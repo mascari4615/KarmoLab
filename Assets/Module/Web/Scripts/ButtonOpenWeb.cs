@@ -2,14 +2,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ButtonOpenWeb : MonoBehaviour
+public class ButtonOpenWeb : ButtonCustom
 {
-	[SerializeField] private Button openWebButton;
-	[field: SerializeField] public string Url { get; private set; } = "https://mascari4615.github.io/";
+	[field: SerializeField] public string Url { get; set; } = "https://mascari4615.github.io/";
 
 	private void Start()
 	{
-		openWebButton.onClick.AddListener(() => OpenWebPage(Url));
+		button.onClick.AddListener(() => OpenWebPage(Url));
 	}
 
 	private void OpenWebPage(string url)
