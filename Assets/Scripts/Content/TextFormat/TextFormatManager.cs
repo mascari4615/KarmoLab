@@ -14,6 +14,8 @@ namespace KarmoLab
 			{
 				{ 1, ((FunctionWithMainInput)KakaoFormat, nameof(KakaoFormat)) },
 				{ 2, ((FunctionWithMainInput)UniqueCharacters, nameof(UniqueCharacters)) },
+				{ 3, ((FunctionWithMainInput)KarmoEncode, nameof(KarmoEncode)) },
+				{ 4, ((FunctionWithMainInput)KarmoDecode, nameof(KarmoDecode)) },
 			};
 		}
 	}
