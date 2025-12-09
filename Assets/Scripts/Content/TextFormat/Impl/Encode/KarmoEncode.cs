@@ -7,6 +7,8 @@ namespace KarmoLab
 {
 	public partial class TextFormatManager : ButtonContent
 	{
+		private readonly bool OVERRIDE_FILE = true;
+
 		public void KarmoEncode(string filePath) => KarmoEncodeDecode(filePath, decode: false);
 		public void KarmoDecode(string filePath) => KarmoEncodeDecode(filePath, decode: true);
 		private void KarmoEncodeDecode(string filePath, bool decode = false)
@@ -47,6 +49,12 @@ namespace KarmoLab
 				string encodedText = KarmoKarmoEncode(text);
 				// MLog.Log($"Encoded Text: {encodedText}");
 				formattedText = encodedText;
+			}
+
+			if (OVERRIDE_FILE == true)
+			{
+				File.Delete(filePath);
+				newFilePath = filePath;
 			}
 
 			File.WriteAllText(newFilePath, formattedText);
