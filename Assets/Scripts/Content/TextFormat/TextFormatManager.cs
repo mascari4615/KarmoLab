@@ -13,6 +13,7 @@ namespace KarmoLab
 			return new Dictionary<int, (Delegate function, string functionName)>
 			{
 				{ 1, ((FunctionWithMainInput)KakaoFormat, nameof(KakaoFormat)) },
+				{ 2, ((FunctionWithMainInput)UniqueCharacters, nameof(UniqueCharacters)) },
 			};
 		}
 	}
