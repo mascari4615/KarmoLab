@@ -14,7 +14,7 @@
     "version": "1.0.0",
     "restore": {
       "projectUniqueName": "C:\\Users\\masca\\source\\repos\\KarmoLab\\Launcher\\Launcher.csproj",
-      "projectName": "Launcher",
+      "projectName": "KarmoTray",
       "projectPath": "C:\\Users\\masca\\source\\repos\\KarmoLab\\Launcher\\Launcher.csproj",
       "packagesPath": "C:\\Users\\masca\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\masca\\source\\repos\\KarmoLab\\Launcher\\obj\\",

@@ -52,7 +52,7 @@ namespace Launcher {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/Launcher;component/app.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/KarmoTray;component/app.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\App.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

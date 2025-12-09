@@ -1,4 +1,4 @@
-# Launcher/WPF 트레이 런처 개요
+# KarmoTray 개요
 
 ## AI는 이곳을 보라
 

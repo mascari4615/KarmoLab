@@ -15,6 +15,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // 시작 프로그램에 등록
+        StartupService.RegisterStartup(Environment.ProcessPath ?? string.Empty);
+
         _gameProcessService = new GameProcessService();
         _mainWindow = new MainWindow(_gameProcessService);
         MainWindow = _mainWindow;

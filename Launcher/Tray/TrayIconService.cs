@@ -27,7 +27,7 @@ public sealed class TrayIconService : IDisposable
         {
             Icon = LoadIcon(iconPath),
             Visible = true,
-            Text = "Launcher"
+            Text = "KarmoTray"
         };
 
         var menu = new ContextMenuStrip();
