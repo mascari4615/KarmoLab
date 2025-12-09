@@ -1,5 +1,7 @@
-using System; 
+using System;
 using System.Drawing;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
 using Launcher.Services;
@@ -18,9 +20,12 @@ public sealed class TrayIconService : IDisposable
         _gameProcessService = gameProcessService;
         _mainWindow = mainWindow;
 
+        var resourcesDir = Path.Combine(AppContext.BaseDirectory, "Resources");
+        var iconPath = Path.Combine(resourcesDir, "tray.ico");
+
         _notifyIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = LoadIcon(iconPath),
             Visible = true,
             Text = "Launcher"
         };
@@ -60,5 +65,15 @@ public sealed class TrayIconService : IDisposable
         _notifyIcon.MouseUp -= OnMouseUp;
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
+    }
+
+    private static Icon LoadIcon(string icoPath)
+    {
+        if (File.Exists(icoPath))
+		{
+            return new Icon(icoPath);
+        }
+
+        return SystemIcons.Application;
     }
 }

@@ -19,3 +19,4 @@ C:\Users\masca\source\repos\KarmoLab\Launcher\obj\Debug\net8.0-windows\refint\La
 C:\Users\masca\source\repos\KarmoLab\Launcher\obj\Debug\net8.0-windows\Launcher.pdb
 C:\Users\masca\source\repos\KarmoLab\Launcher\obj\Debug\net8.0-windows\Launcher.genruntimeconfig.cache
 C:\Users\masca\source\repos\KarmoLab\Launcher\obj\Debug\net8.0-windows\ref\Launcher.dll
+C:\Users\masca\source\repos\KarmoLab\Launcher\bin\Debug\net8.0-windows\Resources\tray.ico

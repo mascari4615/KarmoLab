@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Resources\tray.ico" Condition="Exists('Resources\tray.ico')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
