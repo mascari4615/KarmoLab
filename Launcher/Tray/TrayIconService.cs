@@ -30,6 +30,17 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add("메인 창 열기", null, (_, _) => ShowMainWindow());
         menu.Items.Add("종료", null, (_, _) => ExitApplication());
         _notifyIcon.ContextMenuStrip = menu;
+
+        // 좌클릭 시 메인 창 열기 이벤트 처리
+        _notifyIcon.MouseUp += OnMouseUp;
+    }
+
+    private void OnMouseUp(object? sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            ShowMainWindow();
+        }
     }
 
     private void ShowMainWindow()
@@ -46,6 +57,7 @@ public sealed class TrayIconService : IDisposable
 
     public void Dispose()
     {
+        _notifyIcon.MouseUp -= OnMouseUp;
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
     }
