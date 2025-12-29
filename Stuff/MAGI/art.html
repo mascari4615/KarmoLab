@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project M.A.G.I. - Art Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Noto Sans KR', 'sans-serif'] },
+                    colors: {
+                        brand: { 500: '#FF6B6B', 600: '#EE5D88' },
+                        dark: { 800: '#2D2D2D', 900: '#1A1A1A' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .tab-btn {
+            @apply px-3 py-1.5 text-[10px] font-bold text-gray-400 rounded-lg hover:bg-white/5 hover:text-white transition-all;
+        }
+        .tab-btn.active {
+            @apply bg-brand-500 text-white shadow-lg shadow-brand-500/20;
+        }
+        .card-btn {
+            @apply flex flex-col items-center justify-center p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 hover:border-brand-500/30 transition-all gap-2 text-center group;
+        }
+        .card-btn.selected {
+            @apply border-brand-500 bg-brand-500/10;
+        }
+        .card-icon {
+            @apply text-2xl group-hover:scale-110 transition-transform;
+        }
+        .card-label {
+            @apply text-[10px] font-bold text-gray-300 group-hover:text-white;
+        }
+        .vibe-btn {
+            @apply px-2 py-1 text-[10px] border border-white/10 rounded text-gray-400 hover:text-white hover:border-white/30 transition-all;
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center overflow-hidden bg-[url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2568&auto=format&fit=crop')] bg-cover bg-center">
+    
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+
+    <div class="glass-panel relative w-full h-full max-w-[1200px] md:h-[85vh] md:rounded-2xl flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- Left Panel (Settings) -->
+        <div class="w-full md:w-[360px] flex flex-col border-r border-white/10 bg-dark-900/50">
+            <!-- Header -->
+            <div class="p-5 border-b border-white/10">
+                <h1 class="text-xl font-bold text-white flex items-center gap-2"><span>🎨</span> Art Studio</h1>
+                
+                <!-- API Key Input -->
+                <div class="mt-3 p-2 bg-black/30 rounded-lg border border-white/10">
+                    <div class="flex gap-2">
+                        <input type="password" id="apiKeyInput" placeholder="Gemini API Key..." class="flex-1 px-2 py-1.5 bg-black/50 border border-white/10 rounded text-[10px] text-white focus:border-brand-500/50 focus:outline-none" />
+                        <button onclick="saveApiKey()" class="px-2 py-1.5 bg-brand-500 hover:bg-brand-600 rounded text-[10px] font-bold text-white transition">Save</button>
+                    </div>
+                    <p id="apiKeyStatus" class="text-[9px] text-gray-500 mt-1"></p>
+                </div>
+
+                <!-- Model Selector -->
+                <div class="mt-3 p-2 bg-black/30 rounded-lg border border-white/10">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">🤖 Model</label>
+                    <select id="modelSelect" onchange="updateModelSettings()" class="w-full bg-black/50 border border-white/10 rounded text-[10px] text-white p-1.5 focus:border-brand-500/50 focus:outline-none">
+                        <optgroup label="Gemini (Image Generation)">
+                            <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash Preview 09-2025</option>
+                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                            <option value="gemini-2.5-flash-lite-preview-09-2025">Gemini 2.5 Flash Lite Preview 09-2025</option>
+                            <option value="gemini-2.0-flash" selected>Gemini 2.0 Flash</option>
+                            <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                        </optgroup>
+                        <optgroup label="Imagen">
+                            <option value="imagen-4.0-generate-001">Imagen 4.0</option>
+                            <option value="imagen-4.0-ultra-generate-001">Imagen 4.0 Ultra</option>
+                            <option value="imagen-4.0-fast-generate-001">Imagen 4.0 Fast</option>
+                            <option value="imagen-3.0-generate-002">Imagen 3.0</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="px-4 pt-4 pb-2 flex gap-1 overflow-x-auto custom-scroll">
+                <button id="tab-btn-char" onclick="setTab('char')" class="tab-btn active">Character</button>
+                <button id="tab-btn-bg" onclick="setTab('bg')" class="tab-btn">Background</button>
+                <button id="tab-btn-story" onclick="setTab('story')" class="tab-btn">Story</button>
+                <button id="tab-btn-lab" onclick="setTab('lab')" class="tab-btn">Lab</button>
+            </div>
+
+            <!-- Presets Grid -->
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 pt-0">
+                <div id="selectionGrid" class="grid grid-cols-3 gap-2">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel (Canvas & Input) -->
+        <div class="flex-1 flex flex-col bg-dark-900 relative">
+            
+            <!-- Canvas Area -->
+            <div class="flex-1 flex items-center justify-center p-8 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMWgydjJIMUMxeiIgZmlsbD0iIzMzMyIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4')] relative">
+                
+                <!-- Settings Overlay (Nano) -->
+                <div id="nanoSettings" class="absolute top-4 left-4 bg-black/60 backdrop-blur p-2 rounded-lg border border-white/10 text-[10px] text-gray-300">
+                    <span class="text-brand-500 font-bold">NanoBanana</span> (Gemini 2.0 Flash)
+                </div>
+                
+                <!-- Settings Overlay (Imagen) -->
+                <div id="imagenSettings" class="hidden absolute top-4 left-4 bg-black/60 backdrop-blur p-2 rounded-lg border border-white/10 text-[10px] text-gray-300">
+                    <span class="text-blue-400 font-bold">Imagen 3.0</span> (High Quality)
+                </div>
+
+                <div id="imagePlaceholder" class="text-center">
+                    <div class="text-6xl mb-4 opacity-20">🎨</div>
+                    <p class="text-gray-500 text-sm">Select a preset or type a prompt</p>
+                </div>
+                <div id="loadingSpinner" class="hidden flex flex-col items-center">
+                    <div class="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-brand-500 text-xs font-bold animate-pulse">Dreaming...</p>
+                </div>
+                <img id="generatedImage" onclick="openLightbox(this.src)" class="hidden max-w-full max-h-full rounded-lg shadow-2xl border border-white/10 cursor-zoom-in hover:scale-[1.02] transition-transform" alt="Generated Art" />
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-4 bg-black/40 border-t border-white/10">
+                <div class="relative">
+                    <textarea id="promptInput" onkeydown="handleEnter(event)" placeholder="Describe your image..." class="w-full bg-white/5 border border-white/10 rounded-xl p-4 pr-20 text-sm text-white focus:border-brand-500/50 focus:outline-none resize-none h-24 custom-scroll"></textarea>
+                    
+                    <div class="absolute right-2 top-2 bottom-2 flex flex-col gap-2">
+                        <button onclick="generateImage()" id="generateBtn" class="flex-1 w-16 bg-brand-500 hover:bg-brand-600 rounded-lg flex flex-col items-center justify-center text-white transition shadow-lg shadow-brand-500/20 group">
+                            <span class="text-lg group-hover:scale-110 transition">✨</span>
+                            <span class="text-[9px] font-bold mt-1">Create</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mt-2 px-1">
+                    <p class="text-[10px] text-gray-500">Aspect Ratio: 16:9 (Landscape)</p>
+                    <button onclick="downloadImage()" id="downloadBtn" class="hidden text-[10px] text-brand-500 hover:text-white transition flex items-center gap-1">
+                        <span>⬇️</span> Download
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" onclick="closeLightbox(event)" class="hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="relative max-w-[95vw] max-h-[95vh]">
+            <img id="lightboxImage" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl border border-white/10" src="" alt="Full Size">
+            <div class="absolute -bottom-12 left-0 right-0 flex justify-center gap-4">
+                <a id="lightboxDownload" href="#" download="art-studio-export.png" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 rounded-full text-white text-xs font-bold shadow-lg flex items-center gap-2 transition">
+                    <span>⬇️</span> Download Original
+                </a>
+                <button onclick="closeLightbox({target: {id: 'lightboxModal'}})" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white text-xs font-bold transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Toast Container -->
+    <div id="errorToastContainer" class="fixed bottom-0 right-0 p-4 space-y-3 pointer-events-none z-[9999]"></div>
+
+    <script src="js/prompts.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/art.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Generative AI Studio Config
+js/config.js
+
+# Ignore images in asset/img folder and subfolders
+asset/img/**/*.png
+asset/img/**/*.jpg
+asset/img/**/*.jpeg
+asset/img/**/*.webp
+asset/img/**/*.gif
+!asset/img/**/.gitkeep
