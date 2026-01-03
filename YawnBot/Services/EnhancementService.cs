@@ -46,15 +46,22 @@ namespace YawnBot.Services
 
 			if (currentLevel >= 20)
 			{
-				await channel.SendMessageAsync("🎉 **이미 최고 레벨(20강)에 도달했습니다!** 더 이상 강화할 수 없습니다.");
+				var embed = new EmbedBuilder()
+					.WithTitle("🎉 최고 레벨 도달!")
+					.WithDescription("더 이상 강화할 수 없습니다.")
+					.WithColor(Color.Gold);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
 			var info = _gameData.UpgradeInfos.FirstOrDefault(x => x.Level == currentLevel);
 			if (info == null)
 			{
-				string errorMsg = $"강화 정보를 찾을 수 없습니다. (Level: {currentLevel})";
-				await channel.SendMessageAsync($"🚫 **오류 발생**: {errorMsg}\n관리자에게 문의해주세요.");
+				var embed = new EmbedBuilder()
+					.WithTitle("🚫 오류 발생")
+					.WithDescription($"강화 정보를 찾을 수 없습니다. (Level: {currentLevel})\n관리자에게 문의해주세요.")
+					.WithColor(Color.Red);
+				await SendEmbedAsync(channel, embed);
 
 				await _loggingService.LogErrorAsync("EnhancementService", "UpgradeInfo not found", new { UserId = userId, Level = currentLevel });
 				return;
@@ -64,7 +71,12 @@ namespace YawnBot.Services
 
 			if (!_gameData.TrySpendMoney(userId, cost))
 			{
-				await channel.SendMessageAsync($"💸 **돈이 부족합니다!**\n필요한 금액: {cost}원 / 보유 금액: {_gameData.UserMoney[userId]}원");
+				var embed = new EmbedBuilder()
+					.WithTitle("💸 돈이 부족합니다!")
+					.AddField("필요한 금액", $"{cost}원", true)
+					.AddField("보유 금액", $"{_gameData.UserMoney[userId]}원", true)
+					.WithColor(Color.Red);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
@@ -89,10 +101,16 @@ namespace YawnBot.Services
 				}
 
 				string imagePath = GetImagePath(userSword.ImageName);
-				string text = $"🌟 **대성공!!!** 🌟\n{user.Mention}님의 검이 단숨에 **+{userSword.Level}강 {userSword.Name}**(으)로 진화했습니다! (+{userSword.Level - oldLevel}강)\n" +
-							  $"(비용: {cost}원, 남은 돈: {_gameData.UserMoney[userId]}원)";
+				
+				var embed = new EmbedBuilder()
+					.WithTitle("🌟 대성공!!! 🌟")
+					.WithDescription($"{user.Mention}님의 검이 단숨에 **+{userSword.Level}강 {userSword.Name}**(으)로 진화했습니다!")
+					.AddField("상승폭", $"+{userSword.Level - oldLevel}강", true)
+					.AddField("비용", $"{cost}원", true)
+					.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+					.WithColor(Color.Gold);
 
-				await SendWithImageAsync(channel, imagePath, text);
+				await SendEmbedAsync(channel, embed, imagePath);
 			}
 			else if (roll <= successProb)
 			{
@@ -108,11 +126,16 @@ namespace YawnBot.Services
 
 				string imagePath = GetImagePath(userSword.ImageName);
 				string chatMsg = GetRandomChatMessage(userSword.Level, "success");
-				string text = $"🎉 **강화 성공!**\n{user.Mention}님의 검이 **+{userSword.Level}강 {userSword.Name}**(으)로 변했습니다!\n" +
-							  $"💬 \"{chatMsg}\"\n" +
-							  $"(비용: {cost}원, 남은 돈: {_gameData.UserMoney[userId]}원)";
+				
+				var embed = new EmbedBuilder()
+					.WithTitle("🎉 강화 성공!")
+					.WithDescription($"{user.Mention}님의 검이 **+{userSword.Level}강 {userSword.Name}**(으)로 변했습니다!")
+					.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
+					.AddField("비용", $"{cost}원", true)
+					.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+					.WithColor(Color.Green);
 
-				await SendWithImageAsync(channel, imagePath, text);
+				await SendEmbedAsync(channel, embed, imagePath);
 			}
 			else
 			{
@@ -125,11 +148,16 @@ namespace YawnBot.Services
 					string maintainImageName = GetRandomImage("bot_asset_강화_유지_");
 					string maintainImagePath = GetImagePath(maintainImageName);
 					string chatMsg = GetRandomChatMessage(userSword.Level, "maintain");
-					string maintainText = $"🛡️ **강화 실패... 하지만 검은 무사합니다!** (파괴 방어 성공)\n{user.Mention}님의 검이 **+{userSword.Level}강 {userSword.Name}**(으)로 유지되었습니다.\n" +
-										  $"💬 \"{chatMsg}\"\n" +
-										  $"(비용: {cost}원, 남은 돈: {_gameData.UserMoney[userId]}원)";
+					
+					var embed = new EmbedBuilder()
+						.WithTitle("🛡️ 강화 실패... 하지만 검은 무사합니다!")
+						.WithDescription($"{user.Mention}님의 검이 **+{userSword.Level}강 {userSword.Name}**(으)로 유지되었습니다.")
+						.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
+						.AddField("비용", $"{cost}원", true)
+						.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+						.WithColor(Color.Blue);
 
-					await SendWithImageAsync(channel, maintainImagePath, maintainText);
+					await SendEmbedAsync(channel, embed, maintainImagePath);
 				}
 				else
 				{
@@ -144,11 +172,16 @@ namespace YawnBot.Services
 					string destroyImageName = GetRandomImage("bot_asset_강화_실패_");
 					string destroyImagePath = GetImagePath(destroyImageName);
 					string chatMsg = GetRandomChatMessage(currentLevel + 1, "fail");
-					string destroyText = $"💥 **강화 실패...**\n{user.Mention}님의 검이 깨졌습니다...\n" +
-										 $"💬 \"{chatMsg}\"\n" +
-										 $"(비용: {cost}원, 남은 돈: {_gameData.UserMoney[userId]}원)";
+					
+					var embed = new EmbedBuilder()
+						.WithTitle("💥 강화 실패...")
+						.WithDescription($"{user.Mention}님의 검이 깨졌습니다...")
+						.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
+						.AddField("비용", $"{cost}원", true)
+						.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+						.WithColor(Color.Red);
 
-					await SendWithImageAsync(channel, destroyImagePath, destroyText, builder.Build());
+					await SendEmbedAsync(channel, embed, destroyImagePath, builder.Build());
 				}
 			}
 		}
@@ -162,7 +195,11 @@ namespace YawnBot.Services
 			int currentLevel = userSword.Level;
 			if (currentLevel == 0)
 			{
-				await channel.SendMessageAsync("0강 검은 팔 수 없습니다! 강화 후에 판매하세요.");
+				var embed = new EmbedBuilder()
+					.WithTitle("🚫 판매 불가")
+					.WithDescription("0강 검은 팔 수 없습니다! 강화 후에 판매하세요.")
+					.WithColor(Color.Red);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
@@ -190,7 +227,12 @@ namespace YawnBot.Services
 			userSword.ImageName = resetImg;
 			userSword.Name = resetName;
 
-			await channel.SendMessageAsync($"💰 **판매 완료!**\n+{currentLevel}강 검을 팔아 **{finalPrice}원**을 벌었습니다!\n현재 보유 금액: {_gameData.UserMoney[userId]}원");
+			var successEmbed = new EmbedBuilder()
+				.WithTitle("💰 판매 완료!")
+				.WithDescription($"+{currentLevel}강 검을 팔아 **{finalPrice}원**을 벌었습니다!")
+				.AddField("현재 보유 금액", $"{_gameData.UserMoney[userId]}원", true)
+				.WithColor(Color.Green);
+			await SendEmbedAsync(channel, successEmbed);
 		}
 
 		public async Task ShowInfoAsync(IUser user, IMessageChannel channel)
@@ -205,9 +247,15 @@ namespace YawnBot.Services
 			string swordName = userSword.Name ?? "이름 없는 검";
 
 			string imagePath = GetImagePath(userSword.ImageName);
-			string text = $"⚔️ **{user.Username}님의 정보**\n검 이름: **{swordName}** (+{level}강)\n최대 달성 레벨: +{maxLevel}강\n보유 금액: {money}원";
+			
+			var embed = new EmbedBuilder()
+				.WithTitle($"⚔️ {user.Username}님의 정보")
+				.AddField("검 이름", $"**{swordName}** (+{level}강)", true)
+				.AddField("최대 달성 레벨", $"+{maxLevel}강", true)
+				.AddField("보유 금액", $"{money}원", true)
+				.WithColor(Color.Blue);
 
-			await SendWithImageAsync(channel, imagePath, text);
+			await SendEmbedAsync(channel, embed, imagePath);
 		}
 
 		public async Task ShowMoneyAsync(IUser user, IMessageChannel channel)
@@ -215,7 +263,12 @@ namespace YawnBot.Services
 			ulong userId = user.Id;
 			EnsureUserData(userId);
 			long money = _gameData.UserMoney[userId];
-			await channel.SendMessageAsync($"💰 **{user.Username}님의 보유 금액**: {money}원");
+			
+			var embed = new EmbedBuilder()
+				.WithTitle("💰 보유 금액")
+				.WithDescription($"**{user.Username}**님의 현재 자산: {money}원")
+				.WithColor(Color.Green);
+			await SendEmbedAsync(channel, embed);
 		}
 
 		public async Task BattleAsync(IUser user, IUser targetUser, IMessageChannel channel)
@@ -225,19 +278,31 @@ namespace YawnBot.Services
 
 			if (targetUser == null)
 			{
-				await channel.SendMessageAsync("대결할 상대를 멘션해주세요! 예: `!배틀 @상대방`");
+				var embed = new EmbedBuilder()
+					.WithTitle("⚠️ 대상 오류")
+					.WithDescription("대결할 상대를 멘션해주세요! 예: `/배틀 @상대방`")
+					.WithColor(Color.Orange);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
 			if (targetUser.Id == userId)
 			{
-				await channel.SendMessageAsync("자기 자신과는 싸울 수 없습니다.");
+				var embed = new EmbedBuilder()
+					.WithTitle("⚠️ 대상 오류")
+					.WithDescription("자기 자신과는 싸울 수 없습니다.")
+					.WithColor(Color.Orange);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
 			if (targetUser.IsBot)
 			{
-				await channel.SendMessageAsync("봇과는 싸울 수 없습니다.");
+				var embed = new EmbedBuilder()
+					.WithTitle("⚠️ 대상 오류")
+					.WithDescription("봇과는 싸울 수 없습니다.")
+					.WithColor(Color.Orange);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
@@ -252,7 +317,11 @@ namespace YawnBot.Services
 
 			if (_gameData.DailyBattleCounts[userId].Count >= 10)
 			{
-				await channel.SendMessageAsync("🔥 **오늘의 대결 횟수를 모두 소진했습니다!** (하루 10회)");
+				var embed = new EmbedBuilder()
+					.WithTitle("🔥 일일 제한 도달")
+					.WithDescription("오늘의 대결 횟수를 모두 소진했습니다! (하루 10회)")
+					.WithColor(Color.Red);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
@@ -290,30 +359,45 @@ namespace YawnBot.Services
 				}
 
 				_gameData.AddMoney(userId, reward);
-				string winText = $"⚔️ **대결 승리!**\n{user.Mention}님이 {targetUser.Mention}님을 이겼습니다!\n" +
-					$"나: +{myLevel}강 {mySwordName} vs 상대: +{targetLevel}강 {targetSwordName}\n" +
-					$"💰 보상: **{reward}원** 획득! (남은 대결 횟수: {remainingBattles}회)";
+				
+				var embed = new EmbedBuilder()
+					.WithTitle("⚔️ 대결 승리!")
+					.WithDescription($"{user.Mention}님이 {targetUser.Mention}님을 이겼습니다!")
+					.AddField("나의 검", $"+{myLevel}강 {mySwordName}", true)
+					.AddField("상대의 검", $"+{targetLevel}강 {targetSwordName}", true)
+					.AddField("보상", $"{reward}원", true)
+					.AddField("남은 대결 횟수", $"{remainingBattles}회", true)
+					.WithColor(Color.Green);
 
-				await SendWithImageAsync(channel, battleImagePath, winText);
+				await SendEmbedAsync(channel, embed, battleImagePath);
 			}
 			else
 			{
-				string loseText = $"🏳️ **대결 패배...**\n{user.Mention}님이 {targetUser.Mention}님에게 졌습니다...\n" +
-					$"나: +{myLevel}강 {mySwordName} vs 상대: +{targetLevel}강 {targetSwordName}\n" +
-					$"남은 대결 횟수: {remainingBattles}회";
+				var embed = new EmbedBuilder()
+					.WithTitle("🏳️ 대결 패배...")
+					.WithDescription($"{user.Mention}님이 {targetUser.Mention}님에게 졌습니다...")
+					.AddField("나의 검", $"+{myLevel}강 {mySwordName}", true)
+					.AddField("상대의 검", $"+{targetLevel}강 {targetSwordName}", true)
+					.AddField("남은 대결 횟수", $"{remainingBattles}회", true)
+					.WithColor(Color.Red);
 
-				await SendWithImageAsync(channel, battleImagePath, loseText);
+				await SendEmbedAsync(channel, embed, battleImagePath);
 			}
 		}
 
 		public async Task ShowRankingAsync(IMessageChannel channel, DiscordSocketClient client)
 		{
 			var sortedUsers = _gameData.UserMoney.OrderByDescending(x => x.Value).ToList();
-			var rankMsg = "🏆 **전체 랭킹 (돈 순)**\n";
+			var embed = new EmbedBuilder()
+				.WithTitle("🏆 전체 랭킹 (돈 순)")
+				.WithColor(Color.Gold);
 
 			int rank = 1;
+			string description = "";
 			foreach (var user in sortedUsers)
 			{
+				if (rank > 10) break; // Top 10만 표시
+
 				ulong id = user.Key;
 				var socketUser = client.GetUser(id);
 				string username = socketUser?.Username ?? "알 수 없는 유저";
@@ -322,16 +406,17 @@ namespace YawnBot.Services
 				int maxLv = _gameData.UserMaxSwordLevels.ContainsKey(id) ? _gameData.UserMaxSwordLevels[id] : 0;
 				long money = user.Value;
 
-				rankMsg += $"{rank}. **{username}** - 💰 {money}원 | ⚔️ 현재 +{currentLv}강 | 🌟 최대 +{maxLv}강\n";
+				description += $"{rank}. **{username}**\n💰 {money}원 | ⚔️ 현재 +{currentLv}강 | 🌟 최대 +{maxLv}강\n\n";
 				rank++;
 			}
 
 			if (sortedUsers.Count == 0)
 			{
-				rankMsg += "데이터가 없습니다.";
+				description = "데이터가 없습니다.";
 			}
 
-			await channel.SendMessageAsync(rankMsg);
+			embed.WithDescription(description);
+			await SendEmbedAsync(channel, embed);
 		}
 
 		public async Task CheckAttendanceAsync(IUser user, IMessageChannel channel)
@@ -352,12 +437,22 @@ namespace YawnBot.Services
 				long reward = 1000;
 				_gameData.AddMoney(userId, reward);
 				_gameData.LastAttendance[userId] = DateTime.Now;
-				await channel.SendMessageAsync($"📅 **출석체크 완료!**\n{reward}원을 받았습니다! (현재 보유 금액: {_gameData.UserMoney[userId]}원)");
+				
+				var embed = new EmbedBuilder()
+					.WithTitle("📅 출석체크 완료!")
+					.WithDescription($"{reward}원을 받았습니다!")
+					.AddField("현재 보유 금액", $"{_gameData.UserMoney[userId]}원", true)
+					.WithColor(Color.Green);
+				await SendEmbedAsync(channel, embed);
 			}
 			else
 			{
 				TimeSpan remaining = TimeSpan.FromHours(1) - diff;
-				await channel.SendMessageAsync($"⏳ **아직 출석체크를 할 수 없습니다.**\n남은 시간: {remaining.Minutes}분 {remaining.Seconds}초");
+				var embed = new EmbedBuilder()
+					.WithTitle("⏳ 아직 출석체크를 할 수 없습니다.")
+					.WithDescription($"남은 시간: {remaining.Minutes}분 {remaining.Seconds}초")
+					.WithColor(Color.Orange);
+				await SendEmbedAsync(channel, embed);
 			}
 		}
 
@@ -369,13 +464,21 @@ namespace YawnBot.Services
 			ulong targetId = 332838413579321354;
 			if (userId != targetId)
 			{
-				await channel.SendMessageAsync("🙅‍♂️ **민생지원금 대상자가 아닙니다.**");
+				var embed = new EmbedBuilder()
+					.WithTitle("🙅‍♂️ 대상 아님")
+					.WithDescription("민생지원금 대상자가 아닙니다.")
+					.WithColor(Color.Red);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
 			if (_gameData.ReceivedSupportFundUsers.ContainsKey(userId))
 			{
-				await channel.SendMessageAsync($"🙅‍♂️ **이미 민생지원금을 받으셨습니다!** (1인 1회 한정)");
+				var embed = new EmbedBuilder()
+					.WithTitle("🙅‍♂️ 지급 완료")
+					.WithDescription("이미 민생지원금을 받으셨습니다! (1인 1회 한정)")
+					.WithColor(Color.Red);
+				await SendEmbedAsync(channel, embed);
 				return;
 			}
 
@@ -383,7 +486,12 @@ namespace YawnBot.Services
 			_gameData.AddMoney(userId, supportAmount);
 			_gameData.ReceivedSupportFundUsers.TryAdd(userId, true);
 
-			await channel.SendMessageAsync($"💸 **민생지원금 지급 완료!**\n{user.Mention}님에게 **{supportAmount}원**을 지급했습니다! (1회 한정)\n현재 보유 금액: {_gameData.UserMoney[userId]}원");
+			var successEmbed = new EmbedBuilder()
+				.WithTitle("💸 민생지원금 지급 완료!")
+				.WithDescription($"{user.Mention}님에게 **{supportAmount}원**을 지급했습니다! (1회 한정)")
+				.AddField("현재 보유 금액", $"{_gameData.UserMoney[userId]}원", true)
+				.WithColor(Color.Green);
+			await SendEmbedAsync(channel, successEmbed);
 		}
 
 		public (string ImageName, string Name) GetRandomSwordImage(int level)
@@ -455,21 +563,17 @@ namespace YawnBot.Services
 			return "";
 		}
 
-		public async Task SendWithImageAsync(IMessageChannel channel, string imagePath, string text, MessageComponent components = null)
+		public async Task SendEmbedAsync(IMessageChannel channel, EmbedBuilder embed, string imagePath = null, MessageComponent components = null)
 		{
 			if (!string.IsNullOrEmpty(imagePath) && File.Exists(imagePath))
 			{
 				string fileName = Path.GetFileName(imagePath);
-				var embed = new EmbedBuilder()
-					.WithThumbnailUrl($"attachment://{fileName}") // 썸네일로 설정하여 작게 표시
-					.WithColor(Color.Orange)
-					.Build();
-
-				await channel.SendFileAsync(imagePath, text: text, embed: embed, components: components);
+				embed.WithThumbnailUrl($"attachment://{fileName}");
+				await channel.SendFileAsync(imagePath, embed: embed.Build(), components: components);
 			}
 			else
 			{
-				await channel.SendMessageAsync(text, components: components);
+				await channel.SendMessageAsync(embed: embed.Build(), components: components);
 			}
 		}
 	}

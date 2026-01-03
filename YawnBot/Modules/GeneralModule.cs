@@ -9,7 +9,12 @@ namespace YawnBot.Modules
 		[SlashCommand("ping", "봇 생존 확인!")]
 		public async Task PingAsync()
 		{
-			await RespondAsync("Pong!");
+			var embed = new EmbedBuilder()
+				.WithTitle("🏓 Pong!")
+				.WithDescription($"Latency: {Context.Client.Latency}ms")
+				.WithColor(Color.Green)
+				.Build();
+			await RespondAsync(embed: embed);
 		}
 
 		[SlashCommand("도움말", "도움말을 출력합니다.")]

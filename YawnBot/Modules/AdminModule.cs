@@ -22,13 +22,24 @@ namespace YawnBot.Modules
 		{
 			if (!_configService.IsAdmin(Context.User.Id))
 			{
-				await RespondAsync("🚫 **관리자만 사용할 수 있는 명령어입니다.**", ephemeral: true);
+				var errorEmbed = new EmbedBuilder()
+					.WithTitle("🚫 접근 거부")
+					.WithDescription("관리자만 사용할 수 있는 명령어입니다.")
+					.WithColor(Color.Red)
+					.Build();
+				await RespondAsync(embed: errorEmbed, ephemeral: true);
 				return;
 			}
 
 			await _gameDataService.InitializeAsync();
 			await _configService.InitializeAsync();
-			await RespondAsync("✅ **데이터 및 설정 리로드 완료!**", ephemeral: true);
+			
+			var successEmbed = new EmbedBuilder()
+				.WithTitle("✅ 리로드 완료")
+				.WithDescription("데이터 및 설정을 다시 불러왔습니다.")
+				.WithColor(Color.Green)
+				.Build();
+			await RespondAsync(embed: successEmbed, ephemeral: true);
 		}
 
 		[SlashCommand("저장", "데이터를 저장합니다.")]
@@ -36,12 +47,23 @@ namespace YawnBot.Modules
 		{
 			if (!_configService.IsAdmin(Context.User.Id))
 			{
-				await RespondAsync("🚫 **관리자만 사용할 수 있는 명령어입니다.**", ephemeral: true);
+				var errorEmbed = new EmbedBuilder()
+					.WithTitle("🚫 접근 거부")
+					.WithDescription("관리자만 사용할 수 있는 명령어입니다.")
+					.WithColor(Color.Red)
+					.Build();
+				await RespondAsync(embed: errorEmbed, ephemeral: true);
 				return;
 			}
 
 			_gameDataService.SaveGameData();
-			await RespondAsync("💾 **데이터 저장 완료!**", ephemeral: true);
+			
+			var successEmbed = new EmbedBuilder()
+				.WithTitle("💾 저장 완료")
+				.WithDescription("게임 데이터를 저장했습니다.")
+				.WithColor(Color.Green)
+				.Build();
+			await RespondAsync(embed: successEmbed, ephemeral: true);
 		}
 	}
 }

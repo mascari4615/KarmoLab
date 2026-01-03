@@ -136,9 +136,13 @@ namespace YawnBot
 				var enhancementService = _services.GetRequiredService<EnhancementService>();
 				string imageName = enhancementService.GetRandomImage("bot_asset_위로(놀림)_");
 				string imagePath = imageName != null ? Path.Combine("Resources/img/sword", imageName) : null;
-				string text = $"{component.User.Mention}님이 위로(또는 놀림)를 건넸습니다! ㅋㅋㅋ";
+				
+				var embed = new EmbedBuilder()
+					.WithTitle("🤣 위로(또는 놀림) 도착!")
+					.WithDescription($"{component.User.Mention}님이 위로(또는 놀림)를 건넸습니다! ㅋㅋㅋ")
+					.WithColor(Color.Magenta);
 
-				await enhancementService.SendWithImageAsync(component.Channel, imagePath, text);
+				await enhancementService.SendEmbedAsync(component.Channel, embed, imagePath);
 
 				await component.DeferAsync();
 			}
