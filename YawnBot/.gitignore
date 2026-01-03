@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+config.json
+Data/gamedata.json
+Data/error_logs.json
+Resources/img/meme/
+
