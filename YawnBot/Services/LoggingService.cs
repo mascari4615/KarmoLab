@@ -7,7 +7,7 @@ namespace YawnBot.Services
 		private const string LogPath = "Data/error_logs.json";
 		private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
-		public async Task LogErrorAsync(string source, string message, object data = null)
+		public async Task LogErrorAsync(string source, string message, object? data = null)
 		{
 			var logEntry = new
 			{

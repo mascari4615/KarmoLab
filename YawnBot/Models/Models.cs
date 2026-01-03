@@ -18,16 +18,16 @@ namespace YawnBot.Models
 
 	public class ChatData
 	{
-		public List<string> success { get; set; }
-		public List<string> fail { get; set; }
-		public List<string> maintain { get; set; }
+		public List<string> success { get; set; } = new List<string>();
+		public List<string> fail { get; set; } = new List<string>();
+		public List<string> maintain { get; set; } = new List<string>();
 	}
 
 	public class SwordData
 	{
 		public int Level { get; set; }
-		public string ImageName { get; set; }
-		public string Name { get; set; }
+		public string ImageName { get; set; } = string.Empty;
+		public string Name { get; set; } = string.Empty;
 	}
 
 	public class DailyBattleInfo
@@ -38,11 +38,10 @@ namespace YawnBot.Models
 
 	public class GameState
 	{
-		public Dictionary<string, SwordData> UserSwords { get; set; }
-		public Dictionary<string, int> UserMaxSwordLevels { get; set; }
-		public Dictionary<string, long> UserMoney { get; set; }
-		public Dictionary<string, DateTime> LastAttendance { get; set; }
-		public Dictionary<string, DailyBattleInfo> DailyBattleCounts { get; set; }
-		public List<string> ReceivedSupportFundUsers { get; set; }
+		public Dictionary<string, SwordData> UserSwords { get; set; } = new Dictionary<string, SwordData>();
+		public Dictionary<string, int> UserMaxSwordLevels { get; set; } = new Dictionary<string, int>();
+		public Dictionary<string, long> UserMoney { get; set; } = new Dictionary<string, long>();
+		public Dictionary<string, DateTime> LastAttendance { get; set; } = new Dictionary<string, DateTime>();
+		public Dictionary<string, DailyBattleInfo> DailyBattleCounts { get; set; } = new Dictionary<string, DailyBattleInfo>();
 	}
 }

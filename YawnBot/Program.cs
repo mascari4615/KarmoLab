@@ -10,9 +10,9 @@ namespace YawnBot
 {
 	public class Program
 	{
-		private DiscordSocketClient _client;
-		private InteractionService _interactionService;
-		private IServiceProvider _services;
+		private DiscordSocketClient _client = null!;
+		private InteractionService _interactionService = null!;
+		private IServiceProvider _services = null!;
 
 		public static Task Main(string[] args) => new Program().MainAsync();
 
@@ -134,8 +134,8 @@ namespace YawnBot
 			if (component.Data.CustomId == "consolation")
 			{
 				var enhancementService = _services.GetRequiredService<EnhancementService>();
-				string imageName = enhancementService.GetRandomImage("bot_asset_위로(놀림)_");
-				string imagePath = imageName != null ? Path.Combine("Resources/img/sword", imageName) : null;
+				string? imageName = enhancementService.GetRandomImage("bot_asset_위로(놀림)_");
+				string? imagePath = imageName != null ? Path.Combine("Resources/img/sword", imageName) : null;
 				
 				var embed = new EmbedBuilder()
 					.WithTitle("🤣 위로(또는 놀림) 도착!")
