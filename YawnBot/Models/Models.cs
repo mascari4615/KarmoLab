@@ -44,4 +44,20 @@ namespace YawnBot.Models
 		public Dictionary<string, DateTime> LastAttendance { get; set; } = new Dictionary<string, DateTime>();
 		public Dictionary<string, DailyBattleInfo> DailyBattleCounts { get; set; } = new Dictionary<string, DailyBattleInfo>();
 	}
+
+	public class RaidBoss
+	{
+		public string Name { get; set; } = string.Empty;
+		public long MaxHp { get; set; }
+		public long CurrentHp { get; set; }
+		public string ImageName { get; set; } = string.Empty;
+		public bool IsDead => CurrentHp <= 0;
+	}
+
+	public class RaidParticipant
+	{
+		public ulong UserId { get; set; }
+		public string Username { get; set; } = string.Empty;
+		public long TotalDamage { get; set; }
+	}
 }

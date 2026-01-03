@@ -34,6 +34,7 @@ namespace YawnBot
 				.AddSingleton<ConfigService>()
 				.AddSingleton<GameDataService>()
 				.AddSingleton<EnhancementService>()
+				.AddSingleton<RaidService>()
 				.AddSingleton<Random>()
 				.BuildServiceProvider();
 
