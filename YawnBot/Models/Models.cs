@@ -44,6 +44,7 @@ namespace YawnBot.Models
 		public Dictionary<string, DateTime> LastAttendance { get; set; } = new Dictionary<string, DateTime>();
 		public Dictionary<string, DailyBattleInfo> DailyBattleCounts { get; set; } = new Dictionary<string, DailyBattleInfo>();
 		public Dictionary<string, UserStockData> UserStocks { get; set; } = new Dictionary<string, UserStockData>();
+		public Dictionary<string, StockItem> Stocks { get; set; } = new Dictionary<string, StockItem>();
 	}
 
 	public class RaidBoss
@@ -69,6 +70,7 @@ namespace YawnBot.Models
 		public long Price { get; set; }
 		public long PreviousPrice { get; set; }
 		public string Description { get; set; } = string.Empty;
+		public List<long> PriceHistory { get; set; } = new List<long>();
 	}
 
 	public class UserStockData

@@ -21,6 +21,28 @@ namespace YawnBot.Modules
 			await RespondAsync(embed: embed.Build());
 		}
 
+		[SlashCommand("주식차트", "특정 주식의 차트를 확인합니다.")]
+		public async Task StockChartAsync(string symbol)
+		{
+			await DeferAsync();
+
+			string url = _stockService.GetChartUrl(symbol.ToUpper());
+			if (string.IsNullOrEmpty(url))
+			{
+				await FollowupAsync("존재하지 않는 종목입니다.", ephemeral: true);
+				return;
+			}
+
+			Console.WriteLine($"[StockChart] Generated URL: {url}");
+
+			var embed = new EmbedBuilder()
+				.WithTitle($"📈 {symbol.ToUpper()} 차트")
+				.WithImageUrl(url)
+				.WithColor(Color.Blue);
+			
+			await FollowupAsync(embed: embed.Build());
+		}
+
 		[SlashCommand("매수", "주식을 매수합니다.")]
 		public async Task BuyStockAsync(string symbol, int amount)
 		{

@@ -1,5 +1,6 @@
 using Discord;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ namespace YawnBot.Services
 		private readonly Random _random;
 		private Timer? _priceUpdateTimer;
 		
-		public Dictionary<string, StockItem> Stocks { get; private set; } = new();
+		public ConcurrentDictionary<string, StockItem> Stocks => _gameData.Stocks;
 
 		public StockService(GameDataService gameData, Random random)
 		{
@@ -27,6 +28,9 @@ namespace YawnBot.Services
 
 		private void InitializeStocks()
 		{
+			// 이미 데이터가 있으면 초기화하지 않음
+			if (Stocks.Count > 0) return;
+
 			// 초기 종목 설정
 			AddStock("SAMSUNG", "떡락전자", 70000, "국민 주식. 하지만 파란불이 익숙하다.");
 			AddStock("DOGE", "화성갈끄니까", 100, "도지코인. 화성 갈 수 있을까?");
@@ -43,7 +47,8 @@ namespace YawnBot.Services
 				Name = name,
 				Price = price,
 				PreviousPrice = price,
-				Description = desc
+				Description = desc,
+				PriceHistory = new List<long> { price }
 			};
 		}
 
@@ -77,7 +82,60 @@ namespace YawnBot.Services
 
 				// 최소 가격 보정 (1원)
 				if (stock.Price < 1) stock.Price = 1;
+
+				// 히스토리 추가 (최대 30개 유지)
+				stock.PriceHistory.Add(stock.Price);
+				if (stock.PriceHistory.Count > 30)
+				{
+					stock.PriceHistory.RemoveAt(0);
+				}
 			}
+			
+			// 가격 변동 후 저장
+			_gameData.SaveGameData();
+		}
+
+		public string GetChartUrl(string symbol)
+		{
+			if (!Stocks.ContainsKey(symbol)) return "";
+			var stock = Stocks[symbol];
+			
+			if (stock.PriceHistory == null) stock.PriceHistory = new List<long> { stock.Price };
+
+			// QuickChart.io API 사용
+			string labels = string.Join(",", Enumerable.Range(1, stock.PriceHistory.Count).Select(i => $"'{i}m'"));
+			string data = string.Join(",", stock.PriceHistory);
+			string color = stock.Price >= stock.PreviousPrice ? "green" : "red";
+			
+			string config = $@"{{
+				type: 'line',
+				data: {{
+					labels: [{labels}],
+					datasets: [{{
+						label: '{stock.Name}',
+						data: [{data}],
+						borderColor: '{color}',
+						fill: false
+					}}]
+				}},
+				options: {{
+					scales: {{
+						yAxes: [{{
+							ticks: {{
+								beginAtZero: false
+							}}
+						}}]
+					}},
+					title: {{
+						display: true,
+						text: '{stock.Name} ({stock.Symbol}) Price History'
+					}}
+				}}
+			}}";
+
+			// URL 인코딩 필요 없이 QuickChart는 JSON을 쿼리로 받음 (단, 복잡하면 인코딩 필요)
+			// 간단하게 Uri.EscapeDataString 사용
+			return $"https://quickchart.io/chart?c={Uri.EscapeDataString(config)}";
 		}
 
 		public EmbedBuilder GetStockListEmbed()
