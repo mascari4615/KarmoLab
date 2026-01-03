@@ -43,6 +43,7 @@ namespace YawnBot.Models
 		public Dictionary<string, long> UserMoney { get; set; } = new Dictionary<string, long>();
 		public Dictionary<string, DateTime> LastAttendance { get; set; } = new Dictionary<string, DateTime>();
 		public Dictionary<string, DailyBattleInfo> DailyBattleCounts { get; set; } = new Dictionary<string, DailyBattleInfo>();
+		public Dictionary<string, UserStockData> UserStocks { get; set; } = new Dictionary<string, UserStockData>();
 	}
 
 	public class RaidBoss
@@ -59,5 +60,20 @@ namespace YawnBot.Models
 		public ulong UserId { get; set; }
 		public string Username { get; set; } = string.Empty;
 		public long TotalDamage { get; set; }
+	}
+
+	public class StockItem
+	{
+		public string Symbol { get; set; } = string.Empty; // 식별자 (예: DOGE)
+		public string Name { get; set; } = string.Empty;   // 이름 (예: 도지코인)
+		public long Price { get; set; }
+		public long PreviousPrice { get; set; }
+		public string Description { get; set; } = string.Empty;
+	}
+
+	public class UserStockData
+	{
+		public Dictionary<string, int> Stocks { get; set; } = new Dictionary<string, int>(); // Symbol -> Amount
+		public Dictionary<string, double> AveragePrice { get; set; } = new Dictionary<string, double>(); // Symbol -> AvgPrice
 	}
 }

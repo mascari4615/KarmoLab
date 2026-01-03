@@ -22,6 +22,7 @@ namespace YawnBot.Services
 		public ConcurrentDictionary<ulong, long> UserMoney { get; private set; } = new();
 		public ConcurrentDictionary<ulong, DateTime> LastAttendance { get; private set; } = new();
 		public ConcurrentDictionary<ulong, DailyBattleInfo> DailyBattleCounts { get; private set; } = new();
+		public ConcurrentDictionary<ulong, UserStockData> UserStocks { get; private set; } = new();
 
 		public List<UpgradeInfo> UpgradeInfos { get; private set; } = new();
 		public Dictionary<string, ChatData> ChatData { get; private set; } = new();
@@ -87,7 +88,8 @@ namespace YawnBot.Services
 					UserMaxSwordLevels = UserMaxSwordLevels.ToDictionary(k => k.Key.ToString(), v => v.Value),
 					UserMoney = UserMoney.ToDictionary(k => k.Key.ToString(), v => v.Value),
 					LastAttendance = LastAttendance.ToDictionary(k => k.Key.ToString(), v => v.Value),
-					DailyBattleCounts = DailyBattleCounts.ToDictionary(k => k.Key.ToString(), v => v.Value)
+					DailyBattleCounts = DailyBattleCounts.ToDictionary(k => k.Key.ToString(), v => v.Value),
+					UserStocks = UserStocks.ToDictionary(k => k.Key.ToString(), v => v.Value)
 				};
 
 				string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
@@ -130,6 +132,9 @@ namespace YawnBot.Services
 
 						if (state.DailyBattleCounts != null)
 							DailyBattleCounts = new ConcurrentDictionary<ulong, DailyBattleInfo>(state.DailyBattleCounts.ToDictionary(k => ulong.Parse(k.Key), v => v.Value));
+
+						if (state.UserStocks != null)
+							UserStocks = new ConcurrentDictionary<ulong, UserStockData>(state.UserStocks.ToDictionary(k => ulong.Parse(k.Key), v => v.Value));
 					}
 					Console.WriteLine("게임 데이터 로드 완료!");
 				}
