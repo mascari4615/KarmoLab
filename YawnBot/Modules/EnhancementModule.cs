@@ -25,6 +25,20 @@ namespace YawnBot.Modules
 			await DeleteOriginalResponseAsync();
 		}
 
+		[ComponentInteraction("enhance_retry")]
+		public async Task EnhanceRetryAsync()
+		{
+			await DeferAsync();
+			await _enhancementService.EnhanceSwordAsync(Context.User, Context.Channel);
+		}
+
+		[ComponentInteraction("sell_sword")]
+		public async Task SellSwordButtonAsync()
+		{
+			await DeferAsync();
+			await _enhancementService.SellSwordAsync(Context.User, Context.Channel);
+		}
+
 		[SlashCommand("판매", "검을 판매합니다.")]
 		public async Task SellAsync()
 		{

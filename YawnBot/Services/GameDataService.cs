@@ -27,6 +27,7 @@ namespace YawnBot.Services
 
 		public List<UpgradeInfo> UpgradeInfos { get; private set; } = new();
 		public Dictionary<string, ChatData> ChatData { get; private set; } = new();
+		public Dictionary<string, WeaponLoreData> WeaponLores { get; private set; } = new(); // 무기 종류별 Lore 데이터
 
 		private readonly LoggingService _loggingService;
 		private Timer? _autoSaveTimer;
@@ -64,6 +65,7 @@ namespace YawnBot.Services
 			await LoadGameDataAsync();
 			await LoadProbabilitiesAsync();
 			await LoadChatDataAsync();
+			await LoadWeaponLoresAsync();
 			StartAutoSave();
 		}
 
@@ -187,5 +189,32 @@ namespace YawnBot.Services
 				await _loggingService.LogErrorAsync("GameDataService", "대사 정보 로드 실패", ex.Message);
 			}
 		}
-	}
+		private async Task LoadWeaponLoresAsync()
+		{
+			try
+			{
+				string enhancementPath = "Resources/img/enhancement";
+				if (Directory.Exists(enhancementPath))
+				{
+					var files = Directory.GetFiles(enhancementPath, "*_data.json", SearchOption.AllDirectories);
+					foreach (var file in files)
+					{
+						string jsonString = await File.ReadAllTextAsync(file);
+						// JSON 구조가 대소문자 구분 없이 매핑되도록 옵션 설정
+						var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+						var loreData = JsonSerializer.Deserialize<WeaponLoreData>(jsonString, options);
+						
+						if (loreData != null && !string.IsNullOrEmpty(loreData.WeaponName))
+						{
+							WeaponLores[loreData.WeaponName] = loreData;
+						}
+					}
+					Console.WriteLine($"무기 Lore 데이터 로드 완료: {WeaponLores.Count}개 무기");
+				}
+			}
+			catch (Exception ex)
+			{
+				await _loggingService.LogErrorAsync("GameDataService", "무기 Lore 데이터 로드 실패", ex.Message);
+			}
+		}	}
 }

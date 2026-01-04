@@ -15,7 +15,7 @@ namespace YawnBot.Services
 		private readonly Random _random;
 		private readonly GameDataService _gameData;
 		private readonly LoggingService _loggingService;
-		private const string ImageBasePath = "Resources/img/sword";
+		private const string EnhancementImageBasePath = "Resources/img/enhancement";
 
 		public EnhancementService(Random random, GameDataService gameData, LoggingService loggingService)
 		{
@@ -29,9 +29,25 @@ namespace YawnBot.Services
 		{
 			if (!_gameData.UserSwords.ContainsKey(userId))
 			{
-				var (img, name) = GetRandomSwordImage(0);
-				_gameData.UserSwords[userId] = new SwordData { Level = 0, ImageName = img, Name = name };
+				// 0강 초기화 시 랜덤 무기 선택
+				var (img, name, type) = GetRandomWeaponImage(0, null);
+				_gameData.UserSwords[userId] = new SwordData { Level = 0, ImageName = img, Name = name, WeaponType = type };
 			}
+			else
+			{
+				// 기존 데이터 마이그레이션: WeaponType이 없으면 ImageName에서 추론
+				var sword = _gameData.UserSwords[userId];
+				if (string.IsNullOrEmpty(sword.WeaponType) && !string.IsNullOrEmpty(sword.ImageName))
+				{
+					var fileName = Path.GetFileName(sword.ImageName);
+					var parts = fileName.Split('_');
+					if (parts.Length > 0)
+					{
+						sword.WeaponType = parts[0];
+					}
+				}
+			}
+
 			if (!_gameData.UserMoney.ContainsKey(userId)) _gameData.UserMoney[userId] = 100000; // 초기 자금
 			if (!_gameData.UserMaxSwordLevels.ContainsKey(userId)) _gameData.UserMaxSwordLevels[userId] = 0;
 		}
@@ -44,7 +60,7 @@ namespace YawnBot.Services
 			var userSword = _gameData.UserSwords[userId];
 			int currentLevel = userSword.Level;
 
-			if (currentLevel >= 20)
+			if (currentLevel >= 15)
 			{
 				var embed = new EmbedBuilder()
 					.WithTitle("🎉 최고 레벨 도달!")
@@ -85,39 +101,25 @@ namespace YawnBot.Services
 			double roll = _random.NextDouble() * 100;
 			bool isGreatSuccess = _random.NextDouble() * 100 <= 1.0; // 1% 대성공 확률
 
+			var retryComponent = new ComponentBuilder()
+				.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
+				.Build();
+
+			var successComponent = new ComponentBuilder()
+				.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
+				.WithButton("판매", "sell_sword", ButtonStyle.Secondary)
+				.Build();
+
 			if (isGreatSuccess)
 			{
 				int increase = 3;
 				int oldLevel = userSword.Level;
-				userSword.Level = Math.Min(userSword.Level + increase, 20);
+				userSword.Level = Math.Min(userSword.Level + increase, 15);
 
-				var (newImg, newName) = GetRandomSwordImage(userSword.Level);
+				var (newImg, newName, newType) = GetRandomWeaponImage(userSword.Level, userSword.WeaponType);
 				userSword.ImageName = newImg;
 				userSword.Name = newName;
-
-				if (userSword.Level > _gameData.UserMaxSwordLevels[userId])
-				{
-					_gameData.UserMaxSwordLevels[userId] = userSword.Level;
-				}
-
-				string? imagePath = GetImagePath(userSword.ImageName);
-				
-				var embed = new EmbedBuilder()
-					.WithTitle("🌟 대성공!!! 🌟")
-					.WithDescription($"{user.Mention}님의 검이 단숨에 **+{userSword.Level}강 {userSword.Name}**(으)로 진화했습니다!")
-					.AddField("상승폭", $"+{userSword.Level - oldLevel}강", true)
-					.AddField("비용", $"{cost}원", true)
-					.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
-					.WithColor(Color.Gold);
-
-				await SendEmbedAsync(channel, embed, imagePath);
-			}
-			else if (roll <= successProb)
-			{
-				userSword.Level++;
-				var (newImg, newName) = GetRandomSwordImage(userSword.Level);
-				userSword.ImageName = newImg; // 레벨업 시 새로운 이미지 할당
-				userSword.Name = newName;
+				userSword.WeaponType = newType;
 
 				if (userSword.Level > _gameData.UserMaxSwordLevels[userId])
 				{
@@ -126,16 +128,57 @@ namespace YawnBot.Services
 
 				string? imagePath = GetImagePath(userSword.ImageName);
 				string chatMsg = GetRandomChatMessage(userSword.Level, "success");
+				string lore = GetWeaponLore(userSword.WeaponType, userSword.Level);
+				
+				var embed = new EmbedBuilder()
+					.WithTitle("🌟 대성공!!! 🌟")
+					.WithDescription($"{user.Mention}님의 무기가 단숨에 **+{userSword.Level}강 {userSword.Name}**(으)로 진화했습니다!")
+					.AddField("상승폭", $"+{userSword.Level - oldLevel}강", true)
+					.AddField("대장장이의 한마디", $"\"{chatMsg}\"");
+
+				if (!string.IsNullOrEmpty(lore))
+				{
+					embed.AddField("전설", $"*{lore}*");
+				}
+
+				embed.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
+					 .AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+					 .WithColor(Color.Gold);
+
+				await SendEmbedAsync(channel, embed, imagePath, successComponent);
+			}
+			else if (roll <= successProb)
+			{
+				userSword.Level++;
+				var (newImg, newName, newType) = GetRandomWeaponImage(userSword.Level, userSword.WeaponType);
+				userSword.ImageName = newImg; // 레벨업 시 새로운 이미지 할당
+				userSword.Name = newName;
+				userSword.WeaponType = newType;
+
+				if (userSword.Level > _gameData.UserMaxSwordLevels[userId])
+				{
+					_gameData.UserMaxSwordLevels[userId] = userSword.Level;
+				}
+
+				string? imagePath = GetImagePath(userSword.ImageName);
+				string chatMsg = GetRandomChatMessage(userSword.Level, "success");
+				string lore = GetWeaponLore(userSword.WeaponType, userSword.Level);
 				
 				var embed = new EmbedBuilder()
 					.WithTitle("🎉 강화 성공!")
-					.WithDescription($"{user.Mention}님의 검이 **+{userSword.Level}강 {userSword.Name}**(으)로 변했습니다!")
-					.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
-					.AddField("비용", $"{cost}원", true)
-					.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
-					.WithColor(Color.Green);
+					.WithDescription($"{user.Mention}님의 무기가 **+{userSword.Level}강 {userSword.Name}**(으)로 변했습니다!")
+					.AddField("대장장이의 한마디", $"\"{chatMsg}\"");
 
-				await SendEmbedAsync(channel, embed, imagePath);
+				if (!string.IsNullOrEmpty(lore))
+				{
+					embed.AddField("전설", $"*{lore}*");
+				}
+
+				embed.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
+					 .AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+					 .WithColor(Color.Green);
+
+				await SendEmbedAsync(channel, embed, imagePath, successComponent);
 			}
 			else
 			{
@@ -145,39 +188,42 @@ namespace YawnBot.Services
 				if (isProtected)
 				{
 					// 유지
-					string? maintainImageName = GetRandomImage("bot_asset_강화_유지_");
+					string? maintainImageName = GetRandomImage("강화_유지_");
 					string? maintainImagePath = GetImagePath(maintainImageName);
 					string chatMsg = GetRandomChatMessage(userSword.Level, "maintain");
 					
 					var embed = new EmbedBuilder()
-						.WithTitle("🛡️ 강화 실패... 하지만 검은 무사합니다!")
-						.WithDescription($"{user.Mention}님의 검이 **+{userSword.Level}강 {userSword.Name}**(으)로 유지되었습니다.")
+						.WithTitle("🛡️ 강화 실패... 하지만 무기는 무사합니다!")
+						.WithDescription($"{user.Mention}님의 무기가 **+{userSword.Level}강 {userSword.Name}**(으)로 유지되었습니다.")
 						.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
-						.AddField("비용", $"{cost}원", true)
+						.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
 						.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
 						.WithColor(Color.Blue);
 
-					await SendEmbedAsync(channel, embed, maintainImagePath);
+					await SendEmbedAsync(channel, embed, maintainImagePath, successComponent);
 				}
 				else
 				{
 					userSword.Level = 0; // 파괴
-					var (resetImg, resetName) = GetRandomSwordImage(0);
-					userSword.ImageName = resetImg; // 파괴 시 0강 이미지 재할당
+					// 파괴 시 새로운 무기 랜덤 배정 (0강)
+					var (resetImg, resetName, resetType) = GetRandomWeaponImage(0, null);
+					userSword.ImageName = resetImg;
 					userSword.Name = resetName;
+					userSword.WeaponType = resetType;
 
 					var builder = new ComponentBuilder()
-						.WithButton("위로하기", "consolation", ButtonStyle.Primary);
+						.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
+						.WithButton("위로하기", "consolation", ButtonStyle.Secondary);
 
-					string? destroyImageName = GetRandomImage("bot_asset_강화_실패_");
+					string? destroyImageName = GetRandomImage("강화_실패_");
 					string? destroyImagePath = GetImagePath(destroyImageName);
 					string chatMsg = GetRandomChatMessage(currentLevel + 1, "fail");
 					
 					var embed = new EmbedBuilder()
 						.WithTitle("💥 강화 실패...")
-						.WithDescription($"{user.Mention}님의 검이 깨졌습니다...")
+						.WithDescription($"{user.Mention}님의 무기가 깨졌습니다...")
 						.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
-						.AddField("비용", $"{cost}원", true)
+						.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
 						.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
 						.WithColor(Color.Red);
 
@@ -223,9 +269,10 @@ namespace YawnBot.Services
 			_gameData.AddMoney(userId, finalPrice);
 
 			userSword.Level = 0; // 판매 후 초기화
-			var (resetImg, resetName) = GetRandomSwordImage(0);
+			var (resetImg, resetName, resetType) = GetRandomWeaponImage(0, null);
 			userSword.ImageName = resetImg;
 			userSword.Name = resetName;
+			userSword.WeaponType = resetType;
 
 			var successEmbed = new EmbedBuilder()
 				.WithTitle("💰 판매 완료!")
@@ -342,7 +389,7 @@ namespace YawnBot.Services
 			_gameData.DailyBattleCounts[userId].Count++;
 			int remainingBattles = 10 - _gameData.DailyBattleCounts[userId].Count;
 
-			string? battleImageName = GetRandomImage("bot_asset_배틀_시작_");
+			string? battleImageName = GetRandomImage("배틀_시작_");
 			string? battleImagePath = GetImagePath(battleImageName);
 
 			if (isWin)
@@ -692,41 +739,85 @@ namespace YawnBot.Services
 			await SendEmbedAsync(channel, embed);
 		}
 
-		public (string ImageName, string Name) GetRandomSwordImage(int level)
+		public (string ImageName, string Name, string WeaponType) GetRandomWeaponImage(int level, string? currentWeaponType)
 		{
 			try
 			{
-				var files = Directory.GetFiles(ImageBasePath, $"sword_lv{level}_*.png");
+				// 0레벨이거나 무기 타입이 없으면 랜덤 선택
+				if (level == 0 || string.IsNullOrEmpty(currentWeaponType))
+				{
+					var keys = _gameData.WeaponLores.Keys.ToList();
+					if (keys.Count > 0)
+					{
+						currentWeaponType = keys[_random.Next(keys.Count)];
+					}
+					else
+					{
+						// 데이터가 없으면 기본값
+						currentWeaponType = "곡괭이"; 
+					}
+				}
+
+				// 파일 검색 패턴: {WeaponType}/{WeaponType}_Lv{Level}_*.png
+				// 레벨 0인 경우 레벨 1 이미지를 사용 (낡은 상태)
+				int searchLevel = level == 0 ? 1 : level;
+				
+				string weaponPath = Path.Combine(EnhancementImageBasePath, currentWeaponType);
+				if (!Directory.Exists(weaponPath)) return ($"default.png", "알 수 없는 무기", currentWeaponType ?? "Unknown");
+
+				var files = Directory.GetFiles(weaponPath, $"{currentWeaponType}_Lv{searchLevel}_*.png");
 				if (files.Length > 0)
 				{
 					string filePath = files[_random.Next(files.Length)];
 					string fileName = Path.GetFileName(filePath);
 
-					// 파일명 형식: sword_lv{Level}_{Variant}_{Name}.png
-					string name = "이름 없는 검";
+					// 파일명 형식: {WeaponType}_Lv{Level}_{Title}_{LoreSnippet}.png
+					string name = "이름 없는 무기";
 					string namePart = Path.GetFileNameWithoutExtension(fileName);
 					var parts = namePart.Split('_');
-					if (parts.Length >= 4)
+					if (parts.Length >= 3)
 					{
-						name = parts[3];
+						// 예: 낡은 곡괭이
+						name = $"{parts[2]} {parts[0]}"; 
 					}
 
-					return (fileName, name);
+					return (Path.Combine(currentWeaponType, fileName), name, currentWeaponType);
 				}
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				_loggingService.LogErrorAsync("EnhancementService", "GetRandomWeaponImage Error", ex).Wait();
+			}
 
-			return ($"sword_lv{level}_0.png", "이름 없는 검");
+			return ($"default.png", "알 수 없는 무기", currentWeaponType ?? "Unknown");
+		}
+
+		public string GetWeaponLore(string weaponType, int level)
+		{
+			if (_gameData.WeaponLores.TryGetValue(weaponType, out var loreData))
+			{
+				// 레벨 0은 레벨 1의 로어를 사용
+				int searchLevel = level == 0 ? 1 : level;
+				var stage = loreData.Stages.FirstOrDefault(s => s.Level == searchLevel);
+				if (stage != null)
+				{
+					return stage.Lore;
+				}
+			}
+			return "";
 		}
 
 		public string? GetRandomImage(string prefix)
 		{
 			try
 			{
-				var files = Directory.GetFiles(ImageBasePath, $"{prefix}*.png");
+				string etcPath = Path.Combine(EnhancementImageBasePath, "Etc");
+				if (!Directory.Exists(etcPath)) return null;
+
+				var files = Directory.GetFiles(etcPath, $"{prefix}*.png");
 				if (files.Length > 0)
 				{
-					return Path.GetFileName(files[_random.Next(files.Length)]);
+					return Path.Combine("Etc", Path.GetFileName(files[_random.Next(files.Length)]));
 				}
 			}
 			catch { }
@@ -736,7 +827,7 @@ namespace YawnBot.Services
 		private string? GetImagePath(string? imageName)
 		{
 			if (string.IsNullOrEmpty(imageName)) return null;
-			return Path.Combine(ImageBasePath, imageName);
+			return Path.Combine(EnhancementImageBasePath, imageName);
 		}
 
 		private string GetRandomChatMessage(int level, string type)

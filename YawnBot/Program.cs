@@ -136,8 +136,8 @@ namespace YawnBot
 			if (component.Data.CustomId == "consolation")
 			{
 				var enhancementService = _services.GetRequiredService<EnhancementService>();
-				string? imageName = enhancementService.GetRandomImage("bot_asset_위로(놀림)_");
-				string? imagePath = imageName != null ? Path.Combine("Resources/img/sword", imageName) : null;
+				string? imageName = enhancementService.GetRandomImage("위로(놀림)_");
+				string? imagePath = imageName != null ? Path.Combine("Resources/img/enhancement", imageName) : null;
 				
 				var embed = new EmbedBuilder()
 					.WithTitle("🤣 위로(또는 놀림) 도착!")

@@ -28,6 +28,20 @@ namespace YawnBot.Models
 		public int Level { get; set; }
 		public string ImageName { get; set; } = string.Empty;
 		public string Name { get; set; } = string.Empty;
+		public string WeaponType { get; set; } = string.Empty; // 무기 종류 (예: 곡괭이, 만월도끼 등)
+	}
+
+	public class WeaponLoreData
+	{
+		public string WeaponName { get; set; } = string.Empty;
+		public List<WeaponStage> Stages { get; set; } = new List<WeaponStage>();
+	}
+
+	public class WeaponStage
+	{
+		public int Level { get; set; }
+		public string Title { get; set; } = string.Empty;
+		public string Lore { get; set; } = string.Empty;
 	}
 
 	public class DailyBattleInfo
