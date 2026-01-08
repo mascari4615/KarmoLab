@@ -1,0 +1,717 @@
+.planner-container {
+    flex-grow: 1;
+    background-color: rgb(17, 24, 39); /* gray-900 */
+    padding: 15px;
+    color: rgb(229, 231, 235); /* gray-200 */
+}
+
+/* Fix for TextField visibility on Unity default theme */
+.unity-text-field__input {
+    background-color: rgb(31, 41, 55); /* gray-800 */
+    color: white;
+    border-color: rgb(75, 85, 99); /* gray-600 */
+    border-width: 1px;
+    border-radius: 4px;
+}
+
+.unity-text-field__input:focus {
+    border-color: rgb(129, 140, 248); /* indigo-400 */
+}
+
+/* --- Header --- */
+.top-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(55, 65, 81); /* gray-700 */
+    margin-bottom: 15px;
+}
+
+.header-left {
+    flex-direction: row;
+    align-items: center;
+}
+
+.header-icon {
+    background-color: rgb(79, 70, 229); /* indigo-600 */
+    padding: 8px;
+    border-radius: 8px;
+    margin-right: 12px;
+    -unity-font-style: bold;
+    color: white;
+}
+
+.header-title {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: white;
+}
+
+.header-subtitle {
+    font-size: 12px;
+    color: rgb(129, 140, 248); /* indigo-400 */
+}
+
+.header-right {
+    align-items: flex-end;
+}
+
+.header-subtitle-input > .unity-text-field__input {
+    background-color: transparent;
+    border-color: transparent;
+    color: #888888;
+    font-size: 14px;
+    padding: 0;
+    margin: 0;
+}
+
+.header-subtitle-input:hover > .unity-text-field__input {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.header-date {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: rgb(165, 180, 252); /* indigo-300 */
+}
+
+.header-dday {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: rgb(248, 113, 113); /* red-400 */
+}
+
+/* --- Tabs --- */
+.nav-tabs {
+    flex-direction: row;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(55, 65, 81);
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    background-color: transparent;
+    border-width: 0;
+    color: rgb(107, 114, 128); /* gray-500 */
+    padding: 10px 15px;
+    -unity-font-style: bold;
+    font-size: 14px;
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    margin-right: 5px;
+}
+
+.tab-button:hover {
+    color: rgb(209, 213, 219); /* gray-300 */
+}
+
+.tab-button.selected {
+    color: rgb(129, 140, 248); /* indigo-400 */
+    border-bottom-color: rgb(129, 140, 248); /* indigo-400 */
+}
+
+/* --- Dashboard --- */
+.advice-banner {
+    background-color: rgb(49, 46, 129); /* indigo-900 / purple mix */
+    padding: 15px;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgb(67, 56, 202); /* indigo-700 */
+    margin-bottom: 20px;
+}
+
+.advice-text {
+    color: rgb(199, 210, 254); /* indigo-200 */
+    -unity-font-style: italic;
+    white-space: normal;
+}
+
+.stats-grid {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    flex-grow: 1;
+    background-color: rgb(31, 41, 55); /* gray-800 */
+    border-width: 1px;
+    border-color: rgb(55, 65, 81); /* gray-700 */
+    border-radius: 8px;
+    padding: 15px;
+    margin-right: 10px;
+}
+
+/* Unity 2021 UI Toolkit does not support :last-child */
+/*.stat-card:last-child {
+    margin-right: 0;
+}*/
+
+.stat-title {
+    font-size: 12px;
+    color: rgb(156, 163, 175); /* gray-400 */
+    -unity-font-style: bold;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: white;
+}
+
+.bg-blue .stat-title { color: rgb(96, 165, 250); }
+.bg-purple .stat-title { color: rgb(192, 132, 252); }
+.bg-green .stat-title { color: rgb(74, 222, 128); }
+
+.dashboard-row {
+    flex-direction: row;
+}
+
+.dashboard-col {
+    flex-grow: 1;
+    background-color: rgb(31, 41, 55);
+    border-width: 1px;
+    border-color: rgb(55, 65, 81);
+    border-radius: 8px;
+    padding: 20px;
+    margin-right: 10px;
+    height: 300px;
+}
+
+/*.dashboard-col:last-child {
+    margin-right: 0;
+}*/
+
+.section-title {
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: white;
+    margin-bottom: 15px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(55, 65, 81);
+    padding-bottom: 5px;
+}
+
+.progress-label {
+    font-size: 12px;
+    color: rgb(209, 213, 219);
+    margin-bottom: 2px;
+    margin-top: 10px;
+}
+
+.status-bar .unity-progress-bar__container {
+    height: 10px;
+    min-height: 10px;
+}
+
+.status-bar .unity-progress-bar__background {
+    background-color: rgb(55, 65, 81);
+    border-radius: 5px;
+    border-width: 0;
+}
+
+.status-bar .unity-progress-bar__progress {
+    border-radius: 5px;
+    margin: 0;
+}
+
+.status-bar.red .unity-progress-bar__progress { background-color: rgb(239, 68, 68); }
+.status-bar.blue .unity-progress-bar__progress { background-color: rgb(59, 130, 246); }
+.status-bar.yellow .unity-progress-bar__progress { background-color: rgb(234, 179, 8); }
+
+.memo-input {
+    flex-grow: 1;
+    white-space: normal;
+}
+
+.memo-input > .unity-text-field__input {
+    background-color: rgb(17, 24, 39);
+    border-color: rgb(75, 85, 99);
+    color: rgb(209, 213, 219);
+    -unity-text-align: upper-left;
+}
+
+/* --- Quest Board (Tasks) --- */
+.task-columns {
+    flex-direction: row;
+    height: 600px;
+}
+
+.task-column {
+    flex-grow: 1;
+    width: 33%;
+    background-color: rgb(31, 41, 55);
+    border-width: 1px;
+    border-color: rgb(55, 65, 81);
+    border-radius: 8px;
+    margin-right: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+/*.task-column:last-child {
+    margin-right: 0;
+}*/
+
+.col-header {
+    padding: 15px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(55, 65, 81);
+    -unity-font-style: bold;
+    font-size: 14px;
+}
+
+.text-purple { color: rgb(192, 132, 252); background-color: rgba(192, 132, 252, 0.1); }
+.text-blue { color: rgb(96, 165, 250); background-color: rgba(96, 165, 250, 0.1); }
+.text-green { color: rgb(74, 222, 128); background-color: rgba(74, 222, 128, 0.1); }
+
+.task-list-scroll {
+    flex-grow: 1;
+    padding: 10px;
+}
+
+.col-footer {
+    padding: 10px;
+    border-top-width: 1px;
+    border-top-color: rgb(55, 65, 81);
+    flex-direction: row;
+}
+
+.task-input {
+    flex-grow: 1;
+    margin-right: 5px;
+}
+
+.task-add-btn {
+    width: 30px;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    -unity-font-style: bold;
+}
+
+.todo-item {
+    flex-direction: row;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    background-color: transparent;
+}
+
+.todo-item:hover {
+    background-color: rgb(55, 65, 81);
+}
+
+.todo-toggle {
+    width: 16px;
+    height: 16px;
+    border-width: 1px;
+    border-color: rgb(156, 163, 175);
+    border-radius: 4px;
+    margin-right: 8px;
+    margin-top: 2px;
+    background-color: transparent;
+}
+
+.todo-toggle.completed {
+    background-color: rgb(34, 197, 94);
+    border-color: rgb(34, 197, 94);
+}
+
+.todo-content {
+    flex-grow: 1;
+    font-size: 14px;
+    color: rgb(229, 231, 235);
+    white-space: normal;
+}
+
+.todo-content.completed {
+    color: rgb(107, 114, 128);
+    text-decoration: line-through; /* Unity 2022+? Not supported in older, use opacity/color */
+    opacity: 0.6;
+}
+
+.todo-delete {
+    color: rgb(75, 85, 99);
+    background-color: transparent;
+    border-width: 0;
+    width: 20px;
+    opacity: 0;
+}
+
+.todo-item:hover .todo-delete {
+    opacity: 1;
+}
+
+/* --- Schedule (Existing Logic) --- */
+.schedule-scroll {
+    height: 500px;
+    background-color: rgb(31, 41, 55);
+}
+
+.time-ruler-container {
+    height: 1440px; 
+    flex-direction: row; /* Change to row for columns */
+}
+
+.time-axis {
+    width: 60px;
+    border-right-width: 1px;
+    border-right-color: rgb(75, 85, 99);
+    background-color: rgb(31, 41, 55);
+}
+
+.day-column {
+    flex-grow: 1;
+    height: 100%;
+    border-right-width: 1px;
+    border-right-color: rgb(75, 85, 99);
+    position: relative;
+}
+
+.day-header {
+    height: 30px;
+    background-color: rgb(55, 65, 81);
+    -unity-text-align: middle-center;
+    font-size: 12px;
+    -unity-font-style: bold;
+    color: rgb(209, 213, 219);
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+}
+
+.hour-line {
+    position: absolute;
+    left: 0; 
+    right: 0; 
+    height: 1px; 
+    background-color: rgba(75, 85, 99, 0.3); /* Softer lines */
+}
+
+.hour-label {
+    position: absolute;
+    top: -10px;
+    right: 5px; /* Align right in axis */
+    font-size: 10px;
+    color: rgb(156, 163, 175);
+}
+
+.time-block {
+    position: absolute;
+    left: 0; 
+    right: 1px; /* Gap for border */
+    border-radius: 4px;
+    padding: 2px 5px;
+    overflow: hidden;
+    font-size: 10px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+/* Expanded Color Palette (Google Calendar / Pastel Style) */
+.block-color-0 { background-color: rgba(239, 68, 68, 0.9); }    /* Red (Tomato) */
+.block-color-1 { background-color: rgba(249, 115, 22, 0.9); }   /* Orange (Tangerine) */
+.block-color-2 { background-color: rgba(245, 158, 11, 0.9); }   /* Amber (Banana) */
+.block-color-3 { background-color: rgba(132, 204, 22, 0.9); }   /* Lime (Sage) */
+.block-color-4 { background-color: rgba(16, 185, 129, 0.9); }   /* Emerald (Basil) */
+.block-color-5 { background-color: rgba(6, 182, 212, 0.9); }    /* Cyan (Peacock) */
+.block-color-6 { background-color: rgba(59, 130, 246, 0.9); }   /* Blue (Blueberry) */
+.block-color-7 { background-color: rgba(99, 102, 241, 0.9); }   /* Indigo (Lavender) */
+.block-color-8 { background-color: rgba(139, 92, 246, 0.9); }   /* Violet (Grape) */
+.block-color-9 { background-color: rgba(217, 70, 239, 0.9); }   /* Fuchsia (Flamingo) */
+.block-color-10 { background-color: rgba(107, 114, 128, 0.9); } /* Gray (Graphite) */
+.block-color-11 { background-color: rgba(20, 184, 166, 0.9); }  /* Teal */
+
+.date-nav {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.date-label {
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgb(199, 210, 254);
+    width: 200px;
+    -unity-text-align: middle-center;
+}
+
+.schedule-input-row {
+     flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+    background-color: rgb(31, 41, 55);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.block-input-title { flex-grow: 1; }
+.block-input-time { width: 40px; }
+
+/* --- Secret Notes --- */
+.secret-header-box {
+    background-color: rgba(139, 92, 246, 0.1);
+    border-width: 1px;
+    border-color: rgba(139, 92, 246, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.secret-title {
+    color: rgb(216, 180, 254);
+    -unity-font-style: bold;
+    margin-bottom: 5px;
+}
+
+.secret-desc {
+    color: rgb(209, 213, 219);
+    font-size: 12px;
+}
+
+.secret-form {
+    background-color: rgb(31, 41, 55);
+    padding: 20px;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgb(75, 85, 99);
+    margin-bottom: 20px;
+}
+
+.secret-btn {
+    margin-top: 10px;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    padding: 10px;
+    -unity-font-style: bold;
+}
+
+.secret-item {
+    background-color: rgb(31, 41, 55);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgb(75, 85, 99);
+}
+
+.secret-item:hover {
+    border-color: rgb(99, 102, 241);
+}
+
+/* --- Overlays & Popups --- */
+
+/* Contrast Fix for Inputs */
+.unity-base-field__label {
+    color: rgb(209, 213, 219); /* gray-300 */
+}
+
+/* Specific fix for IntegerField and others being white-on-white */
+.unity-integer-field .unity-integer-field__input,
+.unity-double-field .unity-double-field__input,
+.unity-text-field .unity-text-field__input {
+    background-color: rgb(17, 24, 39); /* Dark background */
+    color: white;             /* White text */
+    border-color: rgb(75, 85, 99);
+}
+
+/* Time Block Internal Layout */
+.time-block-time {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2px;
+}
+
+.time-block-title {
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: white;
+    white-space: normal;
+    text-overflow: ellipsis; 
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.time-block-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    font-size: 14px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-width: 0;
+    border-radius: 4px;
+    color: white;
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+}
+
+.time-block-btn:hover {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Detail Popup */
+.detail-popup {
+    position: absolute;
+    background-color: rgb(255, 255, 255); /* White background for contrast against dark UI */
+    border-radius: 8px;
+    width: 220px;
+    padding: 15px;
+    border-width: 1px;
+    border-color: rgb(209, 213, 219);
+    /* Shadow not supported directly, simulate with border/color */
+}
+
+.detail-title {
+    color: rgb(17, 24, 39); /* Black text */
+    font-size: 14px;
+    -unity-font-style: bold;
+    margin-bottom: 5px;
+    white-space: normal;
+}
+
+.detail-time {
+    color: rgb(75, 85, 99); /* Gray text */
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.detail-desc {
+    color: rgb(55, 65, 81);
+    font-size: 12px;
+    margin-bottom: 15px;
+    white-space: normal;
+}
+
+.detail-btn {
+    background-color: rgb(79, 70, 229); /* Indigo 600 */
+    color: white;
+    border-radius: 4px;
+    border-width: 0;
+    padding: 8px;
+    -unity-font-style: bold;
+    margin-bottom: 5px;
+}
+
+.detail-btn:hover {
+    background-color: rgb(67, 56, 202);
+}
+
+.detail-btn-close {
+    background-color: transparent;
+    border-width: 0;
+    color: rgb(107, 114, 128);
+    font-size: 11px;
+    align-self: flex-end;
+}
+
+.detail-btn-close:hover {
+    color: rgb(31, 41, 55);
+}
+
+/* Edit Dialog Overlay */
+.edit-overlay {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.edit-dialog {
+    width: 350px;
+    background-color: rgb(31, 41, 55); /* Gray 800 */
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgb(75, 85, 99);
+    padding: 20px;
+}
+
+.edit-header-title {
+    color: white;
+    font-size: 18px;
+    -unity-font-style: bold;
+    margin-bottom: 20px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(75, 85, 99);
+    padding-bottom: 10px;
+}
+
+/* Edit Dialog Inputs */
+.edit-dialog .unity-text-field {
+    margin-bottom: 10px;
+}
+
+.color-picker-row {
+    flex-direction: row;
+    flex-wrap: wrap; /* Allow wrapping for many colors */
+    justify-content: flex-start;
+    margin-top: 5px;
+    margin-bottom: 20px;
+}
+
+.color-select-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 12px; /* Circle */
+    border-width: 2px;
+    border-color: transparent;
+    margin: 3px;
+}
+
+.color-select-btn:hover {
+    border-color: white;
+    transform-origin: center;
+    scale: 1.1; 
+}
+
+/* Actions */
+.edit-actions {
+    flex-direction: row;
+    margin-top: 10px;
+}
+
+.btn-primary {
+    background-color: rgb(79, 70, 229);
+    color: white;
+    border-radius: 6px;
+    padding: 8px 16px;
+    border-width: 0;
+    -unity-font-style: bold;
+}
+
+.btn-primary:hover {
+    background-color: rgb(67, 56, 202);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: rgb(156, 163, 175);
+    border-width: 0;
+    margin-right: 10px;
+}
+
+.btn-secondary:hover {
+    color: white;
+}
+
+.btn-danger {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: rgb(248, 113, 113);
+    border-width: 1px;
+    border-color: rgba(239, 68, 68, 0.5);
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.btn-danger:hover {
+    background-color: rgb(239, 68, 68);
+    color: white;
+}
