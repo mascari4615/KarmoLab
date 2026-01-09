@@ -27,6 +27,7 @@
             <ui:Button name="TabTasks" text="퀘스트 보드" class="tab-button" />
             <ui:Button name="TabSchedule" text="전략 시간표" class="tab-button" />
             <ui:Button name="TabSecret" text="비밀 노트" class="tab-button" />
+            <ui:Button name="TabTools" text="도구함" class="tab-button" />
         </ui:VisualElement>
 
         <!-- 1. DASHBOARD VIEW -->
@@ -149,6 +150,42 @@
 
             <ui:Label text="획득한 경험치 로그" class="section-title" style="margin-top: 20px;" />
             <ui:VisualElement name="SecretList" class="secret-list" />
+        </ui:ScrollView>
+
+        <!-- 5. TOOLS VIEW -->
+        <ui:ScrollView name="ViewTools" class="tab-content" style="display: none;">
+             <!-- Header -->
+            <ui:VisualElement class="tool-header">
+                <ui:Label name="ToolTitle" text="Tool Name" class="header-title" />
+                <ui:DropdownField name="ToolSelector" class="tool-selector" />
+                <ui:DropdownField name="ActionSelector" class="tool-selector" style="margin-top: 5px;" />
+            </ui:VisualElement>
+
+            <!-- Description Box -->
+            <ui:Label name="ToolDescription" text="Select a tool action..." class="tool-description" style="white-space: normal; margin: 10px; color: #aaaaaa;" />
+
+            <!-- Inputs -->
+            <ui:VisualElement class="tool-body">
+                <ui:VisualElement class="input-group">
+                    <ui:Label name="LabelInputMain" text="Main Input" class="input-label" />
+                    <ui:TextField name="InputMain" multiline="true" class="tool-input-field" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="input-group">
+                    <ui:Label name="LabelInputSub" text="Sub Input (Optional)" class="input-label" />
+                    <ui:TextField name="InputSub" class="tool-input-field-single" />
+                </ui:VisualElement>
+
+                <!-- Action Button -->
+                <ui:Button name="BtnRunAction" text="RUN" class="action-btn-large" style="height: 40px; margin-top: 10px; background-color: #4CAF50; color: white;" />
+                
+                <!-- Output -->
+                <ui:VisualElement class="output-group">
+                    <ui:Label text="Output / Log" class="input-label" />
+                    <ui:TextField name="OutputField" multiline="true" readonly="true" class="output-field" />
+                    <ui:Button name="BtnCopyOutput" text="Copy to Clipboard" class="copy-btn" />
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:ScrollView>
 
         <!-- OVERLAYS -->

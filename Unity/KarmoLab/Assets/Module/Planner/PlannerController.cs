@@ -326,6 +326,7 @@ namespace KarmoLab.Module.Planner
                 SelectTab(_tabDash, _viewDash);
             }
 
+            InitializeTools(root);
             _isInitialized = true;
         }
 
@@ -341,11 +342,13 @@ namespace KarmoLab.Module.Planner
             if (_viewTasks != null) _viewTasks.style.display = DisplayStyle.None;
             if (_viewSched != null) _viewSched.style.display = DisplayStyle.None;
             if (_viewSecret != null) _viewSecret.style.display = DisplayStyle.None;
+            if (_viewTools != null) _viewTools.style.display = DisplayStyle.None;
 
             if (_tabDash != null) _tabDash.RemoveFromClassList("selected");
             if (_tabTasks != null) _tabTasks.RemoveFromClassList("selected");
             if (_tabSched != null) _tabSched.RemoveFromClassList("selected");
             if (_tabSecret != null) _tabSecret.RemoveFromClassList("selected");
+            if (_tabTools != null) _tabTools.RemoveFromClassList("selected");
 
             if (activeView != null) activeView.style.display = DisplayStyle.Flex;
             if (activeBtn != null) activeBtn.AddToClassList("selected");

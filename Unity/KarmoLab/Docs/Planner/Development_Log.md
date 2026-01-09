@@ -86,3 +86,29 @@
 ### 4.3. 문서화
 - 코파일럿 지침(`copilot-instructions.md`)에 Unity 프로젝트 규칙(UI Toolkit 사용, Partial Class 권장 등) 추가.
 - 모든 UI 텍스트의 데이터 화.
+
+# Planner Development Log
+
+## 2026-01-09: Tools Integration & Refactoring
+
+### 1. Refactoring
+- **Controller Partitioning**: `PlannerController.cs` became too large, so it was split into `partial` classes:
+  - `PlannerController.cs`: Main initialization and Tab logic.
+  - `PlannerController.Dashboard.cs`: Dashboard specific logic.
+  - `PlannerController.Schedule.cs`: Schedule/Week view logic.
+  - `PlannerController.Tools.cs`: New Tools tab logic.
+
+### 2. Tools Integration
+- **Objective**: Integrate legacy utilities (from `Assets/Scripts/Content`) directly into the Planner UI.
+- **ITool Architecture**:
+  - Created `ITool` interface to standardize tool behaviors.
+  - Tools:
+    - **TextFormatter**: KakaoTalk bullet point style formatter.
+    - **FileNameManager**: Rename screenshot files sequentially.
+    - **YoutubeTool**: Fetch playlist video counts (using Youtube Data API).
+- **UI Changes**:
+  - Added "Tools" (도구함) Tab to `PlannerView.uxml`.
+  - Merged tool interaction UI (Input/Output/Actions) into the main window.
+  - Updated `PlannerStyle.uss` to support tool-specific styling.
+
+---
