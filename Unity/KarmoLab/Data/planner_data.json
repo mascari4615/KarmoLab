@@ -20,6 +20,27 @@
             "IsCompleted": false,
             "Category": "personal",
             "CreatedAtTicks": 639034851180155743
+        },
+        {
+            "Id": "9f5cff1e-85be-4f45-bf16-1a01236680f3",
+            "Content": "awdawd",
+            "IsCompleted": true,
+            "Category": "personal",
+            "CreatedAtTicks": 639035578077823604
+        },
+        {
+            "Id": "621d04ba-1d5d-4159-b47e-a9218512d94a",
+            "Content": "wdawd",
+            "IsCompleted": false,
+            "Category": "study",
+            "CreatedAtTicks": 639035578091637350
+        },
+        {
+            "Id": "4ff78f26-fc95-4a21-8095-53ccfef4cb9a",
+            "Content": "awdawdafwef",
+            "IsCompleted": false,
+            "Category": "team",
+            "CreatedAtTicks": 639035578114364788
         }
     ],
     "TimeBlocks": [
@@ -37,9 +58,9 @@
             "Id": "3a754143-6577-48df-bf36-47046e2f9b3a",
             "Title": "New Event",
             "Description": "",
-            "DateString": "2026-01-10",
-            "StartMinute": 215,
-            "EndMinute": 480,
+            "DateString": "2026-01-05",
+            "StartMinute": 60,
+            "EndMinute": 410,
             "ColorIndex": 1,
             "Tags": [
                 "테스트",
@@ -51,7 +72,7 @@
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-07",
-            "StartMinute": 195,
+            "StartMinute": 180,
             "EndMinute": 230,
             "ColorIndex": 2,
             "Tags": []
@@ -60,9 +81,9 @@
             "Id": "40f5bd86-0a69-4e5f-a11d-95f7e359c628",
             "Title": "New Event",
             "Description": "",
-            "DateString": "2026-01-08",
-            "StartMinute": 119,
-            "EndMinute": 169,
+            "DateString": "2026-01-07",
+            "StartMinute": 130,
+            "EndMinute": 180,
             "ColorIndex": 2,
             "Tags": []
         },
@@ -71,9 +92,9 @@
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-09",
-            "StartMinute": 90,
-            "EndMinute": 135,
-            "ColorIndex": 2,
+            "StartMinute": 180,
+            "EndMinute": 225,
+            "ColorIndex": 5,
             "Tags": []
         },
         {
@@ -81,8 +102,8 @@
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-09",
-            "StartMinute": 220,
-            "EndMinute": 295,
+            "StartMinute": 305,
+            "EndMinute": 380,
             "ColorIndex": 0,
             "Tags": []
         },
@@ -90,9 +111,9 @@
             "Id": "d7ae9d7c-084a-47c5-9179-36b0b106dba4",
             "Title": "New Event",
             "Description": "",
-            "DateString": "2026-01-08",
-            "StartMinute": 280,
-            "EndMinute": 375,
+            "DateString": "2026-01-09",
+            "StartMinute": 135,
+            "EndMinute": 230,
             "ColorIndex": 2,
             "Tags": []
         },
@@ -101,9 +122,9 @@
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-08",
-            "StartMinute": 178,
-            "EndMinute": 213,
-            "ColorIndex": 0,
+            "StartMinute": 130,
+            "EndMinute": 165,
+            "ColorIndex": 10,
             "Tags": []
         },
         {
@@ -111,8 +132,8 @@
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-08",
-            "StartMinute": 210,
-            "EndMinute": 245,
+            "StartMinute": 180,
+            "EndMinute": 215,
             "ColorIndex": 4,
             "Tags": []
         },
@@ -121,8 +142,8 @@
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-06",
-            "StartMinute": 75,
-            "EndMinute": 135,
+            "StartMinute": 60,
+            "EndMinute": 120,
             "ColorIndex": 4,
             "Tags": []
         },
@@ -131,8 +152,8 @@
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-10",
-            "StartMinute": 70,
-            "EndMinute": 305,
+            "StartMinute": 60,
+            "EndMinute": 295,
             "ColorIndex": 3,
             "Tags": []
         },
@@ -145,12 +166,149 @@
             "EndMinute": 380,
             "ColorIndex": 1,
             "Tags": []
+        },
+        {
+            "Id": "124b062c-3d52-461b-be32-3bcaafc699b8",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-08",
+            "StartMinute": 60,
+            "EndMinute": 110,
+            "ColorIndex": 2,
+            "Tags": []
+        },
+        {
+            "Id": "7fc14a0b-cdaf-4bd2-9509-6a4d90b9f8c5",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-11",
+            "StartMinute": 120,
+            "EndMinute": 195,
+            "ColorIndex": 0,
+            "Tags": []
+        },
+        {
+            "Id": "2f906c83-e0aa-4bc7-9577-e19c6d1398fc",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-11",
+            "StartMinute": 335,
+            "EndMinute": 455,
+            "ColorIndex": 0,
+            "Tags": []
+        },
+        {
+            "Id": "466e2c33-7860-48a5-891f-1e1b336f14ec",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-06",
+            "StartMinute": 105,
+            "EndMinute": 155,
+            "ColorIndex": 2,
+            "Tags": []
+        },
+        {
+            "Id": "76822265-c2d1-417c-8ef6-94fbd2ec9ed1",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-09",
+            "StartMinute": 60,
+            "EndMinute": 80,
+            "ColorIndex": 0,
+            "Tags": []
+        },
+        {
+            "Id": "01a1ebbf-9f73-4e73-9592-64b267e66b72",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-08",
+            "StartMinute": 290,
+            "EndMinute": 320,
+            "ColorIndex": 1,
+            "Tags": []
+        },
+        {
+            "Id": "d983cb10-3fac-4d41-9358-7381dffa50c4",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-08",
+            "StartMinute": 320,
+            "EndMinute": 335,
+            "ColorIndex": 1,
+            "Tags": []
+        },
+        {
+            "Id": "f5e78129-5fbb-4b5a-b251-93ae5ff85bae",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-09",
+            "StartMinute": 80,
+            "EndMinute": 110,
+            "ColorIndex": 0,
+            "Tags": []
+        },
+        {
+            "Id": "3f4db7be-f5dd-4bfd-8e0d-9b219d3238f0",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-07",
+            "StartMinute": 450,
+            "EndMinute": 465,
+            "ColorIndex": 4,
+            "Tags": []
+        },
+        {
+            "Id": "bb80c085-bd04-463b-85c8-c67cb1db9ce0",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-07",
+            "StartMinute": 270,
+            "EndMinute": 315,
+            "ColorIndex": 4,
+            "Tags": []
+        },
+        {
+            "Id": "1165103f-bb15-434c-9818-b50ce372ef70",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-09",
+            "StartMinute": 120,
+            "EndMinute": 135,
+            "ColorIndex": 0,
+            "Tags": []
+        },
+        {
+            "Id": "a270ce47-77b4-41e8-b83d-81fa9169446b",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-11",
+            "StartMinute": 60,
+            "EndMinute": 85,
+            "ColorIndex": 2,
+            "Tags": []
         }
     ],
-    "SecretNotes": [],
-    "MemoContent": "",
+    "SecretNotes": [
+        {
+            "Id": "22957f2e-0efb-47e5-9b5f-c7d92cc236b2",
+            "DateString": "2026-01-09",
+            "Problem": "awd",
+            "Why": "awd",
+            "Solution": "rawerawer",
+            "AiAnalysis": ""
+        },
+        {
+            "Id": "f554ac9c-bd32-425d-bbc4-2e3a85b61c01",
+            "DateString": "2026-01-09",
+            "Problem": "dasd",
+            "Why": "asdasd",
+            "Solution": "우하하하하하하",
+            "AiAnalysis": ""
+        }
+    ],
+    "MemoContent": "ㅁㄴㄴㅁㄴㅇㅁㄴㅇㅁㄴㅇㅁㄴㄴㅁㅁㄴㅇ아아하하하하하하핳ㅎㅎ핳핳핳하하하핳하하ㅏ핳",
     "TargetName": "Nexon",
-    "TargetDateString": "2026-01-23",
+    "TargetDateString": "ㅇㅇ",
     "PersonalQuestTitle": "MAIN QUEST: Personal",
     "StudyQuestTitle": "SKILL GRINDING: Study",
     "TeamQuestTitle": "SIDE QUEST: Team",

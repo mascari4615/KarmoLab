@@ -7,183 +7,187 @@ using KarmoLab.Module.Tools;
 
 namespace KarmoLab.Module.Planner
 {
-    public partial class PlannerController
-    {
-        // Tools UI Elements
-        private Button _tabTools;
-        private ScrollView _viewTools;
-        
-        private Label _toolTitle;
-        private Label _toolDescription;
-        private DropdownField _toolSelector;
-        private DropdownField _actionSelector;
-        
-        private Label _labelInputMain;
-        private Label _labelInputSub;
-        private TextField _inputMain;
-        private TextField _inputSub;
-        
-        private Button _btnRunAction;
-        private TextField _outputField;
-        private Button _btnCopyOutput;
+	public partial class PlannerController
+	{
+		// 도구 UI 요소
+		private Button _tabTools;
+		private ScrollView _viewTools;
 
-        // Tool Logic
-        private List<ITool> _tools = new();
-        private ITool _currentTool;
-        private ToolAction _currentAction;
+		private Label _toolTitle;
+		private Label _toolDescription;
+		private DropdownField _toolSelector;
+		private DropdownField _actionSelector;
 
-        private void InitializeTools(VisualElement root)
-        {
-            // 1. UI Query
-            _tabTools = root.Q<Button>("TabTools");
-            _viewTools = root.Q<ScrollView>("ViewTools");
-            
-            _toolTitle = root.Q<Label>("ToolTitle");
-            _toolSelector = root.Q<DropdownField>("ToolSelector");
-            _actionSelector = root.Q<DropdownField>("ActionSelector");
-            _toolDescription = root.Q<Label>("ToolDescription");
+		private Label _labelInputMain;
+		private Label _labelInputSub;
+		private TextField _inputMain;
+		private TextField _inputSub;
 
-            _labelInputMain = root.Q<Label>("LabelInputMain");
-            _labelInputSub = root.Q<Label>("LabelInputSub");
-            _inputMain = root.Q<TextField>("InputMain");
-            _inputSub = root.Q<TextField>("InputSub");
-            
-            _btnRunAction = root.Q<Button>("BtnRunAction");
-            _outputField = root.Q<TextField>("OutputField");
-            _btnCopyOutput = root.Q<Button>("BtnCopyOutput");
+		private Button _btnRunAction;
+		private TextField _outputField;
+		private Button _btnCopyOutput;
 
-            // 2. Load Tools
-            _tools.Clear();
-            _tools.Add(new TextFormatTool());
-            _tools.Add(new FileNameTool());
-            _tools.Add(new YoutubeTool());
+		// 도구 로직
+		private List<ITool> _tools = new();
+		private ITool _currentTool;
+		private ToolAction _currentAction;
 
-            // Initialize Tools with Logger
-            foreach(var tool in _tools)
-            {
-                tool.Initialize((msg) => {
-                    if (_outputField != null) _outputField.value = msg;
-                });
-            }
+		private void InitializeTools(VisualElement root)
+		{
+			// 1. UI 조회
+			_tabTools = root.Q<Button>("TabTools");
+			_viewTools = root.Q<ScrollView>("ViewTools");
 
-            // 3. Bind Selectors
-            if (_toolSelector != null)
-            {
-                _toolSelector.choices = _tools.Select(t => t.Name).ToList();
-                _toolSelector.RegisterValueChangedCallback(evt => {
-                    SelectTool(evt.newValue);
-                });
-            }
+			_toolTitle = root.Q<Label>("ToolTitle");
+			_toolSelector = root.Q<DropdownField>("ToolSelector");
+			_actionSelector = root.Q<DropdownField>("ActionSelector");
+			_toolDescription = root.Q<Label>("ToolDescription");
 
-            if (_actionSelector != null)
-            {
-                _actionSelector.RegisterValueChangedCallback(evt => {
-                    SelectAction(evt.newValue);
-                });
-            }
+			_labelInputMain = root.Q<Label>("LabelInputMain");
+			_labelInputSub = root.Q<Label>("LabelInputSub");
+			_inputMain = root.Q<TextField>("InputMain");
+			_inputSub = root.Q<TextField>("InputSub");
 
-            if (_btnRunAction != null)
-            {
-                _btnRunAction.clicked += RunCurrentAction;
-            }
+			_btnRunAction = root.Q<Button>("BtnRunAction");
+			_outputField = root.Q<TextField>("OutputField");
+			_btnCopyOutput = root.Q<Button>("BtnCopyOutput");
 
-            // 4. Bind Copy Button
-            if (_btnCopyOutput != null)
-            {
-                _btnCopyOutput.clicked += () => {
-                    if (_outputField != null) GUIUtility.systemCopyBuffer = _outputField.value;
-                };
-            }
+			// 2. 도구 로드
+			_tools.Clear();
+			_tools.Add(new TextFormatTool());
+			_tools.Add(new FileNameTool());
+			_tools.Add(new YoutubeTool());
 
-            // 5. Bind Tab
-            if (_tabTools != null && _viewTools != null)
-            {
-                BindTab(_tabTools, _viewTools);
-            }
-            
-            // Default Selection
-             if (_tools.Count > 0 && _toolSelector != null) 
-            {
-                _toolSelector.value = _tools[0].Name;
-                // SelectTool(_tools[0].Name); // Value changed callback handles this? No, value assignment triggers sometimes, sometimes not depending on version. Safer to call directly if loop issue is handled.
-                // In UI Toolkit runtime, setting value usually triggers callback. 
-            }
-        }
+			// 로거와 함께 도구 초기화
+			foreach (var tool in _tools)
+			{
+				tool.Initialize((msg) =>
+				{
+					if (_outputField != null) _outputField.value = msg;
+				});
+			}
 
-        private void SelectTool(string toolName)
-        {
-            _currentTool = _tools.FirstOrDefault(t => t.Name == toolName);
-            if (_currentTool == null) return;
+			// 3. 선택자 바인딩
+			if (_toolSelector != null)
+			{
+				_toolSelector.choices = _tools.Select(t => t.Name).ToList();
+				_toolSelector.RegisterValueChangedCallback(evt =>
+				{
+					SelectTool(evt.newValue);
+				});
+			}
 
-            if (_toolTitle != null) _toolTitle.text = _currentTool.Name;
-            
-            // Reset Fields
-            if (_inputMain != null) _inputMain.value = "";
-            if (_inputSub != null) _inputSub.value = "";
-            if (_outputField != null) _outputField.value = "";
-            
-            // Populate Actions
-            var actions = _currentTool.GetActions();
-            if (_actionSelector != null)
-            {
-                _actionSelector.choices = actions.Select(a => a.Name).ToList();
-                if (actions.Count > 0)
-                {
-                    _actionSelector.value = actions[0].Name; // Triggers SelectAction via callback
-                }
-                else
-                {
-                     _actionSelector.value = null;
-                     SelectAction(null);
-                }
-            }
-        }
+			if (_actionSelector != null)
+			{
+				_actionSelector.RegisterValueChangedCallback(evt =>
+				{
+					SelectAction(evt.newValue);
+				});
+			}
 
-        private void SelectAction(string actionName)
-        {
-            if (_currentTool == null) return;
-            var actions = _currentTool.GetActions();
-            _currentAction = actions.FirstOrDefault(a => a.Name == actionName);
+			if (_btnRunAction != null)
+			{
+				_btnRunAction.clicked += RunCurrentAction;
+			}
 
-            if (_currentAction == null)
-            {
-                if (_toolDescription != null) _toolDescription.text = "";
-                return;
-            }
+			// 4. 복사 버튼 바인딩
+			if (_btnCopyOutput != null)
+			{
+				_btnCopyOutput.clicked += () =>
+				{
+					if (_outputField != null) GUIUtility.systemCopyBuffer = _outputField.value;
+				};
+			}
 
-            // Update Metadata UI
-            if (_toolDescription != null) _toolDescription.text = _currentAction.Description;
-            
-            if (_labelInputMain != null) _labelInputMain.text = _currentAction.MainInputLabel;
-            if (_labelInputSub != null) 
-            {
-                if (string.IsNullOrEmpty(_currentAction.SubInputLabel))
-                {
-                    _labelInputSub.text = "Sub Input (Not Used)";
-                    if(_inputSub != null) _inputSub.SetEnabled(false);
-                }
-                else
-                {
-                    _labelInputSub.text = _currentAction.SubInputLabel;
-                    if(_inputSub != null) _inputSub.SetEnabled(true);
-                }
-            }
-        }
+			// 5. 탭 바인딩
+			if (_tabTools != null && _viewTools != null)
+			{
+				BindTab(_tabTools, _viewTools);
+			}
 
-        private void RunCurrentAction()
-        {
-            if (_currentAction == null) return;
-            try 
-            {
-                string main = _inputMain != null ? _inputMain.value : "";
-                string sub = _inputSub != null ? _inputSub.value : "";
-                _currentAction.Execute?.Invoke(main, sub);
-            }
-            catch (Exception ex) 
-            {
-                if (_outputField != null) _outputField.value = $"Error: {ex.Message}";
-            }
-        }
-    }
+			// 기본 선택
+			if (_tools.Count > 0 && _toolSelector != null)
+			{
+				_toolSelector.value = _tools[0].Name;
+				// 값이 변경된 콜백이 이를 처리하나? 아니요, 값 할당은 버전에 따라 다르게 트리거될 수 있습니다. 루프 문제가 처리된다면 직접 호출하는 것이 더 안전함.
+				// UI Toolkit 런타임에서, 값을 설정하면 보통 콜백이 트리거됨. 
+			}
+		}
+
+		private void SelectTool(string toolName)
+		{
+			_currentTool = _tools.FirstOrDefault(t => t.Name == toolName);
+			if (_currentTool == null) return;
+
+			if (_toolTitle != null) _toolTitle.text = _currentTool.Name;
+
+			// 필드 초기화
+			if (_inputMain != null) _inputMain.value = "";
+			if (_inputSub != null) _inputSub.value = "";
+			if (_outputField != null) _outputField.value = "";
+
+			// 작업 목록 채우기
+			var actions = _currentTool.GetActions();
+			if (_actionSelector != null)
+			{
+				_actionSelector.choices = actions.Select(a => a.Name).ToList();
+				if (actions.Count > 0)
+				{
+					_actionSelector.value = actions[0].Name; // 콜백을 통해 SelectAction 트리거
+				}
+				else
+				{
+					_actionSelector.value = null;
+					SelectAction(null);
+				}
+			}
+		}
+
+		private void SelectAction(string actionName)
+		{
+			if (_currentTool == null) return;
+			var actions = _currentTool.GetActions();
+			_currentAction = actions.FirstOrDefault(a => a.Name == actionName);
+
+			if (_currentAction == null)
+			{
+				if (_toolDescription != null) _toolDescription.text = "";
+				return;
+			}
+
+			// 메타데이터 UI 업데이트
+			if (_toolDescription != null) _toolDescription.text = _currentAction.Description;
+
+			if (_labelInputMain != null) _labelInputMain.text = _currentAction.MainInputLabel;
+			if (_labelInputSub != null)
+			{
+				if (string.IsNullOrEmpty(_currentAction.SubInputLabel))
+				{
+					_labelInputSub.text = "Sub Input (Not Used)";
+					if (_inputSub != null) _inputSub.SetEnabled(false);
+				}
+				else
+				{
+					_labelInputSub.text = _currentAction.SubInputLabel;
+					if (_inputSub != null) _inputSub.SetEnabled(true);
+				}
+			}
+		}
+
+		private void RunCurrentAction()
+		{
+			if (_currentAction == null) return;
+			try
+			{
+				string main = _inputMain != null ? _inputMain.value : "";
+				string sub = _inputSub != null ? _inputSub.value : "";
+				_currentAction.Execute?.Invoke(main, sub);
+			}
+			catch (Exception ex)
+			{
+				if (_outputField != null) _outputField.value = $"Error: {ex.Message}";
+			}
+		}
+	}
 }
 
