@@ -32,6 +32,7 @@ dotnet run --project KarmoHub/KarmoHub.csproj
 ## 설치 및 데이터 경로
 
 - **게임 설치 경로**: `%LocalAppData%\KarmoLab\Games` (사용자 별 격리 설치, 관리자 권한 불필요)
+- **시작 메뉴 바로가기**: `%AppData%\Microsoft\Windows\Start Menu\Programs\KarmoLab`
 - **설정/로그**: `bin` 폴더 또는 향후 `%AppData%` 이동 예정
 - **시스템 연동**: 제어판 '프로그램 추가/제거' 및 Windows 설정 '설치된 앱'에 등록됨 (`HKCU` 레지스트리 사용)
 

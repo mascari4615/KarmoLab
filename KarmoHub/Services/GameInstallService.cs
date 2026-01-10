@@ -107,6 +107,9 @@ public class GameInstallService
 			
 			// 5. Windows 레지스트리 등록 (제어판 - 프로그램 추가/제거에 표시)
 			RegisterToWindowsSettings(game, installPath);
+
+			// 6. 시작 메뉴 바로가기 생성 (Windows 검색 노출)
+			CreateStartMenuShortcut(game, installPath);
 		}
 		finally
 		{
@@ -114,6 +117,52 @@ public class GameInstallService
 			{
 				try { File.Delete(tempZipPath); } catch { /* 무시 */ }
 			}
+		}
+	}
+
+	private void CreateStartMenuShortcut(GameItem game, string installLocation)
+	{
+		try
+		{
+			// 시작 메뉴 경로: %AppData%\Microsoft\Windows\Start Menu\Programs\KarmoLab
+			var startMenuPath = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+			var karmoMenuPath = Path.Combine(startMenuPath, "KarmoLab");
+
+			if (!Directory.Exists(karmoMenuPath))
+			{
+				Directory.CreateDirectory(karmoMenuPath);
+			}
+
+			var shortcutPath = Path.Combine(karmoMenuPath, $"{game.Name}.lnk");
+			var targetPath = Path.Combine(_baseAppDataPath, game.ExecutablePath);
+
+			// PowerShell을 사용하여 바로가기 생성 (COM 참조 불필요)
+			// $s = ...CreateShortcut...
+			// $s.TargetPath = ...
+			// $s.Save()
+			var script = $@"
+$ws = New-Object -ComObject WScript.Shell
+$s = $ws.CreateShortcut('{shortcutPath}')
+$s.TargetPath = '{targetPath}'
+$s.Description = 'KarmoLab Game Information'
+$s.Save()";
+
+			var processInfo = new System.Diagnostics.ProcessStartInfo
+			{
+				FileName = "powershell.exe",
+				Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
+				UseShellExecute = false,
+				CreateNoWindow = true
+			};
+
+			using (var process = System.Diagnostics.Process.Start(processInfo))
+			{
+				process?.WaitForExit();
+			}
+		}
+		catch (Exception)
+		{
+			// 바로가기 생성 실패 무시
 		}
 	}
 

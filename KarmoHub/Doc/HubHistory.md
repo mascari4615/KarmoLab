@@ -8,10 +8,11 @@
 2. **Windows 시스템 통합**:
    - 레지스트리 등록: `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall`
    - **제어판/설정 앱 연동**: '프로그램 추가/제거' 목록에 게임 표시.
+   - **시작 메뉴 바로가기**: `%AppData%\Microsoft\Windows\Start Menu\Programs\KarmoLab`에 바로가기 생성 (Windows 검색 노출).
    - `UninstallString`, `DisplayIcon`, `DisplayVersion` 등 메타데이터 등록.
 3. **언인스톨러 구현**:
    - 실행 인자 `--uninstall {GameId}` 처리 로직 추가 (`App.xaml.cs`).
-   - 삭제 시 레지스트리 키 및 설치 폴더 일괄 정리.
+   - 삭제 시 레지스트리 키, 설치 폴더, 시작 메뉴 바로가기 일괄 정리.
 
 ## 2026-01-10 (KST) - 설치 시스템 구현 (Zero Setup)
 

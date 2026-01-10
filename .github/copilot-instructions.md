@@ -41,18 +41,18 @@
 - [ ] 불필요한 공백(줄 끝, 두 칸 이상 연속 빈 줄)이 없는가?
 - [ ] 디렉터리 트리/명령어에 적절한 fence 언어를 썼는가?
 
-## KarmoHub 관련 문서 작성 시 추가 지침
-
-- 코드 수정하고 꼭 빌드해볼 것. 컴파일 에러가 있다면 수정해주세요.
-- 빌드하고 실행 다시 해야 하는데, 이미 실행 중이라면?
-  - `Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force`로 강제 종료 가능 (파일 잠금 해제).
-  - 위 명령 실행하고 대기할 것. (`Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force; dotnet run --project KarmoHub/KarmoHub.csproj` 같이 바로 빌드/실행 시도하지 말 것)
-- History 문서에 기록 잘 남길 것.
-
 ### 적용 대상
 
 - 모든 마크다운 문서 작성/수정 시 준수
 - 새 문서 생성 요청 시 본 규칙을 기본 템플릿으로 사용
+
+## KarmoHub 개발 시 추가 지침
+
+- 코드 수정하고 꼭 빌드해볼 것. 컴파일 에러가 있다면 수정해주세요.
+- 빌드 전에는 반드시 이전 프로세스를 종료할 것. (실행중인지 아닌지 모르기 때문에 우선 종료 시도)
+  - `Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force`로 강제 종료 가능 (파일 잠금 해제).
+  - 위 명령 실행하고 대기할 것. (`Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force; dotnet run --project KarmoHub/KarmoHub.csproj` 같이 바로 빌드/실행 시도하지 말 것)
+- 이후 문서 갱신 필요 (History, Roadmap 등)
 
 ## YawnBot 디스코드 봇 개발 지침
 

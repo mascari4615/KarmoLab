@@ -69,6 +69,25 @@ public partial class App : Application
 					{
 						System.IO.Directory.Delete(installPath, true);
 					}
+
+					// 3. 시작 메뉴 바로가기 삭제
+					try
+					{
+						// game.Name 정보가 없으므로 GameId 기반으로 찾거나 폴더를 정리해야 함
+						// 하지만 여기서는 레지스트리 정보만으로는 Name을 알기 어려움.
+						// 레지스트리에서 DisplayName을 가져올 수 있음
+						var gameName = key.GetValue("DisplayName") as string;
+						if (!string.IsNullOrEmpty(gameName))
+						{
+							var startMenuPath = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+							var lnkPath = System.IO.Path.Combine(startMenuPath, "KarmoLab", $"{gameName}.lnk");
+							if (System.IO.File.Exists(lnkPath))
+							{
+								System.IO.File.Delete(lnkPath);
+							}
+						}
+					}
+					catch { /* 무시 */ }
 				}
 			}
 			
