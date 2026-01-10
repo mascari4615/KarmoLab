@@ -51,10 +51,11 @@ public partial class MainWindow : Window
 			{
 				string path = game.ExecutablePath;
 				
-				// 상대 경로인 경우 절대 경로로 변환 (BaseDirectory 기준)
+				// 상대 경로인 경우 절대 경로로 변환 (AppData/Local/KarmoLab 기준)
 				if (!Path.IsPathRooted(path))
 				{
-					path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+					var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KarmoLab");
+					path = Path.Combine(baseDir, path);
 				}
 				path = Path.GetFullPath(path); // 경로 정규화
 

@@ -19,6 +19,11 @@
   - 설치 폴더 열기 기능.
   - 실시간 로그 콘솔 추가.
 
+### Phase 1.5: 시스템 통합 (완료)
+- [x] **사용자 수준 설치 (User Scope Install)**
+  - 설치 경로 변경: `AppData/Local/KarmoLab/Games` (UAC 권한 문제 회피).
+  - **Windows 레지스트리 등록**: `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall`에 등록하여 제어판/설정 앱에서 프로그램으로 인식되도록 구현.
+
 ### Phase 2: 배포 자동화 (GitHub Actions)
 - [ ] **Unity Build Action**: 클라우드 상에서 Unity 프로젝트 빌드.
 - [ ] **Zip Artifact**: 빌드 결과물을 `.zip`으로 압축.

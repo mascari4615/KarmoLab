@@ -22,10 +22,11 @@ public sealed class GameProcessService : IDisposable
 			return true;
 		}
 
-		// 절대 경로가 아니라면 현재 실행 위치 기준 상대 경로로 처리
+		// 절대 경로가 아니라면 AppData/Local/KarmoLab 기준 상대 경로로 처리
 		if (!Path.IsPathRooted(executablePath))
 		{
-			executablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executablePath);
+			var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KarmoLab");
+			executablePath = Path.Combine(baseDir, executablePath);
 		}
 
 		if (!File.Exists(executablePath) && !IsSystemCommand(executablePath))

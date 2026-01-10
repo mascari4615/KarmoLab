@@ -62,14 +62,15 @@ public class GameLibraryService
 		}
 
 		// 로컬 설치 확인
-		var baseDir = System.AppDomain.CurrentDomain.BaseDirectory;
+		// LocalAppData/KarmoLab 기준 (사용자별 설치 경로)
+		var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KarmoLab");
 
 		foreach (var game in games)
 		{
 			// 절대 경로가 아니고, 시스템 경로(메모장)가 아닌 경우 체크
 			if (!Path.IsPathRooted(game.ExecutablePath) && game.Id != "notepad")
 			{
-				// 실행 파일 위치(bin/Debug/...) 기준으로 경로 확인
+				// ExecutablePath는 "Games/..." 형태이므로 baseDir와 결합
 				var fullPath = Path.Combine(baseDir, game.ExecutablePath);
 				
 				if (File.Exists(fullPath))

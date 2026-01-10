@@ -4,18 +4,25 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Threading.Tasks;
 using KarmoHub.Models;
+using Microsoft.Win32;
 
 namespace KarmoHub.Services;
 
 public class GameInstallService
 {
 	private readonly HttpClient _httpClient;
-	private const string BaseInstallPath = "Games";
+	// AppData/Local/KarmoLab 경로 사용
+	private readonly string _baseAppDataPath;
 
 	public GameInstallService()
 	{
 		_httpClient = new HttpClient();
 		_httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("KarmoHub");
+		
+		_baseAppDataPath = Path.Combine(
+			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+			"KarmoLab"
+		);
 	}
 
 	public async Task InstallGameAsync(GameItem game, IProgress<int>? progress = null)
@@ -25,8 +32,15 @@ public class GameInstallService
 			 throw new InvalidOperationException("다운로드 URL이 없습니다.");
 		}
 
-		// 설치 경로: 실행 파일 위치(KarmoHub.exe) / Games / {GameId}
-		var installPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, BaseInstallPath, game.Id);
+		// 설치 경로: %LocalAppData%/KarmoLab/Games/{GameId}
+		// GameItem.ExecutablePath가 "Games/..." 로 시작하므로 이를 고려해서 경로 조합
+		// 여기서는 {GameId} 폴더까지만 지정 (ZIP 내부에 구조가 있다고 가정하거나 루트에 품)
+		
+		// NOTE: 현재 ZIP 파일 구조가 "KarmoLab.exe"가 최상위에 있거나, "Built/..." 일 수 있음.
+		// 기존 로직: BaseInstallPath/"Games"/{GameId} 
+		// 새 로직: _baseAppDataPath/"Games"/{GameId}
+		
+		var installPath = Path.Combine(_baseAppDataPath, "Games", game.Id);
 		var tempZipPath = Path.Combine(Path.GetTempPath(), $"{game.Id}_{Guid.NewGuid()}.zip");
 
 		try
@@ -90,6 +104,9 @@ public class GameInstallService
 
 			// 4. 버전 업데이트 반영
 			game.DefaultVersion = game.LatestVersion;
+			
+			// 5. Windows 레지스트리 등록 (제어판 - 프로그램 추가/제거에 표시)
+			RegisterToWindowsSettings(game, installPath);
 		}
 		finally
 		{
@@ -97,6 +114,51 @@ public class GameInstallService
 			{
 				try { File.Delete(tempZipPath); } catch { /* 무시 */ }
 			}
+		}
+	}
+
+	private void RegisterToWindowsSettings(GameItem game, string installLocation)
+	{
+		try
+		{
+			// HKCU (현재 사용자) 레지스트리에 등록 -> 관리자 권한 필요 없음
+			string keyPath = $@"Software\Microsoft\Windows\CurrentVersion\Uninstall\KarmoLab_{game.Id}";
+			
+			using (var key = Registry.CurrentUser.CreateSubKey(keyPath))
+			{
+				if (key != null)
+				{
+					key.SetValue("DisplayName", game.Name);
+					key.SetValue("DisplayVersion", game.LatestVersion);
+					key.SetValue("Publisher", "KarmoLab");
+					key.SetValue("InstallLocation", installLocation);
+					key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
+					key.SetValue("NoModify", 1);
+					key.SetValue("NoRepair", 1);
+					
+					// 아이콘 설정 (실행 파일이 있다고 가정)
+					// ExecutablePath는 "Games/..." 상대 경로이므로 이름만 추출하거나 조합 필요
+					// 여기서는 installLocation 내의 exe 탐색 시도
+					var exeName = Path.GetFileName(game.ExecutablePath);
+					var exePath = Path.Combine(installLocation, exeName);
+					if (File.Exists(exePath))
+					{
+						key.SetValue("DisplayIcon", exePath);
+					}
+
+					// UninstallString 없으면 제어판(프로그램 및 기능)에 안 뜨는 경우가 많음
+					// KarmoHub에게 언인스톨 위임
+					var launcherPath = Environment.ProcessPath;
+					if (!string.IsNullOrEmpty(launcherPath))
+					{
+						key.SetValue("UninstallString", $"\"{launcherPath}\" --uninstall \"{game.Id}\"");
+					}
+				}
+			}
+		}
+		catch (Exception)
+		{
+			// 레지스트리 등록 실패는 설치 실패로 간주하지 않음 (조용히 무시)
 		}
 	}
 }

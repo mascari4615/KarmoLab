@@ -1,5 +1,18 @@
 # KarmoHub 개발 히스토리
 
+## 2026-01-10 (KST) - 시스템 통합 및 언인스톨 기능
+
+1. **사용자 수준 설치(User Scope Install) 적용**:
+   - 설치 경로 변경: `BaseDirectory/Games` -> `%LocalAppData%/KarmoLab/Games`
+   - 관리자 권한(UAC) 요구 없이 설치/업데이트/삭제 가능하도록 개선.
+2. **Windows 시스템 통합**:
+   - 레지스트리 등록: `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall`
+   - **제어판/설정 앱 연동**: '프로그램 추가/제거' 목록에 게임 표시.
+   - `UninstallString`, `DisplayIcon`, `DisplayVersion` 등 메타데이터 등록.
+3. **언인스톨러 구현**:
+   - 실행 인자 `--uninstall {GameId}` 처리 로직 추가 (`App.xaml.cs`).
+   - 삭제 시 레지스트리 키 및 설치 폴더 일괄 정리.
+
 ## 2026-01-10 (KST) - 설치 시스템 구현 (Zero Setup)
 
 1. **설치 관리자 (`GameInstallService`) 구현**:
