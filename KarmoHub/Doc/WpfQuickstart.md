@@ -1,4 +1,4 @@
-# WPF Quickstart (Launcher 용)
+# WPF Quickstart (KarmoHub 용)
 
 ## 왜 WPF?
 
@@ -9,11 +9,11 @@
 ## 최소 프로젝트 구조
 
 ```text
-Launcher/
-  Launcher.csproj        <- <UseWPF>true</UseWPF>
+KarmoHub/
+  KarmoHub.csproj        <- <UseWPF>true</UseWPF>
   App.xaml/.cs          <- 앱 엔트리, Startup 로직
-  MainWindow.xaml/.cs   <- 기본 창 (이번엔 숨김 기본)
-  Services/             <- 비즈니스 로직, 프로세스 관리 등
+  MainWindow.xaml/.cs   <- 메인 대시보드 (라이브러리 UI)
+  Services/             <- 비즈니스 로직, 프로세스 관리, 라이브러리 관리 등
   Tray/                 <- 트레이 아이콘 래퍼
 ```
 
@@ -40,7 +40,7 @@ Launcher/
 ## 빌드/실행
 
 ```bash
-cd Launcher
+cd KarmoHub
 dotnet build
 dotnet run
 ```
@@ -48,6 +48,3 @@ dotnet run
 ## 다음 확장 아이디어
 
 - 설정 파일(JSON) + 바인딩으로 게임 경로/옵션 UI 구성
-- MVVM 도입: `MainWindow` → ViewModel로 상태/명령 이동
-- 리소스 사전으로 라이트/다크 테마 정의
-- IPC(네임드 파이프/WebSocket) 클라이언트 추가해 Unity와 상태 교환
