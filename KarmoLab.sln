@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YawnBot", "YawnBot\YawnBot.csproj", "{57321BA3-E1E3-4A31-B261-CE0181145623}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher", "Launcher\Launcher.csproj", "{49A63773-1421-48E9-B90D-F013F278D86A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KarmoHub", "KarmoHub\KarmoHub.csproj", "{49A63773-1421-48E9-B90D-F013F278D86A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
