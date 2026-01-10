@@ -12,8 +12,4 @@
   <ItemGroup>
     <None Include="Resources\tray.ico" Condition="Exists('Resources\tray.ico')" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="SharpCompress" Version="0.44.0" />
-  </ItemGroup>
 </Project>

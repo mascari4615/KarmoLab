@@ -49,9 +49,8 @@ public class GameLibraryService
 			if (karmoLab != null)
 			{
 				karmoLab.LatestVersion = latestRelease.TagName;
-				// 압축 파일(ZIP, 7Z 등) 찾기
-				var archiveAsset = latestRelease.Assets.FirstOrDefault(a => a.Name.EndsWith(".zip") || a.Name.EndsWith(".7z")) 
-							   ?? latestRelease.Assets.FirstOrDefault();
+				// 압축 파일(ZIP) 찾기 (표준 Zip 라이브러리 사용을 위해 .zip만 허용)
+				var archiveAsset = latestRelease.Assets.FirstOrDefault(a => a.Name.EndsWith(".zip"));
 				
 				if (archiveAsset != null)
 				{
