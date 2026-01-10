@@ -35,7 +35,7 @@ public partial class App : Application
 
 		_mainWindow = new MainWindow(_gameProcessService, _gameLibraryService, _gameInstallService);
 		MainWindow = _mainWindow;
-		_mainWindow.Hide();
+		// _mainWindow.Hide(); // 생성 시점에는 보여지지 않으므로 Hide 호출 불필요
 		
 		// 초기 데이터 로드 등을 위해 메인 윈도우 초기화
 		await _mainWindow.InitializeAsync();

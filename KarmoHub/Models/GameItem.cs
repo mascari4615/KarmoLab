@@ -11,6 +11,10 @@ public class GameItem
 	public string LatestVersion { get; set; } = "0.0.0"; // 서버 최신 버전
 	public string DownloadUrl { get; set; } = string.Empty; // 설치 파일(zip) 다운로드 URL
 
+	// GitHub 리포지토리 정보 (업데이트 확인용)
+	public string RepoOwner { get; set; } = string.Empty;
+	public string RepoName { get; set; } = string.Empty;
+
 	// 상태 도출 속성
 	public GameStatus Status
 	{

@@ -43,11 +43,11 @@ dotnet run --project KarmoHub/KarmoHub.csproj
 ## 동작 요약
 
 - **Core**: WPF (.NET 8) + WinForms (Tray) 하이브리드.
-- **Library**: `Games/` 폴더 내의 게임을 관리. GitHub Releases를 소스로 사용.
+- **Library**: `Games/` 폴더 내의 게임을 관리. GitHub Releases를 소스로 사용 (다중 리포지토리 지원).
 - **Install**:
   1. GitHub API로 `latest` 또는 `pre-release` 태그 확인.
   2. `.zip` 자산 다운로드 (Memory Stream -> File Stream).
-  3. `ExecutablePath` 기준 상위 폴더에 압축 해제 `System.IO.Compression`.
+  3. `ExecutablePath` 기준 상위 폴더에 압축 해제 (설치 후 `.exe` 자동 탐색 및 경로 보정 지원).
 - **Play**: `Process.Start`로 자식 프로세스 실행. 종료 이벤트 감지하여 상태(Status) 갱신.
 
 ## 주요 기능

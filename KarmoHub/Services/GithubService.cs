@@ -6,8 +6,7 @@ namespace KarmoHub.Services;
 
 public class GithubService
 {
-	private const string Owner = "mascari4615";
-	private const string Repo = "KarmoLab";
+	private const string DefaultOwner = "mascari4615";
 	private readonly HttpClient _httpClient;
 
 	public GithubService()
@@ -17,12 +16,14 @@ public class GithubService
 		_httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("KarmoHub");
 	}
 
-	public async Task<GithubRelease?> GetLatestReleaseAsync()
+	public async Task<GithubRelease?> GetLatestReleaseAsync(string repoName, string owner = DefaultOwner)
 	{
 		try
 		{
+			if (string.IsNullOrEmpty(repoName)) return null;
+
 			// releases/latest는 정식 릴리스만 반환하므로, Pre-release도 포함하기 위해 전체 목록을 조회하여 첫 번째 항목을 가져옴
-			var url = $"https://api.github.com/repos/{Owner}/{Repo}/releases";
+			var url = $"https://api.github.com/repos/{owner}/{repoName}/releases";
 			var releases = await _httpClient.GetFromJsonAsync<List<GithubRelease>>(url);
 			return releases?.FirstOrDefault();
 		}
