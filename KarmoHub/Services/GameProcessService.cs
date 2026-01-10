@@ -12,22 +12,25 @@ public sealed class GameProcessService : IDisposable
 
 	public event EventHandler? GameExited;
 
-	// TODO: 실제 Unity 빌드 경로로 교체하세요.
-	private const string GameExecutablePath = @"C:\\Path\\To\\MyUnityGame.exe";
-
 	public bool IsRunning => _gameProcess is { HasExited: false };
 
-	public bool StartGame()
+	public bool StartGame(string executablePath)
 	{
 		if (IsRunning)
 		{
-			MessageBox.Show("이미 게임이 실행 중입니다.", "KarmoHub", MessageBoxButton.OK, MessageBoxImage.Information);
+			MessageBox.Show("이미 다른 프로그램이 실행 중입니다.", "KarmoHub", MessageBoxButton.OK, MessageBoxImage.Information);
 			return true;
 		}
 
-		if (!File.Exists(GameExecutablePath))
+		// 절대 경로가 아니라면 현재 실행 위치 기준 상대 경로로 처리
+		if (!Path.IsPathRooted(executablePath))
 		{
-			MessageBox.Show($"게임 실행 파일을 찾을 수 없습니다.\n경로를 수정하세요:\n{GameExecutablePath}", "KarmoHub", MessageBoxButton.OK, MessageBoxImage.Warning);
+			executablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executablePath);
+		}
+
+		if (!File.Exists(executablePath) && !IsSystemCommand(executablePath))
+		{
+			MessageBox.Show($"실행 파일을 찾을 수 없습니다:\n{executablePath}", "KarmoHub", MessageBoxButton.OK, MessageBoxImage.Warning);
 			return false;
 		}
 
@@ -35,9 +38,9 @@ public sealed class GameProcessService : IDisposable
 		{
 			var startInfo = new ProcessStartInfo
 			{
-				FileName = GameExecutablePath,
+				FileName = executablePath,
 				UseShellExecute = true,
-				WorkingDirectory = Path.GetDirectoryName(GameExecutablePath) ?? string.Empty
+				WorkingDirectory = Path.GetDirectoryName(executablePath) ?? string.Empty
 			};
 
 			_gameProcess = Process.Start(startInfo);
@@ -88,11 +91,15 @@ public sealed class GameProcessService : IDisposable
 		if (_gameProcess is not null)
 		{
 			_gameProcess.Exited -= OnGameExited;
-			if (!_gameProcess.HasExited)
-			{
-				_gameProcess.Dispose();
-			}
+			// 프로세스는 종료하지 않고 핸들만 해제할 수도 있음. 정책에 따라 결정.
+			// 여기서는 런처 종료 시 자원만 해제
 			_gameProcess = null;
 		}
+	}
+
+	// 간단한 시스템 명령어 판별 (예: notepad.exe 등 path에 있는 것)
+	private bool IsSystemCommand(string path)
+	{
+		return !path.Contains(Path.DirectorySeparatorChar) && !path.Contains(Path.AltDirectorySeparatorChar);
 	}
 }

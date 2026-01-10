@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Controls;
+using KarmoHub.Models;
 using KarmoHub.Services;
 using Application = System.Windows.Application;
 
@@ -7,21 +9,33 @@ namespace KarmoHub;
 public partial class MainWindow : Window
 {
 	private readonly GameProcessService _gameProcessService;
+	private readonly GameLibraryService _gameLibraryService;
 
-	public MainWindow(GameProcessService gameProcessService)
+	public MainWindow(GameProcessService gameProcessService, GameLibraryService gameLibraryService)
 	{
 		InitializeComponent();
 		_gameProcessService = gameProcessService;
+		_gameLibraryService = gameLibraryService;
 		_gameProcessService.GameExited += OnGameExited;
+		
+		LoadGames();
 		UpdateStatus();
 	}
 
-	private void OnStartGame(object sender, RoutedEventArgs e)
+	private void LoadGames()
 	{
-		_gameProcessService.StartGame();
-		UpdateStatus();
+		GameInfos.ItemsSource = _gameLibraryService.GetGames();
 	}
 
+	private void OnPlayButtonClick(object sender, RoutedEventArgs e)
+	{
+		if (sender is System.Windows.Controls.Button button && button.DataContext is GameItem game)
+		{
+			_gameProcessService.StartGame(game.ExecutablePath);
+			UpdateStatus();
+		}
+	}
+	
 	private void OnStopGame(object sender, RoutedEventArgs e)
 	{
 		_gameProcessService.StopGame();

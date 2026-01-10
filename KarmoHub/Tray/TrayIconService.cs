@@ -31,8 +31,10 @@ public sealed class TrayIconService : IDisposable
 		};
 
 		var menu = new ContextMenuStrip();
-		menu.Items.Add("게임 실행", null, (_, _) => _gameProcessService.StartGame());
-		menu.Items.Add("메인 창 열기", null, (_, _) => ShowMainWindow());
+		// TODO: 특정 게임을 바로 실행하게 하거나, 최근 실행 게임을 실행하도록 개선 필요
+		// menu.Items.Add("게임 실행", null, (_, _) => _gameProcessService.StartGame("...")); 
+		
+		menu.Items.Add("KarmoHub 열기", null, (_, _) => ShowMainWindow());
 		menu.Items.Add("종료", null, (_, _) => ExitApplication());
 		_notifyIcon.ContextMenuStrip = menu;
 

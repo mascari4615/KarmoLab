@@ -10,6 +10,7 @@ public partial class App : Application
 	private TrayIconService? _tray;
 	private MainWindow? _mainWindow;
 	private GameProcessService? _gameProcessService;
+	private GameLibraryService? _gameLibraryService;
 
 	protected override void OnStartup(StartupEventArgs e)
 	{
@@ -19,7 +20,9 @@ public partial class App : Application
 		StartupService.RegisterStartup(Environment.ProcessPath ?? string.Empty);
 
 		_gameProcessService = new GameProcessService();
-		_mainWindow = new MainWindow(_gameProcessService);
+		_gameLibraryService = new GameLibraryService();
+
+		_mainWindow = new MainWindow(_gameProcessService, _gameLibraryService);
 		MainWindow = _mainWindow;
 		_mainWindow.Hide();
 
