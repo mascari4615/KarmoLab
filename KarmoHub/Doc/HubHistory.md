@@ -1,5 +1,20 @@
 # KarmoHub 개발 히스토리
 
+## 2026-01-10 (KST) - 설치 시스템 구현 (Zero Setup)
+
+1. **설치 관리자 (`GameInstallService`) 구현**:
+   - 외부 인스톨러(`setup.exe`) 의존성 제거. Hub가 직접 다운로드/설치 관리.
+   - GitHub Releases API 연동하여 최신 버전(.zip) 자동 감지.
+   - **설치 프로세스**: `Download` (Stream) -> `Extract` (System.IO.Compression) -> `Deploy` (`/Games` 폴더).
+   - 압축 해제 성능 최적화를 위해 복잡한 라이브러리 제거하고 순수 ZIP 방식으로 회귀.
+2. **UI 기능 강화**:
+   - **Log Console**: 하단에 실시간 로그(설치, 실행, 오류) 출력 창 추가.
+   - **Folder Open**: 설치된 경로를 바로 여는 탐색기 연동 버튼 추가.
+   - **Progress Feedback**: 다운로드 및 압축 해제 진행률의 정교한 시각화.
+3. **버그 수정**:
+   - 설치 경로 인식 오류 수정 (상대 경로 vs 절대 경로).
+   - `.7z` 지원 시도 후 성능 문제로 ZIP 표준화 결정.
+
 ## 2026-01-10 (KST) - KarmoHub 리브랜딩
 
 1. 프로젝트 명 변경: `Launcher` -> `KarmoHub`.

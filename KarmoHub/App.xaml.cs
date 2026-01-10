@@ -11,8 +11,9 @@ public partial class App : Application
 	private MainWindow? _mainWindow;
 	private GameProcessService? _gameProcessService;
 	private GameLibraryService? _gameLibraryService;
+	private GameInstallService? _gameInstallService;
 
-	protected override void OnStartup(StartupEventArgs e)
+	protected override async void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
 
@@ -21,10 +22,14 @@ public partial class App : Application
 
 		_gameProcessService = new GameProcessService();
 		_gameLibraryService = new GameLibraryService();
+		_gameInstallService = new GameInstallService();
 
-		_mainWindow = new MainWindow(_gameProcessService, _gameLibraryService);
+		_mainWindow = new MainWindow(_gameProcessService, _gameLibraryService, _gameInstallService);
 		MainWindow = _mainWindow;
 		_mainWindow.Hide();
+		
+		// 초기 데이터 로드 등을 위해 메인 윈도우 초기화
+		await _mainWindow.InitializeAsync();
 
 		_tray = new TrayIconService(_gameProcessService, _mainWindow);
 	}

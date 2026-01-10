@@ -1,13 +1,5 @@
 # KarmoHub 개요
 
-## AI는 이곳을 보라
-
-- 빌드하고 실행 다시 해야 하는데, 이미 실행 중이라면?
-  - `Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force`로 강제 종료 가능 (파일 잠금 해제).
-  - 위 명령 실행하고 대기할 것. (`Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force; dotnet run --project KarmoHub/KarmoHub.csproj` 같이 바로 빌드/실행 시도하지 말 것)
-- History 문서에 기록 잘 남길 것.
-- **프로젝트 이름 변경됨**: `Launcher` -> `KarmoHub`
-
 ## 목표
 
 - 통합 게임/툴 플랫폼 (Hub)
@@ -43,7 +35,17 @@ dotnet run --project KarmoHub/KarmoHub.csproj
 
 ## 동작 요약
 
-- 시작 시 트레이 아이콘 등록 및 메인 대시보드 창 준비 (숨김 상태).
-- 트레이 메뉴: KarmoHub 열기, 종료.
-- 메인 대시보드: 라이브러리 목록 확인 및 실행, 상태 관리.
-- 게임 실행은 `Process.Start`로 관리하며 다중 실행 방지/관리.
+- **Core**: WPF (.NET 8) + WinForms (Tray) 하이브리드.
+- **Library**: `Games/` 폴더 내의 게임을 관리. GitHub Releases를 소스로 사용.
+- **Install**:
+  1. GitHub API로 `latest` 또는 `pre-release` 태그 확인.
+  2. `.zip` 자산 다운로드 (Memory Stream -> File Stream).
+  3. `ExecutablePath` 기준 상위 폴더에 압축 해제 `System.IO.Compression`.
+- **Play**: `Process.Start`로 자식 프로세스 실행. 종료 이벤트 감지하여 상태(Status) 갱신.
+
+## 주요 기능
+
+1. **Zero-Setup Install**: 별도 설치 과정 없이 Hub에서 다운로드 버튼만 누르면 설치 완료. (Portable 방식)
+2. **Auto-Update Check**: 실행 시 혹은 라이브러리 로드 시 GitHub와 버전 비교.
+3. **Log System**: 설치 및 실행 과정에 대한 투명한 로그 제공.
+
