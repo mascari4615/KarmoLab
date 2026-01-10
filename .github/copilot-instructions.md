@@ -51,7 +51,11 @@
 - 코드 수정 시 아래 프로세스를 따라주세요.
   1. 프로세스 종료 필수:
     - 빌드 테스트 때문에 빌드가 안될 수 있음. 때문에 반드시 이전 프로세스를 종료할 것.(실행중인지 아닌지 모르기 때문에 우선 종료 시도)
-    - `Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force`로 강제 종료 가능 (파일 잠금 해제).
+    - 아래 명령어로 강제 종료 및 빌드/실행을 연속 처리할 것:
+      ```powershell
+      Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force; dotnet build KarmoHub/KarmoHub.csproj
+      ```
+      (파일 잠금 해제 및 빌드 오류 방지)
   2. 위 명령 실행하고 대기할 것. (`Get-Process KarmoHub -ErrorAction SilentlyContinue | Stop-Process -Force; dotnet run --project KarmoHub/KarmoHub.csproj` 같이 바로 빌드/실행 시도하지 말 것)
   3. 코드 수정하고 꼭 빌드하여 컴파일 에러 확인. 에러가 있다면 수정. 수정 후 문제 없을 때까지 확인 프로세스 반복.
 - 이후 문서 갱신 필요 (History, Roadmap 등)
