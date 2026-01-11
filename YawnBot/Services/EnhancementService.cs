@@ -1,6 +1,7 @@
 using Discord;
 using Discord.WebSocket;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace YawnBot.Services
 		private readonly GameDataService _gameData;
 		private readonly LoggingService _loggingService;
 		private const string EnhancementImageBasePath = "Resources/img/enhancement";
+		private const double GreatSuccessProbability = 0.5; // 대성공 확률 (%)
+		private readonly ConcurrentDictionary<ulong, bool> _processingUsers = new();
 
 		public EnhancementService(Random random, GameDataService gameData, LoggingService loggingService)
 		{
@@ -55,231 +58,310 @@ namespace YawnBot.Services
 		public async Task EnhanceSwordAsync(IUser user, IMessageChannel channel)
 		{
 			ulong userId = user.Id;
-			EnsureUserData(userId);
-
-			var userSword = _gameData.UserSwords[userId];
-			int currentLevel = userSword.Level;
-
-			if (currentLevel >= 15)
+			if (_processingUsers.TryGetValue(userId, out bool isProcessing) && isProcessing)
 			{
-				var embed = new EmbedBuilder()
-					.WithTitle("🎉 최고 레벨 도달!")
-					.WithDescription("더 이상 강화할 수 없습니다.")
-					.WithColor(Color.Gold);
-				await SendEmbedAsync(channel, embed);
+				await channel.SendMessageAsync("🚫 이전 작업이 진행 중입니다. 잠시만 기다려주세요.");
 				return;
 			}
 
-			var info = _gameData.UpgradeInfos.FirstOrDefault(x => x.Level == currentLevel);
-			if (info == null)
+			_processingUsers[userId] = true;
+			try
 			{
-				var embed = new EmbedBuilder()
-					.WithTitle("🚫 오류 발생")
-					.WithDescription($"강화 정보를 찾을 수 없습니다. (Level: {currentLevel})\n관리자에게 문의해주세요.")
-					.WithColor(Color.Red);
-				await SendEmbedAsync(channel, embed);
+				EnsureUserData(userId);
 
-				await _loggingService.LogErrorAsync("EnhancementService", "UpgradeInfo not found", new { UserId = userId, Level = currentLevel });
-				return;
-			}
+				var userSword = _gameData.UserSwords[userId];
+				int currentLevel = userSword.Level;
 
-			long cost = info.Cost;
-
-			if (!_gameData.TrySpendMoney(userId, cost))
-			{
-				var embed = new EmbedBuilder()
-					.WithTitle("💸 돈이 부족합니다!")
-					.AddField("필요한 금액", $"{cost}원", true)
-					.AddField("보유 금액", $"{_gameData.UserMoney[userId]}원", true)
-					.WithColor(Color.Red);
-				await SendEmbedAsync(channel, embed);
-				return;
-			}
-
-			// 확률 계산
-			double successProb = info.Success;
-			double roll = _random.NextDouble() * 100;
-			bool isGreatSuccess = _random.NextDouble() * 100 <= 1.0; // 1% 대성공 확률
-
-			var retryComponent = new ComponentBuilder()
-				.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
-				.Build();
-
-			var successComponent = new ComponentBuilder()
-				.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
-				.WithButton("판매", "sell_sword", ButtonStyle.Secondary)
-				.Build();
-
-			if (isGreatSuccess)
-			{
-				int increase = 3;
-				int oldLevel = userSword.Level;
-				userSword.Level = Math.Min(userSword.Level + increase, 15);
-
-				var (newImg, newName, newType) = GetRandomWeaponImage(userSword.Level, userSword.WeaponType);
-				userSword.ImageName = newImg;
-				userSword.Name = newName;
-				userSword.WeaponType = newType;
-
-				if (userSword.Level > _gameData.UserMaxSwordLevels[userId])
+				if (currentLevel >= 15)
 				{
-					_gameData.UserMaxSwordLevels[userId] = userSword.Level;
-				}
-
-				string? imagePath = GetImagePath(userSword.ImageName);
-				string chatMsg = GetRandomChatMessage(userSword.Level, "success");
-				string lore = GetWeaponLore(userSword.WeaponType, userSword.Level);
-				
-				var embed = new EmbedBuilder()
-					.WithTitle("🌟 대성공!!! 🌟")
-					.WithDescription($"{user.Mention}님의 무기가 단숨에 **+{userSword.Level}강 {userSword.Name}**(으)로 진화했습니다!")
-					.AddField("상승폭", $"+{userSword.Level - oldLevel}강", true)
-					.AddField("대장장이의 한마디", $"\"{chatMsg}\"");
-
-				if (!string.IsNullOrEmpty(lore))
-				{
-					embed.AddField("전설", $"*{lore}*");
-				}
-
-				embed.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
-					 .AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
-					 .WithColor(Color.Gold);
-
-				await SendEmbedAsync(channel, embed, imagePath, successComponent);
-			}
-			else if (roll <= successProb)
-			{
-				userSword.Level++;
-				var (newImg, newName, newType) = GetRandomWeaponImage(userSword.Level, userSword.WeaponType);
-				userSword.ImageName = newImg; // 레벨업 시 새로운 이미지 할당
-				userSword.Name = newName;
-				userSword.WeaponType = newType;
-
-				if (userSword.Level > _gameData.UserMaxSwordLevels[userId])
-				{
-					_gameData.UserMaxSwordLevels[userId] = userSword.Level;
-				}
-
-				string? imagePath = GetImagePath(userSword.ImageName);
-				string chatMsg = GetRandomChatMessage(userSword.Level, "success");
-				string lore = GetWeaponLore(userSword.WeaponType, userSword.Level);
-				
-				var embed = new EmbedBuilder()
-					.WithTitle("🎉 강화 성공!")
-					.WithDescription($"{user.Mention}님의 무기가 **+{userSword.Level}강 {userSword.Name}**(으)로 변했습니다!")
-					.AddField("대장장이의 한마디", $"\"{chatMsg}\"");
-
-				if (!string.IsNullOrEmpty(lore))
-				{
-					embed.AddField("전설", $"*{lore}*");
-				}
-
-				embed.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
-					 .AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
-					 .WithColor(Color.Green);
-
-				await SendEmbedAsync(channel, embed, imagePath, successComponent);
-			}
-			else
-			{
-				// 실패 시 파괴 방어 로직 (35% 확률)
-				bool isProtected = _random.NextDouble() * 100 <= 35.0;
-
-				if (isProtected)
-				{
-					// 유지
-					string? maintainImageName = GetRandomImage("강화_유지_");
-					string? maintainImagePath = GetImagePath(maintainImageName);
-					string chatMsg = GetRandomChatMessage(userSword.Level, "maintain");
-					
 					var embed = new EmbedBuilder()
-						.WithTitle("🛡️ 강화 실패... 하지만 무기는 무사합니다!")
-						.WithDescription($"{user.Mention}님의 무기가 **+{userSword.Level}강 {userSword.Name}**(으)로 유지되었습니다.")
-						.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
-						.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
-						.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
-						.WithColor(Color.Blue);
+						.WithTitle("🎉 최고 레벨 도달!")
+						.WithDescription("더 이상 강화할 수 없습니다.")
+						.WithColor(Color.Gold);
+					await SendEmbedAsync(channel, embed);
+					return;
+				}
 
-					await SendEmbedAsync(channel, embed, maintainImagePath, successComponent);
+				var info = _gameData.UpgradeInfos.FirstOrDefault(x => x.Level == currentLevel);
+				if (info == null)
+				{
+					var embed = new EmbedBuilder()
+						.WithTitle("🚫 오류 발생")
+						.WithDescription($"강화 정보를 찾을 수 없습니다. (Level: {currentLevel})\n관리자에게 문의해주세요.")
+						.WithColor(Color.Red);
+					await SendEmbedAsync(channel, embed);
+
+					await _loggingService.LogErrorAsync("EnhancementService", "UpgradeInfo not found", new { UserId = userId, Level = currentLevel });
+					return;
+				}
+
+				long cost = info.Cost;
+
+				if (!_gameData.TrySpendMoney(userId, cost))
+				{
+					var embed = new EmbedBuilder()
+						.WithTitle("💸 돈이 부족합니다!")
+						.AddField("필요한 금액", $"{cost}원", true)
+						.AddField("보유 금액", $"{_gameData.UserMoney[userId]}원", true)
+						.WithColor(Color.Red);
+					await SendEmbedAsync(channel, embed);
+					return;
+				}
+
+				// 확률 계산
+				double successProb = info.Success;
+				double roll = _random.NextDouble() * 100;
+				bool isGreatSuccess = _random.NextDouble() * 100 <= GreatSuccessProbability;
+
+				var retryComponent = new ComponentBuilder()
+					.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
+					.Build();
+
+				var successComponent = new ComponentBuilder()
+					.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
+					.WithButton("판매", "sell_sword", ButtonStyle.Secondary)
+					.Build();
+
+				if (isGreatSuccess)
+				{
+					int increase = 3;
+					int oldLevel = userSword.Level;
+					userSword.Level = Math.Min(userSword.Level + increase, 15);
+
+					var (newImg, newName, newType) = GetRandomWeaponImage(userSword.Level, userSword.WeaponType);
+					userSword.ImageName = newImg;
+					userSword.Name = newName;
+					userSword.WeaponType = newType;
+
+					if (userSword.Level > _gameData.UserMaxSwordLevels[userId])
+					{
+						_gameData.UserMaxSwordLevels[userId] = userSword.Level;
+					}
+
+					string? imagePath = GetImagePath(userSword.ImageName);
+					string chatMsg = GetRandomChatMessage(userSword.Level, "success");
+					string lore = GetWeaponLore(userSword.WeaponType, userSword.Level);
+
+					var embed = new EmbedBuilder()
+						.WithTitle("🌟 대성공!!! 🌟")
+						.WithDescription($"{user.Mention}님, **{userSword.Name}** 대성공으로 강화에 성공했습니다! [ +{oldLevel} ==> +{userSword.Level} ]")
+						.AddField("상승폭", $"+{userSword.Level - oldLevel}강", true)
+						.AddField("대장장이의 한마디", $"\"{chatMsg}\"");
+
+					if (!string.IsNullOrEmpty(lore))
+					{
+						embed.AddField("전설", $"*{lore}*");
+					}
+
+					embed.AddField("소요된 비용", $"{cost}원", true)
+						 .AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+						 .WithColor(Color.Gold);
+
+					await SendEmbedAsync(channel, embed, imagePath, successComponent);
+
+					if (userSword.Level >= 10)
+					{
+						var newsEmbed = new EmbedBuilder()
+							.WithTitle("📰 [속보] 전설의 탄생?!")
+							.WithDescription($"📢 **{user.Username}**님이 **+{userSword.Level}강 {userSword.Name}** 강화에 성공했습니다!!!")
+							.WithColor(Color.Purple)
+							.WithThumbnailUrl(user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl());
+
+						await channel.SendMessageAsync(embed: newsEmbed.Build());
+					}
+				}
+				else if (roll <= successProb)
+				{
+					userSword.Level++;
+					var (newImg, newName, newType) = GetRandomWeaponImage(userSword.Level, userSword.WeaponType);
+					userSword.ImageName = newImg; // 레벨업 시 새로운 이미지 할당
+					userSword.Name = newName;
+					userSword.WeaponType = newType;
+
+					if (userSword.Level > _gameData.UserMaxSwordLevels[userId])
+					{
+						_gameData.UserMaxSwordLevels[userId] = userSword.Level;
+					}
+
+					string? imagePath = GetImagePath(userSword.ImageName);
+					string chatMsg = GetRandomChatMessage(userSword.Level, "success");
+					string lore = GetWeaponLore(userSword.WeaponType, userSword.Level);
+
+					var embed = new EmbedBuilder()
+						.WithTitle("🎉 강화 성공!")
+						.WithDescription($"{user.Mention}님, **{userSword.Name}** 강화에 성공했습니다! [ +{userSword.Level - 1} ==> +{userSword.Level} ]")
+						.AddField("대장장이의 한마디", $"\"{chatMsg}\"");
+
+					if (!string.IsNullOrEmpty(lore))
+					{
+						embed.AddField("전설", $"*{lore}*");
+					}
+
+					embed.AddField("소요된 비용", $"{cost}원", true)
+						 .AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+						 .WithColor(Color.Green);
+
+					await SendEmbedAsync(channel, embed, imagePath, successComponent);
+
+					if (userSword.Level >= 10)
+					{
+						var newsEmbed = new EmbedBuilder()
+							.WithTitle("📰 [속보] 엄청난 무기가 나타났다!")
+							.WithDescription($"📢 **{user.Username}**님이 **+{userSword.Level}강 {userSword.Name}** 강화에 성공했습니다!!!\n이 기세라면 세계 정복도 가능하겠는데요?! 👏👏👏")
+							.WithColor(Color.Purple)
+							.WithThumbnailUrl(user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl());
+
+						await channel.SendMessageAsync(embed: newsEmbed.Build());
+					}
 				}
 				else
 				{
-					userSword.Level = 0; // 파괴
-					// 파괴 시 새로운 무기 랜덤 배정 (0강)
-					var (resetImg, resetName, resetType) = GetRandomWeaponImage(0, null);
-					userSword.ImageName = resetImg;
-					userSword.Name = resetName;
-					userSword.WeaponType = resetType;
+					// 실패 시 파괴 방어 로직 (35% 확률)
+					bool isProtected = _random.NextDouble() * 100 <= 35.0;
 
-					var builder = new ComponentBuilder()
-						.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
-						.WithButton("위로하기", "consolation", ButtonStyle.Secondary);
+					if (isProtected)
+					{
+						// 유지
+						string? maintainImageName = GetRandomImage("강화_유지_");
+						string? maintainImagePath = GetImagePath(maintainImageName);
+						string chatMsg = GetRandomChatMessage(userSword.Level, "maintain");
 
-					string? destroyImageName = GetRandomImage("강화_실패_");
-					string? destroyImagePath = GetImagePath(destroyImageName);
-					string chatMsg = GetRandomChatMessage(currentLevel + 1, "fail");
-					
-					var embed = new EmbedBuilder()
-						.WithTitle("💥 강화 실패...")
-						.WithDescription($"{user.Mention}님의 무기가 깨졌습니다...")
-						.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
-						.AddField($"비용 (+{currentLevel}강 ➡️ +{currentLevel + 1}강)", $"{cost}원", true)
-						.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
-						.WithColor(Color.Red);
+						var embed = new EmbedBuilder()
+							.WithTitle("🛡️ 강화 실패... 하지만 무기는 무사합니다!")
+							.WithDescription($"{user.Mention}님의 무기가 **+{userSword.Level}강 {userSword.Name}**(으)로 유지되었습니다.")
+							.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
+							.AddField("소요된 비용", $"{cost}원", true)
+							.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+							.WithColor(Color.Blue);
 
-					await SendEmbedAsync(channel, embed, destroyImagePath, builder.Build());
+						await SendEmbedAsync(channel, embed, maintainImagePath, successComponent);
+					}
+					else
+					{
+						userSword.Level = 0; // 파괴
+											 // 파괴 시 새로운 무기 랜덤 배정 (0강)
+						var (resetImg, resetName, resetType) = GetRandomWeaponImage(0, null);
+						userSword.ImageName = resetImg;
+						userSword.Name = resetName;
+						userSword.WeaponType = resetType;
+
+						var builder = new ComponentBuilder()
+							.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
+							.WithButton("위로하기", "consolation", ButtonStyle.Secondary);
+
+						string? destroyImageName = GetRandomImage("강화_실패_");
+						string? destroyImagePath = GetImagePath(destroyImageName);
+						string chatMsg = GetRandomChatMessage(currentLevel + 1, "fail");
+
+						var embed = new EmbedBuilder()
+							.WithTitle("💥 강화 실패...")
+							.WithDescription($"{user.Mention}님의 무기가 깨졌습니다...\n하지만 대장장이가 **{userSword.Name}**을(를) 무료로 주었습니다.")
+							.AddField("대장장이의 한마디", $"\"{chatMsg}\"")
+							.AddField("비용", $"{cost}원", true)
+							.AddField("남은 돈", $"{_gameData.UserMoney[userId]}원", true)
+							.WithColor(Color.Red);
+
+						await SendEmbedAsync(channel, embed, destroyImagePath, builder.Build());
+					}
 				}
+			}
+			finally
+			{
+				_processingUsers.TryRemove(userId, out _);
 			}
 		}
 
 		public async Task SellSwordAsync(IUser user, IMessageChannel channel)
 		{
 			ulong userId = user.Id;
-			EnsureUserData(userId);
-
-			var userSword = _gameData.UserSwords[userId];
-			int currentLevel = userSword.Level;
-			if (currentLevel == 0)
+			if (_processingUsers.TryGetValue(userId, out bool isProcessing) && isProcessing)
 			{
-				var embed = new EmbedBuilder()
-					.WithTitle("🚫 판매 불가")
-					.WithDescription("0강 검은 팔 수 없습니다! 강화 후에 판매하세요.")
-					.WithColor(Color.Red);
-				await SendEmbedAsync(channel, embed);
+				await channel.SendMessageAsync("🚫 이전 작업이 진행 중입니다. 잠시만 기다려주세요.");
 				return;
 			}
 
-			// 판매 가격 계산
-			long basePrice = 0;
-			var info = _gameData.UpgradeInfos.FirstOrDefault(x => x.Level == currentLevel);
-			if (info != null)
+			_processingUsers[userId] = true;
+			try
 			{
-				basePrice = info.SellPrice;
+				EnsureUserData(userId);
+
+				var userSword = _gameData.UserSwords[userId];
+				int currentLevel = userSword.Level;
+				if (currentLevel == 0)
+				{
+					var embed = new EmbedBuilder()
+						.WithTitle("🚫 판매 불가")
+						.WithDescription("0강 검은 팔 수 없습니다! 강화 후에 판매하세요.")
+						.WithColor(Color.Red);
+					await SendEmbedAsync(channel, embed);
+					return;
+				}
+
+				// 판매 가격 계산
+				long basePrice = 0;
+				var info = _gameData.UpgradeInfos.FirstOrDefault(x => x.Level == currentLevel);
+				if (info != null)
+				{
+					basePrice = info.SellPrice;
+				}
+				else
+				{
+					basePrice = currentLevel * 10000;
+				}
+
+				// 감정 시작 메시지
+				var appraisalEmbed = new EmbedBuilder()
+					.WithTitle("🔍 감정 중...")
+					.WithDescription($"대장장이가 **+{currentLevel}강 {userSword.Name}**을(를) 꼼꼼히 살펴보고 있습니다...")
+					.WithColor(Color.Orange);
+
+				var message = await channel.SendMessageAsync(embed: appraisalEmbed.Build());
+				await Task.Delay(2000); // 2초 대기
+
+				// 감정가 계산 (0.9 ~ 1.5 배)
+				double multiplier = 0.9 + (_random.NextDouble() * 0.6);
+				long finalPrice = (long)(basePrice * multiplier);
+
+				// 1원 단위까지 랜덤 변동 추가 (-50 ~ +50)
+				finalPrice += _random.Next(-50, 51);
+				if (finalPrice < 0) finalPrice = 0;
+
+				_gameData.AddMoney(userId, finalPrice);
+
+				userSword.Level = 0; // 판매 후 초기화
+				var (resetImg, resetName, resetType) = GetRandomWeaponImage(0, null);
+				userSword.ImageName = resetImg;
+				userSword.Name = resetName;
+				userSword.WeaponType = resetType;
+
+				string appraisalComment = "";
+				if (multiplier >= 1.3) appraisalComment = "상태가 아주 훌륭하군요! 값을 더 쳐드리겠습니다.";
+				else if (multiplier <= 1.0) appraisalComment = "흠... 흠집이 좀 있네요. 많이는 못 드립니다.";
+				else appraisalComment = "적당한 물건이군요. 시세대로 드리겠습니다.";
+
+				var successEmbed = new EmbedBuilder()
+					.WithTitle("💰 판매 완료!")
+					.WithDescription($"감정 결과: **{finalPrice:N0}원**")
+					.AddField("기본 시세", $"{basePrice:N0}원", true)
+					.AddField("감정가", $"{finalPrice:N0}원 ({(multiplier * 100):F0}%)", true)
+					.AddField("대장장이의 평가", $"\"{appraisalComment}\"")
+					.AddField("현재 보유 금액", $"{_gameData.UserMoney[userId]:N0}원", true)
+					.WithColor(Color.Green);
+
+				var component = new ComponentBuilder()
+					.WithButton("강화", "enhance_retry", ButtonStyle.Primary)
+					.Build();
+
+				await message.ModifyAsync(m => 
+				{
+					m.Embed = successEmbed.Build();
+					m.Components = component;
+				});
 			}
-			else
+			finally
 			{
-				basePrice = currentLevel * 10000;
+				_processingUsers.TryRemove(userId, out _);
 			}
-
-			// 랜덤 보너스 (0% ~ 20%)
-			double bonusRate = _random.NextDouble() * 0.2;
-			long bonus = (long)(basePrice * bonusRate);
-			long finalPrice = basePrice + bonus;
-
-			_gameData.AddMoney(userId, finalPrice);
-
-			userSword.Level = 0; // 판매 후 초기화
-			var (resetImg, resetName, resetType) = GetRandomWeaponImage(0, null);
-			userSword.ImageName = resetImg;
-			userSword.Name = resetName;
-			userSword.WeaponType = resetType;
-
-			var successEmbed = new EmbedBuilder()
-				.WithTitle("💰 판매 완료!")
-				.WithDescription($"+{currentLevel}강 검을 팔아 **{finalPrice}원**을 벌었습니다!")
-				.AddField("현재 보유 금액", $"{_gameData.UserMoney[userId]}원", true)
-				.WithColor(Color.Green);
-			await SendEmbedAsync(channel, successEmbed);
 		}
 
 		public async Task ShowInfoAsync(IUser user, IMessageChannel channel)
@@ -294,7 +376,7 @@ namespace YawnBot.Services
 			string swordName = userSword.Name ?? "이름 없는 검";
 
 			string? imagePath = GetImagePath(userSword.ImageName);
-			
+
 			var embed = new EmbedBuilder()
 				.WithTitle($"⚔️ {user.Username}님의 정보")
 				.AddField("검 이름", $"**{swordName}** (+{level}강)", true)
@@ -310,7 +392,7 @@ namespace YawnBot.Services
 			ulong userId = user.Id;
 			EnsureUserData(userId);
 			long money = _gameData.UserMoney[userId];
-			
+
 			var embed = new EmbedBuilder()
 				.WithTitle("💰 보유 금액")
 				.WithDescription($"**{user.Username}**님의 현재 자산: {money}원")
@@ -406,7 +488,7 @@ namespace YawnBot.Services
 				}
 
 				_gameData.AddMoney(userId, reward);
-				
+
 				var embed = new EmbedBuilder()
 					.WithTitle("⚔️ 대결 승리!")
 					.WithDescription($"{user.Mention}님이 {targetUser.Mention}님을 이겼습니다!")
@@ -484,7 +566,7 @@ namespace YawnBot.Services
 				long reward = 1000;
 				_gameData.AddMoney(userId, reward);
 				_gameData.LastAttendance[userId] = DateTime.Now;
-				
+
 				var embed = new EmbedBuilder()
 					.WithTitle("📅 출석체크 완료!")
 					.WithDescription($"{reward}원을 받았습니다!")
@@ -541,7 +623,7 @@ namespace YawnBot.Services
 
 			// 슬롯 심볼
 			string[] symbols = { "🍒", "🍋", "🍇", "💎", "7️⃣" };
-			
+
 			// 최종 결과 미리 결정
 			string s1 = symbols[_random.Next(symbols.Length)];
 			string s2 = symbols[_random.Next(symbols.Length)];
@@ -552,7 +634,7 @@ namespace YawnBot.Services
 				.WithTitle("🎰 슬롯 머신 돌아가는 중...")
 				.WithDescription("**[ ❓ | ❓ | ❓ ]**")
 				.WithColor(Color.Orange);
-			
+
 			var message = await channel.SendMessageAsync(embed: embed.Build());
 
 			// 1단계: 첫 번째 슬롯 결정
@@ -599,7 +681,7 @@ namespace YawnBot.Services
 			// 결과 계산
 			long payout = 0;
 			string resultMsg = "꽝!";
-			
+
 			if (s1 == "7️⃣" && s2 == "7️⃣" && s3 == "7️⃣") { payout = betAmount * 77; resultMsg = "Jackpot! (77배)"; }
 			else if (s1 == "💎" && s2 == "💎" && s3 == "💎") { payout = betAmount * 50; resultMsg = "Diamond! (50배)"; }
 			else if (s1 == s2 && s2 == s3) { payout = betAmount * 10; resultMsg = "Triple! (10배)"; }
@@ -616,7 +698,7 @@ namespace YawnBot.Services
 				.AddField("획득", $"{payout}원", true)
 				.AddField("잔액", $"{_gameData.UserMoney[userId]}원", true)
 				.WithColor(payout > 0 ? Color.Gold : Color.DarkGrey);
-			
+
 			await message.ModifyAsync(m => m.Embed = embed.Build());
 		}
 
@@ -697,7 +779,7 @@ namespace YawnBot.Services
 			// 승패 판정
 			int userIdx = Array.IndexOf(rps, choice);
 			int botIdx = Array.IndexOf(rps, botChoice);
-			
+
 			// 0:가위, 1:바위, 2:보
 			// (0,1)->1승, (1,2)->2승, (2,0)->0승
 			// (user - bot + 3) % 3 == 1 -> user win
@@ -754,14 +836,14 @@ namespace YawnBot.Services
 					else
 					{
 						// 데이터가 없으면 기본값
-						currentWeaponType = "곡괭이"; 
+						currentWeaponType = "곡괭이";
 					}
 				}
 
 				// 파일 검색 패턴: {WeaponType}/{WeaponType}_Lv{Level}_*.png
 				// 레벨 0인 경우 레벨 1 이미지를 사용 (낡은 상태)
 				int searchLevel = level == 0 ? 1 : level;
-				
+
 				string weaponPath = Path.Combine(EnhancementImageBasePath, currentWeaponType);
 				if (!Directory.Exists(weaponPath)) return ($"default.png", "알 수 없는 무기", currentWeaponType ?? "Unknown");
 
@@ -778,7 +860,7 @@ namespace YawnBot.Services
 					if (parts.Length >= 3)
 					{
 						// 예: 낡은 곡괭이
-						name = $"{parts[2]} {parts[0]}"; 
+						name = $"{parts[2]} {parts[0]}";
 					}
 
 					return (Path.Combine(currentWeaponType, fileName), name, currentWeaponType);
