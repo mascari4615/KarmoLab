@@ -1,12 +1,5 @@
 # KarmoTray 개요
 
-## AI는 이곳을 보라
-
-- 빌드하고 실행 다시 해야 하는데, 이미 실행 중이라면?
-  - `Get-Process Launcher -ErrorAction SilentlyContinue | Stop-Process -Force`로 강제 종료 가능 (파일 잠금 해제).
-  - 위 명령 실행하고 대기할 것. (`Get-Process Launcher -ErrorAction SilentlyContinue | Stop-Process -Force; dotnet run --project Launcher/Launcher.csproj` 같이 바로 빌드/실행 시도하지 말 것)
-- History 문서에 기록 잘 남길 것.
-
 ## 목표
 
 - WPF 런처에서 Unity 실행/종료

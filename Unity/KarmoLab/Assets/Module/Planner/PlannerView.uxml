@@ -1,0 +1,210 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+	<Style src="project://database/Assets/Module/Planner/PlannerStyle.uss?fileID=7433441132597879392&amp;guid=06a781525ac90944fad22b122e51c588&amp;type=3#PlannerStyle"/>
+	<ui:VisualElement name="Container" class="planner-container bg-gray-900">
+		<ui:VisualElement class="top-header">
+			<ui:VisualElement class="header-left">
+				<ui:Label text="[ G ]" class="header-icon"/>
+				<ui:VisualElement>
+					<ui:Label text="Project: Next Level" class="header-title"/>
+					<ui:TextField name="HeaderTargetInput" value="Target: Project (yyyy.mm)" class="header-subtitle-input"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+			<ui:VisualElement class="header-right">
+				<ui:Button name="BtnThemeToggle" text="◑" class="theme-toggle-btn"/>
+				<ui:Label name="HeaderDateLabel" text="2026-01-09" class="header-date"/>
+				<ui:Label name="HeaderDDayLabel" text="D-416" class="header-dday"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+		<ui:VisualElement class="nav-tabs">
+			<ui:Button name="TabDashboard" text="대시보드" class="tab-button selected"/>
+			<ui:Button name="TabTasks" text="퀘스트 보드" class="tab-button"/>
+			<ui:Button name="TabSchedule" text="전략 시간표" class="tab-button"/>
+			<ui:Button name="TabSecret" text="비밀 노트" class="tab-button"/>
+			<ui:Button name="TabTools" text="도구함" class="tab-button"/>
+		</ui:VisualElement>
+		<ui:ScrollView name="ViewDashboard" class="tab-content">
+			<ui:VisualElement class="advice-banner">
+				<ui:Label text="NPC 멘토의 한마디: 지금 자면 꿈을 꾸지만, 지금 코딩하면 꿈을 이룬다." class="advice-text"/>
+			</ui:VisualElement>
+			<ui:VisualElement class="stats-grid">
+				<ui:VisualElement class="stat-card bg-blue">
+					<ui:Label text="D-Day" class="stat-title"/>
+					<ui:Label name="StatProgress" text="D-000" class="stat-value"/>
+				</ui:VisualElement>
+				<ui:VisualElement class="stat-card bg-purple">
+					<ui:Label name="StatPersonalTitle" text="Personal" class="stat-title"/>
+					<ui:Label name="StatPersonalValue" text="..." class="stat-value"/>
+				</ui:VisualElement>
+				<ui:VisualElement class="stat-card bg-green">
+					<ui:Label name="StatTeamTitle" text="Team" class="stat-title"/>
+					<ui:Label name="StatTeamValue" text="..." class="stat-value"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+			<ui:VisualElement class="dashboard-row">
+				<ui:VisualElement class="dashboard-col memo-panel" style="flex-grow: 1;">
+					<ui:Label text="메모 &amp; 설정" class="section-title"/>
+					<ui:VisualElement style="flex-direction: row; margin-bottom: 5px;">
+						<ui:Label text="목표 날짜:" style="width: 70px; align-self: center; color: rgb(136, 136, 136);"/>
+						<ui:TextField name="ConfigTargetDate" value="2027-03-01" style="flex-grow: 1;"/>
+					</ui:VisualElement>
+					<ui:TextField name="MemoInput" multiline="true" class="memo-input" style="flex-grow: 1;"/>
+					<ui:Button name="SaveMemoBtn" text="저장" class="save-btn"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:ScrollView>
+		<ui:VisualElement name="ViewTasks" class="tab-content" style="display: none;">
+			<ui:VisualElement class="task-columns">
+				<ui:VisualElement class="task-column col-personal">
+					<ui:Label name="HeaderPersonal" text="MAIN QUEST: ..." class="col-header text-purple"/>
+					<ui:ScrollView name="ListPersonal" class="task-list-scroll"/>
+					<ui:VisualElement class="col-footer">
+						<ui:TextField name="InputPersonal" class="task-input"/>
+						<ui:Button name="BtnAddPersonal" text="+" class="task-add-btn"/>
+					</ui:VisualElement>
+				</ui:VisualElement>
+				<ui:VisualElement class="task-column col-study">
+					<ui:Label name="HeaderStudy" text="SKILL GRINDING: ..." class="col-header text-blue"/>
+					<ui:ScrollView name="ListStudy" class="task-list-scroll"/>
+					<ui:VisualElement class="col-footer">
+						<ui:TextField name="InputStudy" class="task-input"/>
+						<ui:Button name="BtnAddStudy" text="+" class="task-add-btn"/>
+					</ui:VisualElement>
+				</ui:VisualElement>
+				<ui:VisualElement class="task-column col-team">
+					<ui:Label name="HeaderTeam" text="SIDE QUEST: ..." class="col-header text-green"/>
+					<ui:ScrollView name="ListTeam" class="task-list-scroll"/>
+					<ui:VisualElement class="col-footer">
+						<ui:TextField name="InputTeam" class="task-input"/>
+						<ui:Button name="BtnAddTeam" text="+" class="task-add-btn"/>
+					</ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+		<ui:VisualElement name="ViewSchedule" class="tab-content" style="display: none;">
+			<ui:VisualElement class="section-header" style="flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+				<ui:VisualElement style="flex-direction: row; align-items: center;">
+					<ui:Button name="PrevDayBtn" text="◀" class="nav-button" style="width: 30px; margin-right: 5px;" />
+					<ui:Label name="CurrentDateLabel" text="2026-01-09" class="date-label" style="font-size: 16px; margin-right: 5px; -unity-text-align: middle-center; min-width: 120px;" />
+					<ui:Button name="NextDayBtn" text="▶" class="nav-button" style="width: 30px;" />
+				</ui:VisualElement>
+				
+				<ui:VisualElement style="flex-direction: row; align-items: center;">
+					<ui:Toggle name="WeekendToggle" text="WEEKEND" value="true" class="toggle-control" style="margin-right: 10px;" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<ui:VisualElement class="schedule-settings-row" style="flex-direction: row; margin-bottom: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
+				<ui:DropdownField name="StartDayDropdown" choices="Monday,Sunday" index="0" class="control-dropdown" style="width: 100px; margin-right: 10px;" />
+				<ui:DropdownField name="TagFilterDropdown" choices="All,Study,Work,Health,Hobby" index="0" class="control-dropdown" style="width: 100px; margin-right: 15px;" />
+				
+				<ui:Label text="Zoom" class="control-label" style="margin-right: 5px;" />
+				<ui:Slider name="ZoomSlider" low-value="0.5" high-value="5.0" value="1.0" style="width: 80px; margin-right: 15px;" />
+				
+				<ui:Label text="Snap(m)" class="control-label" style="margin-right: 5px;" />
+				<ui:IntegerField name="SnapIntervalInput" value="5" style="width: 50px;" />
+			</ui:VisualElement>
+
+			<ui:ScrollView name="ScheduleScroll" class="schedule-scroll">
+				<ui:VisualElement name="TimeRulerContainer" class="time-ruler-container" style="padding-left: 20px; padding-right: 20px;">
+					<ui:VisualElement name="TimeAxis" class="time-axis" />
+					<!-- 스크립트를 통해 요일 컬럼이 여기에 추가됨 -->
+				</ui:VisualElement>
+			</ui:ScrollView>
+		</ui:VisualElement>
+		<ui:ScrollView name="ViewSecret" class="tab-content" style="display: none;">
+			<ui:VisualElement class="secret-header-box">
+				<ui:Label text="Secret Guideline: 무엇을 얻을 것인가?" class="secret-title"/>
+				<ui:Label text="- 구조 (Architecture): 코드가 아니라 논리를 가져와라." class="secret-desc"/>
+				<ui:Label text="- 실패 (Troubleshooting): 버그의 원인과 해결 과정을 상세히 기록하라." class="secret-desc"/>
+			</ui:VisualElement>
+			<ui:VisualElement class="secret-form">
+				<ui:TextField name="SecretProblem" label="Problem" placeholder-text="오늘 발견한 문제"/>
+				<ui:TextField name="SecretWhy" label="Why" placeholder-text="근본적인 원인"/>
+				<ui:TextField name="SecretSolution" label="Solution" placeholder-text="해결책 / 아이디어" multiline="true" style="height: 60px;"/>
+				<ui:Button name="AddSecretBtn" text="비밀 노트에 기록하기" class="secret-btn"/>
+			</ui:VisualElement>
+			<ui:Label text="획득한 경험치 로그" class="section-title" style="margin-top: 20px;"/>
+			<ui:VisualElement name="SecretList" class="secret-list"/>
+		</ui:ScrollView>
+		<ui:ScrollView name="ViewTools" class="tab-content" style="display: none;">
+			<ui:VisualElement class="tool-header">
+				<ui:Label name="ToolTitle" text="Tool Name" class="header-title"/>
+				<ui:DropdownField name="ToolSelector" class="tool-selector"/>
+				<ui:DropdownField name="ActionSelector" class="tool-selector" style="margin-top: 5px;"/>
+			</ui:VisualElement>
+			<ui:Label name="ToolDescription" text="Select a tool action..." class="tool-description" style="white-space: normal; margin: 10px; color: rgb(170, 170, 170);"/>
+			<ui:VisualElement class="tool-body">
+				<ui:VisualElement class="input-group">
+					<ui:Label name="LabelInputMain" text="Main Input" class="input-label"/>
+					<ui:TextField name="InputMain" multiline="true" class="tool-input-field"/>
+				</ui:VisualElement>
+				<ui:VisualElement class="input-group">
+					<ui:Label name="LabelInputSub" text="Sub Input (Optional)" class="input-label"/>
+					<ui:TextField name="InputSub" class="tool-input-field-single"/>
+				</ui:VisualElement>
+				<ui:Button name="BtnRunAction" text="RUN" class="action-btn-large" style="height: 40px; margin-top: 10px;"/>
+				<ui:VisualElement class="output-group">
+					<ui:Label text="Output / Log" class="input-label"/>
+					<ui:TextField name="OutputField" multiline="true" readonly="true" class="output-field"/>
+					<ui:Button name="BtnCopyOutput" text="Copy to Clipboard" class="copy-btn"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:ScrollView>
+		<ui:VisualElement name="DetailPopup" class="detail-popup" style="display: none;">
+			<ui:Label name="DetailTitle" text="Block Title" class="detail-title"/>
+			<ui:Label name="DetailTime" text="00:00 - 01:00" class="detail-time"/>
+			<ui:Label name="DetailDesc" text="Description here..." class="detail-desc"/>
+			<ui:Button name="DetailEditBtn" text="Edit" class="detail-btn"/>
+			<ui:Button name="DetailCloseBtn" text="Close" class="detail-btn-close"/>
+		</ui:VisualElement>
+		<ui:VisualElement name="EditDialogOverlay" class="edit-overlay" style="display: none;">
+			<ui:VisualElement name="EditDialog" class="edit-dialog">
+				<ui:Label text="Edit Event" class="edit-header-title"/>
+				<ui:TextField name="EditTitleInput" label="Title"/>
+				<ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 10px;">
+					<ui:VisualElement style="flex-grow: 1; margin-right: 5px;">
+						<ui:Label text="Start Time" style="color: rgb(204, 204, 204); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:VisualElement style="flex-direction: row;">
+							<ui:IntegerField name="EditStartHour" style="flex-grow: 1; margin-right: 2px;"/>
+							<ui:Label text=":" style="align-self: center; color: white;"/>
+							<ui:IntegerField name="EditStartMin" style="flex-grow: 1; margin-left: 2px;"/>
+						</ui:VisualElement>
+					</ui:VisualElement>
+					<ui:VisualElement style="flex-grow: 1; margin-left: 5px;">
+						<ui:Label text="End Time" style="color: rgb(204, 204, 204); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:VisualElement style="flex-direction: row;">
+							<ui:IntegerField name="EditEndHour" style="flex-grow: 1; margin-right: 2px;"/>
+							<ui:Label text=":" style="align-self: center; color: white;"/>
+							<ui:IntegerField name="EditEndMin" style="flex-grow: 1; margin-left: 2px;"/>
+						</ui:VisualElement>
+					</ui:VisualElement>
+				</ui:VisualElement>
+				<ui:TextField name="EditDescInput" label="Description" multiline="true" style="height: 60px;"/>
+				<ui:Label text="Tags" style="color: rgb(204, 204, 204); font-size: 12px; margin-top: 10px;"/>
+				<ui:VisualElement name="EditTagsContainer" style="flex-direction: row; flex-wrap: wrap; align-items: center; min-height: 30px; margin-bottom: 5px;"/>
+				<ui:TextField name="EditTagInputField" placeholder-text="Add tag..."/>
+				<ui:Label text="Color" style="margin-top: 10px; color: rgb(204, 204, 204);"/>
+				<ui:VisualElement class="color-picker-row">
+					<ui:Button name="ColorBtn0" class="color-select-btn block-color-0"/>
+					<ui:Button name="ColorBtn1" class="color-select-btn block-color-1"/>
+					<ui:Button name="ColorBtn2" class="color-select-btn block-color-2"/>
+					<ui:Button name="ColorBtn3" class="color-select-btn block-color-3"/>
+					<ui:Button name="ColorBtn4" class="color-select-btn block-color-4"/>
+					<ui:Button name="ColorBtn5" class="color-select-btn block-color-5"/>
+					<ui:Button name="ColorBtn6" class="color-select-btn block-color-6"/>
+					<ui:Button name="ColorBtn7" class="color-select-btn block-color-7"/>
+					<ui:Button name="ColorBtn8" class="color-select-btn block-color-8"/>
+					<ui:Button name="ColorBtn9" class="color-select-btn block-color-9"/>
+					<ui:Button name="ColorBtn10" class="color-select-btn block-color-10"/>
+					<ui:Button name="ColorBtn11" class="color-select-btn block-color-11"/>
+				</ui:VisualElement>
+				<ui:VisualElement class="edit-actions">
+					<ui:Button name="EditDeleteBtn" text="Delete" class="btn-danger"/>
+					<ui:VisualElement style="flex-grow: 1;"/>
+					<ui:Button name="EditCancelBtn" text="Cancel" class="btn-secondary"/>
+					<ui:Button name="EditSaveBtn" text="Save" class="btn-primary"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>
