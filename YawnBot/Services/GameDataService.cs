@@ -22,13 +22,15 @@ namespace YawnBot.Services
 		public ConcurrentDictionary<ulong, long> UserMoney { get; private set; } = new();
 		public ConcurrentDictionary<ulong, DateTime> LastAttendance { get; private set; } = new();
 		public ConcurrentDictionary<ulong, DailyBattleInfo> DailyBattleCounts { get; private set; } = new();
-		public ConcurrentDictionary<ulong, bool> ReceivedSupportFundUsers { get; private set; } = new(); // HashSet -> ConcurrentDictionary (Key only)
+		public ConcurrentDictionary<ulong, UserStockData> UserStocks { get; private set; } = new();
+		public ConcurrentDictionary<string, StockItem> Stocks { get; private set; } = new();
 
 		public List<UpgradeInfo> UpgradeInfos { get; private set; } = new();
 		public Dictionary<string, ChatData> ChatData { get; private set; } = new();
+		public Dictionary<string, WeaponLoreData> WeaponLores { get; private set; } = new(); // 무기 종류별 Lore 데이터
 
 		private readonly LoggingService _loggingService;
-		private Timer _autoSaveTimer;
+		private Timer? _autoSaveTimer;
 		private readonly object _saveLock = new();
 		private readonly object _moneyLock = new();
 
@@ -63,6 +65,7 @@ namespace YawnBot.Services
 			await LoadGameDataAsync();
 			await LoadProbabilitiesAsync();
 			await LoadChatDataAsync();
+			await LoadWeaponLoresAsync();
 			StartAutoSave();
 		}
 
@@ -89,7 +92,8 @@ namespace YawnBot.Services
 					UserMoney = UserMoney.ToDictionary(k => k.Key.ToString(), v => v.Value),
 					LastAttendance = LastAttendance.ToDictionary(k => k.Key.ToString(), v => v.Value),
 					DailyBattleCounts = DailyBattleCounts.ToDictionary(k => k.Key.ToString(), v => v.Value),
-					ReceivedSupportFundUsers = ReceivedSupportFundUsers.Keys.Select(u => u.ToString()).ToList()
+					UserStocks = UserStocks.ToDictionary(k => k.Key.ToString(), v => v.Value),
+					Stocks = Stocks.ToDictionary(k => k.Key, v => v.Value)
 				};
 
 				string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
@@ -133,8 +137,11 @@ namespace YawnBot.Services
 						if (state.DailyBattleCounts != null)
 							DailyBattleCounts = new ConcurrentDictionary<ulong, DailyBattleInfo>(state.DailyBattleCounts.ToDictionary(k => ulong.Parse(k.Key), v => v.Value));
 
-						if (state.ReceivedSupportFundUsers != null)
-							ReceivedSupportFundUsers = new ConcurrentDictionary<ulong, bool>(state.ReceivedSupportFundUsers.Select(u => new KeyValuePair<ulong, bool>(ulong.Parse(u), true)));
+						if (state.UserStocks != null)
+							UserStocks = new ConcurrentDictionary<ulong, UserStockData>(state.UserStocks.ToDictionary(k => ulong.Parse(k.Key), v => v.Value));
+
+						if (state.Stocks != null)
+							Stocks = new ConcurrentDictionary<string, StockItem>(state.Stocks);
 					}
 					Console.WriteLine("게임 데이터 로드 완료!");
 				}
@@ -182,5 +189,32 @@ namespace YawnBot.Services
 				await _loggingService.LogErrorAsync("GameDataService", "대사 정보 로드 실패", ex.Message);
 			}
 		}
-	}
+		private async Task LoadWeaponLoresAsync()
+		{
+			try
+			{
+				string enhancementPath = "Resources/img/enhancement";
+				if (Directory.Exists(enhancementPath))
+				{
+					var files = Directory.GetFiles(enhancementPath, "*_data.json", SearchOption.AllDirectories);
+					foreach (var file in files)
+					{
+						string jsonString = await File.ReadAllTextAsync(file);
+						// JSON 구조가 대소문자 구분 없이 매핑되도록 옵션 설정
+						var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+						var loreData = JsonSerializer.Deserialize<WeaponLoreData>(jsonString, options);
+						
+						if (loreData != null && !string.IsNullOrEmpty(loreData.WeaponName))
+						{
+							WeaponLores[loreData.WeaponName] = loreData;
+						}
+					}
+					Console.WriteLine($"무기 Lore 데이터 로드 완료: {WeaponLores.Count}개 무기");
+				}
+			}
+			catch (Exception ex)
+			{
+				await _loggingService.LogErrorAsync("GameDataService", "무기 Lore 데이터 로드 실패", ex.Message);
+			}
+		}	}
 }

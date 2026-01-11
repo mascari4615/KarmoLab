@@ -1,4 +1,6 @@
+using Discord;
 using Discord.WebSocket;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +38,15 @@ namespace YawnBot.Services
 
 					if (targetFile != null)
 					{
-						await message.Channel.SendFileAsync(targetFile.FullName);
+						string fileName = Path.GetFileName(targetFile.FullName);
+						var embed = new EmbedBuilder()
+							.WithTitle($"🖼️ {query}")
+							.WithImageUrl($"attachment://{fileName}")
+							.WithColor(Color.Gold)
+							.WithFooter($"Requested by {message.Author.Username}", message.Author.GetAvatarUrl() ?? message.Author.GetDefaultAvatarUrl())
+							.Build();
+
+						await message.Channel.SendFileAsync(targetFile.FullName, embed: embed);
 						return true;
 					}
 				}

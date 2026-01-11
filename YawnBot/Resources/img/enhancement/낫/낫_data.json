@@ -1,0 +1,111 @@
+{
+  "weaponName": "낫",
+  "createdAt": "2026-01-03T19:12:31.344Z",
+  "stages": [
+    {
+      "level": 1,
+      "title": "낡은",
+      "prompt": "RPG game icon, 낫, 낡은 version. Visuals: Rusty, broken, dirty, damaged, weak appearance, gray dull colors. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Rusty, broken, dirty, damaged, weak appearance, gray dull colors",
+      "lore": "흙밭에서 쓰다 버려진 듯 녹이 잔뜩 슬어있는 초보자용 낫."
+    },
+    {
+      "level": 2,
+      "title": "일반",
+      "prompt": "RPG game icon, 낫, 일반 version. Visuals: Common, standard look, simple wood or iron material, basic utility. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Common, standard look, simple wood or iron material, basic utility",
+      "lore": "레벨 1의 한계를 넘어, 날이 예리하게 잘 다듬어진 가장 기본적인 2단계 무기."
+    },
+    {
+      "level": 3,
+      "title": "상급",
+      "prompt": "RPG game icon, 낫, 상급 version. Visuals: Polished, clean, cared for, steel texture, decent condition, sturdy. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Polished, clean, cared for, steel texture, decent condition, sturdy",
+      "lore": "상급 재료로 벼려져, 휘두르는 궤적마다 죽음의 그림자를 남기는 무시무시한 낫."
+    },
+    {
+      "level": 4,
+      "title": "명품",
+      "prompt": "RPG game icon, 낫, 명품 version. Visuals: Masterpiece craftsmanship, silver decorations, gold inlay, expensive look, luxury item. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Masterpiece craftsmanship, silver decorations, gold inlay, expensive look, luxury item",
+      "lore": "4단계의 경지에 오른 이 명품 낫은, 적의 생명을 쾌속으로 수확하는 그림자의 손길이다."
+    },
+    {
+      "level": 5,
+      "title": "고대",
+      "prompt": "RPG game icon, 낫, 고대 version. Visuals: Ancient relic style, faded runes, mysterious archaeology found, dusty but powerful, stone texture. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Ancient relic style, faded runes, mysterious archaeology found, dusty but powerful, stone texture",
+      "lore": "고대 노동과 전쟁의 피가 응고되어 검게 물든, 가장 초보적인 살육의 도구."
+    },
+    {
+      "level": 6,
+      "title": "강화",
+      "prompt": "RPG game icon, 낫, 강화 version. Visuals: Reinforced, spikes added, heavy weight, military grade, combat ready modification, steel plates. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Reinforced, spikes added, heavy weight, military grade, combat ready modification, steel plates",
+      "lore": "여섯 번의 담금질 끝에 죽음을 부르는 날카로운 곡선."
+    },
+    {
+      "level": 7,
+      "title": "기계",
+      "prompt": "RPG game icon, 낫, 기계 version. Visuals: Steampunk or cyberpunk mechanical parts, gears, neon lights, metallic pipes, futuristic. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Steampunk or cyberpunk mechanical parts, gears, neon lights, metallic pipes, futuristic",
+      "lore": "정밀하게 벼려진 기계 동력 칼날이 적들의 운명을 오차 없이 '수확'한다."
+    },
+    {
+      "level": 8,
+      "title": "마법",
+      "prompt": "RPG game icon, 낫, 마법 version. Visuals: Enchanted, faint blue glowing aura, floating particles, mystical energy, runes. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Enchanted, faint blue glowing aura, floating particles, mystical energy, runes",
+      "lore": "8레벨의 마력이 응축된 날로 영혼까지 수확하는 낫."
+    },
+    {
+      "level": 9,
+      "title": "원소",
+      "prompt": "RPG game icon, 낫, 원소 version. Visuals: Elemental chaos, mixing fire, ice, and lightning, swirling energy vortex, unstable power. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Elemental chaos, mixing fire, ice, and lightning, swirling energy vortex, unstable power",
+      "lore": "아홉 원소의 정수가 응축되어, 세계의 경계를 베어내는 궁극의 심판 낫."
+    },
+    {
+      "level": 10,
+      "title": "영혼",
+      "prompt": "RPG game icon, 낫, 영혼 version. Visuals: Ghostly translucent texture, spectral blue smoke, haunted souls circling, ethereal. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Ghostly translucent texture, spectral blue smoke, haunted souls circling, ethereal",
+      "lore": "어둠 속에 깃든 미약한 영혼을 베어, 첫 번째 힘을 증명하는 낫."
+    },
+    {
+      "level": 11,
+      "title": "신성",
+      "prompt": "RPG game icon, 낫, 신성 version. Visuals: Divine holy light, white and gold wings motif, angelic aura, purifying energy. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Divine holy light, white and gold wings motif, angelic aura, purifying energy",
+      "lore": "열한 단계의 권능을 담아, 어둠을 거두는 달빛과 같은 신성의 낫."
+    },
+    {
+      "level": 12,
+      "title": "전설",
+      "prompt": "RPG game icon, 낫, 전설 version. Visuals: Legendary hero weapon, blinding platinum light, perfect form, epic masterpiece. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Legendary hero weapon, blinding platinum light, perfect form, epic masterpiece",
+      "lore": "**전설로만 존재하던, 살아있는 모든 것을 수확하기 위해 벼려진 저승의 날.**"
+    },
+    {
+      "level": 13,
+      "title": "암흑",
+      "prompt": "RPG game icon, 낫, 암흑 version. Visuals: Cursed, dark purple energy, red eyes, floating debris, demonic presence. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Cursed, dark purple energy, red eyes, floating debris, demonic presence",
+      "lore": "**13레벨의 암흑 속삭임이 깃들어, 희생자의 그림자를 거두는 낫.**"
+    },
+    {
+      "level": 14,
+      "title": "우주",
+      "prompt": "RPG game icon, 낫, 우주 version. Visuals: Galaxy texture, nebula clouds inside, stars twinkling, cosmic horror, void energy. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Galaxy texture, nebula clouds inside, stars twinkling, cosmic horror, void energy",
+      "lore": "**열네 번째 별의 파편으로 벼려낸, 우주의 공허를 가르는 낫.**"
+    },
+    {
+      "level": 15,
+      "title": "초월",
+      "prompt": "RPG game icon, 낫, 초월 version. Visuals: Abstract god form, pure white light, reality distorting, divine geometric shapes, beyond understanding. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Abstract god form, pure white light, reality distorting, divine geometric shapes, beyond understanding",
+      "lore": "운명의 경계를 초월하고, 15 레벨의 극한을 베어내는 초월자의 낫."
+    }
+  ]
+}

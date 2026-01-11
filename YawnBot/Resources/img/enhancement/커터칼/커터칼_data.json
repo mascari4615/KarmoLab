@@ -1,0 +1,111 @@
+{
+  "weaponName": "커터칼",
+  "createdAt": "2026-01-03T19:20:50.142Z",
+  "stages": [
+    {
+      "level": 1,
+      "title": "낡은",
+      "prompt": "RPG game icon, 커터칼, 낡은 version. Visuals: Rusty, broken, dirty, damaged, weak appearance, gray dull colors. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Rusty, broken, dirty, damaged, weak appearance, gray dull colors",
+      "lore": "날이 무뎌지고 녹이 슬었지만, 초보 모험가에게는 유용한 최후의 수단."
+    },
+    {
+      "level": 2,
+      "title": "일반",
+      "prompt": "RPG game icon, 커터칼, 일반 version. Visuals: Common, standard look, simple wood or iron material, basic utility. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Common, standard look, simple wood or iron material, basic utility",
+      "lore": "날을 살짝만 빼도 의외의 위력을 보여주는 일상 속의 칼날."
+    },
+    {
+      "level": 3,
+      "title": "상급",
+      "prompt": "RPG game icon, 커터칼, 상급 version. Visuals: Polished, clean, cared for, steel texture, decent condition, sturdy. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Polished, clean, cared for, steel texture, decent condition, sturdy",
+      "lore": "모든 방어를 무의미하게 만드는, 3등급 정밀함이 부여된 은밀한 절단 칼날."
+    },
+    {
+      "level": 4,
+      "title": "명품",
+      "prompt": "RPG game icon, 커터칼, 명품 version. Visuals: Masterpiece craftsmanship, silver decorations, gold inlay, expensive look, luxury item. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Masterpiece craftsmanship, silver decorations, gold inlay, expensive look, luxury item",
+      "lore": "운명의 실타래조차 끊어내는, 찰나를 지배하는 날카로움의 정수."
+    },
+    {
+      "level": 5,
+      "title": "고대",
+      "prompt": "RPG game icon, 커터칼, 고대 version. Visuals: Ancient relic style, faded runes, mysterious archaeology found, dusty but powerful, stone texture. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Ancient relic style, faded runes, mysterious archaeology found, dusty but powerful, stone texture",
+      "lore": "고대 문명의 유물 중, 모든 것을 5단계로 절단하는 가장 치명적인 다섯 번째 칼날."
+    },
+    {
+      "level": 6,
+      "title": "강화",
+      "prompt": "RPG game icon, 커터칼, 강화 version. Visuals: Reinforced, spikes added, heavy weight, military grade, combat ready modification, steel plates. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Reinforced, spikes added, heavy weight, military grade, combat ready modification, steel plates",
+      "lore": "여섯 번의 강화를 통해, 강철마저도 종이처럼 가르는 절대적인 예리함을 얻었다."
+    },
+    {
+      "level": 7,
+      "title": "기계",
+      "prompt": "RPG game icon, 커터칼, 기계 version. Visuals: Steampunk or cyberpunk mechanical parts, gears, neon lights, metallic pipes, futuristic. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Steampunk or cyberpunk mechanical parts, gears, neon lights, metallic pipes, futuristic",
+      "lore": "칠흑의 7등급 동력으로, 존재하는 모든 경계를 해체하는 기계식 절단 칼날."
+    },
+    {
+      "level": 8,
+      "title": "마법",
+      "prompt": "RPG game icon, 커터칼, 마법 version. Visuals: Enchanted, faint blue glowing aura, floating particles, mystical energy, runes. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Enchanted, faint blue glowing aura, floating particles, mystical energy, runes",
+      "lore": "마력이 깃들어 차원의 틈마저 갈라버리는, 절대적인 예리함의 칼날."
+    },
+    {
+      "level": 9,
+      "title": "원소",
+      "prompt": "RPG game icon, 커터칼, 원소 version. Visuals: Elemental chaos, mixing fire, ice, and lightning, swirling energy vortex, unstable power. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Elemental chaos, mixing fire, ice, and lightning, swirling energy vortex, unstable power",
+      "lore": "지극히 평범한 형태 속에 아홉 차원의 경계를 해체하는 원소의 심연이 담겨 있다."
+    },
+    {
+      "level": 10,
+      "title": "영혼",
+      "prompt": "RPG game icon, 커터칼, 영혼 version. Visuals: Ghostly translucent texture, spectral blue smoke, haunted souls circling, ethereal. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Ghostly translucent texture, spectral blue smoke, haunted souls circling, ethereal",
+      "lore": "**날카로움의 본질이 깃든 이 칼날은 육신을 넘어 영혼의 경계까지 베어 가른다.**"
+    },
+    {
+      "level": 11,
+      "title": "신성",
+      "prompt": "RPG game icon, 커터칼, 신성 version. Visuals: Divine holy light, white and gold wings motif, angelic aura, purifying energy. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Divine holy light, white and gold wings motif, angelic aura, purifying energy",
+      "lore": "**신성한 빛으로 불순물을 정확히 가르는, 작지만 치명적인 칼날.**"
+    },
+    {
+      "level": 12,
+      "title": "전설",
+      "prompt": "RPG game icon, 커터칼, 전설 version. Visuals: Legendary hero weapon, blinding platinum light, perfect form, epic masterpiece. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Legendary hero weapon, blinding platinum light, perfect form, epic masterpiece",
+      "lore": "만물의 틈새를 찾아 정확히 찔러 넣는, 전설 등급의 소름 끼치는 예리함."
+    },
+    {
+      "level": 13,
+      "title": "암흑",
+      "prompt": "RPG game icon, 커터칼, 암흑 version. Visuals: Cursed, dark purple energy, red eyes, floating debris, demonic presence. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Cursed, dark purple energy, red eyes, floating debris, demonic presence",
+      "lore": "암흑의 틈새를 노려 13등급의 치명적인 정적을 새기는 잔혹한 칼날."
+    },
+    {
+      "level": 14,
+      "title": "우주",
+      "prompt": "RPG game icon, 커터칼, 우주 version. Visuals: Galaxy texture, nebula clouds inside, stars twinkling, cosmic horror, void energy. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Galaxy texture, nebula clouds inside, stars twinkling, cosmic horror, void energy",
+      "lore": "14차원의 현실조차 단 한 번의 움직임으로 깔끔하게 베어내는 우주급 절단력."
+    },
+    {
+      "level": 15,
+      "title": "초월",
+      "prompt": "RPG game icon, 커터칼, 초월 version. Visuals: Abstract god form, pure white light, reality distorting, divine geometric shapes, beyond understanding. Style: 2D Game Asset, UI Icon, High quality fantasy art, isolated on black background, detailed, vector style, 8k resolution.",
+      "visualDescription": "Abstract god form, pure white light, reality distorting, divine geometric shapes, beyond understanding",
+      "lore": "한때 종이만 잘랐던 이 칼날은 이제 신들의 역사를 자른다."
+    }
+  ]
+}
