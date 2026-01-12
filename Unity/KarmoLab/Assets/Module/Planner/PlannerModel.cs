@@ -55,6 +55,8 @@ namespace KarmoLab.Module.Planner
 		public int StartMinute;   // 0 (00:00) ~ 1439 (23:59)
 		public int EndMinute;     // StartMinute < EndMinute
 		public int ColorIndex;    // 색상 구분용
+		public bool IsDeleted;    // 휴지통 여부
+		public long DeletedTicks; // 삭제된 시간 (복구/영구삭제 기준)
 		public List<string> Tags = new List<string>(); // 태그 목록
 
 		public TimeBlock(string date, int start, int end, string title)

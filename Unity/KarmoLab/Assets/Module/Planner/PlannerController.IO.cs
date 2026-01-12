@@ -22,6 +22,7 @@ namespace KarmoLab.Module.Planner
 			if (_data.Items == null) _data.Items = new List<TodoItem>();
 			if (_data.TimeBlocks == null) _data.TimeBlocks = new List<TimeBlock>();
 			if (_data.SecretNotes == null) _data.SecretNotes = new List<SecretNote>();
+			CleanupTrash(); // 휴지통 정리
 		}
 
 		private void SaveData()

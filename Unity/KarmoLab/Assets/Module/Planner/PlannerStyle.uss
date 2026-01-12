@@ -1,3 +1,42 @@
+.time-block-compact {
+	font-size: 8px;
+	color: var(--block-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	padding: 0 1px;
+}
+.time-block-compact-bg {
+	background-color: rgba(0, 0, 0, 0);
+}
+.time-block-row {
+	flex-direction: row;
+	align-items: center;
+	padding: 0 4px; /* 좌우 여백 조금 더 확보 */
+	overflow: hidden;
+}
+
+.time-block-row .time-block-title {
+	font-size: 11px; /* 가독성 위해 1px 키움 */
+	margin-right: 4px;
+	flex-shrink: 1; 
+	margin-bottom: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.time-block-row .time-block-time {
+	font-size: 10px;
+	opacity: 0.9;
+	flex-shrink: 0;
+	margin-bottom: 0;
+	white-space: nowrap;
+}
+
+.time-block-compact-bg {
+	background-color: transparent;
+}
 /* ========================================================================================
 모던 블랙 & 화이트 테마 (다크 & 라이트 모드)
 ======================================================================================== */

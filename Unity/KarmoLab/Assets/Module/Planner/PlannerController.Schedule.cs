@@ -147,6 +147,7 @@ namespace KarmoLab.Module.Planner
 				var dateStr = targetDate.ToString("yyyy-MM-dd");
 				var blocks = _data.TimeBlocks
 					.Where(b => b.DateString == dateStr)
+					.Where(b => !b.IsDeleted) // 삭제된 항목 제외
 					.Where(b => !useFilter || (b.Tags != null && b.Tags.Contains(filterTag)))
 					.OrderBy(b => b.StartMinute)
 					.ThenByDescending(b => b.EndMinute)
@@ -196,22 +197,26 @@ namespace KarmoLab.Module.Planner
 					{
 						foreach (var block in columns[c])
 						{
-							var visual = CreateBlockVisual(block);
-							float top = block.StartMinute * _pixelsPerMinute;
-							float height = (block.EndMinute - block.StartMinute) * _pixelsPerMinute;
-							if (height < 20) height = 20;
+			// 1. 높이 클램핑 제거 (실제 크기 반영)
+			var visual = CreateBlockVisual(block, (block.EndMinute - block.StartMinute) * _pixelsPerMinute);
+						
+			float top = block.StartMinute * _pixelsPerMinute;
+			float height = (block.EndMinute - block.StartMinute) * _pixelsPerMinute;
 
-							visual.style.top = top;
-							visual.style.height = height;
-							visual.style.left = Length.Percent(100f / totalClusterCols * c);
-							visual.style.width = Length.Percent(100f / totalClusterCols);
+			visual.style.top = top;
+			visual.style.height = height;
+			visual.style.left = Length.Percent(100f / totalClusterCols * c);
+			visual.style.width = Length.Percent(100f / totalClusterCols);
 
-							col.Add(visual);
-						}
-					}
-				}
-			}
+			// 2. 툴팁 추가 (마우스 오버 시 정보 표시)
+			visual.tooltip = $"{block.Title}\n{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
+
+			col.Add(visual);
 		}
+	}
+}
+}
+	} // RefreshSchedule 종료
 
 		// --- 크기 조정 필드 ---
 		private bool _isResizing = false;
@@ -240,23 +245,48 @@ namespace KarmoLab.Module.Planner
 			if (_timeRuler != null) _timeRuler.CapturePointer(evt.pointerId);
 		}
 
-		private VisualElement CreateBlockVisual(TimeBlock block)
-		{
-			var visualBlock = new VisualElement();
-			visualBlock.AddToClassList("time-block");
-			visualBlock.AddToClassList($"block-color-{block.ColorIndex}");
-			visualBlock.style.position = Position.Absolute;
-			visualBlock.userData = block;
+		private VisualElement CreateBlockVisual(TimeBlock block, float blockHeight = 0)
+{
+	var visualBlock = new VisualElement();
+	visualBlock.AddToClassList("time-block");
+	visualBlock.AddToClassList($"block-color-{block.ColorIndex}");
+	visualBlock.style.position = Position.Absolute;
+	visualBlock.userData = block;
 
-			// 제목
-			var titleLabel = new Label(block.Title);
-			titleLabel.AddToClassList("time-block-title");
-			visualBlock.Add(titleLabel);
+			// 툴팁 설정 (네이티브 툴팁 제거 후 커스텀 사용)
+			visualBlock.tooltip = ""; 
+			visualBlock.RegisterCallback<PointerEnterEvent>(evt => ShowCustomTooltip(block, visualBlock));
+			visualBlock.RegisterCallback<PointerLeaveEvent>(evt => HideCustomTooltip());
 
-			// 시간
-			var timeLabel = new Label($"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}");
-			timeLabel.AddToClassList("time-block-time");
-			visualBlock.Add(timeLabel);
+			// 아주 작은 블록 (15px 미만): 텍스트 숨김
+			if (blockHeight < 15f)
+			{
+				// 내용 없음
+			}
+			// 작은 블록: 가로 배치
+			else if (blockHeight < 50f)
+			{
+				visualBlock.AddToClassList("time-block-row");
+				string titleText = string.IsNullOrEmpty(block.Title) ? "(No Title)" : block.Title;
+				var titleLabel = new Label($"{titleText},"); 
+				titleLabel.AddToClassList("time-block-title");
+				visualBlock.Add(titleLabel);
+
+				var timeLabel = new Label(TimeStr(block.StartMinute));
+				timeLabel.AddToClassList("time-block-time");
+				visualBlock.Add(timeLabel);
+			}
+			// 일반 블록
+			else
+			{
+				var titleLabel = new Label(block.Title);
+				titleLabel.AddToClassList("time-block-title");
+				visualBlock.Add(titleLabel);
+
+				var timeLabel = new Label($"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}");
+				timeLabel.AddToClassList("time-block-time");
+				visualBlock.Add(timeLabel);
+			}
 
 			// "..." 버튼
 			var moreBtn = new Button(() =>
@@ -267,15 +297,28 @@ namespace KarmoLab.Module.Planner
 			moreBtn.AddToClassList("time-block-btn");
 			visualBlock.Add(moreBtn);
 
-			// -- 크기 조정 핸들 --
+			// 우클릭 컨텍스트 메뉴 (PointerDown으로 변경)
+			visualBlock.RegisterCallback<PointerDownEvent>(evt =>
+			{
+				if (evt.button == 1) // 0: Left, 1: Right, 2: Middle
+				{
+					ShowDetailPopup(block, visualBlock);
+					evt.StopPropagation();
+				}
+			});
+
+			// -- 크기 조정 핸들 (왼쪽 50%만 차지) --
+			// 디버깅/상호작용 확실화를 위해 아주 희미한 색 적용
+			// ZOrder를 위해 맨 마지막에 Add
 			var resizeTop = new VisualElement();
 			resizeTop.name = "ResizeTop";
 			resizeTop.style.position = Position.Absolute;
 			resizeTop.style.top = 0;
 			resizeTop.style.left = 0;
-			resizeTop.style.right = 0;
-			resizeTop.style.height = 8; // 히트박스
-			resizeTop.style.cursor = new StyleCursor(StyleKeyword.None); // 필요한 경우 USS가 커서를 처리하도록 함
+			resizeTop.style.width = Length.Percent(50); 
+			resizeTop.style.height = 8; 
+			resizeTop.style.backgroundColor = new StyleColor(new Color(1, 0, 0, 0.01f)); // 투명도 1% 빨강
+			resizeTop.style.cursor = new StyleCursor(StyleKeyword.None); 
 			resizeTop.RegisterCallback<PointerDownEvent>(evt => OnResizeStart(evt, block, visualBlock, true));
 			visualBlock.Add(resizeTop);
 
@@ -284,12 +327,97 @@ namespace KarmoLab.Module.Planner
 			resizeBottom.style.position = Position.Absolute;
 			resizeBottom.style.bottom = 0;
 			resizeBottom.style.left = 0;
-			resizeBottom.style.right = 0;
-			resizeBottom.style.height = 8; // 히트박스
+			resizeBottom.style.width = Length.Percent(50);
+			resizeBottom.style.height = 8;
+			resizeBottom.style.backgroundColor = new StyleColor(new Color(0, 0, 1, 0.01f)); // 투명도 1% 파랑
 			resizeBottom.RegisterCallback<PointerDownEvent>(evt => OnResizeStart(evt, block, visualBlock, false));
 			visualBlock.Add(resizeBottom);
 
+			// 리사이즈 핸들이 다른 요소보다 위에 오도록 BringToFront
+			resizeTop.BringToFront();
+			resizeBottom.BringToFront();
+
 			return visualBlock;
+		}
+
+		// --- Custom Tooltip Logic ---
+		private VisualElement _customTooltip;
+		private Label _customTooltipLabel;
+
+		private void CreateCustomTooltip()
+		{
+			if (_timeRuler == null) return; 
+
+			// 이미 존재하고 부모가 있으면 스킵
+			if (_customTooltip != null && _customTooltip.parent != null) return;
+
+			// 존재하는데 부모가 없으면(Clear 등으로 떨어져 나감) 다시 붙임
+			if (_customTooltip != null && _customTooltip.parent == null)
+			{
+				_timeRuler.Add(_customTooltip);
+				return;
+			}
+
+			_customTooltip = new VisualElement();
+			_customTooltip.style.position = Position.Absolute;
+			_customTooltip.style.backgroundColor = new StyleColor(new Color(0.1f, 0.1f, 0.1f, 0.95f));
+			_customTooltip.style.paddingLeft = 8;
+			_customTooltip.style.paddingRight = 8;
+			_customTooltip.style.paddingTop = 4;
+			_customTooltip.style.paddingBottom = 4;
+			_customTooltip.style.borderTopLeftRadius = 4;
+			_customTooltip.style.borderTopRightRadius = 4;
+			_customTooltip.style.borderBottomLeftRadius = 4;
+			_customTooltip.style.borderBottomRightRadius = 4;
+			_customTooltip.style.borderTopWidth = 1;
+			_customTooltip.style.borderBottomWidth = 1;
+			_customTooltip.style.borderLeftWidth = 1;
+			_customTooltip.style.borderRightWidth = 1;
+			_customTooltip.style.borderTopColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+			_customTooltip.style.borderBottomColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+			_customTooltip.style.borderLeftColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+			_customTooltip.style.borderRightColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+			_customTooltip.style.display = DisplayStyle.None;
+			_customTooltip.pickingMode = PickingMode.Ignore; // 툴팁 자체가 레이캐스트 막지 않게
+
+			_customTooltipLabel = new Label();
+			_customTooltipLabel.style.color = Color.white;
+			_customTooltipLabel.style.fontSize = 12;
+			_customTooltip.Add(_customTooltipLabel);
+
+			// _timeRuler에 추가
+			_timeRuler.Add(_customTooltip);
+		}
+
+		private void ShowCustomTooltip(TimeBlock block, VisualElement target)
+		{
+			CreateCustomTooltip();
+			if (_customTooltip == null) return;
+
+			_customTooltipLabel.text = $"{block.Title}\n{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
+			_customTooltip.style.display = DisplayStyle.Flex;
+			_customTooltip.BringToFront();
+
+			// 위치 설정 (Target의 바로 위 또는 아래)
+			// worldBound 같은 절대 좌표보다는, 부모 기준 상대 좌표 사용
+			// target은 _timeRuler의 자식인 dayColumn의 자식임. _customTooltip은 _timeRuler의 자식임.
+			// 복잡하므로 간단하게 target의 worldBound를 _timeRuler 로컬로 변환
+			
+			// 단순화: 마우스 위치 기반이 제일 좋지만, 여기선 블록 위치 기반으로
+			// target이 dayColumn 내부에 있으므로 좌표 변환 필요
+			Vector2 targetPos = target.ChangeCoordinatesTo(_timeRuler, Vector2.zero);
+			
+			// 툴팁 위치: 블록의 오른쪽 위
+			float tipLeft = targetPos.x + target.resolvedStyle.width + 10;
+			float tipTop = targetPos.y;
+
+			_customTooltip.style.left = tipLeft;
+			_customTooltip.style.top = tipTop;
+		}
+
+		private void HideCustomTooltip()
+		{
+			if (_customTooltip != null) _customTooltip.style.display = DisplayStyle.None;
 		}
 
 		private string TimeStr(int m) => $"{m / 60:00}:{m % 60:00}";

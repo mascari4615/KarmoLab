@@ -52,6 +52,8 @@
             "StartMinute": 385,
             "EndMinute": 510,
             "ColorIndex": 3,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -62,6 +64,8 @@
             "StartMinute": 60,
             "EndMinute": 410,
             "ColorIndex": 1,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": [
                 "테스트",
                 "테스트2"
@@ -75,6 +79,8 @@
             "StartMinute": 180,
             "EndMinute": 230,
             "ColorIndex": 2,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -85,6 +91,8 @@
             "StartMinute": 130,
             "EndMinute": 180,
             "ColorIndex": 2,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -95,6 +103,8 @@
             "StartMinute": 180,
             "EndMinute": 225,
             "ColorIndex": 5,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -105,6 +115,8 @@
             "StartMinute": 305,
             "EndMinute": 380,
             "ColorIndex": 0,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -115,6 +127,8 @@
             "StartMinute": 135,
             "EndMinute": 230,
             "ColorIndex": 2,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -125,6 +139,8 @@
             "StartMinute": 130,
             "EndMinute": 165,
             "ColorIndex": 10,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -135,6 +151,8 @@
             "StartMinute": 180,
             "EndMinute": 215,
             "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -145,6 +163,8 @@
             "StartMinute": 60,
             "EndMinute": 120,
             "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -155,6 +175,8 @@
             "StartMinute": 60,
             "EndMinute": 295,
             "ColorIndex": 3,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -165,6 +187,8 @@
             "StartMinute": 320,
             "EndMinute": 380,
             "ColorIndex": 1,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -175,6 +199,8 @@
             "StartMinute": 60,
             "EndMinute": 110,
             "ColorIndex": 2,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -185,6 +211,8 @@
             "StartMinute": 120,
             "EndMinute": 195,
             "ColorIndex": 0,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -195,6 +223,8 @@
             "StartMinute": 335,
             "EndMinute": 455,
             "ColorIndex": 0,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -205,6 +235,8 @@
             "StartMinute": 105,
             "EndMinute": 155,
             "ColorIndex": 2,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -215,6 +247,8 @@
             "StartMinute": 60,
             "EndMinute": 80,
             "ColorIndex": 0,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -225,6 +259,8 @@
             "StartMinute": 290,
             "EndMinute": 320,
             "ColorIndex": 1,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -235,6 +271,8 @@
             "StartMinute": 320,
             "EndMinute": 335,
             "ColorIndex": 1,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -245,6 +283,8 @@
             "StartMinute": 80,
             "EndMinute": 110,
             "ColorIndex": 0,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -255,6 +295,8 @@
             "StartMinute": 450,
             "EndMinute": 465,
             "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -265,6 +307,8 @@
             "StartMinute": 270,
             "EndMinute": 315,
             "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -275,6 +319,8 @@
             "StartMinute": 120,
             "EndMinute": 135,
             "ColorIndex": 0,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
             "Tags": []
         },
         {
@@ -285,6 +331,92 @@
             "StartMinute": 60,
             "EndMinute": 85,
             "ColorIndex": 2,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": []
+        },
+        {
+            "Id": "68a6a58d-df5e-43de-8f31-d67295e23e09",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 150,
+            "EndMinute": 190,
+            "ColorIndex": 2,
+            "IsDeleted": true,
+            "DeletedTicks": 639038490204162676,
+            "Tags": []
+        },
+        {
+            "Id": "e4b47dd6-2fef-4471-8d67-87cf0bb79d69",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 225,
+            "EndMinute": 270,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": []
+        },
+        {
+            "Id": "7e367cc1-b096-477a-a692-6ee349c9641e",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 190,
+            "EndMinute": 325,
+            "ColorIndex": 0,
+            "IsDeleted": true,
+            "DeletedTicks": 639038490599162194,
+            "Tags": []
+        },
+        {
+            "Id": "705a7b84-f17e-4093-b7b7-912f63c4cbbc",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 275,
+            "EndMinute": 290,
+            "ColorIndex": 2,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": []
+        },
+        {
+            "Id": "53fe5703-e155-4d29-8b89-3cedc9a4b35f",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 185,
+            "EndMinute": 235,
+            "ColorIndex": 1,
+            "IsDeleted": true,
+            "DeletedTicks": 639038490580877676,
+            "Tags": []
+        },
+        {
+            "Id": "1a0f0c0b-982b-48b9-89df-08d6e34f0136",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 175,
+            "EndMinute": 255,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639038490222347520,
+            "Tags": []
+        },
+        {
+            "Id": "75355ab0-58b1-41a6-bc03-441dc6783352",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 185,
+            "EndMinute": 190,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639038490623963728,
             "Tags": []
         }
     ],

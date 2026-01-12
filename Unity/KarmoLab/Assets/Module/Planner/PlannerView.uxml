@@ -90,6 +90,7 @@
 				
 				<ui:VisualElement style="flex-direction: row; align-items: center;">
 					<ui:Toggle name="WeekendToggle" text="WEEKEND" value="true" class="toggle-control" style="margin-right: 10px;" />
+					<ui:Button name="OpenTrashBtn" text="🗑️" class="icon-btn" style="width: 30px; height: 30px; margin-left: 5px; background-color: rgb(60, 60, 60); color: white; border-radius: 4px;" />
 				</ui:VisualElement>
 			</ui:VisualElement>
 
@@ -154,9 +155,19 @@
 			<ui:Label name="DetailTitle" text="Block Title" class="detail-title"/>
 			<ui:Label name="DetailTime" text="00:00 - 01:00" class="detail-time"/>
 			<ui:Label name="DetailDesc" text="Description here..." class="detail-desc"/>
+			<ui:Button name="DetailDeleteBtn" text="Delete" class="detail-btn btn-danger" style="margin-bottom: 5px; background-color: rgb(220, 53, 69);"/>
 			<ui:Button name="DetailEditBtn" text="Edit" class="detail-btn"/>
 			<ui:Button name="DetailCloseBtn" text="Close" class="detail-btn-close"/>
 		</ui:VisualElement>
+		<ui:VisualElement name="TrashPopup" class="edit-overlay" style="display: none;">
+			<ui:VisualElement class="edit-dialog" style="width: 400px; max-height: 80%;">
+				<ui:Label text="Recycle Bin 🗑️" class="edit-header-title"/>
+				<ui:Label text="Deleted items are permanently removed after 24 hours." style="color: rgb(150, 150, 150); font-size: 11px; margin-bottom: 10px;"/>
+				<ui:ScrollView name="TrashList" style="flex-grow: 1; margin-bottom: 10px; background-color: rgb(30, 30, 30); border-radius: 5px; padding: 5px; height: 300px;"/>
+				<ui:Button name="TrashCloseBtn" text="Close" class="btn-secondary" style="align-self: flex-end; width: 80px;"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
 		<ui:VisualElement name="EditDialogOverlay" class="edit-overlay" style="display: none;">
 			<ui:VisualElement name="EditDialog" class="edit-dialog">
 				<ui:Label text="Edit Event" class="edit-header-title"/>

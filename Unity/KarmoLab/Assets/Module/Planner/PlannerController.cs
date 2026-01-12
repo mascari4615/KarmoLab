@@ -213,6 +213,7 @@ namespace KarmoLab.Module.Planner
 			_detailDesc = root.Q<Label>("DetailDesc");
 			_detailEditBtn = root.Q<Button>("DetailEditBtn");
 			_detailCloseBtn = root.Q<Button>("DetailCloseBtn");
+			_detailDeleteBtn = root.Q<Button>("DetailDeleteBtn"); // 버튼 할당
 
 			_editOverlay = root.Q("EditDialogOverlay");
 			_editDialog = root.Q("EditDialog");
@@ -253,6 +254,7 @@ namespace KarmoLab.Module.Planner
 			// 바인딩
 			if (_detailCloseBtn != null) { _detailCloseBtn.clicked -= HideDetailPopup; _detailCloseBtn.clicked += HideDetailPopup; }
 			if (_detailEditBtn != null) { _detailEditBtn.clicked -= () => ShowEditDialog(_selectedBlock); _detailEditBtn.clicked += () => ShowEditDialog(_selectedBlock); }
+			if (_detailDeleteBtn != null) { _detailDeleteBtn.clicked -= OnDetailDelete; _detailDeleteBtn.clicked += OnDetailDelete; }
 
 			if (_editCancelBtn != null) { _editCancelBtn.clicked -= HideEditDialog; _editCancelBtn.clicked += HideEditDialog; }
 			if (_editSaveBtn != null) { _editSaveBtn.clicked -= OnSaveEdit; _editSaveBtn.clicked += OnSaveEdit; }
@@ -349,6 +351,7 @@ namespace KarmoLab.Module.Planner
 			}
 
 			InitializeTools(root);
+			InitializeTrash(root); // 휴지통 초기화
 			_isInitialized = true;
 		}
 
@@ -392,6 +395,22 @@ namespace KarmoLab.Module.Planner
 			{
 				_root.RemoveFromClassList("theme-light");
 				if (_btnThemeToggle != null) _btnThemeToggle.text = "○"; // 라이트 아이콘
+			}
+		}
+		private void CleanupTrash()
+		{
+			if (_data == null || _data.TimeBlocks == null) return;
+			
+			long now = DateTime.Now.Ticks;
+			long oneDayTicks = TimeSpan.TicksPerDay;
+
+			// 하루(24시간) 지난 삭제된 항목 영구 제거
+			int removedCount = _data.TimeBlocks.RemoveAll(b => b.IsDeleted && (now - b.DeletedTicks > oneDayTicks));
+			
+			if (removedCount > 0)
+			{
+				Debug.Log($"[Planner] Cleanup: Permanently deleted {removedCount} trash items.");
+				SaveData();
 			}
 		}
 	}
