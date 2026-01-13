@@ -34,4 +34,13 @@
 
 - **개발 환경 최적화 (DX)**:
     - **VS Code Workspace**: 프로젝트 권장 확장 프로그램 목록(`.vscode/extensions.json`) 구성.
-    - **코드 구조 개선**: `PlannerController`의 Partial Class 구조 (`Tools`, `Dashboard` 등) 간 충돌 해결 및 통합.
+
+- **KarmoTools**:
+    - **Build Helper**: Unity 에디터 전용 빌드 및 배포 도구 (`Assets/KarmoTools/Editor`).
+    - **Smart Build**: `Prefix_Time_Memo` 자동 네이밍 및 경로 관리.
+    - **Patch Mode**: 빌드 후 Live 경로로 즉시 덮어쓰기 기능 지원.
+    - **Auto Cleanup**: 빌드 시 `DoNotShip` 등 불필요한 디버그 폴더 자동 삭제 옵션.
+
+- **빌드 및 환경 안정화**:
+    - **컴파일/인텔리센스 복구**: `Assembly-CSharp.csproj`의 잘못된 Analyzer 참조 제거로 `CS0006` 및 인텔리센스 먹통 현상 해결.
+    - **Linq 누락 수정**: `BuildToolWindow.cs`에 `using System.Linq` 추가로 `CS1061` 해결.
