@@ -352,6 +352,7 @@ namespace KarmoLab.Module.Planner
 
 			InitializeTools(root);
 			InitializeTrash(root); // 휴지통 초기화
+			InitializeRecurrenceUI(root); // 반복 일정 UI 초기화
 			_isInitialized = true;
 		}
 

@@ -54,7 +54,10 @@
             "ColorIndex": 3,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "3a754143-6577-48df-bf36-47046e2f9b3a",
@@ -69,7 +72,10 @@
             "Tags": [
                 "테스트",
                 "테스트2"
-            ]
+            ],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "1b9690d3-7916-4833-9cfc-428feba66fc6",
@@ -81,7 +87,10 @@
             "ColorIndex": 2,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "40f5bd86-0a69-4e5f-a11d-95f7e359c628",
@@ -93,7 +102,10 @@
             "ColorIndex": 2,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "4e6aa75b-190c-462e-85dd-a1749ee6b146",
@@ -105,7 +117,10 @@
             "ColorIndex": 5,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "a6cbcb8e-19f4-40f9-8e52-5bc228223178",
@@ -117,7 +132,10 @@
             "ColorIndex": 0,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "d7ae9d7c-084a-47c5-9179-36b0b106dba4",
@@ -129,7 +147,10 @@
             "ColorIndex": 2,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "9f9ae7d2-e8ca-4f55-80e9-7593fce42b0c",
@@ -141,7 +162,10 @@
             "ColorIndex": 10,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "afc86137-e1e1-41dc-9da4-97a1eff63003",
@@ -153,7 +177,10 @@
             "ColorIndex": 4,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "3d5fdccc-c32a-4c66-8703-39716f95d2f3",
@@ -165,7 +192,10 @@
             "ColorIndex": 4,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "ea67d131-b794-4ae8-ae40-a3dccf546998",
@@ -177,7 +207,10 @@
             "ColorIndex": 3,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "52d92fda-3d9a-4abc-965d-4fafd17590f7",
@@ -189,7 +222,10 @@
             "ColorIndex": 1,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "124b062c-3d52-461b-be32-3bcaafc699b8",
@@ -201,7 +237,10 @@
             "ColorIndex": 2,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "7fc14a0b-cdaf-4bd2-9509-6a4d90b9f8c5",
@@ -213,7 +252,10 @@
             "ColorIndex": 0,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "2f906c83-e0aa-4bc7-9577-e19c6d1398fc",
@@ -225,7 +267,10 @@
             "ColorIndex": 0,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "466e2c33-7860-48a5-891f-1e1b336f14ec",
@@ -237,7 +282,10 @@
             "ColorIndex": 2,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "76822265-c2d1-417c-8ef6-94fbd2ec9ed1",
@@ -249,7 +297,10 @@
             "ColorIndex": 0,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "01a1ebbf-9f73-4e73-9592-64b267e66b72",
@@ -261,7 +312,10 @@
             "ColorIndex": 1,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "d983cb10-3fac-4d41-9358-7381dffa50c4",
@@ -273,7 +327,10 @@
             "ColorIndex": 1,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "f5e78129-5fbb-4b5a-b251-93ae5ff85bae",
@@ -285,7 +342,10 @@
             "ColorIndex": 0,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "3f4db7be-f5dd-4bfd-8e0d-9b219d3238f0",
@@ -297,7 +357,10 @@
             "ColorIndex": 4,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "bb80c085-bd04-463b-85c8-c67cb1db9ce0",
@@ -309,7 +372,10 @@
             "ColorIndex": 4,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "1165103f-bb15-434c-9818-b50ce372ef70",
@@ -321,7 +387,10 @@
             "ColorIndex": 0,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "a270ce47-77b4-41e8-b83d-81fa9169446b",
@@ -333,7 +402,10 @@
             "ColorIndex": 2,
             "IsDeleted": false,
             "DeletedTicks": 0,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "68a6a58d-df5e-43de-8f31-d67295e23e09",
@@ -345,19 +417,25 @@
             "ColorIndex": 2,
             "IsDeleted": true,
             "DeletedTicks": 639038490204162676,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "e4b47dd6-2fef-4471-8d67-87cf0bb79d69",
             "Title": "New Event",
             "Description": "",
             "DateString": "2026-01-16",
-            "StartMinute": 225,
-            "EndMinute": 270,
+            "StartMinute": 150,
+            "EndMinute": 195,
             "ColorIndex": 4,
-            "IsDeleted": false,
-            "DeletedTicks": 0,
-            "Tags": []
+            "IsDeleted": true,
+            "DeletedTicks": 639039335013506436,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "7e367cc1-b096-477a-a692-6ee349c9641e",
@@ -369,7 +447,10 @@
             "ColorIndex": 0,
             "IsDeleted": true,
             "DeletedTicks": 639038490599162194,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "705a7b84-f17e-4093-b7b7-912f63c4cbbc",
@@ -379,9 +460,12 @@
             "StartMinute": 275,
             "EndMinute": 290,
             "ColorIndex": 2,
-            "IsDeleted": false,
-            "DeletedTicks": 0,
-            "Tags": []
+            "IsDeleted": true,
+            "DeletedTicks": 639039335099216530,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "53fe5703-e155-4d29-8b89-3cedc9a4b35f",
@@ -393,7 +477,10 @@
             "ColorIndex": 1,
             "IsDeleted": true,
             "DeletedTicks": 639038490580877676,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "1a0f0c0b-982b-48b9-89df-08d6e34f0136",
@@ -405,7 +492,10 @@
             "ColorIndex": 4,
             "IsDeleted": true,
             "DeletedTicks": 639038490222347520,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         },
         {
             "Id": "75355ab0-58b1-41a6-bc03-441dc6783352",
@@ -417,7 +507,510 @@
             "ColorIndex": 4,
             "IsDeleted": true,
             "DeletedTicks": 639038490623963728,
-            "Tags": []
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "c63711df-65f1-499e-93c8-8adf6e082453",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 225,
+            "EndMinute": 245,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-14",
+            "ExceptionDates": [
+                "2026-01-14",
+                "2026-01-16"
+            ]
+        },
+        {
+            "Id": "a2c4932d-5ece-4841-a98d-84a115ef5052",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 205,
+            "EndMinute": 215,
+            "ColorIndex": 2,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335059724723,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "b12958b5-4f43-4a2a-ad7e-42c0f002f9d8",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 275,
+            "EndMinute": 315,
+            "ColorIndex": 1,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335085790740,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "ca1fcb8d-0ae4-442e-b983-ebae56803e2e",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 245,
+            "EndMinute": 265,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335074964357,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "64fbf194-9aa7-4122-9c14-f0ce5b0ccc09",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 100,
+            "EndMinute": 120,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335025081394,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "a44c570c-d329-4a29-b313-0a826d66fbd4",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 280,
+            "EndMinute": 300,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-14",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "c3b0e2d3-9211-47c9-bb8f-fd877c547e49",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 40,
+            "EndMinute": 60,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-14",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "63c60ed8-64e9-4b4c-9d57-4117ff8d0cb4",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 350,
+            "EndMinute": 370,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-14",
+            "ExceptionDates": [
+                "2026-01-16"
+            ]
+        },
+        {
+            "Id": "c7cd4983-9f9d-4f99-91a5-c8d59f6e7587",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 315,
+            "EndMinute": 345,
+            "ColorIndex": 3,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335128063015,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "0c38ea6f-741f-420d-886c-5b1be9701e0b",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 390,
+            "EndMinute": 410,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335139111459,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "36ff6bd7-241f-4393-a78a-0f5d4d2ba7b9",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 65,
+            "EndMinute": 85,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-14",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "66a88ec1-642f-4810-80a9-5c9c21f4944f",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 460,
+            "EndMinute": 480,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-14",
+            "ExceptionDates": [
+                "2026-01-16"
+            ]
+        },
+        {
+            "Id": "4c7c5925-d115-44bf-b684-d19df4cba558",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 430,
+            "EndMinute": 450,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335155076993,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "72ca8071-3627-4cea-922c-3c9b4bb3f2d9",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 220,
+            "EndMinute": 240,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-15",
+            "ExceptionDates": [
+                "2026-01-15",
+                "2026-01-17"
+            ]
+        },
+        {
+            "Id": "b5e86128-2783-4c8d-bef1-87ad14bd88ae",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 75,
+            "EndMinute": 190,
+            "ColorIndex": 2,
+            "IsDeleted": true,
+            "DeletedTicks": 639039334946793548,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "3fd7705e-22a0-40ef-83ca-6c69f0557fe6",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 195,
+            "EndMinute": 265,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639039334960982503,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "23f3e6ca-3e81-41ad-b090-393f0f61f07d",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-17",
+            "StartMinute": 280,
+            "EndMinute": 300,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335111621652,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "916d3a4c-321f-4448-9491-3584a0c8ad6e",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 470,
+            "EndMinute": 490,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-15",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "5bc079d6-c9ff-4b9a-b9da-a3c98810f742",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-12",
+            "StartMinute": 30,
+            "EndMinute": 365,
+            "ColorIndex": 1,
+            "IsDeleted": true,
+            "DeletedTicks": 639039335046878177,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "3e7e3988-7257-4f25-b784-75f4ddf8ae38",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 420,
+            "EndMinute": 490,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-15",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "21294e1f-ea63-4f23-afeb-73ed1d8262e2",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 420,
+            "EndMinute": 490,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-16",
+            "ExceptionDates": [
+                "2026-01-16"
+            ]
+        },
+        {
+            "Id": "60918d04-be2e-4b93-8408-6c1f79cc5bad",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-16",
+            "StartMinute": 330,
+            "EndMinute": 400,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "685ce3c9-7bd1-44a2-be8e-3f5293f580d1",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-17",
+            "StartMinute": 420,
+            "EndMinute": 490,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-17",
+            "ExceptionDates": [
+                "2026-01-17"
+            ]
+        },
+        {
+            "Id": "896dd262-3d04-4e3e-8698-4c0a43960973",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-15",
+            "StartMinute": 410,
+            "EndMinute": 480,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "76a827f4-c491-42e7-b2ca-3716c9f27557",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 380,
+            "EndMinute": 450,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-16",
+            "ExceptionDates": [
+                "2026-01-14"
+            ]
+        },
+        {
+            "Id": "c8ba6712-07e6-4c27-b8a1-c034805c7ed8",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 240,
+            "EndMinute": 310,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "5ca8c28f-2528-4093-a92e-30adb8c949bc",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-17",
+            "StartMinute": 80,
+            "EndMinute": 450,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-17",
+            "ExceptionDates": [
+                "2026-01-17"
+            ]
+        },
+        {
+            "Id": "2c1aa20f-89a5-4f87-9a14-a698d73b6962",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-17",
+            "StartMinute": 80,
+            "EndMinute": 450,
+            "ColorIndex": 4,
+            "IsDeleted": true,
+            "DeletedTicks": 639039338433503489,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "aed7c61d-ebfc-4510-8318-5214a8bbd4bf",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-17",
+            "StartMinute": 80,
+            "EndMinute": 450,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-16",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "178c1a84-9a82-4af8-8eb8-ff7fb962559d",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-13",
+            "StartMinute": 65,
+            "EndMinute": 435,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "2026-01-12",
+            "ExceptionDates": [
+                "2026-01-14"
+            ]
+        },
+        {
+            "Id": "628bdbee-2681-4184-975a-29f52478323e",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-14",
+            "StartMinute": 65,
+            "EndMinute": 135,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
+        },
+        {
+            "Id": "0acac6d1-4ab0-4637-a850-8a7c39191843",
+            "Title": "New Event",
+            "Description": "",
+            "DateString": "2026-01-13",
+            "StartMinute": 145,
+            "EndMinute": 515,
+            "ColorIndex": 4,
+            "IsDeleted": false,
+            "DeletedTicks": 0,
+            "Tags": [],
+            "RecurrenceRule": "Daily",
+            "RecurrenceEnd": "",
+            "ExceptionDates": []
         }
     ],
     "SecretNotes": [

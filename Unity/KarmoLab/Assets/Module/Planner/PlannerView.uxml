@@ -172,6 +172,8 @@
 			<ui:VisualElement name="EditDialog" class="edit-dialog">
 				<ui:Label text="Edit Event" class="edit-header-title"/>
 				<ui:TextField name="EditTitleInput" label="Title"/>
+				
+				<ui:DropdownField name="EditRecurrenceDropdown" label="Repeat" choices="None,Daily,Weekly,Monthly" index="0" style="margin-bottom: 10px;"/>
 				<ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 10px;">
 					<ui:VisualElement style="flex-grow: 1; margin-right: 5px;">
 						<ui:Label text="Start Time" style="color: rgb(204, 204, 204); font-size: 10px; margin-bottom: 2px;"/>
@@ -215,6 +217,17 @@
 					<ui:Button name="EditCancelBtn" text="Cancel" class="btn-secondary"/>
 					<ui:Button name="EditSaveBtn" text="Save" class="btn-primary"/>
 				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<ui:VisualElement name="RecurrenceChoicePopup" class="edit-overlay" style="display: none;">
+			<ui:VisualElement class="edit-dialog" style="width: 350px;">
+				<ui:Label text="Recurring Event 🔄" class="edit-header-title"/>
+				<ui:Label text="This is a recurring event. Apply changes to:" style="margin-bottom: 20px; color: rgb(200, 200, 200);"/>
+				
+				<ui:Button name="BtnRecurThis" text="This Event Only" class="btn-secondary" style="margin-bottom: 10px;"/>
+				<ui:Button name="BtnRecurFuture" text="All Future Events" class="btn-secondary" style="margin-bottom: 10px;"/>
+				<ui:Button name="BtnRecurCancel" text="Cancel" class="btn-ghost" style="margin-top: 10px;"/>
 			</ui:VisualElement>
 		</ui:VisualElement>
 	</ui:VisualElement>

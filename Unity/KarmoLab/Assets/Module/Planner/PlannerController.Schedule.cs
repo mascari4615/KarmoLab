@@ -145,9 +145,54 @@ namespace KarmoLab.Module.Planner
 
 				// 블록 필터링
 				var dateStr = targetDate.ToString("yyyy-MM-dd");
-				var blocks = _data.TimeBlocks
-					.Where(b => b.DateString == dateStr)
-					.Where(b => !b.IsDeleted) // 삭제된 항목 제외
+				// 1. 해당 날짜에 맞는 블록 수집 (일반 + 반복)
+				var rawBlocks = new List<TimeBlock>();
+				
+				foreach (var b in _data.TimeBlocks)
+				{
+					if (b.IsDeleted) continue;
+
+					// A. 일반 블록 (날짜 일치)
+					if (b.DateString == dateStr && (string.IsNullOrEmpty(b.RecurrenceRule) || b.RecurrenceRule == "None"))
+					{
+						rawBlocks.Add(b);
+					}
+					// B. 반복 블록 (규칙 체크)
+					else if (!string.IsNullOrEmpty(b.RecurrenceRule) && b.RecurrenceRule != "None")
+					{
+						// 시작일 체크
+						if (string.Compare(b.DateString, dateStr) > 0) continue;
+						// 종료일 체크
+						if (!string.IsNullOrEmpty(b.RecurrenceEnd) && string.Compare(b.RecurrenceEnd, dateStr) < 0) continue;
+						// 예외 날짜 체크
+						if (b.ExceptionDates != null && b.ExceptionDates.Contains(dateStr)) continue;
+
+						// 규칙 매칭
+						bool isMatch = false;
+						DateTime start = DateTime.Parse(b.DateString);
+						
+						switch (b.RecurrenceRule)
+						{
+							case "Daily": isMatch = true; break;
+							case "Weekly": if (start.DayOfWeek == targetDate.DayOfWeek) isMatch = true; break;
+							case "Monthly": if (start.Day == targetDate.Day) isMatch = true; break;
+						}
+
+						if (isMatch)
+						{
+							// Transient Block
+							var transient = new TimeBlock(dateStr, b.StartMinute, b.EndMinute, b.Title);
+							transient.Id = b.Id; // ID 공유
+							transient.Description = b.Description;
+							transient.ColorIndex = b.ColorIndex;
+							transient.Tags = new List<string>(b.Tags);
+							transient.RecurrenceRule = b.RecurrenceRule; // 표식
+							rawBlocks.Add(transient);
+						}
+					}
+				}
+
+				var blocks = rawBlocks
 					.Where(b => !useFilter || (b.Tags != null && b.Tags.Contains(filterTag)))
 					.OrderBy(b => b.StartMinute)
 					.ThenByDescending(b => b.EndMinute)
@@ -451,36 +496,35 @@ namespace KarmoLab.Module.Planner
 			return null;
 		}
 
+		// 드래그 오프셋 상태
+		private float _dragOffsetY;
+
 		private void OnRulerPointerDown(PointerDownEvent evt)
 		{
 			if (_timeRuler == null) return;
 			if (evt.button != 0) return;
 
-			// 생성과 이동 모두에 대해 포착
 			_timeRuler.CapturePointer(evt.pointerId);
 
-			// 기존 블록을 클릭했는지 확인
 			VisualElement target = evt.target as VisualElement;
 			VisualElement hitBlock = FindAncestorBlock(target);
 
-			// 스냅 Y 결정
 			float snapY = Snap(evt.localPosition.y, _snapInterval * _pixelsPerMinute);
 
 			if (hitBlock != null)
 			{
-				// 이동 모드
 				_dragMode = DragMode.Move;
 				_moveSourceBlock = hitBlock.userData as TimeBlock;
 				if (_moveSourceBlock == null) { _dragMode = DragMode.None; return; }
 
-				// UI 위치에서 열 결정 (이동 중 더 신뢰성 있음)
-				// 참고: localPosition.x는 _timeRuler에 상대적임.
 				_dragColumnIndex = GetColumnIndex(evt.localPosition.x);
 
-				// 원본 숨기기
+				// Offset 계산: 마우스 위치 - 블록 상단 위치
+				float blockTop = _moveSourceBlock.StartMinute * _pixelsPerMinute;
+				_dragOffsetY = evt.localPosition.y - blockTop;
+
 				hitBlock.style.opacity = 0.5f;
 
-				// 고스트 생성
 				_ghostBlock = new VisualElement();
 				_ghostBlock.AddToClassList("time-block");
 				_ghostBlock.AddToClassList($"block-color-{_moveSourceBlock.ColorIndex}");
@@ -491,19 +535,15 @@ namespace KarmoLab.Module.Planner
 				float durationMins = _moveSourceBlock.EndMinute - _moveSourceBlock.StartMinute;
 				float height = durationMins * _pixelsPerMinute;
 
-				// 블록이 있던 위치에 고스트 정확히 정렬 (스냅된 상태)
-				_dragStartY = _moveSourceBlock.StartMinute * _pixelsPerMinute;
-
-				_ghostBlock.style.top = _dragStartY;
+				// 고스트 초기 위치 = 현재 블록 위치
+				_ghostBlock.style.top = blockTop;
 				_ghostBlock.style.height = height;
 
-				// 현재 열에 고스트 추가
 				if (_dragColumnIndex >= 0 && _dragColumnIndex < _dayColumns.Count)
 					_dayColumns[_dragColumnIndex].Add(_ghostBlock);
 			}
 			else
 			{
-				// 생성 모드 (유효한 열인 경우에만)
 				int colIndex = GetColumnIndex(evt.localPosition.x);
 				if (colIndex == -1)
 				{
@@ -530,46 +570,33 @@ namespace KarmoLab.Module.Planner
 
 		private void OnRulerPointerMove(PointerMoveEvent evt)
 		{
-			// --- 크기 조정 로직 ---
-			if (_isResizing && _resizingVisual != null)
+			// ... (Resize logic skipped, assumming separate or same method) ...
+			if (_isResizing)
 			{
-				float deltaY = evt.position.y - _resizeStartMouseY;
-
-				if (_isResizeTop)
+				// 리사이즈 로직 (기존 유지)
+				if (_resizingVisual != null)
 				{
-					// Top & Height 수정 (반대)
-					float newTop = _resizeStartBlockTop + deltaY;
-					float newHeight = _resizeStartBlockHeight - deltaY;
-
-					// 제약 조건
-					float minHeight = _snapInterval * _pixelsPerMinute;
-					if (newHeight < minHeight)
+					float deltaY = evt.position.y - _resizeStartMouseY;
+					if (_isResizeTop)
 					{
-						newHeight = minHeight;
-						newTop = (_resizeStartBlockTop + _resizeStartBlockHeight) - minHeight;
+						float newTop = _resizeStartBlockTop + deltaY;
+						float newHeight = _resizeStartBlockHeight - deltaY;
+						float minHeight = _snapInterval * _pixelsPerMinute;
+						if (newHeight < minHeight) { newHeight = minHeight; newTop = (_resizeStartBlockTop + _resizeStartBlockHeight) - minHeight; }
+						if (newTop < 0) { newTop = 0; newHeight = _resizeStartBlockTop + _resizeStartBlockHeight; }
+						_resizingVisual.style.top = newTop;
+						_resizingVisual.style.height = newHeight;
 					}
-					if (newTop < 0)
+					else
 					{
-						newTop = 0;
-						newHeight = _resizeStartBlockTop + _resizeStartBlockHeight;
+						float newHeight = _resizeStartBlockHeight + deltaY;
+						float minHeight = _snapInterval * _pixelsPerMinute;
+						if (newHeight < minHeight) newHeight = minHeight;
+						float currentTop = _resizingVisual.style.top.value.value;
+						float maxBottom = 24 * 60 * _pixelsPerMinute;
+						if (currentTop + newHeight > maxBottom) newHeight = maxBottom - currentTop;
+						_resizingVisual.style.height = newHeight;
 					}
-
-					_resizingVisual.style.top = newTop;
-					_resizingVisual.style.height = newHeight;
-				}
-				else
-				{
-					// 높이만 수정
-					float newHeight = _resizeStartBlockHeight + deltaY;
-					float minHeight = _snapInterval * _pixelsPerMinute;
-					if (newHeight < minHeight) newHeight = minHeight;
-
-					// 최대 제한 (24:00)
-					float currentTop = _resizingVisual.style.top.value.value;
-					float maxBottom = 24 * 60 * _pixelsPerMinute;
-					if (currentTop + newHeight > maxBottom) newHeight = maxBottom - currentTop;
-
-					_resizingVisual.style.height = newHeight;
 				}
 				evt.StopPropagation();
 				return;
@@ -577,12 +604,11 @@ namespace KarmoLab.Module.Planner
 
 			if (_dragMode == DragMode.None || _ghostBlock == null) return;
 
-			float currentY = Snap(evt.localPosition.y, _snapInterval * _pixelsPerMinute);
 			int curColIndex = GetColumnIndex(evt.localPosition.x);
-
+			
 			if (_dragMode == DragMode.Create)
 			{
-				// 생성 로직: 시작점 고정, 높이 늘리기
+				float currentY = Snap(evt.localPosition.y, _snapInterval * _pixelsPerMinute);
 				float top = Mathf.Min(_dragStartY, currentY);
 				float height = Mathf.Abs(currentY - _dragStartY);
 				_ghostBlock.style.top = top;
@@ -590,64 +616,67 @@ namespace KarmoLab.Module.Planner
 			}
 			else if (_dragMode == DragMode.Move)
 			{
-				// 이동 로직: 높이 고정, Top 이동
-				// 열 변경 감지
+				// Offset 적용하여 Top 계산
+				float rawTop = evt.localPosition.y - _dragOffsetY;
+				float snappedTop = Snap(rawTop, _snapInterval * _pixelsPerMinute);
+				if (snappedTop < 0) snappedTop = 0;
+
 				if (curColIndex != -1 && curColIndex != _dragColumnIndex && curColIndex < _dayColumns.Count)
 				{
-					// 고스트 부모 변경
 					_ghostBlock.parent?.Remove(_ghostBlock);
 					_dayColumns[curColIndex].Add(_ghostBlock);
 					_dragColumnIndex = curColIndex;
 				}
-
-				// Y 업데이트
-				_ghostBlock.style.top = currentY;
+				_ghostBlock.style.top = snappedTop;
 			}
 		}
 
 		private void OnRulerPointerUp(IPointerEvent evt)
 		{
-			// --- 크기 조정 커밋 ---
 			if (_isResizing)
 			{
-				if (_timeRuler != null && evt is PointerUpEvent upEvt)
-					_timeRuler.ReleasePointer(upEvt.pointerId);
-
+				if (_timeRuler != null && evt is PointerUpEvent upEvt) _timeRuler.ReleasePointer(upEvt.pointerId);
 				if (_resizingVisual != null && _resizingBlock != null)
 				{
+					// Resize Commit Logic (Keep as is)
 					float finalTop = _resizingVisual.style.top.value.value;
 					float finalHeight = _resizingVisual.style.height.value.value;
-
-					// 분 단위로 다시 변환
 					int startMin = Mathf.RoundToInt(finalTop / _pixelsPerMinute);
 					int endMin = Mathf.RoundToInt((finalTop + finalHeight) / _pixelsPerMinute);
-
-					// 스냅
 					int interval = (int)_snapInterval;
 					startMin = Mathf.RoundToInt((float)startMin / interval) * interval;
 					endMin = Mathf.RoundToInt((float)endMin / interval) * interval;
-
-					// 유효성 검사
 					if (endMin <= startMin) endMin = startMin + interval;
 					if (endMin > 1440) endMin = 1440;
+				// No-Op Check
+					if (startMin == _resizingBlock.StartMinute && endMin == _resizingBlock.EndMinute)
+					{
+						_isResizing = false; _resizingBlock = null; _resizingVisual = null;
+						return;
+					}
 
 					_resizingBlock.StartMinute = startMin;
 					_resizingBlock.EndMinute = endMin;
 
-					SaveData();
-					RefreshSchedule(); // 깨끗한 상태를 보장하기 위해 전체 다시 그리기
+					bool isTransient = !_data.TimeBlocks.Contains(_resizingBlock);
+					if (isTransient)
+					{
+						// Recurring Block Resize -> Treat as Move (Same Date, New Times)
+						RequestRecurrenceMove(_resizingBlock, _resizingBlock.DateString, startMin, endMin);
+					}
+					else
+					{
+						SaveData();
+						RefreshSchedule();
+					}
 				}
-
-				_isResizing = false;
-				_resizingBlock = null;
-				_resizingVisual = null;
+				_isResizing = false; _resizingBlock = null; _resizingVisual = null;
 				return;
 			}
 
 			if (_dragMode == DragMode.None) return;
 
-			if (_timeRuler != null && evt is PointerUpEvent upEvt2)
-				_timeRuler.ReleasePointer(upEvt2.pointerId);
+			if (_timeRuler != null && evt is PointerUpEvent upEvt2) _timeRuler.ReleasePointer(upEvt2.pointerId);
 
 			if (_ghostBlock != null)
 			{
@@ -660,7 +689,7 @@ namespace KarmoLab.Module.Planner
 				int startMin = Mathf.RoundToInt(top / _pixelsPerMinute);
 				int endMin = Mathf.RoundToInt((top + height) / _pixelsPerMinute);
 				if (startMin < 0) startMin = 0;
-				if (endMin > 24 * 60) endMin = 24 * 60; // 24:00
+				if (endMin > 24 * 60) endMin = 24 * 60;
 
 				if (_dragMode == DragMode.Create)
 				{
@@ -668,24 +697,56 @@ namespace KarmoLab.Module.Planner
 					{
 						int offset = (int)_dayColumns[_dragColumnIndex].userData;
 						DateTime targetDate = _currentDate.AddDays(offset);
+						// 기본값 1시간 설정 등
+						if (endMin - startMin < 30) endMin = startMin + 30; 
 						_data.TimeBlocks.Add(new TimeBlock(targetDate.ToString("yyyy-MM-dd"), startMin, endMin, "New Event"));
 						SaveData();
 					}
 				}
 				else if (_dragMode == DragMode.Move && _moveSourceBlock != null)
 				{
-					// 이동 커밋
 					if (endMin > startMin && _dragColumnIndex != -1)
 					{
 						int offset = (int)_dayColumns[_dragColumnIndex].userData;
-						DateTime targetDate = _currentDate.AddDays(offset); // 올바른 날짜 로직
-						_moveSourceBlock.DateString = targetDate.ToString("yyyy-MM-dd");
-						_moveSourceBlock.StartMinute = startMin;
-						_moveSourceBlock.EndMinute = endMin;
-						SaveData();
+						DateTime targetDate = _currentDate.AddDays(offset);
+						string targetDateStr = targetDate.ToString("yyyy-MM-dd");
+
+						// No-Op Check
+						// 날짜, 시작시간, 종료시간이 모두 같으면 변경 없음
+						// 주의: Transient 블록의 경우 DateString이 실제 날짜와 다를 수 있으므로(Master의 날짜일 수 있음),
+						// 현재 _moveSourceBlock이 화면에 표시된 날짜와 비교해야 함. 
+						// 하지만 _moveSourceBlock은 데이터 객체임. 
+						// Transient 블록은 생성 시점에 DateString을 해당 날짜로 덮어씌워서 생성함 (Schedule.cs 184라인 참조)
+						// 따라서 DateString 비교가 유효함.
+						
+						if (_moveSourceBlock.StartMinute == startMin && 
+							_moveSourceBlock.EndMinute == endMin && 
+							_moveSourceBlock.DateString == targetDateStr)
+						{
+							_dragMode = DragMode.None;
+							_moveSourceBlock = null;
+							_dragColumnIndex = -1;
+							RefreshSchedule(); // 고스트 제거 등을 위해 리프레시 (사실 위에서 Remove 했지만 안전하게)
+							return;
+						}
+
+						bool isTransient = !_data.TimeBlocks.Contains(_moveSourceBlock);
+						if (isTransient)
+						{
+							// Recurring Block Move -> Ask User
+							RequestRecurrenceMove(_moveSourceBlock, targetDateStr, startMin, endMin);
+						}
+						else
+						{
+							// Normal Move
+							_moveSourceBlock.DateString = targetDateStr;
+							_moveSourceBlock.StartMinute = startMin;
+							_moveSourceBlock.EndMinute = endMin;
+							SaveData();
+						}
 					}
 				}
-				RefreshSchedule(); // 모든 것을 다시 빌드
+				RefreshSchedule();
 			}
 
 			_dragMode = DragMode.None;

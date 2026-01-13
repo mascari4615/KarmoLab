@@ -99,6 +99,13 @@ namespace KarmoLab.Module.Planner
 			_selectedColorIndex = block.ColorIndex;
 
 			if (_editTitleInput != null) _editTitleInput.value = block.Title;
+			
+			// Recurrence
+			if (_editRecurrenceDropdown != null)
+			{
+				// If transient, use its rule. If normal, use its rule.
+				_editRecurrenceDropdown.value = !string.IsNullOrEmpty(block.RecurrenceRule) ? block.RecurrenceRule : "None";
+			}
 
 			// 태그
 			_tempEditTags.Clear();
@@ -124,31 +131,253 @@ namespace KarmoLab.Module.Planner
 			if (_editOverlay != null) _editOverlay.style.display = DisplayStyle.None;
 		}
 
-		private void OnSaveEdit()
+
+
+		// --- Recurrence Logic ---
+		private DropdownField _editRecurrenceDropdown;
+		private VisualElement _recurrenceChoicePopup;
+		private Button _btnRecurThis;
+		private Button _btnRecurFuture;
+		private Button _btnRecurCancel;
+
+		// Action State
+		private enum RecurrenceAction { None, Save, Delete, Move }
+		private RecurrenceAction _pendingRecurrenceAction = RecurrenceAction.None;
+
+		// Pending Move State
+		private string _pendingMoveDate;
+		private int _pendingMoveStart;
+		private int _pendingMoveEnd;
+
+		private void InitializeRecurrenceUI(VisualElement root)
 		{
-			if (_selectedBlock == null) return;
+			_editRecurrenceDropdown = root.Q<DropdownField>("EditRecurrenceDropdown");
+			_recurrenceChoicePopup = root.Q("RecurrenceChoicePopup");
+			_btnRecurThis = root.Q<Button>("BtnRecurThis");
+			_btnRecurFuture = root.Q<Button>("BtnRecurFuture");
+			_btnRecurCancel = root.Q<Button>("BtnRecurCancel");
 
-			if (_editTitleInput != null) _selectedBlock.Title = _editTitleInput.value;
-			if (_editDescInput != null) _selectedBlock.Description = _editDescInput.value;
+			if (_btnRecurThis != null) _btnRecurThis.clicked += () => OnRecurrenceChoice(true); // This Only
+			if (_btnRecurFuture != null) _btnRecurFuture.clicked += () => OnRecurrenceChoice(false); // All Future
+			if (_btnRecurCancel != null) _btnRecurCancel.clicked += OnRecurrenceCancel;
+		}
 
-			// Tags
-			_selectedBlock.Tags = new List<string>(_tempEditTags);
+		private void OnRecurrenceCancel()
+		{
+			HideRecurrencePopup();
+			RefreshSchedule(); // Revert any optimistic changes (Resize, opacity, etc.)
+		}
 
+		private void ShowRecurrencePopup(RecurrenceAction action)
+		{
+			if (_recurrenceChoicePopup == null) return;
+			_pendingRecurrenceAction = action;
+			_recurrenceChoicePopup.style.display = DisplayStyle.Flex;
+		}
+
+		public void RequestRecurrenceMove(TimeBlock block, string newDate, int newStart, int newEnd)
+		{
+			_selectedBlock = block;
+			_pendingMoveDate = newDate;
+			_pendingMoveStart = newStart;
+			_pendingMoveEnd = newEnd;
+			ShowRecurrencePopup(RecurrenceAction.Move);
+		}
+
+		private void HideRecurrencePopup()
+		{
+			if (_recurrenceChoicePopup != null) _recurrenceChoicePopup.style.display = DisplayStyle.None;
+			_pendingRecurrenceAction = RecurrenceAction.None;
+		}
+
+		private void OnRecurrenceChoice(bool isThisInstanceOnly)
+		{
+			// HideRecurrencePopup(); // Move to end or ensure it doesn't kill execution? No, it just hides UI.
+			Debug.Log($"[Planner] OnRecurrenceChoice: {isThisInstanceOnly}, Action: {_pendingRecurrenceAction}");
+
+			// Find Master Block
+			var masterBlock = _data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
+			if (masterBlock == null)
+			{
+				Debug.LogError($"[Planner] Master block not found for ID: {_selectedBlock.Id}");
+				HideRecurrencePopup();
+				return;
+			}
+			Debug.Log($"[Planner] Master Block Found: {masterBlock.Title} ({masterBlock.DateString}), Rule: {masterBlock.RecurrenceRule}");
+
+			if (_pendingRecurrenceAction == RecurrenceAction.Delete)
+			{
+				if (isThisInstanceOnly)
+				{
+					// [Delete This] -> Add Exception
+					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
+					Debug.Log($"[Planner] Added Exception Date: {_selectedBlock.DateString}");
+				}
+				else
+				{
+					// [Delete Future] -> End Recurrence Yesterday
+					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
+					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
+					Debug.Log($"[Planner] Set RecurrenceEnd: {masterBlock.RecurrenceEnd}");
+				}
+			}
+			else if (_pendingRecurrenceAction == RecurrenceAction.Save)
+			{
+				if (isThisInstanceOnly)
+				{
+					// [Edit This]
+					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
+
+					var newBlock = CreateBlockFromUI();
+					newBlock.DateString = _selectedBlock.DateString; // Ensure date is correct
+					newBlock.RecurrenceRule = ""; // Break recurrence
+					_data.TimeBlocks.Add(newBlock);
+					Debug.Log($"[Planner] Created Independent Block: {newBlock.Title} at {newBlock.DateString}");
+				}
+				else
+				{
+					// [Edit Future]
+					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
+					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
+					
+					var newMaster = CreateBlockFromUI();
+					newMaster.DateString = targetDate.ToString("yyyy-MM-dd"); // Start from today
+					_data.TimeBlocks.Add(newMaster);
+					Debug.Log($"[Planner] Created New Master: {newMaster.Title} starting {newMaster.DateString}");
+				}
+			}
+			else if (_pendingRecurrenceAction == RecurrenceAction.Move)
+			{
+				if (isThisInstanceOnly)
+				{
+					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates.Add(_selectedBlock.DateString); 
+					Debug.Log($"[Planner] Move This: Exception added for {_selectedBlock.DateString}");
+
+					var newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
+					newBlock.Description = masterBlock.Description;
+					newBlock.Tags = new List<string>(masterBlock.Tags);
+					newBlock.ColorIndex = masterBlock.ColorIndex;
+					newBlock.RecurrenceRule = "";
+					_data.TimeBlocks.Add(newBlock);
+				}
+				else
+				{
+					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
+					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
+					Debug.Log($"[Planner] Move Future: Ended Old Master at {masterBlock.RecurrenceEnd}");
+
+					var newMaster = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
+					newMaster.Description = masterBlock.Description;
+					newMaster.Tags = new List<string>(masterBlock.Tags);
+					newMaster.ColorIndex = masterBlock.ColorIndex;
+					newMaster.RecurrenceRule = masterBlock.RecurrenceRule; 
+					_data.TimeBlocks.Add(newMaster);
+					Debug.Log($"[Planner] Move Future: Created New Master at {_pendingMoveDate}");
+				}
+			}
+
+			SaveData();
+			RefreshSchedule();
+			HideEditDialog();
+			HideDetailPopup();
+			HideRecurrencePopup();
+		}
+
+		// Helper to create block from current UI values
+		private TimeBlock CreateBlockFromUI()
+		{
 			// Time Calculation
 			int startH = _editStartHour != null ? _editStartHour.value : 0;
 			int startM = _editStartMin != null ? _editStartMin.value : 0;
 			int endH = _editEndHour != null ? _editEndHour.value : 0;
 			int endM = _editEndMin != null ? _editEndMin.value : 0;
-
 			int startTotal = Mathf.Clamp(startH * 60 + startM, 0, 1440);
 			int endTotal = Mathf.Clamp(endH * 60 + endM, 0, 1440);
+			if (endTotal <= startTotal) endTotal = startTotal + 30;
 
-			// Validate Order
-			if (endTotal <= startTotal) endTotal = startTotal + 30; // Min 30 min duration fix
+			string title = _editTitleInput != null ? _editTitleInput.value : "No Title";
+			
+			var block = new TimeBlock("temp", startTotal, endTotal, title);
+			block.Description = _editDescInput != null ? _editDescInput.value : "";
+			block.Tags = new List<string>(_tempEditTags);
+			block.ColorIndex = _selectedColorIndex;
+			
+			// Recurrence from Dropdown
+			if (_editRecurrenceDropdown != null)
+			{
+				string r = _editRecurrenceDropdown.value;
+				block.RecurrenceRule = (r == "None") ? "" : r;
+			}
+
+			return block;
+		}
+
+		private void OnSaveEdit()
+		{
+			if (_selectedBlock == null) return;
+
+			// Calculate UI Values first
+			int startH = _editStartHour != null ? _editStartHour.value : 0;
+			int startM = _editStartMin != null ? _editStartMin.value : 0;
+			int endH = _editEndHour != null ? _editEndHour.value : 0;
+			int endM = _editEndMin != null ? _editEndMin.value : 0;
+			int startTotal = Mathf.Clamp(startH * 60 + startM, 0, 1440);
+			int endTotal = Mathf.Clamp(endH * 60 + endM, 0, 1440);
+			if (endTotal <= startTotal) endTotal = startTotal + 30;
+
+			string title = _editTitleInput != null ? _editTitleInput.value : "No Title";
+			string desc = _editDescInput != null ? _editDescInput.value : "";
+			string recur = (_editRecurrenceDropdown != null) ? _editRecurrenceDropdown.value : "";
+			if (recur == "None") recur = "";
+
+			int colorIdx = _selectedColorIndex;
+
+			// Check Changes
+			// Note: Tags comparison is complex (list vs list). Assuming simpler checks first.
+			// If tags logic effectively always replaces the list, we might need deep compare.
+			bool tagsChanged = false;
+			if (_selectedBlock.Tags == null && _tempEditTags.Count > 0) tagsChanged = true;
+			else if (_selectedBlock.Tags != null && _selectedBlock.Tags.Count != _tempEditTags.Count) tagsChanged = true;
+			else if (_selectedBlock.Tags != null)
+			{
+				for (int i = 0; i < _selectedBlock.Tags.Count; i++)
+					if (_selectedBlock.Tags[i] != _tempEditTags[i]) { tagsChanged = true; break; }
+			}
+
+			if (!tagsChanged &&
+				_selectedBlock.Title == title &&
+				_selectedBlock.Description == desc &&
+				_selectedBlock.RecurrenceRule == recur &&
+				_selectedBlock.StartMinute == startTotal &&
+				_selectedBlock.EndMinute == endTotal &&
+				_selectedBlock.ColorIndex == colorIdx)
+			{
+				// No Change
+				HideEditDialog();
+				return;
+			}
+
+			// Check if we are editing a Recurring Instance (Transient)
+			bool isTransient = !_data.TimeBlocks.Contains(_selectedBlock);
+
+			if (isTransient)
+			{
+				ShowRecurrencePopup(RecurrenceAction.Save);
+				return;
+			}
+
+			// Normal Save Logic
+			_selectedBlock.Title = title;
+			_selectedBlock.Description = desc;
+			_selectedBlock.RecurrenceRule = recur;
+			_selectedBlock.Tags = new List<string>(_tempEditTags);
 
 			_selectedBlock.StartMinute = startTotal;
 			_selectedBlock.EndMinute = endTotal;
-			_selectedBlock.ColorIndex = _selectedColorIndex;
+			_selectedBlock.ColorIndex = colorIdx;
 
 			SaveData();
 			RefreshSchedule();
@@ -157,13 +386,25 @@ namespace KarmoLab.Module.Planner
 
 		private void OnDeleteEdit()
 		{
-			if (_selectedBlock != null && _data.TimeBlocks.Contains(_selectedBlock))
+			if (_selectedBlock == null) return;
+
+			bool isTransient = !_data.TimeBlocks.Contains(_selectedBlock);
+
+			if (isTransient)
+			{
+				ShowRecurrencePopup(RecurrenceAction.Delete);
+				return;
+			}
+
+			// Normal Delete
+			if (_data.TimeBlocks.Contains(_selectedBlock))
 			{
 				_data.TimeBlocks.Remove(_selectedBlock);
 				SaveData();
 				RefreshSchedule();
 			}
 			HideEditDialog();
+			HideDetailPopup();
 		}
 
 		private void OnColorSelected(int index)
