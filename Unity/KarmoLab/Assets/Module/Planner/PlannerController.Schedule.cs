@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using KarmoToys.Common.Data;
 
 namespace KarmoLab.Module.Planner
 {

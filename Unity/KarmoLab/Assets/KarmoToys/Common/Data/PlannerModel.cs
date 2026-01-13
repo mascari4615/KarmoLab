@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace KarmoLab.Module.Planner
+namespace KarmoToys.Common.Data
 {
 	[Serializable]
 	public class TodoItem
