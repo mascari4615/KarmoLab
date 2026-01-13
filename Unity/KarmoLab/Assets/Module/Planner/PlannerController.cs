@@ -80,7 +80,8 @@ namespace KarmoLab.Module.Planner
 		// 팝업 및 편집
 		private VisualElement _detailPopup;
 		private Label _detailTitle, _detailTime, _detailDesc;
-		private Button _detailEditBtn, _detailCloseBtn;
+		private Button _detailEditBtn, _detailCloseBtn, _detailDeleteBtn;
+
 
 		private VisualElement _editOverlay, _editDialog;
 		private TextField _editTitleInput, _editDescInput;
@@ -353,6 +354,11 @@ namespace KarmoLab.Module.Planner
 			InitializeTools(root);
 			InitializeTrash(root); // 휴지통 초기화
 			InitializeRecurrenceUI(root); // 반복 일정 UI 초기화
+			InitializeToast(root); // 토스트 초기화 (Welcome)
+
+			// Welcome Toast
+			ShowToast("집사님, 돌아오신 걸 환영한다냥! 🐾", ToastType.Info);
+
 			_isInitialized = true;
 		}
 

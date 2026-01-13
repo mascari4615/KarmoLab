@@ -182,7 +182,49 @@
 				<ui:Label text="Edit Event" class="edit-header-title"/>
 				<ui:TextField name="EditTitleInput" label="Title"/>
 				
-				<ui:DropdownField name="EditRecurrenceDropdown" label="Repeat" choices="None,Daily,Weekly,Monthly" index="0" style="margin-bottom: 10px;"/>
+				<!-- Recurrence Toggle -->
+				<ui:Toggle name="EditRecurrenceToggle" label="Repeat Event" style="margin-bottom: 5px;"/>
+				
+				<!-- Recurrence Type Dropdown -->
+				<ui:DropdownField name="EditRecurrenceDropdown" choices="Weekly,Monthly,Yearly" index="0" style="margin-bottom: 5px; display: none;"/>
+				
+				<!-- Weekly UI -->
+				<ui:VisualElement name="RecurrenceWeekContainer" style="flex-direction: row; justify-content: space-around; margin-bottom: 10px; display: none; background-color: rgb(40, 40, 40); padding: 5px; border-radius: 4px;">
+					<ui:Toggle name="ToggleSun" text="S" class="day-toggle"/>
+					<ui:Toggle name="ToggleMon" text="M" class="day-toggle"/>
+					<ui:Toggle name="ToggleTue" text="T" class="day-toggle"/>
+					<ui:Toggle name="ToggleWed" text="W" class="day-toggle"/>
+					<ui:Toggle name="ToggleThu" text="T" class="day-toggle"/>
+					<ui:Toggle name="ToggleFri" text="F" class="day-toggle"/>
+					<ui:Toggle name="ToggleSat" text="S" class="day-toggle"/>
+				</ui:VisualElement>
+
+				<!-- Monthly UI -->
+				<ui:VisualElement name="RecurrenceMonthContainer" style="flex-direction: row; margin-bottom: 10px; display: none; background-color: rgb(40, 40, 40); padding: 5px; border-radius: 4px; align-items: center;">
+					<ui:Label text="Day:" style="margin-right: 5px; color: rgb(200, 200, 200); font-size: 11px;"/>
+					<ui:IntegerField name="RecurMonthDayInput" value="1" style="width: 50px;"/>
+				</ui:VisualElement>
+
+				<!-- Yearly UI -->
+				<ui:VisualElement name="RecurrenceYearContainer" style="flex-direction: row; margin-bottom: 10px; display: none; background-color: rgb(40, 40, 40); padding: 5px; border-radius: 4px; align-items: center;">
+					<ui:Label text="Month:" style="margin-right: 5px; color: rgb(200, 200, 200); font-size: 11px;"/>
+					<ui:IntegerField name="RecurYearMonthInput" value="1" style="width: 40px; margin-right: 10px;"/>
+					<ui:Label text="Day:" style="margin-right: 5px; color: rgb(200, 200, 200); font-size: 11px;"/>
+					<ui:IntegerField name="RecurYearDayInput" value="1" style="width: 40px;"/>
+				</ui:VisualElement>
+
+				<!-- Recurrence Dates Info -->
+				<ui:VisualElement name="RecurrenceDateInfo" style="flex-direction: row; justify-content: space-between; margin-bottom: 10px; display: none;">
+					<ui:VisualElement style="flex-grow: 1; margin-right: 5px;">
+						<ui:Label text="From" style="color: rgb(200, 200, 200); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:TextField name="RecurStartDate" style="flex-grow: 1;"/>
+					</ui:VisualElement>
+					<ui:VisualElement style="flex-grow: 1;">
+						<ui:Label text="Until" style="color: rgb(200, 200, 200); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:TextField name="RecurEndDate" style="flex-grow: 1;"/>
+					</ui:VisualElement>
+				</ui:VisualElement>
+
 				<ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 10px;">
 					<ui:VisualElement style="flex-grow: 1; margin-right: 5px;">
 						<ui:Label text="Start Time" style="color: rgb(204, 204, 204); font-size: 10px; margin-bottom: 2px;"/>
@@ -239,5 +281,7 @@
 				<ui:Button name="BtnRecurCancel" text="Cancel" class="btn-ghost" style="margin-top: 10px;"/>
 			</ui:VisualElement>
 		</ui:VisualElement>
+		<!-- Toast Container (Bottom Right) -->
+		<ui:VisualElement name="ToastContainer" style="position: absolute; right: 20px; bottom: 20px; align-items: flex-end; width: 300px; padding-bottom: 20px;" picking-mode="Ignore"/>
 	</ui:VisualElement>
 </ui:UXML>

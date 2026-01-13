@@ -147,7 +147,7 @@ namespace KarmoLab.Module.Planner
 				var dateStr = targetDate.ToString("yyyy-MM-dd");
 				// 1. 해당 날짜에 맞는 블록 수집 (일반 + 반복)
 				var rawBlocks = new List<TimeBlock>();
-				
+
 				foreach (var b in _data.TimeBlocks)
 				{
 					if (b.IsDeleted) continue;
@@ -170,12 +170,64 @@ namespace KarmoLab.Module.Planner
 						// 규칙 매칭
 						bool isMatch = false;
 						DateTime start = DateTime.Parse(b.DateString);
-						
-						switch (b.RecurrenceRule)
+
+						if (b.RecurrenceRule == "Daily")
 						{
-							case "Daily": isMatch = true; break;
-							case "Weekly": if (start.DayOfWeek == targetDate.DayOfWeek) isMatch = true; break;
-							case "Monthly": if (start.Day == targetDate.Day) isMatch = true; break;
+							isMatch = true;
+						}
+						else if (b.RecurrenceRule.StartsWith("Weekly"))
+						{
+							try
+							{
+								var parts = b.RecurrenceRule.Split(';');
+								if (parts.Length > 1)
+								{
+									// Has specific days "Weekly;0,1,3..."
+									int currentDayIdx = (int)targetDate.DayOfWeek;
+									var dayIndices = parts[1].Split(',').Select(s => int.Parse(s));
+									if (dayIndices.Contains(currentDayIdx)) isMatch = true;
+								}
+								else
+								{
+									// Legacy "Weekly": Match day of start date
+									if (start.DayOfWeek == targetDate.DayOfWeek) isMatch = true;
+								}
+							}
+							catch { isMatch = false; }
+						}
+						else if (b.RecurrenceRule.StartsWith("Monthly"))
+						{
+							try
+							{
+								if (b.RecurrenceRule == "Monthly")
+								{
+									if (start.Day == targetDate.Day) isMatch = true;
+								}
+								else
+								{
+									// Monthly;Day:25
+									int d = -1;
+									var parts = b.RecurrenceRule.Split(';');
+									foreach (var p in parts) if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
+									if (targetDate.Day == d) isMatch = true;
+								}
+							}
+							catch { isMatch = false; }
+						}
+						else if (b.RecurrenceRule.StartsWith("Yearly"))
+						{
+							try
+							{
+								int m = -1, d = -1;
+								var parts = b.RecurrenceRule.Split(';');
+								foreach (var p in parts)
+								{
+									if (p.StartsWith("Month:")) int.TryParse(p.Substring(6), out m);
+									else if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
+								}
+								if (targetDate.Month == m && targetDate.Day == d) isMatch = true;
+							}
+							catch { isMatch = false; }
 						}
 
 						if (isMatch)
@@ -242,26 +294,26 @@ namespace KarmoLab.Module.Planner
 					{
 						foreach (var block in columns[c])
 						{
-			// 1. 높이 클램핑 제거 (실제 크기 반영)
-			var visual = CreateBlockVisual(block, (block.EndMinute - block.StartMinute) * _pixelsPerMinute);
-						
-			float top = block.StartMinute * _pixelsPerMinute;
-			float height = (block.EndMinute - block.StartMinute) * _pixelsPerMinute;
+							// 1. 높이 클램핑 제거 (실제 크기 반영)
+							var visual = CreateBlockVisual(block, (block.EndMinute - block.StartMinute) * _pixelsPerMinute);
 
-			visual.style.top = top;
-			visual.style.height = height;
-			visual.style.left = Length.Percent(100f / totalClusterCols * c);
-			visual.style.width = Length.Percent(100f / totalClusterCols);
+							float top = block.StartMinute * _pixelsPerMinute;
+							float height = (block.EndMinute - block.StartMinute) * _pixelsPerMinute;
 
-			// 2. 툴팁 추가 (마우스 오버 시 정보 표시)
-			visual.tooltip = $"{block.Title}\n{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
+							visual.style.top = top;
+							visual.style.height = height;
+							visual.style.left = Length.Percent(100f / totalClusterCols * c);
+							visual.style.width = Length.Percent(100f / totalClusterCols);
 
-			col.Add(visual);
-		}
-	}
-}
-}
-	} // RefreshSchedule 종료
+							// 2. 툴팁 추가 (마우스 오버 시 정보 표시)
+							visual.tooltip = $"{block.Title}\n{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
+
+							col.Add(visual);
+						}
+					}
+				}
+			}
+		} // RefreshSchedule 종료
 
 		// --- 크기 조정 필드 ---
 		private bool _isResizing = false;
@@ -291,15 +343,15 @@ namespace KarmoLab.Module.Planner
 		}
 
 		private VisualElement CreateBlockVisual(TimeBlock block, float blockHeight = 0)
-{
-	var visualBlock = new VisualElement();
-	visualBlock.AddToClassList("time-block");
-	visualBlock.AddToClassList($"block-color-{block.ColorIndex}");
-	visualBlock.style.position = Position.Absolute;
-	visualBlock.userData = block;
+		{
+			var visualBlock = new VisualElement();
+			visualBlock.AddToClassList("time-block");
+			visualBlock.AddToClassList($"block-color-{block.ColorIndex}");
+			visualBlock.style.position = Position.Absolute;
+			visualBlock.userData = block;
 
 			// 툴팁 설정 (네이티브 툴팁 제거 후 커스텀 사용)
-			visualBlock.tooltip = ""; 
+			visualBlock.tooltip = "";
 			visualBlock.RegisterCallback<PointerEnterEvent>(evt => ShowCustomTooltip(block, visualBlock));
 			visualBlock.RegisterCallback<PointerLeaveEvent>(evt => HideCustomTooltip());
 
@@ -313,7 +365,7 @@ namespace KarmoLab.Module.Planner
 			{
 				visualBlock.AddToClassList("time-block-row");
 				string titleText = string.IsNullOrEmpty(block.Title) ? "(No Title)" : block.Title;
-				var titleLabel = new Label($"{titleText},"); 
+				var titleLabel = new Label($"{titleText},");
 				titleLabel.AddToClassList("time-block-title");
 				visualBlock.Add(titleLabel);
 
@@ -360,10 +412,10 @@ namespace KarmoLab.Module.Planner
 			resizeTop.style.position = Position.Absolute;
 			resizeTop.style.top = 0;
 			resizeTop.style.left = 0;
-			resizeTop.style.width = Length.Percent(50); 
-			resizeTop.style.height = 8; 
+			resizeTop.style.width = Length.Percent(50);
+			resizeTop.style.height = 8;
 			resizeTop.style.backgroundColor = new StyleColor(new Color(1, 0, 0, 0.01f)); // 투명도 1% 빨강
-			resizeTop.style.cursor = new StyleCursor(StyleKeyword.None); 
+			resizeTop.style.cursor = new StyleCursor(StyleKeyword.None);
 			resizeTop.RegisterCallback<PointerDownEvent>(evt => OnResizeStart(evt, block, visualBlock, true));
 			visualBlock.Add(resizeTop);
 
@@ -391,7 +443,7 @@ namespace KarmoLab.Module.Planner
 
 		private void CreateCustomTooltip()
 		{
-			if (_timeRuler == null) return; 
+			if (_timeRuler == null) return;
 
 			// 이미 존재하고 부모가 있으면 스킵
 			if (_customTooltip != null && _customTooltip.parent != null) return;
@@ -447,11 +499,11 @@ namespace KarmoLab.Module.Planner
 			// worldBound 같은 절대 좌표보다는, 부모 기준 상대 좌표 사용
 			// target은 _timeRuler의 자식인 dayColumn의 자식임. _customTooltip은 _timeRuler의 자식임.
 			// 복잡하므로 간단하게 target의 worldBound를 _timeRuler 로컬로 변환
-			
+
 			// 단순화: 마우스 위치 기반이 제일 좋지만, 여기선 블록 위치 기반으로
 			// target이 dayColumn 내부에 있으므로 좌표 변환 필요
 			Vector2 targetPos = target.ChangeCoordinatesTo(_timeRuler, Vector2.zero);
-			
+
 			// 툴팁 위치: 블록의 오른쪽 위
 			float tipLeft = targetPos.x + target.resolvedStyle.width + 10;
 			float tipTop = targetPos.y;
@@ -605,7 +657,7 @@ namespace KarmoLab.Module.Planner
 			if (_dragMode == DragMode.None || _ghostBlock == null) return;
 
 			int curColIndex = GetColumnIndex(evt.localPosition.x);
-			
+
 			if (_dragMode == DragMode.Create)
 			{
 				float currentY = Snap(evt.localPosition.y, _snapInterval * _pixelsPerMinute);
@@ -648,7 +700,7 @@ namespace KarmoLab.Module.Planner
 					endMin = Mathf.RoundToInt((float)endMin / interval) * interval;
 					if (endMin <= startMin) endMin = startMin + interval;
 					if (endMin > 1440) endMin = 1440;
-				// No-Op Check
+					// No-Op Check
 					if (startMin == _resizingBlock.StartMinute && endMin == _resizingBlock.EndMinute)
 					{
 						_isResizing = false; _resizingBlock = null; _resizingVisual = null;
@@ -698,7 +750,7 @@ namespace KarmoLab.Module.Planner
 						int offset = (int)_dayColumns[_dragColumnIndex].userData;
 						DateTime targetDate = _currentDate.AddDays(offset);
 						// 기본값 1시간 설정 등
-						if (endMin - startMin < 30) endMin = startMin + 30; 
+						if (endMin - startMin < 30) endMin = startMin + 30;
 						_data.TimeBlocks.Add(new TimeBlock(targetDate.ToString("yyyy-MM-dd"), startMin, endMin, "New Event"));
 						SaveData();
 					}
@@ -718,9 +770,9 @@ namespace KarmoLab.Module.Planner
 						// 하지만 _moveSourceBlock은 데이터 객체임. 
 						// Transient 블록은 생성 시점에 DateString을 해당 날짜로 덮어씌워서 생성함 (Schedule.cs 184라인 참조)
 						// 따라서 DateString 비교가 유효함.
-						
-						if (_moveSourceBlock.StartMinute == startMin && 
-							_moveSourceBlock.EndMinute == endMin && 
+
+						if (_moveSourceBlock.StartMinute == startMin &&
+							_moveSourceBlock.EndMinute == endMin &&
 							_moveSourceBlock.DateString == targetDateStr)
 						{
 							_dragMode = DragMode.None;

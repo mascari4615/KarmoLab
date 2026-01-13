@@ -799,10 +799,19 @@
 	font-size: 11px;
 	-unity-font-style: bold;
 	color: var(--block-text);
-	white-space: normal;
-	text-overflow: ellipsis; 
+	white-space: nowrap;
 	overflow: hidden;
-	margin-bottom: 0;
+	text-overflow: ellipsis;
+}
+
+.day-toggle {
+    margin-right: 2px;
+    margin-left: 2px;
+}
+.day-toggle .unity-toggle__label {
+    min-width: 10px;
+    font-size: 10px;
+    color: rgb(200, 200, 200);
 }
 
 .time-block-btn {

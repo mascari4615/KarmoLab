@@ -32,7 +32,7 @@ namespace KarmoLab.Module.Planner
 			return false;
 		}
 
-		private Button _detailDeleteBtn; // Field for Delete Button
+
 
 		private void ShowDetailPopup(TimeBlock block, VisualElement visualBlock)
 		{
@@ -53,7 +53,7 @@ namespace KarmoLab.Module.Planner
 			// 여기서는 일단 "삭제" 버튼만 구현
 
 			_detailPopup.style.display = DisplayStyle.Flex;
-			
+
 			// ... (Positioning logic remains the same)
 			// 위치 계산 로직
 			if (visualBlock.parent != null && _detailPopup.parent != null)
@@ -74,15 +74,37 @@ namespace KarmoLab.Module.Planner
 			Debug.Log("[Planner] OnDetailDelete called");
 			if (_selectedBlock != null)
 			{
-				// Soft Delete
-				_selectedBlock.IsDeleted = true;
-				_selectedBlock.DeletedTicks = DateTime.Now.Ticks;
-				Debug.Log($"[Planner] Soft deleted: {_selectedBlock.Title}");
-				
-				// 저장 및 갱신
-				SaveData();
-				RefreshSchedule();
-				HideDetailPopup();
+				// Check if it's a recurring block (or part of one)
+				// Transient blocks should have RecurrenceRule copied, or we find Master
+				var master = _data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
+				bool isRecurring = !string.IsNullOrEmpty(_selectedBlock.RecurrenceRule)
+								   || (master != null && !string.IsNullOrEmpty(master.RecurrenceRule));
+
+				if (isRecurring)
+				{
+					// Show Recurrence Choice for Delete
+					ShowRecurrencePopup(RecurrenceAction.Delete);
+				}
+				else
+				{
+					// Normal Delete
+					if (master != null)
+					{
+						master.IsDeleted = true;
+						master.DeletedTicks = DateTime.Now.Ticks;
+					}
+					else
+					{
+						// Maybe _selectedBlock IS the master (if not transient)
+						_selectedBlock.IsDeleted = true;
+						_selectedBlock.DeletedTicks = DateTime.Now.Ticks;
+					}
+
+					Debug.Log($"[Planner] Soft deleted: {_selectedBlock.Title}");
+					SaveData();
+					RefreshSchedule();
+					HideDetailPopup();
+				}
 			}
 		}
 
@@ -99,18 +121,93 @@ namespace KarmoLab.Module.Planner
 			_selectedColorIndex = block.ColorIndex;
 
 			if (_editTitleInput != null) _editTitleInput.value = block.Title;
-			
+
 			// Recurrence
-			if (_editRecurrenceDropdown != null)
+			if (_editRecurrenceToggle != null && _editRecurrenceDropdown != null)
 			{
-				// If transient, use its rule. If normal, use its rule.
-				_editRecurrenceDropdown.value = !string.IsNullOrEmpty(block.RecurrenceRule) ? block.RecurrenceRule : "None";
+				string rule = !string.IsNullOrEmpty(block.RecurrenceRule) ? block.RecurrenceRule : "";
+
+				if (string.IsNullOrEmpty(rule) || rule == "None")
+				{
+					_editRecurrenceToggle.value = false;
+					_editRecurrenceDropdown.value = "Weekly"; // Default
+					UpdateRecurrenceUI(false);
+				}
+				else
+				{
+					_editRecurrenceToggle.value = true;
+					// UpdateRecurrenceUI(true) will be called by toggle, but we set fields first
+
+					// Parse Rule
+					if (rule == "Daily")
+					{
+						_editRecurrenceDropdown.value = "Weekly";
+						for (int i = 0; i < 7; i++) if (_weekToggles[i] != null) _weekToggles[i].value = true;
+					}
+					else if (rule.StartsWith("Weekly"))
+					{
+						_editRecurrenceDropdown.value = "Weekly";
+
+						var parts = rule.Split(';');
+						if (parts.Length > 1)
+						{
+							var dayIndices = parts[1].Split(',').Select(s => int.Parse(s)).ToList();
+							for (int i = 0; i < 7; i++)
+							{
+								if (_weekToggles[i] != null) _weekToggles[i].value = dayIndices.Contains(i);
+							}
+						}
+						else
+						{
+							// Legacy "Weekly"
+							DateTime date = DateTime.Parse(block.DateString);
+							int dayIdx = (int)date.DayOfWeek;
+							for (int i = 0; i < 7; i++)
+							{
+								if (_weekToggles[i] != null) _weekToggles[i].value = (i == dayIdx);
+							}
+						}
+					}
+					else if (rule.StartsWith("Monthly"))
+					{
+						_editRecurrenceDropdown.value = "Monthly";
+						int d = 1;
+						var parts = rule.Split(';');
+						foreach (var p in parts)
+						{
+							if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
+						}
+						if (d < 1) d = 1;
+						if (_recurMonthDayInput != null) _recurMonthDayInput.value = d;
+					}
+					else if (rule.StartsWith("Yearly"))
+					{
+						_editRecurrenceDropdown.value = "Yearly";
+						int m = 1, d = 1;
+						var parts = rule.Split(';');
+						foreach (var p in parts)
+						{
+							if (p.StartsWith("Month:")) int.TryParse(p.Substring(6), out m);
+							if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
+						}
+						if (_recurYearMonthInput != null) _recurYearMonthInput.value = m;
+						if (_recurYearDayInput != null) _recurYearDayInput.value = d;
+					}
+
+					UpdateRecurrenceUI(true);
+				}
+
+				if (_recurStartDate != null) _recurStartDate.value = block.DateString;
+				if (_recurEndDate != null) _recurEndDate.value = block.RecurrenceEnd ?? "";
 			}
 
 			// 태그
-			_tempEditTags.Clear();
-			if (block.Tags != null) _tempEditTags.AddRange(block.Tags);
-			RenderEditTags();
+			if (_tempEditTags != null) // Safety check
+			{
+				_tempEditTags.Clear();
+				if (block.Tags != null) _tempEditTags.AddRange(block.Tags);
+				RenderEditTags();
+			}
 			if (_editTagInputField != null) _editTagInputField.value = "";
 
 			// 시간 변환
@@ -132,13 +229,31 @@ namespace KarmoLab.Module.Planner
 		}
 
 
+		// Recurrence Dates
+		private TextField _recurStartDate;
+		private TextField _recurEndDate;
+		private VisualElement _recurrenceDateInfo; // Container for dates
 
 		// --- Recurrence Logic ---
+		private Toggle _editRecurrenceToggle; // New Toggle
 		private DropdownField _editRecurrenceDropdown;
 		private VisualElement _recurrenceChoicePopup;
 		private Button _btnRecurThis;
 		private Button _btnRecurFuture;
 		private Button _btnRecurCancel;
+
+		// Weekly UI
+		private VisualElement _recurrenceWeekContainer;
+		private Toggle[] _weekToggles;
+
+		// Monthly UI
+		private VisualElement _recurrenceMonthContainer;
+		private IntegerField _recurMonthDayInput;
+
+		// Yearly UI
+		private VisualElement _recurrenceYearContainer;
+		private IntegerField _recurYearMonthInput;
+		private IntegerField _recurYearDayInput;
 
 		// Action State
 		private enum RecurrenceAction { None, Save, Delete, Move }
@@ -151,7 +266,9 @@ namespace KarmoLab.Module.Planner
 
 		private void InitializeRecurrenceUI(VisualElement root)
 		{
+			_editRecurrenceToggle = root.Q<Toggle>("EditRecurrenceToggle");
 			_editRecurrenceDropdown = root.Q<DropdownField>("EditRecurrenceDropdown");
+
 			_recurrenceChoicePopup = root.Q("RecurrenceChoicePopup");
 			_btnRecurThis = root.Q<Button>("BtnRecurThis");
 			_btnRecurFuture = root.Q<Button>("BtnRecurFuture");
@@ -160,6 +277,81 @@ namespace KarmoLab.Module.Planner
 			if (_btnRecurThis != null) _btnRecurThis.clicked += () => OnRecurrenceChoice(true); // This Only
 			if (_btnRecurFuture != null) _btnRecurFuture.clicked += () => OnRecurrenceChoice(false); // All Future
 			if (_btnRecurCancel != null) _btnRecurCancel.clicked += OnRecurrenceCancel;
+
+			// Week Toggles
+			_recurrenceWeekContainer = root.Q("RecurrenceWeekContainer");
+			if (_recurrenceWeekContainer == null) Debug.LogError("RecurrenceWeekContainer not found!");
+
+			_weekToggles = new Toggle[7];
+			string[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+			for (int i = 0; i < 7; i++)
+			{
+				_weekToggles[i] = root.Q<Toggle>($"Toggle{days[i]}");
+				if (_weekToggles[i] == null) Debug.LogError($"Toggle{days[i]} not found!");
+				else _weekToggles[i].RegisterValueChangedCallback(evt => Debug.Log($"Toggle {i} changed to {evt.newValue}"));
+			}
+
+			// Monthly/Yearly UI
+			_recurrenceMonthContainer = root.Q("RecurrenceMonthContainer");
+			_recurMonthDayInput = root.Q<IntegerField>("RecurMonthDayInput");
+
+			_recurrenceYearContainer = root.Q("RecurrenceYearContainer");
+			_recurYearMonthInput = root.Q<IntegerField>("RecurYearMonthInput");
+			_recurYearDayInput = root.Q<IntegerField>("RecurYearDayInput");
+
+			// Dates
+			_recurrenceDateInfo = root.Q("RecurrenceDateInfo");
+			_recurStartDate = root.Q<TextField>("RecurStartDate");
+			_recurEndDate = root.Q<TextField>("RecurEndDate");
+
+			if (_editRecurrenceToggle != null)
+			{
+				_editRecurrenceToggle.RegisterValueChangedCallback(evt => UpdateRecurrenceUI(evt.newValue));
+			}
+			if (_editRecurrenceDropdown != null)
+			{
+				_editRecurrenceDropdown.RegisterValueChangedCallback(evt => UpdateRecurrenceVisibility());
+			}
+		}
+
+		private void UpdateRecurrenceUI(bool isRecurring)
+		{
+			if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
+			if (_recurrenceDateInfo != null) _recurrenceDateInfo.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
+
+			if (isRecurring)
+			{
+				UpdateRecurrenceVisibility();
+			}
+			else
+			{
+				// Hide everything else
+				if (_recurrenceWeekContainer != null) _recurrenceWeekContainer.style.display = DisplayStyle.None;
+				if (_recurrenceMonthContainer != null) _recurrenceMonthContainer.style.display = DisplayStyle.None;
+				if (_recurrenceYearContainer != null) _recurrenceYearContainer.style.display = DisplayStyle.None;
+			}
+		}
+
+		private void UpdateRecurrenceVisibility()
+		{
+			string value = _editRecurrenceDropdown != null ? _editRecurrenceDropdown.value : "";
+
+			if (_recurrenceWeekContainer != null)
+				_recurrenceWeekContainer.style.display = value.StartsWith("Weekly") ? DisplayStyle.Flex : DisplayStyle.None;
+
+			if (_recurrenceMonthContainer != null)
+				_recurrenceMonthContainer.style.display = value.StartsWith("Monthly") ? DisplayStyle.Flex : DisplayStyle.None;
+
+			if (_recurrenceYearContainer != null)
+				_recurrenceYearContainer.style.display = value.StartsWith("Yearly") ? DisplayStyle.Flex : DisplayStyle.None;
+		}
+
+		private void UpdateRecurrenceUI(string value)
+		{
+			// Legacy method signature support or forwarder
+			// Does nothing since we use bool now for main switch.
+			// But callback from Dropdown calls UpdateRecurrenceVisibility.
+			UpdateRecurrenceVisibility();
 		}
 
 		private void OnRecurrenceCancel()
@@ -230,8 +422,7 @@ namespace KarmoLab.Module.Planner
 					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
 					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
 
-					var newBlock = CreateBlockFromUI();
-					newBlock.DateString = _selectedBlock.DateString; // Ensure date is correct
+					var newBlock = CreateBlockFromUI(); // Reads Date from UI
 					newBlock.RecurrenceRule = ""; // Break recurrence
 					_data.TimeBlocks.Add(newBlock);
 					Debug.Log($"[Planner] Created Independent Block: {newBlock.Title} at {newBlock.DateString}");
@@ -240,10 +431,11 @@ namespace KarmoLab.Module.Planner
 				{
 					// [Edit Future]
 					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
+					// End old recurrence at day before target (or day before New Start Date? logic complex)
+					// Standard behavior: End old series just before the Split Point.
 					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
-					
-					var newMaster = CreateBlockFromUI();
-					newMaster.DateString = targetDate.ToString("yyyy-MM-dd"); // Start from today
+
+					var newMaster = CreateBlockFromUI(); // Reads Date from UI as new start
 					_data.TimeBlocks.Add(newMaster);
 					Debug.Log($"[Planner] Created New Master: {newMaster.Title} starting {newMaster.DateString}");
 				}
@@ -253,7 +445,7 @@ namespace KarmoLab.Module.Planner
 				if (isThisInstanceOnly)
 				{
 					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
-					masterBlock.ExceptionDates.Add(_selectedBlock.DateString); 
+					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
 					Debug.Log($"[Planner] Move This: Exception added for {_selectedBlock.DateString}");
 
 					var newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
@@ -273,7 +465,7 @@ namespace KarmoLab.Module.Planner
 					newMaster.Description = masterBlock.Description;
 					newMaster.Tags = new List<string>(masterBlock.Tags);
 					newMaster.ColorIndex = masterBlock.ColorIndex;
-					newMaster.RecurrenceRule = masterBlock.RecurrenceRule; 
+					newMaster.RecurrenceRule = masterBlock.RecurrenceRule;
 					_data.TimeBlocks.Add(newMaster);
 					Debug.Log($"[Planner] Move Future: Created New Master at {_pendingMoveDate}");
 				}
@@ -299,20 +491,64 @@ namespace KarmoLab.Module.Planner
 			if (endTotal <= startTotal) endTotal = startTotal + 30;
 
 			string title = _editTitleInput != null ? _editTitleInput.value : "No Title";
-			
+
 			var block = new TimeBlock("temp", startTotal, endTotal, title);
 			block.Description = _editDescInput != null ? _editDescInput.value : "";
 			block.Tags = new List<string>(_tempEditTags);
 			block.ColorIndex = _selectedColorIndex;
-			
-			// Recurrence from Dropdown
-			if (_editRecurrenceDropdown != null)
+
+			// Recurrence from Dropdown (Use Helper)
+			block.RecurrenceRule = GetRecurrenceRuleFromUI();
+			block.RecurrenceEnd = _recurEndDate != null ? _recurEndDate.value.Trim() : "";
+
+			// Date String
+			if (_recurStartDate != null && !string.IsNullOrWhiteSpace(_recurStartDate.value))
 			{
-				string r = _editRecurrenceDropdown.value;
-				block.RecurrenceRule = (r == "None") ? "" : r;
+				block.DateString = _recurStartDate.value.Trim();
 			}
 
 			return block;
+		}
+
+
+		private string GetRecurrenceRuleFromUI()
+		{
+			if (_editRecurrenceToggle != null && !_editRecurrenceToggle.value) return ""; // Not recurring
+			if (_editRecurrenceDropdown == null) return "None"; // Should not happen if toggle is on
+
+			string r = _editRecurrenceDropdown.value;
+			if (string.IsNullOrEmpty(r)) return "";
+
+			if (r == "Weekly")
+			{
+				List<int> selectedDays = new List<int>();
+				for (int i = 0; i < 7; i++)
+				{
+					if (_weekToggles[i] != null && _weekToggles[i].value) selectedDays.Add(i);
+				}
+
+				if (selectedDays.Count > 0)
+				{
+					return $"Weekly;{string.Join(",", selectedDays)}";
+				}
+				else
+				{
+					return "Weekly";
+				}
+			}
+			else if (r == "Monthly")
+			{
+				int d = _recurMonthDayInput != null ? _recurMonthDayInput.value : 1;
+				return $"Monthly;Day:{d}";
+			}
+			else if (r == "Yearly")
+			{
+				int m = _recurYearMonthInput != null ? _recurYearMonthInput.value : 1;
+				int d = _recurYearDayInput != null ? _recurYearDayInput.value : 1;
+				return $"Yearly;Month:{m};Day:{d}";
+			}
+
+			return r;
 		}
 
 		private void OnSaveEdit()
@@ -330,14 +566,15 @@ namespace KarmoLab.Module.Planner
 
 			string title = _editTitleInput != null ? _editTitleInput.value : "No Title";
 			string desc = _editDescInput != null ? _editDescInput.value : "";
-			string recur = (_editRecurrenceDropdown != null) ? _editRecurrenceDropdown.value : "";
-			if (recur == "None") recur = "";
+
+			// FIX: Use helper to get complex rule string
+			string recur = GetRecurrenceRuleFromUI();
+			string recurEnd = _recurEndDate != null ? _recurEndDate.value.Trim() : "";
+			string dateStr = _recurStartDate != null ? _recurStartDate.value.Trim() : _selectedBlock.DateString;
 
 			int colorIdx = _selectedColorIndex;
 
 			// Check Changes
-			// Note: Tags comparison is complex (list vs list). Assuming simpler checks first.
-			// If tags logic effectively always replaces the list, we might need deep compare.
 			bool tagsChanged = false;
 			if (_selectedBlock.Tags == null && _tempEditTags.Count > 0) tagsChanged = true;
 			else if (_selectedBlock.Tags != null && _selectedBlock.Tags.Count != _tempEditTags.Count) tagsChanged = true;
@@ -351,6 +588,8 @@ namespace KarmoLab.Module.Planner
 				_selectedBlock.Title == title &&
 				_selectedBlock.Description == desc &&
 				_selectedBlock.RecurrenceRule == recur &&
+				_selectedBlock.RecurrenceEnd == recurEnd &&
+				_selectedBlock.DateString == dateStr &&
 				_selectedBlock.StartMinute == startTotal &&
 				_selectedBlock.EndMinute == endTotal &&
 				_selectedBlock.ColorIndex == colorIdx)
@@ -373,6 +612,8 @@ namespace KarmoLab.Module.Planner
 			_selectedBlock.Title = title;
 			_selectedBlock.Description = desc;
 			_selectedBlock.RecurrenceRule = recur;
+			_selectedBlock.RecurrenceEnd = recurEnd;
+			_selectedBlock.DateString = dateStr;
 			_selectedBlock.Tags = new List<string>(_tempEditTags);
 
 			_selectedBlock.StartMinute = startTotal;
@@ -574,7 +815,7 @@ namespace KarmoLab.Module.Planner
 				timeLbl.style.color = Color.gray;
 				timeLbl.style.fontSize = 10;
 				infoBox.Add(timeLbl);
-				
+
 				// Deleted Time
 				var deletedDate = new DateTime(block.DeletedTicks);
 				var delLbl = new Label($"Del: {deletedDate:MM/dd HH:mm}");
