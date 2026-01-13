@@ -13,31 +13,28 @@ namespace KarmoLab.Module.Planner
 			// 헤더 업데이트
 			if (string.IsNullOrEmpty(_data.TargetName)) _data.TargetName = "Target: Project (yyyy.mm)";
 			if (string.IsNullOrEmpty(_data.TargetDateString)) _data.TargetDateString = "2027-03-01";
-			if (_headerTargetInput != null) _headerTargetInput.value = _data.TargetName;
+			_headerTargetInput.value = _data.TargetName;
 
 			string dDayStr = "D-???";
-			if (_headerDDay != null)
+			if (DateTime.TryParse(_data.TargetDateString, out DateTime target))
 			{
-				if (DateTime.TryParse(_data.TargetDateString, out DateTime target))
-				{
-					var diff = (target - DateTime.Now).Days;
-					dDayStr = $"D{diff:+#;-#;0}";
-				}
-				_headerDDay.text = dDayStr;
+				var diff = (target - DateTime.Now).Days;
+				dDayStr = $"D{diff:+#;-#;0}";
 			}
+			_headerDDay.text = dDayStr;
 
-			if (_memoInput != null) _memoInput.value = _data.MemoContent;
-			if (_configTargetDate != null) _configTargetDate.value = _data.TargetDateString;
-			if (_statProgress != null) _statProgress.text = dDayStr;
+			_memoInput.value = _data.MemoContent;
+			_configTargetDate.value = _data.TargetDateString;
+			_statProgress.text = dDayStr;
 
-			if (_headerPersonal != null) _headerPersonal.text = _data.PersonalQuestTitle;
-			if (_headerStudy != null) _headerStudy.text = _data.StudyQuestTitle;
-			if (_headerTeam != null) _headerTeam.text = _data.TeamQuestTitle;
+			_headerPersonal.text = _data.PersonalQuestTitle;
+			_headerStudy.text = _data.StudyQuestTitle;
+			_headerTeam.text = _data.TeamQuestTitle;
 
-			if (_statPersonalTitle != null) _statPersonalTitle.text = _data.StatPersonalTitle;
-			if (_statPersonalValue != null) _statPersonalValue.text = _data.StatPersonalValue;
-			if (_statTeamTitle != null) _statTeamTitle.text = _data.StatTeamTitle;
-			if (_statTeamValue != null) _statTeamValue.text = _data.StatTeamValue;
+			_statPersonalTitle.text = _data.StatPersonalTitle;
+			_statPersonalValue.text = _data.StatPersonalValue;
+			_statTeamTitle.text = _data.StatTeamTitle;
+			_statTeamValue.text = _data.StatTeamValue;
 
 			RefreshTasks(_listPersonal, "personal");
 			RefreshTasks(_listStudy, "study");
@@ -51,9 +48,9 @@ namespace KarmoLab.Module.Planner
 		private void SaveMemo()
 		{
 			if (_data == null) return;
-			if (_memoInput != null) _data.MemoContent = _memoInput.value;
-			if (_headerTargetInput != null) _data.TargetName = _headerTargetInput.value;
-			if (_configTargetDate != null) _data.TargetDateString = _configTargetDate.value;
+			_data.MemoContent = _memoInput.value;
+			_data.TargetName = _headerTargetInput.value;
+			_data.TargetDateString = _configTargetDate.value;
 			SaveData();
 			RefreshAll();
 		}

@@ -32,29 +32,23 @@ namespace KarmoLab.Module.Planner
 			return false;
 		}
 
-
-
 		private void ShowDetailPopup(TimeBlock block, VisualElement visualBlock)
 		{
 			if (_detailPopup == null) return;
 			_selectedBlock = block;
 
-			if (_detailTitle != null) _detailTitle.text = block.Title;
-			if (_detailTime != null) _detailTime.text = $"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
-			if (_detailDesc != null)
-			{
-				string txt = string.IsNullOrEmpty(block.Description) ? "" : block.Description + "\n";
-				if (block.Tags != null && block.Tags.Count > 0)
-					txt += $"Tags: {string.Join(", ", block.Tags)}";
-				_detailDesc.text = txt;
-			}
+			_detailTitle.text = block.Title;
+			_detailTime.text = $"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
+			string txt = string.IsNullOrEmpty(block.Description) ? "" : block.Description + "\n";
+			if (block.Tags != null && block.Tags.Count > 0)
+				txt += $"Tags: {string.Join(", ", block.Tags)}";
+			_detailDesc.text = txt;
 
 			// 휴지통에 있는 경우 "영구 삭제" 또는 "복구" 버튼으로 변경 가능 (선택 사항)
 			// 여기서는 일단 "삭제" 버튼만 구현
 
 			_detailPopup.style.display = DisplayStyle.Flex;
 
-			// ... (Positioning logic remains the same)
 			// 위치 계산 로직
 			if (visualBlock.parent != null && _detailPopup.parent != null)
 			{
@@ -120,103 +114,100 @@ namespace KarmoLab.Module.Planner
 			_selectedBlock = block;
 			_selectedColorIndex = block.ColorIndex;
 
-			if (_editTitleInput != null) _editTitleInput.value = block.Title;
+			_editTitleInput.value = block.Title;
 
 			// Recurrence
-			if (_editRecurrenceToggle != null && _editRecurrenceDropdown != null)
+			string rule = !string.IsNullOrEmpty(block.RecurrenceRule) ? block.RecurrenceRule : "";
+
+			if (string.IsNullOrEmpty(rule) || rule == "None")
 			{
-				string rule = !string.IsNullOrEmpty(block.RecurrenceRule) ? block.RecurrenceRule : "";
+				_editRecurrenceToggle.value = false;
+				_editRecurrenceDropdown.value = "Weekly"; // Default
+				UpdateRecurrenceUI(false);
+			}
+			else
+			{
+				_editRecurrenceToggle.value = true;
+				// UpdateRecurrenceUI(true) will be called by toggle, but we set fields first
 
-				if (string.IsNullOrEmpty(rule) || rule == "None")
+				// Parse Rule
+				if (rule == "Daily")
 				{
-					_editRecurrenceToggle.value = false;
-					_editRecurrenceDropdown.value = "Weekly"; // Default
-					UpdateRecurrenceUI(false);
+					_editRecurrenceDropdown.value = "Weekly";
+					for (int i = 0; i < 7; i++) if (_weekToggles[i] != null) _weekToggles[i].value = true;
 				}
-				else
+				else if (rule.StartsWith("Weekly"))
 				{
-					_editRecurrenceToggle.value = true;
-					// UpdateRecurrenceUI(true) will be called by toggle, but we set fields first
+					_editRecurrenceDropdown.value = "Weekly";
 
-					// Parse Rule
-					if (rule == "Daily")
+					var parts = rule.Split(';');
+					if (parts.Length > 1)
 					{
-						_editRecurrenceDropdown.value = "Weekly";
-						for (int i = 0; i < 7; i++) if (_weekToggles[i] != null) _weekToggles[i].value = true;
-					}
-					else if (rule.StartsWith("Weekly"))
-					{
-						_editRecurrenceDropdown.value = "Weekly";
-
-						var parts = rule.Split(';');
-						if (parts.Length > 1)
+						var dayIndices = parts[1].Split(',').Select(s => int.Parse(s)).ToList();
+						for (int i = 0; i < 7; i++)
 						{
-							var dayIndices = parts[1].Split(',').Select(s => int.Parse(s)).ToList();
-							for (int i = 0; i < 7; i++)
-							{
-								if (_weekToggles[i] != null) _weekToggles[i].value = dayIndices.Contains(i);
-							}
-						}
-						else
-						{
-							// Legacy "Weekly"
-							DateTime date = DateTime.Parse(block.DateString);
-							int dayIdx = (int)date.DayOfWeek;
-							for (int i = 0; i < 7; i++)
-							{
-								if (_weekToggles[i] != null) _weekToggles[i].value = (i == dayIdx);
-							}
+							if (_weekToggles[i] != null) _weekToggles[i].value = dayIndices.Contains(i);
 						}
 					}
-					else if (rule.StartsWith("Monthly"))
+					else
 					{
-						_editRecurrenceDropdown.value = "Monthly";
-						int d = 1;
-						var parts = rule.Split(';');
-						foreach (var p in parts)
+						// Legacy "Weekly"
+						DateTime date = DateTime.Parse(block.DateString);
+						int dayIdx = (int)date.DayOfWeek;
+						for (int i = 0; i < 7; i++)
 						{
-							if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
+							if (_weekToggles[i] != null) _weekToggles[i].value = (i == dayIdx);
 						}
-						if (d < 1) d = 1;
-						if (_recurMonthDayInput != null) _recurMonthDayInput.value = d;
 					}
-					else if (rule.StartsWith("Yearly"))
+				}
+				else if (rule.StartsWith("Monthly"))
+				{
+					_editRecurrenceDropdown.value = "Monthly";
+					int d = 1;
+					var parts = rule.Split(';');
+					foreach (var p in parts)
 					{
-						_editRecurrenceDropdown.value = "Yearly";
-						int m = 1, d = 1;
-						var parts = rule.Split(';');
-						foreach (var p in parts)
-						{
-							if (p.StartsWith("Month:")) int.TryParse(p.Substring(6), out m);
-							if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
-						}
-						if (_recurYearMonthInput != null) _recurYearMonthInput.value = m;
-						if (_recurYearDayInput != null) _recurYearDayInput.value = d;
+						if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
 					}
-
-					UpdateRecurrenceUI(true);
+					if (d < 1) d = 1;
+					if (_recurMonthDayInput != null) _recurMonthDayInput.value = d;
+				}
+				else if (rule.StartsWith("Yearly"))
+				{
+					_editRecurrenceDropdown.value = "Yearly";
+					int m = 1, d = 1;
+					var parts = rule.Split(';');
+					foreach (var p in parts)
+					{
+						if (p.StartsWith("Month:")) int.TryParse(p.Substring(6), out m);
+						if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
+					}
+					_recurYearMonthInput.value = m;
+					_recurYearDayInput.value = d;
 				}
 
-				if (_recurStartDate != null) _recurStartDate.value = block.DateString;
-				if (_recurEndDate != null) _recurEndDate.value = block.RecurrenceEnd ?? "";
+				UpdateRecurrenceUI(true);
 			}
 
+			if (_recurStartDate != null) _recurStartDate.value = block.DateString;
+			if (_recurEndDate != null) _recurEndDate.value = block.RecurrenceEnd ?? "";
+
 			// 태그
-			if (_tempEditTags != null) // Safety check
+			if (_tempEditTags != null)
 			{
 				_tempEditTags.Clear();
 				if (block.Tags != null) _tempEditTags.AddRange(block.Tags);
 				RenderEditTags();
 			}
-			if (_editTagInputField != null) _editTagInputField.value = "";
+			_editTagInputField.value = "";
 
 			// 시간 변환
-			if (_editStartHour != null) _editStartHour.value = block.StartMinute / 60;
-			if (_editStartMin != null) _editStartMin.value = block.StartMinute % 60;
-			if (_editEndHour != null) _editEndHour.value = block.EndMinute / 60;
-			if (_editEndMin != null) _editEndMin.value = block.EndMinute % 60;
+			_editStartHour.value = block.StartMinute / 60;
+			_editStartMin.value = block.StartMinute % 60;
+			_editEndHour.value = block.EndMinute / 60;
+			_editEndMin.value = block.EndMinute % 60;
 
-			if (_editDescInput != null) _editDescInput.value = block.Description;
+			_editDescInput.value = block.Description;
 
 			UpdateColorSelection();
 
@@ -225,7 +216,7 @@ namespace KarmoLab.Module.Planner
 
 		private void HideEditDialog()
 		{
-			if (_editOverlay != null) _editOverlay.style.display = DisplayStyle.None;
+			_editOverlay.style.display = DisplayStyle.None;
 		}
 
 
@@ -274,9 +265,9 @@ namespace KarmoLab.Module.Planner
 			_btnRecurFuture = root.Q<Button>("BtnRecurFuture");
 			_btnRecurCancel = root.Q<Button>("BtnRecurCancel");
 
-			if (_btnRecurThis != null) _btnRecurThis.clicked += () => OnRecurrenceChoice(true); // This Only
-			if (_btnRecurFuture != null) _btnRecurFuture.clicked += () => OnRecurrenceChoice(false); // All Future
-			if (_btnRecurCancel != null) _btnRecurCancel.clicked += OnRecurrenceCancel;
+			_btnRecurThis.clicked += () => OnRecurrenceChoice(true); // This Only
+			_btnRecurFuture.clicked += () => OnRecurrenceChoice(false); // All Future
+			_btnRecurCancel.clicked += OnRecurrenceCancel;
 
 			// Week Toggles
 			_recurrenceWeekContainer = root.Q("RecurrenceWeekContainer");
@@ -304,20 +295,14 @@ namespace KarmoLab.Module.Planner
 			_recurStartDate = root.Q<TextField>("RecurStartDate");
 			_recurEndDate = root.Q<TextField>("RecurEndDate");
 
-			if (_editRecurrenceToggle != null)
-			{
-				_editRecurrenceToggle.RegisterValueChangedCallback(evt => UpdateRecurrenceUI(evt.newValue));
-			}
-			if (_editRecurrenceDropdown != null)
-			{
-				_editRecurrenceDropdown.RegisterValueChangedCallback(evt => UpdateRecurrenceVisibility());
-			}
+			_editRecurrenceToggle.RegisterValueChangedCallback(evt => UpdateRecurrenceUI(evt.newValue));
+			_editRecurrenceDropdown.RegisterValueChangedCallback(evt => UpdateRecurrenceVisibility());
 		}
 
 		private void UpdateRecurrenceUI(bool isRecurring)
 		{
-			if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
-			if (_recurrenceDateInfo != null) _recurrenceDateInfo.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
+			_editRecurrenceDropdown.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
+			_recurrenceDateInfo.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
 
 			if (isRecurring)
 			{
@@ -326,24 +311,19 @@ namespace KarmoLab.Module.Planner
 			else
 			{
 				// Hide everything else
-				if (_recurrenceWeekContainer != null) _recurrenceWeekContainer.style.display = DisplayStyle.None;
-				if (_recurrenceMonthContainer != null) _recurrenceMonthContainer.style.display = DisplayStyle.None;
-				if (_recurrenceYearContainer != null) _recurrenceYearContainer.style.display = DisplayStyle.None;
+				_recurrenceWeekContainer.style.display = DisplayStyle.None;
+				_recurrenceMonthContainer.style.display = DisplayStyle.None;
+				_recurrenceYearContainer.style.display = DisplayStyle.None;
 			}
 		}
 
 		private void UpdateRecurrenceVisibility()
 		{
-			string value = _editRecurrenceDropdown != null ? _editRecurrenceDropdown.value : "";
+			string value = _editRecurrenceDropdown.value;
 
-			if (_recurrenceWeekContainer != null)
-				_recurrenceWeekContainer.style.display = value.StartsWith("Weekly") ? DisplayStyle.Flex : DisplayStyle.None;
-
-			if (_recurrenceMonthContainer != null)
-				_recurrenceMonthContainer.style.display = value.StartsWith("Monthly") ? DisplayStyle.Flex : DisplayStyle.None;
-
-			if (_recurrenceYearContainer != null)
-				_recurrenceYearContainer.style.display = value.StartsWith("Yearly") ? DisplayStyle.Flex : DisplayStyle.None;
+			_recurrenceWeekContainer.style.display = value.StartsWith("Weekly") ? DisplayStyle.Flex : DisplayStyle.None;
+			_recurrenceMonthContainer.style.display = value.StartsWith("Monthly") ? DisplayStyle.Flex : DisplayStyle.None;
+			_recurrenceYearContainer.style.display = value.StartsWith("Yearly") ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
 		private void UpdateRecurrenceUI(string value)
@@ -658,8 +638,6 @@ namespace KarmoLab.Module.Planner
 		{
 			for (int i = 0; i < _colorBtns.Count; i++)
 			{
-				if (_colorBtns[i] == null) continue;
-
 				Color c = (i == _selectedColorIndex) ? Color.white : Color.clear;
 				var sc = new StyleColor(c);
 
@@ -739,34 +717,23 @@ namespace KarmoLab.Module.Planner
 			_trashCloseBtn = root.Q<Button>("TrashCloseBtn");
 			_openTrashBtn = root.Q<Button>("OpenTrashBtn");
 
-			if (_trashCloseBtn != null)
-			{
-				_trashCloseBtn.clicked -= HideTrashPopup;
-				_trashCloseBtn.clicked += HideTrashPopup;
-			}
-
-			if (_openTrashBtn != null)
-			{
-				_openTrashBtn.clicked -= ShowTrashPopup;
-				_openTrashBtn.clicked += ShowTrashPopup;
-			}
+			_trashCloseBtn.clicked += HideTrashPopup;
+			_openTrashBtn.clicked += ShowTrashPopup;
 		}
 
 		private void ShowTrashPopup()
 		{
-			if (_trashPopup == null) return;
 			RenderTrashList();
 			_trashPopup.style.display = DisplayStyle.Flex;
 		}
 
 		private void HideTrashPopup()
 		{
-			if (_trashPopup != null) _trashPopup.style.display = DisplayStyle.None;
+			_trashPopup.style.display = DisplayStyle.None;
 		}
 
 		private void RenderTrashList()
 		{
-			if (_trashList == null || _data == null) return;
 			_trashList.Clear();
 
 			var deletedBlocks = _data.TimeBlocks

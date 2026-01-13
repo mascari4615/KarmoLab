@@ -47,7 +47,7 @@ namespace KarmoLab.Module.Planner
 
 			// 주말 로직
 			bool showWeekend = true;
-			if (_weekendToggle != null) showWeekend = _weekendToggle.value;
+			showWeekend = _weekendToggle.value;
 
 			int daysToShow = showWeekend ? 7 : 5;
 
@@ -98,8 +98,7 @@ namespace KarmoLab.Module.Planner
 			// 현재로서는 _currentDate를 뷰의 시작일로 취급
 
 			DateTime endWeek = _currentDate.AddDays(6);
-			if (_schedDateLabel != null)
-				_schedDateLabel.text = $"{_currentDate:yyyy-MM-dd} ~ {endWeek:yyyy-MM-dd}";
+			_schedDateLabel.text = $"{_currentDate:yyyy-MM-dd} ~ {endWeek:yyyy-MM-dd}";
 
 			BuildTimeRuler();
 
@@ -109,15 +108,13 @@ namespace KarmoLab.Module.Planner
 			{
 				if (b.Tags != null) foreach (var t in b.Tags) allTags.Add(t);
 			}
-			if (_tagFilterDropdown != null)
-			{
-				var list = allTags.OrderBy(t => t).ToList();
-				list.Insert(0, "All Tags");
-				_tagFilterDropdown.choices = list;
-				if (string.IsNullOrEmpty(_tagFilterDropdown.value) || !_tagFilterDropdown.choices.Contains(_tagFilterDropdown.value))
-					_tagFilterDropdown.value = "All Tags";
-			}
-			string filterTag = _tagFilterDropdown != null ? _tagFilterDropdown.value : "All Tags";
+			var list = allTags.OrderBy(t => t).ToList();
+			list.Insert(0, "All Tags");
+			_tagFilterDropdown.choices = list;
+			if (string.IsNullOrEmpty(_tagFilterDropdown.value) || !_tagFilterDropdown.choices.Contains(_tagFilterDropdown.value))
+				_tagFilterDropdown.value = "All Tags";
+
+			string filterTag = _tagFilterDropdown.value;
 			bool useFilter = !string.IsNullOrEmpty(filterTag) && filterTag != "All Tags";
 
 			// 생성된 열을 기반으로 다시 반복
@@ -125,7 +122,7 @@ namespace KarmoLab.Module.Planner
 			// _dayColumns 리스트는 표시 순서대로 비주얼 요소를 저장함
 
 			bool showWeekend = true;
-			if (_weekendToggle != null) showWeekend = _weekendToggle.value;
+			showWeekend = _weekendToggle.value;
 
 			int colIndex = 0;
 			for (int i = 0; i < 7; i++)
@@ -140,8 +137,7 @@ namespace KarmoLab.Module.Planner
 				colIndex++;
 
 				var header = col.Q<Label>("Header");
-				if (header != null)
-					header.text = targetDate.ToString("MM/dd (ddd)");
+				header.text = targetDate.ToString("MM/dd (ddd)");
 
 				// 블록 필터링
 				var dateStr = targetDate.ToString("yyyy-MM-dd");
@@ -334,9 +330,11 @@ namespace KarmoLab.Module.Planner
 			_resizingVisual = visual;
 			_resizeStartMouseY = evt.position.y;
 			_resizeStartBlockTop = visual.layout.y; // 또는 style.top.value.value
-			if (float.IsNaN(_resizeStartBlockTop)) _resizeStartBlockTop = visual.style.top.value.value;
+			if (float.IsNaN(_resizeStartBlockTop))
+				_resizeStartBlockTop = visual.style.top.value.value;
 			_resizeStartBlockHeight = visual.layout.height;
-			if (float.IsNaN(_resizeStartBlockHeight)) _resizeStartBlockHeight = visual.style.height.value.value;
+			if (float.IsNaN(_resizeStartBlockHeight))
+				_resizeStartBlockHeight = visual.style.height.value.value;
 
 			evt.StopPropagation(); // 드래그 이동 방지
 			if (_timeRuler != null) _timeRuler.CapturePointer(evt.pointerId);
@@ -525,16 +523,21 @@ namespace KarmoLab.Module.Planner
 		private int GetColumnIndex(float localX)
 		{
 			float axisWidth = 60f;
-			if (localX < axisWidth) return -1;
-			float rulerWidth = _timeRuler.contentRect.width;
-			if (float.IsNaN(rulerWidth) || rulerWidth <= axisWidth) return -1;
+			if (localX < axisWidth)
+				return -1;
 
-			bool showWeekend = (_weekendToggle == null) || _weekendToggle.value;
+			float rulerWidth = _timeRuler.contentRect.width;
+			if (float.IsNaN(rulerWidth) || rulerWidth <= axisWidth)
+				return -1;
+
+			bool showWeekend = _weekendToggle.value;
 			float numCols = showWeekend ? 7f : 5f;
 
 			float columnWidth = (rulerWidth - axisWidth) / numCols;
 			int colIndex = Mathf.FloorToInt((localX - axisWidth) / columnWidth);
-			if (colIndex < 0 || colIndex >= (int)numCols) return -1;
+			if (colIndex < 0 || colIndex >= (int)numCols)
+				return -1;
+
 			return colIndex;
 		}
 
@@ -567,7 +570,11 @@ namespace KarmoLab.Module.Planner
 			{
 				_dragMode = DragMode.Move;
 				_moveSourceBlock = hitBlock.userData as TimeBlock;
-				if (_moveSourceBlock == null) { _dragMode = DragMode.None; return; }
+				if (_moveSourceBlock == null)
+				{
+					_dragMode = DragMode.None;
+					return;
+				}
 
 				_dragColumnIndex = GetColumnIndex(evt.localPosition.x);
 

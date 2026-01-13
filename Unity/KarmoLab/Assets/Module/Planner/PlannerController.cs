@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 
 namespace KarmoLab.Module.Planner
 {
-	[ExecuteAlways]
 	public partial class PlannerController : MonoBehaviour
 	{
 		[SerializeField] private UIDocument _uiDocument;
@@ -110,18 +109,14 @@ namespace KarmoLab.Module.Planner
 		private TimeBlock _moveSourceBlock;
 		private float _moveOffsetMin; // 블록 시작점으로부터의 마우스 오프셋 (부드러운 드래그를 위해)
 
-		private void OnEnable()
+		private void Start()
 		{
-			if (_uiDocument == null) _uiDocument = GetComponent<UIDocument>();
+			_uiDocument = GetComponent<UIDocument>();
 			Initialize();
 		}
 
-		private void Start() => Initialize();
-
 		private void Update()
 		{
-			if (_uiDocument != null && (_tabDash == null || _tabDash.panel == null)) Initialize();
-
 			// 실시간 시계
 			if (_headerDate != null)
 			{
@@ -131,7 +126,7 @@ namespace KarmoLab.Module.Planner
 
 		private void Initialize()
 		{
-			if (_isInitialized && _tabDash != null && _tabDash.panel != null) return;
+			if (_isInitialized) return;
 
 			// 경로 설정
 			_savePath = Path.Combine(Application.persistentDataPath, "planner_data.json");
@@ -214,7 +209,7 @@ namespace KarmoLab.Module.Planner
 			_detailDesc = root.Q<Label>("DetailDesc");
 			_detailEditBtn = root.Q<Button>("DetailEditBtn");
 			_detailCloseBtn = root.Q<Button>("DetailCloseBtn");
-			_detailDeleteBtn = root.Q<Button>("DetailDeleteBtn"); // 버튼 할당
+			_detailDeleteBtn = root.Q<Button>("DetailDeleteBtn");
 
 			_editOverlay = root.Q("EditDialogOverlay");
 			_editDialog = root.Q("EditDialog");
@@ -230,107 +225,90 @@ namespace KarmoLab.Module.Planner
 
 			_editTagsContainer = root.Q("EditTagsContainer");
 			_editTagInputField = root.Q<TextField>("EditTagInputField");
-			if (_editTagInputField != null)
+			_editTagInputField.RegisterCallback<KeyDownEvent>(evt =>
 			{
-				_editTagInputField.RegisterCallback<KeyDownEvent>(evt =>
+				if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
 				{
-					if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
-					{
-						AddEditTag(_editTagInputField.value);
-						_editTagInputField.value = "";
-					}
-				});
-			}
+					AddEditTag(_editTagInputField.value);
+					_editTagInputField.value = "";
+				}
+			});
 
 			_editSaveBtn = root.Q<Button>("EditSaveBtn");
 			_editCancelBtn = root.Q<Button>("EditCancelBtn");
 			_editDeleteBtn = root.Q<Button>("EditDeleteBtn");
 
 			_colorBtns.Clear();
-			for (int i = 0; i < 12; i++) _colorBtns.Add(root.Q<Button>($"ColorBtn{i}"));
+			for (int i = 0; i < 12; i++)
+				_colorBtns.Add(root.Q<Button>($"ColorBtn{i}"));
 
 			// 외부 클릭 해제를 위한 루트 리스너
 			root.RegisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);
 
 			// 바인딩
-			if (_detailCloseBtn != null) { _detailCloseBtn.clicked -= HideDetailPopup; _detailCloseBtn.clicked += HideDetailPopup; }
-			if (_detailEditBtn != null) { _detailEditBtn.clicked -= () => ShowEditDialog(_selectedBlock); _detailEditBtn.clicked += () => ShowEditDialog(_selectedBlock); }
-			if (_detailDeleteBtn != null) { _detailDeleteBtn.clicked -= OnDetailDelete; _detailDeleteBtn.clicked += OnDetailDelete; }
+			_detailCloseBtn.clicked += HideDetailPopup;
+			_detailEditBtn.clicked += () => ShowEditDialog(_selectedBlock);
+			_detailDeleteBtn.clicked += OnDetailDelete;
 
-			if (_editCancelBtn != null) { _editCancelBtn.clicked -= HideEditDialog; _editCancelBtn.clicked += HideEditDialog; }
-			if (_editSaveBtn != null) { _editSaveBtn.clicked -= OnSaveEdit; _editSaveBtn.clicked += OnSaveEdit; }
-			if (_editDeleteBtn != null) { _editDeleteBtn.clicked -= OnDeleteEdit; _editDeleteBtn.clicked += OnDeleteEdit; }
+			_editCancelBtn.clicked += HideEditDialog;
+			_editSaveBtn.clicked += OnSaveEdit;
+			_editDeleteBtn.clicked += OnDeleteEdit;
 
 			for (int i = 0; i < _colorBtns.Count; i++)
 			{
 				int idx = i;
-				if (_colorBtns[i] != null)
-				{
-					_colorBtns[i].clicked -= () => OnColorSelected(idx);
-					_colorBtns[i].clicked += () => OnColorSelected(idx);
-				}
+				_colorBtns[i].clicked += () => OnColorSelected(idx);
 			}
 
-			if (_tabDash != null) BindTab(_tabDash, _viewDash);
-			if (_tabTasks != null) BindTab(_tabTasks, _viewTasks);
-			if (_tabSched != null) BindTab(_tabSched, _viewSched);
-			if (_tabSecret != null) BindTab(_tabSecret, _viewSecret);
+			_tabDash.clicked += () => SelectTab(_tabDash, _viewDash);
+			_tabTasks.clicked += () => SelectTab(_tabTasks, _viewTasks);
+			_tabSched.clicked += () => SelectTab(_tabSched, _viewSched);
+			_tabSecret.clicked += () => SelectTab(_tabSecret, _viewSecret);
 
-			if (_saveMemoBtn != null) { _saveMemoBtn.clicked -= SaveMemo; _saveMemoBtn.clicked += SaveMemo; }
+			_saveMemoBtn.clicked += SaveMemo;
 
-			if (_btnAddPersonal != null) { _btnAddPersonal.clicked -= AddTodoPersonal; _btnAddPersonal.clicked += AddTodoPersonal; }
-			if (_btnAddStudy != null) { _btnAddStudy.clicked -= AddTodoStudy; _btnAddStudy.clicked += AddTodoStudy; }
-			if (_btnAddTeam != null) { _btnAddTeam.clicked -= AddTodoTeam; _btnAddTeam.clicked += AddTodoTeam; }
+			_btnAddPersonal.clicked += AddTodoPersonal;
+			_btnAddStudy.clicked += AddTodoStudy;
+			_btnAddTeam.clicked += AddTodoTeam;
 
-			if (_prevDayBtn != null) { _prevDayBtn.clicked -= OnPrevWeek; _prevDayBtn.clicked += OnPrevWeek; }
-			if (_nextDayBtn != null) { _nextDayBtn.clicked -= OnNextWeek; _nextDayBtn.clicked += OnNextWeek; }
+			_prevDayBtn.clicked += OnPrevWeek;
+			_nextDayBtn.clicked += OnNextWeek;
 
-			if (_addSecBtn != null) { _addSecBtn.clicked -= AddSecretNote; _addSecBtn.clicked += AddSecretNote; }
-			if (_btnThemeToggle != null) { _btnThemeToggle.clicked -= ToggleTheme; _btnThemeToggle.clicked += ToggleTheme; }
+			_addSecBtn.clicked += AddSecretNote;
+			_btnThemeToggle.clicked += ToggleTheme;
 
 			// 런타임 설정 초기화
-			if (_uiStartDay != null)
+			_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
+			_uiStartDay.value = _startDayOfWeek.ToString();
+			_uiStartDay.RegisterValueChangedCallback(evt =>
 			{
-				_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
-				_uiStartDay.value = _startDayOfWeek.ToString();
-				_uiStartDay.RegisterValueChangedCallback(evt =>
+				if (Enum.TryParse(evt.newValue, out DayOfWeek day))
 				{
-					if (Enum.TryParse(evt.newValue, out DayOfWeek day))
-					{
-						_startDayOfWeek = day;
-						AdjustCurrentDateToStartOfWeek();
-						RefreshSchedule();
-					}
-				});
-			}
-			if (_uiZoom != null)
-			{
-				_uiZoom.value = _pixelsPerMinute;
-				_uiZoom.RegisterValueChangedCallback(evt =>
-				{
-					_pixelsPerMinute = evt.newValue;
+					_startDayOfWeek = day;
+					AdjustCurrentDateToStartOfWeek();
 					RefreshSchedule();
-				});
-			}
-			if (_uiSnap != null)
+				}
+			});
+
+			_uiZoom.value = _pixelsPerMinute;
+			_uiZoom.RegisterValueChangedCallback(evt =>
 			{
-				_uiSnap.value = (int)_snapInterval;
-				_uiSnap.RegisterValueChangedCallback(evt =>
-				{
-					_snapInterval = Mathf.Max(1, evt.newValue);
-				});
-			}
-			if (_tagFilterDropdown != null)
+				_pixelsPerMinute = evt.newValue;
+				RefreshSchedule();
+			});
+
+			_uiSnap.value = (int)_snapInterval;
+			_uiSnap.RegisterValueChangedCallback(evt =>
 			{
-				_tagFilterDropdown.RegisterValueChangedCallback(evt =>
-				{
-					RefreshSchedule();
-				});
-			}
-			if (_weekendToggle != null)
+				_snapInterval = Mathf.Max(1, evt.newValue);
+			});
+
+			_tagFilterDropdown.RegisterValueChangedCallback(evt =>
 			{
-				_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
-			}
+				RefreshSchedule();
+			});
+
+			_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
 
 			AdjustCurrentDateToStartOfWeek();
 
@@ -338,23 +316,20 @@ namespace KarmoLab.Module.Planner
 			RefreshAll();
 
 			// 눈금자 한번 생성
-			if (_timeRuler != null && _viewSched != null)
-			{
-				// 드래그 이벤트 등록
-				_timeRuler.RegisterCallback<PointerDownEvent>(OnRulerPointerDown);
-				_timeRuler.RegisterCallback<PointerMoveEvent>(OnRulerPointerMove);
-				_timeRuler.RegisterCallback<PointerUpEvent>(OnRulerPointerUp);
-				_timeRuler.RegisterCallback<PointerLeaveEvent>(OnRulerPointerUp);
+			// 드래그 이벤트 등록
+			_timeRuler.RegisterCallback<PointerDownEvent>(OnRulerPointerDown);
+			_timeRuler.RegisterCallback<PointerMoveEvent>(OnRulerPointerMove);
+			_timeRuler.RegisterCallback<PointerUpEvent>(OnRulerPointerUp);
+			_timeRuler.RegisterCallback<PointerLeaveEvent>(OnRulerPointerUp);
 
-				BuildTimeRuler();
-				// 기본 탭
-				SelectTab(_tabDash, _viewDash);
-			}
-
+			BuildTimeRuler();
 			InitializeTools(root);
 			InitializeTrash(root); // 휴지통 초기화
 			InitializeRecurrenceUI(root); // 반복 일정 UI 초기화
 			InitializeToast(root); // 토스트 초기화 (Welcome)
+
+			// 기본 탭 (모든 초기화 후 호출)
+			SelectTab(_tabDash, _viewDash);
 
 			// Welcome Toast
 			ShowToast("집사님, 돌아오신 걸 환영한다냥! 🐾", ToastType.Info);
@@ -364,26 +339,25 @@ namespace KarmoLab.Module.Planner
 
 		private void BindTab(Button btn, VisualElement view)
 		{
-			btn.clicked -= () => SelectTab(btn, view);
 			btn.clicked += () => SelectTab(btn, view);
 		}
 
 		private void SelectTab(Button activeBtn, VisualElement activeView)
 		{
-			if (_viewDash != null) _viewDash.style.display = DisplayStyle.None;
-			if (_viewTasks != null) _viewTasks.style.display = DisplayStyle.None;
-			if (_viewSched != null) _viewSched.style.display = DisplayStyle.None;
-			if (_viewSecret != null) _viewSecret.style.display = DisplayStyle.None;
-			if (_viewTools != null) _viewTools.style.display = DisplayStyle.None;
+			_viewDash.style.display = DisplayStyle.None;
+			_viewTasks.style.display = DisplayStyle.None;
+			_viewSched.style.display = DisplayStyle.None;
+			_viewSecret.style.display = DisplayStyle.None;
+			_viewTools.style.display = DisplayStyle.None;
 
-			if (_tabDash != null) _tabDash.RemoveFromClassList("selected");
-			if (_tabTasks != null) _tabTasks.RemoveFromClassList("selected");
-			if (_tabSched != null) _tabSched.RemoveFromClassList("selected");
-			if (_tabSecret != null) _tabSecret.RemoveFromClassList("selected");
-			if (_tabTools != null) _tabTools.RemoveFromClassList("selected");
+			_tabDash.RemoveFromClassList("selected");
+			_tabTasks.RemoveFromClassList("selected");
+			_tabSched.RemoveFromClassList("selected");
+			_tabSecret.RemoveFromClassList("selected");
+			_tabTools.RemoveFromClassList("selected");
 
-			if (activeView != null) activeView.style.display = DisplayStyle.Flex;
-			if (activeBtn != null) activeBtn.AddToClassList("selected");
+			activeView.style.display = DisplayStyle.Flex;
+			activeBtn.AddToClassList("selected");
 
 			if (activeView == _viewSched) RefreshSchedule();
 		}
@@ -404,16 +378,17 @@ namespace KarmoLab.Module.Planner
 				if (_btnThemeToggle != null) _btnThemeToggle.text = "○"; // 라이트 아이콘
 			}
 		}
+
 		private void CleanupTrash()
 		{
 			if (_data == null || _data.TimeBlocks == null) return;
-			
+
 			long now = DateTime.Now.Ticks;
 			long oneDayTicks = TimeSpan.TicksPerDay;
 
 			// 하루(24시간) 지난 삭제된 항목 영구 제거
 			int removedCount = _data.TimeBlocks.RemoveAll(b => b.IsDeleted && (now - b.DeletedTicks > oneDayTicks));
-			
+
 			if (removedCount > 0)
 			{
 				Debug.Log($"[Planner] Cleanup: Permanently deleted {removedCount} trash items.");

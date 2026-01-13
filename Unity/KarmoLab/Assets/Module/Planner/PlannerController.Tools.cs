@@ -28,8 +28,6 @@ namespace KarmoLab.Module.Planner
 		private TextField _outputField;
 		private Button _btnCopyOutput;
 
-
-
 		private Button _btnOpenSaveDir;
 		private Button _btnRefreshData;
 
@@ -61,8 +59,8 @@ namespace KarmoLab.Module.Planner
 			_btnOpenSaveDir = root.Q<Button>("BtnOpenSaveDir");
 			_btnRefreshData = root.Q<Button>("BtnRefreshData");
 
-			if (_btnOpenSaveDir != null) _btnOpenSaveDir.clicked += OnOpenSaveDir;
-			if (_btnRefreshData != null) _btnRefreshData.clicked += OnRefreshData;
+			_btnOpenSaveDir.clicked += OnOpenSaveDir;
+			_btnRefreshData.clicked += OnRefreshData;
 
 			// 2. 도구 로드
 			_tools.Clear();
@@ -75,50 +73,36 @@ namespace KarmoLab.Module.Planner
 			{
 				tool.Initialize((msg) =>
 				{
-					if (_outputField != null) _outputField.value = msg;
+					_outputField.value = msg;
 				});
 			}
 
 			// 3. 선택자 바인딩
-			if (_toolSelector != null)
+			_toolSelector.choices = _tools.Select(t => t.Name).ToList();
+			_toolSelector.RegisterValueChangedCallback(evt =>
 			{
-				_toolSelector.choices = _tools.Select(t => t.Name).ToList();
-				_toolSelector.RegisterValueChangedCallback(evt =>
-				{
-					SelectTool(evt.newValue);
-				});
-			}
+				SelectTool(evt.newValue);
+			});
 
-			if (_actionSelector != null)
+			_actionSelector.choices = _tools.Select(t => t.Name).ToList();
+			_actionSelector.RegisterValueChangedCallback(evt =>
 			{
-				_actionSelector.RegisterValueChangedCallback(evt =>
-				{
-					SelectAction(evt.newValue);
-				});
-			}
+				SelectAction(evt.newValue);
+			});
 
-			if (_btnRunAction != null)
-			{
-				_btnRunAction.clicked += RunCurrentAction;
-			}
+			_btnRunAction.clicked += RunCurrentAction;
 
 			// 4. 복사 버튼 바인딩
-			if (_btnCopyOutput != null)
+			_btnCopyOutput.clicked += () =>
 			{
-				_btnCopyOutput.clicked += () =>
-				{
-					if (_outputField != null) GUIUtility.systemCopyBuffer = _outputField.value;
-				};
-			}
+				if (_outputField != null) GUIUtility.systemCopyBuffer = _outputField.value;
+			};
 
 			// 5. 탭 바인딩
-			if (_tabTools != null && _viewTools != null)
-			{
-				BindTab(_tabTools, _viewTools);
-			}
+			_tabTools.clicked += () => SelectTab(_tabTools, _viewTools);
 
 			// 기본 선택
-			if (_tools.Count > 0 && _toolSelector != null)
+			if (_tools.Count > 0)
 			{
 				_toolSelector.value = _tools[0].Name;
 				// 값이 변경된 콜백이 이를 처리하나? 아니요, 값 할당은 버전에 따라 다르게 트리거될 수 있습니다. 루프 문제가 처리된다면 직접 호출하는 것이 더 안전함.
@@ -131,27 +115,24 @@ namespace KarmoLab.Module.Planner
 			_currentTool = _tools.FirstOrDefault(t => t.Name == toolName);
 			if (_currentTool == null) return;
 
-			if (_toolTitle != null) _toolTitle.text = _currentTool.Name;
+			_toolTitle.text = _currentTool.Name;
 
 			// 필드 초기화
-			if (_inputMain != null) _inputMain.value = "";
-			if (_inputSub != null) _inputSub.value = "";
-			if (_outputField != null) _outputField.value = "";
+			_inputMain.value = "";
+			_inputSub.value = "";
+			_outputField.value = "";
 
 			// 작업 목록 채우기
 			var actions = _currentTool.GetActions();
-			if (_actionSelector != null)
+			_actionSelector.choices = actions.Select(a => a.Name).ToList();
+			if (actions.Count > 0)
 			{
-				_actionSelector.choices = actions.Select(a => a.Name).ToList();
-				if (actions.Count > 0)
-				{
-					_actionSelector.value = actions[0].Name; // 콜백을 통해 SelectAction 트리거
-				}
-				else
-				{
-					_actionSelector.value = null;
-					SelectAction(null);
-				}
+				_actionSelector.value = actions[0].Name; // 콜백을 통해 SelectAction 트리거
+			}
+			else
+			{
+				_actionSelector.value = null;
+				SelectAction(null);
 			}
 		}
 
@@ -163,26 +144,23 @@ namespace KarmoLab.Module.Planner
 
 			if (_currentAction == null)
 			{
-				if (_toolDescription != null) _toolDescription.text = "";
+				_toolDescription.text = "";
 				return;
 			}
 
 			// 메타데이터 UI 업데이트
-			if (_toolDescription != null) _toolDescription.text = _currentAction.Description;
+			_toolDescription.text = _currentAction.Description;
 
-			if (_labelInputMain != null) _labelInputMain.text = _currentAction.MainInputLabel;
-			if (_labelInputSub != null)
+			_labelInputMain.text = _currentAction.MainInputLabel;
+			if (string.IsNullOrEmpty(_currentAction.SubInputLabel))
 			{
-				if (string.IsNullOrEmpty(_currentAction.SubInputLabel))
-				{
-					_labelInputSub.text = "Sub Input (Not Used)";
-					if (_inputSub != null) _inputSub.SetEnabled(false);
-				}
-				else
-				{
-					_labelInputSub.text = _currentAction.SubInputLabel;
-					if (_inputSub != null) _inputSub.SetEnabled(true);
-				}
+				_labelInputSub.text = "Sub Input (Not Used)";
+				_inputSub.SetEnabled(false);
+			}
+			else
+			{
+				_labelInputSub.text = _currentAction.SubInputLabel;
+				_inputSub.SetEnabled(true);
 			}
 		}
 
@@ -191,13 +169,13 @@ namespace KarmoLab.Module.Planner
 			if (_currentAction == null) return;
 			try
 			{
-				string main = _inputMain != null ? _inputMain.value : "";
-				string sub = _inputSub != null ? _inputSub.value : "";
+				string main = _inputMain.value;
+				string sub = _inputSub.value;
 				_currentAction.Execute?.Invoke(main, sub);
 			}
 			catch (Exception ex)
 			{
-				if (_outputField != null) _outputField.value = $"Error: {ex.Message}";
+				_outputField.value = $"Error: {ex.Message}";
 			}
 		}
 
