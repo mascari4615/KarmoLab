@@ -26,3 +26,12 @@
 - **UX/안정성**:
     - **취소 로직 강화**: 리사이즈/드래그 도중 취소(Cancel) 버튼 클릭 시 UI 상태 원상복구.
     - **전체 수정 경험**: '이후 모든 일정' 선택 시 기존 시리즈 종료 + 새 시리즈 시작 로직 정립.
+
+- **디버그 및 데이터 관리 (Debug & Data)**:
+    - **Data Management UI**: [도구] 탭에 데이터 관련 유틸리티 섹션 추가.
+    - **Open Save Folder**: `savedata.json` 저장 경로를 원클릭으로 탐색기에서 열람.
+    - **Refresh Data**: 외부 수정된 데이터를 런타임에 즉시 재로드하여 반영 (Hot Reload).
+
+- **개발 환경 최적화 (DX)**:
+    - **VS Code Workspace**: 프로젝트 권장 확장 프로그램 목록(`.vscode/extensions.json`) 구성.
+    - **코드 구조 개선**: `PlannerController`의 Partial Class 구조 (`Tools`, `Dashboard` 등) 간 충돌 해결 및 통합.

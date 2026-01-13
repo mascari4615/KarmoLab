@@ -46,6 +46,8 @@ namespace KarmoLab.Module.Planner
 			RefreshSchedule();
 		}
 
+		private void RefreshDashboard() => RefreshAll();
+
 		private void SaveMemo()
 		{
 			if (_data == null) return;

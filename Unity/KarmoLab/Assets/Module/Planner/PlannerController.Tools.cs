@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoLab.Module.Tools;
+using System.IO;
 
 namespace KarmoLab.Module.Planner
 {
@@ -26,6 +27,11 @@ namespace KarmoLab.Module.Planner
 		private Button _btnRunAction;
 		private TextField _outputField;
 		private Button _btnCopyOutput;
+
+
+
+		private Button _btnOpenSaveDir;
+		private Button _btnRefreshData;
 
 		// 도구 로직
 		private List<ITool> _tools = new();
@@ -51,6 +57,12 @@ namespace KarmoLab.Module.Planner
 			_btnRunAction = root.Q<Button>("BtnRunAction");
 			_outputField = root.Q<TextField>("OutputField");
 			_btnCopyOutput = root.Q<Button>("BtnCopyOutput");
+
+			_btnOpenSaveDir = root.Q<Button>("BtnOpenSaveDir");
+			_btnRefreshData = root.Q<Button>("BtnRefreshData");
+
+			if (_btnOpenSaveDir != null) _btnOpenSaveDir.clicked += OnOpenSaveDir;
+			if (_btnRefreshData != null) _btnRefreshData.clicked += OnRefreshData;
 
 			// 2. 도구 로드
 			_tools.Clear();
@@ -187,6 +199,22 @@ namespace KarmoLab.Module.Planner
 			{
 				if (_outputField != null) _outputField.value = $"Error: {ex.Message}";
 			}
+		}
+
+		private void OnOpenSaveDir()
+		{
+			if (string.IsNullOrEmpty(_savePath)) return;
+			string dir = Path.GetDirectoryName(_savePath);
+			Application.OpenURL("file://" + dir);
+			Debug.Log($"[Planner] Opened Save Directory: {dir}");
+		}
+
+		private void OnRefreshData()
+		{
+			LoadData();
+			RefreshDashboard();
+			RefreshSchedule();
+			Debug.Log("[Planner] Data Refreshed from File.");
 		}
 	}
 }
