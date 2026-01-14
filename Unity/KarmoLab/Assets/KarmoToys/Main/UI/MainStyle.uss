@@ -1079,3 +1079,18 @@
 	background-color: rgba(0, 0, 0, 0.2);
 }
 
+/* Global Tooltip System 냥! */
+#GlobalTooltip {
+    background-color: rgba(20, 20, 20, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+    border-radius: 4px;
+    padding: 6px 10px;
+}
+
+#GlobalTooltipLabel {
+    color: white;
+    font-size: 13px;
+    -unity-font-style: bold;
+    white-space: normal;
+}

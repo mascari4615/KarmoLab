@@ -16,9 +16,6 @@ namespace KarmoToys.Features.Planner
 		private bool _isResizeTop = false;
 		private TimeBlock _resizingBlock;
 
-		// Tooltip Refs
-		private VisualElement _customTooltip;
-		private Label _customTooltipLabel;
 
 		// Current Time Indicator
 		private VisualElement _currentTimeIndicator;
@@ -268,9 +265,9 @@ namespace KarmoToys.Features.Planner
 				return;
 			}
 
-			// 현재 시간을 분 단위로 계산
-			int currentMinute = now.Hour * 60 + now.Minute;
-			float topPosition = currentMinute * _pixelsPerMinute;
+			// 현재 시간을 초 단위까지 포함하여 계산 (매우 부드럽다냥!)
+			float totalMinutes = now.Hour * 60 + now.Minute + (now.Second / 60f);
+			float topPosition = totalMinutes * _pixelsPerMinute;
 
 			_currentTimeIndicator.style.top = topPosition;
 			_currentTimeIndicator.style.display = DisplayStyle.Flex;
@@ -332,37 +329,30 @@ namespace KarmoToys.Features.Planner
 			visualBlock.AddToClassList($"block-color-{block.ColorIndex}");
 			visualBlock.style.position = Position.Absolute;
 			visualBlock.userData = block;
-			visualBlock.tooltip = "";
-
-			visualBlock.RegisterCallback<PointerEnterEvent>(evt => ShowCustomTooltip(block, visualBlock));
-			visualBlock.RegisterCallback<PointerLeaveEvent>(evt => HideCustomTooltip());
+			visualBlock.userData = block;
+			visualBlock.tooltip = $"{block.Title}\n{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
 
 			if (blockHeight >= 15f)
 			{
-				if (blockHeight < 50f)
-				{
-					visualBlock.AddToClassList("time-block-row");
-					var titleLabel = new Label((string.IsNullOrEmpty(block.Title) ? "(No Title)" : block.Title) + ",");
-					titleLabel.AddToClassList("time-block-title");
-					visualBlock.Add(titleLabel);
-					var timeLabel = new Label(TimeStr(block.StartMinute));
-					timeLabel.AddToClassList("time-block-time");
-					visualBlock.Add(timeLabel);
-				}
-				else
-				{
-					var titleLabel = new Label(block.Title);
-					titleLabel.AddToClassList("time-block-title");
-					visualBlock.Add(titleLabel);
-					var timeLabel = new Label($"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}");
-					timeLabel.AddToClassList("time-block-time");
-					visualBlock.Add(timeLabel);
-				}
+				bool isShort = blockHeight < 50f;
+				if (isShort) visualBlock.AddToClassList("time-block-row");
+
+				var titleLabel = new Label(string.IsNullOrEmpty(block.Title) ? "(No Title)" : block.Title);
+				titleLabel.AddToClassList("time-block-title");
+				titleLabel.pickingMode = PickingMode.Ignore; // 툴팁 방해 금지냥!
+				visualBlock.Add(titleLabel);
+
+				string timeStr = isShort ? TimeStr(block.StartMinute) : $"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
+				var timeLabel = new Label(timeStr);
+				timeLabel.AddToClassList("time-block-time");
+				timeLabel.pickingMode = PickingMode.Ignore;
+				visualBlock.Add(timeLabel);
 			}
 
 			var moreBtn = new Button(() => ShowDetailPopup(block));
 			moreBtn.text = "...";
 			moreBtn.AddToClassList("time-block-btn");
+			moreBtn.pickingMode = PickingMode.Position; // 버튼은 눌려야 한다냥
 			visualBlock.Add(moreBtn);
 
 			visualBlock.RegisterCallback<PointerDownEvent>(evt =>
@@ -412,56 +402,8 @@ namespace KarmoToys.Features.Planner
 			if (_timeRuler != null) _timeRuler.CapturePointer(evt.pointerId);
 		}
 
-		private void CreateCustomTooltip()
-		{
-			if (ViewContainer == null) return;
-			// Ensure it's in ViewContainer so it persists across refreshes
-			if (_customTooltip != null && _customTooltip.parent == ViewContainer) return;
-
-			if (_customTooltip == null)
-			{
-				_customTooltip = new VisualElement();
-				_customTooltip.style.position = Position.Absolute;
-				_customTooltip.style.backgroundColor = new StyleColor(new Color(0.1f, 0.1f, 0.1f, 0.95f));
-				_customTooltip.style.paddingLeft = 8; _customTooltip.style.paddingRight = 8;
-				_customTooltip.style.paddingTop = 4; _customTooltip.style.paddingBottom = 4;
-				_customTooltip.style.borderTopLeftRadius = 4; _customTooltip.style.borderTopRightRadius = 4;
-				_customTooltip.style.borderBottomLeftRadius = 4; _customTooltip.style.borderBottomRightRadius = 4;
-				_customTooltip.pickingMode = PickingMode.Ignore;
-
-				_customTooltipLabel = new Label();
-				_customTooltipLabel.style.color = Color.white;
-				_customTooltipLabel.style.fontSize = 12;
-				_customTooltip.Add(_customTooltipLabel);
-			}
-
-			_customTooltip.style.display = DisplayStyle.None;
-			if (_customTooltip.parent != ViewContainer) ViewContainer.Add(_customTooltip);
-		}
-
-		private void ShowCustomTooltip(TimeBlock block, VisualElement target)
-		{
-			CreateCustomTooltip();
-			if (_customTooltip == null || ViewContainer == null) return;
-			_customTooltipLabel.text = $"{block.Title}\n{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
-			_customTooltip.style.display = DisplayStyle.Flex;
-			_customTooltip.BringToFront();
-
-			// Calculate position relative to ViewContainer
-			Vector2 targetWorld = target.worldBound.position;
-			Vector2 containerWorld = ViewContainer.worldBound.position;
-			Vector2 localPos = targetWorld - containerWorld;
-
-			_customTooltip.style.left = localPos.x + target.resolvedStyle.width + 10;
-			_customTooltip.style.top = localPos.y;
-		}
-
-		private void HideCustomTooltip()
-		{
-			if (_customTooltip != null) _customTooltip.style.display = DisplayStyle.None;
-		}
-
 		private string TimeStr(int m) => $"{m / 60:00}:{m % 60:00}";
+
 		private float Snap(float value, float interval) => Mathf.Round(value / interval) * interval;
 
 		private int GetColumnIndex(float localX)

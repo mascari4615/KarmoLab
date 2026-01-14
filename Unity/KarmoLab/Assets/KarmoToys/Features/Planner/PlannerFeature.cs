@@ -119,6 +119,10 @@ namespace KarmoToys.Features.Planner
 			_timeRuler.RegisterCallback<PointerLeaveEvent>(OnRulerPointerUp);
 
 			InitializeDialogs(root); // In Partial
+
+			// 현재 시간 표시 바 실시간 갱신 등록 (1초마다냥!)
+			ViewContainer.schedule.Execute(UpdateCurrentTimeIndicator).Every(1000);
+			UpdateCurrentTimeIndicator();
 		}
 
 		public override void OnSelect()

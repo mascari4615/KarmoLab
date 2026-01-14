@@ -14,15 +14,20 @@ namespace KarmoToys.Main
 		[SerializeField] private KarmoToysSettings _settings;
 
 		public KarmoToysSettings Settings => _settings;
+		public static TooltipService Tooltip { get; private set; }
 
 		public static KarmoToysApp Instance { get; private set; }
-		public static ToastSystem Toast { get; private set; }
+		public static ToastService Toast { get; private set; }
 
 		public KarmoToysData Data { get; private set; }
 		private string _savePath;
 
 		private List<IFeature> _features = new();
 		private Dictionary<Button, IFeature> _tabMap = new();
+		// UI Refs (Global)
+		private Label _headerDateLabel;
+		private Label _headerDDayLabel;
+
 		private IFeature _currentFeature;
 
 		private void Awake()
@@ -56,7 +61,8 @@ namespace KarmoToys.Main
 			EnsureFeatures();
 
 			// 1. 공통 서비스 초기화
-			Toast = new ToastSystem(root.Q("ToastContainer"));
+			Toast = new ToastService(root.Q("ToastContainer"));
+			Tooltip = new TooltipService(root);
 
 			// 2. 피처 검색 및 초기화
 			_features.Clear();
@@ -103,8 +109,35 @@ namespace KarmoToys.Main
 				}
 			}
 
+			// 5. 헤더 시간 정보 초기화 및 실시간 업데이트 등록
+			_headerDateLabel = root.Q<Label>("HeaderDateLabel");
+			_headerDDayLabel = root.Q<Label>("HeaderDDayLabel");
+			root.schedule.Execute(UpdateHeaderTime).Every(1000);
+			UpdateHeaderTime();
+
 			// 환영 메시지
 			Toast.Show("KarmoToys에 오신 것을 환영한다냥! 🎮", ToastType.Info);
+		}
+
+		private void UpdateHeaderTime()
+		{
+			if (_headerDateLabel != null)
+			{
+				_headerDateLabel.text = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+			}
+
+			if (_headerDDayLabel != null && Data?.Planner != null)
+			{
+				if (System.DateTime.TryParse(Data.Planner.TargetDateString, out System.DateTime target))
+				{
+					var diff = (target.Date - System.DateTime.Now.Date).Days;
+					_headerDDayLabel.text = $"D{diff:+#;-#;0}";
+				}
+				else
+				{
+					_headerDDayLabel.text = "D-???";
+				}
+			}
 		}
 
 		private void ToggleTheme()
@@ -177,6 +210,7 @@ namespace KarmoToys.Main
 			{
 				typeof(Features.Dashboard.DashboardFeature),
 				typeof(Features.Planner.PlannerFeature),
+				typeof(KarmoToys.Features.LifeWeekly.LifeWeeklyFeature),
 				typeof(Features.QuestBoard.QuestBoardFeature),
 				typeof(Features.Note.NoteFeature),
 				typeof(Features.ToolBox.ToolBoxFeature)

@@ -117,8 +117,8 @@
 
 ### 4.2. UI 구현 가이드
 - 모든 UI 레이아웃은 .uxml 파일로, 스타일은 .uss 파일로 분리하여 관리합니다.
-- 코드에서 UI 요소를 찾을 때는 
-oot.Q<Type>('name') 패턴을 사용합니다.
+- 코드에서 UI 요소를 찾을 때는 `root.Q<Type>("name")` 패턴을 사용합니다.
+- UI Toolkit USS에서는 `z-index` 속성을 지원하지 않으므로 사용하지 않습니다. (요소의 순서는 계층 구조나 `BringToFront()` 등을 활용하세요.)냥!
 - 복잡한 UI 로직은 PlannerController와 같이 Partial Class로 분리하여 관리하는 것을 권장합니다 (예: IO, Dashboard, Dialogs 등).
 
 ### 4.3. 개인정보 보호 (엄격)

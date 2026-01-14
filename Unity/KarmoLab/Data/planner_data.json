@@ -571,5 +571,15 @@
         "Exp": 30,
         "LastUpdatedTicks": 0
     },
-    "Theme": 1
+    "LifeWeekly": {
+        "BirthDate": "2002-10-12",
+        "TargetAge": 50,
+        "WeeksPerRow": 70,
+        "BlockSize": 10,
+        "ShowYearlyHighlight": false,
+        "ShowCalendarYearHighlight": true,
+        "ShowDecadeHighlight": false,
+        "Milestones": []
+    },
+    "Theme": 0
 }
