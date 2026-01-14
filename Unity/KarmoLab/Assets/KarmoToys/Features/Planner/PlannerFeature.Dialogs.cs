@@ -10,7 +10,7 @@ namespace KarmoToys.Features.Planner
 {
 	public partial class PlannerFeature
 	{
-		private PlannerData Data => KarmoToysApp.Instance.Data?.Planner;
+		private ScheduleData Data => KarmoToysApp.Instance.Data?.Schedule;
 
 		private VisualElement _detailPopup;
 		private Label _detailTitle, _detailTime, _detailDesc;

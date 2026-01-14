@@ -1,0 +1,108 @@
+/* --- 도구 통합 --- */
+.tool-header {
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom-width: 1px;
+	border-bottom-color: var(--color-border);
+	padding-bottom: 15px;
+	margin-bottom: 20px;
+}
+
+.tool-selector {
+	width: 200px;
+}
+
+.tool-body {
+	flex-grow: 1;
+}
+
+.input-group {
+	margin-bottom: 15px;
+}
+
+.input-label {
+	color: var(--color-text-sub);
+	font-size: 12px;
+	margin-bottom: 5px;
+}
+
+.tool-input-field > .unity-text-field__input {
+	background-color: var(--color-bg-base); 
+	border-color: var(--color-border); 
+	color: var(--color-text-main);
+	height: 80px;
+	-unity-text-align: upper-left;
+	border-radius: 4px;
+}
+
+.tool-input-field-single > .unity-text-field__input {
+	background-color: var(--color-bg-base);
+	border-color: var(--color-border);
+	color: var(--color-text-main);
+	border-radius: 4px;
+}
+
+.actions-grid {
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin-bottom: 20px;
+}
+
+.action-btn {
+	width: 48%;
+	margin-right: 2%;
+	margin-bottom: 10px;
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	-unity-font-style: bold;
+	padding: 10px;
+	border-radius: 6px;
+	border-width: 0;
+}
+
+.action-btn:hover {
+	background-color: var(--color-primary-hover);
+	color: var(--color-primary-text-hover);
+}
+
+.action-btn-large {
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	-unity-font-style: bold;
+	border-radius: 6px;
+	border-width: 0;
+}
+
+.action-btn-large:hover {
+	background-color: var(--color-primary-hover);
+	color: var(--color-primary-text-hover);
+}
+
+.output-group {
+	margin-top: 10px;
+}
+
+.output-field > .unity-text-field__input {
+	background-color: var(--color-bg-base);
+	border-color: var(--color-border);
+	color: var(--color-text-main);
+	height: 100px;
+	-unity-text-align: upper-left;
+}
+
+.copy-btn {
+	margin-top: 5px;
+	align-self: flex-end;
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	width: 150px;
+	border-radius: 4px;
+	-unity-font-style: bold;
+	border-width: 0;
+}
+
+.copy-btn:hover {
+	background-color: var(--color-primary-hover);
+	color: var(--color-primary-text-hover);
+}

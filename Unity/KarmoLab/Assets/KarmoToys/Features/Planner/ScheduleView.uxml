@@ -1,0 +1,164 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
+	<Style src="project://database/Assets/KarmoToys/Features/Planner/ScheduleStyle.uss"/>
+	<ui:VisualElement name="ViewSchedule" class="tab-content" style="display: none;">
+		<ui:VisualElement class="section-header" style="flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+			<ui:VisualElement style="flex-direction: row; align-items: center;">
+				<ui:Button name="PrevDayBtn" text="◀" class="nav-button" style="width: 30px; margin-right: 5px;" />
+				<ui:Label name="CurrentDateLabel" text="2026-01-09" class="date-label" style="font-size: 16px; margin-right: 5px; -unity-text-align: middle-center; min-width: 120px;" />
+				<ui:Button name="NextDayBtn" text="▶" class="nav-button" style="width: 30px;" />
+			</ui:VisualElement>
+			
+			<ui:VisualElement style="flex-direction: row; align-items: center;">
+				<ui:Toggle name="WeekendToggle" text="WEEKEND" value="true" class="toggle-control" style="margin-right: 10px;" />
+				<ui:Button name="OpenTrashBtn" text="🗑️" class="icon-btn" style="width: 30px; height: 30px; margin-left: 5px; background-color: rgb(60, 60, 60); color: white; border-radius: 4px;" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<ui:VisualElement class="schedule-settings-row" style="flex-direction: row; margin-bottom: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
+			<ui:DropdownField name="StartDayDropdown" choices="Monday,Sunday" index="0" class="control-dropdown" style="width: 100px; margin-right: 10px;" />
+			<ui:DropdownField name="TagFilterDropdown" choices="All,Study,Work,Health,Hobby" index="0" class="control-dropdown" style="width: 100px; margin-right: 15px;" />
+			
+			<ui:Label text="Zoom" class="control-label" style="margin-right: 5px;" />
+			<ui:Slider name="ZoomSlider" low-value="0.5" high-value="5.0" value="1.0" style="width: 80px; margin-right: 15px;" />
+			
+			<ui:Label text="Snap(m)" class="control-label" style="margin-right: 5px;" />
+			<ui:IntegerField name="SnapIntervalInput" value="5" style="width: 50px;" />
+		</ui:VisualElement>
+
+		<ui:ScrollView name="ScheduleScroll" class="schedule-scroll">
+			<ui:VisualElement name="TimeRulerContainer" class="time-ruler-container" style="padding-left: 20px; padding-right: 20px;">
+				<ui:VisualElement name="TimeAxis" class="time-axis" />
+				<ui:VisualElement name="CurrentTimeIndicator" class="current-time-indicator" picking-mode="Ignore" />
+				<!-- 스크립트를 통해 요일 컬럼이 여기에 추가됨 -->
+			</ui:VisualElement>
+		</ui:ScrollView>
+
+		<!-- Popups moved inside ViewSchedule for better encapsulation -->
+		<ui:VisualElement name="DetailPopup" class="detail-popup" style="display: none;">
+			<ui:Label name="DetailTitle" text="Block Title" class="detail-title"/>
+			<ui:Label name="DetailTime" text="00:00 - 01:00" class="detail-time"/>
+			<ui:Label name="DetailDesc" text="Description here..." class="detail-desc"/>
+			<ui:Button name="DetailDeleteBtn" text="Delete" class="detail-btn btn-danger" style="margin-bottom: 5px; background-color: rgb(220, 53, 69);"/>
+			<ui:Button name="DetailEditBtn" text="Edit" class="detail-btn"/>
+			<ui:Button name="DetailCloseBtn" text="Close" class="detail-btn-close"/>
+		</ui:VisualElement>
+
+		<ui:VisualElement name="TrashPopup" class="edit-overlay" style="display: none;">
+			<ui:VisualElement class="edit-dialog" style="width: 400px; max-height: 80%;">
+				<ui:Label text="Recycle Bin 🗑️" class="edit-header-title"/>
+				<ui:Label text="Deleted items are permanently removed after 24 hours." style="color: rgb(150, 150, 150); font-size: 11px; margin-bottom: 10px;"/>
+				<ui:ScrollView name="TrashList" style="flex-grow: 1; margin-bottom: 10px; background-color: rgb(30, 30, 30); border-radius: 5px; padding: 5px; height: 300px;"/>
+				<ui:Button name="TrashCloseBtn" text="Close" class="btn-secondary" style="align-self: flex-end; width: 80px;"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<ui:VisualElement name="EditDialogOverlay" class="edit-overlay" style="display: none;">
+			<ui:VisualElement name="EditDialog" class="edit-dialog">
+				<ui:Label text="Edit Event" class="edit-header-title"/>
+				<ui:TextField name="EditTitleInput" label="Title"/>
+				
+				<!-- Recurrence Toggle -->
+				<ui:Toggle name="EditRecurrenceToggle" label="Repeat Event" style="margin-bottom: 5px;"/>
+				
+				<!-- Recurrence Type Dropdown -->
+				<ui:DropdownField name="EditRecurrenceDropdown" choices="Weekly,Monthly,Yearly" index="0" style="margin-bottom: 5px; display: none;"/>
+				
+				<!-- Weekly UI -->
+				<ui:VisualElement name="RecurrenceWeekContainer" style="flex-direction: row; justify-content: space-around; margin-bottom: 10px; display: none; background-color: rgb(40, 40, 40); padding: 5px; border-radius: 4px;">
+					<ui:Toggle name="ToggleSun" text="S" class="day-toggle"/>
+					<ui:Toggle name="ToggleMon" text="M" class="day-toggle"/>
+					<ui:Toggle name="ToggleTue" text="T" class="day-toggle"/>
+					<ui:Toggle name="ToggleWed" text="W" class="day-toggle"/>
+					<ui:Toggle name="ToggleThu" text="T" class="day-toggle"/>
+					<ui:Toggle name="ToggleFri" text="F" class="day-toggle"/>
+					<ui:Toggle name="ToggleSat" text="S" class="day-toggle"/>
+				</ui:VisualElement>
+
+				<!-- Monthly UI -->
+				<ui:VisualElement name="RecurrenceMonthContainer" style="flex-direction: row; margin-bottom: 10px; display: none; background-color: rgb(40, 40, 40); padding: 5px; border-radius: 4px; align-items: center;">
+					<ui:Label text="Day:" style="margin-right: 5px; color: rgb(200, 200, 200); font-size: 11px;"/>
+					<ui:IntegerField name="RecurMonthDayInput" value="1" style="width: 50px;"/>
+				</ui:VisualElement>
+
+				<!-- Yearly UI -->
+				<ui:VisualElement name="RecurrenceYearContainer" style="flex-direction: row; margin-bottom: 10px; display: none; background-color: rgb(40, 40, 40); padding: 5px; border-radius: 4px; align-items: center;">
+					<ui:Label text="Month:" style="margin-right: 5px; color: rgb(200, 200, 200); font-size: 11px;"/>
+					<ui:IntegerField name="RecurYearMonthInput" value="1" style="width: 40px; margin-right: 10px;"/>
+					<ui:Label text="Day:" style="margin-right: 5px; color: rgb(200, 200, 200); font-size: 11px;"/>
+					<ui:IntegerField name="RecurYearDayInput" value="1" style="width: 40px;"/>
+				</ui:VisualElement>
+
+				<!-- Recurrence Dates Info -->
+				<ui:VisualElement name="RecurrenceDateInfo" style="flex-direction: row; justify-content: space-between; margin-bottom: 10px; display: none;">
+					<ui:VisualElement style="flex-grow: 1; margin-right: 5px;">
+						<ui:Label text="From" style="color: rgb(200, 200, 200); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:TextField name="RecurStartDate" style="flex-grow: 1;"/>
+					</ui:VisualElement>
+					<ui:VisualElement style="flex-grow: 1;">
+						<ui:Label text="Until" style="color: rgb(200, 200, 200); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:TextField name="RecurEndDate" style="flex-grow: 1;"/>
+					</ui:VisualElement>
+				</ui:VisualElement>
+
+				<ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 10px;">
+					<ui:VisualElement style="flex-grow: 1; margin-right: 5px;">
+						<ui:Label text="Start Time" style="color: rgb(204, 204, 204); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:VisualElement style="flex-direction: row;">
+							<ui:IntegerField name="EditStartHour" style="flex-grow: 1; margin-right: 2px;"/>
+							<ui:Label text=":" style="align-self: center; color: white;"/>
+							<ui:IntegerField name="EditStartMin" style="flex-grow: 1; margin-left: 2px;"/>
+						</ui:VisualElement>
+					</ui:VisualElement>
+					<ui:VisualElement style="flex-grow: 1; margin-left: 5px;">
+						<ui:Label text="End Time" style="color: rgb(204, 204, 204); font-size: 10px; margin-bottom: 2px;"/>
+						<ui:VisualElement style="flex-direction: row;">
+							<ui:IntegerField name="EditEndHour" style="flex-grow: 1; margin-right: 2px;"/>
+							<ui:Label text=":" style="align-self: center; color: white;"/>
+							<ui:IntegerField name="EditEndMin" style="flex-grow: 1; margin-left: 2px;"/>
+						</ui:VisualElement>
+					</ui:VisualElement>
+				</ui:VisualElement>
+				<ui:TextField name="EditDescInput" label="Description" multiline="true" style="height: 60px;"/>
+				<ui:Label text="Tags" style="color: rgb(204, 204, 204); font-size: 12px; margin-top: 10px;"/>
+				<ui:VisualElement name="EditTagsContainer" style="flex-direction: row; flex-wrap: wrap; align-items: center; min-height: 30px; margin-bottom: 5px;"/>
+				<ui:VisualElement style="flex-direction: row;">
+					<ui:TextField name="EditTagInputField" placeholder-text="Add tag..." style="flex-grow: 1;"/>
+					<ui:Button name="EditTagAddBtn" text="+" class="btn-secondary" style="width: 30px; margin-left: 5px;"/>
+				</ui:VisualElement>
+				<ui:Label text="Color" style="margin-top: 10px; color: rgb(204, 204, 204);"/>
+				<ui:VisualElement class="color-picker-row">
+					<ui:Button name="ColorBtn0" class="color-select-btn block-color-0"/>
+					<ui:Button name="ColorBtn1" class="color-select-btn block-color-1"/>
+					<ui:Button name="ColorBtn2" class="color-select-btn block-color-2"/>
+					<ui:Button name="ColorBtn3" class="color-select-btn block-color-3"/>
+					<ui:Button name="ColorBtn4" class="color-select-btn block-color-4"/>
+					<ui:Button name="ColorBtn5" class="color-select-btn block-color-5"/>
+					<ui:Button name="ColorBtn6" class="color-select-btn block-color-6"/>
+					<ui:Button name="ColorBtn7" class="color-select-btn block-color-7"/>
+					<ui:Button name="ColorBtn8" class="color-select-btn block-color-8"/>
+					<ui:Button name="ColorBtn9" class="color-select-btn block-color-9"/>
+					<ui:Button name="ColorBtn10" class="color-select-btn block-color-10"/>
+					<ui:Button name="ColorBtn11" class="color-select-btn block-color-11"/>
+				</ui:VisualElement>
+				<ui:VisualElement class="edit-actions">
+					<ui:Button name="EditDeleteBtn" text="Delete" class="btn-danger"/>
+					<ui:VisualElement style="flex-grow: 1;"/>
+					<ui:Button name="EditCancelBtn" text="Cancel" class="btn-secondary"/>
+					<ui:Button name="EditSaveBtn" text="Save" class="btn-primary"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<ui:VisualElement name="RecurrenceChoicePopup" class="edit-overlay" style="display: none;">
+			<ui:VisualElement class="edit-dialog" style="width: 350px;">
+				<ui:Label text="Recurring Event 🔄" class="edit-header-title"/>
+				<ui:Label text="This is a recurring event. Apply changes to:" style="margin-bottom: 20px; color: rgb(200, 200, 200);"/>
+				
+				<ui:Button name="BtnRecurThis" text="This Event Only" class="btn-secondary" style="margin-bottom: 10px;"/>
+				<ui:Button name="BtnRecurFuture" text="All Future Events" class="btn-secondary" style="margin-bottom: 10px;"/>
+				<ui:Button name="BtnRecurCancel" text="Cancel" class="btn-ghost" style="margin-top: 10px;"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

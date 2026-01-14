@@ -1,0 +1,34 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
+	<Style src="project://database/Assets/KarmoToys/Features/Dashboard/DashboardStyle.uss"/>
+	<ui:ScrollView name="ViewDashboard" class="tab-content">
+		<ui:VisualElement class="advice-banner">
+			<ui:Label text="NPC 멘토의 한마디: 지금 자면 꿈을 꾸지만, 지금 코딩하면 꿈을 이룬다." class="advice-text"/>
+		</ui:VisualElement>
+		<ui:VisualElement class="stats-grid">
+			<ui:VisualElement class="stat-card bg-blue">
+				<ui:Label text="D-Day" class="stat-title"/>
+				<ui:Label name="StatProgress" text="D-000" class="stat-value"/>
+			</ui:VisualElement>
+			<ui:VisualElement class="stat-card bg-purple">
+				<ui:Label name="StatPersonalTitle" text="Personal" class="stat-title"/>
+				<ui:Label name="StatPersonalValue" text="..." class="stat-value"/>
+			</ui:VisualElement>
+			<ui:VisualElement class="stat-card bg-green">
+				<ui:Label name="StatTeamTitle" text="Team" class="stat-title"/>
+				<ui:Label name="StatTeamValue" text="..." class="stat-value"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+		<ui:VisualElement class="dashboard-row">
+			<ui:VisualElement class="dashboard-col memo-panel" style="flex-grow: 1;">
+				<ui:Label text="메모 &amp; 설정" class="section-title"/>
+				<ui:VisualElement style="flex-direction: row; margin-bottom: 5px;">
+					<ui:Label text="목표 날짜:" style="width: 70px; align-self: center; color: rgb(136, 136, 136);"/>
+					<ui:TextField name="ConfigTargetDate" value="2027-03-01" style="flex-grow: 1;"/>
+				</ui:VisualElement>
+				<ui:TextField name="MemoInput" multiline="true" class="memo-input" style="flex-grow: 1;"/>
+				<ui:Button name="SaveMemoBtn" text="저장" class="save-btn"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:ScrollView>
+</ui:UXML>

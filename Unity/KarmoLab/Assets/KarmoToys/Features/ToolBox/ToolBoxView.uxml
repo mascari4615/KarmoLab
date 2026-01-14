@@ -1,0 +1,28 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
+	<Style src="project://database/Assets/KarmoToys/Features/ToolBox/ToolBoxStyle.uss"/>
+	<ui:ScrollView name="ViewTools" class="tab-content" style="display: none;">
+		<ui:VisualElement class="tool-header">
+			<ui:Label name="ToolTitle" text="Tool Name" class="header-title"/>
+			<ui:DropdownField name="ToolSelector" class="tool-selector"/>
+			<ui:DropdownField name="ActionSelector" class="tool-selector" style="margin-top: 5px;"/>
+		</ui:VisualElement>
+		<ui:Label name="ToolDescription" text="Select a tool action..." class="tool-description" style="white-space: normal; margin: 10px; color: rgb(170, 170, 170);"/>
+		<ui:VisualElement class="tool-body">
+			<ui:VisualElement class="input-group">
+				<ui:Label name="LabelInputMain" text="Main Input" class="input-label"/>
+				<ui:TextField name="InputMain" multiline="true" class="tool-input-field"/>
+			</ui:VisualElement>
+			<ui:VisualElement class="input-group">
+				<ui:Label name="LabelInputSub" text="Sub Input (Optional)" class="input-label"/>
+				<ui:TextField name="InputSub" class="tool-input-field-single"/>
+			</ui:VisualElement>
+			<ui:Button name="BtnRunAction" text="RUN" class="action-btn-large" style="height: 40px; margin-top: 10px;"/>
+			<ui:VisualElement class="output-group">
+				<ui:Label text="Output / Log" class="input-label"/>
+				<ui:TextField name="OutputField" multiline="true" readonly="true" class="output-field"/>
+				<ui:Button name="BtnCopyOutput" text="Copy to Clipboard" class="copy-btn"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:ScrollView>
+</ui:UXML>

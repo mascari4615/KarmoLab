@@ -1,0 +1,43 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
+	<Style src="project://database/Assets/KarmoToys/Main/UI/LifeWeeklyStyle.uss"/>
+	<ui:VisualElement name="ViewLifeWeekly" class="tab-content" style="display: none;">
+		<!-- Header Row 1: Title & Highlights -->
+		<ui:VisualElement class="section-header" style="flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+			<ui:Label text="인생의 주 (Life Weekly Visualizer)" class="life-weekly-title" />
+			<ui:VisualElement style="flex-direction: row; align-items: center;">
+				<ui:Toggle name="ToggleYearlyHighlight" text="1년(생일)" value="true" class="toggle-control" style="margin-right: 10px;" />
+				<ui:Toggle name="ToggleCalendarHighlight" text="1년(달력)" value="false" class="toggle-control" style="margin-right: 10px;" />
+				<ui:Toggle name="ToggleDecadeHighlight" text="10년" value="true" class="toggle-control" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- Header Row 2: Parameters & Birthday -->
+		<ui:VisualElement class="section-header" style="flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 15px; padding: 5px 10px; background-color: rgba(0, 0, 0, 0.2); border-radius: 5px;">
+			<ui:VisualElement style="flex-direction: row; align-items: center;">
+				<ui:Label text="수명/줄당:" style="color: rgb(150, 150, 150); margin-right: 5px;" />
+				<ui:IntegerField name="LifeTargetAgeInput" value="100" style="width: 40px; margin-right: 5px;" />
+				<ui:IntegerField name="LifeWeeksPerRowInput" value="52" style="width: 40px; margin-right: 15px;" />
+				
+				<ui:Label text="확대(Zoom):" style="color: rgb(150, 150, 150); margin-right: 5px;" />
+				<ui:IntegerField name="LifeBlockSizeInput" value="10" style="width: 35px; margin-right: 5px;" />
+				<ui:Slider name="LifeBlockSizeSlider" low-value="5" high-value="50" value="10" style="width: 80px;" />
+			</ui:VisualElement>
+
+			<ui:VisualElement style="flex-direction: row; align-items: center;">
+				<ui:Label text="생일(Y.M.D):" style="color: rgb(150, 150, 150); margin-right: 5px;" />
+				<ui:IntegerField name="LifeBirthYearInput" value="2000" style="width: 50px; margin-right: 2px;" />
+				<ui:Label text="." style="color: gray;" />
+				<ui:IntegerField name="LifeBirthMonthInput" value="01" style="width: 30px; margin-right: 2px;" />
+				<ui:Label text="." style="color: gray;" />
+				<ui:IntegerField name="LifeBirthDayInput" value="01" style="width: 30px;" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+		
+		<ui:ScrollView name="LifeWeeklyScroll" class="life-weekly-scroll">
+			<ui:VisualElement class="life-weekly-grid-container">
+				<ui:VisualElement name="LifeWeeklyGrid" class="life-weekly-grid" />
+			</ui:VisualElement>
+		</ui:ScrollView>
+	</ui:VisualElement>
+</ui:UXML>

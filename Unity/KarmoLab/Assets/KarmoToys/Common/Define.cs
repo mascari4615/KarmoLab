@@ -12,6 +12,7 @@ namespace KarmoToys.Common
 		public const string FeaturePlanner = "Planner";
 		public const string FeatureNote = "Note";
 		public const string FeatureToolBox = "ToolBox";
+		public const string FeaturePreferences = "Preferences";
 
 		// Tab IDs (UXML Button Names)
 		public const string TabDashboard = "TabDashboard";
@@ -19,6 +20,7 @@ namespace KarmoToys.Common
 		public const string TabSchedule = "TabSchedule";
 		public const string TabSecret = "TabSecret";
 		public const string TabTools = "TabTools";
+		public const string TabPreferences = "TabPreferences";
 
 		// Planner
 		public const string DefaultTargetDate = "2027-03-01";

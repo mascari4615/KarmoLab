@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
+	<Style src="project://database/Assets/KarmoToys/Features/QuestBoard/QuestBoardStyle.uss"/>
+	<ui:VisualElement name="ViewTasks" class="tab-content" style="display: none;">
+		<ui:VisualElement class="task-columns">
+			<ui:VisualElement class="task-column col-personal">
+				<ui:Label name="HeaderPersonal" text="MAIN QUEST: ..." class="col-header text-purple"/>
+				<ui:ScrollView name="ListPersonal" class="task-list-scroll"/>
+				<ui:VisualElement class="col-footer">
+					<ui:TextField name="InputPersonal" class="task-input"/>
+					<ui:Button name="BtnAddPersonal" text="+" class="task-add-btn"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+			<ui:VisualElement class="task-column col-study">
+				<ui:Label name="HeaderStudy" text="SKILL GRINDING: ..." class="col-header text-blue"/>
+				<ui:ScrollView name="ListStudy" class="task-list-scroll"/>
+				<ui:VisualElement class="col-footer">
+					<ui:TextField name="InputStudy" class="task-input"/>
+					<ui:Button name="BtnAddStudy" text="+" class="task-add-btn"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+			<ui:VisualElement class="task-column col-team">
+				<ui:Label name="HeaderTeam" text="SIDE QUEST: ..." class="col-header text-green"/>
+				<ui:ScrollView name="ListTeam" class="task-list-scroll"/>
+				<ui:VisualElement class="col-footer">
+					<ui:TextField name="InputTeam" class="task-input"/>
+					<ui:Button name="BtnAddTeam" text="+" class="task-add-btn"/>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

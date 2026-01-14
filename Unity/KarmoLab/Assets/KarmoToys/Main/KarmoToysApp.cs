@@ -232,6 +232,7 @@ namespace KarmoToys.Main
 		public void LoadData()
 		{
 			Data = DataService.Load(_savePath);
+			if (Data != null) Data.MigrateLegacyData();
 			if (_currentFeature != null) _currentFeature.OnSelect();
 		}
 
@@ -245,7 +246,8 @@ namespace KarmoToys.Main
 				typeof(KarmoToys.Features.LifeWeekly.LifeWeeklyFeature),
 				typeof(Features.QuestBoard.QuestBoardFeature),
 				typeof(Features.Note.NoteFeature),
-				typeof(Features.ToolBox.ToolBoxFeature)
+				typeof(Features.ToolBox.ToolBoxFeature),
+				typeof(Features.Preferences.PreferencesFeature)
 			};
 
 			foreach (var type in features)

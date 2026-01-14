@@ -165,8 +165,35 @@
 - **빌드 도구 일반화 고도화 (Build Tool)**:
     - **패턴 기반 백업 시스템**: 패치(Deploy) 시 유실될 수 있는 중요 파일(세이브 등)을 보호하기 위해, 사용자 정의 패턴(`*.json;Data/` 등)에 기반한 자동 백업 및 복구 로직 구현.
     - **격리된 설계**: 특정 피처에 의존하지 않고 패턴 매칭을 통해 동작하므로 범용적인 활용 가능.
-    - **UI 개선**: 보호할 패턴을 에디터 윈도우에서 직접 설정하고 저장할 수 있도록 필드 추가.
-
+    - **UI 개선**: 보호할 패턴을 에디터 윈도우에서 직접 설정하고 저장할### 2026-01-15 (Backup System Improvements & Preferences Refactor)
+- **백업 시스템 대규모 개편 (Backup System v9)**
+    - **지능형 백업 트리거 (Deep Modification Detection)**: 단순 개수 변화뿐만 아니라, `TimeBlock`의 시간/제목 변경, `TodoItem`의 완료 여부/내용 변경, `SecretNote`의 상세 내용 변경까지 완벽하게 감지합니다.
+    - **누적 변경 감지 (Cumulative Tracking)**: 마지막 저장 시점이 아닌, **마지막 백업 파일**과 비교하여 변경 사항을 누적 카운트합니다. 조금씩 수정해도 결국 임계치(Change Threshold)를 넘으면 백업됩니다.
+    - **안전장치 (Fallback)**: 백업 파일이 없으면 즉시 초기 백업을 생성합니다. (InitBackup)
+- **설정 탭 분리 (Preferences Refactor)**
+    - **탭 분리**: 기존 `ToolBox`에 섞여 있던 앱 설정(테마, 백업 등)을 독립된 **Preferences(설정)** 탭으로 분리하여 UI 구조 개선.
+    - **기능 이관**:
+        *   Theme Control (Dark/Light)
+        *   Backup Settings (AutoBackup, Threshold, MaxCount)
+        *   Data Management (Open Folder, Reset, Refresh)
+        *   Visual Diff (백업 비교)
+    - **ToolBox 정화**: 도구함은 순수 유틸리티(텍스트 포맷터 등) 공간으로 재정립.
+- **UI 구조 모듈화 (UXML Modularization)**
+    - **컴포넌트 분리**: 거대해진 `MainView.uxml`을 기능별로 7개의 독립된 `.uxml` 파일로 분리. (`DashboardView`, `QuestBoardView`, `ScheduleView`, `LifeWeeklyView`, `SecretNoteView`, `ToolBoxView`, `PreferencesView`)
+    - **유지보수성 향상**: 각 기능의 UI를 해당 Feature 폴더 내에서 독립적으로 관리 가능. `MainView`는 레이아웃과 인스턴스 조립만 담당.
+- **스타일 모듈화 (USS Modularization)**
+    - **스타일 분리**: `MainStyle.uss`에서 각 기능별 스타일을 분리하여 `FeatureStyle.uss`로 이동. (`DashboardStyle`, `QuestBoardStyle`, `ScheduleStyle`, `SecretNoteStyle`, `ToolBoxStyle`)
+    - **구조 최적화**: 공통 스타일(Global)은 `MainStyle.uss`에 남기고, 기능별 스타일은 각 UXML 파일에서 직접 로드하도록 연결.
+- **C# 데이터 및 로직 모듈화 (C# Modularization)**
+    - **데이터 분리**: `KarmoToysData` 내에 뭉쳐있던 `PlannerData`를 기능별로 분리 (`DashboardData`, `QuestData`, `ScheduleData`, `NoteData`).
+    - **마이그레이션 구현**: 기존 세이브 파일 호환성을 위해 `LegacyPlannerData`를 유지하고, 로드 시 `MigrateLegacyData`를 통해 신규 구조로 자동 이관되도록 구현.
+    - **코드 리팩토링**: 각 Feature 클래스(`DashboardFeature`, `QuestBoardFeature` 등)가 더 이상 거대 `Planner` 데이터에 의존하지 않고, 본인의 전용 데이터 모듈을 사용하도록 변경.
+ 시 무조건 백업 생성하여 데이터 안전성 확보.
+        - **변경량 감지 (Threshold)**: 일반 저장 시에는 변경 사항이 설정값(`Threshold`, 기본 10) 이상일 때만 백업하여 디스크 낭비 방지.
+        - **누적 변경 추적**: 마지막 '저장'이 아닌 마지막 '백업'과의 차이를 비교하여, 소규모 수정을 반복해도 누적치가 임계점을 넘으면 백업되도록 버그 수정.
+        - **정밀 감지**: 단순 개수 비교를 넘어 스케줄(TimeBlock)의 이동/리사이즈, 할 일(Todo)의 완료/수정, 비밀 노트의 내용 변경까지 감지.
+    - **UI/UX 구현**:
+        - **ToolBox 설정**: 자동 백업 여부(`AutoBackupOnSave`)와 민감도(`Threshold`)를 도구함에서 직접 설정 가능.
 - **백업 시스템 대규모 개편 (Backup System v9)**:
     - **구조 단순화 (Flat Structure)**:
         - `Backups/{SaveId}/` 형태의 복잡한 폴더 구조를 `Backups/` 단일 폴더로 통합.

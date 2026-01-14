@@ -101,7 +101,7 @@ namespace KarmoToys.Features.Planner
 		private void RefreshSchedule()
 		{
 			if (_timeRuler == null) return;
-			var data = KarmoToysApp.Instance.Data?.Planner;
+			var data = KarmoToysApp.Instance.Data?.Schedule;
 			if (data == null) return;
 
 			_timeRuler.style.height = 24 * 60 * _pixelsPerMinute;
@@ -571,7 +571,7 @@ namespace KarmoToys.Features.Planner
 					_resizingBlock.StartMinute = startMin;
 					_resizingBlock.EndMinute = endMin;
 
-					var data = KarmoToysApp.Instance.Data?.Planner;
+					var data = KarmoToysApp.Instance.Data?.Schedule;
 					if (data != null)
 					{
 						bool isTransient = !data.TimeBlocks.Contains(_resizingBlock);
@@ -607,7 +607,7 @@ namespace KarmoToys.Features.Planner
 				if (startMin < 0) startMin = 0;
 				if (endMin > 24 * 60) endMin = 24 * 60;
 
-				var data = KarmoToysApp.Instance.Data?.Planner;
+				var data = KarmoToysApp.Instance.Data?.Schedule;
 				if (data != null)
 				{
 					if (_dragMode == DragMode.Create)

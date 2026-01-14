@@ -57,7 +57,7 @@ namespace KarmoToys.Features.QuestBoard
 		{
 			if (string.IsNullOrWhiteSpace(input.value)) return;
 
-			var data = KarmoToysApp.Instance.Data?.Planner;
+			var data = KarmoToysApp.Instance.Data?.Quest;
 			if (data == null) return;
 
 			data.Items.Add(new TodoItem(input.value, category));
@@ -71,7 +71,7 @@ namespace KarmoToys.Features.QuestBoard
 		{
 			list.Clear();
 
-			var data = KarmoToysApp.Instance.Data?.Planner;
+			var data = KarmoToysApp.Instance.Data?.Quest;
 			if (data == null) return;
 
 			var items = data.Items.Where(i => i.Category == category).ToList();
@@ -86,7 +86,7 @@ namespace KarmoToys.Features.QuestBoard
 				{
 					item.IsCompleted = !item.IsCompleted;
 					KarmoToysApp.Instance.SaveData();
-					RefreshTasks(list, category); // Refresh to showing strikethrough logic (if any)
+					RefreshTasks(list, category); 
 				});
 				toggle.AddToClassList("todo-toggle");
 				if (item.IsCompleted) toggle.AddToClassList("completed");

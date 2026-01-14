@@ -1,0 +1,91 @@
+/* --- 대시보드 --- */
+.advice-banner {
+	background-color: var(--color-bg-surface);
+	padding: 15px;
+	border-radius: 8px;
+	border-width: 1px;
+	border-color: var(--color-border);
+	margin-bottom: 20px;
+}
+
+.advice-text {
+	color: var(--color-text-main);
+	-unity-font-style: italic;
+	white-space: normal;
+}
+
+.stats-grid {
+	flex-direction: row;
+	justify-content: space-between;
+	margin-bottom: 20px;
+}
+
+.stat-card {
+	flex-grow: 1;
+	background-color: var(--color-bg-surface);
+	border-width: 1px;
+	border-color: var(--color-border);
+	border-radius: 8px;
+	padding: 15px;
+	margin-right: 10px;
+}
+
+.stat-title {
+	font-size: 12px;
+	color: var(--color-text-sub);
+	-unity-font-style: bold;
+	margin-bottom: 5px;
+}
+
+.stat-value {
+	font-size: 18px;
+	-unity-font-style: bold;
+	color: var(--color-text-main);
+}
+
+.bg-blue .stat-title { color: var(--color-text-sub); }
+.bg-purple .stat-title { color: var(--color-text-sub); }
+.bg-green .stat-title { color: var(--color-text-sub); }
+
+.dashboard-row {
+	flex-direction: row;
+}
+
+.dashboard-col {
+	flex-grow: 1;
+	background-color: var(--color-bg-surface);
+	border-width: 1px;
+	border-color: var(--color-border);
+	border-radius: 8px;
+	padding: 20px;
+	margin-right: 10px;
+	height: 300px;
+}
+
+.memo-input {
+	flex-grow: 1;
+	white-space: normal;
+}
+
+.memo-input > .unity-text-field__input {
+	background-color: var(--color-bg-base);
+	border-color: var(--color-border);
+	color: var(--color-text-main);
+	-unity-text-align: upper-left;
+}
+
+.save-btn {
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	border-radius: 6px;
+	padding: 8px 16px;
+	border-width: 0;
+	-unity-font-style: bold;
+	margin-top: 10px;
+	align-self: flex-end;
+}
+
+.save-btn:hover {
+	background-color: var(--color-primary-hover);
+	color: var(--color-primary-text-hover);
+}

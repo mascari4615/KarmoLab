@@ -1,0 +1,339 @@
+/* --- 일정표 (기존 로직) --- */
+.schedule-scroll {
+	flex-grow: 1;
+	background-color: var(--color-bg-surface);
+}
+
+.time-ruler-container {
+	height: 1440px; 
+	flex-direction: row; /* 열 배치를 위해 가로 방향으로 변경 */
+}
+
+.time-axis {
+	width: 60px;
+	border-right-width: 1px;
+	border-right-color: var(--color-border);
+	background-color: var(--color-bg-base);
+}
+
+.day-column {
+	flex-grow: 1;
+	height: 100%;
+	border-right-width: 1px;
+	border-right-color: var(--color-border);
+	position: relative;
+}
+
+.day-header {
+	height: 30px;
+	background-color: var(--color-bg-surface);
+	-unity-text-align: middle-center;
+	font-size: 12px;
+	-unity-font-style: bold;
+	color: var(--color-text-sub);
+	position: absolute;
+	top: 0; left: 0; right: 0;
+}
+
+.hour-line {
+	position: absolute;
+	left: 0; 
+	right: 0; 
+	height: 1px; 
+	background-color: var(--color-border); /* 부드러운 선 */
+}
+
+.hour-label {
+	position: absolute;
+	top: -10px;
+	right: 5px; /* 축 내부 우측 정렬 */
+	font-size: 10px;
+	color: var(--color-text-sub);
+}
+
+.time-block {
+	position: absolute;
+	left: 0; 
+	right: 1px; /* 테두리를 위한 간격 */
+	border-radius: 4px;
+	padding: 2px 5px;
+	overflow: hidden;
+	font-size: 10px;
+	margin-left: 2px;
+	margin-right: 2px;
+	color: var(--block-text);
+}
+
+/* 현재 시간 표시 바 */
+.current-time-indicator {
+	position: absolute;
+	left: 60px; /* time-axis 너비만큼 오프셋 */
+	right: 0;
+	background-color: var(--color-time-indicator);
+	height: var(--height-time-indicator);
+}
+
+/* 타임 블록 내부 레이아웃 */
+.time-block-time {
+	font-size: 9px;
+	color: var(--block-text); 
+	opacity: 0.8;
+	margin-bottom: 2px;
+}
+
+.time-block-title {
+	font-size: 11px;
+	-unity-font-style: bold;
+	color: var(--block-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.time-block-btn {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	width: 18px;
+	height: 18px;
+	font-size: 14px;
+	background-color: rgba(0, 0, 0, 0.2);
+	border-width: 0;
+	border-radius: 4px;
+	color: var(--block-text);
+	-unity-text-align: middle-center;
+	padding: 0;
+	margin: 0;
+}
+
+.time-block-btn:hover {
+	background-color: rgba(0, 0, 0, 0.5);
+}
+
+.time-block-compact {
+	font-size: 8px;
+	color: var(--block-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	padding: 0 1px;
+}
+.time-block-compact-bg {
+	background-color: transparent;
+}
+.time-block-row {
+	flex-direction: row;
+	align-items: center;
+	padding: 0 4px;
+	overflow: hidden;
+}
+
+.time-block-row .time-block-title {
+	font-size: 11px;
+	margin-right: 4px;
+	flex-shrink: 1; 
+	margin-bottom: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.time-block-row .time-block-time {
+	font-size: 10px;
+	opacity: 0.9;
+	flex-shrink: 0;
+	margin-bottom: 0;
+	white-space: nowrap;
+}
+
+
+/* 확장된 색상 팔레트 (모던 파스텔) */
+.block-color-0 { background-color: var(--block-color-0); }
+.block-color-1 { background-color: var(--block-color-1); }
+.block-color-2 { background-color: var(--block-color-2); }
+.block-color-3 { background-color: var(--block-color-3); }
+.block-color-4 { background-color: var(--block-color-4); }
+.block-color-5 { background-color: var(--block-color-5); }
+.block-color-6 { background-color: var(--block-color-6); }
+.block-color-7 { background-color: var(--block-color-7); }
+.block-color-8 { background-color: var(--block-color-5); } /* 재사용 */
+.block-color-9 { background-color: var(--block-color-6); } /* 재사용 */
+.block-color-10 { background-color: var(--block-color-7); } /* 재사용 */
+.block-color-11 { background-color: var(--block-color-4); } /* 재사용 */
+
+.date-nav {
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	margin-bottom: 15px;
+}
+
+.nav-button {
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	border-radius: 4px;
+	border-width: 0;
+	-unity-font-style: bold;
+}
+
+.nav-button:hover {
+	background-color: var(--color-primary-hover);
+	color: var(--color-primary-text-hover);
+}
+
+.date-label {
+	font-size: 16px;
+	-unity-font-style: bold;
+	color: var(--color-text-main);
+	width: 200px;
+	-unity-text-align: middle-center;
+}
+
+.day-toggle {
+    margin-right: 2px;
+    margin-left: 2px;
+}
+.day-toggle .unity-toggle__label {
+    min-width: 10px;
+    font-size: 10px;
+    color: rgb(200, 200, 200);
+}
+
+.schedule-input-row {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 10px;
+	background-color: var(--color-bg-surface);
+	padding: 8px;
+	border-radius: 8px;
+}
+
+.block-input-title { flex-grow: 1; }
+.block-input-time { width: 40px; }
+
+/* 상세 팝업 */
+.detail-popup {
+	position: absolute;
+	background-color: var(--color-bg-surface);
+	border-radius: 8px;
+	width: 220px;
+	padding: 15px;
+	border-width: 1px;
+	border-color: var(--color-border);
+}
+
+.detail-title {
+	color: var(--color-text-main);
+	font-size: 14px;
+	-unity-font-style: bold;
+	margin-bottom: 5px;
+	white-space: normal;
+}
+
+.detail-time {
+	color: var(--color-text-sub);
+	font-size: 12px;
+	margin-bottom: 10px;
+}
+
+.detail-desc {
+	color: var(--color-text-main);
+	font-size: 12px;
+	margin-bottom: 15px;
+	white-space: normal;
+}
+
+.detail-btn {
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	border-radius: 4px;
+	border-width: 0;
+	padding: 8px;
+	-unity-font-style: bold;
+	margin-bottom: 5px;
+}
+
+.detail-btn:hover {
+	background-color: var(--color-primary-hover);
+	color: var(--color-primary-text-hover);
+}
+
+.detail-btn-close {
+	background-color: var(--color-primary);
+	color: var(--color-primary-text);
+	border-radius: 4px;
+	border-width: 0;
+	padding: 8px;
+	-unity-font-style: bold;
+	font-size: 11px;
+	margin-top: 5px;
+	width: 100%;
+	align-self: center;
+}
+
+.detail-btn-close:hover {
+	background-color: var(--color-primary-hover);
+	color: var(--color-primary-text-hover);
+}
+
+/* 편집 다이얼로그 오버레이 */
+.edit-overlay {
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	background-color: var(--color-overlay);
+	align-items: center;
+	justify-content: center;
+}
+
+.edit-dialog {
+	width: 350px;
+	background-color: var(--color-bg-surface);
+	border-radius: 12px;
+	border-width: 1px;
+	border-color: var(--color-border);
+	padding: 20px;
+}
+
+.edit-header-title {
+	color: var(--color-text-main);
+	font-size: 18px;
+	-unity-font-style: bold;
+	margin-bottom: 20px;
+	border-bottom-width: 1px;
+	border-bottom-color: var(--color-border);
+	padding-bottom: 10px;
+}
+
+/* 편집 다이얼로그 입력 */
+.edit-dialog .unity-text-field {
+	margin-bottom: 10px;
+}
+
+.color-picker-row {
+	flex-direction: row;
+	flex-wrap: wrap; /* 색상이 많을 경우 줄바꿈 허용 */
+	justify-content: flex-start;
+	margin-top: 5px;
+	margin-bottom: 20px;
+}
+
+.color-select-btn {
+	width: 24px;
+	height: 24px;
+	border-radius: 12px; /* 원형 */
+	border-width: 2px;
+	border-color: transparent;
+	margin: 3px;
+}
+
+.color-select-btn:hover {
+	border-color: white;
+	transform-origin: center;
+	scale: 1.1; 
+}
+
+/* 동작 */
+.edit-actions {
+	flex-direction: row;
+	margin-top: 10px;
+}

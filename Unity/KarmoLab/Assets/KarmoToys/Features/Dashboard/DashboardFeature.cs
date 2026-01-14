@@ -42,6 +42,8 @@ namespace KarmoToys.Features.Dashboard
 			// Header Elements (Global)
 			_headerTargetInput = root.Q<TextField>("HeaderTargetInput");
 			_headerDDay = root.Q<Label>("HeaderDDayLabel");
+			
+			// These might not exist in current UI
 			_headerPersonal = root.Q<Label>("HeaderPersonal");
 			_headerStudy = root.Q<Label>("HeaderStudy");
 			_headerTeam = root.Q<Label>("HeaderTeam");
@@ -52,7 +54,7 @@ namespace KarmoToys.Features.Dashboard
 			_statTeamValue = root.Q<Label>("StatTeamValue");
 
 			// Events
-			_saveMemoBtn.clicked += OnSave;
+			if (_saveMemoBtn != null) _saveMemoBtn.clicked += OnSave;
 		}
 
 		public override void OnSelect()
@@ -63,48 +65,56 @@ namespace KarmoToys.Features.Dashboard
 
 		private void RefreshDashboard()
 		{
-			var data = KarmoToysApp.Instance.Data?.Planner;
-			if (data == null) return;
+			if (KarmoToysApp.Instance.Data == null) return;
+			var dashboard = KarmoToysApp.Instance.Data.Dashboard;
+			var quest = KarmoToysApp.Instance.Data.Quest;
+
+			if (dashboard == null) return;
 
 			// Header Update
-			if (string.IsNullOrEmpty(data.TargetName)) data.TargetName = Define.DefaultTargetName;
-			if (string.IsNullOrEmpty(data.TargetDateString)) data.TargetDateString = Define.DefaultTargetDate;
+			if (string.IsNullOrEmpty(dashboard.TargetName)) dashboard.TargetName = Define.DefaultTargetName;
+			if (string.IsNullOrEmpty(dashboard.TargetDateString)) dashboard.TargetDateString = Define.DefaultTargetDate;
 
-			_headerTargetInput.value = data.TargetName;
+			if (_headerTargetInput != null) _headerTargetInput.value = dashboard.TargetName;
 
 			string dDayStr = "D-???";
-			if (DateTime.TryParse(data.TargetDateString, out DateTime target))
+			if (DateTime.TryParse(dashboard.TargetDateString, out DateTime target))
 			{
 				var diff = (target - DateTime.Now).Days;
 				dDayStr = $"D{diff:+#;-#;0}";
 			}
-			_headerDDay.text = dDayStr;
-			_statProgress.text = dDayStr;
+			if (_headerDDay != null) _headerDDay.text = dDayStr;
+			if (_statProgress != null) _statProgress.text = dDayStr;
 
 			// Content Update
-			_memoInput.value = data.MemoContent;
-			_configTargetDate.value = data.TargetDateString;
+			if (_memoInput != null) _memoInput.value = dashboard.MemoContent;
+			if (_configTargetDate != null) _configTargetDate.value = dashboard.TargetDateString;
 
-			// Quest/Stats Title Update
-			_headerPersonal.text = data.PersonalQuestTitle;
-			_headerStudy.text = data.StudyQuestTitle;
-			_headerTeam.text = data.TeamQuestTitle;
+			// Quest/Stats Title Update (Quest Data)
+			if (quest != null)
+			{
+				if (_headerPersonal != null) _headerPersonal.text = quest.PersonalQuestTitle;
+				if (_headerStudy != null) _headerStudy.text = quest.StudyQuestTitle;
+				if (_headerTeam != null) _headerTeam.text = quest.TeamQuestTitle;
+			}
 
-			_statPersonalTitle.text = data.StatPersonalTitle;
-			_statPersonalValue.text = data.StatPersonalValue;
-			_statTeamTitle.text = data.StatTeamTitle;
-			_statTeamValue.text = data.StatTeamValue;
+			// Dashboard Data
+			if (_statPersonalTitle != null) _statPersonalTitle.text = dashboard.StatPersonalTitle;
+			if (_statPersonalValue != null) _statPersonalValue.text = dashboard.StatPersonalValue;
+			if (_statTeamTitle != null) _statTeamTitle.text = dashboard.StatTeamTitle;
+			if (_statTeamValue != null) _statTeamValue.text = dashboard.StatTeamValue;
 		}
 
 		private void OnSave()
 		{
-			var data = KarmoToysApp.Instance.Data?.Planner;
-			if (data == null) return;
+			if (KarmoToysApp.Instance.Data == null) return;
+			var dashboard = KarmoToysApp.Instance.Data.Dashboard;
+			if (dashboard == null) return;
 
 			// Update Data
-			data.MemoContent = _memoInput.value;
-			data.TargetName = _headerTargetInput.value;
-			data.TargetDateString = _configTargetDate.value;
+			if (_memoInput != null) dashboard.MemoContent = _memoInput.value;
+			if (_headerTargetInput != null) dashboard.TargetName = _headerTargetInput.value;
+			if (_configTargetDate != null) dashboard.TargetDateString = _configTargetDate.value;
 
 			// Save via App
 			KarmoToysApp.Instance.SaveData();

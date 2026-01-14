@@ -12,12 +12,12 @@ namespace KarmoToys.Features.Note
 	[AddComponentMenu("KarmoLab/Features/Note")]
 	public class NoteFeature : FeatureBase
 	{
-		public override string FeatureName => Define.FeatureNote; // "Note"
-		public override string TabButtonName => Define.TabSecret; // "TabSecret"
+		public override string FeatureName => Define.FeatureNote;
+		public override string TabButtonName => Define.TabSecret;
 
 		private TextField _secProblem, _secWhy, _secSolution;
 		private Button _addSecBtn;
-		private VisualElement _secList; // or ScrollView? PlannerController used VisualElement (root.Q("SecretList"))
+		private VisualElement _secList; 
 
 		public override void Initialize(VisualElement root)
 		{
@@ -29,7 +29,7 @@ namespace KarmoToys.Features.Note
 			_addSecBtn = root.Q<Button>("AddSecretBtn");
 			_secList = root.Q("SecretList");
 
-			_addSecBtn.clicked += AddSecretNote;
+			if (_addSecBtn != null) _addSecBtn.clicked += AddSecretNote;
 		}
 
 		public override void OnSelect()
@@ -42,7 +42,7 @@ namespace KarmoToys.Features.Note
 		{
 			if (_secProblem == null || string.IsNullOrWhiteSpace(_secProblem.value)) return;
 
-			var data = KarmoToysApp.Instance.Data?.Planner;
+			var data = KarmoToysApp.Instance.Data?.Note;
 			if (data == null) return;
 
 			data.SecretNotes.Add(new SecretNote(_secProblem.value, _secWhy.value, _secSolution.value));
@@ -58,9 +58,10 @@ namespace KarmoToys.Features.Note
 
 		private void RefreshSecretNotes()
 		{
+			if (_secList == null) return;
 			_secList.Clear();
 
-			var data = KarmoToysApp.Instance.Data?.Planner;
+			var data = KarmoToysApp.Instance.Data?.Note;
 			if (data == null) return;
 
 			foreach (var note in data.SecretNotes.OrderByDescending(n => n.DateString))
