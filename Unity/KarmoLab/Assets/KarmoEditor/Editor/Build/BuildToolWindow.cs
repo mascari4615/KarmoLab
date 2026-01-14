@@ -9,10 +9,7 @@ namespace KarmoTools.Build
 	public class BuildToolWindow : EditorWindow
 	{
 		[MenuItem("KarmoTools/Build Helper")]
-		public static void ShowWindow()
-		{
-			GetWindow<BuildToolWindow>("Build Helper");
-		}
+		public static void ShowWindow() => GetWindow<BuildToolWindow>("Build Helper");
 
 		// Config Keys
 		private const string KEY_OUTPUT_PATH = "KarmoTools_BuildPath";

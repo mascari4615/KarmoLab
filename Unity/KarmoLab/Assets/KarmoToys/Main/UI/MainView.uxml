@@ -108,6 +108,7 @@
 			<ui:ScrollView name="ScheduleScroll" class="schedule-scroll">
 				<ui:VisualElement name="TimeRulerContainer" class="time-ruler-container" style="padding-left: 20px; padding-right: 20px;">
 					<ui:VisualElement name="TimeAxis" class="time-axis" />
+					<ui:VisualElement name="CurrentTimeIndicator" class="current-time-indicator" picking-mode="Ignore" />
 					<!-- 스크립트를 통해 요일 컬럼이 여기에 추가됨 -->
 				</ui:VisualElement>
 			</ui:ScrollView>

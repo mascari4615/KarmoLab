@@ -51,7 +51,7 @@ namespace KarmoToys.Main
 		{
 			var root = _uiDocument.rootVisualElement;
 			if (root == null) return;
-			
+
 			// 0. Features Auto Addition
 			EnsureFeatures();
 
@@ -83,7 +83,12 @@ namespace KarmoToys.Main
 				}
 			}
 
-			// 3. 첫 번째 탭 선택 (기본값)
+			// 3. 테마 초기화 및 버튼 바인딩
+			ApplyTheme();
+			var themeBtn = root.Q<Button>("BtnThemeToggle");
+			if (themeBtn != null) themeBtn.clicked += ToggleTheme;
+
+			// 4. 첫 번째 탭 선택 (기본값)
 			if (_tabMap.Count > 0)
 			{
 				// Dictionary의 첫 번째 키를 가져오는 것은 순서가 보장되지 않으므로, Features 순서대로 찾음
@@ -100,6 +105,32 @@ namespace KarmoToys.Main
 
 			// 환영 메시지
 			Toast.Show("KarmoToys에 오신 것을 환영한다냥! 🎮", ToastType.Info);
+		}
+
+		private void ToggleTheme()
+		{
+			var themes = (AppTheme[])System.Enum.GetValues(typeof(AppTheme));
+			int nextIndex = ((int)Instance.Data.Theme + 1) % themes.Length;
+			Instance.Data.Theme = themes[nextIndex];
+
+			ApplyTheme();
+			SaveData();
+			Toast.Show($"테마가 {Instance.Data.Theme} 모드로 바뀌었다냥! ✨");
+		}
+
+		private void ApplyTheme()
+		{
+			var root = _uiDocument.rootVisualElement;
+			if (root == null) return;
+
+			// Enum에 정의된 모든 테마 클래스 제거 (소문자 기준)
+			foreach (var themeName in System.Enum.GetNames(typeof(AppTheme)))
+			{
+				root.RemoveFromClassList($"theme-{themeName.ToLower()}");
+			}
+
+			// 현재 선택된 테마 클래스 추가
+			root.AddToClassList($"theme-{Data.Theme.ToString().ToLower()}");
 		}
 
 		private void SelectTab(Button selectedBtn)
@@ -136,9 +167,7 @@ namespace KarmoToys.Main
 		public void LoadData()
 		{
 			Data = DataService.Load(_savePath);
-			// Refresh current feature if needed?
-			// Force UI refresh:
-			if (_currentFeature != null) _currentFeature.OnSelect(); // Re-trigger select to refresh view
+			if (_currentFeature != null) _currentFeature.OnSelect();
 		}
 
 		private void EnsureFeatures()

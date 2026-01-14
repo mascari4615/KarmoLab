@@ -65,7 +65,8 @@ namespace KarmoToys.Features.Planner
 			_nextDayBtn = root.Q<Button>("NextDayBtn");
 			_schedDateLabel = root.Q<Label>("CurrentDateLabel");
 			_weekendToggle = root.Q<Toggle>("WeekendToggle");
-			_timeRuler = root.Q("TimeRulerContainer"); // Ensure ID correct
+			_timeRuler = root.Q("TimeRulerContainer");
+			_currentTimeIndicator = root.Q("CurrentTimeIndicator");
 
 			// Runtime Config
 			_uiStartDay = root.Q<DropdownField>("StartDayDropdown");
@@ -107,7 +108,7 @@ namespace KarmoToys.Features.Planner
 				_pixelsPerMinute = KarmoToysApp.Instance.Settings.DefaultPixelsPerMinute;
 				_startDayOfWeek = KarmoToysApp.Instance.Settings.DefaultStartDay;
 			}
-			
+
 			// Init Logic
 			AdjustCurrentDateToStartOfWeek();
 

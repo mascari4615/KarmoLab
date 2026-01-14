@@ -24,4 +24,10 @@ namespace KarmoToys.Common
 		public const string DefaultTargetDate = "2027-03-01";
 		public const string DefaultTargetName = "Target: Project";
 	}
+
+	public enum AppTheme
+	{
+		Dark,
+		Light
+	}
 }

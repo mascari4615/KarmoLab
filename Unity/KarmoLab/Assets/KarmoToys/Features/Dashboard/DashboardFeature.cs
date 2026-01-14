@@ -52,7 +52,6 @@ namespace KarmoToys.Features.Dashboard
 			_statTeamValue = root.Q<Label>("StatTeamValue");
 
 			// Events
-			// Events
 			_saveMemoBtn.clicked += OnSave;
 		}
 
@@ -102,7 +101,6 @@ namespace KarmoToys.Features.Dashboard
 			var data = KarmoToysApp.Instance.Data?.Planner;
 			if (data == null) return;
 
-			// Update Data
 			// Update Data
 			data.MemoContent = _memoInput.value;
 			data.TargetName = _headerTargetInput.value;

@@ -192,7 +192,7 @@
                 "DeletedTicks": 0,
                 "Tags": [],
                 "RecurrenceRule": "Weekly;Tue,Wed,Thu,Fri,Sat",
-                "RecurrenceEnd": "2026-01-13",
+                "RecurrenceEnd": "2026-01-12",
                 "ExceptionDates": []
             },
             {
@@ -222,7 +222,7 @@
                 "DeletedTicks": 0,
                 "Tags": [],
                 "RecurrenceRule": "Weekly;Thu,Fri,Sat",
-                "RecurrenceEnd": "",
+                "RecurrenceEnd": "2026-01-14",
                 "ExceptionDates": []
             },
             {
@@ -230,11 +230,11 @@
                 "Title": "New Event",
                 "Description": "",
                 "DateString": "2026-01-15",
-                "StartMinute": 270,
-                "EndMinute": 300,
+                "StartMinute": 255,
+                "EndMinute": 285,
                 "ColorIndex": 4,
-                "IsDeleted": false,
-                "DeletedTicks": 0,
+                "IsDeleted": true,
+                "DeletedTicks": 639040347085097325,
                 "Tags": [],
                 "RecurrenceRule": "",
                 "RecurrenceEnd": "",
@@ -248,8 +248,8 @@
                 "StartMinute": 195,
                 "EndMinute": 230,
                 "ColorIndex": 4,
-                "IsDeleted": false,
-                "DeletedTicks": 0,
+                "IsDeleted": true,
+                "DeletedTicks": 639040347105702684,
                 "Tags": [],
                 "RecurrenceRule": "",
                 "RecurrenceEnd": "",
@@ -267,10 +267,11 @@
                 "DeletedTicks": 0,
                 "Tags": [],
                 "RecurrenceRule": "Weekly;Tue,Wed,Thu,Fri,Sat",
-                "RecurrenceEnd": "2026-03-17",
+                "RecurrenceEnd": "2026-01-16",
                 "ExceptionDates": [
                     "2026-01-14",
-                    "2026-01-15"
+                    "2026-01-15",
+                    "2026-01-16"
                 ]
             },
             {
@@ -281,8 +282,8 @@
                 "StartMinute": 510,
                 "EndMinute": 540,
                 "ColorIndex": 3,
-                "IsDeleted": false,
-                "DeletedTicks": 0,
+                "IsDeleted": true,
+                "DeletedTicks": 639040347238880528,
                 "Tags": [],
                 "RecurrenceRule": "",
                 "RecurrenceEnd": "",
@@ -300,7 +301,7 @@
                 "DeletedTicks": 0,
                 "Tags": [],
                 "RecurrenceRule": "Weekly;Tue,Wed,Thu,Fri,Sat",
-                "RecurrenceEnd": "2026-01-13",
+                "RecurrenceEnd": "2026-01-12",
                 "ExceptionDates": []
             },
             {
@@ -341,8 +342,8 @@
                 "StartMinute": 350,
                 "EndMinute": 380,
                 "ColorIndex": 3,
-                "IsDeleted": false,
-                "DeletedTicks": 0,
+                "IsDeleted": true,
+                "DeletedTicks": 639040347045265520,
                 "Tags": [],
                 "RecurrenceRule": "",
                 "RecurrenceEnd": "",
@@ -360,8 +361,10 @@
                 "DeletedTicks": 0,
                 "Tags": [],
                 "RecurrenceRule": "Weekly;Sun,Mon,Tue,Wed,Thu,Fri,Sat",
-                "RecurrenceEnd": "",
-                "ExceptionDates": []
+                "RecurrenceEnd": "2026-01-13",
+                "ExceptionDates": [
+                    "2026-01-13"
+                ]
             },
             {
                 "Id": "8ca4db23-4a5b-4297-9269-ef14dd152a2c",
@@ -461,8 +464,8 @@
                 "StartMinute": 160,
                 "EndMinute": 190,
                 "ColorIndex": 1,
-                "IsDeleted": false,
-                "DeletedTicks": 0,
+                "IsDeleted": true,
+                "DeletedTicks": 639040347201330917,
                 "Tags": [],
                 "RecurrenceRule": "",
                 "RecurrenceEnd": "",
@@ -480,7 +483,7 @@
                 "DeletedTicks": 0,
                 "Tags": [],
                 "RecurrenceRule": "Weekly;Mon,Tue,Wed,Thu,Fri",
-                "RecurrenceEnd": "2026-02-16",
+                "RecurrenceEnd": "2026-01-13",
                 "ExceptionDates": []
             },
             {
@@ -512,6 +515,36 @@
                 "RecurrenceRule": "Weekly;Sun,Tue,Wed,Thu,Fri,Sat",
                 "RecurrenceEnd": "",
                 "ExceptionDates": []
+            },
+            {
+                "Id": "4686b090-dabb-4385-a5b6-fed11720b53e",
+                "Title": "New Event",
+                "Description": "",
+                "DateString": "2026-01-14",
+                "StartMinute": 60,
+                "EndMinute": 90,
+                "ColorIndex": 3,
+                "IsDeleted": false,
+                "DeletedTicks": 0,
+                "Tags": [],
+                "RecurrenceRule": "",
+                "RecurrenceEnd": "",
+                "ExceptionDates": []
+            },
+            {
+                "Id": "6892c27b-9c3c-4369-99a5-44f05e31e852",
+                "Title": "New Event",
+                "Description": "",
+                "DateString": "2026-01-14",
+                "StartMinute": 45,
+                "EndMinute": 75,
+                "ColorIndex": 2,
+                "IsDeleted": false,
+                "DeletedTicks": 0,
+                "Tags": [],
+                "RecurrenceRule": "",
+                "RecurrenceEnd": "",
+                "ExceptionDates": []
             }
         ],
         "SecretNotes": [
@@ -537,5 +570,6 @@
         "Mp": 60,
         "Exp": 30,
         "LastUpdatedTicks": 0
-    }
+    },
+    "Theme": 1
 }

@@ -1,0 +1,96 @@
+/* ========================================================================================
+   모던 블랙 & 화이트 테마 토큰 (Theme Tokens)
+   :root에는 공통 구조/수치 설정을, .theme- 계열에는 색상 설정을 정의한다냥!
+   ======================================================================================== */
+
+:root {
+	/* --- Common Settings (공통 구조 및 수치) --- */
+	--height-time-indicator: 2px;
+}
+
+/* ========================================================================================
+   Theme: Dark (다크 모드 - 기본)
+   ======================================================================================== */
+:root, .theme-dark {
+	--color-bg-base: rgb(10, 10, 10);      /* 거의 검정 */
+	--color-bg-surface: rgb(24, 24, 24);   /* 어두운 회색 */
+	--color-bg-hover: rgb(40, 40, 40);     /* 밝은 회색 */
+	--color-border: rgb(60, 60, 60);       
+	--color-border-focus: rgb(255, 255, 255);
+
+	--color-text-main: rgb(255, 255, 255);
+	--color-text-sub: rgb(160, 160, 160);
+	--color-text-hover: rgb(255, 255, 255);
+	--color-text-inverse: rgb(0, 0, 0);
+
+	--color-primary: rgb(40, 40, 40);      /* 다크 그레이 버튼 베이스 */
+	--color-primary-hover: rgb(255, 255, 255); /* 호버 시 흰색 */
+	--color-primary-text: rgb(255, 255, 255); /* 기본 흰색 텍스트 */
+	--color-primary-text-hover: rgb(10, 10, 10); /* 호버 시 검은색 텍스트 */
+
+	--color-secondary: transparent;
+	--color-secondary-border: rgb(80, 80, 80);
+	--color-secondary-hover: rgb(40, 40, 40);
+	
+	--color-success: rgb(255, 255, 255);
+	--color-danger: rgb(255, 255, 255);
+	
+	--color-overlay: rgba(0, 0, 0, 0.85);
+	--unity-cursor-color: white;
+
+	/* 일정 블록 색상 (다크 모드용 부드러운 파스텔톤) */
+	--block-color-0: rgb(252, 165, 165);
+	--block-color-1: rgb(253, 186, 116);
+	--block-color-2: rgb(253, 224, 71);
+	--block-color-3: rgb(134, 239, 172);
+	--block-color-4: rgb(147, 197, 253);
+	--block-color-5: rgb(165, 180, 252);
+	--block-color-6: rgb(216, 180, 254);
+	--block-color-7: rgb(240, 171, 252);
+	--block-text: rgb(0, 0, 0);
+
+	/* 현재 시간 표시 바 */
+	--color-time-indicator: rgba(255, 147, 147, 0.8);
+}
+
+/* ========================================================================================
+   Theme: Light (라이트 모드)
+   ======================================================================================== */
+.theme-light {
+	--color-bg-base: rgb(255, 255, 255);
+	--color-bg-surface: rgb(245, 245, 245);
+	--color-bg-hover: rgb(230, 230, 230);
+	--color-border: rgb(220, 220, 220);
+	--color-border-focus: rgb(0, 0, 0);
+
+	--color-text-main: rgb(0, 0, 0);
+	--color-text-sub: rgb(100, 100, 100);
+	--color-text-hover: rgb(255, 255, 255);
+	--color-text-inverse: rgb(255, 255, 255);
+
+	--color-primary: rgb(230, 230, 230);
+	--color-primary-hover: rgb(180, 180, 180);
+	--color-primary-text: rgb(0, 0, 0);
+	--color-primary-text-hover: rgb(0, 0, 0);
+
+	--color-secondary: transparent;
+	--color-secondary-border: rgb(200, 200, 200);
+	--color-secondary-hover: rgb(235, 235, 235);
+
+	--color-overlay: rgba(255, 255, 255, 0.85);
+	--unity-cursor-color: black;
+
+	/* 일정 블록 색상 (라이트 모드용 매우 연한 파스텔톤) */
+	--block-color-0: rgb(254, 202, 202);
+	--block-color-1: rgb(254, 215, 170);
+	--block-color-2: rgb(254, 240, 138);
+	--block-color-3: rgb(187, 247, 208);
+	--block-color-4: rgb(191, 219, 254);
+	--block-color-5: rgb(199, 210, 254);
+	--block-color-6: rgb(233, 213, 255);
+	--block-color-7: rgb(245, 208, 254);
+	--block-text: rgb(0, 0, 0);
+
+	/* 현재 시간 표시 바 (라이트 모드) */
+	--color-time-indicator: rgba(255, 146, 146, 0.9);
+}

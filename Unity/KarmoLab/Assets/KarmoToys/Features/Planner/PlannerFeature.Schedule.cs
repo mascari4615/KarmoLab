@@ -20,6 +20,9 @@ namespace KarmoToys.Features.Planner
 		private VisualElement _customTooltip;
 		private Label _customTooltipLabel;
 
+		// Current Time Indicator
+		private VisualElement _currentTimeIndicator;
+
 		private void AdjustCurrentDateToStartOfWeek()
 		{
 			int diff = (7 + (_currentDate.DayOfWeek - _startDayOfWeek)) % 7;
@@ -93,6 +96,9 @@ namespace KarmoToys.Features.Planner
 				_dayColumns.Add(dayCol);
 				_timeRuler.Add(dayCol);
 			}
+
+			// 3. Current Time Indicator (UXML에서 찾은 요소를 다시 상단으로Add)
+			_timeRuler.Add(_currentTimeIndicator);
 		}
 
 		private void RefreshSchedule()
@@ -242,6 +248,32 @@ namespace KarmoToys.Features.Planner
 					}
 				}
 			}
+
+			// Update current time indicator
+			UpdateCurrentTimeIndicator();
+		}
+
+		private void UpdateCurrentTimeIndicator()
+		{
+			if (_currentTimeIndicator == null) return;
+
+			DateTime now = DateTime.Now;
+			DateTime startOfWeek = _currentDate;
+			DateTime endOfWeek = _currentDate.AddDays(6);
+
+			// 오늘이 현재 표시 중인 주에 포함되는지 확인
+			if (now.Date < startOfWeek.Date || now.Date > endOfWeek.Date)
+			{
+				_currentTimeIndicator.style.display = DisplayStyle.None;
+				return;
+			}
+
+			// 현재 시간을 분 단위로 계산
+			int currentMinute = now.Hour * 60 + now.Minute;
+			float topPosition = currentMinute * _pixelsPerMinute;
+
+			_currentTimeIndicator.style.top = topPosition;
+			_currentTimeIndicator.style.display = DisplayStyle.Flex;
 		}
 
 		private bool IsRecurrenceMatch(TimeBlock b, DateTime targetDate)
