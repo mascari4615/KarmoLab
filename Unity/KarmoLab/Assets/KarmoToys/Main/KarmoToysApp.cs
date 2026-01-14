@@ -7,9 +7,13 @@ using KarmoToys.Common.Data;
 
 namespace KarmoToys.Main
 {
+	[AddComponentMenu("KarmoLab/KarmoToysApp")]
 	public class KarmoToysApp : MonoBehaviour
 	{
 		[SerializeField] private UIDocument _uiDocument;
+		[SerializeField] private KarmoToysSettings _settings;
+
+		public KarmoToysSettings Settings => _settings;
 
 		public static KarmoToysApp Instance { get; private set; }
 		public static ToastSystem Toast { get; private set; }
@@ -47,6 +51,9 @@ namespace KarmoToys.Main
 		{
 			var root = _uiDocument.rootVisualElement;
 			if (root == null) return;
+			
+			// 0. Features Auto Addition
+			EnsureFeatures();
 
 			// 1. 공통 서비스 초기화
 			Toast = new ToastSystem(root.Q("ToastContainer"));
@@ -118,6 +125,42 @@ namespace KarmoToys.Main
 		public void SaveData()
 		{
 			DataService.Save(_savePath, Data);
+		}
+
+		public string GetSaveDirectory()
+		{
+			if (string.IsNullOrEmpty(_savePath)) return Application.persistentDataPath;
+			return System.IO.Path.GetDirectoryName(_savePath);
+		}
+
+		public void LoadData()
+		{
+			Data = DataService.Load(_savePath);
+			// Refresh current feature if needed?
+			// Force UI refresh:
+			if (_currentFeature != null) _currentFeature.OnSelect(); // Re-trigger select to refresh view
+		}
+
+		private void EnsureFeatures()
+		{
+			// List of known features to auto-add
+			var features = new System.Type[]
+			{
+				typeof(Features.Dashboard.DashboardFeature),
+				typeof(Features.Planner.PlannerFeature),
+				typeof(Features.QuestBoard.QuestBoardFeature),
+				typeof(Features.Note.NoteFeature),
+				typeof(Features.ToolBox.ToolBoxFeature)
+			};
+
+			foreach (var type in features)
+			{
+				if (GetComponent(type) == null)
+				{
+					gameObject.AddComponent(type);
+					Debug.Log($"[KarmoToys] Auto-added missing feature: {type.Name}");
+				}
+			}
 		}
 	}
 }

@@ -30,7 +30,6 @@ namespace KarmoToys.Common.Data
 		public string Problem;
 		public string Why;
 		public string Solution;
-		public string AiAnalysis;
 
 		public SecretNote(string problem, string why, string solution)
 		{

@@ -10,6 +10,7 @@ using KarmoToys.Common.Data;
 
 namespace KarmoToys.Features.Planner
 {
+	[AddComponentMenu("KarmoLab/Features/Planner")]
 	public partial class PlannerFeature : FeatureBase
 	{
 		public override string FeatureName => Define.FeaturePlanner;
@@ -17,15 +18,10 @@ namespace KarmoToys.Features.Planner
 
 		// --- Fields from PlannerController Related to Schedule ---
 
-		[Header("Settings")]
-		[Tooltip("Snap interval in minutes for drag and drop.")]
-		[SerializeField] private float _snapInterval = 5f;
-
-		[Tooltip("Vertical scale in pixels per minute.")]
-		[SerializeField, Range(0.5f, 5f)] private float _pixelsPerMinute = 0.8f;
-
-		[Tooltip("Start day of the week.")]
-		[SerializeField] private DayOfWeek _startDayOfWeek = DayOfWeek.Monday;
+		// Settings are now in KarmoToysSettings (via KarmoToysApp)
+		private float _snapInterval = 5f;
+		private float _pixelsPerMinute = 0.8f;
+		private DayOfWeek _startDayOfWeek = DayOfWeek.Monday;
 
 		private DateTime _currentDate = DateTime.Today;
 
@@ -78,58 +74,48 @@ namespace KarmoToys.Features.Planner
 			_tagFilterDropdown = root.Q<DropdownField>("TagFilterDropdown");
 
 			// Events
-			if (_prevDayBtn != null) _prevDayBtn.clicked += OnPrevWeek;
-			if (_nextDayBtn != null) _nextDayBtn.clicked += OnNextWeek;
+			_prevDayBtn.clicked += OnPrevWeek;
+			_nextDayBtn.clicked += OnNextWeek;
 
 			// Config Events
-			if (_uiStartDay != null)
+			_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
+			_uiStartDay.value = _startDayOfWeek.ToString();
+			_uiStartDay.RegisterValueChangedCallback(evt =>
 			{
-				_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
-				_uiStartDay.value = _startDayOfWeek.ToString();
-				_uiStartDay.RegisterValueChangedCallback(evt =>
+				if (Enum.TryParse(evt.newValue, out DayOfWeek day))
 				{
-					if (Enum.TryParse(evt.newValue, out DayOfWeek day))
-					{
-						_startDayOfWeek = day;
-						AdjustCurrentDateToStartOfWeek();
-						RefreshSchedule();
-					}
-				});
-			}
+					_startDayOfWeek = day;
+					AdjustCurrentDateToStartOfWeek();
+					RefreshSchedule();
+				}
+			});
 
-			if (_uiZoom != null)
+			_uiZoom.value = _pixelsPerMinute;
+			_uiZoom.RegisterValueChangedCallback(evt => { _pixelsPerMinute = evt.newValue; RefreshSchedule(); });
+
+			_uiSnap.value = (int)_snapInterval;
+			_uiSnap.RegisterValueChangedCallback(evt => _snapInterval = Mathf.Max(1, evt.newValue));
+
+			_tagFilterDropdown.RegisterValueChangedCallback(evt => RefreshSchedule());
+
+			_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
+
+			// Init Defaults from Settings
+			if (KarmoToysApp.Instance.Settings != null)
 			{
-				_uiZoom.value = _pixelsPerMinute;
-				_uiZoom.RegisterValueChangedCallback(evt => { _pixelsPerMinute = evt.newValue; RefreshSchedule(); });
+				_snapInterval = KarmoToysApp.Instance.Settings.DefaultSnapInterval;
+				_pixelsPerMinute = KarmoToysApp.Instance.Settings.DefaultPixelsPerMinute;
+				_startDayOfWeek = KarmoToysApp.Instance.Settings.DefaultStartDay;
 			}
-
-			if (_uiSnap != null)
-			{
-				_uiSnap.value = (int)_snapInterval;
-				_uiSnap.RegisterValueChangedCallback(evt => _snapInterval = Mathf.Max(1, evt.newValue));
-			}
-
-			if (_tagFilterDropdown != null)
-			{
-				_tagFilterDropdown.RegisterValueChangedCallback(evt => RefreshSchedule());
-			}
-
-			if (_weekendToggle != null)
-			{
-				_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
-			}
-
+			
 			// Init Logic
 			AdjustCurrentDateToStartOfWeek();
 
 			// Setup Ruler Interaction
-			if (_timeRuler != null)
-			{
-				_timeRuler.RegisterCallback<PointerDownEvent>(OnRulerPointerDown);
-				_timeRuler.RegisterCallback<PointerMoveEvent>(OnRulerPointerMove);
-				_timeRuler.RegisterCallback<PointerUpEvent>(OnRulerPointerUp);
-				_timeRuler.RegisterCallback<PointerLeaveEvent>(OnRulerPointerUp);
-			}
+			_timeRuler.RegisterCallback<PointerDownEvent>(OnRulerPointerDown);
+			_timeRuler.RegisterCallback<PointerMoveEvent>(OnRulerPointerMove);
+			_timeRuler.RegisterCallback<PointerUpEvent>(OnRulerPointerUp);
+			_timeRuler.RegisterCallback<PointerLeaveEvent>(OnRulerPointerUp);
 
 			InitializeDialogs(root); // In Partial
 		}
@@ -138,26 +124,15 @@ namespace KarmoToys.Features.Planner
 		{
 			base.OnSelect();
 			RefreshSchedule();
-			// BuildTimeRuler if needed? usually called in RefreshSchedule or Init
-			BuildTimeRuler();
 		}
 
-		private void OnPrevWeek()
+		public override void OnDeselect()
 		{
-			_currentDate = _currentDate.AddDays(-7);
-			RefreshSchedule();
-		}
-
-		private void OnNextWeek()
-		{
-			_currentDate = _currentDate.AddDays(7);
-			RefreshSchedule();
-		}
-
-		private void AdjustCurrentDateToStartOfWeek()
-		{
-			int diff = (7 + (_currentDate.DayOfWeek - _startDayOfWeek)) % 7;
-			_currentDate = _currentDate.AddDays(-1 * diff);
+			base.OnDeselect();
+			HideDetailPopup();
+			HideEditDialog();
+			HideRecurrencePopup();
+			HideTrashPopup();
 		}
 	}
 }

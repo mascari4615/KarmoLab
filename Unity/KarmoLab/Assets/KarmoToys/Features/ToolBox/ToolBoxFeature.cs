@@ -10,6 +10,7 @@ using KarmoToys.Common;
 
 namespace KarmoToys.Features.ToolBox
 {
+	[AddComponentMenu("KarmoLab/Features/ToolBox")]
 	public class ToolBoxFeature : FeatureBase
 	{
 		public override string FeatureName => Define.FeatureToolBox; // "ToolBox"
@@ -49,13 +50,13 @@ namespace KarmoToys.Features.ToolBox
 			_btnOpenSaveDir = root.Q<Button>("BtnOpenSaveDir");
 			_btnRefreshData = root.Q<Button>("BtnRefreshData");
 
-			if (_btnRunAction != null) _btnRunAction.clicked += RunCurrentAction;
-			if (_btnCopyOutput != null) _btnCopyOutput.clicked += () => { if (_outputField != null) GUIUtility.systemCopyBuffer = _outputField.value; };
-			if (_btnOpenSaveDir != null) _btnOpenSaveDir.clicked += OnOpenSaveDir;
-			if (_btnRefreshData != null) _btnRefreshData.clicked += OnRefreshData;
+			_btnRunAction.clicked += RunCurrentAction;
+			_btnCopyOutput.clicked += () => { GUIUtility.systemCopyBuffer = _outputField.value; };
+			_btnOpenSaveDir.clicked += OnOpenSaveDir;
+			_btnRefreshData.clicked += OnRefreshData;
 
-			if (_toolSelector != null) _toolSelector.RegisterValueChangedCallback(evt => SelectTool(evt.newValue));
-			if (_actionSelector != null) _actionSelector.RegisterValueChangedCallback(evt => SelectAction(evt.newValue));
+			_toolSelector.RegisterValueChangedCallback(evt => SelectTool(evt.newValue));
+			_actionSelector.RegisterValueChangedCallback(evt => SelectAction(evt.newValue));
 
 			LoadTools();
 		}
@@ -71,12 +72,12 @@ namespace KarmoToys.Features.ToolBox
 			{
 				t.Initialize(msg =>
 				{
-					if (_outputField != null) _outputField.value = msg;
+					_outputField.value = msg;
 				});
 			}
 
-			if (_toolSelector != null) _toolSelector.choices = _tools.Select(t => t.Name).ToList();
-			if (_tools.Count > 0 && _toolSelector != null) _toolSelector.value = _tools[0].Name;
+			_toolSelector.choices = _tools.Select(t => t.Name).ToList();
+			if (_tools.Count > 0) _toolSelector.value = _tools[0].Name;
 		}
 
 		private void SelectTool(string toolName)
@@ -84,19 +85,16 @@ namespace KarmoToys.Features.ToolBox
 			_currentTool = _tools.FirstOrDefault(t => t.Name == toolName);
 			if (_currentTool == null) return;
 
-			if (_toolTitle != null) _toolTitle.text = _currentTool.Name;
+			_toolTitle.text = _currentTool.Name;
 
-			if (_inputMain != null) _inputMain.value = "";
-			if (_inputSub != null) _inputSub.value = "";
-			if (_outputField != null) _outputField.value = "";
+			_inputMain.value = "";
+			_inputSub.value = "";
+			_outputField.value = "";
 
 			var actions = _currentTool.GetActions();
-			if (_actionSelector != null)
-			{
-				_actionSelector.choices = actions.Select(a => a.Name).ToList();
-				if (actions.Count > 0) _actionSelector.value = actions[0].Name;
-				else { _actionSelector.value = null; SelectAction(null); }
-			}
+			_actionSelector.choices = actions.Select(a => a.Name).ToList();
+			if (actions.Count > 0) _actionSelector.value = actions[0].Name;
+			else { _actionSelector.value = null; SelectAction(null); }
 		}
 
 		private void SelectAction(string actionName)
@@ -107,22 +105,22 @@ namespace KarmoToys.Features.ToolBox
 
 			if (_currentAction == null)
 			{
-				if (_toolDescription != null) _toolDescription.text = "";
+				_toolDescription.text = "";
 				return;
 			}
 
-			if (_toolDescription != null) _toolDescription.text = _currentAction.Description;
-			if (_labelInputMain != null) _labelInputMain.text = _currentAction.MainInputLabel;
+			_toolDescription.text = _currentAction.Description;
+			_labelInputMain.text = _currentAction.MainInputLabel;
 
 			if (string.IsNullOrEmpty(_currentAction.SubInputLabel))
 			{
-				if (_labelInputSub != null) _labelInputSub.text = "Sub Input (Not Used)";
-				if (_inputSub != null) _inputSub.SetEnabled(false);
+				_labelInputSub.text = "Sub Input (Not Used)";
+				_inputSub.SetEnabled(false);
 			}
 			else
 			{
-				if (_labelInputSub != null) _labelInputSub.text = _currentAction.SubInputLabel;
-				if (_inputSub != null) _inputSub.SetEnabled(true);
+				_labelInputSub.text = _currentAction.SubInputLabel;
+				_inputSub.SetEnabled(true);
 			}
 		}
 
@@ -131,21 +129,20 @@ namespace KarmoToys.Features.ToolBox
 			if (_currentAction == null) return;
 			try
 			{
-				string main = _inputMain != null ? _inputMain.value : "";
-				string sub = _inputSub != null ? _inputSub.value : "";
+				string main = _inputMain.value;
+				string sub = _inputSub.value;
 				_currentAction.Execute?.Invoke(main, sub);
 			}
 			catch (Exception ex)
 			{
-				if (_outputField != null) _outputField.value = $"Error: {ex.Message}";
+				_outputField.value = $"Error: {ex.Message}";
 			}
 		}
 
 		private void OnOpenSaveDir()
 		{
-			string path = Define.EditorDataPath;
-			if (string.IsNullOrEmpty(path)) return;
-			string dir = Path.GetDirectoryName(path);
+			string dir = KarmoToysApp.Instance.GetSaveDirectory();
+			if (string.IsNullOrEmpty(dir)) return;
 			Application.OpenURL("file://" + dir);
 			Debug.Log($"[ToolBox] Opened Dir: {dir}");
 		}

@@ -8,556 +8,674 @@ using KarmoToys.Main;
 
 namespace KarmoToys.Features.Planner
 {
-    public partial class PlannerFeature
-    {
-        // --- Fields for Dialogs ---
-        private PlannerData Data => KarmoToysApp.Instance.Data?.Planner;
+	public partial class PlannerFeature
+	{
+		private PlannerData Data => KarmoToysApp.Instance.Data?.Planner;
 
-        // Detail Popup
-        private VisualElement _detailPopup;
-        private Label _detailTitle, _detailTime, _detailDesc;
-        private Button _detailEditBtn, _detailDeleteBtn, _detailCloseBtn;
+		private VisualElement _detailPopup;
+		private Label _detailTitle, _detailTime, _detailDesc;
+		private Button _detailEditBtn, _detailDeleteBtn, _detailCloseBtn;
 
-        // Edit Overlay
-        private VisualElement _editOverlay;
-        private TextField _editTitleInput, _editDescInput;
-        private IntegerField _editStartHour, _editStartMin, _editEndHour, _editEndMin;
-        private Button _editSaveBtn, _editDeleteBtn, _editCancelBtn;
-        
-        // Tags
-        private VisualElement _editTagsContainer;
-        private TextField _editTagInputField;
-        private Button _editTagAddBtn;
-        private List<string> _tempEditTags = new List<string>();
+		private VisualElement _editOverlay;
+		private TextField _editTitleInput, _editDescInput;
+		private IntegerField _editStartHour, _editStartMin, _editEndHour, _editEndMin;
+		private Button _editSaveBtn, _editDeleteBtn, _editCancelBtn;
 
-        // Colors
-        private List<VisualElement> _colorBtns = new List<VisualElement>();
-        private int _selectedColorIndex = 0;
+		private VisualElement _editTagsContainer;
+		private TextField _editTagInputField;
+		private Button _editTagAddBtn;
+		private List<string> _tempEditTags = new List<string>();
 
-        // Recurrence UI
-        private Toggle _editRecurrenceToggle;
-        private DropdownField _editRecurrenceDropdown;
-        private VisualElement _recurrenceChoicePopup;
-        private Button _btnRecurThis, _btnRecurFuture, _btnRecurCancel;
-        private VisualElement _recurrenceWeekContainer;
-        private Toggle[] _weekToggles;
-        private VisualElement _recurrenceMonthContainer;
-        private IntegerField _recurMonthDayInput;
-        private VisualElement _recurrenceYearContainer;
-        private IntegerField _recurYearMonthInput, _recurYearDayInput;
-        private VisualElement _recurrenceDateInfo;
-        private TextField _recurStartDate, _recurEndDate;
+		private List<VisualElement> _colorBtns = new List<VisualElement>();
+		private int _selectedColorIndex = 0;
 
-        // Trash
-        private VisualElement _trashPopup;
-        private ScrollView _trashList;
-        private Button _trashCloseBtn, _openTrashBtn;
+		private Toggle _editRecurrenceToggle;
+		private DropdownField _editRecurrenceDropdown;
+		private VisualElement _recurrenceChoicePopup;
+		private Button _btnRecurThis, _btnRecurFuture, _btnRecurCancel;
+		private VisualElement _recurrenceWeekContainer;
+		private Toggle[] _weekToggles;
+		private VisualElement _recurrenceMonthContainer;
+		private IntegerField _recurMonthDayInput;
+		private VisualElement _recurrenceYearContainer;
+		private IntegerField _recurYearMonthInput, _recurYearDayInput;
+		private VisualElement _recurrenceDateInfo;
+		private TextField _recurStartDate, _recurEndDate;
 
-        // State
-        private enum RecurrenceAction { None, Save, Delete, Move }
-        private RecurrenceAction _pendingRecurrenceAction = RecurrenceAction.None;
-        private string _pendingMoveDate;
-        private int _pendingMoveStart, _pendingMoveEnd;
+		private VisualElement _trashPopup;
+		private ScrollView _trashList;
+		private Button _trashCloseBtn, _openTrashBtn;
 
-        // Initialization
-        private void InitializeDialogs(VisualElement root)
-        {
-            // Detail Popup
-            _detailPopup = root.Q("DetailPopup");
-            _detailTitle = root.Q<Label>("DetailTitle");
-            _detailTime = root.Q<Label>("DetailTime");
-            _detailDesc = root.Q<Label>("DetailDesc");
-            
-            _detailEditBtn = root.Q<Button>("DetailEditBtn");
-            _detailDeleteBtn = root.Q<Button>("DetailDeleteBtn");
-            _detailCloseBtn = root.Q<Button>("DetailCloseBtn");
+		private enum RecurrenceAction { None, Save, Delete, Move }
+		private RecurrenceAction _pendingRecurrenceAction = RecurrenceAction.None;
+		private string _pendingMoveDate;
+		private int _pendingMoveStart, _pendingMoveEnd;
 
-            if (_detailEditBtn != null) _detailEditBtn.clicked += () => ShowEditDialog(_selectedBlock);
-            if (_detailDeleteBtn != null) _detailDeleteBtn.clicked += OnDetailDelete;
-            if (_detailCloseBtn != null) _detailCloseBtn.clicked += HideDetailPopup;
-            
-            // To Dismiss Detail Popup on click outside, root needs callback.
-            // Assuming PlannerFeature.cs or root element handles global clicks?
-            // In PlannerController, OnRootPointerDown handled it.
-            // I'll register callback to ViewContainer in Init if needed, or just DetailPopup bg?
-            // If ViewContainer covers screen...
-            // For now, Close button is primary.
 
-            // Edit Overlay
-            _editOverlay = root.Q("EditOverlay");
-            _editTitleInput = root.Q<TextField>("EditTitleInput");
-            _editDescInput = root.Q<TextField>("EditDescInput");
-            
-            _editStartHour = root.Q<IntegerField>("EditStartHour");
-            _editStartMin = root.Q<IntegerField>("EditStartMin");
-            _editEndHour = root.Q<IntegerField>("EditEndHour");
-            _editEndMin = root.Q<IntegerField>("EditEndMin");
 
-            _editSaveBtn = root.Q<Button>("EditSaveBtn");
-            _editDeleteBtn = root.Q<Button>("EditDeleteBtn");
-            _editCancelBtn = root.Q<Button>("EditCancelBtn");
+		private void InitializeDialogs(VisualElement root)
+		{
+			// Detail Popup
+			_detailPopup = root.Q("DetailPopup");
+			_detailTitle = root.Q<Label>("DetailTitle");
+			_detailTime = root.Q<Label>("DetailTime");
+			_detailDesc = root.Q<Label>("DetailDesc");
 
-            if (_editSaveBtn != null) _editSaveBtn.clicked += OnSaveEdit;
-            if (_editDeleteBtn != null) _editDeleteBtn.clicked += OnDeleteEdit;
-            if (_editCancelBtn != null) _editCancelBtn.clicked += HideEditDialog;
+			_detailEditBtn = root.Q<Button>("DetailEditBtn");
+			_detailDeleteBtn = root.Q<Button>("DetailDeleteBtn");
+			_detailCloseBtn = root.Q<Button>("DetailCloseBtn");
 
-            // Colors
-            _colorBtns.Clear();
-            for (int i = 0; i < 5; i++)
-            {
-                var btn = root.Q($"ColorBtn{i}");
-                if (btn != null)
-                {
-                    int idx = i;
-                    btn.RegisterCallback<ClickEvent>(evt => OnColorSelected(idx));
-                    _colorBtns.Add(btn);
-                }
-            }
+			_detailEditBtn.clicked += () => ShowEditDialog(_selectedBlock);
+			_detailDeleteBtn.clicked += OnDetailDelete;
+			_detailCloseBtn.clicked += HideDetailPopup;
 
-            // Tags
-            _editTagsContainer = root.Q("EditTagsContainer");
-            _editTagInputField = root.Q<TextField>("EditTagInputField");
-            _editTagAddBtn = root.Q<Button>("EditTagAddBtn");
-            if (_editTagAddBtn != null) _editTagAddBtn.clicked += () => 
-            {
-                if (_editTagInputField != null) { AddEditTag(_editTagInputField.value); _editTagInputField.value = ""; }
-            };
-            if (_editTagInputField != null) _editTagInputField.RegisterCallback<KeyDownEvent>(evt => 
-            {
-                if (evt.keyCode == KeyCode.Return) { AddEditTag(_editTagInputField.value); _editTagInputField.value = ""; }
-            });
+			// To Dismiss Detail Popup on click outside, root needs callback.
+			// Assuming PlannerFeature.cs or root element handles global clicks?
+			// In PlannerController, OnRootPointerDown handled it.
+			// I'll register callback to ViewContainer in Init if needed, or just DetailPopup bg?
+			// If ViewContainer covers screen...
+			// For now, Close button is primary.
 
-            // Recurrence
-            InitializeRecurrenceUI(root);
+			// Edit Overlay
+			_editOverlay = root.Q("EditDialogOverlay");
+			_editTitleInput = root.Q<TextField>("EditTitleInput");
+			_editDescInput = root.Q<TextField>("EditDescInput");
 
-            // Trash
-            InitializeTrash(root);
-        }
+			_editStartHour = root.Q<IntegerField>("EditStartHour");
+			_editStartMin = root.Q<IntegerField>("EditStartMin");
+			_editEndHour = root.Q<IntegerField>("EditEndHour");
+			_editEndMin = root.Q<IntegerField>("EditEndMin");
 
-        private void InitializeRecurrenceUI(VisualElement root)
-        {
-            _editRecurrenceToggle = root.Q<Toggle>("EditRecurrenceToggle");
-            _editRecurrenceDropdown = root.Q<DropdownField>("EditRecurrenceDropdown");
+			_editSaveBtn = root.Q<Button>("EditSaveBtn");
+			_editDeleteBtn = root.Q<Button>("EditDeleteBtn");
+			_editCancelBtn = root.Q<Button>("EditCancelBtn");
 
-            _recurrenceChoicePopup = root.Q("RecurrenceChoicePopup");
-            _btnRecurThis = root.Q<Button>("BtnRecurThis");
-            _btnRecurFuture = root.Q<Button>("BtnRecurFuture");
-            _btnRecurCancel = root.Q<Button>("BtnRecurCancel");
+			_editSaveBtn.clicked += OnSaveEdit;
+			_editDeleteBtn.clicked += OnDeleteEdit;
+			_editCancelBtn.clicked += HideEditDialog;
 
-            if (_btnRecurThis != null) _btnRecurThis.clicked += () => OnRecurrenceChoice(true);
-            if (_btnRecurFuture != null) _btnRecurFuture.clicked += () => OnRecurrenceChoice(false);
-            if (_btnRecurCancel != null) _btnRecurCancel.clicked += OnRecurrenceCancel;
+			_editSaveBtn.clicked += OnSaveEdit;
+			_editDeleteBtn.clicked += OnDeleteEdit;
+			_editCancelBtn.clicked += HideEditDialog;
 
-            _recurrenceWeekContainer = root.Q("RecurrenceWeekContainer");
-            _weekToggles = new Toggle[7];
-            string[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-            for (int i = 0; i < 7; i++)
-            {
-                _weekToggles[i] = root.Q<Toggle>($"Toggle{days[i]}");
-            }
+			if (_editOverlay != null)
+			{
+				// Force full screen overlay style
+				_editOverlay.style.position = Position.Absolute;
+				_editOverlay.style.left = 0; _editOverlay.style.right = 0;
+				_editOverlay.style.top = 0; _editOverlay.style.bottom = 0;
+				_editOverlay.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.5f));
+				_editOverlay.style.justifyContent = Justify.Center;
+				_editOverlay.style.alignItems = Align.Center;
 
-            _recurrenceMonthContainer = root.Q("RecurrenceMonthContainer");
-            _recurMonthDayInput = root.Q<IntegerField>("RecurMonthDayInput");
+				// Click background to close (check target)
+				_editOverlay.RegisterCallback<PointerDownEvent>(evt =>
+				{
+					if (evt.target == _editOverlay) HideEditDialog();
+				});
+			}
 
-            _recurrenceYearContainer = root.Q("RecurrenceYearContainer");
-            _recurYearMonthInput = root.Q<IntegerField>("RecurYearMonthInput");
-            _recurYearDayInput = root.Q<IntegerField>("RecurYearDayInput");
+			// Colors
+			_colorBtns.Clear();
+			for (int i = 0; i < 5; i++)
+			{
+				var btn = root.Q($"ColorBtn{i}");
+				if (btn != null)
+				{
+					int idx = i;
+					btn.RegisterCallback<ClickEvent>(evt => OnColorSelected(idx));
+					_colorBtns.Add(btn);
+				}
+			}
 
-            _recurrenceDateInfo = root.Q("RecurrenceDateInfo");
-            _recurStartDate = root.Q<TextField>("RecurStartDate");
-            _recurEndDate = root.Q<TextField>("RecurEndDate");
+			// Tags
+			_editTagsContainer = root.Q("EditTagsContainer");
+			_editTagInputField = root.Q<TextField>("EditTagInputField");
+			_editTagAddBtn = root.Q<Button>("EditTagAddBtn");
+			_editTagAddBtn.clicked += () =>
+			{
+				AddEditTag(_editTagInputField.value); _editTagInputField.value = "";
+			};
+			_editTagInputField.RegisterCallback<KeyDownEvent>(evt =>
+			{
+				if (evt.keyCode == KeyCode.Return) { AddEditTag(_editTagInputField.value); _editTagInputField.value = ""; }
+			});
 
-            if (_editRecurrenceToggle != null) _editRecurrenceToggle.RegisterValueChangedCallback(evt => UpdateRecurrenceUI(evt.newValue));
-            if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.RegisterValueChangedCallback(evt => UpdateRecurrenceVisibility());
-        }
+			InitializeRecurrenceUI(root);
+			InitializeTrash(root);
 
-        private void InitializeTrash(VisualElement root)
-        {
-             _trashPopup = root.Q("TrashPopup");
-            _trashList = root.Q<ScrollView>("TrashList");
-            _trashCloseBtn = root.Q<Button>("TrashCloseBtn");
-            _openTrashBtn = root.Q<Button>("OpenTrashBtn");
+			root.RegisterCallback<PointerDownEvent>(evt =>
+			{
+				if (_detailPopup.style.display == DisplayStyle.Flex)
+				{
+					// If click target is NOT inside DetailPopup
+					if (!_detailPopup.Contains(evt.target as VisualElement))
+					{
+						HideDetailPopup();
+					}
+				}
+			}, TrickleDown.TrickleDown);
 
-            if (_trashCloseBtn != null) _trashCloseBtn.clicked += HideTrashPopup;
-            if (_openTrashBtn != null) _openTrashBtn.clicked += ShowTrashPopup;
-        }
+			// 2. Scroll to Close DetailPopup
+			var scheduleScroll = root.Q<ScrollView>("ScheduleScroll");
+			if (scheduleScroll != null)
+			{
+				scheduleScroll.RegisterCallback<WheelEvent>(evt => HideDetailPopup());
+			}
+		}
 
-        // --- Logic ---
 
-        private void ShowDetailPopup(TimeBlock block)
-        {
-            if (_detailPopup == null) return;
-            _selectedBlock = block;
 
-            if (_detailTitle != null) _detailTitle.text = block.Title;
-            if (_detailTime != null) _detailTime.text = $"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
-            
-            string txt = string.IsNullOrEmpty(block.Description) ? "" : block.Description + "\n";
-            if (block.Tags != null && block.Tags.Count > 0)
-                txt += $"Tags: {string.Join(", ", block.Tags)}";
-            if (_detailDesc != null) _detailDesc.text = txt;
+		private void InitializeRecurrenceUI(VisualElement root)
+		{
+			_editRecurrenceToggle = root.Q<Toggle>("EditRecurrenceToggle");
+			_editRecurrenceDropdown = root.Q<DropdownField>("EditRecurrenceDropdown");
 
-            _detailPopup.style.display = DisplayStyle.Flex;
-            
-            // Positioning Logic could be complex, simple center or stored mouse pos?
-            // PlannerController used visualBlock position. 
-            // In Feature, we don't always have visual reference easily passed unless we modify ShowDetailPopup signature.
-            // I'll rely on it being centered or keep it simple.
-            // Or I can add `VisualElement target` arg back if `PlannerFeature.Schedule.cs` passes it.
-            // (Schedule.cs calls ShowDetailPopup(block)).
-            // I'll update signature implies I update call site.
-            // Call site in Schedule.cs line 388: `ShowDetailPopup(block)`.
-            // Controller.cs had `ShowDetailPopup(block, visualBlock)`.
-            // I modified it to just `block`.
-            // So for now, Popup appears fixed (e.g. Center) or I accept it.
-            // Or I use `Event.current` if possible? No.
-            // I'll assume Center or default layout position.
-        }
+			_recurrenceChoicePopup = root.Q("RecurrenceChoicePopup");
+			_btnRecurThis = root.Q<Button>("BtnRecurThis");
+			_btnRecurFuture = root.Q<Button>("BtnRecurFuture");
+			_btnRecurCancel = root.Q<Button>("BtnRecurCancel");
 
-        private void HideDetailPopup()
-        {
-            if (_detailPopup != null) _detailPopup.style.display = DisplayStyle.None;
-        }
+			_btnRecurThis.clicked += () => OnRecurrenceChoice(true);
+			_btnRecurFuture.clicked += () => OnRecurrenceChoice(false);
+			_btnRecurCancel.clicked += OnRecurrenceCancel;
 
-        private void OnDetailDelete()
-        {
-            if (_selectedBlock != null && Data != null)
-            {
-                var master = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
-                bool isRecurring = !string.IsNullOrEmpty(_selectedBlock.RecurrenceRule)
-                                   || (master != null && !string.IsNullOrEmpty(master.RecurrenceRule));
+			_recurrenceWeekContainer = root.Q("RecurrenceWeekContainer");
+			_weekToggles = new Toggle[7];
+			string[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+			for (int i = 0; i < 7; i++)
+			{
+				_weekToggles[i] = root.Q<Toggle>($"Toggle{days[i]}");
+			}
 
-                if (isRecurring)
-                {
-                    ShowRecurrencePopup(RecurrenceAction.Delete);
-                }
-                else
-                {
-                    if (master != null)
-                    {
-                        master.IsDeleted = true;
-                        master.DeletedTicks = DateTime.Now.Ticks;
-                    }
-                    else
-                    {
-                        _selectedBlock.IsDeleted = true;
-                        _selectedBlock.DeletedTicks = DateTime.Now.Ticks;
-                    }
-                    KarmoToysApp.Instance.SaveData();
-                    RefreshSchedule();
-                    HideDetailPopup();
-                }
-            }
-        }
+			_recurrenceMonthContainer = root.Q("RecurrenceMonthContainer");
+			_recurMonthDayInput = root.Q<IntegerField>("RecurMonthDayInput");
 
-        private void ShowEditDialog(TimeBlock block)
-        {
-             HideDetailPopup();
-            if (_editOverlay == null || block == null) return;
-            _selectedBlock = block;
-            _selectedColorIndex = block.ColorIndex;
+			_recurrenceYearContainer = root.Q("RecurrenceYearContainer");
+			_recurYearMonthInput = root.Q<IntegerField>("RecurYearMonthInput");
+			_recurYearDayInput = root.Q<IntegerField>("RecurYearDayInput");
 
-            if (_editTitleInput != null) _editTitleInput.value = block.Title;
+			_recurrenceDateInfo = root.Q("RecurrenceDateInfo");
+			_recurStartDate = root.Q<TextField>("RecurStartDate");
+			_recurEndDate = root.Q<TextField>("RecurEndDate");
 
-            // Recurrence Setup (Simplification of PlannerController logic)
-            string rule = !string.IsNullOrEmpty(block.RecurrenceRule) ? block.RecurrenceRule : "";
-            
-            if (_editRecurrenceToggle != null) 
-            {
-                bool isRecur = !string.IsNullOrEmpty(rule) && rule != "None";
-                _editRecurrenceToggle.value = isRecur;
-                
-                if (isRecur)
-                {
-                    if (rule.StartsWith("Weekly")) _editRecurrenceDropdown.value = "Weekly"; // Simplification
-                    else if (rule.StartsWith("Monthly")) _editRecurrenceDropdown.value = "Monthly";
-                    else if (rule.StartsWith("Yearly")) _editRecurrenceDropdown.value = "Yearly";
-                    // Populate Specifics... (omitted full parsing for brevity, assume user re-enters or basic defaults)
-                    // Actually I should parse if I want good UX.
-                    // Copying logic from Controller...
-                    ParseRecurrenceToUI(rule);
-                }
-                UpdateRecurrenceUI(isRecur);
-            }
+			_editRecurrenceToggle.RegisterValueChangedCallback(evt => UpdateRecurrenceUI(evt.newValue));
+			_editRecurrenceDropdown.RegisterValueChangedCallback(evt => UpdateRecurrenceVisibility());
+		}
 
-            if (_recurStartDate != null) _recurStartDate.value = block.DateString;
-            if (_recurEndDate != null) _recurEndDate.value = block.RecurrenceEnd ?? "";
+		private void InitializeTrash(VisualElement root)
+		{
+			_trashPopup = root.Q("TrashPopup");
+			_trashList = root.Q<ScrollView>("TrashList");
+			_trashCloseBtn = root.Q<Button>("TrashCloseBtn");
+			_openTrashBtn = root.Q<Button>("OpenTrashBtn");
 
-            // Tags
-            _tempEditTags.Clear();
-            if (block.Tags != null) _tempEditTags.AddRange(block.Tags);
-            RenderEditTags();
-            if (_editTagInputField != null) _editTagInputField.value = "";
+			_trashCloseBtn.clicked += HideTrashPopup;
+			_openTrashBtn.clicked += ShowTrashPopup;
+		}
 
-            if (_editStartHour != null) _editStartHour.value = block.StartMinute / 60;
-            if (_editStartMin != null) _editStartMin.value = block.StartMinute % 60;
-            if (_editEndHour != null) _editEndHour.value = block.EndMinute / 60;
-            if (_editEndMin != null) _editEndMin.value = block.EndMinute % 60;
+		private void ShowDetailPopup(TimeBlock block)
+		{
+			_selectedBlock = block;
 
-            if (_editDescInput != null) _editDescInput.value = block.Description;
+			_detailTitle.text = block.Title;
+			_detailTime.text = $"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
 
-            UpdateColorSelection();
-            _editOverlay.style.display = DisplayStyle.Flex;
-        }
+			string txt = string.IsNullOrEmpty(block.Description) ? "" : block.Description + "\n";
+			if (block.Tags != null && block.Tags.Count > 0)
+				txt += $"Tags: {string.Join(", ", block.Tags)}";
+			_detailDesc.text = txt;
 
-        private void ParseRecurrenceToUI(string rule)
-        {
-            // Simplified Parser
-             if (rule == "Daily")
-            {
-                if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.value = "Weekly";
-                for(int i=0;i<7;i++) if(_weekToggles[i]!=null) _weekToggles[i].value=true;
-            }
-            else if (rule.StartsWith("Weekly"))
-            {
-                 if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.value = "Weekly";
-                 // ... Parse week days ...
-            }
-             else if (rule.StartsWith("Monthly")) if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.value = "Monthly";
-             else if (rule.StartsWith("Yearly")) if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.value = "Yearly";
-        }
+			_detailPopup.style.display = DisplayStyle.Flex;
 
-        private void HideEditDialog()
-        {
-            if (_editOverlay != null) _editOverlay.style.display = DisplayStyle.None;
-        }
+			if (_detailPopup.parent == null && _timeRuler != null)
+			{
+				_timeRuler.Add(_detailPopup);
+			}
 
-        // ... Recurrence Helpers ...
-        
-        public void RequestRecurrenceMove(TimeBlock block, string newDate, int newStart, int newEnd)
-        {
-            _selectedBlock = block;
-            _pendingMoveDate = newDate;
-            _pendingMoveStart = newStart;
-            _pendingMoveEnd = newEnd;
-            ShowRecurrencePopup(RecurrenceAction.Move);
-        }
+			float top = block.EndMinute * _pixelsPerMinute; // Position at Bottom of Block
 
-        private void ShowRecurrencePopup(RecurrenceAction action)
-        {
-            if (_recurrenceChoicePopup == null) return;
-            _pendingRecurrenceAction = action;
-            _recurrenceChoicePopup.style.display = DisplayStyle.Flex;
-        }
+			// Calculate Left based on column
+			DateTime blockDate = DateTime.Parse(block.DateString);
+			int dayDiff = (blockDate - _currentDate).Days;
+			if (dayDiff < 0 || dayDiff >= 7) dayDiff = 0;
 
-        private void HideRecurrencePopup()
-        {
-            if (_recurrenceChoicePopup != null) _recurrenceChoicePopup.style.display = DisplayStyle.None;
-            _pendingRecurrenceAction = RecurrenceAction.None;
-        }
+			bool showWeekend = _weekendToggle?.value ?? true;
+			int totalCols = showWeekend ? 7 : 5;
+			if (!showWeekend && dayDiff >= 5) dayDiff = 4;
 
-        private void UpdateRecurrenceUI(bool isRecurring)
-        {
-            if (_editRecurrenceDropdown != null) _editRecurrenceDropdown.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_recurrenceDateInfo != null) _recurrenceDateInfo.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
-            if (isRecurring) UpdateRecurrenceVisibility();
-            else
-            {
-                if (_recurrenceWeekContainer != null) _recurrenceWeekContainer.style.display = DisplayStyle.None;
-                if (_recurrenceMonthContainer != null) _recurrenceMonthContainer.style.display = DisplayStyle.None;
-                if (_recurrenceYearContainer != null) _recurrenceYearContainer.style.display = DisplayStyle.None;
-            }
-        }
+			float colWidthPercent = 100f / totalCols;
+			float leftPercent = (dayDiff * colWidthPercent) + (colWidthPercent * 0.5f); // Center of column
 
-        private void UpdateRecurrenceVisibility()
-        {
-            if (_editRecurrenceDropdown == null) return;
-            string value = _editRecurrenceDropdown.value;
-            if (_recurrenceWeekContainer != null) _recurrenceWeekContainer.style.display = (value != null && value.StartsWith("Weekly")) ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_recurrenceMonthContainer != null) _recurrenceMonthContainer.style.display = (value != null && value.StartsWith("Monthly")) ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_recurrenceYearContainer != null) _recurrenceYearContainer.style.display = (value != null && value.StartsWith("Yearly")) ? DisplayStyle.Flex : DisplayStyle.None;
-        }
+			_detailPopup.style.top = top;
+			_detailPopup.style.left = Length.Percent(leftPercent);
 
-        private void OnRecurrenceCancel()
-        {
-            HideRecurrencePopup();
-            RefreshSchedule();
-        }
 
-        private void OnRecurrenceChoice(bool isThisInstanceOnly)
-        {
-             if (Data == null || _selectedBlock == null) { HideRecurrencePopup(); return; }
-            var masterBlock = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
-            if (masterBlock == null) { HideRecurrencePopup(); return; }
+		}
 
-            if (_pendingRecurrenceAction == RecurrenceAction.Delete)
-            {
-                if (isThisInstanceOnly)
-                {
-                    if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
-                    masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
-                }
-                else
-                {
-                    DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
-                    masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
-                }
-            }
-            else if (_pendingRecurrenceAction == RecurrenceAction.Save)
-            {
-                 // Edit Logic...
-                 // Creating new blocks...
-                 // For now, simple implementation to close flow:
-                 if (isThisInstanceOnly)
-                 {
-                     if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
-                    masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
-                    var newBlock = CreateBlockFromUI();
-                    newBlock.RecurrenceRule = "";
-                    Data.TimeBlocks.Add(newBlock);
-                 }
-                 else
-                 {
-                    DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
-                    masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
-                    var newMaster = CreateBlockFromUI();
-                     Data.TimeBlocks.Add(newMaster);
-                 }
-            }
-            else if (_pendingRecurrenceAction == RecurrenceAction.Move)
-            {
-                 if (isThisInstanceOnly)
-                 {
-                    if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
-                    masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
-                    var newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
-                    newBlock.ColorIndex = masterBlock.ColorIndex;
-                    Data.TimeBlocks.Add(newBlock);
-                 }
-                 else
-                 {
-                    DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
-                     masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
-                     var newMaster = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
-                     newMaster.RecurrenceRule = masterBlock.RecurrenceRule;
-                     newMaster.ColorIndex = masterBlock.ColorIndex;
-                     Data.TimeBlocks.Add(newMaster);
-                 }
-            }
-            
-            KarmoToysApp.Instance.SaveData();
-            RefreshSchedule();
-            HideEditDialog();
-            HideDetailPopup();
-            HideRecurrencePopup();
-        }
-        
-        // ... Trash Logic ...
-        private void ShowTrashPopup()
-        {
-            RenderTrashList();
-            if (_trashPopup != null) _trashPopup.style.display = DisplayStyle.Flex;
-        }
-        private void HideTrashPopup() { if (_trashPopup != null) _trashPopup.style.display = DisplayStyle.None; }
+		private void HideDetailPopup()
+		{
+			_detailPopup.style.display = DisplayStyle.None;
+		}
 
-        private void RenderTrashList()
-        {
-            if (_trashList == null || Data == null) return;
-            _trashList.Clear();
-            var deletedBlocks = Data.TimeBlocks.Where(b => b.IsDeleted).OrderByDescending(b => b.DeletedTicks).ToList();
-            if (deletedBlocks.Count == 0)
-            {
-                _trashList.Add(new Label("Trash is empty.") { style = { color = Color.gray } });
-                return;
-            }
-            foreach(var block in deletedBlocks)
-            {
-                var row = new VisualElement();
-                row.Add(new Label(block.Title));
-                var resBtn = new Button(() => 
-                {
-                    block.IsDeleted = false;
-                    KarmoToysApp.Instance.SaveData();
-                    RenderTrashList();
-                    RefreshSchedule();
-                }) { text = "Restore" };
-                row.Add(resBtn);
-                _trashList.Add(row);
-            }
-        }
+		private void OnDetailDelete()
+		{
+			if (_selectedBlock != null && Data != null)
+			{
+				var master = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
+				bool isRecurring = !string.IsNullOrEmpty(_selectedBlock.RecurrenceRule)
+								   || (master != null && !string.IsNullOrEmpty(master.RecurrenceRule));
 
-        private void OnSaveEdit()
-        {
-             if (_selectedBlock == null) return;
-             // Calc UI values
-             string title = _editTitleInput != null ? _editTitleInput.value : "No Title";
-             // ...
-             // Update _selectedBlock
-             
-             // Check Transient... RecurrenceAction.Save...
-             // Simplified:
-            if (Data != null && !Data.TimeBlocks.Contains(_selectedBlock))
-            {
-                ShowRecurrencePopup(RecurrenceAction.Save);
-                return;
-            }
+				if (isRecurring)
+				{
+					ShowRecurrencePopup(RecurrenceAction.Delete);
+				}
+				else
+				{
+					if (master != null)
+					{
+						master.IsDeleted = true;
+						master.DeletedTicks = DateTime.Now.Ticks;
+					}
+					else
+					{
+						_selectedBlock.IsDeleted = true;
+						_selectedBlock.DeletedTicks = DateTime.Now.Ticks;
+					}
+					KarmoToysApp.Instance.SaveData();
+					RefreshSchedule();
+					HideDetailPopup();
+				}
+			}
+		}
 
-            _selectedBlock.Title = title;
-            // ... Update other fields ...
-            
-            KarmoToysApp.Instance.SaveData();
-            RefreshSchedule();
-            HideEditDialog();
-        }
+		private void ShowEditDialog(TimeBlock block)
+		{
+			HideDetailPopup();
+			if (_editOverlay == null || block == null) return;
+			_selectedBlock = block;
+			_selectedColorIndex = block.ColorIndex;
 
-        private void OnDeleteEdit()
-        {
-            if (_selectedBlock == null) return;
-            if (Data != null && !Data.TimeBlocks.Contains(_selectedBlock)) { ShowRecurrencePopup(RecurrenceAction.Delete); return; }
-            if (Data != null) Data.TimeBlocks.Remove(_selectedBlock);
-            KarmoToysApp.Instance.SaveData();
-            RefreshSchedule();
-            HideEditDialog();
-            HideDetailPopup();
-        }
+			_editTitleInput.value = block.Title;
+			_editDescInput.value = block.Description ?? "";
 
-        private TimeBlock CreateBlockFromUI()
-        {
-             // Simplified creation
-            TimeBlock b = new TimeBlock("temp", 0, 60, "New");
-            if (_editTitleInput != null) b.Title = _editTitleInput.value;
-            // ...
-            b.RecurrenceRule = GetRecurrenceRuleFromUI();
-            b.ColorIndex = _selectedColorIndex;
-            return b;
-        }
+			string rule = !string.IsNullOrEmpty(block.RecurrenceRule) ? block.RecurrenceRule : "";
 
-        private string GetRecurrenceRuleFromUI()
-        {
-            if (_editRecurrenceToggle != null && !_editRecurrenceToggle.value) return "";
-            return _editRecurrenceDropdown?.value ?? "";
-        }
+			bool isRecur = !string.IsNullOrEmpty(rule) && rule != "None";
+			_editRecurrenceToggle.value = isRecur;
 
-        private void OnColorSelected(int index)
-        {
-            _selectedColorIndex = index;
-            UpdateColorSelection();
-        }
+			// Reset weekday toggles before parsing
+			for (int i = 0; i < 7; i++)
+			{
+				if (_weekToggles[i] != null) _weekToggles[i].value = false;
+			}
 
-        private void UpdateColorSelection()
-        {
-             for (int i = 0; i < _colorBtns.Count; i++)
-            {
-                Color c = (i == _selectedColorIndex) ? Color.white : Color.clear;
-                _colorBtns[i].style.borderTopColor = new StyleColor(c);
-                 _colorBtns[i].style.borderBottomColor = new StyleColor(c);
-                 _colorBtns[i].style.borderLeftColor = new StyleColor(c);
-                 _colorBtns[i].style.borderRightColor = new StyleColor(c);
-            }
-        }
-        
-        private void AddEditTag(string tag) { if(!_tempEditTags.Contains(tag)) { _tempEditTags.Add(tag); RenderEditTags(); } }
-        private void RemoveEditTag(string tag) { if(_tempEditTags.Contains(tag)) { _tempEditTags.Remove(tag); RenderEditTags(); } }
-        private void RenderEditTags() 
-        {
-            if(_editTagsContainer == null) return;
-            _editTagsContainer.Clear();
-            foreach(var t in _tempEditTags) 
-            {
-                var el = new Label(t);
-                el.RegisterCallback<ClickEvent>(evt => RemoveEditTag(t)); // Click to remove
-                _editTagsContainer.Add(el);
-            }
-        }
-    }
+			if (isRecur)
+			{
+				if (rule.StartsWith("Weekly")) _editRecurrenceDropdown.value = "Weekly";
+				else if (rule.StartsWith("Monthly")) _editRecurrenceDropdown.value = "Monthly";
+				else if (rule.StartsWith("Yearly")) _editRecurrenceDropdown.value = "Yearly";
+				ParseRecurrenceToUI(rule);
+			}
+			UpdateRecurrenceUI(isRecur);
+
+			_recurStartDate.value = block.DateString;
+			_recurEndDate.value = block.RecurrenceEnd ?? "";
+
+			// Tags
+			_tempEditTags.Clear();
+			if (block.Tags != null) _tempEditTags.AddRange(block.Tags);
+			RenderEditTags();
+			_editTagInputField.value = "";
+
+			_editStartHour.value = block.StartMinute / 60;
+			_editStartMin.value = block.StartMinute % 60;
+			_editEndHour.value = block.EndMinute / 60;
+			_editEndMin.value = block.EndMinute % 60;
+
+			_editDescInput.value = block.Description;
+			_editDescInput.value = block.Description;
+
+
+			UpdateColorSelection();
+			_editOverlay.style.display = DisplayStyle.Flex;
+		}
+
+		private void ParseRecurrenceToUI(string rule)
+		{
+			// Reset Toggles
+			foreach (var t in _weekToggles) if (t != null) t.value = false;
+
+			if (rule == "Daily")
+			{
+				_editRecurrenceDropdown.value = "Weekly";
+				for (int i = 0; i < 7; i++) if (_weekToggles[i] != null) _weekToggles[i].value = true;
+			}
+			else if (rule.StartsWith("Weekly"))
+			{
+				_editRecurrenceDropdown.value = "Weekly";
+				var parts = rule.Split(';');
+				if (parts.Length > 1)
+				{
+					var selectedDays = parts[1].Split(',');
+					string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+					for (int i = 0; i < 7; i++)
+					{
+						if (selectedDays.Contains(dayNames[i]) && _weekToggles[i] != null)
+							_weekToggles[i].value = true;
+					}
+				}
+			}
+			else if (rule.StartsWith("Monthly")) _editRecurrenceDropdown.value = "Monthly";
+			else if (rule.StartsWith("Yearly")) _editRecurrenceDropdown.value = "Yearly";
+		}
+
+		private void HideEditDialog()
+		{
+			_editOverlay.style.display = DisplayStyle.None;
+		}
+
+		// ... Recurrence Helpers ...
+
+		public void RequestRecurrenceMove(TimeBlock block, string newDate, int newStart, int newEnd)
+		{
+			_selectedBlock = block;
+			_pendingMoveDate = newDate;
+			_pendingMoveStart = newStart;
+			_pendingMoveEnd = newEnd;
+			ShowRecurrencePopup(RecurrenceAction.Move);
+		}
+
+		private void ShowRecurrencePopup(RecurrenceAction action)
+		{
+			_pendingRecurrenceAction = action;
+			_recurrenceChoicePopup.style.display = DisplayStyle.Flex;
+		}
+
+		private void HideRecurrencePopup()
+		{
+			_recurrenceChoicePopup.style.display = DisplayStyle.None;
+			_pendingRecurrenceAction = RecurrenceAction.None;
+		}
+
+		private void UpdateRecurrenceUI(bool isRecurring)
+		{
+			_editRecurrenceDropdown.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
+			_recurrenceDateInfo.style.display = isRecurring ? DisplayStyle.Flex : DisplayStyle.None;
+			if (isRecurring) UpdateRecurrenceVisibility();
+			else
+			{
+				_recurrenceWeekContainer.style.display = DisplayStyle.None;
+				_recurrenceMonthContainer.style.display = DisplayStyle.None;
+				_recurrenceYearContainer.style.display = DisplayStyle.None;
+			}
+		}
+
+		private void UpdateRecurrenceVisibility()
+		{
+			string value = _editRecurrenceDropdown.value;
+			_recurrenceWeekContainer.style.display = (value != null && value.StartsWith("Weekly")) ? DisplayStyle.Flex : DisplayStyle.None;
+			_recurrenceMonthContainer.style.display = (value != null && value.StartsWith("Monthly")) ? DisplayStyle.Flex : DisplayStyle.None;
+			_recurrenceYearContainer.style.display = (value != null && value.StartsWith("Yearly")) ? DisplayStyle.Flex : DisplayStyle.None;
+		}
+
+		private void OnRecurrenceCancel()
+		{
+			HideRecurrencePopup();
+			RefreshSchedule();
+		}
+
+		private void OnRecurrenceChoice(bool isThisInstanceOnly)
+		{
+			if (Data == null || _selectedBlock == null) { HideRecurrencePopup(); return; }
+			var masterBlock = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
+			if (masterBlock == null) { HideRecurrencePopup(); return; }
+
+			if (_pendingRecurrenceAction == RecurrenceAction.Delete)
+			{
+				if (isThisInstanceOnly)
+				{
+					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
+				}
+				else
+				{
+					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
+					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
+				}
+			}
+			else if (_pendingRecurrenceAction == RecurrenceAction.Save)
+			{
+				// Edit Logic...
+				// Creating new blocks...
+				// For now, simple implementation to close flow:
+				if (isThisInstanceOnly)
+				{
+					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
+					var newBlock = CreateBlockFromUI();
+					newBlock.RecurrenceRule = "";
+					Data.TimeBlocks.Add(newBlock);
+				}
+				else
+				{
+					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
+					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
+					var newMaster = CreateBlockFromUI();
+					Data.TimeBlocks.Add(newMaster);
+				}
+			}
+			else if (_pendingRecurrenceAction == RecurrenceAction.Move)
+			{
+				if (isThisInstanceOnly)
+				{
+					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
+					var newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
+					newBlock.ColorIndex = masterBlock.ColorIndex;
+					Data.TimeBlocks.Add(newBlock);
+				}
+				else
+				{
+					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
+					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
+					var newMaster = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
+					newMaster.RecurrenceRule = masterBlock.RecurrenceRule;
+					newMaster.ColorIndex = masterBlock.ColorIndex;
+					Data.TimeBlocks.Add(newMaster);
+				}
+			}
+
+			KarmoToysApp.Instance.SaveData();
+			RefreshSchedule();
+			HideEditDialog();
+			HideDetailPopup();
+			HideRecurrencePopup();
+		}
+
+
+		private void ShowTrashPopup()
+		{
+			RenderTrashList();
+			_trashPopup.style.display = DisplayStyle.Flex;
+		}
+		private void HideTrashPopup() { _trashPopup.style.display = DisplayStyle.None; }
+
+		private void RenderTrashList()
+		{
+			if (_trashList == null || Data == null) return;
+			_trashList.Clear();
+			var deletedBlocks = Data.TimeBlocks.Where(b => b.IsDeleted).OrderByDescending(b => b.DeletedTicks).ToList();
+			if (deletedBlocks.Count == 0)
+			{
+				_trashList.Add(new Label("Trash is empty.") { style = { color = Color.gray } });
+				return;
+			}
+			foreach (var block in deletedBlocks)
+			{
+				var row = new VisualElement();
+				row.Add(new Label(block.Title));
+				var resBtn = new Button(() =>
+				{
+					block.IsDeleted = false;
+					KarmoToysApp.Instance.SaveData();
+					RenderTrashList();
+					RefreshSchedule();
+				})
+				{ text = "Restore" };
+				row.Add(resBtn);
+				_trashList.Add(row);
+			}
+		}
+
+		private void OnSaveEdit()
+		{
+			if (_selectedBlock == null) return;
+			// Calc UI values
+			string title = _editTitleInput.value;
+			// ...
+			// Update _selectedBlock
+
+			// Check Transient... RecurrenceAction.Save...
+			// Simplified:
+			if (Data != null && !Data.TimeBlocks.Contains(_selectedBlock))
+			{
+				ShowRecurrencePopup(RecurrenceAction.Save);
+				return;
+			}
+
+			_selectedBlock.Title = title;
+			_selectedBlock.Description = _editDescInput.value;
+
+			// Time
+			int startM = _editStartHour.value * 60 + _editStartMin.value;
+			int endM = _editEndHour.value * 60 + _editEndMin.value;
+			if (endM <= startM) endM = startM + 60; // Minimum duration
+
+			_selectedBlock.StartMinute = startM;
+			_selectedBlock.EndMinute = endM;
+
+			// Color
+			_selectedBlock.ColorIndex = _selectedColorIndex;
+
+			// Tags
+			_selectedBlock.Tags = new List<string>(_tempEditTags);
+
+			// Recurrence
+			_selectedBlock.RecurrenceRule = GetRecurrenceRuleFromUI();
+
+			_selectedBlock.RecurrenceRule = GetRecurrenceRuleFromUI();
+
+
+			KarmoToysApp.Instance.SaveData();
+			RefreshSchedule();
+			HideEditDialog();
+		}
+
+		private void OnDeleteEdit()
+		{
+			if (_selectedBlock == null) return;
+			if (Data != null && !Data.TimeBlocks.Contains(_selectedBlock)) { ShowRecurrencePopup(RecurrenceAction.Delete); return; }
+			if (Data != null) Data.TimeBlocks.Remove(_selectedBlock);
+			KarmoToysApp.Instance.SaveData();
+			RefreshSchedule();
+			HideEditDialog();
+			HideDetailPopup();
+		}
+
+		private TimeBlock CreateBlockFromUI()
+		{
+			// Get all data from UI
+			string dateStr = _recurStartDate.value;
+			if (string.IsNullOrEmpty(dateStr)) dateStr = _selectedBlock?.DateString ?? DateTime.Now.ToString("yyyy-MM-dd");
+
+			int startM = _editStartHour.value * 60 + _editStartMin.value;
+			int endM = _editEndHour.value * 60 + _editEndMin.value;
+			if (endM <= startM) endM = startM + 60;
+
+			string title = _editTitleInput.value;
+			if (string.IsNullOrEmpty(title)) title = "Untitled";
+
+			TimeBlock b = new TimeBlock(dateStr, startM, endM, title);
+			b.Description = _editDescInput.value;
+			b.Tags = new List<string>(_tempEditTags);
+			b.ColorIndex = _selectedColorIndex;
+			b.RecurrenceRule = GetRecurrenceRuleFromUI();
+			b.RecurrenceEnd = _recurEndDate.value;
+
+			return b;
+		}
+
+		private string GetRecurrenceRuleFromUI()
+		{
+			if (!_editRecurrenceToggle.value) return "";
+
+			string rule = _editRecurrenceDropdown.value;
+			if (rule == "Weekly")
+			{
+				var days = new List<string>();
+				string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+				for (int i = 0; i < 7; i++)
+				{
+					if (_weekToggles[i].value) days.Add(dayNames[i]);
+				}
+				if (days.Count > 0) rule += ";" + string.Join(",", days);
+			}
+			else if (rule == "Monthly")
+			{
+				rule += $";{_recurMonthDayInput.value}";
+			}
+			else if (rule == "Yearly")
+			{
+				rule += $";{_recurYearMonthInput.value}-{_recurYearDayInput.value}";
+			}
+
+			return rule;
+		}
+
+		private void OnColorSelected(int index)
+		{
+			_selectedColorIndex = index;
+			UpdateColorSelection();
+		}
+
+		private void UpdateColorSelection()
+		{
+			for (int i = 0; i < _colorBtns.Count; i++)
+			{
+				Color c = (i == _selectedColorIndex) ? Color.white : Color.clear;
+				_colorBtns[i].style.borderTopColor = new StyleColor(c);
+				_colorBtns[i].style.borderBottomColor = new StyleColor(c);
+				_colorBtns[i].style.borderLeftColor = new StyleColor(c);
+				_colorBtns[i].style.borderRightColor = new StyleColor(c);
+			}
+		}
+
+		private void AddEditTag(string tag)
+		{
+			if (!_tempEditTags.Contains(tag))
+			{
+				_tempEditTags.Add(tag); RenderEditTags();
+			}
+		}
+
+		private void RemoveEditTag(string tag)
+		{
+			if (_tempEditTags.Contains(tag))
+			{
+				_tempEditTags.Remove(tag); RenderEditTags();
+			}
+		}
+
+		private void RenderEditTags()
+		{
+			_editTagsContainer.Clear();
+			foreach (var t in _tempEditTags)
+			{
+				var el = new Label(t);
+				el.RegisterCallback<ClickEvent>(evt => RemoveEditTag(t)); // Click to remove
+				_editTagsContainer.Add(el);
+			}
+		}
+	}
 }

@@ -9,6 +9,7 @@ using KarmoToys.Common.Data;
 
 namespace KarmoToys.Features.QuestBoard
 {
+	[AddComponentMenu("KarmoLab/Features/QuestBoard")]
 	public class QuestBoardFeature : FeatureBase
 	{
 		public override string FeatureName => Define.FeatureQuestBoard;
@@ -34,9 +35,9 @@ namespace KarmoToys.Features.QuestBoard
 			_btnAddStudy = root.Q<Button>("BtnAddStudy");
 			_btnAddTeam = root.Q<Button>("BtnAddTeam");
 
-			if (_btnAddPersonal != null) _btnAddPersonal.clicked += () => AddTodo("personal", _inputPersonal, _listPersonal);
-			if (_btnAddStudy != null) _btnAddStudy.clicked += () => AddTodo("study", _inputStudy, _listStudy);
-			if (_btnAddTeam != null) _btnAddTeam.clicked += () => AddTodo("team", _inputTeam, _listTeam);
+			_btnAddPersonal.clicked += () => AddTodo("personal", _inputPersonal, _listPersonal);
+			_btnAddStudy.clicked += () => AddTodo("study", _inputStudy, _listStudy);
+			_btnAddTeam.clicked += () => AddTodo("team", _inputTeam, _listTeam);
 		}
 
 		public override void OnSelect()
@@ -54,7 +55,7 @@ namespace KarmoToys.Features.QuestBoard
 
 		private void AddTodo(string category, TextField input, ScrollView list)
 		{
-			if (input == null || string.IsNullOrWhiteSpace(input.value)) return;
+			if (string.IsNullOrWhiteSpace(input.value)) return;
 
 			var data = KarmoToysApp.Instance.Data?.Planner;
 			if (data == null) return;
@@ -68,7 +69,6 @@ namespace KarmoToys.Features.QuestBoard
 
 		private void RefreshTasks(ScrollView list, string category)
 		{
-			if (list == null) return;
 			list.Clear();
 
 			var data = KarmoToysApp.Instance.Data?.Planner;

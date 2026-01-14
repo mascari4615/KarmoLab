@@ -104,8 +104,7 @@ namespace KarmoToys.Features.Planner
 			_timeRuler.style.height = 24 * 60 * _pixelsPerMinute;
 
 			DateTime endWeek = _currentDate.AddDays(6);
-			if (_schedDateLabel != null)
-				_schedDateLabel.text = $"{_currentDate:yyyy-MM-dd} ~ {endWeek:yyyy-MM-dd}";
+			_schedDateLabel.text = $"{_currentDate:yyyy-MM-dd} ~ {endWeek:yyyy-MM-dd}";
 
 			BuildTimeRuler();
 
@@ -118,18 +117,15 @@ namespace KarmoToys.Features.Planner
 			var list = allTags.OrderBy(t => t).ToList();
 			list.Insert(0, "All Tags");
 
-			if (_tagFilterDropdown != null)
-			{
-				_tagFilterDropdown.choices = list;
-				if (string.IsNullOrEmpty(_tagFilterDropdown.value) || !_tagFilterDropdown.choices.Contains(_tagFilterDropdown.value))
-					_tagFilterDropdown.value = "All Tags";
-			}
+			_tagFilterDropdown.choices = list;
+			if (string.IsNullOrEmpty(_tagFilterDropdown.value) || !_tagFilterDropdown.choices.Contains(_tagFilterDropdown.value))
+				_tagFilterDropdown.value = "All Tags";
 
-			string filterTag = (_tagFilterDropdown != null) ? _tagFilterDropdown.value : "All Tags";
+			string filterTag = _tagFilterDropdown.value;
 			bool useFilter = !string.IsNullOrEmpty(filterTag) && filterTag != "All Tags";
 
 			bool showWeekend = true;
-			if (_weekendToggle != null) showWeekend = _weekendToggle.value;
+			showWeekend = _weekendToggle.value;
 
 			// Fill Columns
 			int colIndex = 0;
@@ -155,12 +151,10 @@ namespace KarmoToys.Features.Planner
 				{
 					if (b.IsDeleted) continue;
 
-					// A. Normal
 					if (b.DateString == dateStr && (string.IsNullOrEmpty(b.RecurrenceRule) || b.RecurrenceRule == "None"))
 					{
 						rawBlocks.Add(b);
 					}
-					// B. Recurring
 					else if (!string.IsNullOrEmpty(b.RecurrenceRule) && b.RecurrenceRule != "None")
 					{
 						if (string.Compare(b.DateString, dateStr) > 0) continue;
@@ -261,13 +255,10 @@ namespace KarmoToys.Features.Planner
 				var parts = b.RecurrenceRule.Split(';');
 				if (parts.Length > 1)
 				{
-					int currentDayIdx = (int)targetDate.DayOfWeek;
-					try
-					{
-						var dayIndices = parts[1].Split(',').Select(s => int.Parse(s));
-						if (dayIndices.Contains(currentDayIdx)) return true;
-					}
-					catch { }
+					string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+					string currentDay = dayNames[(int)targetDate.DayOfWeek]; // Force English day name
+					var selectedDays = parts[1].Split(','); // "Mon", "Fri"
+					if (selectedDays.Contains(currentDay)) return true;
 				}
 				else
 				{
@@ -389,42 +380,48 @@ namespace KarmoToys.Features.Planner
 			if (_timeRuler != null) _timeRuler.CapturePointer(evt.pointerId);
 		}
 
-		// --- Custom Tooltip ---
 		private void CreateCustomTooltip()
 		{
-			if (_timeRuler == null) return;
-			if (_customTooltip != null && _customTooltip.parent != null) return;
-			if (_customTooltip != null && _customTooltip.parent == null) { _timeRuler.Add(_customTooltip); return; }
+			if (ViewContainer == null) return;
+			// Ensure it's in ViewContainer so it persists across refreshes
+			if (_customTooltip != null && _customTooltip.parent == ViewContainer) return;
 
-			_customTooltip = new VisualElement();
-			_customTooltip.style.position = Position.Absolute;
-			_customTooltip.style.backgroundColor = new StyleColor(new Color(0.1f, 0.1f, 0.1f, 0.95f));
-			_customTooltip.style.paddingLeft = 8; _customTooltip.style.paddingRight = 8;
-			_customTooltip.style.paddingTop = 4; _customTooltip.style.paddingBottom = 4;
-			_customTooltip.style.borderTopLeftRadius = 4; _customTooltip.style.borderTopRightRadius = 4;
-			_customTooltip.style.borderBottomLeftRadius = 4; _customTooltip.style.borderBottomRightRadius = 4;
+			if (_customTooltip == null)
+			{
+				_customTooltip = new VisualElement();
+				_customTooltip.style.position = Position.Absolute;
+				_customTooltip.style.backgroundColor = new StyleColor(new Color(0.1f, 0.1f, 0.1f, 0.95f));
+				_customTooltip.style.paddingLeft = 8; _customTooltip.style.paddingRight = 8;
+				_customTooltip.style.paddingTop = 4; _customTooltip.style.paddingBottom = 4;
+				_customTooltip.style.borderTopLeftRadius = 4; _customTooltip.style.borderTopRightRadius = 4;
+				_customTooltip.style.borderBottomLeftRadius = 4; _customTooltip.style.borderBottomRightRadius = 4;
+				_customTooltip.pickingMode = PickingMode.Ignore;
+
+				_customTooltipLabel = new Label();
+				_customTooltipLabel.style.color = Color.white;
+				_customTooltipLabel.style.fontSize = 12;
+				_customTooltip.Add(_customTooltipLabel);
+			}
+
 			_customTooltip.style.display = DisplayStyle.None;
-			_customTooltip.pickingMode = PickingMode.Ignore;
-
-			_customTooltipLabel = new Label();
-			_customTooltipLabel.style.color = Color.white;
-			_customTooltipLabel.style.fontSize = 12;
-			_customTooltip.Add(_customTooltipLabel);
-
-			_timeRuler.Add(_customTooltip);
+			if (_customTooltip.parent != ViewContainer) ViewContainer.Add(_customTooltip);
 		}
 
 		private void ShowCustomTooltip(TimeBlock block, VisualElement target)
 		{
 			CreateCustomTooltip();
-			if (_customTooltip == null) return;
+			if (_customTooltip == null || ViewContainer == null) return;
 			_customTooltipLabel.text = $"{block.Title}\n{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
 			_customTooltip.style.display = DisplayStyle.Flex;
 			_customTooltip.BringToFront();
 
-			Vector2 targetPos = target.ChangeCoordinatesTo(_timeRuler, Vector2.zero);
-			_customTooltip.style.left = targetPos.x + target.resolvedStyle.width + 10;
-			_customTooltip.style.top = targetPos.y;
+			// Calculate position relative to ViewContainer
+			Vector2 targetWorld = target.worldBound.position;
+			Vector2 containerWorld = ViewContainer.worldBound.position;
+			Vector2 localPos = targetWorld - containerWorld;
+
+			_customTooltip.style.left = localPos.x + target.resolvedStyle.width + 10;
+			_customTooltip.style.top = localPos.y;
 		}
 
 		private void HideCustomTooltip()
@@ -432,7 +429,6 @@ namespace KarmoToys.Features.Planner
 			if (_customTooltip != null) _customTooltip.style.display = DisplayStyle.None;
 		}
 
-		// --- Helpers ---
 		private string TimeStr(int m) => $"{m / 60:00}:{m % 60:00}";
 		private float Snap(float value, float interval) => Mathf.Round(value / interval) * interval;
 
@@ -443,7 +439,7 @@ namespace KarmoToys.Features.Planner
 			float rulerWidth = _timeRuler.contentRect.width;
 			if (float.IsNaN(rulerWidth) || rulerWidth <= axisWidth) return -1;
 
-			bool showWeekend = (_weekendToggle != null) ? _weekendToggle.value : true;
+			bool showWeekend = _weekendToggle.value;
 			float numCols = showWeekend ? 7f : 5f;
 			float columnWidth = (rulerWidth - axisWidth) / numCols;
 
@@ -462,14 +458,6 @@ namespace KarmoToys.Features.Planner
 			return null;
 		}
 
-		// --- Drag Implementation (OnRulerPointerDown etc) --
-
-		// Note: Needs OnRulerPointerDown, OnRulerPointerMove, OnRulerPointerUp
-		// These are currently MISSING in this partial but listed in PlannerFeature.cs
-		// I will add them in the NEXT partial or append here.
-		// It's getting long. I'll append OnRulerPointerDown here.
-		// (Wait, Logic for drag was large. I'll include it now)
-
 		private void OnRulerPointerDown(PointerDownEvent evt)
 		{
 			if (_timeRuler == null || evt.button != 0) return;
@@ -477,10 +465,6 @@ namespace KarmoToys.Features.Planner
 
 			VisualElement target = evt.target as VisualElement;
 			VisualElement hitBlock = FindAncestorBlock(target);
-
-			// Resizing handled by specific handlers? No, Resizing set flags.
-			// But if hitBlock is resize handle, OnResizeStart should have fired and stopped propagation.
-			// If we are here, we are not resizing.
 
 			if (hitBlock != null)
 			{
@@ -494,7 +478,6 @@ namespace KarmoToys.Features.Planner
 
 				hitBlock.style.opacity = 0.5f;
 
-				// Ghost
 				_ghostBlock = new VisualElement();
 				_ghostBlock.AddToClassList("time-block");
 				_ghostBlock.AddToClassList($"block-color-{_moveSourceBlock.ColorIndex}");
@@ -510,7 +493,6 @@ namespace KarmoToys.Features.Planner
 			}
 			else
 			{
-				// Create
 				_dragMode = DragMode.Create;
 				float snapY = Snap(evt.localPosition.y, _snapInterval * _pixelsPerMinute);
 				_dragStartY = snapY;

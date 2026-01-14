@@ -378,7 +378,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1627088699}
   - component: {fileID: 1627088698}
-  - component: {fileID: 1627088700}
+  - component: {fileID: 1627088705}
   m_Layer: 0
   m_Name: Planner
   m_TagString: Untagged
@@ -424,7 +424,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1627088700
+--- !u!114 &1627088705
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -433,13 +433,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1627088697}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4a737b2f26691d4cbd9e7d6a4f3bfcd, type: 3}
+  m_Script: {fileID: 11500000, guid: 166452bab7a6b6644aab4456ecc9ff1b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KarmoLab.Module.Planner.PlannerController
+  m_EditorClassIdentifier: Assembly-CSharp::KarmoToys.Main.KarmoToysApp
   _uiDocument: {fileID: 1627088698}
-  _snapInterval: 5
-  _pixelsPerMinute: 1
-  _startDayOfWeek: 1
+  _settings: {fileID: 11400000, guid: f3f39fd0d9956f74991faebd22af7973, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
