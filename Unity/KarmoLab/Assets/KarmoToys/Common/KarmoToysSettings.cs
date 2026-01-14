@@ -16,5 +16,9 @@ namespace KarmoToys.Common
 
         [Tooltip("Default start day of the week.")]
         public DayOfWeek DefaultStartDay = DayOfWeek.Monday;
+
+        [Header("Save Settings")]
+        [Tooltip("Maximum number of rolling backups to keep.")]
+        public int MaxBackupCount = 1000;
     }
 }

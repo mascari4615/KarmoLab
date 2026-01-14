@@ -19,10 +19,14 @@ namespace KarmoToys.Features.ToolBox
 		// UI
 		private Label _toolTitle, _toolDescription;
 		private DropdownField _toolSelector, _actionSelector;
+
 		private Label _labelInputMain, _labelInputSub;
 		private TextField _inputMain, _inputSub, _outputField;
 		private Button _btnRunAction, _btnCopyOutput;
 		private Button _btnOpenSaveDir, _btnRefreshData;
+		private IntegerField _maxBackupCountInput, _thresholdInput; // [NEW] Threshold
+		private Toggle _autoBackupToggle; // [NEW] AutoBackup
+		private ScrollView _backupFileList;
 
 		// Logic
 		private List<ITool> _tools = new List<ITool>();
@@ -49,16 +53,147 @@ namespace KarmoToys.Features.ToolBox
 
 			_btnOpenSaveDir = root.Q<Button>("BtnOpenSaveDir");
 			_btnRefreshData = root.Q<Button>("BtnRefreshData");
+			_maxBackupCountInput = root.Q<IntegerField>("MaxBackupCountInput");
+			_backupFileList = root.Q<ScrollView>("BackupFileList");
+
+			// [NEW] Configure AutoBackup & Threshold UI
+			// Assuming UI Builder doesn't have these, we inject them or reuse existing if present.
+			// For simplicity, we'll create them programmatically above BackupFileList or reuse a container.
+			var configContainer = new VisualElement();
+			configContainer.style.flexDirection = FlexDirection.Row;
+			configContainer.style.marginBottom = 10;
+
+			// AutoBackup Toggle
+			_autoBackupToggle = new Toggle("Auto Backup");
+			_autoBackupToggle.style.flexGrow = 1;
+			_autoBackupToggle.RegisterValueChangedCallback(evt =>
+			{
+				if (KarmoToysApp.Instance.Data != null)
+				{
+					KarmoToysApp.Instance.Data.AutoBackupOnSave = evt.newValue;
+					KarmoToysApp.Instance.SaveData(false); // Save settings
+				}
+			});
+
+			// Threshold Input
+			_thresholdInput = new IntegerField("Change Threshold");
+			_thresholdInput.style.flexGrow = 1;
+			_thresholdInput.style.marginLeft = 10;
+			_thresholdInput.RegisterValueChangedCallback(evt =>
+			{
+				if (KarmoToysApp.Instance.Data != null)
+				{
+					KarmoToysApp.Instance.Data.SignificantChangeThreshold = evt.newValue;
+					KarmoToysApp.Instance.SaveData(false); // Save settings
+				}
+			});
+
+			// Insert above Backup List
+			if (_backupFileList != null && _backupFileList.parent != null)
+			{
+				_backupFileList.parent.Insert(_backupFileList.parent.IndexOf(_backupFileList), configContainer);
+				configContainer.Add(_autoBackupToggle);
+				configContainer.Add(_thresholdInput);
+			}
 
 			_btnRunAction.clicked += RunCurrentAction;
 			_btnCopyOutput.clicked += () => { GUIUtility.systemCopyBuffer = _outputField.value; };
 			_btnOpenSaveDir.clicked += OnOpenSaveDir;
 			_btnRefreshData.clicked += OnRefreshData;
 
+			_maxBackupCountInput.RegisterValueChangedCallback(evt =>
+			{
+				if (KarmoToysApp.Instance.Data != null)
+				{
+					KarmoToysApp.Instance.Data.MaxBackupCount = evt.newValue;
+					KarmoToysApp.Instance.SaveData();
+				}
+			});
+
 			_toolSelector.RegisterValueChangedCallback(evt => SelectTool(evt.newValue));
 			_actionSelector.RegisterValueChangedCallback(evt => SelectAction(evt.newValue));
 
 			LoadTools();
+		}
+
+		public override void OnSelect()
+		{
+			base.OnSelect();
+			RefreshBackupList();
+			if (KarmoToysApp.Instance.Data != null)
+			{
+				_maxBackupCountInput.SetValueWithoutNotify(KarmoToysApp.Instance.Data.MaxBackupCount);
+				// [NEW] Bind Config Values
+				if (_autoBackupToggle != null) _autoBackupToggle.SetValueWithoutNotify(KarmoToysApp.Instance.Data.AutoBackupOnSave);
+				if (_thresholdInput != null) _thresholdInput.SetValueWithoutNotify(KarmoToysApp.Instance.Data.SignificantChangeThreshold);
+			}
+		}
+
+		private void RefreshBackupList()
+		{
+			if (_backupFileList == null) return;
+			_backupFileList.Clear();
+
+			string savePath = KarmoToysApp.Instance.GetSavePath();
+			if (string.IsNullOrEmpty(savePath)) return;
+
+			// Flat Structure: 현재 파일명 기반 필터링
+			var backups = DataService.GetBackupFiles(savePath);
+			foreach (var file in backups)
+			{
+				var row = new VisualElement();
+				row.style.flexDirection = FlexDirection.Row;
+				row.style.alignItems = Align.Center;
+				row.style.marginBottom = 2;
+				row.style.justifyContent = Justify.SpaceBetween;
+
+				// 파일명 전체 표시 (유저 요청)
+				string displayText = $"{file.Name} ({file.Length / 1024f:F1}KB)";
+
+				var label = new Label(displayText);
+				label.style.flexGrow = 1;
+				label.style.color = new StyleColor(new Color(0.8f, 0.8f, 0.8f));
+
+				var btnDiff = new Button(() => ShowDiff(file.FullName));
+				btnDiff.text = "🔍";
+				btnDiff.tooltip = "Compare (Diff)";
+				btnDiff.style.width = 30;
+
+				var btnLoad = new Button(() => OnClickBackupFile(file.FullName));
+				btnLoad.text = "📂";
+				btnLoad.tooltip = "Load this backup";
+				btnLoad.style.width = 30;
+
+				row.Add(label);
+				row.Add(btnDiff);
+				row.Add(btnLoad);
+				_backupFileList.Add(row);
+			}
+		}
+
+		private void ShowDiff(string backupPath)
+		{
+			if (KarmoToysApp.Instance.Data == null) return;
+
+			// 백업 데이터 로드 (메모리 상에서만)
+			var backupData = DataService.Load(backupPath);
+
+			// 현재 데이터와 비교
+			string diffSummary = DataService.GetDiffSummary(backupData, KarmoToysApp.Instance.Data);
+
+			// 결과 출력
+			var diffLabel = ViewContainer.Q<Label>("BackupDiffResult");
+			if (diffLabel != null)
+			{
+				diffLabel.text = diffSummary;
+			}
+		}
+
+		private void OnClickBackupFile(string path)
+		{
+			// TODO: Confirm Popup? For now, run directly.
+			KarmoToysApp.Instance.LoadBackup(path);
+			RefreshBackupList();
 		}
 
 		private void LoadTools()

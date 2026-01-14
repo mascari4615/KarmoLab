@@ -60,6 +60,9 @@ namespace KarmoToys.Main
 			// 0. Features Auto Addition
 			EnsureFeatures();
 
+			// 0.5. Session Start Backup
+			SaveData(true, "SessionStart");
+
 			// 1. 공통 서비스 초기화
 			Toast = new ToastService(root.Q("ToastContainer"));
 			Tooltip = new TooltipService(root);
@@ -186,15 +189,44 @@ namespace KarmoToys.Main
 			_currentFeature = targetFeature;
 		}
 
-		public void SaveData()
+		public void SaveData(bool forceBackup = false, string tagOverride = "")
 		{
-			DataService.Save(_savePath, Data);
+			if (Data == null) return;
+
+			string tag = string.IsNullOrEmpty(tagOverride) ? $"v{Application.version}" : tagOverride;
+
+			// 앱 버전 정보를 백업 태그로 전달 (기본 백업 로직은 DataService 내부에서 AutoBackup 설정에 따름)
+			DataService.Save(_savePath, Data, Data.MaxBackupCount, tag, forceBackup);
+		}
+
+		private void OnApplicationQuit()
+		{
+			// 앱 종료 시 강제 백업 (SessionEnd)
+			SaveData(true, "SessionEnd");
+		}
+
+		public void LoadBackup(string backupPath)
+		{
+			if (DataService.LoadBackup(_savePath, backupPath, Data.MaxBackupCount))
+			{
+				LoadData();
+				Toast.Show("백업 데이터를 성공적으로 불러왔다냥! 🕒✨");
+			}
+			else
+			{
+				Toast.Show("백업을 불러오는 데 실패했다냥... 😿", ToastType.Error);
+			}
 		}
 
 		public string GetSaveDirectory()
 		{
 			if (string.IsNullOrEmpty(_savePath)) return Application.persistentDataPath;
 			return System.IO.Path.GetDirectoryName(_savePath);
+		}
+
+		public string GetSavePath()
+		{
+			return _savePath;
 		}
 
 		public void LoadData()

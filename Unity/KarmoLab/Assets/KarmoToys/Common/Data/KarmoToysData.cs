@@ -12,6 +12,10 @@ namespace KarmoToys.Common.Data
 		public LifeWeeklyData LifeWeekly = new();
 
 		// 설정 데이터
+		public string SaveId = Guid.NewGuid().ToString();
 		public AppTheme Theme = AppTheme.Dark;
+		public int MaxBackupCount = 1000;
+		public bool AutoBackupOnSave = false;
+		public int SignificantChangeThreshold = 10;
 	}
 }

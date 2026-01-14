@@ -15,11 +15,13 @@ namespace KarmoTools.Build
 		private const string KEY_OUTPUT_PATH = "KarmoTools_BuildPath";
 		private const string KEY_LIVE_PATH = "KarmoTools_LivePath";
 		private const string KEY_PREFIX = "KarmoTools_Prefix";
+		private const string KEY_BACKUP_PATTERNS = "KarmoTools_BackupPatterns";
 
 		// Fields
 		private string _outputPath;
 		private string _livePath;
 		private string _filePrefix = "KarmoLab";
+		private string _backupPatterns = "*.json;Data/";
 		private string _buildMemo = "";
 		private bool _openFolderAfterBuild = true;
 		private bool _deleteDoNotShip = true;
@@ -29,6 +31,7 @@ namespace KarmoTools.Build
 			_outputPath = EditorPrefs.GetString(KEY_OUTPUT_PATH, "");
 			_livePath = EditorPrefs.GetString(KEY_LIVE_PATH, "");
 			_filePrefix = EditorPrefs.GetString(KEY_PREFIX, "KarmoLab");
+			_backupPatterns = EditorPrefs.GetString(KEY_BACKUP_PATTERNS, "*.json;Data/");
 		}
 
 		private void OnDisable()
@@ -36,6 +39,7 @@ namespace KarmoTools.Build
 			EditorPrefs.SetString(KEY_OUTPUT_PATH, _outputPath);
 			EditorPrefs.SetString(KEY_LIVE_PATH, _livePath);
 			EditorPrefs.SetString(KEY_PREFIX, _filePrefix);
+			EditorPrefs.SetString(KEY_BACKUP_PATTERNS, _backupPatterns);
 		}
 
 		private void OnGUI()
@@ -67,6 +71,8 @@ namespace KarmoTools.Build
 
 			_filePrefix = EditorGUILayout.TextField("File Prefix", _filePrefix);
 			_buildMemo = EditorGUILayout.TextField("Memo (Optional)", _buildMemo);
+			_backupPatterns = EditorGUILayout.TextField("Protect Patterns", _backupPatterns);
+			EditorGUILayout.HelpBox("Semicolon-separated patterns to protect (e.g. *.json;Data/)", MessageType.None);
 			_openFolderAfterBuild = EditorGUILayout.Toggle("Open Folder After Build", _openFolderAfterBuild);
 			_deleteDoNotShip = EditorGUILayout.Toggle("Delete DoNotShip Folders", _deleteDoNotShip);
 
@@ -176,11 +182,26 @@ namespace KarmoTools.Build
 				Directory.CreateDirectory(_livePath);
 			}
 
+			string backupDirPath = _livePath + "_Backup";
+
 			try
 			{
+				// 1. Backup protected files/folders냥! 🛡️
+				int backupCount = BackupFiles_Internal(_livePath, backupDirPath, _backupPatterns);
+				if (backupCount > 0) Debug.Log($"[KarmoTools] Backed up {backupCount} items for protection.");
+
+				// 2. Deploy (Overwrite) 덮어쓰기냥!
 				CopyDirectory(sourceDir, _livePath);
 				Debug.Log($"[KarmoTools] Deployed successfully to: {_livePath}");
-				EditorUtility.DisplayDialog("Success", "Build & Deploy Complete!\nFiles updated in Live Path.", "Awesome!");
+
+				// 3. Restore protected files 싹 돌려놓기냥! 🔄
+				if (backupCount > 0)
+				{
+					CopyDirectory(backupDirPath, _livePath);
+					Debug.Log("[KarmoTools] Restored protected files from backup.");
+				}
+
+				EditorUtility.DisplayDialog("Success", "Build & Deploy Complete!\nFiles updated in Live Path (Protected files restored).", "Awesome!");
 
 				if (_openFolderAfterBuild)
 				{
@@ -192,6 +213,57 @@ namespace KarmoTools.Build
 				Debug.LogError($"[KarmoTools] Deploy Failed: {ex.Message}");
 				EditorUtility.DisplayDialog("Error", $"Deploy Failed.\n{ex.Message}", "OK");
 			}
+			finally
+			{
+				// 4. Cleanup backup folder냥! 🧹
+				if (Directory.Exists(backupDirPath))
+				{
+					Directory.Delete(backupDirPath, true);
+				}
+			}
+		}
+
+		private int BackupFiles_Internal(string liveDir, string backupDir, string patternsStr)
+		{
+			if (!Directory.Exists(liveDir)) return 0;
+			if (string.IsNullOrWhiteSpace(patternsStr)) return 0;
+
+			int count = 0;
+			var patterns = patternsStr.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+			if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
+
+			foreach (var pattern in patterns)
+			{
+				var trimPattern = pattern.Trim();
+				if (string.IsNullOrEmpty(trimPattern)) continue;
+
+				// Directory Pattern (ends with / or \)
+				if (trimPattern.EndsWith("/") || trimPattern.EndsWith("\\"))
+				{
+					string subDirName = trimPattern.TrimEnd('/', '\\');
+					string sourceSubDir = Path.Combine(liveDir, subDirName);
+					if (Directory.Exists(sourceSubDir))
+					{
+						string destSubDir = Path.Combine(backupDir, subDirName);
+						if (!Directory.Exists(destSubDir)) Directory.CreateDirectory(destSubDir);
+						CopyDirectory(sourceSubDir, destSubDir);
+						count++;
+					}
+				}
+				else // File Pattern
+				{
+					var files = Directory.GetFiles(liveDir, trimPattern, SearchOption.TopDirectoryOnly);
+					foreach (var f in files)
+					{
+						string fileName = Path.GetFileName(f);
+						File.Copy(f, Path.Combine(backupDir, fileName), true);
+						count++;
+					}
+				}
+			}
+
+			return count;
 		}
 
 		private void CopyDirectory(string sourceDir, string destDir)

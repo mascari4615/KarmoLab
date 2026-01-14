@@ -195,10 +195,23 @@
 			
 			<ui:VisualElement class="tool-section" style="margin-top: 20px; border-top-width: 1px; border-color: rgb(60, 60, 60); padding-top: 10px;">
 				<ui:Label text="Data Management" class="section-title"/>
-				<ui:VisualElement style="flex-direction: row; justify-content: space-between;">
+				<ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 10px;">
+					<ui:Label text="최대 백업 수:" style="color: rgb(150, 150, 150); margin-right: 10px;"/>
+					<ui:IntegerField name="MaxBackupCountInput" value="1000" style="width: 80px;"/>
+				</ui:VisualElement>
+				<ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 20px;">
 					<ui:Button name="BtnOpenSaveDir" text="📂 Open Save Folder" class="btn-secondary" style="flex-grow: 1; margin-right: 5px;"/>
 					<ui:Button name="BtnRefreshData" text="🔄 Refresh Data" class="btn-primary" style="flex-grow: 1; margin-left: 5px;"/>
 				</ui:VisualElement>
+				
+				<ui:Label text="Backup Center 🕒" class="section-title" style="margin-top: 20px;"/>
+				<ui:Label text="백업 파일을 클릭하면 불러올 수 있다냥! (현재 데이터는 자동 백업된다냥)" style="color: rgb(136, 136, 136); font-size: 11px; margin-bottom: 10px;"/>
+				<ui:ScrollView name="BackupFileList" style="height: 180px; background-color: rgba(0, 0, 0, 0.2); border-radius: 5px; padding: 5px;"/>
+				
+				<ui:Label text="데이터 비교 (Visual Diff) 🔍" class="section-title" style="margin-top: 15px;"/>
+				<ui:ScrollView style="height: 120px; background-color: rgba(0, 0, 0, 0.3); border-radius: 5px; padding: 10px;">
+					<ui:Label name="BackupDiffResult" text="백업 목록에서 '비교' 버튼을 누르면 차이점이 여기 나온다냥! ✨" style="color: rgb(200, 200, 200); font-size: 11px; white-space: normal;"/>
+				</ui:ScrollView>
 			</ui:VisualElement>
 
 		</ui:ScrollView>
