@@ -7,6 +7,7 @@ using UnityEngine.UIElements;
 using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
+using KarmoToys.Features.ToolBox.Tools;
 
 namespace KarmoToys.Features.ToolBox
 {
@@ -69,6 +70,7 @@ namespace KarmoToys.Features.ToolBox
 			_tools.Add(new Tools.TextFormatTool());
 			_tools.Add(new Tools.FileNameTool());
 			_tools.Add(new Tools.YoutubeTool());
+			_tools.Add(new KarmoToys.Features.ToolBox.Tools.CompanionLauncherTool());
 
 			foreach (var t in _tools)
 			{

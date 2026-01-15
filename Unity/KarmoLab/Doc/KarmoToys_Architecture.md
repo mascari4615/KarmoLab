@@ -49,7 +49,19 @@
 - **Class**: `ToolBoxFeature`
 - **Key Features**: 유틸리티 도구 (텍스트 변환, 파일명 변경 등), 데이터 관리.
 
-## 4. 폴더 구조 (Directory Structure)
+### 3.6. Companion (투명 펫 캐릭터)
+- **Class**: `CompanionFeature`
+- **Key Features**:
+  - 투명 윈도우 오버레이, 동적 클릭 통과(Input Passthrough).
+  - 독립 프로세스 실행 (`-mode companion`).
+
+## 4. 프로세스 아키텍처 (Process Architecture)
+**KarmoToys**는 단일 모니터 멀티 윈도우 한계를 극복하기 위해 **멀티 프로세스 모델**을 사용합니다.
+- **Main Process**: 기본 플래너 앱. (`Mutex: Global\KarmoLab_Main`)
+- **Companion Process**: 투명 캐릭터 앱. (`Mutex: Global\KarmoLab_Companion`)
+- 두 프로세스는 완전히 독립적이며 OS 레벨에서 윈도우 스타일(투명/불투명)을 다르게 가져갑니다.
+
+## 5. 폴더 구조 (Directory Structure)
 ```
 Assets/KarmoToys/
 ├── Main/           # 엔트리 포인트 (KarmoToysApp)

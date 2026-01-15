@@ -86,6 +86,15 @@ namespace KarmoTools.Build
 				BuildApp(false);
 			}
 
+			if (GUILayout.Button("Build & Run", GUILayout.Height(30)))
+			{
+				string builtExe = BuildApp(false);
+				if (!string.IsNullOrEmpty(builtExe))
+				{
+					RunApp(builtExe);
+				}
+			}
+
 			GUI.backgroundColor = Color.green;
 			if (GUILayout.Button("Build & Deploy (Patch)", GUILayout.Height(40)))
 			{
@@ -105,12 +114,12 @@ namespace KarmoTools.Build
 			return $"{_filePrefix}_{dateStr}{memoPart}";
 		}
 
-		private void BuildApp(bool deploy)
+		private string BuildApp(bool deploy)
 		{
 			if (string.IsNullOrEmpty(_outputPath))
 			{
 				EditorUtility.DisplayDialog("Error", "Please select a Build Output Path.", "OK");
-				return;
+				return null;
 			}
 
 			string folderName = GetFolderName();
@@ -158,14 +167,36 @@ namespace KarmoTools.Build
 				{
 					DeployToLive(fullPath);
 				}
-				else if (_openFolderAfterBuild)
+				else if (_openFolderAfterBuild && !deploy) // Don't open if we are going to run it manually via Build & Run (handled by caller if needed, but here caller usually handles run)
 				{
-					EditorUtility.RevealInFinder(exePath);
+					// For simple Build Only, we open. For Build & Run, we might not want to open folder. 
+					// Let's keep logic simple: return exe path.
+					if (!deploy) EditorUtility.RevealInFinder(exePath);
 				}
+
+				return exePath;
 			}
 			else
 			{
 				Debug.LogError($"[KarmoTools] Build Failed: {summary.result}");
+				return null;
+			}
+		}
+
+		private void RunApp(string exePath)
+		{
+			if (File.Exists(exePath))
+			{
+				Debug.Log($"[KarmoTools] Launching: {exePath}");
+				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+				{
+					FileName = exePath,
+					WorkingDirectory = Path.GetDirectoryName(exePath)
+				});
+			}
+			else
+			{
+				Debug.LogError($"[KarmoTools] Executable not found at: {exePath}");
 			}
 		}
 

@@ -207,3 +207,21 @@
         - **ToolBox 설정**: 자동 백업 여부(`AutoBackupOnSave`)와 민감도(`Threshold`)를 도구함에서 직접 설정 가능.
         - **Visual Diff**: 백업 파일과 현재 상태의 변경 내역을 요약하여 보여주는 비교 기능 고도화.
     - **중복 방지**: MD5 해시 체크를 통해 내용이 동일한 중복 백업 생성 원천 차단.
+
+## 2026-01-16 (Companion Mode Alpha)
+
+- **컴패니언 모드 (Companion Mode) 구현**:
+    - **투명 윈도우 시스템**: 유니티의 한계를 넘어선 **완전한 데스크탑 투명 오버레이** 구현.
+        - **Windowed Mode Strategy**: 전체화면 모드의 제약을 우회하기 위해 창 모드(Windowed)로 시작 후, Win32 API(`user32.dll`, `dwmapi.dll`)를 사용하여 **테두리를 강제 제거**하고 **DWM 유리 효과**를 적용하는 하이브리드 방식 채택.
+        - **Black Screen 해결**: URP 환경에서 발생하는 알파 채널 손실 문제를 해결하기 위해 `PlayerSettings.preserveFramebufferAlpha` 활성화 및 카메라 Post-Processing 강제 비활성화 로직 적용.
+        - **Work Area Compliance**: 작업표시줄이 가려지는 문제를 방지하기 위해 `SystemParametersInfo(SPI_GETWORKAREA)`를 사용하여 **작업 영역(Work Area)에 딱 맞는 해상도**로 창 크기를 자동 조절.
+    - **인터랙션 (Interaction)**:
+        - **Input Passthrough**: 마우스가 캐릭터(UI) 위에 있을 때만 입력을 받고, 빈 공간에서는 **클릭이 바탕화면으로 통과**되도록 동적 히트 테스트 로직 구현.
+        - **Always On Top**: 바탕화면을 클릭해도 창이 뒤로 숨지 않도록 `SetWindowPos`를 주기적으로 호출하여 최상단 유지.
+    - **프로세스 아키텍처 (Process Architecture)**:
+        - **Multi-Instance**: 메인 앱(`Planner`)과 컴패니언 앱(`Companion`)이 서로 독립된 프로세스로 동시에 실행될 수 있도록 구조화.
+        - **Launch Argument**: `-mode companion` 인자를 통해 하나의 실행 파일로 두 가지 모드를 분기 처리.
+        - **Mutex Protection**: `Global\KarmoLab_Main` 과 `Global\KarmoLab_Companion` 뮤텍스를 분리하여, **각 모드별로 단일 인스턴스**만 실행되도록 보호 (메인+컴패니언 공존 가능, 메인+메인 불가).
+    - **에디터 도구**:
+        - **Companion Build Helper**: 투명화에 필수적인 Player Settings(D3D11, FlipModel OFF 등)를 원클릭으로 설정하는 에디터 툴 제공.
+        - **Build & Run**: 빌드 후 즉시 실행하여 빠른 테스트가 가능하도록 빌드 파이프라인 개선.

@@ -30,15 +30,84 @@ namespace KarmoToys.Main
 
 		private IFeature _currentFeature;
 
+		public bool IsCompanionMode { get; private set; }
+
+		// Mutex for Single Instance Check (Keep reference to prevent GC)
+		private static System.Threading.Mutex _appMutex;
+
 		private void Awake()
 		{
 			if (Instance == null) Instance = this;
 			else Destroy(gameObject);
+
+			// Check execution mode
+			var args = System.Environment.GetCommandLineArgs();
+			IsCompanionMode = System.Array.Exists(args, arg => arg == "-mode") &&
+							  System.Array.Exists(args, arg => arg == "companion");
+
+			// --- Single Instance Protection (Mutex) ---
+			// Different mutex per mode allows Main + Companion to run simultaneously
+			string mutexName = IsCompanionMode ? "Global\\KarmoLab_Companion" : "Global\\KarmoLab_Main";
+			bool createdNew;
+
+			try
+			{
+				_appMutex = new System.Threading.Mutex(true, mutexName, out createdNew);
+			}
+			catch (System.Exception ex)
+			{
+				Debug.LogError($"[KarmoToysApp] Mutex creation failed: {ex}");
+				createdNew = true; // Fallback? Or fail safe? Let's assume fail safe.
+			}
+
+			if (!createdNew)
+			{
+				Debug.LogError($"[KarmoToysApp] Instance already running for mode: {(IsCompanionMode ? "Companion" : "Main")}. Quitting.");
+				Application.Quit();
+				// Ensure we don't continue initialization
+				return;
+			}
+			// ------------------------------------------
 		}
 
 		private void Start()
 		{
 			if (_uiDocument == null) _uiDocument = GetComponent<UIDocument>();
+
+			// Ensure run in background is active
+			Application.runInBackground = true;
+
+			// Window Mode Setup based on App Mode
+			// Window Mode Setup based on App Mode
+			if (IsCompanionMode)
+			{
+				// Companion Mode: Start Windowed, then we strip borders in WindowTransparencyUtils
+				// Force Full Work Area Resolution (Excluding Taskbar) to allow character to roam freely
+				Screen.fullScreenMode = FullScreenMode.Windowed;
+
+				// Use the new GetWorkArea method to respect Taskbar
+				// Note: In Editor/Non-Windows this returns dummy values.
+				// We need to resolve the namespace or use full name if needed, but 'IsCompanionMode' implies we are likely running logic valid for Utils
+#if UNITY_STANDALONE_WIN
+				Rect workArea = KarmoToys.Features.Companion.WindowTransparencyUtils.GetWorkArea();
+				int width = (int)workArea.width;
+				int height = (int)workArea.height;
+				// Position is handled by OS usually at (0,0) for main monitor, but could be offset if needed.
+				// Ideally we also SetWindowPos to workArea.x, workArea.y via Utils if it doesn't default there.
+#else
+				int width = Display.main.systemWidth;
+				int height = Display.main.systemHeight;
+#endif
+				Screen.SetResolution(width, height, FullScreenMode.Windowed);
+				Debug.Log($"[KarmoToysApp] Companion Mode: Set Resolution to {width}x{height} (WorkArea)");
+			}
+			else
+			{
+				// Main Mode: Windowed (Standard)
+				// Force a default reasonable resolution to avoid inheriting Companion's 4K size
+				Screen.fullScreenMode = FullScreenMode.Windowed;
+				Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
+			}
 
 			// Path Setup
 			_savePath = System.IO.Path.Combine(Application.persistentDataPath, Define.SaveFileName);
@@ -60,8 +129,35 @@ namespace KarmoToys.Main
 			// 0. Features Auto Addition
 			EnsureFeatures();
 
-			// 0.5. Session Start Backup
-			SaveData(true, "SessionStart");
+			if (IsCompanionMode)
+			{
+				// In Companion Mode, UI setup is minimal or handled by CompanionFeature
+				// We clear the root to remove any existing MainView elements from UXML
+				root.Clear();
+
+				// Ensure root is circular transparent (though transparency comes from camera)
+				root.style.backgroundColor = new StyleColor(Color.clear);
+
+				// Set Camera to clear background for window transparency
+				var cam = Camera.main;
+				if (cam != null)
+				{
+					cam.clearFlags = CameraClearFlags.SolidColor;
+					cam.backgroundColor = Color.clear;
+
+					// CRITICAL: Disable URP Post-Processing on Camera to preserve Alpha
+					var camData = cam.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+					if (camData != null)
+					{
+						camData.renderPostProcessing = false;
+					}
+				}
+			}
+			else
+			{
+				// 0.5. Session Start Backup
+				SaveData(true, "SessionStart");
+			}
 
 			// 1. 공통 서비스 초기화
 			Toast = new ToastService(root.Q("ToastContainer"));
@@ -76,20 +172,25 @@ namespace KarmoToys.Main
 				// 각 피처 초기화
 				feature.Initialize(root);
 
-				// 탭 버튼 바인딩
-				if (!string.IsNullOrEmpty(feature.TabButtonName))
+				if (!IsCompanionMode)
 				{
-					var btn = root.Q<Button>(feature.TabButtonName);
-					if (btn != null)
+					// 탭 버튼 바인딩
+					if (!string.IsNullOrEmpty(feature.TabButtonName))
 					{
-						_tabMap[btn] = feature;
-						btn.clicked += () => SelectTab(btn);
-					}
-					else
-					{
-						Debug.LogWarning($"[KarmoToys] Tab Button '{feature.TabButtonName}' not found for feature '{feature.FeatureName}'");
+						var btn = root.Q<Button>(feature.TabButtonName);
+						if (btn != null)
+						{
+							_tabMap[btn] = feature;
+							btn.clicked += () => SelectTab(btn);
+						}
 					}
 				}
+			}
+
+			if (IsCompanionMode)
+			{
+				// Companion Mode initialization ends here
+				return;
 			}
 
 			// 3. 테마 초기화 및 버튼 바인딩
@@ -238,24 +339,36 @@ namespace KarmoToys.Main
 
 		private void EnsureFeatures()
 		{
-			// List of known features to auto-add
-			var features = new System.Type[]
+			if (IsCompanionMode)
 			{
-				typeof(Features.Dashboard.DashboardFeature),
-				typeof(Features.Planner.PlannerFeature),
-				typeof(KarmoToys.Features.LifeWeekly.LifeWeeklyFeature),
-				typeof(Features.QuestBoard.QuestBoardFeature),
-				typeof(Features.Note.NoteFeature),
-				typeof(Features.ToolBox.ToolBoxFeature),
-				typeof(Features.Preferences.PreferencesFeature)
-			};
-
-			foreach (var type in features)
-			{
+				// Companion Mode: Only CompanionFeature
+				var type = typeof(Features.Companion.CompanionFeature);
 				if (GetComponent(type) == null)
 				{
 					gameObject.AddComponent(type);
-					Debug.Log($"[KarmoToys] Auto-added missing feature: {type.Name}");
+				}
+			}
+			else
+			{
+				// Main Mode: Standard Features
+				var features = new System.Type[]
+				{
+					typeof(Features.Dashboard.DashboardFeature),
+					typeof(Features.Planner.PlannerFeature),
+					typeof(KarmoToys.Features.LifeWeekly.LifeWeeklyFeature),
+					typeof(Features.QuestBoard.QuestBoardFeature),
+					typeof(Features.Note.NoteFeature),
+					typeof(Features.ToolBox.ToolBoxFeature),
+					typeof(Features.Preferences.PreferencesFeature)
+				};
+
+				foreach (var type in features)
+				{
+					if (GetComponent(type) == null)
+					{
+						gameObject.AddComponent(type);
+						Debug.Log($"[KarmoToys] Auto-added missing feature: {type.Name}");
+					}
 				}
 			}
 		}
