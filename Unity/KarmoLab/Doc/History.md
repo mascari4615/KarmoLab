@@ -207,9 +207,6 @@
         - **ToolBox 설정**: 자동 백업 여부(`AutoBackupOnSave`)와 민감도(`Threshold`)를 도구함에서 직접 설정 가능.
         - **Visual Diff**: 백업 파일과 현재 상태의 변경 내역을 요약하여 보여주는 비교 기능 고도화.
     - **중복 방지**: MD5 해시 체크를 통해 내용이 동일한 중복 백업 생성 원천 차단.
-
-## 2026-01-16 (Companion Mode Alpha)
-
 - **컴패니언 모드 (Companion Mode) 구현**:
     - **투명 윈도우 시스템**: 유니티의 한계를 넘어선 **완전한 데스크탑 투명 오버레이** 구현.
         - **Windowed Mode Strategy**: 전체화면 모드의 제약을 우회하기 위해 창 모드(Windowed)로 시작 후, Win32 API(`user32.dll`, `dwmapi.dll`)를 사용하여 **테두리를 강제 제거**하고 **DWM 유리 효과**를 적용하는 하이브리드 방식 채택.
@@ -225,3 +222,10 @@
     - **에디터 도구**:
         - **Companion Build Helper**: 투명화에 필수적인 Player Settings(D3D11, FlipModel OFF 등)를 원클릭으로 설정하는 에디터 툴 제공.
         - **Build & Run**: 빌드 후 즉시 실행하여 빠른 테스트가 가능하도록 빌드 파이프라인 개선.
+- **아키텍처 결정: 하이브리드 입력 시스템 (Hybrid Robust Input)**:
+    - **문제점**: 윈도우가 비활성 상태이거나 투명 모드일 때, 유니티의 기본 이벤트 시스템(`Pick`, `OnPointerDown`)이 클릭을 제대로 감지하지 못하는 현상 발생.
+    - **해결책**: `DwmExtendFrame` (시각적 투명화)와 **수동 입력 훅 (Manual Input Hooks)**을 결합한 하이브리드 방식 채택.
+    - **원칙 (Rules)**:
+        1. **투명화**: `DwmExtendFrameIntoClientArea` 사용. (알파 블렌딩과 비주얼 품질을 위해 Chroma Key 사용 금지).
+        2. **입력 감지**: 드래그 시작은 반드시 `WindowTransparencyUtils.IsLeftMouseButtonDown()` (Win32 `GetAsyncKeyState`)를 사용하여 물리적인 마우스 상태를 체크.
+        3. **히트 테스트**: 불확실한 `panel.Pick()` 대신, 화면 비율을 계산하는 `TransparencyHitTest.OverlapPoint()` (Manual Ratio Math) 사용.

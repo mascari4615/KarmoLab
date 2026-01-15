@@ -105,21 +105,32 @@ Windows OS 환경에서 윈도우 배경을 투명하게 만들기 위해 `User3
 
 ---
 
-## 5. 작업 계획 (Roadmap)
+### 4.3. 3D Model Strategy: VRM vs Humanoid
+집사님 요청에 따라 3D 캐릭터 도입 시 고려할 포맷 비교를 정리합니다.
 
-### 단계 1: PoC (Proof of Concept)
-- [ ] `WindowTransparencyUtils.cs` 작성 (PInvoke 래퍼).
-- [ ] 빈 씬에서 유니티 데스크탑 투명화 테스트.
-- [ ] 빌드 설정 변경(`Use Flip Model Swapchain` 해제) 및 테스트.
+| 분류 | **VRM (Virtual Reality Model)** | **Generic Humanoid (FBX)** |
+| :--- | :--- | :--- |
+| **목적** | **'아바타'** (인격체) 표현에 특화 | **범용 3D 캐릭터** (게임/애니메이션) |
+| **표정** | **BlendShape 표준화** (Joy, Angry, Sorrow, Fun, Blink 등) | 모델마다 제각각 (직접 매핑 필요) |
+| **물리** | **SpringBone** 내장 (머리카락, 옷자락 등 자동 설정) | Dynamic Bone / Cloth 등 별도 세팅 필요 |
+| **쉐이더** | **MToon** 표준 (카툰 렌더링 최적화) | Standard / URP Lit 등 직접 설정 |
+| **호환성** | VSeeFace, VRChat 등 다양한 앱과 호환 가능 | 유니티 내부에서만 통용 |
+| **결론** | **Companion 앱에는 VRM이 압도적으로 유리함.**<br>(별도 세팅 없이 표정/물리 즉시 적용 가능) | 커스텀 애니메이션 제작엔 유리하나 손이 많이 감 |
 
-### 단계 2: 모드 분리
-- [ ] `KarmoToysApp` 진입점 리팩토링 (인자 처리).
-- [ ] 메인 앱에서 서브 프로세스 실행 로직 구현.
+---
 
-### 단계 3: 캐릭터 및 인터랙션
-- [ ] 드래그로 윈도우 이동 구현 (`GetCursorPos` & `SetWindowPos`).
-- [ ] 캐릭터 리소스 연동.
+## 5. 추가 기능 로드맵 (Roadmap 2.0)
 
-### 주의사항
-- **에디터 실행**: 투명화 로직은 에디터에서는 동작하지 않거나 에디터 전체를 투명하게 만들 수 있으므로 `#if !UNITY_EDITOR`로 감싸야 합니다.
-- **빌드 파이프라인**: 배포 시 하나의 실행 파일로 두 가지 기능을 모두 제공하므로 관리가 용이합니다.
+### 단계 1: 인터랙션 강화 (Immediate)
+- [ ] **Drag & Drop**: 마우스로 캐릭터를 잡아 이동 (구현 예정).
+- [ ] **Speech Bubble**: 텍스트 말풍선으로 대화 기능 추가.
+
+### 단계 2: 비주얼 업그레이드 (Humanoid Focus)
+- [ ] **Generic Humanoid Support**: 기존 보유 중인 Humanoid 모델(FBX) 연동.
+- [ ] **Animations**: 기본 Animator Controller 구성 (Idle, Walk, Dragged).
+
+### 단계 3: 미래 아이디어 (Backlog)
+- [ ] **VRM Support**: 추후 호환성 확장 (UniVRM).
+- [ ] **Window Sitting**: 활성화된 창 위에 앉기.
+- [ ] **Gravity**: 바닥으로 떨어지기.
+- [ ] **Chat GPT**: 대화형 AI 연동.

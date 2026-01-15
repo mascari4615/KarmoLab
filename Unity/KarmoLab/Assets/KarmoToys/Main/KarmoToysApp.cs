@@ -138,15 +138,17 @@ namespace KarmoToys.Main
 				// Ensure root is circular transparent (though transparency comes from camera)
 				root.style.backgroundColor = new StyleColor(Color.clear);
 
-				// Set Camera to clear background for window transparency
-				var cam = Camera.main;
-				if (cam != null)
+				// 3. Camera Setup
+				// Reverted to DwmExtendFrame, so we need Clear background (Alpha=0)
+				var camera = Camera.main;
+				if (camera != null)
 				{
-					cam.clearFlags = CameraClearFlags.SolidColor;
-					cam.backgroundColor = Color.clear;
+					camera.clearFlags = CameraClearFlags.SolidColor;
+					camera.backgroundColor = Color.clear; // (0,0,0,0)
+					camera.allowHDR = false;
 
 					// CRITICAL: Disable URP Post-Processing on Camera to preserve Alpha
-					var camData = cam.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+					var camData = camera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
 					if (camData != null)
 					{
 						camData.renderPostProcessing = false;

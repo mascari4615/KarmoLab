@@ -147,6 +147,80 @@ namespace KarmoToys.Features.Companion
 			public int Bottom;
 		}
 
+		// --- Input Helpers ---
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		private static extern bool GetCursorPos(out POINT lpPoint);
+
+		[DllImport("user32.dll")]
+		public static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
+
+		[StructLayout(LayoutKind.Sequential)]
+		public struct POINT
+		{
+			public int X;
+			public int Y;
+		}
+
+		public static Vector2 GetCursorPosition(bool relativeToWindow = true)
+		{
+			POINT p;
+			if (GetCursorPos(out p))
+			{
+				if (relativeToWindow)
+				{
+					// Ensure we have the cached handle
+					GetUnityWindowHandle();
+				}
+				return new Vector2(p.X, p.Y);
+			}
+			return Vector2.zero;
+		}
+
+		[DllImport("user32.dll", SetLastError = true)]
+		private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+		private static IntPtr _cachedHWnd = IntPtr.Zero;
+		
+		public static IntPtr GetUnityWindowHandle()
+		{
+			if (_cachedHWnd != IntPtr.Zero) return _cachedHWnd;
+			
+			// Try GetActiveWindow first
+			_cachedHWnd = GetActiveWindow();
+			
+			// If failed, try FindWindow (Unity 2020+ usually uses "UnityWndClass" or similar, but name is product name)
+			if (_cachedHWnd == IntPtr.Zero)
+			{
+				// Note: Class name varies by Unity version. "UnityWndClass" is common. 
+				// "KarmoToys" is the product name set in PlayerSettings.
+				_cachedHWnd = FindWindow(null, Application.productName);
+			}
+
+			// If still zero, we can't do much, but next frame might succeed.
+			return _cachedHWnd;
+		}
+
+	public static Vector2 GetMousePosInWindow()
+		{
+			IntPtr hWnd = GetUnityWindowHandle();
+			if (hWnd == IntPtr.Zero) return Vector2.zero; // Logic fail if no hWnd cached
+
+			POINT p;
+			GetCursorPos(out p);
+			ScreenToClient(hWnd, ref p);
+			return new Vector2(p.X, p.Y);
+		}
+
+		[DllImport("user32.dll")]
+		private static extern short GetAsyncKeyState(int vKey);
+
+		public static bool IsLeftMouseButtonDown()
+		{
+			// 0x01 is VK_LBUTTON
+			return (GetAsyncKeyState(0x01) & 0x8000) != 0;
+		}
+
 		public static Rect GetWorkArea()
 		{
 			RECT rect = new RECT();
@@ -166,6 +240,7 @@ namespace KarmoToys.Features.Companion
 		public static void SetClickThrough(bool b) { Debug.Log($"[WindowTransparencyUtils] SetClickThrough: {b} (Mock)."); }
 		public static void SetAlwaysOnTop(bool b) { Debug.Log($"[WindowTransparencyUtils] SetAlwaysOnTop: {b} (Mock)."); }
 		public static Rect GetWorkArea() { return new Rect(0, 0, 1920, 1080); }
+		public static Vector2 GetMousePosInWindow() { return (Vector2)Input.mousePosition; }
 	}
 #endif
 }
