@@ -53,6 +53,8 @@
 - **Class**: `CompanionFeature`
 - **Key Features**:
   - 투명 윈도우 오버레이, 동적 클릭 통과(Input Passthrough).
+  - **인터랙션 모델**: Win32 API 폴링(`Update`) 기반의 하이브리드 입력 처리 (신뢰도 최우선).
+  - **아바타 시스템**: `Root Motion` 제어, `Random Idle Loop`, 에디터 태그 스캐너 지원.
   - 독립 프로세스 실행 (`-mode companion`).
 
 ## 4. 프로세스 아키텍처 (Process Architecture)

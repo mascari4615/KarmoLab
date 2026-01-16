@@ -73,3 +73,4 @@ crashlytics-build.properties
 
 # Custom
 /[Aa]ssets/Plugin*
+Ignore

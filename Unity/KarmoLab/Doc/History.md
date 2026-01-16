@@ -229,3 +229,11 @@
         1. **투명화**: `DwmExtendFrameIntoClientArea` 사용. (알파 블렌딩과 비주얼 품질을 위해 Chroma Key 사용 금지).
         2. **입력 감지**: 드래그 시작은 반드시 `WindowTransparencyUtils.IsLeftMouseButtonDown()` (Win32 `GetAsyncKeyState`)를 사용하여 물리적인 마우스 상태를 체크.
         3. **히트 테스트**: 불확실한 `panel.Pick()` 대신, 화면 비율을 계산하는 `TransparencyHitTest.OverlapPoint()` (Manual Ratio Math) 사용.
+- **컴패니언 모드 (Companion Mode) UI 및 안정성 강화**:
+    - **인터랙션 로직 통합 (Unified Polling)**: UI Toolkit의 불안정한 이벤트(`PointerDown` 등) 대신 `Update` 루프에서 Win32 API로 마우스 상태를 직접 체크하는 폴링 방식을 채택하여 **클릭 씹힘 및 무한 루프 현상 완벽 해결**.
+    - **버튼 연동 드래그 (Attached Panel)**: 설정창 드래그 기능을 제거하고 설정 버튼(⚙️)을 드래그할 때 창이 따라오도록 변경하여, 슬라이더 조작 시 원치 않는 창 이동 방지.
+    - **해상도 명령행 인자 (CLI Resolution)**: `-width [px]`, `-height [px]`, `-fullworkarea` 인자를 지원하여 초기 실행 시 윈도우 크기 조절로 인한 번쩍임(Flicker) 제거.
+- **아바타 시스템 고도화**:
+    - **애니메이션 회전 누적(Drift) 방지**: `Root Motion` 비활성화 및 로컬 회전 초기화 로직을 통해 휴머노이드 애니메이션 전환 시 캐릭터가 조금씩 돌아가던 고질적 문제 해결.
+    - **랜덤 대기 애니메이션 (Random Idle Loop)**: 캐릭터가 여러 대기 모션을 5~15초 간격으로 랜덤하게 재생하도록 업그레이드하여 생동감 부여.
+    - **애니메이터 태그 스캐너 (Tag Scanner)**: 인스펙터 우클릭 메뉴(`Scan Animator by Tag`)를 통해 특정 태그가 붙은 애니메이션을 자동으로 수집하는 에디터 도구 구현.

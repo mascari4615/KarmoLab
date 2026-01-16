@@ -50,7 +50,7 @@ namespace KarmoToys.Features.Companion
 		/// </summary>
 		public static void EnableTransparency()
 		{
-			IntPtr hWnd = GetActiveWindow();
+			IntPtr hWnd = GetUnityWindowHandle();
 
 			if (hWnd == IntPtr.Zero)
 			{
@@ -94,10 +94,15 @@ namespace KarmoToys.Features.Companion
 			int exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
 			SetWindowLong(hWnd, GWL_EXSTYLE, (uint)(exStyle | WS_EX_LAYERED));
 
-			// 4. Trigger a refresh with SWP_FRAMECHANGED
-			SetWindowPos(hWnd, IntPtr.Zero, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+			// 4. Set Position and Size to Work Area, and Trigger a refresh
+			RECT workArea = new RECT();
+			SystemParametersInfo(0x0030, 0, ref workArea, 0); // SPI_GETWORKAREA
+			int width = workArea.Right - workArea.Left;
+			int height = workArea.Bottom - workArea.Top;
 
-			Debug.Log($"[WindowTransparencyUtils] Transparency Applied. hWnd: {hWnd}, HR: {hr}, ExStyle: {exStyle:X}");
+			SetWindowPos(hWnd, IntPtr.Zero, workArea.Left, workArea.Top, width, height, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+			Debug.Log($"[WindowTransparencyUtils] Transparency Applied. Resolution: {width}x{height}, hWnd: {hWnd}");
 		}
 
 		/// <summary>
@@ -107,7 +112,7 @@ namespace KarmoToys.Features.Companion
 		/// </summary>
 		public static void SetClickThrough(bool isClickThrough)
 		{
-			IntPtr hWnd = GetActiveWindow();
+			IntPtr hWnd = GetUnityWindowHandle();
 			int exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
 
 			if (isClickThrough)
@@ -127,7 +132,7 @@ namespace KarmoToys.Features.Companion
 		/// </summary>
 		public static void SetAlwaysOnTop(bool isAlwaysOnTop)
 		{
-			IntPtr hWnd = GetActiveWindow();
+			IntPtr hWnd = GetUnityWindowHandle();
 			IntPtr hWndInsertAfter = isAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST;
 			SetWindowPos(hWnd, hWndInsertAfter, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		}
@@ -186,18 +191,13 @@ namespace KarmoToys.Features.Companion
 		{
 			if (_cachedHWnd != IntPtr.Zero) return _cachedHWnd;
 			
-			// Try GetActiveWindow first
-			_cachedHWnd = GetActiveWindow();
+			// Priority: FindWindow by name (most reliable for Standalone)
+			_cachedHWnd = FindWindow(null, Application.productName);
 			
-			// If failed, try FindWindow (Unity 2020+ usually uses "UnityWndClass" or similar, but name is product name)
+			// Fallback: GetActiveWindow (might fail if user clicked away)
 			if (_cachedHWnd == IntPtr.Zero)
-			{
-				// Note: Class name varies by Unity version. "UnityWndClass" is common. 
-				// "KarmoToys" is the product name set in PlayerSettings.
-				_cachedHWnd = FindWindow(null, Application.productName);
-			}
+				_cachedHWnd = GetActiveWindow();
 
-			// If still zero, we can't do much, but next frame might succeed.
 			return _cachedHWnd;
 		}
 
