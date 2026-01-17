@@ -242,8 +242,8 @@
 ## 2026-01-17 (KST)
 
 - **KarmoEditor 툴바 기능 강화**:
-	- **Custom Scene Selector**: Unity 6의 새로운 Toolbar API를 활용하여 에디터 상단에 씬 전환 드롭다운 메뉴 추가.
+	- **Custom Scene Selector**: Unity 6.3의 새로운 `MainToolbar` API를 활용하여 에디터 상단에 씬 전환 드롭다운 메뉴 추가.
+	- **공식 API 패턴 적용**: `IEnumerable<MainToolbarElement>`를 반환하는 정적 메서드와 `MainToolbarDropdown`을 사용하는 최신 아키텍처 채택.
 	- **데이터 기반 구성 (ScriptableObject)**: `ToolbarSceneConfig` 에셋을 통해 표시할 씬과 폴더를 자유롭게 설정 가능.
-	- **자동 씬 검색**: 특정 폴더를 지정하면 해당 폴더 내의 모든 씬을 자동으로 드롭다운 메뉴에 포함.
-	- **빠른 설정**: `KarmoTools/Create Toolbar Config` 메뉴를 통해 설정 파일을 원클릭으로 생성 가능.
-	- **UX 개선**: 현재 활성화된 씬 이름을 드롭다운 타이틀에 표시하여 직시성 확보.
+	- **자동 씬 검색**: 지정된 폴더 내의 모든 `.unity` 파일을 자동으로 스캔하여 메뉴에 포함.
+	- **편의성 개선**: `KarmoTools/Create Toolbar Config` 메뉴로 원클릭 설정 생성 지원 및 실시간 활성 씬 이름 표시.
