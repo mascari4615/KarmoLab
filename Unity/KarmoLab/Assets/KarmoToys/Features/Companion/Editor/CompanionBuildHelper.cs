@@ -19,10 +19,7 @@ namespace KarmoToys.Features.Companion.Editor
 			// 3. Run In Background -> True
 			PlayerSettings.runInBackground = true;
 
-			// 4. Set Resolution Dialog -> Disabled
-			PlayerSettings.displayResolutionDialog = ResolutionDialogSetting.Disabled;
-
-			// 5. Allow resizable window -> True
+			// 4. Allow resizable window -> True
 			PlayerSettings.resizableWindow = true;
 
 			Debug.Log("[CompanionBuildHelper] Transparency settings applied:\n" +
@@ -30,12 +27,12 @@ namespace KarmoToys.Features.Companion.Editor
 					  "- UseFlipModelSwapchain: False\n" +
 					  "- RunInBackground: True");
 
-			// 6. Graphics API -> Direct3D11 (Force)
+			// 5. Graphics API -> Direct3D11 (Force)
 			PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
 			PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, new UnityEngine.Rendering.GraphicsDeviceType[] { UnityEngine.Rendering.GraphicsDeviceType.Direct3D11 });
 			Debug.Log("- Graphics API: Forced Direct3D11");
 
-			// 7. Disable HDR on current URP Asset
+			// 6. Disable HDR on current URP Asset
 			var urpAsset = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
 			if (urpAsset != null)
 			{
@@ -46,7 +43,7 @@ namespace KarmoToys.Features.Companion.Editor
 				// but usually handled per-camera. CompanionFeature's camera should handle this.
 			}
 
-			// 8. Preserve Framebuffer Alpha -> True (CRITICAL for DWM composition)
+			// 7. Preserve Framebuffer Alpha -> True (CRITICAL for DWM composition)
 			PlayerSettings.preserveFramebufferAlpha = true;
 			Debug.Log("- Preserve Framebuffer Alpha: True");
 		}

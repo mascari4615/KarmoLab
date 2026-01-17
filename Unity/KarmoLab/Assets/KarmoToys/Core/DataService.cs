@@ -12,7 +12,7 @@ namespace KarmoToys.Core
 	public static class DataService
 	{
 		/// <summary>
-		/// 데이터 로드
+		/// ?�이??로드
 		/// </summary>
 		public static KarmoToysData Load(string path)
 		{
@@ -26,7 +26,7 @@ namespace KarmoToys.Core
 					if (data == null) data = new KarmoToysData();
 					if (data.Planner == null) data.Planner = new PlannerData();
 
-					// 하위 호환성: SaveId가 없으면 생성
+					// ?�위 ?�환?? SaveId가 ?�으�??�성
 					if (string.IsNullOrEmpty(data.SaveId))
 					{
 						data.SaveId = Guid.NewGuid().ToString();
@@ -44,7 +44,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// 데이터 저장 (백업 태그 포함, forceBackup=true면 무조건 백업)
+		/// ?�이???�??(백업 ?�그 ?�함, forceBackup=true�?무조�?백업)
 		/// </summary>
 		public static void Save(string path, KarmoToysData data, int maxBackups = 1000, string tag = "", bool forceBackup = false)
 		{
@@ -54,16 +54,16 @@ namespace KarmoToys.Core
 			{
 				bool shouldBackup = forceBackup;
 
-				// Force가 아닐 경우, 자동 백업 설정 및 변경량 체크
+				// Force가 ?�닐 경우, ?�동 백업 ?�정 �?변경량 체크
 				if (!shouldBackup && data.AutoBackupOnSave)
 				{
-					// 1. 가장 최근 백업 파일 찾기
+					// 1. 가??최근 백업 ?�일 찾기
 					var backups = GetBackupFiles(path);
 					var lastBackupIdx = backups.FirstOrDefault();
 
 					if (lastBackupIdx != null && File.Exists(lastBackupIdx.FullName))
 					{
-						// 2. 최근 백업 데이터와 비교 (누적 변경량 체크)
+						// 2. 최근 백업 ?�이?��? 비교 (?�적 변경량 체크)
 						try
 						{
 							var lastBackupData = Load(lastBackupIdx.FullName);
@@ -75,25 +75,25 @@ namespace KarmoToys.Core
 						}
 						catch
 						{
-							// 백업 로드 실패 시 안전하게 현재 파일 기준으로 비교하거나 백업 수행
+							// 백업 로드 ?�패 ???�전?�게 ?�재 ?�일 기�??�로 비교?�거??백업 ?�행
 							shouldBackup = true;
 						}
 					}
 					else
 					{
-						// 3. 백업이 하나도 없으면 무조건 생성 (기준점 마련)
+						// 3. 백업???�나???�으�?무조�??�성 (기�???마련)
 						shouldBackup = true;
 						if (string.IsNullOrEmpty(tag)) tag = "InitBackup";
 					}
 				}
 
-				// 1. 조건 만족 시 백업 생성
+				// 1. 조건 만족 ??백업 ?�성
 				if (shouldBackup)
 				{
 					CreateBackup(path, maxBackups, tag); // SaveId Parameter Removed
 				}
 
-				// 2. 새로운 파일 저장
+				// 2. ?�로???�일 ?�??
 				string dir = Path.GetDirectoryName(path);
 				if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir))
 				{
@@ -110,7 +110,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// 백업 파일 생성 및 개수 관리 (Flat Structure)
+		/// 백업 ?�일 ?�성 �?개수 관�?(Flat Structure)
 		/// </summary>
 		private static void CreateBackup(string path, int maxBackups, string tag = "")
 		{
@@ -119,14 +119,14 @@ namespace KarmoToys.Core
 			try
 			{
 				string dir = Path.GetDirectoryName(path);
-				string backupDir = Path.Combine(dir, "Backups"); // 하위 폴더(SaveId) 제거, 바로 Backups 폴더 사용
+				string backupDir = Path.Combine(dir, "Backups"); // ?�위 ?�더(SaveId) ?�거, 바로 Backups ?�더 ?�용
 
 				if (!Directory.Exists(backupDir))
 				{
 					Directory.CreateDirectory(backupDir);
 				}
 
-				// 중복 파일 체크 (해시 비교)
+				// 중복 ?�일 체크 (?�시 비교)
 				var lastBackup = GetBackupFiles(path).FirstOrDefault();
 				if (lastBackup != null)
 				{
@@ -137,7 +137,7 @@ namespace KarmoToys.Core
 					}
 				}
 
-				// 타임스탬프 형식의 백업 파일명 생성
+				// ?�?�스?�프 ?�식??백업 ?�일�??�성
 				string fileName = Path.GetFileNameWithoutExtension(path);
 				string extension = Path.GetExtension(path);
 				string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -147,7 +147,7 @@ namespace KarmoToys.Core
 
 				File.Copy(path, backupPath, true);
 
-				// 롤링 클린업 (파일명 기준 필터링 필요)
+				// 롤링 ?�린??(?�일�?기�? ?�터�??�요)
 				CleanupOldBackups(backupDir, fileName, maxBackups);
 			}
 			catch (Exception ex)
@@ -175,14 +175,14 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// 오래된 백업 파일 삭제 (해당 파일명에 해당하는 백업만)
+		/// ?�래??백업 ?�일 ??�� (?�당 ?�일명에 ?�당?�는 백업�?
 		/// </summary>
 		private static void CleanupOldBackups(string backupDir, string originalFileName, int maxBackups)
 		{
 			if (maxBackups <= 0) return;
 
 			var directoryInfo = new DirectoryInfo(backupDir);
-			// 해당 원본 파일의 백업본만 필터링 (StartsWith)
+			// ?�당 ?�본 ?�일??백업본만 ?�터�?(StartsWith)
 			var files = directoryInfo.GetFiles()
 				.Where(f => f.Name.StartsWith(originalFileName))
 				.OrderBy(f => f.CreationTime)
@@ -206,7 +206,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// 백업 파일 목록 조회 (최신순, Flat Structure)
+		/// 백업 ?�일 목록 조회 (최신?? Flat Structure)
 		/// </summary>
 		public static List<FileInfo> GetBackupFiles(string mainPath)
 		{
@@ -218,13 +218,13 @@ namespace KarmoToys.Core
 			string fileName = Path.GetFileNameWithoutExtension(mainPath);
 
 			return new DirectoryInfo(backupDir).GetFiles()
-				.Where(f => f.Name.StartsWith(fileName)) // 파일명으로 필터링
+				.Where(f => f.Name.StartsWith(fileName)) // ?�일명으�??�터�?
 				.OrderByDescending(f => f.CreationTime)
 				.ToList();
 		}
 
 		/// <summary>
-		/// 특정 백업 불러오기 (불러오기 전 현재 데이터 Safety Backup 생성)
+		/// ?�정 백업 불러?�기 (불러?�기 ???�재 ?�이??Safety Backup ?�성)
 		/// </summary>
 		public static bool LoadBackup(string mainPath, string backupPath, int maxBackups)
 		{
@@ -232,13 +232,13 @@ namespace KarmoToys.Core
 
 			try
 			{
-				// 1. 현재 메인 데이터가 있으면 Safety Backup 생성 (태그: Safety)
+				// 1. ?�재 메인 ?�이?��? ?�으�?Safety Backup ?�성 (?�그: Safety)
 				if (File.Exists(mainPath))
 				{
 					CreateBackup(mainPath, maxBackups, "Safety");
 				}
 
-				// 2. 백업 파일을 메인 세이브 위치로 덮어쓰기
+				// 2. 백업 ?�일??메인 ?�이�??�치�???��?�기
 				File.Copy(backupPath, mainPath, true);
 				return true;
 			}
@@ -250,7 +250,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// 시각적 데이터 비교 (간이 Diff)
+		/// ?�각???�이??비교 (간이 Diff)
 		/// </summary>
 		public static string GetDiffSummary(KarmoToysData oldData, KarmoToysData newData)
 		{
@@ -259,19 +259,19 @@ namespace KarmoToys.Core
 			StringBuilder sb = new StringBuilder();
 			sb.AppendLine("<b>[Data Comparison Summary]</b>");
 
-			// 1. Planner 이벤트 비교
+			// 1. Planner ?�벤??비교
 			int oldBlocks = oldData.Planner?.TimeBlocks?.Count ?? 0;
 			int newBlocks = newData.Planner?.TimeBlocks?.Count ?? 0;
 			if (oldBlocks != newBlocks)
 			{
-				sb.AppendLine($"- 📅 TimeBlocks: {oldBlocks} -> {newBlocks} ({(newBlocks > oldBlocks ? "+" : "")}{newBlocks - oldBlocks})");
+				sb.AppendLine($"- ?�� TimeBlocks: {oldBlocks} -> {newBlocks} ({(newBlocks > oldBlocks ? "+" : "")}{newBlocks - oldBlocks})");
 			}
 
 			int oldItems = oldData.Planner?.Items?.Count ?? 0;
 			int newItems = newData.Planner?.Items?.Count ?? 0;
 			if (oldItems != newItems)
 			{
-				sb.AppendLine($"- ✅ Todo Items: {oldItems} -> {newItems} ({(newItems > oldItems ? "+" : "")}{newItems - oldItems})");
+				sb.AppendLine($"- ??Todo Items: {oldItems} -> {newItems} ({(newItems > oldItems ? "+" : "")}{newItems - oldItems})");
 			}
 
 			// 1.5 Secret Notes 비교
@@ -279,33 +279,33 @@ namespace KarmoToys.Core
 			int newNotes = newData.Planner?.SecretNotes?.Count ?? 0;
 			if (oldNotes != newNotes)
 			{
-				sb.AppendLine($"- 🔒 Secret Notes: {oldNotes} -> {newNotes} ({(newNotes > oldNotes ? "+" : "")}{newNotes - oldNotes})");
+				sb.AppendLine($"- ?�� Secret Notes: {oldNotes} -> {newNotes} ({(newNotes > oldNotes ? "+" : "")}{newNotes - oldNotes})");
 			}
 
-			// 2. Life Weekly 설정 비교
+			// 2. Life Weekly ?�정 비교
 			if (oldData.LifeWeekly?.BirthDate != newData.LifeWeekly?.BirthDate)
 			{
-				sb.AppendLine($"- 🎂 Birth Date changed: {oldData.LifeWeekly?.BirthDate} -> {newData.LifeWeekly?.BirthDate}");
+				sb.AppendLine($"- ?�� Birth Date changed: {oldData.LifeWeekly?.BirthDate} -> {newData.LifeWeekly?.BirthDate}");
 			}
 			if (oldData.LifeWeekly?.TargetAge != newData.LifeWeekly?.TargetAge)
 			{
-				sb.AppendLine($"- ⏳ Target Age: {oldData.LifeWeekly?.TargetAge} -> {newData.LifeWeekly?.TargetAge}");
+				sb.AppendLine($"- ??Target Age: {oldData.LifeWeekly?.TargetAge} -> {newData.LifeWeekly?.TargetAge}");
 			}
 
-			// 3. 테마 비교
+			// 3. ?�마 비교
 			if (oldData.Theme != newData.Theme)
 			{
-				sb.AppendLine($"- 🎨 Theme: {oldData.Theme} -> {newData.Theme}");
+				sb.AppendLine($"- ?�� Theme: {oldData.Theme} -> {newData.Theme}");
 			}
 
 			// 4. Memo & Target Date 비교
 			if (oldData.Planner?.MemoContent != newData.Planner?.MemoContent)
 			{
-				sb.AppendLine("- 📝 Memo Content changed.");
+				sb.AppendLine("- ?�� Memo Content changed.");
 			}
 			if (oldData.Planner?.TargetDateString != newData.Planner?.TargetDateString)
 			{
-				sb.AppendLine($"- 🎯 Target Date: {oldData.Planner?.TargetDateString} -> {newData.Planner?.TargetDateString}");
+				sb.AppendLine($"- ?�� Target Date: {oldData.Planner?.TargetDateString} -> {newData.Planner?.TargetDateString}");
 			}
 
 			// 5. TimeBlock Modification Check (New)
@@ -329,7 +329,7 @@ namespace KarmoToys.Core
 			}
 			if (modifiedBlocks > 0)
 			{
-				sb.AppendLine($"- ✏️ Modified Events: {modifiedBlocks}");
+				sb.AppendLine($"- ?�️ Modified Events: {modifiedBlocks}");
 			}
 
 			// 6. Todo Modification Check (New)
@@ -351,10 +351,10 @@ namespace KarmoToys.Core
 			}
 			if (modifiedTodos > 0)
 			{
-				sb.AppendLine($"- ✏️ Modified Todos: {modifiedTodos}");
+				sb.AppendLine($"- ?�️ Modified Todos: {modifiedTodos}");
 			}
 
-			if (sb.Length < 40) // 제목만 있는 경우
+			if (sb.Length < 40) // ?�목�??�는 경우
 			{
 				sb.AppendLine("- No significant changes detected.");
 			}
@@ -375,9 +375,9 @@ namespace KarmoToys.Core
 			int countDiff = Math.Abs(newList.Count - oldList.Count);
 			changes += countDiff;
 
-			// 내용 변경 체크 (개수 차이와 별도로 수행)
-			// 성능 최적화: Dictionary 빌드는 비용이 들지만 리스트가 크지 않다면 수용 가능.
-			// 여기서는 루프를 돌며 ID 매칭을 시도.
+			// ?�용 변�?체크 (개수 차이?� 별도�??�행)
+			// ?�능 최적?? Dictionary 빌드??비용???��?�?리스?��? ?��? ?�다�??�용 가??
+			// ?�기?�는 루프�??�며 ID 매칭???�도.
 			var oldMap = oldList.ToDictionary(b => b.Id);
 			foreach (var newBlock in newList)
 			{
@@ -407,7 +407,7 @@ namespace KarmoToys.Core
 					if (oldItem.IsCompleted != newItem.IsCompleted ||
 						oldItem.Content != newItem.Content)
 					{
-						// 완료 여부 변경이나 내용 변경 모두 1건의 변경으로 취급
+						// ?�료 ?��? 변경이???�용 변�?모두 1건의 변경으�?취급
 						changes++;
 					}
 				}
@@ -432,7 +432,7 @@ namespace KarmoToys.Core
 				}
 			}
 
-			// 중요 설정 변경은 1건이라도 있으면 즉시 true (threshold 무시)
+			// 중요 ?�정 변경�? 1건이?�도 ?�으�?즉시 true (threshold 무시)
 			if (oldData.LifeWeekly?.BirthDate != newData.LifeWeekly?.BirthDate) return true;
 			if (oldData.Theme != newData.Theme) return true;
 

@@ -9,7 +9,7 @@ namespace KarmoToys.Common.Data
 		public string Id;
 		public string Content;
 		public bool IsCompleted;
-		public string Category; // "개인", "학습", "팀"
+		public string Category; // "개인", "?�습", "?�"
 		public long CreatedAtTicks;
 
 		public TodoItem(string content, string category = "personal")
@@ -47,21 +47,21 @@ namespace KarmoToys.Common.Data
 		public string Id;
 		public string Title;
 		public string Description;
-		// 날짜 동기화를 위해 Ticks 대신 DateTime 문자열(yyyy-MM-dd)이나 long Ticks 사용
-		// 여기서는 하루 단위 관리를 위해 "년-월-일" 문자열로 그룹핑하고,
-		// 시작/종료 시간은 "00:00" ~ "23:59"를 분(Minute) 단위 정수(0~1440)로 저장하는 것이 다루기 쉽습니다.
+		// ?�짜 ?�기?��? ?�해 Ticks ?�??DateTime 문자??yyyy-MM-dd)?�나 long Ticks ?�용
+		// ?�기?�는 ?�루 ?�위 관리�? ?�해 "?????? 문자?�로 그룹?�하�?
+		// ?�작/종료 ?�간?� "00:00" ~ "23:59"�?�?Minute) ?�위 ?�수(0~1440)�??�?�하??것이 ?�루�??�습?�다.
 		public string DateString; // "2024-01-09"
 		public int StartMinute;   // 0 (00:00) ~ 1439 (23:59)
-		public int EndMinute;     // StartMinute < EndMinute
-		public int ColorIndex;    // 색상 구분용
-		public bool IsDeleted;    // 휴지통 여부
-		public long DeletedTicks; // 삭제된 시간 (복구/영구삭제 기준)
-		public List<string> Tags = new List<string>(); // 태그 목록
+		public int EndMinute;	 // StartMinute < EndMinute
+		public int ColorIndex;	// ?�상 구분??
+		public bool IsDeleted;	// ?��????��?
+		public long DeletedTicks; // ??��???�간 (복구/?�구??�� 기�?)
+		public List<string> Tags = new List<string>(); // ?�그 목록
 
 		// --- Recurring Fields ---
 		public string RecurrenceRule;   // "NONE", "DAILY", "WEEKLY", "MONTHLY"
-		public string RecurrenceEnd;    // 종료 날짜 문자열 (yyyy-MM-dd) or null if infinite
-		public List<string> ExceptionDates = new List<string>(); // 반복에서 제외된 날짜들 (삭제/개별수정)
+		public string RecurrenceEnd;	// 종료 ?�짜 문자??(yyyy-MM-dd) or null if infinite
+		public List<string> ExceptionDates = new List<string>(); // 반복?�서 ?�외???�짜??(??��/개별?�정)
 
 		public TimeBlock(string date, int start, int end, string title)
 		{
@@ -70,7 +70,7 @@ namespace KarmoToys.Common.Data
 			StartMinute = start;
 			EndMinute = end;
 			Title = title;
-			ColorIndex = UnityEngine.Random.Range(0, 5); // 임시 랜덤 컬러
+			ColorIndex = UnityEngine.Random.Range(0, 5); // ?�시 ?�덤 컬러
 		}
 	}
 
@@ -85,9 +85,9 @@ namespace KarmoToys.Common.Data
 
 		// 목표 / D-Day
 		public string TargetName = "Target Project";
-		public string TargetDateString = "2027-03-01"; // 기본 날짜
+		public string TargetDateString = "2027-03-01"; // 기본 ?�짜
 
-		// 사용자 지정 헤더 (하드코딩된 개인정보 대체)
+		// ?�용??지???�더 (?�드코딩??개인?�보 ?��?
 		public string PersonalQuestTitle = "MAIN QUEST: Personal";
 		public string StudyQuestTitle = "SKILL GRINDING: Study";
 		public string TeamQuestTitle = "SIDE QUEST: Team";
@@ -97,7 +97,7 @@ namespace KarmoToys.Common.Data
 		public string StatTeamTitle = "Team Project";
 		public string StatTeamValue = "In Progress";
 
-		// RPG 스탯 시뮬레이션
+		// RPG ?�탯 ?��??�이??
 		public int Hp = 75;
 		public int Mp = 60;
 		public int Exp = 30;

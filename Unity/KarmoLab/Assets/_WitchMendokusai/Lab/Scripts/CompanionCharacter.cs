@@ -2,8 +2,8 @@ using UnityEngine;
 using KarmoToys.Features.Companion;
 
 /// <summary>
-/// 컴패니언 캐릭터의 활동(드래그 등)에 반응하는 기본 클래스다냥! 🐾
-/// 3D 오브젝트를 위한 콜라이더 안전장치도 포함되어 있다냥.
+/// 컴패니언 캐릭터 활동(드래그 등) 반응용 기본 클래스. 🐾
+/// 3D 오브젝트용 콜라이더 안전장치 포함.
 /// </summary>
 public class CompanionCharacter : MonoBehaviour, IDragHandler
 {
@@ -22,7 +22,7 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 
 	protected virtual void Awake()
 	{
-		// 3D 오브젝트라면 콜라이더가 있어야 드래그가 감지된다냥!
+		// 3D 오브젝트는 콜라이더 존재 시 드래그 감지 가능.
 		if (Dimension == InteractionDimension.ThreeD)
 		{
 			if (GetComponent<Collider>() == null && GetComponentInChildren<Collider>() == null)
@@ -32,7 +32,7 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 			}
 		}
 
-		// 루트 모션 때문에 회전이 누적되는 걸 막고, 기존의 오정렬을 초기화한다냥! ✨
+		// 루트 모션 회전 누적 방지 및 정렬 초기화. ✨
 		if (_animator != null)
 		{
 			_animator.applyRootMotion = false;
@@ -52,14 +52,14 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 
 	public virtual void OnDragStart()
 	{
-		Debug.Log($"[Companion] {name} Drag Started! 🐱");
+		Debug.Log($"[Companion] {name} Drag Started! 🐾");
 		StopIdleLoop();
 		PlayAnimation(AnimPickedUp);
 	}
 
 	public virtual void OnDrag(Vector3 worldPosition)
 	{
-		// 매 프레임 드래그 중 호출됨
+		// 드래그 중 로직 구현용
 	}
 
 	public virtual void OnDragEnd()
@@ -99,7 +99,7 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 			string stateName = _idleStates[Random.Range(0, _idleStates.Length)];
 			PlayAnimation(Animator.StringToHash(stateName));
 
-			// 애니메이션 하나를 5~15초 동안 재생하고 다음 랜덤 애니메이션으로 넘긴다냥!
+			// 애니메이션을 5~15초 동안 재생 후 다음 랜덤 애니메이션으로 전환.
 			yield return new WaitForSeconds(Random.Range(5f, 15f));
 		}
 	}

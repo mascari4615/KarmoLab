@@ -35,9 +35,9 @@ namespace KarmoToys.Features.ToolBox.Tools
 		private void LaunchCompanion(string extraArgs, string unused)
 		{
 #if UNITY_EDITOR
-            string msg = "Cannot launch companion from Editor. Please build and run.";
-            KarmoToysApp.Toast.Show(msg, Core.ToastType.Warning);
-            _onOutput?.Invoke(msg);
+			string msg = "Cannot launch companion from Editor. Please build and run.";
+			KarmoToysApp.Toast.Show(msg, Core.ToastType.Warning);
+			_onOutput?.Invoke(msg);
 #else
 			try
 			{
@@ -48,31 +48,31 @@ namespace KarmoToys.Features.ToolBox.Tools
 
 				string exePath = "";
 #if UNITY_STANDALONE_ODX // One might need specific handling if ODX
-                exePath = System.IO.Path.Combine(System.IO.Directory.GetParent(dataPath).FullName, Application.productName + ".exe");
+				exePath = System.IO.Path.Combine(System.IO.Directory.GetParent(dataPath).FullName, Application.productName + ".exe");
 #elif UNITY_STANDALONE_WIN
-                // Typical Windows build structure:
-                // Root/
-                //   KarmoLab.exe
-                //   KarmoLab_Data/
-                //   MonoBleedingEdge/
-                // Application.dataPath points to KarmoLab_Data
-                
-                // Let's try to deduce it safely
-                DirectoryInfo dataDir = new DirectoryInfo(dataPath);
-                if (dataDir.Parent != null)
-                {
-                    // Find any .exe that matches product name or just the main exe
-                    string potentialExe = Path.Combine(dataDir.Parent.FullName, "KarmoLab.exe"); // Hardcoded based on project knowledge
-                    if (File.Exists(potentialExe)) 
-                    {
-                        exePath = potentialExe;
-                    }
-                    else
-                    {
-                         // Fallback: try Process.GetCurrentProcess().MainModule.FileName
-                         exePath = Process.GetCurrentProcess().MainModule.FileName;
-                    }
-                }
+				// Typical Windows build structure:
+				// Root/
+				//   KarmoLab.exe
+				//   KarmoLab_Data/
+				//   MonoBleedingEdge/
+				// Application.dataPath points to KarmoLab_Data
+				
+				// Let's try to deduce it safely
+				DirectoryInfo dataDir = new DirectoryInfo(dataPath);
+				if (dataDir.Parent != null)
+				{
+					// Find any .exe that matches product name or just the main exe
+					string potentialExe = Path.Combine(dataDir.Parent.FullName, "KarmoLab.exe"); // Hardcoded based on project knowledge
+					if (File.Exists(potentialExe)) 
+					{
+						exePath = potentialExe;
+					}
+					else
+					{
+						 // Fallback: try Process.GetCurrentProcess().MainModule.FileName
+						 exePath = Process.GetCurrentProcess().MainModule.FileName;
+					}
+				}
 #endif
 
 				if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
@@ -95,7 +95,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 
 				Process.Start(startInfo);
 				string successMsg = $"Summoning companion...! ({exePath})";
-				KarmoToysApp.Toast.Show("Companion summoned! 🐾", Core.ToastType.Info);
+				KarmoToysApp.Toast.Show("Companion summoned! ?��", Core.ToastType.Info);
 				_onOutput?.Invoke(successMsg);
 			}
 			catch (Exception ex)

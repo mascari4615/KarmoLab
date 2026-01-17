@@ -15,7 +15,7 @@ namespace KarmoToys.Features.ToolBox
 	public class ToolBoxFeature : FeatureBase
 	{
 		public override string FeatureName => Define.FeatureToolBox; // "ToolBox"
-		public override string TabButtonName => Define.TabTools;     // "TabTools"
+		public override string TabButtonName => Define.TabTools;	 // "TabTools"
 
 		// UI
 		private Label _toolTitle, _toolDescription;

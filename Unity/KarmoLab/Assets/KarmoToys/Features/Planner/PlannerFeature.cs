@@ -120,7 +120,7 @@ namespace KarmoToys.Features.Planner
 
 			InitializeDialogs(root); // In Partial
 
-			// 현재 시간 표시 바 실시간 갱신 등록 (1초마다냥!)
+			// 현재 시간 표시 바 실시간 갱신 등록 (1초 간격)
 			ViewContainer.schedule.Execute(UpdateCurrentTimeIndicator).Every(1000);
 			UpdateCurrentTimeIndicator();
 		}

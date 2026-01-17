@@ -45,7 +45,7 @@ namespace KarmoToys.Features.LifeWeekly
 
 			var data = KarmoToysApp.Instance.Data.LifeWeekly;
 
-			// 생일 날짜 파싱 및 초기값 설정냥!
+			// 생일 날짜 파싱 및 초기값 설정.
 			if (DateTime.TryParse(data.BirthDate, out var birth))
 			{
 				_birthYearInput.value = birth.Year;
@@ -62,7 +62,7 @@ namespace KarmoToys.Features.LifeWeekly
 					KarmoToysApp.Instance.SaveData();
 					RefreshGrid();
 				}
-				catch { /* 잘못된 날짜는 무시한다냥 */ }
+				catch { /* 잘못된 날짜 무시 */ }
 			};
 
 			_birthYearInput.RegisterValueChangedCallback(_ => onDateChanged());
@@ -98,7 +98,7 @@ namespace KarmoToys.Features.LifeWeekly
 			{
 				data.TargetAge = Mathf.Clamp(evt.newValue, 1, 200);
 				KarmoToysApp.Instance.SaveData();
-				GenerateBlocks(); // 블록 개수가 바뀌므로 재생성냥!
+				GenerateBlocks(); // 블록 개수 변경 시 재생성.
 				RefreshGrid();
 			});
 
@@ -133,7 +133,7 @@ namespace KarmoToys.Features.LifeWeekly
 
 			GenerateBlocks();
 
-			// 1분마다 그리드 실시간 갱신 (현재 주차 강조 등)
+			// 1분마다 그리드 표시 갱신 (현재 주차 강조 등)
 			root.schedule.Execute(RefreshGrid).Every(60000);
 		}
 
@@ -156,7 +156,7 @@ namespace KarmoToys.Features.LifeWeekly
 			var data = KarmoToysApp.Instance.Data.LifeWeekly;
 			int totalWeeks = data.TargetAge * 52;
 
-			// 설정된 수명만큼 블록 생성냥!
+			// 설정된 수명만큼 블록 생성.
 			for (int i = 0; i < totalWeeks; i++)
 			{
 				var block = new VisualElement();
@@ -170,7 +170,7 @@ namespace KarmoToys.Features.LifeWeekly
 		{
 			var data = KarmoToysApp.Instance.Data.LifeWeekly;
 
-			// 성능 최적화: 블록 하나하나 크기를 바꾸는 대신 그리드 전체에 scale을 적용한다냥! 🌬️✨
+			// 성능 최적화: 블록 개별 크기 조절 대신 그리드 전체에 scale 적용. 🌬️✨
 			float baseStep = 10f + 4f; // 블록 10px + 마진 2px*2 = 14px
 			float scale = data.BlockSize / 10f;
 
@@ -182,8 +182,8 @@ namespace KarmoToys.Features.LifeWeekly
 			_grid.style.height = originalHeight;
 			_grid.style.scale = new StyleScale(new Scale(new Vector3(scale, scale, 1f)));
 
-			// 스크롤 영역 확보를 위해 컨테이너 크기 조절냥!
-			// (그리드가 center 기준이므로 컨테이너가 딱 이 크기면 내부에서 예쁘게 중앙 정렬된다냥)
+			// 스크롤 영역 확보를 위해 컨테이너 크기 조절.
+			// (그리드가 center 기준이므로 컨테이너가 딱 이 크기면 내부에서 중앙 정렬됨)
 			var container = _grid.parent;
 			if (container != null)
 			{
@@ -228,7 +228,7 @@ namespace KarmoToys.Features.LifeWeekly
 					block.AddToClassList("week-future");
 				}
 
-				// 10년 주기 마커 강조 (520주마다냥!)
+				// 10년 주기 마커 강조 (520주마다)
 				block.RemoveFromClassList("week-marker-ten");
 				block.RemoveFromClassList("week-marker-one");
 				block.RemoveFromClassList("week-marker-calendar");
@@ -242,7 +242,7 @@ namespace KarmoToys.Features.LifeWeekly
 					block.AddToClassList("week-marker-one");
 				}
 
-				// 달력 기준 1년 강조 (1월 1일 포함 주차냥!)
+				// 달력 기준 1년 강조 (1월 1일 포함 주차)
 				if (data.ShowCalendarYearHighlight)
 				{
 					DateTime thisWeekDate = birthDate.AddDays(i * 7);

@@ -121,7 +121,7 @@ namespace KarmoToys.Features.Dashboard
 
 			// Refresh UI
 			RefreshDashboard();
-			KarmoToysApp.Toast.Show("Dashboard Saved! 💾");
+			KarmoToysApp.Toast.Show("Dashboard Saved! ?��");
 		}
 	}
 }

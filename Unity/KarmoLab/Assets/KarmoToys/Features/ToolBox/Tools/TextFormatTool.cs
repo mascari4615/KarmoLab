@@ -93,7 +93,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 			bool isValidFile = (lines.Length > 0) && lines[0].Contains("님과 카카오톡 대화");
 			if (!isValidFile) { Log("Not a valid KakaoTalk file."); return; }
 
-			bool isMobile = (lines.Length > 0) && lines[1].Contains("년");
+			bool isMobile = (lines.Length > 0) && lines[1].Contains("저장한 날짜");
 			if (isMobile) { Log("Mobile format."); MobileFormat(); }
 			else { Log("PC format."); PCFormat(); }
 
@@ -192,7 +192,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 			string formattedText = decode ? KarmoKarmoDecode(text) : KarmoKarmoEncode(text);
 
 			File.Delete(filePath);
-			File.WriteAllText(filePath, formattedText); // Overwrite directly as per original logic (lines 282-285)
+			File.WriteAllText(filePath, formattedText); // Overwrite directly as per original logic
 			Log("Processed and Saved.");
 		}
 

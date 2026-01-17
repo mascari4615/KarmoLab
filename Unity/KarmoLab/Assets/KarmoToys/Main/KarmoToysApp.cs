@@ -78,22 +78,15 @@ namespace KarmoToys.Main
 			Application.runInBackground = true;
 
 			// Window Mode Setup based on App Mode
-			// Window Mode Setup based on App Mode
 			if (IsCompanionMode)
 			{
 				// Companion Mode: Start Windowed, then we strip borders in WindowTransparencyUtils
-				// Force Full Work Area Resolution (Excluding Taskbar) to allow character to roam freely
 				Screen.fullScreenMode = FullScreenMode.Windowed;
 
-				// Use the new GetWorkArea method to respect Taskbar
-				// Note: In Editor/Non-Windows this returns dummy values.
-				// We need to resolve the namespace or use full name if needed, but 'IsCompanionMode' implies we are likely running logic valid for Utils
 #if UNITY_STANDALONE_WIN
 				Rect workArea = KarmoToys.Features.Companion.WindowTransparencyUtils.GetWorkArea();
 				int width = (int)workArea.width;
 				int height = (int)workArea.height;
-				// Position is handled by OS usually at (0,0) for main monitor, but could be offset if needed.
-				// Ideally we also SetWindowPos to workArea.x, workArea.y via Utils if it doesn't default there.
 #else
 				int width = Display.main.systemWidth;
 				int height = Display.main.systemHeight;
@@ -104,7 +97,6 @@ namespace KarmoToys.Main
 			else
 			{
 				// Main Mode: Windowed (Standard)
-				// Force a default reasonable resolution to avoid inheriting Companion's 4K size
 				Screen.fullScreenMode = FullScreenMode.Windowed;
 				Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
 			}
@@ -112,7 +104,7 @@ namespace KarmoToys.Main
 			// Path Setup
 			_savePath = System.IO.Path.Combine(Application.persistentDataPath, Define.SaveFileName);
 #if UNITY_EDITOR
-            _savePath = System.IO.Path.Combine(Application.dataPath, Define.EditorDataPath, Define.SaveFileName);
+			_savePath = System.IO.Path.Combine(Application.dataPath, Define.EditorDataPath, Define.SaveFileName);
 #endif
 
 			// Load Data
@@ -132,14 +124,12 @@ namespace KarmoToys.Main
 			if (IsCompanionMode)
 			{
 				// In Companion Mode, UI setup is minimal or handled by CompanionFeature
-				// We clear the root to remove any existing MainView elements from UXML
 				root.Clear();
 
-				// Ensure root is circular transparent (though transparency comes from camera)
+				// Ensure root is circular transparent
 				root.style.backgroundColor = new StyleColor(Color.clear);
 
 				// 3. Camera Setup
-				// Reverted to DwmExtendFrame, so we need Clear background (Alpha=0)
 				var camera = Camera.main;
 				if (camera != null)
 				{
@@ -222,7 +212,7 @@ namespace KarmoToys.Main
 			UpdateHeaderTime();
 
 			// 환영 메시지
-			Toast.Show("KarmoToys에 오신 것을 환영한다냥! 🎮", ToastType.Info);
+			Toast.Show("KarmoToys에 오신 것을 환영함! 🎮", ToastType.Info);
 		}
 
 		private void UpdateHeaderTime()
@@ -254,7 +244,7 @@ namespace KarmoToys.Main
 
 			ApplyTheme();
 			SaveData();
-			Toast.Show($"테마가 {Instance.Data.Theme} 모드로 바뀌었다냥! ✨");
+			Toast.Show($"테마가 {Instance.Data.Theme} 모드로 변경됨! ✨");
 		}
 
 		private void ApplyTheme()
@@ -313,11 +303,11 @@ namespace KarmoToys.Main
 			if (DataService.LoadBackup(_savePath, backupPath, Data.MaxBackupCount))
 			{
 				LoadData();
-				Toast.Show("백업 데이터를 성공적으로 불러왔다냥! 🕒✨");
+				Toast.Show("백업 데이터를 성공적으로 불러옴! 🕒✨");
 			}
 			else
 			{
-				Toast.Show("백업을 불러오는 데 실패했다냥... 😿", ToastType.Error);
+				Toast.Show("백업 데이터 로드 실패. 😿", ToastType.Error);
 			}
 		}
 

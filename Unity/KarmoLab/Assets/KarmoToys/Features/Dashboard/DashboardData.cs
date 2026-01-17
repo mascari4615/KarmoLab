@@ -9,7 +9,7 @@ namespace KarmoToys.Features.Dashboard
 
 		// 목표 / D-Day
 		public string TargetName = "Target Project";
-		public string TargetDateString = "2027-03-01"; // 기본 날짜
+		public string TargetDateString = "2027-03-01"; // 기본 ?�짜
 
 		// Dashboard Stat Cards
 		public string StatPersonalTitle = "Personal Project";
@@ -17,7 +17,7 @@ namespace KarmoToys.Features.Dashboard
 		public string StatTeamTitle = "Team Project";
 		public string StatTeamValue = "In Progress";
 
-		// RPG 스탯 시뮬레이션
+		// RPG ?�탯 ?��??�이??
 		public int Hp = 75;
 		public int Mp = 60;
 		public int Exp = 30;

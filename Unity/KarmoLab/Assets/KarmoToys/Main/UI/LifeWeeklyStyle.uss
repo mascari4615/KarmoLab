@@ -26,7 +26,7 @@
 	justify-content: flex-start;
 	align-content: flex-start;
 	/* 10px(block) + 4px(margin) = 14px / 14px * 52 = 728px */
-	/* 이제 코드에서 WeeksPerRow에 따라 가변적으로 조절된다냥! */
+	/* 이제 코드에서 WeeksPerRow에 따라 가변적으로 조절 */
 	transform-origin: center;
 }
 
@@ -79,7 +79,7 @@
 	border-width: 1px;
 }
 
-/* 지나온 블록에서도 강조가 잘 보이도록 투명도 조정냥! */
+/* 지나온 블록에서도 강조가 잘 보이도록 투명도 조정 */
 .week-past.week-marker-ten,
 .week-past.week-marker-one,
 .week-past.week-marker-calendar {

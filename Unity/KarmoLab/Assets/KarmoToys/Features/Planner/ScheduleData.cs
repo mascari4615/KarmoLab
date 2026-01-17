@@ -11,9 +11,9 @@ namespace KarmoToys.Features.Planner
 		public string Description;
 		public string DateString; // "2024-01-09"
 		public int StartMinute;   // 0 (00:00) ~ 1439 (23:59)
-		public int EndMinute;     // StartMinute < EndMinute
-		public int ColorIndex;    // 색상 구분용
-		public bool IsDeleted;    // 휴지통 여부
+		public int EndMinute;    // StartMinute < EndMinute
+		public int ColorIndex;  // 색상 구분값
+		public bool IsDeleted;  // 삭제 여부
 		public long DeletedTicks; // 삭제된 시간 (복구/영구삭제 기준)
 		public List<string> Tags = new List<string>(); // 태그 목록
 

@@ -26,7 +26,7 @@ namespace KarmoToys.Features.QuestBoard
 	public class QuestData
 	{
 		public List<TodoItem> Items = new List<TodoItem>();
-		
+
 		// Quest Board Specific Titles (migrated from PlannerData)
 		public string PersonalQuestTitle = "MAIN QUEST: Personal";
 		public string StudyQuestTitle = "SKILL GRINDING: Study";

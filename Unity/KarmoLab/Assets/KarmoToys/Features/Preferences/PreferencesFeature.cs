@@ -106,14 +106,14 @@ namespace KarmoToys.Features.Preferences
 			// TODO: Add robust confirmation dialog
 			// For now, simple log or toast
 			Debug.LogWarning("Reset Data Requested. Implementation Pending Confirmation UI.");
-			KarmoToysApp.Toast.Show("데이터 초기화 기능은 아직 준비 중이다냥! 🚧");
+			KarmoToysApp.Toast.Show("데이터 초기화 기능 준비 중. 🚧");
 		}
 
 		private void OnRefreshData()
 		{
 			KarmoToysApp.Instance.LoadData();
 			RefreshUI();
-			KarmoToysApp.Toast.Show("데이터를 새로고침했다냥! 🔄");
+			KarmoToysApp.Toast.Show("데이터 새로고침 완료. 🔄");
 		}
 
 		private void RefreshBackupList()
@@ -124,7 +124,7 @@ namespace KarmoToys.Features.Preferences
 			string savePath = KarmoToysApp.Instance.GetSavePath();
 			if (string.IsNullOrEmpty(savePath)) return;
 
-			// Flat Structure: 현재 파일명 기반 필터링
+			// Flat Structure: 현재 파일을 기반으로 필터링
 			var backups = DataService.GetBackupFiles(savePath);
 			foreach (var file in backups)
 			{
@@ -142,14 +142,14 @@ namespace KarmoToys.Features.Preferences
 				label.style.color = new StyleColor(new Color(0.8f, 0.8f, 0.8f));
 
 				var btnDiff = new Button(() => ShowDiff(file.FullName));
-				btnDiff.text = "🔍";
+				btnDiff.text = "차이";
 				btnDiff.tooltip = "Compare with current";
-				btnDiff.style.width = 30;
+				btnDiff.style.width = 40;
 
 				var btnLoad = new Button(() => OnClickBackupFile(file.FullName));
-				btnLoad.text = "📂";
+				btnLoad.text = "로드";
 				btnLoad.tooltip = "Load this backup";
-				btnLoad.style.width = 30;
+				btnLoad.style.width = 40;
 
 				row.Add(label);
 				row.Add(btnDiff);
@@ -162,7 +162,7 @@ namespace KarmoToys.Features.Preferences
 		{
 			if (KarmoToysApp.Instance.Data == null) return;
 
-			// 백업 데이터 로드 (메모리 상에서만)
+			// 백업 데이터 로드 (메모리상에서만)
 			var backupData = DataService.Load(backupPath);
 			// 현재 데이터와 비교
 			string diffSummary = DataService.GetDiffSummary(backupData, KarmoToysApp.Instance.Data);
@@ -180,7 +180,7 @@ namespace KarmoToys.Features.Preferences
 			KarmoToysApp.Instance.LoadBackup(path);
 			RefreshBackupList();
 			RefreshUI();
-			KarmoToysApp.Toast.Show("백업을 불러왔다냥! (안전 백업 생성됨) 🛡️");
+			KarmoToysApp.Toast.Show("백업 데이터 로드 완료. (안전 백업 생성됨) 🛡️");
 		}
 	}
 }

@@ -94,7 +94,7 @@ namespace KarmoToys.Features.Planner
 				_timeRuler.Add(dayCol);
 			}
 
-			// 3. Current Time Indicator (UXML에서 찾은 요소를 다시 상단으로Add)
+			// 3. Current Time Indicator (UXML에서 찾지 못했을 경우만 임시 상단으로 Add)
 			_timeRuler.Add(_currentTimeIndicator);
 		}
 
@@ -265,7 +265,7 @@ namespace KarmoToys.Features.Planner
 				return;
 			}
 
-			// 현재 시간을 초 단위까지 포함하여 계산 (매우 부드럽다냥!)
+			// 현재 시간을 초 단위까지 포함하여 계산 (정밀도 향상)
 			float totalMinutes = now.Hour * 60 + now.Minute + (now.Second / 60f);
 			float topPosition = totalMinutes * _pixelsPerMinute;
 
@@ -339,7 +339,7 @@ namespace KarmoToys.Features.Planner
 
 				var titleLabel = new Label(string.IsNullOrEmpty(block.Title) ? "(No Title)" : block.Title);
 				titleLabel.AddToClassList("time-block-title");
-				titleLabel.pickingMode = PickingMode.Ignore; // 툴팁 방해 금지냥!
+				titleLabel.pickingMode = PickingMode.Ignore; // 툴팁 방해 방지
 				visualBlock.Add(titleLabel);
 
 				string timeStr = isShort ? TimeStr(block.StartMinute) : $"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
@@ -352,7 +352,7 @@ namespace KarmoToys.Features.Planner
 			var moreBtn = new Button(() => ShowDetailPopup(block));
 			moreBtn.text = "...";
 			moreBtn.AddToClassList("time-block-btn");
-			moreBtn.pickingMode = PickingMode.Position; // 버튼은 눌려야 한다냥
+			moreBtn.pickingMode = PickingMode.Position; // 버튼 입력 활성화
 			visualBlock.Add(moreBtn);
 
 			visualBlock.RegisterCallback<PointerDownEvent>(evt =>

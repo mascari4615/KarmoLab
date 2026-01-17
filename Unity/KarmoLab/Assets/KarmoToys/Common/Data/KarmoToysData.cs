@@ -18,10 +18,10 @@ namespace KarmoToys.Common.Data
 		public ScheduleData Schedule = new();
 		public NoteData Note = new();
 
-		// 인생의 주 관련 데이터 (Existing)
+		// ?�생??�?관???�이??(Existing)
 		public LifeWeeklyData LifeWeekly = new();
 
-		// 설정 데이터
+		// ?�정 ?�이??
 		public string SaveId = Guid.NewGuid().ToString();
 		public AppTheme Theme = AppTheme.Dark;
 		public int MaxBackupCount = 1000;

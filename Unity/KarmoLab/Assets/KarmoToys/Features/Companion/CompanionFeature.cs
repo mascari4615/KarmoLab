@@ -86,7 +86,7 @@ namespace KarmoToys.Features.Companion
 
 		private void InitializeSettingsButton(VisualElement root)
 		{
-			var settingsButton = new Label("⚙️")
+			var settingsButton = new Label("?�️")
 			{
 				name = "SettingsButton",
 				style =

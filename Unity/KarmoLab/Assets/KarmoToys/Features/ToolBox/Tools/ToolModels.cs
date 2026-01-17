@@ -17,7 +17,7 @@ namespace KarmoLab.Module.Tools
 		string Name { get; }
 		void Initialize(Action<string> logger);
 
-		// 메타데이터를 위해 List<ToolAction>으로 변경
+		// 메타데이터를 위한 List<ToolAction>으로 변환
 		List<ToolAction> GetActions();
 	}
 }
