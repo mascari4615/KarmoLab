@@ -455,14 +455,15 @@ MonoBehaviour:
   _idleTag: Idle
   _idleStates:
   - IDLE
-  - Rig_Dance_Loop
-  - Rig_Pistol_Idle_Loop
-  - Rig_Push_Loop
-  - Rig_Sprint_Loop
-  - Rig_Swim_Fwd_Loop
-  - Rig_Swim_Idle_Loop
-  - Rig_Sword_Idle
-  - Rig_Walk_Loop
+  - Rig|Dance_Loop
+  - Rig|Jump_Loop
+  - Rig|Pistol_Idle_Loop
+  - Rig|Push_Loop
+  - Rig|Sprint_Loop
+  - Rig|Swim_Fwd_Loop
+  - Rig|Swim_Idle_Loop
+  - Rig|Sword_Idle
+  - Rig|Walk_Loop
 --- !u!4 &1034031817 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: bc6bb9f63573eff468de7d395b5e9126, type: 3}
