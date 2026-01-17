@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.karmoddrine.karmoeditor": {
+      "version": "file:../LocalPackages/com.karmoddrine.karmoeditor",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.2d.animation": {
       "version": "13.0.2",
       "depth": 1,

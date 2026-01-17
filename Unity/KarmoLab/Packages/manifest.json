@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.karmoddrine.karmoeditor": "file:../LocalPackages/com.karmoddrine.karmoeditor",
     "com.unity.collab-proxy": "2.10.2",
     "com.unity.feature.2d": "2.0.2",
     "com.unity.ide.visualstudio": "2.0.26",
