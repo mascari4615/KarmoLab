@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: ToolbarSceneConfig
   m_EditorClassIdentifier: KarmoLab.Editor::KarmoLab.KarmoEditor.ToolbarSceneConfig
   FavoriteScenes: []
-  TargetFolders: []
+  TargetFolders:
+  - {fileID: 102900000, guid: d574b2fb4661c408f80aa76c0182931f, type: 3}
   ShowOnlyBuildSettingsScenes: 0
