@@ -93,7 +93,7 @@ namespace KarmoLab.KarmoEditor
 		[MenuItem("KarmoLab/Create Toolbar Config")]
 		public static void CreateConfig()
 		{
-			string path = "Assets/karmo-editor/Settings";
+			string path = "Assets/Settings";
 			if (!Directory.Exists(path)) Directory.CreateDirectory(path);
 
 			string assetPath = $"{path}/ToolbarSceneConfig.asset";

@@ -11,8 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c3adb429ce21b5941864ff3d9eef2e04, type: 3}
   m_Name: ToolbarSceneConfig
-  m_EditorClassIdentifier: Assembly-CSharp-Editor::KarmoTools.Editor.Toolbar.ToolbarSceneConfig
+  m_EditorClassIdentifier: KarmoLab.Editor::KarmoLab.KarmoEditor.ToolbarSceneConfig
   FavoriteScenes: []
-  TargetFolders:
-  - {fileID: 102900000, guid: 109e9bdd0fcc649c5bc59085c35bdc83, type: 3}
+  TargetFolders: []
   ShowOnlyBuildSettingsScenes: 0
