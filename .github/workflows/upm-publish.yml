@@ -24,7 +24,7 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           
           # 1. Split subtree to branch
-          git subtree split -P Unity/KarmoLab/LocalPackages/com.mascari4615.karmo-editor -b upm/karmo-editor
+          git subtree split -P Unity/LocalPackages/com.mascari4615.karmo-editor -b upm/karmo-editor
           git push -f origin upm/karmo-editor
           
           # 2. If it's a version tag for this package, tag the upm branch
