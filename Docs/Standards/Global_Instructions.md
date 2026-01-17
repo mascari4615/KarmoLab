@@ -23,7 +23,7 @@ KarmoLab 리포지토리의 **개발 가이드라인 허브**.
 
 ### 🤖 [YawnBot (Discord Bot)](file:///Docs/Projects/YawnBot/Convention.md)
 - **경로**: `Apps/YawnBot`
-- **핵심**: SOA 아키텍처, DI 패턴, 로깅 및 에러 처리 규칙
+- **핵심**: SOA 아키텍처, DI 패턴, 로깅 및 에러 처리 규칙, 명시적 타입 사용
 
 ### 🎮 [Unity (KarmoLab)](file:///Docs/Projects/KarmoToys/Convention.md)
 - **경로**: `Unity/KarmoLab`
