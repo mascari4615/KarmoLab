@@ -4,18 +4,18 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace KarmoTools.Build
+namespace KarmoLab.KarmoEditor.Build
 {
 	public class BuildToolWindow : EditorWindow
 	{
-		[MenuItem("KarmoTools/Build Helper")]
+		[MenuItem("KarmoLab/Build Helper")]
 		public static void ShowWindow() => GetWindow<BuildToolWindow>("Build Helper");
 
 		// Config Keys
-		private const string KEY_OUTPUT_PATH = "KarmoTools_BuildPath";
-		private const string KEY_LIVE_PATH = "KarmoTools_LivePath";
-		private const string KEY_PREFIX = "KarmoTools_Prefix";
-		private const string KEY_BACKUP_PATTERNS = "KarmoTools_BackupPatterns";
+		private const string KEY_OUTPUT_PATH = "KarmoLab_BuildPath";
+		private const string KEY_LIVE_PATH = "KarmoLab_LivePath";
+		private const string KEY_PREFIX = "KarmoLab_Prefix";
+		private const string KEY_BACKUP_PATTERNS = "KarmoLab_BackupPatterns";
 
 		// Fields
 		private string _outputPath;
@@ -142,7 +142,7 @@ namespace KarmoTools.Build
 
 			if (summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
 			{
-				Debug.Log($"[KarmoTools] Build Succeeded: {summary.totalSize / 1024 / 1024} MB");
+				Debug.Log($"[KarmoLab] Build Succeeded: {summary.totalSize / 1024 / 1024} MB");
 
 				if (_deleteDoNotShip)
 				{
@@ -151,7 +151,7 @@ namespace KarmoTools.Build
 					if (Directory.Exists(doNotShipPath))
 					{
 						Directory.Delete(doNotShipPath, true);
-						Debug.Log($"[KarmoTools] Deleted: {doNotShipPath}");
+						Debug.Log($"[KarmoLab] Deleted: {doNotShipPath}");
 					}
 
 					// Delete BackUpThisFolder_ButDontShipItWithYourGame
@@ -159,7 +159,7 @@ namespace KarmoTools.Build
 					if (Directory.Exists(backupPath))
 					{
 						Directory.Delete(backupPath, true);
-						Debug.Log($"[KarmoTools] Deleted: {backupPath}");
+						Debug.Log($"[KarmoLab] Deleted: {backupPath}");
 					}
 				}
 
@@ -178,7 +178,7 @@ namespace KarmoTools.Build
 			}
 			else
 			{
-				Debug.LogError($"[KarmoTools] Build Failed: {summary.result}");
+				Debug.LogError($"[KarmoLab] Build Failed: {summary.result}");
 				return null;
 			}
 		}
@@ -187,7 +187,7 @@ namespace KarmoTools.Build
 		{
 			if (File.Exists(exePath))
 			{
-				Debug.Log($"[KarmoTools] Launching: {exePath}");
+				Debug.Log($"[KarmoLab] Launching: {exePath}");
 				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
 				{
 					FileName = exePath,
@@ -196,7 +196,7 @@ namespace KarmoTools.Build
 			}
 			else
 			{
-				Debug.LogError($"[KarmoTools] Executable not found at: {exePath}");
+				Debug.LogError($"[KarmoLab] Executable not found at: {exePath}");
 			}
 		}
 
@@ -219,17 +219,17 @@ namespace KarmoTools.Build
 			{
 				// 1. Backup protected files/folders냥! 🛡️
 				int backupCount = BackupFiles_Internal(_livePath, backupDirPath, _backupPatterns);
-				if (backupCount > 0) Debug.Log($"[KarmoTools] Backed up {backupCount} items for protection.");
+				if (backupCount > 0) Debug.Log($"[KarmoLab] Backed up {backupCount} items for protection.");
 
 				// 2. Deploy (Overwrite) 덮어쓰기냥!
 				CopyDirectory(sourceDir, _livePath);
-				Debug.Log($"[KarmoTools] Deployed successfully to: {_livePath}");
+				Debug.Log($"[KarmoLab] Deployed successfully to: {_livePath}");
 
 				// 3. Restore protected files 싹 돌려놓기냥! 🔄
 				if (backupCount > 0)
 				{
 					CopyDirectory(backupDirPath, _livePath);
-					Debug.Log("[KarmoTools] Restored protected files from backup.");
+					Debug.Log("[KarmoLab] Restored protected files from backup.");
 				}
 
 				EditorUtility.DisplayDialog("Success", "Build & Deploy Complete!\nFiles updated in Live Path (Protected files restored).", "Awesome!");
@@ -241,7 +241,7 @@ namespace KarmoTools.Build
 			}
 			catch (Exception ex)
 			{
-				Debug.LogError($"[KarmoTools] Deploy Failed: {ex.Message}");
+				Debug.LogError($"[KarmoLab] Deploy Failed: {ex.Message}");
 				EditorUtility.DisplayDialog("Error", $"Deploy Failed.\n{ex.Message}", "OK");
 			}
 			finally

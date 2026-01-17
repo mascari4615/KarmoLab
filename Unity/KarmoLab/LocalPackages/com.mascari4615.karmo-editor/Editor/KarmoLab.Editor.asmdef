@@ -1,6 +1,6 @@
 {
-	"name": "Karmo.Editor",
-	"rootNamespace": "Karmo.Editor",
+	"name": "KarmoLab.Editor",
+	"rootNamespace": "KarmoLab.KarmoEditor",
 	"references": [],
 	"includePlatforms": [
 		"Editor"

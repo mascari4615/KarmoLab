@@ -18,7 +18,7 @@
 Unity/KarmoLab/
   ├── Assets/ (메인 프로젝트 에셋)
   ├── LocalPackages/ (배포용 패키지 루트)
-  │    └── com.karmoddrine.karmoeditor/ (각 패키지 폴더)
+  │    └── com.mascari4615.karmo-editor/ (각 패키지 폴더)
   │         ├── package.json
   │         ├── Editor/
   │         └── Runtime/
@@ -30,7 +30,7 @@ Unity/KarmoLab/
 `Packages/manifest.json`에 직접 경로를 추가합니다.
 ```json
 "dependencies": {
-  "com.karmoddrine.karmoeditor": "file:../LocalPackages/com.karmoddrine.karmoeditor",
+  "com.mascari4615.karmo-editor": "file:../LocalPackages/com.mascari4615.karmo-editor",
   ...
 }
 ```
@@ -54,8 +54,25 @@ Unity/KarmoLab/
 
 ### [추천] GitHub Actions 자동화 (`upm-publish.yml`)
 `main` 브랜치에 푸시하거나 특정 형식의 태그를 달면 자동으로 배포용 브랜치를 갱신합니다.
-- **태그 규칙**: `패키지명/v버전` (예: `com.karmoddrine.karmoeditor/v1.0.0`)
+- **태그 규칙**: `패키지명/v버전` (예: `com.mascari4615.karmo-editor/v1.0.0`)
 - **자동화 동작**: 지정된 폴더만 추출(Subtree Split)하여 `upm/패키지명` 브랜치로 푸시합니다.
+
+### 🚩 태그(Tag) 다는 방법 (중요!)
+수동으로 배포 신호를 보내는 방법은 두 가지입니다.
+
+#### 방법 1: Git 터미널 (가장 빠름)
+```bash
+# 1. 태그 생성
+git tag com.mascari4615.karmo-editor/v1.0.0
+
+# 2. 서버로 전송 (이때 배포가 시작됩니다!)
+git push origin com.mascari4615.karmo-editor/v1.0.0
+```
+
+#### 방법 2: GitHub 웹사이트 (가장 쉬움)
+1. 리포지토리 우측 **Releases** 클릭 -> **Draft a new release** 버튼.
+2. **Choose a tag** 칸에 `com.mascari4615.karmo-editor/v1.0.0` 입력 후 **Create new tag** 클릭.
+3. 하단의 **Publish release** 버튼을 누르면 배포 완료!
 
 ---
 
@@ -71,7 +88,7 @@ Unity/KarmoLab/
 2. **Scoped Registries** 등록:
    - **Name**: `OpenUPM`
    - **URL**: `https://package.openupm.com`
-   - **Scope(s)**: `com.karmoddrine`
+   - **Scope(s)**: `com.mascari4615`
 3. `Package Manager > My Registries` 탭에서 원클릭 설치 가능.
 
 ---

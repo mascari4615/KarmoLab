@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "com.karmoddrine.karmoeditor": {
-      "version": "file:../LocalPackages/com.karmoddrine.karmoeditor",
+    "com.mascari4615.karmo-editor": {
+      "version": "file:../LocalPackages/com.mascari4615.karmo-editor",
       "depth": 0,
       "source": "local",
       "dependencies": {}

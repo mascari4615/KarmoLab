@@ -18,17 +18,17 @@ jobs:
           fetch-depth: 0
 
       - name: Publish KarmoEditor
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/com.karmoddrine.karmoeditor/')
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/com.mascari4615.karmo-editor/')
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           
           # 1. Split subtree to branch
-          git subtree split -P Unity/KarmoLab/LocalPackages/com.karmoddrine.karmoeditor -b upm/karmo-editor
+          git subtree split -P Unity/KarmoLab/LocalPackages/com.mascari4615.karmo-editor -b upm/karmo-editor
           git push -f origin upm/karmo-editor
           
           # 2. If it's a version tag for this package, tag the upm branch
-          if [[ $GITHUB_REF == refs/tags/com.karmoddrine.karmoeditor/* ]]; then
+          if [[ $GITHUB_REF == refs/tags/com.mascari4615.karmo-editor/* ]]; then
             TAG_NAME=${GITHUB_REF#refs/tags/}
             # Remove remote tag if exists (to overwrite/sync)
             git push origin :refs/tags/$TAG_NAME || true

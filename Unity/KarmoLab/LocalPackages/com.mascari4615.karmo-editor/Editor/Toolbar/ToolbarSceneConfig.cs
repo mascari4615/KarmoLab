@@ -2,12 +2,12 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace KarmoTools.Editor.Toolbar
+namespace KarmoLab.KarmoEditor
 {
 	/// <summary>
 	/// 툴바에 표시할 씬 정보를 저장하는 설정 파일입니다냥! 🐾
 	/// </summary>
-	[CreateAssetMenu(fileName = "ToolbarSceneConfig", menuName = "KarmoTools/Toolbar Scene Config")]
+	[CreateAssetMenu(fileName = "ToolbarSceneConfig", menuName = "KarmoLab/Toolbar Scene Config")]
 	public class ToolbarSceneConfig : ScriptableObject
 	{
 		[Header("Favorite Scenes")]

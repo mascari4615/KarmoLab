@@ -249,8 +249,8 @@
 	- **편의성 개선**: `KarmoTools/Create Toolbar Config` 메뉴로 원클릭 설정 생성 지원 및 실시간 활성 씬 이름 표시.
 
 - **Unity Package 배포 및 모노레포 아키텍처 수립**:
-	- **UPM(Unity Package Manager) 지원**: `com.karmoddrine.karmoeditor` 패키지 구성을 위한 `package.json` 및 `.asmdef` 구축.
-	- **Unity 6 최적화**: 최신 Unity 6 (6000.3) 버전을 최소 사양으로 지정하고 `KarmoEditor`로 네이밍 간소화.
+	- **UPM(Unity Package Manager) 지원**: `com.mascari4615.karmo-editor` 패키지 구성을 위한 `package.json` 및 `.asmdef` 구축.
+	- **Unity 6 최적화**: 최신 Unity 6 (6000.3) 버전을 최소 사양으로 지정하고 `karmo-editor`로 네이밍 간소화.
 	- **모노레포 구조화 (Local Packages)**: 패키지들을 `Assets`가 아닌 `LocalPackages/` 폴더로 격리하여 관리하는 전문적인 아키텍처 도입. `manifest.json`을 통한 로컬 경로 참조 방식 채택.
 	- **자동 배포 파이프라인 (CI)**: GitHub Actions를 활용하여 `main` 푸시 및 버전 태그(`패키지명/v*`) 생성 시 자동으로 배포용(`upm/*`) 브랜치를 갱신하는 워크플로우(`upm-publish.yml`) 구축.
 	- **기술 가이드 제공**: 배포 전략, 프로젝트 구조, IDE 트러블슈팅 등을 통합한 `UPM_Package_Distribution_Guide.md` 작성.

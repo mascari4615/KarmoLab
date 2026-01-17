@@ -7,7 +7,7 @@ using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace KarmoTools.Editor.Toolbar
+namespace KarmoLab.KarmoEditor
 {
 	/// <summary>
 	/// Unity 6.3+ 메인 툴바 확장 클래스입니다.
@@ -21,7 +21,7 @@ namespace KarmoTools.Editor.Toolbar
 	 */
 	public static class KarmoToolbar
 	{
-		public const string ID = "KarmoTools/SceneSelector";
+		public const string ID = "KarmoLab/SceneSelector";
 
 		[MainToolbarElement(ID, defaultDockPosition = MainToolbarDockPosition.Middle)]
 		static IEnumerable<MainToolbarElement> CreateSceneSelector()
@@ -90,16 +90,16 @@ namespace KarmoTools.Editor.Toolbar
 			return null;
 		}
 
-		[MenuItem("KarmoTools/Create Toolbar Config")]
+		[MenuItem("KarmoLab/Create Toolbar Config")]
 		public static void CreateConfig()
 		{
-			string path = "Assets/KarmoEditor/Settings";
+			string path = "Assets/karmo-editor/Settings";
 			if (!Directory.Exists(path)) Directory.CreateDirectory(path);
 
 			string assetPath = $"{path}/ToolbarSceneConfig.asset";
 			if (File.Exists(assetPath))
 			{
-				EditorUtility.DisplayDialog("KarmoTools", "Config already exists!", "OK");
+				EditorUtility.DisplayDialog("KarmoLab", "Config already exists!", "OK");
 				Selection.activeObject = AssetDatabase.LoadAssetAtPath<ToolbarSceneConfig>(assetPath);
 				return;
 			}
@@ -108,7 +108,7 @@ namespace KarmoTools.Editor.Toolbar
 			AssetDatabase.CreateAsset(config, assetPath);
 			AssetDatabase.SaveAssets();
 
-			EditorUtility.DisplayDialog("KarmoTools", "ToolbarSceneConfig created at " + assetPath, "Awesome!");
+			EditorUtility.DisplayDialog("KarmoLab", "ToolbarSceneConfig created at " + assetPath, "Awesome!");
 			Selection.activeObject = config;
 		}
 	}
