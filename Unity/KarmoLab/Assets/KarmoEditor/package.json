@@ -1,0 +1,17 @@
+{
+	"name": "com.karmoddrine.karmoeditor",
+	"version": "1.0.0",
+	"displayName": "Karmo Editor Tools",
+	"description": "Unity Editor utilities and custom toolbar for KarmoLab.",
+	"unity": "2021.3",
+	"author": {
+		"name": "Mascari4615",
+		"url": "https://github.com/mascari4615"
+	},
+	"keywords": [
+		"unity",
+		"editor",
+		"tool",
+		"toolbar"
+	]
+}
