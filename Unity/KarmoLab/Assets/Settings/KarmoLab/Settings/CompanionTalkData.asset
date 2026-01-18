@@ -33,6 +33,18 @@ MonoBehaviour:
   - "\uB3C4\uCC29!"
   - "\uC5B4\uC9C8\uC5B4\uC9C8\uD574"
   - "\uCFF5!"
+  Alarms:
+  - Label: "\uC54C\uB78C"
+    IsEnabled: 1
+    Hour: 6
+    Minute: 49
+    Repeat: 0
+    RepeatDays: 0
+    Message: "\u3141\u3134\u3147\u3141\u3147\u3141\u3134\u3147"
+    ShakeWindow: 1
+    PlaySound: 1
+    Volume: 1
+    UseBeep: 1
   MinChatInterval: 10
   MaxChatInterval: 30
   BubbleDuration: 3

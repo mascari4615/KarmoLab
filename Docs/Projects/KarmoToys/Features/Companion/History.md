@@ -7,6 +7,19 @@
   - **Input Hybrid**: 에디터(`UNITY_EDITOR`)에서는 Win32 API 대신 Unity Input API를 사용하여 마우스 클릭/드래그 지원.
   - **Configuration**: `KarmoToysSettings.SimulateCompanionMode` 옵션을 통해 빌드 없이 모드 강제 진입 지원.
 
+- **Modular Architecture Refactoring (Companion 2.0)**:
+  - **Core Diet**: `CompanionFeature.cs`를 경량화(600줄 -> 130줄)하고 모듈 관리 역할(`RegisterModule`)로 전환.
+  - **Module Ecosystem**:
+    - `InteractionModule`: 마우스, 드래그, 설정 UI 관리.
+    - `ChatModule`: 대사 출력 및 말풍선 관리.
+    - `TimeModule`: 알람 및 스케줄링 관리.
+  - **Dependency Injection**: `CompanionContext`를 통해 모듈 간 데이터 공유 및 의존성 주입 구조 확립.
+
+- **Time & Sound System (Alarm v1.0)**:
+  - **Smart Alarm**: 요일별 반복(`DaysOfWeekFlags`), 시간 설정, 메시지 알림을 지원하는 `CompanionAlarmData` 구현.
+  - **Procedural Sound**: 별도의 오디오 파일 없이 실시간 `Mathf.Sin` 파형 생성으로 **'삐-' 소리(Beep)** 구현 및 볼륨 조절(`0~1`) 지원.
+  - **Volume Control**: 알람 데이터에 볼륨 슬라이더 및 소리 켜기/끄기 옵션 추가.
+
 ## 2026-01-18 (KST) - Part 2
 
 - **Companion Speech Bubble System**:
