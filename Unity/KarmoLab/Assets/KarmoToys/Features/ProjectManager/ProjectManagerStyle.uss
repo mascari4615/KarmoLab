@@ -1,0 +1,273 @@
+.view-container {
+    flex-grow: 1;
+}
+
+/* Table View Styles */
+.table-header {
+    flex-direction: row;
+    background-color: var(--color-bg-surface);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-border);
+    padding: 8px 10px;
+    border-radius: 4px 4px 0 0;
+}
+
+.table-col {
+    color: var(--color-text-sub);
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+
+.table-row {
+    flex-direction: row;
+    padding: 8px 10px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-border);
+    align-items: center;
+}
+
+.table-row:hover {
+    background-color: var(--color-bg-hover);
+}
+
+.table-footer {
+    flex-direction: row;
+    padding: 10px;
+    border-top-width: 1px;
+    border-top-color: var(--color-border);
+}
+
+/* Kanban View Styles */
+.kanban-column {
+    flex: 1;
+    margin: 0 5px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.column-title {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: var(--color-text-main);
+    margin-bottom: 10px;
+    -unity-text-align: middle-center;
+}
+
+.column-list {
+    flex-grow: 1;
+}
+
+.kanban-item {
+    background-color: var(--color-bg-surface);
+    border-radius: 8px;
+    padding: 10px 10px 10px 16px; /* Extra left padding for strip */
+    margin-bottom: 8px;
+    border-width: 1px;
+    border-color: var(--color-border);
+    overflow: hidden; /* For strip clipping */
+    transition: 0.1s;
+}
+
+.kanban-item:hover {
+    border-color: var(--color-primary);
+    scale: 1.02; /* Subtle pop */
+}
+
+.kanban-item.dragging {
+    opacity: 0.5;
+    scale: 0.95;
+    border-color: var(--color-primary);
+}
+
+/* Priority Strip */
+.priority-strip {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+}
+
+.strip-high { background-color: #f87171; }
+.strip-medium { background-color: #fbbf24; }
+.strip-low { background-color: #60a5fa; }
+
+/* Tags */
+.tags-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.tag-chip {
+    font-size: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-sub);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-bottom: 2px;
+}
+
+.item-title {
+    font-size: 13px;
+    color: var(--color-text-main);
+}
+
+.item-meta {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 5px;
+}
+
+.badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+}
+
+.badge-task { background-color: #3b82f6; }
+.badge-secret { background-color: #ef4444; }
+.badge-idea { background-color: #10b981; }
+
+.priority-high { color: #f87171; }
+.priority-mid { color: #fbbf24; }
+.priority-low { color: #60a5fa; }
+
+/* Modal Styles */
+.modal-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-container {
+    background-color: var(--color-bg-surface);
+    width: 500px;
+    max-height: 90%;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: var(--color-border);
+    padding: 20px;
+}
+
+.modal-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-border);
+}
+
+.modal-body {
+    flex-grow: 1;
+}
+
+.modal-input {
+    margin-bottom: 15px;
+}
+
+.content-editor {
+    height: 150px;
+    white-space: normal;
+}
+
+.modal-footer {
+    flex-direction: row;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top-width: 1px;
+    border-top-color: var(--color-border);
+}
+
+.modal-input .unity-base-field__label {
+    min-width: 80px;
+}
+
+/* Quick Add Button */
+.btn-quick-add {
+    background-color: transparent;
+    border-width: 0;
+    color: #888;
+    margin-top: 5px;
+    padding: 5px;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+
+/* Context Menu */
+.context-menu {
+    background-color: var(--color-bg-surface);
+    border-width: 1px;
+    border-color: var(--color-border);
+    border-radius: 6px;
+    padding: 5px;
+    min-width: 150px;
+}
+
+.ctx-btn {
+    background-color: transparent;
+    border-width: 0;
+    color: var(--color-text-main);
+    -unity-text-align: middle-left;
+    padding: 6px 10px;
+    margin: 0;
+    border-radius: 4px;
+}
+
+.ctx-btn:hover {
+    background-color: var(--color-bg-hover);
+}
+
+.ctx-btn.btn-danger {
+    color: #f87171;
+}
+
+
+/* Compact Toolbar */
+.pm-toolbar {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    background-color: var(--color-bg-surface);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-border);
+    min-height: 50px;
+}
+
+.pm-search {
+    width: 200px;
+    margin-right: 10px;
+}
+
+.view-switcher {
+    flex-direction: row;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.btn-tab {
+    background-color: transparent;
+    border-width: 0;
+    color: var(--color-text-sub);
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: 0.2s;
+    font-size: 12px;
+}
+
+.btn-tab:hover {
+    color: var(--color-text-main);
+}
+
+.btn-tab.selected {
+    background-color: var(--color-primary);
+    color: white;
+}

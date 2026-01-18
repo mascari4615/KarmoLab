@@ -6,9 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 using KarmoToys.Common.Data;
-using KarmoToys.Features.QuestBoard;
 using KarmoToys.Features.Planner;
-using KarmoToys.Features.Note;
 using KarmoToys.Features.Dashboard;
 
 namespace KarmoToys.Core
@@ -16,7 +14,7 @@ namespace KarmoToys.Core
 	public static class DataService
 	{
 		/// <summary>
-		/// ?�이??로드
+		/// 데이터 로드
 		/// </summary>
 		public static KarmoToysData Load(string path)
 		{
@@ -28,9 +26,8 @@ namespace KarmoToys.Core
 					KarmoToysData data = JsonUtility.FromJson<KarmoToysData>(json);
 
 					if (data == null) data = new KarmoToysData();
-					if (data.Planner == null) data.Planner = new PlannerData();
 
-					// ?�위 ?�환?? SaveId가 ?�으�??�성
+					// 하위 호환성: SaveId가 없으면 생성
 					if (string.IsNullOrEmpty(data.SaveId))
 					{
 						data.SaveId = Guid.NewGuid().ToString();
@@ -48,7 +45,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// ?�이???�??(백업 ?�그 ?�함, forceBackup=true�?무조�?백업)
+		/// 데이터 저장 (백업 태그 포함, forceBackup=true면 무조건 백업)
 		/// </summary>
 		public static void Save(string path, KarmoToysData data, int maxBackups = 1000, string tag = "", bool forceBackup = false)
 		{
@@ -58,16 +55,16 @@ namespace KarmoToys.Core
 			{
 				bool shouldBackup = forceBackup;
 
-				// Force가 ?�닐 경우, ?�동 백업 ?�정 �?변경량 체크
+				// Force가 아닐 경우, 자동 백업 설정 및 변경량 체크
 				if (!shouldBackup && data.AutoBackupOnSave)
 				{
-					// 1. 가??최근 백업 ?�일 찾기
+					// 1. 가장 최근 백업 파일 찾기
 					List<FileInfo> backups = GetBackupFiles(path);
 					FileInfo lastBackupIdx = backups.FirstOrDefault();
 
 					if (lastBackupIdx != null && File.Exists(lastBackupIdx.FullName))
 					{
-						// 2. 최근 백업 ?�이?��? 비교 (?�적 변경량 체크)
+						// 2. 최근 백업 데이터와 비교 (누적 변경량 체크)
 						try
 						{
 							KarmoToysData lastBackupData = Load(lastBackupIdx.FullName);
@@ -79,25 +76,25 @@ namespace KarmoToys.Core
 						}
 						catch
 						{
-							// 백업 로드 ?�패 ???�전?�게 ?�재 ?�일 기�??�로 비교?�거??백업 ?�행
+							// 백업 로드 실패 시 안전하게 현재 파일 기준으로 비교하거나 백업 실행
 							shouldBackup = true;
 						}
 					}
 					else
 					{
-						// 3. 백업???�나???�으�?무조�??�성 (기�???마련)
+						// 3. 백업이 하나라도 없으면 무조건 생성 (기초 마련)
 						shouldBackup = true;
 						if (string.IsNullOrEmpty(tag)) tag = "InitBackup";
 					}
 				}
 
-				// 1. 조건 만족 ??백업 ?�성
+				// 1. 조건 만족 시 백업 생성
 				if (shouldBackup)
 				{
-					CreateBackup(path, maxBackups, tag); // SaveId Parameter Removed
+					CreateBackup(path, maxBackups, tag);
 				}
 
-				// 2. ?�로???�일 ?�??
+				// 2. 새로운 파일 저장
 				string dir = Path.GetDirectoryName(path);
 				if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir))
 				{
@@ -114,7 +111,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// 백업 ?�일 ?�성 �?개수 관�?(Flat Structure)
+		/// 백업 파일 생성 및 개수 관리 (Flat Structure)
 		/// </summary>
 		private static void CreateBackup(string path, int maxBackups, string tag = "")
 		{
@@ -123,14 +120,14 @@ namespace KarmoToys.Core
 			try
 			{
 				string dir = Path.GetDirectoryName(path);
-				string backupDir = Path.Combine(dir, "Backups"); // ?�위 ?�더(SaveId) ?�거, 바로 Backups ?�더 ?�용
+				string backupDir = Path.Combine(dir, "Backups");
 
 				if (!Directory.Exists(backupDir))
 				{
 					Directory.CreateDirectory(backupDir);
 				}
 
-				// 중복 ?�일 체크 (?�시 비교)
+				// 중복 파일 체크 (해시 비교)
 				FileInfo lastBackup = GetBackupFiles(path).FirstOrDefault();
 				if (lastBackup != null)
 				{
@@ -141,7 +138,7 @@ namespace KarmoToys.Core
 					}
 				}
 
-				// ?�?�스?�프 ?�식??백업 ?�일�??�성
+				// 타임스탬프 형식의 백업 파일명 생성
 				string fileName = Path.GetFileNameWithoutExtension(path);
 				string extension = Path.GetExtension(path);
 				string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -151,7 +148,7 @@ namespace KarmoToys.Core
 
 				File.Copy(path, backupPath, true);
 
-				// 롤링 ?�린??(?�일�?기�? ?�터�??�요)
+				// 롤링 클린업
 				CleanupOldBackups(backupDir, fileName, maxBackups);
 			}
 			catch (Exception ex)
@@ -183,14 +180,13 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// ?�래??백업 ?�일 ??�� (?�당 ?�일명에 ?�당?�는 백업�?
+		/// 오래된 백업 파일 제거 (해당 파일명에 해당하는 백업만)
 		/// </summary>
 		private static void CleanupOldBackups(string backupDir, string originalFileName, int maxBackups)
 		{
 			if (maxBackups <= 0) return;
 
 			DirectoryInfo directoryInfo = new DirectoryInfo(backupDir);
-			// ?�당 ?�본 ?�일??백업본만 ?�터�?(StartsWith)
 			List<FileInfo> files = directoryInfo.GetFiles()
 				.Where(f => f.Name.StartsWith(originalFileName))
 				.OrderBy(f => f.CreationTime)
@@ -214,7 +210,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// 백업 ?�일 목록 조회 (최신?? Flat Structure)
+		/// 백업 파일 목록 조회 (최신순)
 		/// </summary>
 		public static List<FileInfo> GetBackupFiles(string mainPath)
 		{
@@ -226,13 +222,13 @@ namespace KarmoToys.Core
 			string fileName = Path.GetFileNameWithoutExtension(mainPath);
 
 			return new DirectoryInfo(backupDir).GetFiles()
-				.Where(f => f.Name.StartsWith(fileName)) // ?�일명으�??�터�?
+				.Where(f => f.Name.StartsWith(fileName))
 				.OrderByDescending(f => f.CreationTime)
 				.ToList();
 		}
 
 		/// <summary>
-		/// ?�정 백업 불러?�기 (불러?�기 ???�재 ?�이??Safety Backup ?�성)
+		/// 특정 백업 불러오기 (불러오기 전 현재 데이터 Safety Backup 생성)
 		/// </summary>
 		public static bool LoadBackup(string mainPath, string backupPath, int maxBackups)
 		{
@@ -240,13 +236,11 @@ namespace KarmoToys.Core
 
 			try
 			{
-				// 1. ?�재 메인 ?�이?��? ?�으�?Safety Backup ?�성 (?�그: Safety)
 				if (File.Exists(mainPath))
 				{
 					CreateBackup(mainPath, maxBackups, "Safety");
 				}
 
-				// 2. 백업 ?�일??메인 ?�이�??�치�???��?�기
 				File.Copy(backupPath, mainPath, true);
 				return true;
 			}
@@ -258,7 +252,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// ?�각???�이??비교 (간이 Diff)
+		/// 시각적 데이터 비교 (간이 Diff)
 		/// </summary>
 		public static string GetDiffSummary(KarmoToysData oldData, KarmoToysData newData)
 		{
@@ -267,102 +261,55 @@ namespace KarmoToys.Core
 			StringBuilder sb = new StringBuilder();
 			sb.AppendLine("<b>[Data Comparison Summary]</b>");
 
-			// 1. Planner ?�벤??비교
-			int oldBlocks = oldData.Planner?.TimeBlocks?.Count ?? 0;
-			int newBlocks = newData.Planner?.TimeBlocks?.Count ?? 0;
-			if (oldBlocks != newBlocks)
+			// 1.5 ProjectItems (통합 데이터) 비교
+			int oldProjectItems = oldData.ProjectItems?.Count ?? 0;
+			int newProjectItems = newData.ProjectItems?.Count ?? 0;
+			if (oldProjectItems != newProjectItems)
 			{
-				sb.AppendLine($"- ?�� TimeBlocks: {oldBlocks} -> {newBlocks} ({(newBlocks > oldBlocks ? "+" : "")}{newBlocks - oldBlocks})");
+				sb.AppendLine($"- 🚀 Project Items: {oldProjectItems} -> {newProjectItems} ({(newProjectItems > oldProjectItems ? "+" : "")}{newProjectItems - oldProjectItems})");
 			}
 
-			int oldItems = oldData.Planner?.Items?.Count ?? 0;
-			int newItems = newData.Planner?.Items?.Count ?? 0;
-			if (oldItems != newItems)
-			{
-				sb.AppendLine($"- ??Todo Items: {oldItems} -> {newItems} ({(newItems > oldItems ? "+" : "")}{newItems - oldItems})");
-			}
-
-			// 1.5 Secret Notes 비교
-			int oldNotes = oldData.Planner?.SecretNotes?.Count ?? 0;
-			int newNotes = newData.Planner?.SecretNotes?.Count ?? 0;
-			if (oldNotes != newNotes)
-			{
-				sb.AppendLine($"- ?�� Secret Notes: {oldNotes} -> {newNotes} ({(newNotes > oldNotes ? "+" : "")}{newNotes - oldNotes})");
-			}
-
-			// 2. Life Weekly ?�정 비교
+			// 2. Life Weekly 설정 비교
 			if (oldData.LifeWeekly?.BirthDate != newData.LifeWeekly?.BirthDate)
 			{
-				sb.AppendLine($"- ?�� Birth Date changed: {oldData.LifeWeekly?.BirthDate} -> {newData.LifeWeekly?.BirthDate}");
+				sb.AppendLine($"- 🎂 Birth Date changed: {oldData.LifeWeekly?.BirthDate} -> {newData.LifeWeekly?.BirthDate}");
 			}
 			if (oldData.LifeWeekly?.TargetAge != newData.LifeWeekly?.TargetAge)
 			{
-				sb.AppendLine($"- ??Target Age: {oldData.LifeWeekly?.TargetAge} -> {newData.LifeWeekly?.TargetAge}");
+				sb.AppendLine($"- 🎯 Target Age: {oldData.LifeWeekly?.TargetAge} -> {newData.LifeWeekly?.TargetAge}");
 			}
 
-			// 3. ?�마 비교
+			// 3. 테마 비교
 			if (oldData.Theme != newData.Theme)
 			{
-				sb.AppendLine($"- ?�� Theme: {oldData.Theme} -> {newData.Theme}");
+				sb.AppendLine($"- 🎨 Theme: {oldData.Theme} -> {newData.Theme}");
 			}
 
-			// 4. Memo & Target Date 비교
-			if (oldData.Planner?.MemoContent != newData.Planner?.MemoContent)
+			// 6. ProjectItem Modification Check
+			int modifiedProjectItems = 0;
+			if (oldData.ProjectItems != null && newData.ProjectItems != null)
 			{
-				sb.AppendLine("- ?�� Memo Content changed.");
-			}
-			if (oldData.Planner?.TargetDateString != newData.Planner?.TargetDateString)
-			{
-				sb.AppendLine($"- ?�� Target Date: {oldData.Planner?.TargetDateString} -> {newData.Planner?.TargetDateString}");
-			}
-
-			// 5. TimeBlock Modification Check (New)
-			int modifiedBlocks = 0;
-			if (oldData.Planner?.TimeBlocks != null && newData.Planner?.TimeBlocks != null)
-			{
-				Dictionary<string, KarmoToys.Common.Data.TimeBlock> oldMap = oldData.Planner.TimeBlocks.ToDictionary(b => b.Id);
-				foreach (KarmoToys.Common.Data.TimeBlock newBlock in newData.Planner.TimeBlocks)
+				Dictionary<string, ProjectItemData> oldMap = oldData.ProjectItems.ToDictionary(i => i.Id);
+				foreach (var newItem in newData.ProjectItems)
 				{
-					if (oldMap.TryGetValue(newBlock.Id, out KarmoToys.Common.Data.TimeBlock oldBlock))
+					if (oldMap.TryGetValue(newItem.Id, out var oldItem))
 					{
-						if (oldBlock.StartMinute != newBlock.StartMinute ||
-							oldBlock.EndMinute != newBlock.EndMinute ||
-							oldBlock.DateString != newBlock.DateString ||
-							oldBlock.Title != newBlock.Title)
+						if (oldItem.Status != newItem.Status ||
+							oldItem.Title != newItem.Title ||
+							oldItem.Content != newItem.Content ||
+							oldItem.Priority != newItem.Priority)
 						{
-							modifiedBlocks++;
+							modifiedProjectItems++;
 						}
 					}
 				}
 			}
-			if (modifiedBlocks > 0)
+			if (modifiedProjectItems > 0)
 			{
-				sb.AppendLine($"- 🕒 Modified Events: {modifiedBlocks}");
+				sb.AppendLine($"- 🚀 Modified Project Items: {modifiedProjectItems}");
 			}
 
-			// 6. Todo Modification Check (New)
-			int modifiedTodos = 0;
-			if (oldData.Planner?.Items != null && newData.Planner?.Items != null)
-			{
-				Dictionary<string, KarmoToys.Common.Data.TodoItem> oldMap = oldData.Planner.Items.ToDictionary(i => i.Id);
-				foreach (KarmoToys.Common.Data.TodoItem newItem in newData.Planner.Items)
-				{
-					if (oldMap.TryGetValue(newItem.Id, out KarmoToys.Common.Data.TodoItem oldItem))
-					{
-						if (oldItem.IsCompleted != newItem.IsCompleted ||
-							oldItem.Content != newItem.Content)
-						{
-							modifiedTodos++;
-						}
-					}
-				}
-			}
-			if (modifiedTodos > 0)
-			{
-				sb.AppendLine($"- ?�️ Modified Todos: {modifiedTodos}");
-			}
-
-			if (sb.Length < 40) // ?�목�??�는 경우
+			if (sb.Length < 40) // 항목이 없는 경우
 			{
 				sb.AppendLine("- No significant changes detected.");
 			}
@@ -376,77 +323,29 @@ namespace KarmoToys.Core
 
 			int changes = 0;
 
-			// Planner TimeBlocks (Count & Modification)
-			List<KarmoToys.Common.Data.TimeBlock> oldList = oldData.Planner?.TimeBlocks ?? new List<KarmoToys.Common.Data.TimeBlock>();
-			List<KarmoToys.Common.Data.TimeBlock> newList = newData.Planner?.TimeBlocks ?? new List<KarmoToys.Common.Data.TimeBlock>();
+			// ProjectItems (Count & Modification)
+			List<ProjectItemData> oldProjectItems = oldData.ProjectItems ?? new List<ProjectItemData>();
+			List<ProjectItemData> newProjectItems = newData.ProjectItems ?? new List<ProjectItemData>();
+			changes += Math.Abs(newProjectItems.Count - oldProjectItems.Count);
 
-			int countDiff = Math.Abs(newList.Count - oldList.Count);
-			changes += countDiff;
-
-			// ?�용 변�?체크 (개수 차이?� 별도�??�행)
-			// ?�능 최적?? Dictionary 빌드??비용???��?�?리스?��? ?��? ?�다�??�용 가??
-			// ?�기?�는 루프�??�며 ID 매칭???�도.
-			Dictionary<string, KarmoToys.Common.Data.TimeBlock> oldMap = oldList.ToDictionary(b => b.Id);
-			foreach (KarmoToys.Common.Data.TimeBlock newBlock in newList)
+			Dictionary<string, ProjectItemData> oldProjectMap = oldProjectItems.ToDictionary(i => i.Id);
+			foreach (var newItem in newProjectItems)
 			{
-				if (oldMap.TryGetValue(newBlock.Id, out KarmoToys.Common.Data.TimeBlock oldBlock))
+				if (oldProjectMap.TryGetValue(newItem.Id, out var oldItem))
 				{
-					if (oldBlock.StartMinute != newBlock.StartMinute ||
-						oldBlock.EndMinute != newBlock.EndMinute ||
-						oldBlock.DateString != newBlock.DateString ||
-						oldBlock.Title != newBlock.Title)
+					if (oldItem.Status != newItem.Status ||
+						oldItem.Title != newItem.Title ||
+						oldItem.Content != newItem.Content ||
+						oldItem.Priority != newItem.Priority)
 					{
 						changes++;
 					}
 				}
 			}
 
-			// Planner TodoItems (Count & Modification)
-			List<KarmoToys.Common.Data.TodoItem> oldTodos = oldData.Planner?.Items ?? new List<KarmoToys.Common.Data.TodoItem>();
-			List<KarmoToys.Common.Data.TodoItem> newTodos = newData.Planner?.Items ?? new List<KarmoToys.Common.Data.TodoItem>();
-
-			changes += Math.Abs(newTodos.Count - oldTodos.Count);
-
-			Dictionary<string, KarmoToys.Common.Data.TodoItem> oldTodoMap = oldTodos.ToDictionary(i => i.Id);
-			foreach (var newItem in newTodos)
-			{
-				if (oldTodoMap.TryGetValue(newItem.Id, out var oldItem))
-				{
-					if (oldItem.IsCompleted != newItem.IsCompleted ||
-						oldItem.Content != newItem.Content)
-					{
-						// ?�료 ?��? 변경이???�용 변�?모두 1건의 변경으�?취급
-						changes++;
-					}
-				}
-			}
-
-			// Planner SecretNotes (Count & Modification)
-			List<KarmoToys.Common.Data.SecretNote> oldNotes = oldData.Planner?.SecretNotes ?? new List<KarmoToys.Common.Data.SecretNote>();
-			List<KarmoToys.Common.Data.SecretNote> newNotes = newData.Planner?.SecretNotes ?? new List<KarmoToys.Common.Data.SecretNote>();
-			changes += Math.Abs(newNotes.Count - oldNotes.Count);
-
-			Dictionary<string, KarmoToys.Common.Data.SecretNote> oldNoteMap = oldNotes.ToDictionary(n => n.Id);
-			foreach (KarmoToys.Common.Data.SecretNote newNote in newNotes)
-			{
-				if (oldNoteMap.TryGetValue(newNote.Id, out KarmoToys.Common.Data.SecretNote oldNote))
-				{
-					if (oldNote.Problem != newNote.Problem ||
-						oldNote.Why != newNote.Why ||
-						oldNote.Solution != newNote.Solution)
-					{
-						changes++;
-					}
-				}
-			}
-
-			// 중요 ?�정 변경�? 1건이?�도 ?�으�?즉시 true (threshold 무시)
+			// 중요 설정 변경은 1건이라도 있으면 즉시 true (threshold 무시)
 			if (oldData.LifeWeekly?.BirthDate != newData.LifeWeekly?.BirthDate) return true;
 			if (oldData.Theme != newData.Theme) return true;
-
-			// Memo & Target Date
-			if (oldData.Planner?.MemoContent != newData.Planner?.MemoContent) changes++;
-			if (oldData.Planner?.TargetDateString != newData.Planner?.TargetDateString) changes++;
 
 			return changes >= threshold;
 		}

@@ -1,5 +1,32 @@
 # KarmoLab Project History
 
+## 2026-01-18 (KST) - Part 5
+
+- **Project Manager 아키텍처 고도화 (Refactoring & Architecture)**:
+  - **단일 책임 원칙(SRP) 적용**: 거대해진 `ProjectManagerFeature` 클래스를 기능별 Partial Class(`Table`, `Kanban`, `Modal`)로 분리하여 유지보수성 및 가독성 대폭 향상.
+  - **One Data, Multi-View 패턴**: `ProjectItemData` 단일 소스를 공유하며 테이블/칸반 뷰가 실시간으로 동기화되도록 설계.
+
+- **사용자 경험(UX) 심화 구현 (Table & Kanban Enhancements)**:
+  - **Table View**:
+    - **Inline Edit**: 테이블 셀 클릭 시 상태(Status) 및 우선순위(Priority) 즉시 순환 변경 기능.
+    - **Sorting & Filtering**: 헤더 클릭 시 다중 정렬 및 검색어 필터링 지원.
+  - **Kanban View (Trello 벤치마킹)**:
+    - **Visual Refinement**: 우선순위 색상 띠(Color Strip) 및 태그 칩(Tag Chips) 시각화 적용.
+    - **Drag & Drop**: 고스트 아이콘 트래킹 및 영역 판정 로직 개선으로 부드러운 이동 경험 제공.
+    - **Quick Add**: 각 컬럼 하단에 빠른 추가 버튼 배치.
+
+- **인터랙션 및 UI 최적화**:
+  - **Context Menu (우클릭 메뉴)**: 테이블 행 및 칸반 카드 우클릭 시 이동/아카이브/삭제 메뉴 제공.
+  - **Compact Toolbar**: 상단 대형 헤더를 제거하고, 검색창과 뷰 전환 버튼을 포함한 슬림 툴바를 도입하여 작업 공간(Workspace) 확보.
+  - **Runtime Optimization**: 커서 관련 런타임 경고 해결 (`cursor: link` 제거).
+
+## 2026-01-18 (KST) - Part 4
+
+- **UI 최적화 및 기능 통합 (Feature Consolidation)**:
+  - **불필요 피처 제거**: `QuestBoardFeature`와 `NoteFeature`를 제거하여 UI 복잡도를 낮추고 메인 탭 구조를 간소화함.
+  - **프로젝트 관리 중심 개편**: 분산되어 있던 할 일 및 기록 기능을 `ProjectManagerFeature` ("프로젝트 관리" 탭)로 통합하여 집중도 향상.
+  - **네비게이션 정비**: `MainView.uxml`에서 퀘스트 보드와 비밀 노트 탭을 삭제하고, 전체적인 레이아웃을 다시 정렬함.
+
 ## 2026-01-18 (KST) - Part 3
 
 - **설정(Preferences) UI 고도화 및 데이터 관리 강화**:

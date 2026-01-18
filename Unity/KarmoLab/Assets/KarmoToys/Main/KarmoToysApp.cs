@@ -209,9 +209,9 @@ namespace KarmoToys.Main
 				_headerDateLabel.text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 			}
 
-			if (_headerDDayLabel != null && Data?.Planner != null)
+			if (_headerDDayLabel != null && Data?.Dashboard != null)
 			{
-				if (DateTime.TryParse(Data.Planner.TargetDateString, out System.DateTime target))
+				if (DateTime.TryParse(Data.Dashboard.TargetDateString, out System.DateTime target))
 				{
 					int diff = (target.Date - DateTime.Now.Date).Days;
 					_headerDDayLabel.text = $"D{diff:+#;-#;0}";
@@ -304,7 +304,6 @@ namespace KarmoToys.Main
 		public void LoadData()
 		{
 			Data = DataService.Load(SavePath);
-			Data?.MigrateIfNeeded();
 			_currentFeature?.OnSelect();
 		}
 
@@ -327,10 +326,9 @@ namespace KarmoToys.Main
 					typeof(Features.Dashboard.DashboardFeature),
 					typeof(Features.Planner.PlannerFeature),
 					typeof(Features.LifeWeekly.LifeWeeklyFeature),
-					typeof(Features.QuestBoard.QuestBoardFeature),
-					typeof(Features.Note.NoteFeature),
 					typeof(Features.ToolBox.ToolBoxFeature),
-					typeof(Features.Preferences.PreferencesFeature)
+					typeof(Features.Preferences.PreferencesFeature),
+					typeof(KarmoToys.Features.ProjectManager.ProjectManagerFeature)
 				};
 
 				foreach (Type type in features)

@@ -1,11 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
 	<ui:Template name="DashboardView" src="project://database/Assets/KarmoToys/Features/Dashboard/DashboardView.uxml" />
-	<ui:Template name="QuestBoardView" src="project://database/Assets/KarmoToys/Features/QuestBoard/QuestBoardView.uxml" />
 	<ui:Template name="ScheduleView" src="project://database/Assets/KarmoToys/Features/Planner/ScheduleView.uxml" />
 	<ui:Template name="LifeWeeklyView" src="project://database/Assets/KarmoToys/Features/LifeWeekly/LifeWeeklyView.uxml" />
-	<ui:Template name="SecretNoteView" src="project://database/Assets/KarmoToys/Features/Note/SecretNoteView.uxml" />
 	<ui:Template name="ToolBoxView" src="project://database/Assets/KarmoToys/Features/ToolBox/ToolBoxView.uxml" />
 	<ui:Template name="PreferencesView" src="project://database/Assets/KarmoToys/Features/Preferences/PreferencesView.uxml" />
+	<ui:Template name="ProjectManagerView" src="project://database/Assets/KarmoToys/Features/ProjectManager/ProjectManagerView.uxml" />
 
 	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
 	<Style src="project://database/Assets/KarmoToys/Main/UI/LifeWeeklyStyle.uss"/>
@@ -31,21 +30,19 @@
 		
 		<ui:VisualElement class="nav-tabs">
 			<ui:Button name="TabDashboard" text="대시보드" class="tab-button selected"/>
-			<ui:Button name="TabTasks" text="퀘스트 보드" class="tab-button"/>
+			<ui:Button name="TabProject" text="프로젝트 관리" class="tab-button"/>
 			<ui:Button name="TabSchedule" text="전략 시간표" class="tab-button"/>
 			<ui:Button name="TabLifeWeekly" text="인생의 주" class="tab-button"/>
-			<ui:Button name="TabSecret" text="비밀 노트" class="tab-button"/>
 			<ui:Button name="TabTools" text="도구함" class="tab-button"/>
 			<ui:Button name="TabPreferences" text="설정" class="tab-button"/>
 		</ui:VisualElement>
 
 		<ui:Instance template="DashboardView" />
-		<ui:Instance template="QuestBoardView" />
 		<ui:Instance template="ScheduleView" />
 		<ui:Instance template="LifeWeeklyView" />
-		<ui:Instance template="SecretNoteView" />
 		<ui:Instance template="ToolBoxView" />
 		<ui:Instance template="PreferencesView" />
+		<ui:Instance template="ProjectManagerView" />
 
 		<!-- Toast Container (Bottom Right) -->
 		<ui:VisualElement name="ToastContainer" style="position: absolute; right: 20px; bottom: 20px; align-items: flex-end; width: 300px; padding-bottom: 20px;" picking-mode="Ignore"/>

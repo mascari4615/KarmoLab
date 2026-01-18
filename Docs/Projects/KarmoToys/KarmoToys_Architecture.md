@@ -44,22 +44,30 @@
 - **Class**: `DashboardFeature`
 - **Key Features**: D-Day, 진행 상황, RPG 스탯 표시.
 
-### 3.3. QuestBoard (퀘스트 보드)
+### 3.3. ProjectManager (프로젝트 관리)
 
-- **Class**: `QuestBoardFeature`
-- **Key Features**: 할 일(ToDo) 관리 (Main, Skill, Side Quest).
+- **Class Structure** (Partial Classes for SRP):
+  - `ProjectManagerFeature.cs`: 메인 진입점, 초기화, 뷰 전환 로직.
+  - `ProjectManagerFeature.Table.cs`: 테이블 뷰 렌더링, 정렬(Sorting), 필터링, 인라인 편집.
+  - `ProjectManagerFeature.Kanban.cs`: 칸반 보드 렌더링, 드래그 앤 드롭(Ghost Icon), Priority Strip.
+  - `ProjectManagerFeature.Modal.cs`: 상세 아이템 편집 모달 제어.
 
-### 3.4. Note (비밀 노트)
+- **Architecture Pattern**: **"One Data, Multi-View"**
+  - 단일 데이터 소스(`ProjectItemData`)를 공유하며, Table과 Kanban 뷰가 각자의 방식으로 데이터를 렌더링.
+  - 데이터 변경 시 `RefreshViews()`를 호출하여 두 뷰를 동시에 갱신.
 
-- **Class**: `NoteFeature`
-- **Key Features**: 문제 해결 로그 및 TIL 기록.
+- **Key Features**:
+  - **Inline Editing**: 테이블 셀 클릭으로 즉시 상태/우선순위 변경 (Cycle Logic).
+  - **Context Menu**: 우클릭 메뉴를 통한 빠른 이동 및 관리.
+  - **Visual Richness**: Trello 스타일의 우선순위 색상 띠, 태그 칩 시각화.
+  - **Compact Toolbar**: 공간 효율성을 극대화한 상단 툴바 레이아웃.
 
-### 3.5. ToolBox (도구함)
+### 3.4. ToolBox (도구함)
 
 - **Class**: `ToolBoxFeature`
 - **Key Features**: 유틸리티 도구 (텍스트 변환, 파일명 변경 등), 데이터 관리.
 
-### 3.6. Companion (투명 펫 캐릭터)
+### 3.5. Companion (투명 펫 캐릭터)
 
 - **Class**: `CompanionFeature`
 - **Key Features**:
