@@ -1,5 +1,26 @@
 # KarmoHub 개발 히스토리
 
+## 2026-01-19 (KST) - UI Redesign & Brand Identity (Steam Style)
+
+1. **Steam 스타일 UI 전면 개편**:
+   - **Dual-Pane Layout**: 사이드바(게임 목록)와 메인 뷰(디테일/홈) 구조 도입.
+   - **Immersive Detail View**: 게임 배너 아트와 상세 정보를 보여주는 몰입형 페이지 구현.
+   - **Glassmorphism**: 반투명 오버레이와 블러 효과를 적용하여 프리미엄 감성 강화.
+2. **멀티 테마 시스템 (Multi-Theme System)**:
+   - **Obsidian Ember** (기본): Charcoal Black & Volcanic Orange (`#ff8c00`) 조합.
+   - **Monochrome**: 오직 Black & White로 구성된 시크한 고대비 테마.
+   - **Light Mode**: 밝은 테마 가독성 문제 해결 (Adaptive Text Color).
+   - **Theme Selector**: 토글 버튼 대신 직관적인 **Dropdown(콤보박스)** 메뉴 도입.
+   - **Adaptive Accents**: 테마에 따라 디테일 뷰 히어로 배너 색상 등이 동적으로 변화.
+3. **UX 및 기능 개선**:
+   - **Overlay Scrollbars**: 콘텐츠를 가리지 않는 모던한 플로팅 스크롤바 구현.
+   - **UI Scaling**: 80% ~ 120%까지 조절 가능한 줌 슬라이더 추가.
+   - **Compact Mode**: 데스크톱 환경에 맞춰 전반적인 폰트 및 패딩 최적화.
+4. **안정성 및 버그 수정**:
+   - **Startup Crash Fix**: 초기화 시점의 Race Condition(NullReference) 해결.
+   - **Visibility Issue Fix**: 트레이 아이콘 및 메인 윈도우 표시 문제 해결.
+   - **Zombie Process Cleanup**: 빌드/실행 중 멈춘 프로세스 자동 정리 로직 적용.
+
 ## 2026-01-10 (KST) - 라이브러리 확장 및 안정화
 
 1. **게임 라이브러리 확장**:

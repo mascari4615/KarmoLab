@@ -13,34 +13,89 @@ public partial class App : Application
 	private GameLibraryService? _gameLibraryService;
 	private GameInstallService? _gameInstallService;
 
-	protected override async void OnStartup(StartupEventArgs e)
+	private System.Threading.Mutex? _mutex;
+
+	public App()
+	{
+		// 전역 예외 처리 핸들러 등록
+		DispatcherUnhandledException += OnDispatcherUnhandledException;
+		AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+		TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+	}
+
+	private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+	{
+		string errorMessage = $"UI 스레드 오류 발생: {e.Exception.Message}\n\n{e.Exception.StackTrace}";
+		System.Windows.MessageBox.Show(errorMessage, "KarmoHub 치명적 오류 (UI)", MessageBoxButton.OK, MessageBoxImage.Error);
+		e.Handled = true; // 앱 종료 방지 시도 (선택 사항)
+		Shutdown();
+	}
+
+	private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+	{
+		string errorMessage = $"치명적 오류 발생 (Runtime): {(e.ExceptionObject as Exception)?.Message}\n\n{(e.ExceptionObject as Exception)?.StackTrace}";
+		System.Windows.MessageBox.Show(errorMessage, "KarmoHub 치명적 오류 (Global)", MessageBoxButton.OK, MessageBoxImage.Error);
+		// 여기서는 Shutdown 호출 불가 (이미 종료 중일 수 있음)
+	}
+
+	private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+	{
+		string errorMessage = $"비동기 작업 오류 발생: {e.Exception.Message}\n\n{e.Exception.StackTrace}";
+		// UI 스레드가 아닐 수 있으므로 Dispatcher 사용
+		Current.Dispatcher.Invoke(() => 
+		{
+			System.Windows.MessageBox.Show(errorMessage, "KarmoHub 비동기 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+		});
+		e.SetObserved();
+	}
+
+	protected override void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
 
-		// 언인스톨 모드 확인
-		if (e.Args.Length >= 2 && e.Args[0] == "--uninstall")
+		try
 		{
-			var gameId = e.Args[1];
-			PerformUninstall(gameId);
-			Shutdown();
-			return;
+			// 싱글 인스턴스 보장 (디버깅을 위해 임시 주석 처리)
+			// _mutex = new System.Threading.Mutex(true, "KarmoHub_Unique_Mutex_Name", out bool createdNew);
+			// if (!createdNew)
+			// {
+			// 	System.Windows.MessageBox.Show("이미 KarmoHub가 실행 중입니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+			// 	Shutdown();
+			// 	return;
+			// }
+
+			// 언인스톨 모드 확인
+			if (e.Args.Length >= 2 && e.Args[0] == "--uninstall")
+			{
+				var gameId = e.Args[1];
+				PerformUninstall(gameId);
+				Shutdown();
+				return;
+			}
+
+			// 시작 프로그램에 등록
+			StartupService.RegisterStartup(Environment.ProcessPath ?? string.Empty);
+
+			_gameProcessService = new GameProcessService();
+			_gameLibraryService = new GameLibraryService();
+			_gameInstallService = new GameInstallService();
+
+			_mainWindow = new MainWindow(_gameProcessService, _gameLibraryService, _gameInstallService);
+			MainWindow = _mainWindow;
+			
+			// 초기 데이터 로드 (비동기로 시작하되 Startup을 블록하지 않음)
+			_ = _mainWindow.InitializeAsync();
+
+			_tray = new TrayIconService(_gameProcessService, _mainWindow);
+
+			// 앱 시작 시 메인 창 표시
+			_mainWindow.ShowMainWindow();
 		}
-
-		// 시작 프로그램에 등록
-		StartupService.RegisterStartup(Environment.ProcessPath ?? string.Empty);
-
-		_gameProcessService = new GameProcessService();
-		_gameLibraryService = new GameLibraryService();
-		_gameInstallService = new GameInstallService();
-
-		_mainWindow = new MainWindow(_gameProcessService, _gameLibraryService, _gameInstallService);
-		MainWindow = _mainWindow;
-		// _mainWindow.Hide(); // 생성 시점에는 보여지지 않으므로 Hide 호출 불필요
-		
-		// 초기 데이터 로드 등을 위해 메인 윈도우 초기화
-		await _mainWindow.InitializeAsync();
-
-		_tray = new TrayIconService(_gameProcessService, _mainWindow);
+		catch (Exception ex)
+		{
+			System.Windows.MessageBox.Show($"앱 시작 중 치명적인 오류 발생:\n{ex.ToString()}", "KarmoHub 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+			Shutdown();
+		}
 	}
 
 	private void PerformUninstall(string gameId)
