@@ -5,9 +5,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Toolbars;
 using UnityEngine;
-using UnityEngine.UIElements;
+using KarmoLab.KarmoEditor;
+using KarmoLab.KarmoEditor.Settings;
 
-namespace KarmoLab.KarmoEditor
+namespace KarmoLab.KarmoEditor.Toolbar
 {
 	/// <summary>
 	/// Unity 6.3+ 메인 툴바 확장 클래스
@@ -21,7 +22,7 @@ namespace KarmoLab.KarmoEditor
 	 */
 	public static class KarmoToolbar
 	{
-		public const string ID = "KarmoLab/SceneSelector";
+		public const string ID = Define.RootMenu + "SceneSelector";
 
 		[MainToolbarElement(ID, defaultDockPosition = MainToolbarDockPosition.Middle)]
 		static IEnumerable<MainToolbarElement> CreateSceneSelector()
@@ -79,37 +80,16 @@ namespace KarmoLab.KarmoEditor
 			}
 		}
 
-		private static ToolbarSceneConfig FindConfig()
+		private static KarmoToolbarSettings FindConfig()
 		{
-			string[] guids = AssetDatabase.FindAssets("t:ToolbarSceneConfig");
+			string[] guids = AssetDatabase.FindAssets("t:" + nameof(KarmoToolbarSettings));
 			if (guids.Length > 0)
 			{
 				string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-				return AssetDatabase.LoadAssetAtPath<ToolbarSceneConfig>(path);
+				return AssetDatabase.LoadAssetAtPath<KarmoToolbarSettings>(path);
 			}
 			return null;
 		}
 
-		[MenuItem("KarmoLab/Create Toolbar Config")]
-		public static void CreateConfig()
-		{
-			string path = "Assets/Settings";
-			if (!Directory.Exists(path)) Directory.CreateDirectory(path);
-
-			string assetPath = $"{path}/ToolbarSceneConfig.asset";
-			if (File.Exists(assetPath))
-			{
-				EditorUtility.DisplayDialog("KarmoLab", "Config already exists!", "OK");
-				Selection.activeObject = AssetDatabase.LoadAssetAtPath<ToolbarSceneConfig>(assetPath);
-				return;
-			}
-
-			var config = ScriptableObject.CreateInstance<ToolbarSceneConfig>();
-			AssetDatabase.CreateAsset(config, assetPath);
-			AssetDatabase.SaveAssets();
-
-			EditorUtility.DisplayDialog("KarmoLab", "ToolbarSceneConfig created at " + assetPath, "Awesome!");
-			Selection.activeObject = config;
-		}
 	}
 }

@@ -9,10 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c3adb429ce21b5941864ff3d9eef2e04, type: 3}
-  m_Name: ToolbarSceneConfig
-  m_EditorClassIdentifier: KarmoLab.Editor::KarmoLab.KarmoEditor.ToolbarSceneConfig
+  m_Script: {fileID: 11500000, guid: 7e8d48359d0bd314f89d43458c5126c8, type: 3}
+  m_Name: KarmoToolbarSettings
+  m_EditorClassIdentifier: KarmoEditor::KarmoLab.KarmoEditor.Settings.KarmoToolbarSettings
   FavoriteScenes: []
   TargetFolders:
-  - {fileID: 102900000, guid: d574b2fb4661c408f80aa76c0182931f, type: 3}
+  - {fileID: 102900000, guid: 573b86a5a1bac8544bb3c2df5959cb68, type: 3}
   ShowOnlyBuildSettingsScenes: 0

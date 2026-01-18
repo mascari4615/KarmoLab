@@ -45,7 +45,13 @@ namespace KarmoToys.Main
 			IsCompanionMode = System.Array.Exists(args, arg => arg == "-mode") &&
 							  System.Array.Exists(args, arg => arg == "companion");
 
-			// --- Single Instance Protection (Mutex) ---
+			CheckSingleInstance();
+		}
+
+		private void CheckSingleInstance()
+		{
+#if !UNITY_EDITOR
+			// Single Instance Protection (Mutex)
 			// Different mutex per mode allows Main + Companion to run simultaneously
 			string mutexName = IsCompanionMode ? "Global\\KarmoLab_Companion" : "Global\\KarmoLab_Main";
 			bool createdNew;
@@ -64,10 +70,8 @@ namespace KarmoToys.Main
 			{
 				Debug.LogError($"[KarmoToysApp] Instance already running for mode: {(IsCompanionMode ? "Companion" : "Main")}. Quitting.");
 				Application.Quit();
-				// Ensure we don't continue initialization
-				return;
 			}
-			// ------------------------------------------
+#endif
 		}
 
 		private void Start()

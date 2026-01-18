@@ -9,9 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5763514d69d3254428a3604fa5b12472, type: 3}
-  m_Name: KarmoToysSettings
-  m_EditorClassIdentifier: Assembly-CSharp::KarmoToys.Common.KarmoToysSettings
-  DefaultSnapInterval: 5
-  DefaultPixelsPerMinute: 0.8
-  DefaultStartDay: 1
+  m_Script: {fileID: 11500000, guid: 918f83277a615524f90ee50166ced2a1, type: 3}
+  m_Name: KarmoSettings
+  m_EditorClassIdentifier: KarmoEditor::KarmoLab.KarmoEditor.Settings.KarmoSettings
+  MutexNames: []
+  FieldsToReset: []
