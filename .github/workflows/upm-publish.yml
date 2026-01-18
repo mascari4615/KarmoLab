@@ -5,7 +5,9 @@ on:
     branches:
       - main
     tags:
-      - '*'
+      - 'com.mascari4615.karmo-editor/*'
+    paths:
+      - 'Unity/LocalPackages/com.mascari4615.karmo-editor/**'
 
 jobs:
   publish:
