@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
+using KarmoToys.Features.Companion.Data;
+
 namespace KarmoToys.Features.Companion
 {
 	[CreateAssetMenu(fileName = "CompanionTalkData", menuName = "KarmoLab/KarmoToys/Companion Talk Data")]
@@ -22,6 +24,10 @@ namespace KarmoToys.Features.Companion
 
 		[Tooltip("드래그 끝났을 때 반응")]
 		public List<string> DragEndReactions = new List<string>();
+
+		[Header("🕰️ Time & Utility")]
+		[Tooltip("설정된 알람 목록")]
+		public List<CompanionAlarmData> Alarms = new List<CompanionAlarmData>();
 
 		[Header("⚙️ Settings")]
 		[Tooltip("혼잣말 최소 간격 (초)")]

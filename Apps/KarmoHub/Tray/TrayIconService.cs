@@ -11,7 +11,7 @@ namespace KarmoHub.Tray;
 
 public sealed class TrayIconService : IDisposable
 {
-	private readonly NotifyIcon _notifyIcon;
+	private NotifyIcon? _notifyIcon;
 	private readonly GameProcessService _gameProcessService;
 	private readonly MainWindow _mainWindow;
 
@@ -20,26 +20,32 @@ public sealed class TrayIconService : IDisposable
 		_gameProcessService = gameProcessService;
 		_mainWindow = mainWindow;
 
-		var resourcesDir = Path.Combine(AppContext.BaseDirectory, "Resources");
-		var iconPath = Path.Combine(resourcesDir, "tray.ico");
-
-		_notifyIcon = new NotifyIcon
+		try
 		{
-			Icon = LoadIcon(iconPath),
-			Visible = true,
-			Text = "KarmoHub"
-		};
+			var resourcesDir = Path.Combine(AppContext.BaseDirectory, "Resources");
+			var iconPath = Path.Combine(resourcesDir, "tray.ico");
 
-		var menu = new ContextMenuStrip();
-		// TODO: 특정 게임을 바로 실행하게 하거나, 최근 실행 게임을 실행하도록 개선 필요
-		// menu.Items.Add("게임 실행", null, (_, _) => _gameProcessService.StartGame("...")); 
-		
-		menu.Items.Add("KarmoHub 열기", null, (_, _) => ShowMainWindow());
-		menu.Items.Add("종료", null, (_, _) => ExitApplication());
-		_notifyIcon.ContextMenuStrip = menu;
+			_mainWindow.Log($"트레이 아이콘 초기화 중... 아이콘 경로: {iconPath}");
 
-		// 좌클릭 시 메인 창 열기 이벤트 처리
-		_notifyIcon.MouseUp += OnMouseUp;
+			_notifyIcon = new NotifyIcon
+			{
+				Icon = LoadIcon(iconPath, _mainWindow),
+				Visible = true,
+				Text = "KarmoHub"
+			};
+
+			var menu = new ContextMenuStrip();
+			menu.Items.Add("KarmoHub 열기", null, (_, _) => ShowMainWindow());
+			menu.Items.Add("종료", null, (_, _) => ExitApplication());
+			_notifyIcon.ContextMenuStrip = menu;
+
+			_notifyIcon.MouseUp += OnMouseUp;
+			_mainWindow.Log("트레이 아이콘 초기화 완료.");
+		}
+		catch (Exception ex)
+		{
+			_mainWindow.Log($"트레이 아이콘 초기화 실패: {ex.Message}");
+		}
 	}
 
 	private void OnMouseUp(object? sender, MouseEventArgs e)
@@ -52,28 +58,45 @@ public sealed class TrayIconService : IDisposable
 
 	private void ShowMainWindow()
 	{
-		Application.Current.Dispatcher.Invoke(() => _mainWindow.ShowMainWindow());
+		Application.Current?.Dispatcher?.BeginInvoke(new Action(() => _mainWindow.ShowMainWindow()));
 	}
 
 	private void ExitApplication()
 	{
-		_notifyIcon.Visible = false;
-		_notifyIcon.Dispose();
+		if (_notifyIcon != null)
+		{
+			_notifyIcon.Visible = false;
+			_notifyIcon.Dispose();
+		}
 		Application.Current.Shutdown();
 	}
 
 	public void Dispose()
 	{
-		_notifyIcon.MouseUp -= OnMouseUp;
-		_notifyIcon.Visible = false;
-		_notifyIcon.Dispose();
+		if (_notifyIcon != null)
+		{
+			_notifyIcon.MouseUp -= OnMouseUp;
+			_notifyIcon.Visible = false;
+			_notifyIcon.Dispose();
+		}
 	}
 
-	private static Icon LoadIcon(string icoPath)
+	private static Icon LoadIcon(string icoPath, MainWindow mainWindow)
 	{
 		if (File.Exists(icoPath))
 		{
-			return new Icon(icoPath);
+			try
+			{
+				return new Icon(icoPath);
+			}
+			catch (Exception ex)
+			{
+				mainWindow.Log($"아이콘 파일 로드 실패: {ex.Message}");
+			}
+		}
+		else
+		{
+			mainWindow.Log("아이콘 파일을 찾을 수 없어 기본 아이콘을 사용합니다.");
 		}
 
 		return SystemIcons.Application;

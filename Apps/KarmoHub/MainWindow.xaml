@@ -4,147 +4,338 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KarmoHub"
+        xmlns:converters="clr-namespace:KarmoHub.Converters"
         mc:Ignorable="d"
-        Title="KarmoHub" Height="600" Width="900"
-        WindowStartupLocation="CenterScreen" Background="#F5F5F5">
+        Title="KarmoHub" Height="650" Width="1000"
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBackgroundBrush}"
+        ShowInTaskbar="True" WindowState="Normal">
     
-    <Grid>
+    <Window.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
+
+    <Grid Background="{DynamicResource WindowBackgroundBrush}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="200"/> <!-- Compact Sidebar -->
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Sidebar -->
-        <Border Background="#252526" Grid.Column="0">
-            <StackPanel Margin="0">
-                <TextBlock Text="KarmoHub" Foreground="White" FontSize="22" FontWeight="Bold" Margin="20,30,20,40" HorizontalAlignment="Left"/>
-                
-                <RadioButton Content="라이브러리" FontSize="14" Height="40" Background="Transparent" Foreground="White" BorderThickness="0" Padding="20,10" IsChecked="True" Style="{StaticResource {x:Type ToggleButton}}"/>
-                <RadioButton Content="설치" FontSize="14" Height="40" Background="Transparent" Foreground="White" BorderThickness="0" Padding="20,10" Style="{StaticResource {x:Type ToggleButton}}"/>
-                <RadioButton Content="커뮤니티" FontSize="14" Height="40" Background="Transparent" Foreground="White" BorderThickness="0" Padding="20,10" Style="{StaticResource {x:Type ToggleButton}}"/>
-            </StackPanel>
+        <!-- Sidebar: Game List (Steam Style) -->
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.LayoutTransform>
+                    <ScaleTransform ScaleX="{Binding ElementName=UIZoomSlider, Path=Value}" ScaleY="{Binding ElementName=UIZoomSlider, Path=Value}"/>
+                </Grid.LayoutTransform>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Margin="15,20,15,5">
+                    <TextBlock Text="KARMO HUB" FontSize="16" FontWeight="Black" Foreground="{DynamicResource AccentBrush}"/>
+                    <Button x:Name="HomeButton" Content="🏠 라이브러리 홈" Margin="0,20,0,5" Padding="10,8" 
+                            Background="Transparent" BorderThickness="0" Foreground="{DynamicResource PrimaryTextBrush}" HorizontalContentAlignment="Left"
+                            Click="OnHomeClick" FontSize="12">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <TextBlock Text="내 게임" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" Margin="10,15,0,8" FontWeight="Bold"/>
+                </StackPanel>
+
+                <ListBox x:Name="SidebarGameList" Grid.Row="1" Background="Transparent" BorderThickness="0" 
+                         Padding="5,0" SelectionChanged="OnSidebarSelectionChanged">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                            <Setter Property="Padding" Value="10,6"/>
+                            <Setter Property="Margin" Value="0,1"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Border Grid.Row="2" Padding="15">
+                    <Button Content="시스템 설정" Padding="8,6" Background="Transparent" Foreground="{DynamicResource MutedTextBrush}" BorderThickness="0" HorizontalContentAlignment="Left" FontSize="12"/>
+                </Border>
+            </Grid>
         </Border>
 
-        <!-- Main Content -->
-        <Grid Grid.Column="1" Margin="30,20,30,20">
+        <!-- Main Content Area -->
+        <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="120"/>
+                <RowDefinition Height="Auto"/> <!-- Bottom Bar -->
+                <RowDefinition Height="0" x:Name="ConsoleRow"/> <!-- Console -->
             </Grid.RowDefinitions>
 
-            <TextBlock Text="내 라이브러리" FontSize="28" FontWeight="Light" Margin="0,0,0,20"/>
-
-            <ListBox x:Name="GameInfos" Grid.Row="1" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel />
-                    </ItemsPanelTemplate>
-                </ListBox.ItemsPanel>
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="Margin" Value="0"/>
-                        <Setter Property="Background" Value="Transparent"/>
-                        <Setter Property="BorderThickness" Value="0"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListBoxItem">
-                                    <ContentPresenter />
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="White" Width="260" Height="320" Margin="0,0,20,20" CornerRadius="4">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="15" ShadowDepth="2" Opacity="0.1" Direction="270"/>
-                            </Border.Effect>
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="160"/> 
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <!-- Placeholder Thumbnail -->
-                                <Border Background="#EEEEEE" CornerRadius="4,4,0,0">
-                                    <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#CCCCCC" FontSize="40" FontWeight="Bold" Opacity="0.3"/>
-                                </Border>
-
-                                <StackPanel Grid.Row="1" Margin="15">
-                                    <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding AppType}" FontSize="12" Foreground="Gray" Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding Description}" FontSize="13" Foreground="#444444" TextWrapping="Wrap" Margin="0,10,0,0" MaxHeight="60" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-
-                                <Grid Grid.Row="2" Margin="15,0,15,15">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="v" FontSize="12" Foreground="Gray"/>
-                                        <TextBlock Text="{Binding DefaultVersion}" FontSize="12" Foreground="Gray"/>
-                                        <TextBlock Text="/" FontSize="12" Foreground="Gray" Margin="5,0"/>
-                                        <TextBlock Text="{Binding LatestVersion}" FontSize="12" Foreground="Gray"/>
-                                    </StackPanel>
-                                    
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Content="📂" Width="30" Height="30" Margin="0,0,5,0"
-                                                Background="#EEEEEE" Foreground="#333333" BorderThickness="0"
-                                                ToolTip="설치 폴더 열기"
-                                                Click="OnOpenFolderClick">
-                                            <Button.Resources>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="CornerRadius" Value="4"/>
-                                                </Style>
-                                            </Button.Resources>
-                                        </Button>
-                                        <Button Content="{Binding ActionButtonText}" Width="80" Height="30" 
-                                                Background="#007ACC" Foreground="White" BorderThickness="0"
-                                                Click="OnPlayButtonClick">
-                                            <Button.Resources>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="CornerRadius" Value="4"/>
-                                                </Style>
-                                            </Button.Resources>
-                                        </Button>
-                                    </StackPanel>
-                                </Grid>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-
-            <!-- Status Bar -->
-            <Border Grid.Row="2" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,10,0,10">
+            <!-- Top Toolbar -->
+            <Border Grid.Row="0" Background="{DynamicResource SidebarBackgroundBrush}" Padding="15,10">
                 <Grid>
-                    <TextBlock x:Name="StatusText" Text="준비됨" VerticalAlignment="Center" Foreground="#555555"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                       <Button Content="현재 실행 중인 게임 강제 종료" Padding="10,5" Margin="0,0,10,0" Click="OnStopGame" Background="Transparent" BorderBrush="#CCCCCC" BorderThickness="1"/>
-                       <Button Content="숨기기" Padding="10,5" Click="OnHide" Background="Transparent" BorderBrush="#CCCCCC" BorderThickness="1"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="◀" Background="Transparent" Foreground="{DynamicResource PrimaryTextBrush}" BorderThickness="0" Padding="8,4" Click="OnHomeClick" FontSize="14"/>
+                        <Button Content="▶" Background="Transparent" Foreground="{DynamicResource MutedTextBrush}" BorderThickness="0" Padding="8,4" Margin="4,0,0,0" FontSize="14"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock Text="확대/축소" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider x:Name="UIZoomSlider" Minimum="0.8" Maximum="1.2" Value="1.0" Width="100" VerticalAlignment="Center" IsSnapToTickEnabled="True" TickFrequency="0.05"/>
+                        <TextBlock Text="{Binding ElementName=UIZoomSlider, Path=Value, StringFormat=P0}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" VerticalAlignment="Center" Width="35" Margin="10,0,20,0"/>
+
+                        <ComboBox x:Name="ThemeSelector" Width="100" VerticalAlignment="Center" Margin="0,0,10,0"
+                                  SelectionChanged="OnThemeChanged" SelectedIndex="0" FontSize="11">
+                            <ComboBoxItem Content="Obsidian Ember" Tag="Dark"/>
+                            <ComboBoxItem Content="Monochrome" Tag="Monochrome"/>
+                            <ComboBoxItem Content="Light Mode" Tag="Light"/>
+                        </ComboBox>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Logger -->
-            <Border Grid.Row="3" Background="#F0F0F0" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Margin="0,0,0,0">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="로그 (Logs)" FontSize="12" FontWeight="Bold" Foreground="#666666" Margin="10,5"/>
-                    <ListBox x:Name="LogListBox" Grid.Row="1" BorderThickness="0" Background="Transparent"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="5,2"/>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                    </ListBox>
+            <!-- View Containers -->
+            <Grid Grid.Row="1">
+                <!-- Library Home View (Grid) -->
+                <ScrollViewer x:Name="HomeView" VerticalScrollBarVisibility="Auto" Visibility="Visible">
+                     <Border Padding="20">
+                        <StackPanel>
+                            <StackPanel.LayoutTransform>
+                                <ScaleTransform ScaleX="{Binding ElementName=UIZoomSlider, Path=Value}" ScaleY="{Binding ElementName=UIZoomSlider, Path=Value}"/>
+                            </StackPanel.LayoutTransform>
+                            <TextBlock Text="최근 플레이" FontSize="14" Foreground="White" FontWeight="Bold" Margin="10,0,0,10"/>
+                            <ListBox x:Name="GameInfos" BorderThickness="0" Background="Transparent" 
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch"
+                                     SelectionChanged="OnSelectionChanged">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Margin" Value="8"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="IconBorder" Background="Transparent" CornerRadius="10" Padding="8">
+                                                        <ContentPresenter />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="IconBorder" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="IconBorder" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                                            <Setter Property="Opacity" Value="0.8"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Width="130">
+                                            <Border Width="130" Height="190" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" Margin="0,0,0,8" 
+                                                    BorderBrush="{DynamicResource GlassBorderBrush}" BorderThickness="1">
+                                                <Grid>
+                                                    <TextBlock Text="{Binding Name[0]}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="50" FontWeight="Bold" Opacity="0.2"/>
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding LatestVersion}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+
+                <!-- Game Detail View (Immersive Page) -->
+                <ScrollViewer x:Name="DetailView" VerticalScrollBarVisibility="Auto" Visibility="Collapsed" Background="{DynamicResource WindowBackgroundBrush}">
+                    <Grid DataContext="{Binding SelectedItem, ElementName=SidebarGameList}">
+                         <Grid.LayoutTransform>
+                            <ScaleTransform ScaleX="{Binding ElementName=UIZoomSlider, Path=Value}" ScaleY="{Binding ElementName=UIZoomSlider, Path=Value}"/>
+                        </Grid.LayoutTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="260"/> <!-- Header Banner Compact -->
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Hero Banner -->
+                        <Border Grid.Row="0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="{DynamicResource HeroGradientStartColor}" Offset="0"/>
+                                    <GradientStop Color="{DynamicResource WindowBackgroundColor}" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid Margin="40">
+                                <StackPanel VerticalAlignment="Bottom">
+                                    <TextBlock Text="{Binding Name}" FontSize="32" FontWeight="Black" Foreground="{DynamicResource PrimaryTextBrush}">
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.5"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                    
+                                    <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                                        <!-- Big Play Button -->
+                                        <Button Content="{Binding ActionButtonText}" Width="130" Height="40" 
+                                                Background="#5cb85c" Foreground="White" BorderThickness="0" FontSize="14" FontWeight="Bold"
+                                                Click="OnPlayButtonClick" Cursor="Hand"
+                                                Visibility="{Binding IsManageable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="4"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
+
+                                        <StackPanel Margin="20,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="마지막 플레이" FontSize="10" Foreground="{DynamicResource MutedTextBrush}"/>
+                                            <TextBlock Text="-" FontSize="12" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="20,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="플레이 시간" FontSize="10" Foreground="{DynamicResource MutedTextBrush}"/>
+                                            <TextBlock Text="-" FontSize="12" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Padding="40,15,40,40">
+                            <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="상세 정보" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,10"/>
+                                <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" LineHeight="22"/>
+                                
+                                <Border Background="{DynamicResource SidebarBackgroundBrush}" CornerRadius="10" Padding="20" Margin="0,25,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="버전 정보" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,10"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="현재 설치 버전" FontSize="11" Foreground="{DynamicResource MutedTextBrush}"/>
+                                                <TextBlock Text="{Binding DefaultVersion}" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                            </StackPanel>
+                                            <TextBlock Text="→" Grid.Column="1" VerticalAlignment="Center" Margin="25,0" Foreground="{DynamicResource AccentBrush}" FontSize="20"/>
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="클라우드 최신 버전" FontSize="11" Foreground="{DynamicResource MutedTextBrush}"/>
+                                                <TextBlock Text="{Binding LatestVersion}" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Sidebar actions -->
+                            <StackPanel Grid.Column="1" Margin="30,0,0,0">
+                                <TextBlock Text="관리" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,12"/>
+                                <Button Content="📂 로컬 폴더 열기" Padding="12,10" Margin="0,0,0,8"
+                                        Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderThickness="0" HorizontalContentAlignment="Left"
+                                        Click="OnOpenFolderClick" FontSize="13"
+                                        Visibility="{Binding CanShowManagementButtons, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="4"/>
+                                        </Style>
+                                    </Button.Resources>
+                                </Button>
+                                <Button Content="🗑️ 앱 제거" Padding="12,10"
+                                        Background="{DynamicResource DeleteBrush}" Foreground="White" BorderThickness="0" HorizontalContentAlignment="Left"
+                                        Click="OnUninstallButtonClick" FontSize="13"
+                                        Visibility="{Binding CanShowManagementButtons, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="4"/>
+                                        </Style>
+                                    </Button.Resources>
+                                </Button>
+                                
+                                <TextBlock Text="KarmoHub 관리 불가 항목" Margin="0,12,0,0" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" FontStyle="Italic"
+                                           Visibility="{Binding IsManageable, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Inverse}"/>
+                            </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Bottom Console Bar (Compact) -->
+            <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" 
+                    Background="{DynamicResource SidebarBackgroundBrush}" Cursor="Hand" MouseLeftButtonDown="OnToggleConsole"
+                    Padding="10,0">
+                <Grid Height="28">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="ConsoleArrow" Text="▲" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" Margin="0,0,8,0"/>
+                        <TextBlock Text="콘솔 로그" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold" FontSize="11"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="LatestLogStatus" Grid.Column="1" Text="💬 로그 메시지가 여기에..." 
+                               Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" Margin="15,0"/>
+
+                    <TextBlock x:Name="StatusText" Grid.Column="2" Text="준비됨" 
+                               Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
                 </Grid>
+            </Border>
+
+            <!-- Expanded Console Drawer -->
+            <Border Grid.Row="3" Background="{DynamicResource LoggerBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+                <ListBox x:Name="LogListBox" Background="Transparent" BorderThickness="0" Padding="8">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="10" FontFamily="Consolas" Margin="0,0,0,1"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </Border>
         </Grid>
     </Grid>

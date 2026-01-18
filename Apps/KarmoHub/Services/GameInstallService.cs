@@ -103,7 +103,7 @@ public class GameInstallService
 			});
 
 			// 4. 버전 업데이트 반영
-			game.DefaultVersion = game.LatestVersion;
+			game.DefaultVersion = (game.LatestVersion == "0.0.0") ? "Installed" : game.LatestVersion;
 			
 			// 5. Windows 레지스트리 등록 (제어판 - 프로그램 추가/제거에 표시)
 			RegisterToWindowsSettings(game, installPath);
@@ -118,6 +118,47 @@ public class GameInstallService
 				try { File.Delete(tempZipPath); } catch { /* 무시 */ }
 			}
 		}
+	}
+
+	public async Task UninstallGameAsync(GameItem game)
+	{
+		// 1. 레지스트리 제거
+		try
+		{
+			string keyPath = $@"Software\Microsoft\Windows\CurrentVersion\Uninstall\KarmoLab_{game.Id}";
+			using (var key = Registry.CurrentUser.OpenSubKey(keyPath, true))
+			{
+				if (key != null)
+				{
+					// 레지스트리에서 이름 가져오기 (바로가기 삭제용)
+					var gameName = key.GetValue("DisplayName") as string ?? game.Name;
+					
+					Registry.CurrentUser.DeleteSubKeyTree(keyPath, false);
+
+					// 2. 시작 메뉴 바로가기 삭제
+					var startMenuPath = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+					var lnkPath = Path.Combine(startMenuPath, "KarmoLab", $"{gameName}.lnk");
+					if (File.Exists(lnkPath))
+					{
+						File.Delete(lnkPath);
+					}
+				}
+			}
+		}
+		catch { /* 무시 */ }
+
+		// 3. 파일 삭제
+		var installPath = Path.Combine(_baseAppDataPath, "Games", game.Id);
+		if (Directory.Exists(installPath))
+		{
+			await Task.Run(() => 
+			{
+				try { Directory.Delete(installPath, true); } catch { /* 무시 */ }
+			});
+		}
+
+		// 4. 상태 초기화
+		game.DefaultVersion = "0.0.0";
 	}
 
 	private void CreateStartMenuShortcut(GameItem game, string installLocation)

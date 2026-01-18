@@ -1,28 +1,71 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace KarmoHub.Models;
 
-public class GameItem
+public enum AppCategory
 {
-	public string Id { get; set; } = string.Empty;
-	public string Name { get; set; } = string.Empty;
-	public string Description { get; set; } = string.Empty;
-	public string ExecutablePath { get; set; } = string.Empty; // 실행 파일 상대/절대 경로
-	public string AppType { get; set; } = "Game"; // Game, Tool etc.
-	public string DefaultVersion { get; set; } = "0.0.0"; // 설치된 버전
-	public string LatestVersion { get; set; } = "0.0.0"; // 서버 최신 버전
-	public string DownloadUrl { get; set; } = string.Empty; // 설치 파일(zip) 다운로드 URL
+	Game,
+	Tool,
+	Package
+}
 
-	// GitHub 리포지토리 정보 (업데이트 확인용)
+public class GameItem : INotifyPropertyChanged
+{
+	private string _id = string.Empty;
+	private string _name = string.Empty;
+	private string _description = string.Empty;
+	private string _executablePath = string.Empty;
+	private string _appType = "Game";
+	private AppCategory _category = AppCategory.Game;
+	private string _defaultVersion = "0.0.0";
+	private string _latestVersion = "0.0.0";
+	private string _downloadUrl = string.Empty;
+
+	public string Id { get => _id; set { _id = value; OnPropertyChanged(); } }
+	public string Name { get => _name; set { _name = value; OnPropertyChanged(); } }
+	public string Description { get => _description; set { _description = value; OnPropertyChanged(); } }
+	public string ExecutablePath { get => _executablePath; set { _executablePath = value; OnPropertyChanged(); } }
+	public string AppType { get => _appType; set { _appType = value; OnPropertyChanged(); } }
+	public AppCategory Category { get => _category; set { _category = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsManageable)); OnPropertyChanged(nameof(CanShowManagementButtons)); } }
+	
+	public string DefaultVersion 
+	{ 
+		get => _defaultVersion; 
+		set 
+		{ 
+			_defaultVersion = value; 
+			OnPropertyChanged(); 
+			OnPropertyChanged(nameof(Status)); 
+			OnPropertyChanged(nameof(ActionButtonText)); 
+			OnPropertyChanged(nameof(IsInstalled)); 
+			OnPropertyChanged(nameof(CanShowManagementButtons)); 
+		} 
+	}
+	
+	public string LatestVersion 
+	{ 
+		get => _latestVersion; 
+		set 
+		{ 
+			_latestVersion = value; 
+			OnPropertyChanged(); 
+			OnPropertyChanged(nameof(Status)); 
+			OnPropertyChanged(nameof(ActionButtonText)); 
+		} 
+	}
+	
+	public string DownloadUrl { get => _downloadUrl; set { _downloadUrl = value; OnPropertyChanged(); OnPropertyChanged(nameof(Status)); } }
+
 	public string RepoOwner { get; set; } = string.Empty;
 	public string RepoName { get; set; } = string.Empty;
 
-	// 상태 도출 속성
 	public GameStatus Status
 	{
 		get
 		{
 			if (DefaultVersion == "0.0.0")
 			{
-				// 다운로드 URL이 없으면 설치 불가 상태
 				if (string.IsNullOrEmpty(DownloadUrl)) return GameStatus.Unavailable;
 				return GameStatus.NotInstalled;
 			}
@@ -44,6 +87,16 @@ public class GameItem
 				_ => "대기"
 			};
 		}
+	}
+
+	public bool IsManageable => Category != AppCategory.Package;
+	public bool IsInstalled => DefaultVersion != "0.0.0";
+	public bool CanShowManagementButtons => IsManageable && IsInstalled;
+
+	public event PropertyChangedEventHandler? PropertyChanged;
+	protected void OnPropertyChanged([CallerMemberName] string? name = null)
+	{
+		PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 	}
 }
 

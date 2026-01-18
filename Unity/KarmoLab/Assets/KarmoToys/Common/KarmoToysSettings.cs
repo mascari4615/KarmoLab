@@ -24,5 +24,9 @@ namespace KarmoToys.Common
 		[Header("Companion Settings")]
 		[Tooltip("Data for Companion Speech Bubble and Reactions")]
 		public KarmoToys.Features.Companion.CompanionTalkData CompanionData;
+
+		[Header("Debug Settings")]
+		[Tooltip("Check this to force Companion Mode when playing in Unity Editor")]
+		public bool SimulateCompanionMode;
 	}
 }
