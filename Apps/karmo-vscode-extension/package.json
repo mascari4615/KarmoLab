@@ -1,0 +1,107 @@
+{
+	"name": "karmo-vscode-extension",
+	"displayName": "KarmoExtension",
+	"publisher": "mascari4615",
+	"description": "KarmoLab VS Code Extension - File Toggle Feature",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.90.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "karmo.toggleExtensions",
+				"title": "Karmo: Toggle File Extensions"
+			},
+			{
+				"command": "karmo.focusSidebar",
+				"title": "Karmo: Focus Sidebar"
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "karmo-sidebar-container",
+					"title": "KarmoLab",
+					"icon": "resources/icon.svg"
+				}
+			]
+		},
+		"views": {
+			"karmo-sidebar-container": [
+				{
+					"type": "webview",
+					"id": "karmo-sidebar-view",
+					"name": "Karmo Explorer",
+					"icon": "resources/icon.svg"
+				}
+			]
+		},
+		"configuration": {
+			"title": "Karmo Extension",
+			"properties": {
+				"karmo.toggleGroups": {
+					"type": "array",
+					"default": [
+						{
+							"id": "unity-meta",
+							"name": "Unity Meta Files",
+							"patterns": [
+								"**/*.meta"
+							]
+						},
+						{
+							"id": "dotnet-projects",
+							"name": "C# Projects/Solutions",
+							"patterns": [
+								"**/*.csproj",
+								"**/*.sln",
+								"**/bin/",
+								"**/obj/"
+							]
+						},
+						{
+							"id": "unity-folders",
+							"name": "Unity Library/Temp",
+							"patterns": [
+								"**/Library/",
+								"**/Temp/",
+								"**/Logs/",
+								"**/UserSettings/"
+							]
+						},
+						{
+							"id": "git-folders",
+							"name": "Git Data",
+							"patterns": [
+								"**/.git/"
+							]
+						}
+					],
+					"description": "그룹화된 토글 대상 목록임. 사용자가 원하는 그룹을 자유롭게 추가하거나 수정할 수 있음."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "eslint src --ext ts",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.90.0",
+		"@types/node": "20.x",
+		"typescript": "^5.4.5",
+		"eslint": "^8.57.0",
+		"@typescript-eslint/parser": "^7.11.0",
+		"@typescript-eslint/eslint-plugin": "^7.11.0"
+	}
+}

@@ -1,0 +1,39 @@
+name: VSCode Extension Publish
+
+on:
+  push:
+    paths:
+      - 'Apps/karmo-vscode-extension/**'
+    tags:
+      - 'karmo-extension/v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        working-directory: Apps/karmo-vscode-extension
+        run: npm install
+
+      - name: Package Extension
+        working-directory: Apps/karmo-vscode-extension
+        run: npx @vscode/vsce package --out karmo-extension.vsix --allow-missing-repository
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Apps/karmo-vscode-extension/karmo-extension.vsix
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
