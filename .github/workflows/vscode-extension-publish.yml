@@ -1,11 +1,11 @@
-name: VSCode Extension Publish
+name: KarmoVSC-Ext Publish
 
 on:
   push:
     paths:
       - 'Apps/karmo-vscode-extension/**'
     tags:
-      - 'karmo-extension/v*'
+      - 'karmo-vsc-ext/v*'
 
 jobs:
   publish:
@@ -23,6 +23,14 @@ jobs:
       - name: Install Dependencies
         working-directory: Apps/karmo-vscode-extension
         run: npm install
+
+      - name: Update Version in package.json
+        working-directory: Apps/karmo-vscode-extension
+        run: |
+          # 태그에서 버전 추출 (karmo-vsc-ext/v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/karmo-vsc-ext/v}
+          echo "Updating version to $VERSION"
+          npm version $VERSION --no-git-tag-version
 
       - name: Package Extension
         working-directory: Apps/karmo-vscode-extension

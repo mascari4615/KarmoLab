@@ -1,4 +1,4 @@
-# KarmoExtension 개요
+# KarmoVSC-Ext 개요
 
 ## Summary
 
@@ -33,6 +33,11 @@ VS Code 프로젝트 탐색기의 가독성을 높이기 위해 불필요한 파
 ## 개발 가이드 (Development)
 
 - **언어**: TypeScript, HTML, CSS (Vanilla)
-- **빌드**: `npm run compile`
-- **테스트**: VS Code에서 `F5` 실행 (Extension Development Host)
-- **패키징**: `npx vsce package`
+- **로컬 빌드 및 설치 (`Build.ps1`)**:
+  - `./Build.ps1`: TS 컴파일 및 VSIX 패키징.
+  - `./Build.ps1 -Install`: 빌드 후 메인 VS Code에 즉시 클린 재설치.
+  - `./Build.ps1 -DevCopy`: 프로젝트 파일을 익스텐션 폴더로 직접 복사 (개발용).
+  - `./Build.ps1 -Open`: 설치된 확장 폴더를 탐색기로 즉시 열기.
+- **표준 디버깅**: VS Code에서 `F5` 실행 (Extension Development Host).
+- **패키징**: `npx vsce package`.
+- **배포**: GitHub 전용 태그 푸시를 통한 자동 Publish.

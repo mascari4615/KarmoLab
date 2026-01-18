@@ -23,21 +23,23 @@ export class KarmoViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.options = {
 			enableScripts: true,
-			localResourceRoots: [this._extensionUri]
+			localResourceRoots: [
+				this._extensionUri
+			]
 		};
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-		webviewView.webview.onDidReceiveMessage(async (data) => {
+		webviewView.webview.onDidReceiveMessage(data => {
 			switch (data.type) {
 				case 'toggleGroup':
-					await vscode.commands.executeCommand('karmo.toggleGroup', data.groupId);
-					break;
-				case 'openSettings':
-					await vscode.commands.executeCommand('workbench.action.openSettings', 'karmo.toggleGroups');
+					vscode.commands.executeCommand('karmo.toggleGroup', data.groupId);
 					break;
 				case 'refresh':
 					this.updateState();
+					break;
+				case 'openSettings':
+					vscode.commands.executeCommand('workbench.action.openSettings', 'karmo.toggleGroups');
 					break;
 			}
 		});
@@ -69,11 +71,23 @@ export class KarmoViewProvider implements vscode.WebviewViewProvider {
 
 	private _getHtmlForWebview(webview: vscode.Webview) {
 		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'style.css'));
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'main.js'));
 		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'media', 'index.html');
+		const cardTemplatePath = vscode.Uri.joinPath(this._extensionUri, 'media', 'card.html');
+		const packageJsonPath = vscode.Uri.joinPath(this._extensionUri, 'package.json');
 
 		let html = fs.readFileSync(htmlPath.fsPath, 'utf8');
+		const cardTemplate = fs.readFileSync(cardTemplatePath.fsPath, 'utf8');
+		const packageJson = JSON.parse(fs.readFileSync(packageJsonPath.fsPath, 'utf8'));
+		const buildTime = packageJson.buildTime || 'Unknown';
+
 		html = html.replace('{{styleUri}}', styleUri.toString());
+		html = html.replace('{{scriptUri}}', scriptUri.toString());
+		html = html.replace('{{cardTemplate}}', cardTemplate);
+		html = html.replace('{{buildTime}}', buildTime);
 
 		return html;
 	}
+
+
 }

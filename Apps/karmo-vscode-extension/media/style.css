@@ -1,130 +1,148 @@
 :root {
-    --container-padding: 16px;
-    --button-bg: var(--vscode-button-background);
-    --button-hover-bg: var(--vscode-button-hoverBackground);
-    --text-color: var(--vscode-foreground);
-    --card-bg: rgba(255, 255, 255, 0.05);
-    --accent-color: var(--vscode-button-background);
+	--container-padding: 16px;
+	--button-bg: var(--vscode-button-background);
+	--button-hover-bg: var(--vscode-button-hoverBackground);
+	--text-color: var(--vscode-foreground);
+	--card-bg: rgba(255, 255, 255, 0.05);
+	--accent-color: var(--vscode-button-background);
 }
 
 body {
-    padding: var(--container-padding);
-    color: var(--text-color);
-    font-family: var(--vscode-font-family);
-    user-select: none;
-    margin: 0;
+	padding: var(--container-padding);
+	color: var(--text-color);
+	font-family: var(--vscode-font-family);
+	user-select: none;
+	margin: 0;
 }
 
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 24px;
+header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 24px;
 }
 
-.header h2 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--vscode-sideBarTitle-foreground);
+header h1 {
+	margin: 0;
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: var(--vscode-sideBarTitle-foreground);
+	line-height: 1.2;
 }
 
-.settings-btn {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    cursor: pointer;
-    opacity: 0.6;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    border-radius: 4px;
-    transition: opacity 0.2s, background-color 0.2s;
+#settings-button {
+	background: none;
+	border: none;
+	color: var(--text-color);
+	cursor: pointer;
+	opacity: 0.6;
+	padding: 6px;
+	display: flex;
+	align-items: center;
+	border-radius: 4px;
+	transition: opacity 0.2s, background-color 0.2s;
+	margin-right: -4px;
+	/* 여백 보정 */
 }
 
-.settings-btn:hover {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.1);
+#settings-button:hover {
+	opacity: 1;
+	background-color: rgba(255, 255, 255, 0.1);
 }
 
 .card-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+footer {
+	margin-top: 32px;
+	padding-top: 16px;
+	border-top: 1px solid rgba(255, 255, 255, 0.05);
+	text-align: center;
+}
+
+footer p {
+	margin: 0;
+	font-size: 0.65rem;
+	opacity: 0.4;
+	font-family: var(--vscode-editor-font-family);
 }
 
 .card {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+	background: var(--card-bg);
+	border-radius: 8px;
+	padding: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .feature-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 .feature-info h3 {
-    margin: 0;
-    font-size: 0.85rem;
-    font-weight: 500;
+	margin: 0;
+	font-size: 0.85rem;
+	font-weight: 500;
 }
 
 .feature-info p {
-    margin: 4px 0 0;
-    font-size: 0.75rem;
-    opacity: 0.6;
+	margin: 4px 0 0;
+	font-size: 0.75rem;
+	opacity: 0.6;
 }
 
 .switch {
-    position: relative;
-    display: inline-block;
-    width: 36px;
-    height: 20px;
+	position: relative;
+	display: inline-block;
+	width: 36px;
+	height: 20px;
 }
 
 .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
+	opacity: 0;
+	width: 0;
+	height: 0;
 }
 
 .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #555;
-    transition: background-color 0.3s;
-    border-radius: 20px;
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #555;
+	transition: background-color 0.3s;
+	border-radius: 20px;
 }
 
 .slider:before {
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: transform 0.3s;
-    border-radius: 50%;
+	position: absolute;
+	content: "";
+	height: 14px;
+	width: 14px;
+	left: 3px;
+	bottom: 3px;
+	background-color: white;
+	transition: transform 0.3s;
+	border-radius: 50%;
 }
 
-input:checked + .slider {
-    background-color: var(--accent-color);
+input:checked+.slider {
+	background-color: var(--accent-color);
 }
 
-input:checked + .slider:before {
-    transform: translateX(16px);
+input:checked+.slider:before {
+	transform: translateX(16px);
 }
 
 .no-transition .slider,
-.no-transition .slider:before {
-    transition: none !important;
+.no-transition .slider:before,
+.no-transition #settings-button {
+	transition: none !important;
 }

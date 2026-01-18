@@ -1,0 +1,14 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<!-- Centered & Symmetric Rounded Star -->
+	<path d="M64 10L79 48H120L87 72L100 110L64 86L28 110L41 72L8 48H49L64 10Z" 
+		  fill="currentColor"
+		  stroke="currentColor" 
+		  stroke-width="10" 
+		  stroke-linejoin="round"
+		  stroke-linecap="round"/>
+	
+	<!-- Three Dots in Inverted Triangle -->
+	<circle cx="52" cy="112" r="6" fill="currentColor"/>
+	<circle cx="76" cy="112" r="6" fill="currentColor"/>
+	<circle cx="64" cy="122" r="6" fill="currentColor"/>
+</svg>

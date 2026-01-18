@@ -1,12 +1,13 @@
 {
 	"name": "karmo-vscode-extension",
-	"displayName": "KarmoExtension",
+	"displayName": "KarmoVSC-Ext",
 	"publisher": "mascari4615",
-	"description": "KarmoLab VS Code Extension - File Toggle Feature",
 	"version": "0.0.1",
+	"description": "VS Code 프로젝트 탐색기 파일/폴더 토글 확장 프로그램 (KarmoVSC-Ext)",
 	"engines": {
 		"vscode": "^1.90.0"
 	},
+	"icon": "resources/star-transparent-B-128.png",
 	"categories": [
 		"Other"
 	],
@@ -15,12 +16,16 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "karmo.toggleExtensions",
-				"title": "Karmo: Toggle File Extensions"
+				"command": "karmo.toggleGroup",
+				"title": "Karmo: Toggle Group"
 			},
 			{
-				"command": "karmo.focusSidebar",
-				"title": "Karmo: Focus Sidebar"
+				"command": "karmo.toggleAllOff",
+				"title": "Karmo: Toggle All Off"
+			},
+			{
+				"command": "karmo.toggleAllOn",
+				"title": "Karmo: Toggle All On"
 			}
 		],
 		"viewsContainers": {
@@ -28,7 +33,7 @@
 				{
 					"id": "karmo-sidebar-container",
 					"title": "KarmoLab",
-					"icon": "resources/icon.svg"
+					"icon": "resources/sidebar-icon.svg"
 				}
 			]
 		},
@@ -38,15 +43,16 @@
 					"type": "webview",
 					"id": "karmo-sidebar-view",
 					"name": "Karmo Explorer",
-					"icon": "resources/icon.svg"
+					"icon": "resources/sidebar-icon.svg"
 				}
 			]
 		},
 		"configuration": {
-			"title": "Karmo Extension",
+			"title": "KarmoVSC-Ext",
 			"properties": {
 				"karmo.toggleGroups": {
 					"type": "array",
+					"description": "Toggle groups configuration for KarmoVSC-Ext. You can add your own groups here.",
 					"default": [
 						{
 							"id": "unity-meta",
@@ -56,34 +62,51 @@
 							]
 						},
 						{
+							"id": "unity-folders",
+							"name": "Unity Folders",
+							"patterns": [
+								"**/Library",
+								"**/Logs",
+								"**/Temp",
+								"**/UserSettings"
+							]
+						},
+						{
 							"id": "dotnet-projects",
-							"name": "C# Projects/Solutions",
+							"name": "C# Projects",
 							"patterns": [
 								"**/*.csproj",
 								"**/*.sln",
-								"**/bin/",
-								"**/obj/"
+								"**/bin",
+								"**/obj"
 							]
 						},
 						{
-							"id": "unity-folders",
-							"name": "Unity Library/Temp",
-							"patterns": [
-								"**/Library/",
-								"**/Temp/",
-								"**/Logs/",
-								"**/UserSettings/"
-							]
-						},
-						{
-							"id": "git-folders",
+							"id": "git-data",
 							"name": "Git Data",
 							"patterns": [
-								"**/.git/"
+								"**/.git",
+								"**/.gitignore"
 							]
 						}
 					],
-					"description": "그룹화된 토글 대상 목록임. 사용자가 원하는 그룹을 자유롭게 추가하거나 수정할 수 있음."
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"patterns": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -103,5 +126,6 @@
 		"eslint": "^8.57.0",
 		"@typescript-eslint/parser": "^7.11.0",
 		"@typescript-eslint/eslint-plugin": "^7.11.0"
-	}
+	},
+	"buildTime": "2026-01-18 14:02:14"
 }
