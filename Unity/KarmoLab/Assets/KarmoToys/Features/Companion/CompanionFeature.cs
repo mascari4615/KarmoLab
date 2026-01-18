@@ -337,8 +337,8 @@ namespace KarmoToys.Features.Companion
 					{
 						ShowRandomChat(_talkData?.ClickReactions);
 					}
-					// Only show Drag End reaction if we actually dragged significantly
-					else if ((_isDragging || _isDragging3D) && _hasDraggedSignificantly)
+					// Only show Drag End reaction if we actually dragged significantly (3D Only)
+					else if (_isDragging3D && _hasDraggedSignificantly)
 					{
 						ShowRandomChat(_talkData?.DragEndReactions);
 					}
