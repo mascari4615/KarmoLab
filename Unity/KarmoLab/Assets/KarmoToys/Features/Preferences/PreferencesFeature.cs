@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
+using KarmoToys.Common.Data;
 
 namespace KarmoToys.Features.Preferences
 {
@@ -92,7 +95,7 @@ namespace KarmoToys.Features.Preferences
 
 		private void RefreshUI()
 		{
-			var data = KarmoToysApp.Instance.Data;
+			KarmoToysData data = KarmoToysApp.Instance.Data;
 			if (data != null)
 			{
 				_autoBackupToggle?.SetValueWithoutNotify(data.AutoBackupOnSave);
@@ -125,10 +128,10 @@ namespace KarmoToys.Features.Preferences
 			if (string.IsNullOrEmpty(savePath)) return;
 
 			// Flat Structure: 현재 파일을 기반으로 필터링
-			var backups = DataService.GetBackupFiles(savePath);
-			foreach (var file in backups)
+			List<FileInfo> backups = DataService.GetBackupFiles(savePath);
+			foreach (FileInfo file in backups)
 			{
-				var row = new VisualElement();
+				VisualElement row = new VisualElement();
 				row.style.flexDirection = FlexDirection.Row;
 				row.style.alignItems = Align.Center;
 				row.style.marginBottom = 2;
@@ -137,16 +140,16 @@ namespace KarmoToys.Features.Preferences
 				// 파일명 전체 표시
 				string displayText = $"{file.Name} ({file.Length / 1024f:F1}KB)";
 
-				var label = new Label(displayText);
+				Label label = new Label(displayText);
 				label.style.flexGrow = 1;
 				label.style.color = new StyleColor(new Color(0.8f, 0.8f, 0.8f));
 
-				var btnDiff = new Button(() => ShowDiff(file.FullName));
+				Button btnDiff = new Button(() => ShowDiff(file.FullName));
 				btnDiff.text = "차이";
 				btnDiff.tooltip = "Compare with current";
 				btnDiff.style.width = 40;
 
-				var btnLoad = new Button(() => OnClickBackupFile(file.FullName));
+				Button btnLoad = new Button(() => OnClickBackupFile(file.FullName));
 				btnLoad.text = "로드";
 				btnLoad.tooltip = "Load this backup";
 				btnLoad.style.width = 40;
@@ -163,12 +166,12 @@ namespace KarmoToys.Features.Preferences
 			if (KarmoToysApp.Instance.Data == null) return;
 
 			// 백업 데이터 로드 (메모리상에서만)
-			var backupData = DataService.Load(backupPath);
+			KarmoToysData backupData = DataService.Load(backupPath);
 			// 현재 데이터와 비교
 			string diffSummary = DataService.GetDiffSummary(backupData, KarmoToysApp.Instance.Data);
 
 			// 결과 출력
-			var diffLabel = ViewContainer.Q<Label>("BackupDiffResult");
+			Label diffLabel = ViewContainer.Q<Label>("BackupDiffResult");
 			if (diffLabel != null)
 			{
 				diffLabel.text = diffSummary;

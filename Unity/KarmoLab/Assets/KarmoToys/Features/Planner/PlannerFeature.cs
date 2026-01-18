@@ -7,6 +7,7 @@ using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
+using KarmoToys.Features.QuestBoard;
 
 namespace KarmoToys.Features.Planner
 {
@@ -116,7 +117,7 @@ namespace KarmoToys.Features.Planner
 			_timeRuler.RegisterCallback<PointerDownEvent>(OnRulerPointerDown);
 			_timeRuler.RegisterCallback<PointerMoveEvent>(OnRulerPointerMove);
 			_timeRuler.RegisterCallback<PointerUpEvent>(OnRulerPointerUp);
-			_timeRuler.RegisterCallback<PointerLeaveEvent>(OnRulerPointerUp);
+			_timeRuler.RegisterCallback<PointerLeaveEvent>(evt => OnRulerPointerUp(null));
 
 			InitializeDialogs(root); // In Partial
 

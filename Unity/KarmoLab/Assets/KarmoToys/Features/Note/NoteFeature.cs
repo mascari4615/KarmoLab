@@ -6,6 +6,11 @@ using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
+using KarmoToys.Features.QuestBoard; // If needed, but NoteFeature usually doesn't need this
+// Wait, NoteFeature uses NoteData which is in KarmoToys.Features.Note.
+// It is already in that namespace.
+// But KarmoToysData uses NoteData from KarmoToys.Features.Note.
+
 
 namespace KarmoToys.Features.Note
 {
@@ -17,7 +22,7 @@ namespace KarmoToys.Features.Note
 
 		private TextField _secProblem, _secWhy, _secSolution;
 		private Button _addSecBtn;
-		private VisualElement _secList; 
+		private VisualElement _secList;
 
 		public override void Initialize(VisualElement root)
 		{
@@ -42,7 +47,7 @@ namespace KarmoToys.Features.Note
 		{
 			if (_secProblem == null || string.IsNullOrWhiteSpace(_secProblem.value)) return;
 
-			var data = KarmoToysApp.Instance.Data?.Note;
+			NoteData data = KarmoToysApp.Instance.Data?.Note;
 			if (data == null) return;
 
 			data.SecretNotes.Add(new SecretNote(_secProblem.value, _secWhy.value, _secSolution.value));
@@ -61,23 +66,23 @@ namespace KarmoToys.Features.Note
 			if (_secList == null) return;
 			_secList.Clear();
 
-			var data = KarmoToysApp.Instance.Data?.Note;
+			NoteData data = KarmoToysApp.Instance.Data?.Note;
 			if (data == null) return;
 
-			foreach (var note in data.SecretNotes.OrderByDescending(n => n.DateString))
+			foreach (SecretNote note in data.SecretNotes.OrderByDescending(n => n.DateString))
 			{
-				var item = new VisualElement();
+				VisualElement item = new VisualElement();
 				item.AddToClassList("secret-item");
 
-				var title = new Label($"[{note.DateString}] {note.Problem}");
+				Label title = new Label($"[{note.DateString}] {note.Problem}");
 				title.style.unityFontStyleAndWeight = FontStyle.Bold;
 				title.style.color = new StyleColor(new Color(0.85f, 0.7f, 1f));
 
-				var reason = new Label($"Why: {note.Why}");
+				Label reason = new Label($"Why: {note.Why}");
 				reason.style.fontSize = 12;
 				reason.style.color = Color.gray;
 
-				var sol = new Label($"Solution: {note.Solution}");
+				Label sol = new Label($"Solution: {note.Solution}");
 				sol.style.whiteSpace = WhiteSpace.Normal;
 				sol.style.marginTop = 5;
 

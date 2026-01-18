@@ -119,7 +119,7 @@ namespace KarmoToys.Features.Planner
 			_colorBtns.Clear();
 			for (int i = 0; i < 5; i++)
 			{
-				var btn = root.Q($"ColorBtn{i}");
+				VisualElement btn = root.Q($"ColorBtn{i}");
 				if (btn != null)
 				{
 					int idx = i;
@@ -157,7 +157,7 @@ namespace KarmoToys.Features.Planner
 			}, TrickleDown.TrickleDown);
 
 			// 2. Scroll to Close DetailPopup
-			var scheduleScroll = root.Q<ScrollView>("ScheduleScroll");
+			ScrollView scheduleScroll = root.Q<ScrollView>("ScheduleScroll");
 			if (scheduleScroll != null)
 			{
 				scheduleScroll.RegisterCallback<WheelEvent>(evt => HideDetailPopup());
@@ -262,7 +262,7 @@ namespace KarmoToys.Features.Planner
 		{
 			if (_selectedBlock != null && Data != null)
 			{
-				var master = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
+				TimeBlock master = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
 				bool isRecurring = !string.IsNullOrEmpty(_selectedBlock.RecurrenceRule)
 								   || (master != null && !string.IsNullOrEmpty(master.RecurrenceRule));
 
@@ -344,7 +344,7 @@ namespace KarmoToys.Features.Planner
 		private void ParseRecurrenceToUI(string rule)
 		{
 			// Reset Toggles
-			foreach (var t in _weekToggles) if (t != null) t.value = false;
+			foreach (Toggle t in _weekToggles) if (t != null) t.value = false;
 
 			if (rule == "Daily")
 			{
@@ -354,10 +354,10 @@ namespace KarmoToys.Features.Planner
 			else if (rule.StartsWith("Weekly"))
 			{
 				_editRecurrenceDropdown.value = "Weekly";
-				var parts = rule.Split(';');
+				string[] parts = rule.Split(';');
 				if (parts.Length > 1)
 				{
-					var selectedDays = parts[1].Split(',');
+					string[] selectedDays = parts[1].Split(',');
 					string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 					for (int i = 0; i < 7; i++)
 					{
@@ -428,7 +428,7 @@ namespace KarmoToys.Features.Planner
 		private void OnRecurrenceChoice(bool isThisInstanceOnly)
 		{
 			if (Data == null || _selectedBlock == null) { HideRecurrencePopup(); return; }
-			var masterBlock = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
+			TimeBlock masterBlock = Data.TimeBlocks.FirstOrDefault(b => b.Id == _selectedBlock.Id);
 			if (masterBlock == null) { HideRecurrencePopup(); return; }
 
 			if (_pendingRecurrenceAction == RecurrenceAction.Delete)
@@ -453,7 +453,7 @@ namespace KarmoToys.Features.Planner
 				{
 					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
 					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
-					var newBlock = CreateBlockFromUI();
+					TimeBlock newBlock = CreateBlockFromUI();
 					newBlock.RecurrenceRule = "";
 					Data.TimeBlocks.Add(newBlock);
 				}
@@ -461,7 +461,7 @@ namespace KarmoToys.Features.Planner
 				{
 					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
 					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
-					var newMaster = CreateBlockFromUI();
+					TimeBlock newMaster = CreateBlockFromUI();
 					Data.TimeBlocks.Add(newMaster);
 				}
 			}
@@ -471,7 +471,7 @@ namespace KarmoToys.Features.Planner
 				{
 					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
 					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
-					var newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
+					TimeBlock newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
 					newBlock.ColorIndex = masterBlock.ColorIndex;
 					Data.TimeBlocks.Add(newBlock);
 				}
@@ -479,7 +479,7 @@ namespace KarmoToys.Features.Planner
 				{
 					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
 					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
-					var newMaster = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
+					TimeBlock newMaster = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
 					newMaster.RecurrenceRule = masterBlock.RecurrenceRule;
 					newMaster.ColorIndex = masterBlock.ColorIndex;
 					Data.TimeBlocks.Add(newMaster);
@@ -505,17 +505,17 @@ namespace KarmoToys.Features.Planner
 		{
 			if (_trashList == null || Data == null) return;
 			_trashList.Clear();
-			var deletedBlocks = Data.TimeBlocks.Where(b => b.IsDeleted).OrderByDescending(b => b.DeletedTicks).ToList();
+			List<TimeBlock> deletedBlocks = Data.TimeBlocks.Where(b => b.IsDeleted).OrderByDescending(b => b.DeletedTicks).ToList();
 			if (deletedBlocks.Count == 0)
 			{
 				_trashList.Add(new Label("Trash is empty.") { style = { color = Color.gray } });
 				return;
 			}
-			foreach (var block in deletedBlocks)
+			foreach (TimeBlock block in deletedBlocks)
 			{
-				var row = new VisualElement();
+				VisualElement row = new VisualElement();
 				row.Add(new Label(block.Title));
-				var resBtn = new Button(() =>
+				Button resBtn = new Button(() =>
 				{
 					block.IsDeleted = false;
 					KarmoToysApp.Instance.SaveData();
@@ -613,7 +613,7 @@ namespace KarmoToys.Features.Planner
 			string rule = _editRecurrenceDropdown.value;
 			if (rule == "Weekly")
 			{
-				var days = new List<string>();
+				List<string> days = new List<string>();
 				string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 				for (int i = 0; i < 7; i++)
 				{
@@ -670,9 +670,9 @@ namespace KarmoToys.Features.Planner
 		private void RenderEditTags()
 		{
 			_editTagsContainer.Clear();
-			foreach (var t in _tempEditTags)
+			foreach (string t in _tempEditTags)
 			{
-				var el = new Label(t);
+				Label el = new Label(t);
 				el.RegisterCallback<ClickEvent>(evt => RemoveEditTag(t)); // Click to remove
 				_editTagsContainer.Add(el);
 			}

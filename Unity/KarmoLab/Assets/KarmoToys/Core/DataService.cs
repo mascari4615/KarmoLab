@@ -6,6 +6,10 @@ using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 using KarmoToys.Common.Data;
+using KarmoToys.Features.QuestBoard;
+using KarmoToys.Features.Planner;
+using KarmoToys.Features.Note;
+using KarmoToys.Features.Dashboard;
 
 namespace KarmoToys.Core
 {
@@ -21,7 +25,7 @@ namespace KarmoToys.Core
 				try
 				{
 					string json = File.ReadAllText(path);
-					var data = JsonUtility.FromJson<KarmoToysData>(json);
+					KarmoToysData data = JsonUtility.FromJson<KarmoToysData>(json);
 
 					if (data == null) data = new KarmoToysData();
 					if (data.Planner == null) data.Planner = new PlannerData();
@@ -58,15 +62,15 @@ namespace KarmoToys.Core
 				if (!shouldBackup && data.AutoBackupOnSave)
 				{
 					// 1. 가??최근 백업 ?�일 찾기
-					var backups = GetBackupFiles(path);
-					var lastBackupIdx = backups.FirstOrDefault();
+					List<FileInfo> backups = GetBackupFiles(path);
+					FileInfo lastBackupIdx = backups.FirstOrDefault();
 
 					if (lastBackupIdx != null && File.Exists(lastBackupIdx.FullName))
 					{
 						// 2. 최근 백업 ?�이?��? 비교 (?�적 변경량 체크)
 						try
 						{
-							var lastBackupData = Load(lastBackupIdx.FullName);
+							KarmoToysData lastBackupData = Load(lastBackupIdx.FullName);
 							if (HasSignificantChanges(lastBackupData, data, data.SignificantChangeThreshold))
 							{
 								shouldBackup = true;
@@ -127,7 +131,7 @@ namespace KarmoToys.Core
 				}
 
 				// 중복 ?�일 체크 (?�시 비교)
-				var lastBackup = GetBackupFiles(path).FirstOrDefault();
+				FileInfo lastBackup = GetBackupFiles(path).FirstOrDefault();
 				if (lastBackup != null)
 				{
 					if (GetFileHash(path) == GetFileHash(lastBackup.FullName))
@@ -159,10 +163,14 @@ namespace KarmoToys.Core
 		private static string GetFileHash(string path)
 		{
 			if (!File.Exists(path)) return string.Empty;
-			using var md5 = MD5.Create();
-			using var stream = File.OpenRead(path);
-			var hash = md5.ComputeHash(stream);
-			return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+			using (MD5 md5 = MD5.Create())
+			{
+				using (FileStream stream = File.OpenRead(path))
+				{
+					byte[] hash = md5.ComputeHash(stream);
+					return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+				}
+			}
 		}
 
 		private static string SanitizeFileName(string name)
@@ -181,9 +189,9 @@ namespace KarmoToys.Core
 		{
 			if (maxBackups <= 0) return;
 
-			var directoryInfo = new DirectoryInfo(backupDir);
+			DirectoryInfo directoryInfo = new DirectoryInfo(backupDir);
 			// ?�당 ?�본 ?�일??백업본만 ?�터�?(StartsWith)
-			var files = directoryInfo.GetFiles()
+			List<FileInfo> files = directoryInfo.GetFiles()
 				.Where(f => f.Name.StartsWith(originalFileName))
 				.OrderBy(f => f.CreationTime)
 				.ToList();
@@ -312,10 +320,10 @@ namespace KarmoToys.Core
 			int modifiedBlocks = 0;
 			if (oldData.Planner?.TimeBlocks != null && newData.Planner?.TimeBlocks != null)
 			{
-				var oldMap = oldData.Planner.TimeBlocks.ToDictionary(b => b.Id);
-				foreach (var newBlock in newData.Planner.TimeBlocks)
+				Dictionary<string, KarmoToys.Common.Data.TimeBlock> oldMap = oldData.Planner.TimeBlocks.ToDictionary(b => b.Id);
+				foreach (KarmoToys.Common.Data.TimeBlock newBlock in newData.Planner.TimeBlocks)
 				{
-					if (oldMap.TryGetValue(newBlock.Id, out var oldBlock))
+					if (oldMap.TryGetValue(newBlock.Id, out KarmoToys.Common.Data.TimeBlock oldBlock))
 					{
 						if (oldBlock.StartMinute != newBlock.StartMinute ||
 							oldBlock.EndMinute != newBlock.EndMinute ||
@@ -329,17 +337,17 @@ namespace KarmoToys.Core
 			}
 			if (modifiedBlocks > 0)
 			{
-				sb.AppendLine($"- ?�️ Modified Events: {modifiedBlocks}");
+				sb.AppendLine($"- 🕒 Modified Events: {modifiedBlocks}");
 			}
 
 			// 6. Todo Modification Check (New)
 			int modifiedTodos = 0;
 			if (oldData.Planner?.Items != null && newData.Planner?.Items != null)
 			{
-				var oldMap = oldData.Planner.Items.ToDictionary(i => i.Id);
-				foreach (var newItem in newData.Planner.Items)
+				Dictionary<string, KarmoToys.Common.Data.TodoItem> oldMap = oldData.Planner.Items.ToDictionary(i => i.Id);
+				foreach (KarmoToys.Common.Data.TodoItem newItem in newData.Planner.Items)
 				{
-					if (oldMap.TryGetValue(newItem.Id, out var oldItem))
+					if (oldMap.TryGetValue(newItem.Id, out KarmoToys.Common.Data.TodoItem oldItem))
 					{
 						if (oldItem.IsCompleted != newItem.IsCompleted ||
 							oldItem.Content != newItem.Content)
@@ -369,8 +377,8 @@ namespace KarmoToys.Core
 			int changes = 0;
 
 			// Planner TimeBlocks (Count & Modification)
-			var oldList = oldData.Planner?.TimeBlocks ?? new List<TimeBlock>();
-			var newList = newData.Planner?.TimeBlocks ?? new List<TimeBlock>();
+			List<KarmoToys.Common.Data.TimeBlock> oldList = oldData.Planner?.TimeBlocks ?? new List<KarmoToys.Common.Data.TimeBlock>();
+			List<KarmoToys.Common.Data.TimeBlock> newList = newData.Planner?.TimeBlocks ?? new List<KarmoToys.Common.Data.TimeBlock>();
 
 			int countDiff = Math.Abs(newList.Count - oldList.Count);
 			changes += countDiff;
@@ -378,10 +386,10 @@ namespace KarmoToys.Core
 			// ?�용 변�?체크 (개수 차이?� 별도�??�행)
 			// ?�능 최적?? Dictionary 빌드??비용???��?�?리스?��? ?��? ?�다�??�용 가??
 			// ?�기?�는 루프�??�며 ID 매칭???�도.
-			var oldMap = oldList.ToDictionary(b => b.Id);
-			foreach (var newBlock in newList)
+			Dictionary<string, KarmoToys.Common.Data.TimeBlock> oldMap = oldList.ToDictionary(b => b.Id);
+			foreach (KarmoToys.Common.Data.TimeBlock newBlock in newList)
 			{
-				if (oldMap.TryGetValue(newBlock.Id, out var oldBlock))
+				if (oldMap.TryGetValue(newBlock.Id, out KarmoToys.Common.Data.TimeBlock oldBlock))
 				{
 					if (oldBlock.StartMinute != newBlock.StartMinute ||
 						oldBlock.EndMinute != newBlock.EndMinute ||
@@ -394,12 +402,12 @@ namespace KarmoToys.Core
 			}
 
 			// Planner TodoItems (Count & Modification)
-			var oldTodos = oldData.Planner?.Items ?? new List<TodoItem>();
-			var newTodos = newData.Planner?.Items ?? new List<TodoItem>();
+			List<KarmoToys.Common.Data.TodoItem> oldTodos = oldData.Planner?.Items ?? new List<KarmoToys.Common.Data.TodoItem>();
+			List<KarmoToys.Common.Data.TodoItem> newTodos = newData.Planner?.Items ?? new List<KarmoToys.Common.Data.TodoItem>();
 
 			changes += Math.Abs(newTodos.Count - oldTodos.Count);
 
-			var oldTodoMap = oldTodos.ToDictionary(i => i.Id);
+			Dictionary<string, KarmoToys.Common.Data.TodoItem> oldTodoMap = oldTodos.ToDictionary(i => i.Id);
 			foreach (var newItem in newTodos)
 			{
 				if (oldTodoMap.TryGetValue(newItem.Id, out var oldItem))
@@ -414,14 +422,14 @@ namespace KarmoToys.Core
 			}
 
 			// Planner SecretNotes (Count & Modification)
-			var oldNotes = oldData.Planner?.SecretNotes ?? new List<SecretNote>();
-			var newNotes = newData.Planner?.SecretNotes ?? new List<SecretNote>();
+			List<KarmoToys.Common.Data.SecretNote> oldNotes = oldData.Planner?.SecretNotes ?? new List<KarmoToys.Common.Data.SecretNote>();
+			List<KarmoToys.Common.Data.SecretNote> newNotes = newData.Planner?.SecretNotes ?? new List<KarmoToys.Common.Data.SecretNote>();
 			changes += Math.Abs(newNotes.Count - oldNotes.Count);
 
-			var oldNoteMap = oldNotes.ToDictionary(n => n.Id);
-			foreach (var newNote in newNotes)
+			Dictionary<string, KarmoToys.Common.Data.SecretNote> oldNoteMap = oldNotes.ToDictionary(n => n.Id);
+			foreach (KarmoToys.Common.Data.SecretNote newNote in newNotes)
 			{
-				if (oldNoteMap.TryGetValue(newNote.Id, out var oldNote))
+				if (oldNoteMap.TryGetValue(newNote.Id, out KarmoToys.Common.Data.SecretNote oldNote))
 				{
 					if (oldNote.Problem != newNote.Problem ||
 						oldNote.Why != newNote.Why ||

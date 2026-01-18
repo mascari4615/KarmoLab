@@ -23,14 +23,14 @@ namespace KarmoToys.Core
 			}
 
 			// Create Toast Element
-			var toast = new VisualElement();
+			VisualElement toast = new VisualElement();
 			toast.AddToClassList("toast-item");
 
 			if (type == ToastType.Error) toast.AddToClassList("toast-error");
 			else if (type == ToastType.Warning) toast.AddToClassList("toast-warning");
 			else toast.AddToClassList("toast-info");
 
-			var label = new Label(message);
+			Label label = new Label(message);
 			label.style.whiteSpace = WhiteSpace.Normal;
 			toast.Add(label);
 

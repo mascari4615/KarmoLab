@@ -150,7 +150,7 @@ namespace KarmoToys.Main
 					// 탭 버튼 바인딩
 					if (!string.IsNullOrEmpty(feature.TabButtonName))
 					{
-						var btn = root.Q<Button>(feature.TabButtonName);
+						Button btn = root.Q<Button>(feature.TabButtonName);
 						if (btn != null)
 						{
 							_tabMap[btn] = feature;
@@ -225,9 +225,11 @@ namespace KarmoToys.Main
 
 		private void ToggleTheme()
 		{
-			var themes = (AppTheme[])Enum.GetValues(typeof(AppTheme));
-			int nextIndex = ((int)Instance.Data.Theme + 1) % themes.Length;
-			Instance.Data.Theme = themes[nextIndex];
+			AppTheme[] themes = (AppTheme[])Enum.GetValues(typeof(AppTheme));
+			// current theme string to enum
+			if (!Enum.TryParse(Instance.Data.Theme, out AppTheme currentTheme)) currentTheme = AppTheme.Dark;
+			int nextIndex = ((int)currentTheme + 1) % themes.Length;
+			Instance.Data.Theme = themes[nextIndex].ToString();
 
 			ApplyTheme();
 			SaveData();
@@ -302,7 +304,7 @@ namespace KarmoToys.Main
 		public void LoadData()
 		{
 			Data = DataService.Load(SavePath);
-			Data?.MigrateLegacyData();
+			Data?.MigrateIfNeeded();
 			_currentFeature?.OnSelect();
 		}
 

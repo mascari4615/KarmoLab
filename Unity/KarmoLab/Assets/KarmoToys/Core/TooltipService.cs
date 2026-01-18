@@ -34,7 +34,7 @@ namespace KarmoToys.Core
 		{
 			if (_tooltipContainer == null || _tooltipLabel == null) return;
 
-			var element = evt.target as VisualElement;
+			VisualElement element = evt.target as VisualElement;
 			VisualElement tooltipElement = null;
 
 			// Find nearest ancestor with tooltip
@@ -68,7 +68,7 @@ namespace KarmoToys.Core
 
 		private void OnGeometryChanged(GeometryChangedEvent evt)
 		{
-			var container = evt.target as VisualElement;
+			VisualElement container = evt.target as VisualElement;
 			if (container == null) return;
 
 			float right = container.layout.xMax;

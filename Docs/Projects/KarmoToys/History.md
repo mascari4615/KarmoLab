@@ -1,6 +1,22 @@
 # KarmoLab Project History
 
+## 2026-01-18 (KST) - Part 2
+
+- **전역 명시적 타입 리팩토링 (Global Explicit Type Refactoring)**:
+  - **`var` 제거**: `Assets/KarmoToys` 내의 모든 C# 파일에서 `var` 키워드를 제거하고 명시적 타입 선언으로 교체. 코드의 의도를 명확히 하고 IntelliSense 가독성 향상.
+  - **데이터 모델 정합성 확보**: 리팩토링 과정에서 발견된 `KarmoToysData.cs` 내의 `PlannerData` 중복 정의를 제거하고 `ScheduleData`로 단일화.
+  - **네임스페이스 충돌 해결**: `TodoItem`, `TimeBlock` 등 여러 곳에 정의된 타입들에 대해 Fully Qualified Name(완전한 타입 이름)을 사용하여 컴파일 모호성 제거.
+
+- **PlannerFeature 복구 및 코드 정규화 (PlannerFeature Recovery)**:
+  - **소실 코드 복구**: 파일 손상으로 유실되었던 `PlannerFeature.Schedule.cs`의 핵심 로직(블록 드래그, 리사이징, 렌더링 시스템)을 Git 복구 및 재구성을 통해 완전 정상화.
+  - **빌드 오류 완전 해소**: 리팩토링 후 발생한 모든 컴파일 에러(CS0103, CS0104, CS0029 등)를 해결하여 `Assembly-CSharp.csproj` 빌드 성공(Error 0) 달성.
+
 ## 2026-01-18 (KST)
+
+- **인코딩 표준화 및 복구 (Encoding Standardization & Recovery)**:
+  - **문자열 복구**: AI 수정 과정에서 깨진 `CompanionFeature.cs`의 설정 아이콘(`⚙️`) 및 기타 유니코드 문자열 복구.
+  - **인코딩 가이드 수립**: `Encoding_Policy.md`를 작성하여 모든 프로젝트 파일의 인코딩을 **UTF-8 with BOM**으로 고수하도록 규정.
+  - **원인 분석**: AI 도구의 기본 인코딩(UTF-8)과 윈도우 환경(UTF-8 BOM) 간의 불일치 문제를 파악하고 방지 대책 마련.
 
 - **컴패니언 관리 체계 전면 개편 (Companion Management)**:
   - **진입점 중앙화**: `ToolBox`에 흩어져 있던 컴패니언 실행 로직을 `KarmoToysApp` 및 `CompanionService`로 중앙 집중화.

@@ -50,7 +50,7 @@ namespace KarmoToys.Features.Planner
 			_timeAxis.AddToClassList("time-axis");
 			for (int i = 0; i < 24; i++)
 			{
-				var label = new Label($"{i:00}:00");
+				Label label = new Label($"{i:00}:00");
 				label.AddToClassList("hour-label");
 				label.style.top = i * 60 * _pixelsPerMinute;
 				_timeAxis.Add(label);
@@ -71,20 +71,20 @@ namespace KarmoToys.Features.Planner
 
 				if (!showWeekend && isWeekend) continue;
 
-				var dayCol = new VisualElement();
+				VisualElement dayCol = new VisualElement();
 				dayCol.AddToClassList("day-column");
 				dayCol.name = $"DayColumn_{i}";
 				dayCol.userData = i;
 				dayCol.style.width = Length.Percent(100f / daysToShow);
 
-				var header = new Label("Date");
+				Label header = new Label("Date");
 				header.AddToClassList("day-header");
 				header.name = "Header";
 				dayCol.Add(header);
 
 				for (int h = 0; h < 24; h++)
 				{
-					var line = new VisualElement();
+					VisualElement line = new VisualElement();
 					line.AddToClassList("hour-line");
 					line.style.top = h * 60 * _pixelsPerMinute;
 					dayCol.Add(line);
@@ -101,7 +101,7 @@ namespace KarmoToys.Features.Planner
 		private void RefreshSchedule()
 		{
 			if (_timeRuler == null) return;
-			var data = KarmoToysApp.Instance.Data?.Schedule;
+			ScheduleData data = KarmoToysApp.Instance.Data?.Schedule;
 			if (data == null) return;
 
 			_timeRuler.style.height = 24 * 60 * _pixelsPerMinute;
@@ -113,11 +113,11 @@ namespace KarmoToys.Features.Planner
 
 			// Tags Setup
 			HashSet<string> allTags = new HashSet<string>();
-			foreach (var b in data.TimeBlocks)
+			foreach (TimeBlock b in data.TimeBlocks)
 			{
-				if (b.Tags != null) foreach (var t in b.Tags) allTags.Add(t);
+				if (b.Tags != null) foreach (string t in b.Tags) allTags.Add(t);
 			}
-			var list = allTags.OrderBy(t => t).ToList();
+			List<string> list = allTags.OrderBy(t => t).ToList();
 			list.Insert(0, "All Tags");
 
 			_tagFilterDropdown.choices = list;
@@ -140,17 +140,17 @@ namespace KarmoToys.Features.Planner
 				if (!showWeekend && isWeekend) continue;
 				if (colIndex >= _dayColumns.Count) break;
 
-				var col = _dayColumns[colIndex];
+				VisualElement col = _dayColumns[colIndex];
 				colIndex++;
 
-				var header = col.Q<Label>("Header");
+				Label header = col.Q<Label>("Header");
 				if (header != null) header.text = targetDate.ToString("MM/dd (ddd)");
 
 				// Filter & Collect Blocks
-				var dateStr = targetDate.ToString("yyyy-MM-dd");
-				var rawBlocks = new List<TimeBlock>();
+				string dateStr = targetDate.ToString("yyyy-MM-dd");
+				List<TimeBlock> rawBlocks = new List<TimeBlock>();
 
-				foreach (var b in data.TimeBlocks)
+				foreach (TimeBlock b in data.TimeBlocks)
 				{
 					if (b.IsDeleted) continue;
 
@@ -166,7 +166,7 @@ namespace KarmoToys.Features.Planner
 
 						if (IsRecurrenceMatch(b, targetDate))
 						{
-							var transient = new TimeBlock(dateStr, b.StartMinute, b.EndMinute, b.Title);
+							TimeBlock transient = new TimeBlock(dateStr, b.StartMinute, b.EndMinute, b.Title);
 							transient.Id = b.Id;
 							transient.Description = b.Description;
 							transient.ColorIndex = b.ColorIndex;
@@ -177,7 +177,7 @@ namespace KarmoToys.Features.Planner
 					}
 				}
 
-				var blocks = rawBlocks
+				List<TimeBlock> blocks = rawBlocks
 					.Where(b => !useFilter || (b.Tags != null && b.Tags.Contains(filterTag)))
 					.OrderBy(b => b.StartMinute)
 					.ThenByDescending(b => b.EndMinute)
@@ -186,11 +186,11 @@ namespace KarmoToys.Features.Planner
 				if (blocks.Count == 0) continue;
 
 				// Clusters
-				var clusters = new List<List<TimeBlock>>();
-				foreach (var block in blocks)
+				List<List<TimeBlock>> clusters = new List<List<TimeBlock>>();
+				foreach (TimeBlock block in blocks)
 				{
 					bool added = false;
-					foreach (var cluster in clusters)
+					foreach (List<TimeBlock> cluster in clusters)
 					{
 						int clusterEnd = cluster.Max(b => b.EndMinute);
 						if (block.StartMinute < clusterEnd)
@@ -203,15 +203,15 @@ namespace KarmoToys.Features.Planner
 					if (!added) clusters.Add(new List<TimeBlock> { block });
 				}
 
-				foreach (var cluster in clusters)
+				foreach (List<TimeBlock> cluster in clusters)
 				{
-					var columns = new List<List<TimeBlock>>();
-					foreach (var block in cluster)
+					List<List<TimeBlock>> columns = new List<List<TimeBlock>>();
+					foreach (TimeBlock block in cluster)
 					{
 						bool placed = false;
-						foreach (var subCol in columns)
+						foreach (List<TimeBlock> subCol in columns)
 						{
-							var last = subCol[subCol.Count - 1];
+							TimeBlock last = subCol[subCol.Count - 1];
 							if (block.StartMinute >= last.EndMinute)
 							{
 								subCol.Add(block);
@@ -225,9 +225,9 @@ namespace KarmoToys.Features.Planner
 					int totalClusterCols = columns.Count;
 					for (int c = 0; c < totalClusterCols; c++)
 					{
-						foreach (var block in columns[c])
+						foreach (TimeBlock block in columns[c])
 						{
-							var visual = CreateBlockVisual(block, (block.EndMinute - block.StartMinute) * _pixelsPerMinute);
+							VisualElement visual = CreateBlockVisual(block, (block.EndMinute - block.StartMinute) * _pixelsPerMinute);
 
 							float top = block.StartMinute * _pixelsPerMinute;
 							float height = (block.EndMinute - block.StartMinute) * _pixelsPerMinute;
@@ -281,12 +281,12 @@ namespace KarmoToys.Features.Planner
 
 			if (b.RecurrenceRule.StartsWith("Weekly"))
 			{
-				var parts = b.RecurrenceRule.Split(';');
+				string[] parts = b.RecurrenceRule.Split(';');
 				if (parts.Length > 1)
 				{
 					string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 					string currentDay = dayNames[(int)targetDate.DayOfWeek]; // Force English day name
-					var selectedDays = parts[1].Split(','); // "Mon", "Fri"
+					string[] selectedDays = parts[1].Split(','); // "Mon", "Fri"
 					if (selectedDays.Contains(currentDay)) return true;
 				}
 				else
@@ -303,16 +303,16 @@ namespace KarmoToys.Features.Planner
 				else
 				{
 					int d = -1;
-					var parts = b.RecurrenceRule.Split(';');
-					foreach (var p in parts) if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
+					string[] parts = b.RecurrenceRule.Split(';');
+					foreach (string p in parts) if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
 					if (targetDate.Day == d) return true;
 				}
 			}
 			else if (b.RecurrenceRule.StartsWith("Yearly"))
 			{
 				int m = -1, d = -1;
-				var parts = b.RecurrenceRule.Split(';');
-				foreach (var p in parts)
+				string[] parts = b.RecurrenceRule.Split(';');
+				foreach (string p in parts)
 				{
 					if (p.StartsWith("Month:")) int.TryParse(p.Substring(6), out m);
 					else if (p.StartsWith("Day:")) int.TryParse(p.Substring(4), out d);
@@ -324,7 +324,7 @@ namespace KarmoToys.Features.Planner
 
 		private VisualElement CreateBlockVisual(TimeBlock block, float blockHeight = 0)
 		{
-			var visualBlock = new VisualElement();
+			VisualElement visualBlock = new VisualElement();
 			visualBlock.AddToClassList("time-block");
 			visualBlock.AddToClassList($"block-color-{block.ColorIndex}");
 			visualBlock.style.position = Position.Absolute;
@@ -337,19 +337,19 @@ namespace KarmoToys.Features.Planner
 				bool isShort = blockHeight < 50f;
 				if (isShort) visualBlock.AddToClassList("time-block-row");
 
-				var titleLabel = new Label(string.IsNullOrEmpty(block.Title) ? "(No Title)" : block.Title);
+				Label titleLabel = new Label(string.IsNullOrEmpty(block.Title) ? "(No Title)" : block.Title);
 				titleLabel.AddToClassList("time-block-title");
 				titleLabel.pickingMode = PickingMode.Ignore; // 툴팁 방해 방지
 				visualBlock.Add(titleLabel);
 
 				string timeStr = isShort ? TimeStr(block.StartMinute) : $"{TimeStr(block.StartMinute)} - {TimeStr(block.EndMinute)}";
-				var timeLabel = new Label(timeStr);
+				Label timeLabel = new Label(timeStr);
 				timeLabel.AddToClassList("time-block-time");
 				timeLabel.pickingMode = PickingMode.Ignore;
 				visualBlock.Add(timeLabel);
 			}
 
-			var moreBtn = new Button(() => ShowDetailPopup(block));
+			Button moreBtn = new Button(() => ShowDetailPopup(block));
 			moreBtn.text = "...";
 			moreBtn.AddToClassList("time-block-btn");
 			moreBtn.pickingMode = PickingMode.Position; // 버튼 입력 활성화
@@ -365,14 +365,14 @@ namespace KarmoToys.Features.Planner
 			});
 
 			// Resize Handles
-			var resizeTop = new VisualElement { name = "ResizeTop" };
+			VisualElement resizeTop = new VisualElement { name = "ResizeTop" };
 			resizeTop.style.position = Position.Absolute; resizeTop.style.top = 0; resizeTop.style.left = 0;
 			resizeTop.style.width = Length.Percent(50); resizeTop.style.height = 8;
 			resizeTop.style.backgroundColor = new StyleColor(new Color(1, 0, 0, 0.01f));
 			resizeTop.RegisterCallback<PointerDownEvent>(evt => OnResizeStart(evt, block, visualBlock, true));
 			visualBlock.Add(resizeTop);
 
-			var resizeBottom = new VisualElement { name = "ResizeBottom" };
+			VisualElement resizeBottom = new VisualElement { name = "ResizeBottom" };
 			resizeBottom.style.position = Position.Absolute; resizeBottom.style.bottom = 0; resizeBottom.style.left = 0;
 			resizeBottom.style.width = Length.Percent(50); resizeBottom.style.height = 8;
 			resizeBottom.style.backgroundColor = new StyleColor(new Color(0, 0, 1, 0.01f));
@@ -571,7 +571,7 @@ namespace KarmoToys.Features.Planner
 					_resizingBlock.StartMinute = startMin;
 					_resizingBlock.EndMinute = endMin;
 
-					var data = KarmoToysApp.Instance.Data?.Schedule;
+					ScheduleData data = KarmoToysApp.Instance.Data?.Schedule;
 					if (data != null)
 					{
 						bool isTransient = !data.TimeBlocks.Contains(_resizingBlock);
@@ -607,7 +607,7 @@ namespace KarmoToys.Features.Planner
 				if (startMin < 0) startMin = 0;
 				if (endMin > 24 * 60) endMin = 24 * 60;
 
-				var data = KarmoToysApp.Instance.Data?.Schedule;
+				ScheduleData data = KarmoToysApp.Instance.Data?.Schedule;
 				if (data != null)
 				{
 					if (_dragMode == DragMode.Create)

@@ -57,7 +57,7 @@ namespace KarmoToys.Features.QuestBoard
 		{
 			if (string.IsNullOrWhiteSpace(input.value)) return;
 
-			var data = KarmoToysApp.Instance.Data?.Quest;
+			QuestData data = KarmoToysApp.Instance.Data?.Quest;
 			if (data == null) return;
 
 			data.Items.Add(new TodoItem(input.value, category));
@@ -71,33 +71,33 @@ namespace KarmoToys.Features.QuestBoard
 		{
 			list.Clear();
 
-			var data = KarmoToysApp.Instance.Data?.Quest;
+			QuestData data = KarmoToysApp.Instance.Data?.Quest;
 			if (data == null) return;
 
-			var items = data.Items.Where(i => i.Category == category).ToList();
+			List<TodoItem> items = data.Items.Where(i => i.Category == category).ToList();
 
-			foreach (var item in items)
+			foreach (TodoItem item in items)
 			{
-				var row = new VisualElement();
+				VisualElement row = new VisualElement();
 				row.AddToClassList("todo-item");
 
 				// Toggle Button
-				var toggle = new Button(() =>
+				Button toggle = new Button(() =>
 				{
 					item.IsCompleted = !item.IsCompleted;
 					KarmoToysApp.Instance.SaveData();
-					RefreshTasks(list, category); 
+					RefreshTasks(list, category);
 				});
 				toggle.AddToClassList("todo-toggle");
 				if (item.IsCompleted) toggle.AddToClassList("completed");
 
 				// Content Label
-				var label = new Label(item.Content);
+				Label label = new Label(item.Content);
 				label.AddToClassList("todo-content");
 				if (item.IsCompleted) label.AddToClassList("completed");
 
 				// Delete Button
-				var delBtn = new Button(() =>
+				Button delBtn = new Button(() =>
 				{
 					data.Items.Remove(item);
 					KarmoToysApp.Instance.SaveData();

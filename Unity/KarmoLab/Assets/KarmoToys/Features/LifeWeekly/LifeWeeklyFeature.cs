@@ -43,10 +43,11 @@ namespace KarmoToys.Features.LifeWeekly
 			_toggleCalendar = root.Q<Toggle>("ToggleCalendarHighlight");
 			_toggleDecade = root.Q<Toggle>("ToggleDecadeHighlight");
 
-			var data = KarmoToysApp.Instance.Data.LifeWeekly;
+			LifeWeeklyData data = KarmoToysApp.Instance.Data.LifeWeekly;
+			DateTime birth;
 
 			// 생일 날짜 파싱 및 초기값 설정.
-			if (DateTime.TryParse(data.BirthDate, out var birth))
+			if (DateTime.TryParse(data.BirthDate, out birth))
 			{
 				_birthYearInput.value = birth.Year;
 				_birthMonthInput.value = birth.Month;
@@ -153,13 +154,13 @@ namespace KarmoToys.Features.LifeWeekly
 			_grid.Clear();
 			_blocks.Clear();
 
-			var data = KarmoToysApp.Instance.Data.LifeWeekly;
+			LifeWeeklyData data = KarmoToysApp.Instance.Data.LifeWeekly;
 			int totalWeeks = data.TargetAge * 52;
 
 			// 설정된 수명만큼 블록 생성.
 			for (int i = 0; i < totalWeeks; i++)
 			{
-				var block = new VisualElement();
+				VisualElement block = new VisualElement();
 				block.AddToClassList("week-block");
 				_grid.Add(block);
 				_blocks.Add(block);
@@ -168,7 +169,7 @@ namespace KarmoToys.Features.LifeWeekly
 
 		private void RefreshGrid()
 		{
-			var data = KarmoToysApp.Instance.Data.LifeWeekly;
+			LifeWeeklyData data = KarmoToysApp.Instance.Data.LifeWeekly;
 
 			// 성능 최적화: 블록 개별 크기 조절 대신 그리드 전체에 scale 적용. 🌬️✨
 			float baseStep = 10f + 4f; // 블록 10px + 마진 2px*2 = 14px
@@ -184,7 +185,7 @@ namespace KarmoToys.Features.LifeWeekly
 
 			// 스크롤 영역 확보를 위해 컨테이너 크기 조절.
 			// (그리드가 center 기준이므로 컨테이너가 딱 이 크기면 내부에서 중앙 정렬됨)
-			var container = _grid.parent;
+			VisualElement container = _grid.parent;
 			if (container != null)
 			{
 				container.style.width = originalWidth * scale;
@@ -210,7 +211,7 @@ namespace KarmoToys.Features.LifeWeekly
 
 			for (int i = 0; i < _blocks.Count; i++)
 			{
-				var block = _blocks[i];
+				VisualElement block = _blocks[i];
 				block.RemoveFromClassList("week-past");
 				block.RemoveFromClassList("week-current");
 				block.RemoveFromClassList("week-future");

@@ -123,8 +123,8 @@ namespace KarmoToys.Features.ToolBox.Tools
 			Log($"WinScreenshotFix Path: {path}");
 			if (!Directory.Exists(path)) { Log("Folder not found."); return; }
 			string[] prefixes = { "Screenshot 20", "스크린샷 20" };
-			var dir = new DirectoryInfo(path);
-			foreach (var file in dir.GetFiles())
+			DirectoryInfo dir = new DirectoryInfo(path);
+			foreach (FileInfo file in dir.GetFiles())
 			{
 				bool isMatched = prefixes.Any(p => file.Name.StartsWith(p));
 				if (!isMatched) continue;
@@ -154,7 +154,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 			Log($"RemoveString: {path}, {removeString}");
 			if (string.IsNullOrEmpty(removeString)) removeString = "-";
 			if (!Directory.Exists(path)) { Log("Folder not found."); return; }
-			foreach (var file in new DirectoryInfo(path).GetFiles())
+			foreach (FileInfo file in new DirectoryInfo(path).GetFiles())
 			{
 				if (file.Name.Contains(removeString))
 				{
@@ -244,7 +244,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 				file.MoveTo(Path.Combine(path, newName));
 				Log($"Renamed: {file.Name} -> {newName}");
 			}
-			foreach (var subDir in directory.GetDirectories())
+			foreach (DirectoryInfo subDir in directory.GetDirectories())
 			{
 				string newSubName = toUpper ? subDir.Name.ToUpper() : subDir.Name.ToLower();
 				if (subDir.Name != newSubName)
@@ -278,7 +278,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 					Log($"Renamed: {file.Name} -> {newName}");
 				}
 			}
-			foreach (var subDir in directory.GetDirectories())
+			foreach (DirectoryInfo subDir in directory.GetDirectories())
 			{
 				string currentSubName = subDir.Name;
 				if (subDir.Name.Contains(from))

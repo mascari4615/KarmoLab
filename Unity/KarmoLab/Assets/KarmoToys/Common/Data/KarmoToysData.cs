@@ -1,67 +1,47 @@
 using System;
-using KarmoToys.Features.Dashboard;
-using KarmoToys.Features.Note;
-using KarmoToys.Features.Planner;
+using System.Collections.Generic;
+using UnityEngine;
 using KarmoToys.Features.QuestBoard;
+using KarmoToys.Features.Planner;
+using KarmoToys.Features.Note;
+using KarmoToys.Features.Dashboard;
 
 namespace KarmoToys.Common.Data
 {
 	[Serializable]
 	public class KarmoToysData
 	{
-		// Legacy Monolith (Keep for Migration)
-		public PlannerData Planner = new();
-
-		// Feature-specific Modules
-		public DashboardData Dashboard = new();
-		public QuestData Quest = new();
-		public ScheduleData Schedule = new();
-		public NoteData Note = new();
-
-		// ?�생??�?관???�이??(Existing)
-		public LifeWeeklyData LifeWeekly = new();
-
-		// ?�정 ?�이??
-		public string SaveId = Guid.NewGuid().ToString();
-		public AppTheme Theme = AppTheme.Dark;
-		public int MaxBackupCount = 1000;
-		public bool AutoBackupOnSave = false;
+		// App Settings
+		public string Theme = "Dark";
+		public bool AutoBackupOnSave = true;
 		public int SignificantChangeThreshold = 10;
+		public int MaxBackupCount = 100;
+		public string SaveId = ""; // Unique ID for this save file
+
+		// Feature Data
+		public QuestData Quest = new QuestData();
+		public PlannerData Planner = new PlannerData(); // Legacy combined data
+		public ScheduleData Schedule = new ScheduleData();
+		public DashboardData Dashboard = new DashboardData();
+		public LifeWeeklyData LifeWeekly = new LifeWeeklyData();
+		public NoteData Note = new NoteData();
+
+		// New separated structures (for migration/future use)
+		public List<KarmoToys.Features.QuestBoard.TodoItem> ScheduleItems = new List<KarmoToys.Features.QuestBoard.TodoItem>();
+		public List<KarmoToys.Features.Planner.TimeBlock> TimeBlocks = new List<KarmoToys.Features.Planner.TimeBlock>();
 
 		/// <summary>
-		/// Migrates data from the legacy PlannerData monolith to new feature-specific modules.
+		/// Migrates data from legacy Planner structure to new specialized structures.
 		/// </summary>
-		public void MigrateLegacyData()
+		public void MigrateIfNeeded()
 		{
-			if (Planner == null) return;
-
-			// 1. Dashboard Migration
-			if (string.IsNullOrEmpty(Dashboard.MemoContent) && !string.IsNullOrEmpty(Planner.MemoContent))
-			{
-				Dashboard.MemoContent = Planner.MemoContent;
-				Dashboard.TargetName = Planner.TargetName;
-				Dashboard.TargetDateString = Planner.TargetDateString;
-				Dashboard.StatPersonalTitle = Planner.StatPersonalTitle;
-				Dashboard.StatPersonalValue = Planner.StatPersonalValue;
-				Dashboard.StatTeamTitle = Planner.StatTeamTitle;
-				Dashboard.StatTeamValue = Planner.StatTeamValue;
-				Dashboard.Hp = Planner.Hp;
-				Dashboard.Mp = Planner.Mp;
-				Dashboard.Exp = Planner.Exp;
-				Dashboard.LastUpdatedTicks = Planner.LastUpdatedTicks;
-			}
-
-			// 2. Quest Migration
+			// 1. Quest Migration
 			if (Quest.Items.Count == 0 && Planner.Items.Count > 0)
 			{
-				Quest.PersonalQuestTitle = Planner.PersonalQuestTitle;
-				Quest.StudyQuestTitle = Planner.StudyQuestTitle;
-				Quest.TeamQuestTitle = Planner.TeamQuestTitle;
-
-				foreach (var oldItem in Planner.Items)
+				foreach (KarmoToys.Common.Data.TodoItem oldItem in Planner.Items)
 				{
 					// Map Legacy TodoItem to New TodoItem
-					var newItem = new KarmoToys.Features.QuestBoard.TodoItem(oldItem.Content, oldItem.Category)
+					KarmoToys.Features.QuestBoard.TodoItem newItem = new KarmoToys.Features.QuestBoard.TodoItem(oldItem.Content, oldItem.Category)
 					{
 						Id = oldItem.Id,
 						IsCompleted = oldItem.IsCompleted,
@@ -69,38 +49,37 @@ namespace KarmoToys.Common.Data
 					};
 					Quest.Items.Add(newItem);
 				}
-				// Clear legacy to prevent duplicate migration (optional, but safe)
 				Planner.Items.Clear();
 			}
 
-			// 3. Schedule Migration
+			// 2. Schedule Migration
 			if (Schedule.TimeBlocks.Count == 0 && Planner.TimeBlocks.Count > 0)
 			{
-				foreach (var oldBlock in Planner.TimeBlocks)
+				foreach (KarmoToys.Common.Data.TimeBlock oldBlock in Planner.TimeBlocks)
 				{
-					var newBlock = new KarmoToys.Features.Planner.TimeBlock(oldBlock.DateString, oldBlock.StartMinute, oldBlock.EndMinute, oldBlock.Title)
+					KarmoToys.Features.Planner.TimeBlock newBlock = new KarmoToys.Features.Planner.TimeBlock(oldBlock.DateString, oldBlock.StartMinute, oldBlock.EndMinute, oldBlock.Title)
 					{
 						Id = oldBlock.Id,
 						Description = oldBlock.Description,
 						ColorIndex = oldBlock.ColorIndex,
 						IsDeleted = oldBlock.IsDeleted,
 						DeletedTicks = oldBlock.DeletedTicks,
-						Tags = new System.Collections.Generic.List<string>(oldBlock.Tags),
+						Tags = new List<string>(oldBlock.Tags),
 						RecurrenceRule = oldBlock.RecurrenceRule,
 						RecurrenceEnd = oldBlock.RecurrenceEnd,
-						ExceptionDates = new System.Collections.Generic.List<string>(oldBlock.ExceptionDates)
+						ExceptionDates = new List<string>(oldBlock.ExceptionDates)
 					};
 					Schedule.TimeBlocks.Add(newBlock);
 				}
 				Planner.TimeBlocks.Clear();
 			}
 
-			// 4. Note Migration
+			// 3. Note Migration
 			if (Note.SecretNotes.Count == 0 && Planner.SecretNotes.Count > 0)
 			{
-				foreach (var oldNote in Planner.SecretNotes)
+				foreach (KarmoToys.Common.Data.SecretNote oldNote in Planner.SecretNotes)
 				{
-					var newNote = new KarmoToys.Features.Note.SecretNote(oldNote.Problem, oldNote.Why, oldNote.Solution)
+					KarmoToys.Features.Note.SecretNote newNote = new KarmoToys.Features.Note.SecretNote(oldNote.Problem, oldNote.Why, oldNote.Solution)
 					{
 						Id = oldNote.Id,
 						DateString = oldNote.DateString

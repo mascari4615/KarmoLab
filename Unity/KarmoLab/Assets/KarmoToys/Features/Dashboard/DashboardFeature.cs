@@ -5,6 +5,7 @@ using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
+using KarmoToys.Features.QuestBoard;
 
 namespace KarmoToys.Features.Dashboard
 {
@@ -42,7 +43,7 @@ namespace KarmoToys.Features.Dashboard
 			// Header Elements (Global)
 			_headerTargetInput = root.Q<TextField>("HeaderTargetInput");
 			_headerDDay = root.Q<Label>("HeaderDDayLabel");
-			
+
 			// These might not exist in current UI
 			_headerPersonal = root.Q<Label>("HeaderPersonal");
 			_headerStudy = root.Q<Label>("HeaderStudy");
@@ -66,8 +67,8 @@ namespace KarmoToys.Features.Dashboard
 		private void RefreshDashboard()
 		{
 			if (KarmoToysApp.Instance.Data == null) return;
-			var dashboard = KarmoToysApp.Instance.Data.Dashboard;
-			var quest = KarmoToysApp.Instance.Data.Quest;
+			DashboardData dashboard = KarmoToysApp.Instance.Data.Dashboard;
+			QuestData quest = KarmoToysApp.Instance.Data.Quest;
 
 			if (dashboard == null) return;
 
@@ -80,7 +81,7 @@ namespace KarmoToys.Features.Dashboard
 			string dDayStr = "D-???";
 			if (DateTime.TryParse(dashboard.TargetDateString, out DateTime target))
 			{
-				var diff = (target - DateTime.Now).Days;
+				int diff = (target - DateTime.Now).Days;
 				dDayStr = $"D{diff:+#;-#;0}";
 			}
 			if (_headerDDay != null) _headerDDay.text = dDayStr;
@@ -108,7 +109,7 @@ namespace KarmoToys.Features.Dashboard
 		private void OnSave()
 		{
 			if (KarmoToysApp.Instance.Data == null) return;
-			var dashboard = KarmoToysApp.Instance.Data.Dashboard;
+			DashboardData dashboard = KarmoToysApp.Instance.Data.Dashboard;
 			if (dashboard == null) return;
 
 			// Update Data

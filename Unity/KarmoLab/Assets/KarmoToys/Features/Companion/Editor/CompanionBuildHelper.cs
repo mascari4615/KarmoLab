@@ -33,7 +33,7 @@ namespace KarmoToys.Features.Companion.Editor
 			Debug.Log("- Graphics API: Forced Direct3D11");
 
 			// 6. Disable HDR on current URP Asset
-			var urpAsset = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
+			UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urpAsset = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
 			if (urpAsset != null)
 			{
 				urpAsset.supportsHDR = false;

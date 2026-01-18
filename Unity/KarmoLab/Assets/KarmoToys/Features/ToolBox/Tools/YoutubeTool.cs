@@ -18,7 +18,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 		public void Initialize(Action<string> logger)
 		{
 			_logger = logger;
-			_coroutineRunner = KarmoToysApp.Instance; 
+			_coroutineRunner = KarmoToysApp.Instance;
 		}
 
 		public List<ToolAction> GetActions()
@@ -89,7 +89,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 					{
 						foreach (JToken item in items)
 						{
-							var snippet = item["snippet"];
+							JToken snippet = item["snippet"];
 							if (snippet == null) continue;
 
 							string cTitle = snippet["videoOwnerChannelTitle"]?.ToString() ?? snippet["channelTitle"]?.ToString() ?? "Unknown";
@@ -112,7 +112,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 					else
 					{
 						Log($"Done! Found {_allVideoData.Count} videos.");
-						foreach (var v in _allVideoData) Log(v.ToString());
+						foreach (VideoData v in _allVideoData) Log(v.ToString());
 					}
 				}
 				catch (Exception ex)

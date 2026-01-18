@@ -63,7 +63,10 @@ namespace KarmoToys.Features.Companion
 			// 1. Find all objects that want to handle dragging
 			// Note: We use GameObject.FindObjectsByType with Interface support (Unity 2021.3+)
 			_avatarHandlers.Clear();
-			var handlers = GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<IDragHandler>().ToArray();
+			IDragHandler[] handlers = GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<IDragHandler>().ToArray();
+			// Note: As IDragHandler is an interface, we need to be careful with the cast if needed,
+			// but handlers is already filtered by OfType<IDragHandler>().
+			// Let's re-read the original logic to be sure.
 
 			foreach (var h in handlers)
 			{
@@ -84,7 +87,7 @@ namespace KarmoToys.Features.Companion
 
 		private void InitializeSettingsButton(VisualElement root)
 		{
-			var settingsButton = new Label("?�️")
+			Label settingsButton = new Label("⚙️")
 			{
 				name = "SettingsButton",
 				style =
@@ -137,8 +140,8 @@ namespace KarmoToys.Features.Companion
 			};
 
 			// --- Header / Title Bar ---
-			var titleBar = new VisualElement { name = "SettingsHeader", style = { flexDirection = FlexDirection.Row, marginBottom = 5 } };
-			var title = new Label("Avatar Settings")
+			VisualElement titleBar = new VisualElement { name = "SettingsHeader", style = { flexDirection = FlexDirection.Row, marginBottom = 5 } };
+			Label title = new Label("Avatar Settings")
 			{
 				name = "SettingsTitle",
 				style = { color = Color.white, unityFontStyleAndWeight = FontStyle.Bold, flexGrow = 1 }
@@ -156,7 +159,7 @@ namespace KarmoToys.Features.Companion
 
 				// --- Scale Control ---
 				_settingsPanel.Add(new Label("Scale") { style = { fontSize = 12, color = Color.white } });
-				var scaleSlider = new Slider(0.1f, 5.0f) { value = _selectedAvatar.Transform.localScale.x };
+				Slider scaleSlider = new Slider(0.1f, 5.0f) { value = _selectedAvatar.Transform.localScale.x };
 				scaleSlider.RegisterValueChangedCallback((ChangeEvent<float> evt) =>
 				{
 					if (_selectedAvatar != null) _selectedAvatar.Transform.localScale = Vector3.one * evt.newValue;
@@ -165,7 +168,7 @@ namespace KarmoToys.Features.Companion
 
 				// --- Rotation Control ---
 				_settingsPanel.Add(new Label("Rotation (Y)") { style = { fontSize = 12, color = Color.white, marginTop = 10 } });
-				var rotateSlider = new Slider(0f, 360f) { value = _selectedAvatar.Transform.localEulerAngles.y };
+				Slider rotateSlider = new Slider(0f, 360f) { value = _selectedAvatar.Transform.localEulerAngles.y };
 				rotateSlider.RegisterValueChangedCallback((ChangeEvent<float> evt) =>
 				{
 					if (_selectedAvatar != null)
@@ -178,7 +181,7 @@ namespace KarmoToys.Features.Companion
 				_settingsPanel.Add(rotateSlider);
 
 				// Reset Button
-				var resetBtn = new Button(() =>
+				Button resetBtn = new Button(() =>
 				{
 					if (_selectedAvatar != null)
 					{
@@ -203,7 +206,7 @@ namespace KarmoToys.Features.Companion
 		{
 #if !UNITY_EDITOR
 			// 1. Process Command Line Arguments for Window Size
-			var args = System.Environment.GetCommandLineArgs();
+			string[] args = System.Environment.GetCommandLineArgs();
 			int targetW = -1;
 			int targetH = -1;
 			bool forceFullWorkArea = false;
@@ -217,7 +220,7 @@ namespace KarmoToys.Features.Companion
 
 			if (forceFullWorkArea || (targetW <= 0 || targetH <= 0))
 			{
-				var workArea = WindowTransparencyUtils.GetWorkArea();
+				Rect workArea = WindowTransparencyUtils.GetWorkArea();
 				targetW = (int)workArea.width;
 				targetH = (int)workArea.height;
 			}
