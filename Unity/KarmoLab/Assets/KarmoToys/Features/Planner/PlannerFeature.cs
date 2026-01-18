@@ -59,10 +59,17 @@ namespace KarmoToys.Features.Planner
 
 		public override void Initialize(VisualElement root)
 		{
-			ViewContainer = root.Q("ViewSchedule");
-
 			// UI Bindings
+			ViewContainer = root.Q("ViewSchedule");
+			if (ViewContainer == null) Debug.LogError("[PlannerFeature] ViewSchedule not found!");
+
 			_prevDayBtn = root.Q<Button>("PrevDayBtn");
+			if (_prevDayBtn == null)
+			{
+				Debug.LogError("[PlannerFeature] PrevDayBtn not found!");
+				return;
+			}
+
 			_nextDayBtn = root.Q<Button>("NextDayBtn");
 			_schedDateLabel = root.Q<Label>("CurrentDateLabel");
 			_weekendToggle = root.Q<Toggle>("WeekendToggle");
@@ -76,31 +83,51 @@ namespace KarmoToys.Features.Planner
 			_tagFilterDropdown = root.Q<DropdownField>("TagFilterDropdown");
 
 			// Events
-			_prevDayBtn.clicked += OnPrevWeek;
-			_nextDayBtn.clicked += OnNextWeek;
+			if (_prevDayBtn != null) _prevDayBtn.clicked += OnPrevWeek;
+			if (_nextDayBtn != null) _nextDayBtn.clicked += OnNextWeek;
 
 			// Config Events
-			_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
-			_uiStartDay.value = _startDayOfWeek.ToString();
-			_uiStartDay.RegisterValueChangedCallback(evt =>
+			if (_uiStartDay != null)
 			{
-				if (Enum.TryParse(evt.newValue, out DayOfWeek day))
+				_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
+				_uiStartDay.value = _startDayOfWeek.ToString();
+				_uiStartDay.RegisterValueChangedCallback(evt =>
 				{
-					_startDayOfWeek = day;
-					AdjustCurrentDateToStartOfWeek();
+					if (Enum.TryParse(evt.newValue, out DayOfWeek day))
+					{
+						_startDayOfWeek = day;
+						AdjustCurrentDateToStartOfWeek();
+						RefreshSchedule();
+					}
+				});
+			}
+
+
+			if (_uiZoom != null)
+			{
+				_uiZoom.value = _pixelsPerMinute;
+				_uiZoom.RegisterValueChangedCallback(evt =>
+				{
+					_pixelsPerMinute = evt.newValue;
 					RefreshSchedule();
-				}
-			});
+				});
+			}
 
-			_uiZoom.value = _pixelsPerMinute;
-			_uiZoom.RegisterValueChangedCallback(evt => { _pixelsPerMinute = evt.newValue; RefreshSchedule(); });
+			if (_uiSnap != null)
+			{
+				_uiSnap.value = (int)_snapInterval;
+				_uiSnap.RegisterValueChangedCallback(evt => _snapInterval = Mathf.Max(1, evt.newValue));
+			}
 
-			_uiSnap.value = (int)_snapInterval;
-			_uiSnap.RegisterValueChangedCallback(evt => _snapInterval = Mathf.Max(1, evt.newValue));
+			if (_tagFilterDropdown != null)
+			{
+				_tagFilterDropdown.RegisterValueChangedCallback(evt => RefreshSchedule());
+			}
 
-			_tagFilterDropdown.RegisterValueChangedCallback(evt => RefreshSchedule());
-
-			_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
+			if (_weekendToggle != null)
+			{
+				_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
+			}
 
 			// Init Defaults from Settings
 			if (KarmoToysApp.Instance.Settings != null)
