@@ -5,7 +5,7 @@ using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
-using KarmoToys.Features.QuestBoard;
+
 
 namespace KarmoToys.Features.Dashboard
 {
@@ -68,7 +68,7 @@ namespace KarmoToys.Features.Dashboard
 		{
 			if (KarmoToysApp.Instance.Data == null) return;
 			DashboardData dashboard = KarmoToysApp.Instance.Data.Dashboard;
-			QuestData quest = KarmoToysApp.Instance.Data.Quest;
+			if (dashboard == null) return;
 
 			if (dashboard == null) return;
 
@@ -92,12 +92,8 @@ namespace KarmoToys.Features.Dashboard
 			if (_configTargetDate != null) _configTargetDate.value = dashboard.TargetDateString;
 
 			// Quest/Stats Title Update (Quest Data)
-			if (quest != null)
-			{
-				if (_headerPersonal != null) _headerPersonal.text = quest.PersonalQuestTitle;
-				if (_headerStudy != null) _headerStudy.text = quest.StudyQuestTitle;
-				if (_headerTeam != null) _headerTeam.text = quest.TeamQuestTitle;
-			}
+			// QuestData legacy support removed.
+			// if (quest != null) ...
 
 			// Dashboard Data
 			if (_statPersonalTitle != null) _statPersonalTitle.text = dashboard.StatPersonalTitle;

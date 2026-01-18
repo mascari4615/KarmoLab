@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace KarmoToys.Common
 {
-	[CreateAssetMenu(fileName = "KarmoToysSettings", menuName = "KarmoToys/Settings")]
+	[CreateAssetMenu(fileName = "KarmoToysSettings", menuName = "KarmoLab/KarmoToys/Settings")]
 	public class KarmoToysSettings : ScriptableObject
 	{
 		[Header("Planner Settings")]

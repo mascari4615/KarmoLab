@@ -621,7 +621,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 166452bab7a6b6644aab4456ecc9ff1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KarmoToys.Main.KarmoToysApp
-  <Settings>k__BackingField: {fileID: 0}
+  <Settings>k__BackingField: {fileID: 11400000, guid: 11c433de3e801ac4a9575f7a95c43c18, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

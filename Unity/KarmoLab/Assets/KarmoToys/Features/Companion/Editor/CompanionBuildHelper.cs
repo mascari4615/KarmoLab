@@ -5,7 +5,7 @@ namespace KarmoToys.Features.Companion.Editor
 {
 	public class CompanionBuildHelper
 	{
-		[MenuItem("KarmoTools/Companion Mode/Configure Player Settings")]
+		[MenuItem("KarmoLab/KarmoToys/Companion Mode/Configure Player Settings")]
 		public static void ConfigureForTransparency()
 		{
 			// 1. Fullscreen Mode -> Fullscreen Window (D3D11 windowed)
