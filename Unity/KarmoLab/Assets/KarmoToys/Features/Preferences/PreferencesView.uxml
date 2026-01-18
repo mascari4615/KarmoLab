@@ -1,46 +1,60 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
 	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
-	<ui:ScrollView name="ViewPreferences" class="tab-content" style="display: none;">
+	<Style src="project://database/Assets/KarmoToys/Features/Preferences/PreferencesStyle.uss"/>
+	<ui:ScrollView name="ViewPreferences" class="tab-content preferences-container">
 		<ui:Label text="Preferences ⚙️" class="section-title"/>
 		
-		<ui:VisualElement class="tool-section" style="margin-top: 10px;">
+		<ui:VisualElement class="tool-section">
 			<ui:Label text="Backup Settings" class="section-title"/>
 			
-			<ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 15px;">
-				<ui:Toggle name="AutoBackupToggle" text="저장 시 자동 백업 (Auto Backup on Save)" style="flex-grow: 1;"/>
+			<ui:VisualElement class="backup-settings-row">
+				<ui:Toggle name="AutoBackupToggle" text="저장 시 자동 백업 (Auto Backup on Save)" class="backup-settings-toggle"/>
 			</ui:VisualElement>
 
-			<ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 10px;">
-				<ui:Label text="변경 감지 민감도 (Threshold):" style="color: rgb(150, 150, 150); margin-right: 10px; width: 180px;"/>
-				<ui:IntegerField name="ThresholdInput" value="10" style="width: 80px;"/>
-				<ui:Label text="(items)" style="color: gray; margin-left: 5px;"/>
+			<ui:VisualElement class="backup-threshold-row">
+				<ui:Label text="변경 감지 민감도 (Threshold):" class="backup-threshold-label"/>
+				<ui:IntegerField name="ThresholdInput" value="10" class="backup-threshold-input"/>
+				<ui:Label text="(items)" class="backup-threshold-unit"/>
 			</ui:VisualElement>
-			<ui:Label text="* 변경된 항목(할일, 블록 등) 수가 이 값 이상일 때만 백업합니다." style="color: gray; font-size: 10px; margin-bottom: 20px; margin-left: 5px;"/>
+			<ui:Label text="* 변경된 항목(할일, 블록 등) 수가 이 값 이상일 때만 백업합니다." class="backup-info-text"/>
 
-			<ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 10px;">
-				<ui:Label text="최대 백업 보관 수 (Max Backups):" style="color: rgb(150, 150, 150); margin-right: 10px; width: 180px;"/>
-				<ui:IntegerField name="MaxBackupCountInput" value="1000" style="width: 80px;"/>
+			<ui:VisualElement class="backup-threshold-row">
+				<ui:Label text="최대 백업 보관 수 (Max Backups):" class="backup-threshold-label"/>
+				<ui:IntegerField name="MaxBackupCountInput" value="1000" class="backup-threshold-input"/>
 			</ui:VisualElement>
 		</ui:VisualElement>
 
-		<ui:VisualElement class="tool-section" style="margin-top: 10px;">
+		<ui:VisualElement class="tool-section">
 			<ui:Label text="Data Management" class="section-title"/>
 			<ui:VisualElement style="flex-direction: row; margin-bottom: 10px;">
-				<ui:Button name="BtnOpenSaveDir" text="📂 Open Save Directory" style="flex-grow: 1; margin-right: 5px;"/>
-				<ui:Button name="BtnRefreshData" text="🔄 Refresh Data" style="flex-grow: 1;"/>
+				<ui:Button name="BtnOpenSaveDir" text="📂 Open Save Directory" class="btn-primary data-mgmt-btn" style="margin-right: 5px;"/>
+				<ui:Button name="BtnRefreshData" text="🔄 Refresh Data" class="btn-primary data-mgmt-btn"/>
 			</ui:VisualElement>
 			
 			<ui:Label text="Backup List &amp; Visual Diff" class="input-label"/>
-			<ui:ScrollView name="BackupFileList" style="height: 200px; background-color: rgba(0,0,0,0.2); border-radius: 4px; padding: 5px; margin-bottom: 10px;"/>
 			
 			<ui:Label text="Diff Result:" class="input-label"/>
-			<ui:Label name="BackupDiffResult" text="Select a backup to compare..." style="white-space: normal; color: rgb(180, 180, 180); min-height: 40px; padding: 10px; background-color: rgba(0,0,0,0.3); border-radius: 4px;"/>
+			<ui:Label name="BackupDiffResult" text="Select a backup to compare..." class="diff-result-box" style="margin-bottom: 10px;"/>
+			
+			<ui:ScrollView name="BackupFileList" class="backup-list-container"/>
 		</ui:VisualElement>
 
-		<ui:VisualElement style="margin-top: 30px; border-top-width: 1px; border-color: rgb(60,60,60); padding-top: 20px;">
-			<ui:Label text="Danger Zone ☠️" style="color: rgb(220, 53, 69); font-size: 14px; -unity-font-style: bold; margin-bottom: 10px;"/>
-			<ui:Button name="BtnResetData" text="💣 Reset All Data" class="btn-danger" style="background-color: rgb(180, 40, 50);"/>
-			<ui:Label text="* 모든 데이터가 초기화됩니다. 신중하게 결정하세요." style="color: rgb(180, 80, 80); font-size: 10px; margin-top: 5px;"/>
+		<ui:VisualElement class="danger-zone">
+			<ui:Label text="Danger Zone ☠️" class="danger-title"/>
+			<ui:Button name="BtnResetData" text="💣 Reset All Data" class="btn-danger"/>
+			<ui:Label text="* 모든 데이터가 초기화됩니다. 신중하게 결정하세요." class="danger-text-small"/>
 		</ui:VisualElement>
 	</ui:ScrollView>
+
+	<!-- Confirmation Popup Overlay -->
+	<ui:VisualElement name="ConfirmationOverlay" class="edit-overlay" style="display: none;">
+		<ui:VisualElement class="edit-dialog confirm-dialog">
+			<ui:Label text="정말 삭제하시겠습니까?" class="edit-header-title confirm-header"/>
+			<ui:Label name="ConfirmMessage" text="이 작업은 되돌릴 수 없습니다." class="confirm-message"/>
+			<ui:VisualElement class="edit-actions confirm-actions">
+				<ui:Button name="BtnConfirmCancel" text="취소" class="btn-secondary"/>
+				<ui:Button name="BtnConfirmDelete" text="삭제" class="btn-danger" style="margin-left: 10px;"/>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
 </ui:UXML>

@@ -87,4 +87,12 @@ Assets/KarmoToys/
 └── Features/       # 기능별 모듈
     ├── Planner/
     └── .../
-```
+## 6. UI 표준 및 디자인 가이드 (UI Standards)
+
+**KarmoToys**는 시각적 일관성과 유지보수성을 위해 전역 스타일 가이드를 준수함.
+
+- **Theme Tokens**: 모든 색상과 수치는 `ThemeTokens.uss`의 변수를 통해 제어함.
+- **Icon Button Standard (`.btn-icon-item`)**:
+  - 아이콘 기반 버튼은 `MainStyle.uss`에 정의된 이 클래스를 공통 사용함.
+  - 투명 배경을 기본으로 하며, 호버 시 `rgba(255, 255, 255, 0.12)` (다크) 또는 `rgba(0, 0, 0, 0.08)` (라이트) 배경 피드백을 제공함.
+- **Overlay System**: `edit-overlay` 및 `edit-dialog` 클래스를 사용하여 일관된 팝업/확인창 UI를 제공함.

@@ -178,17 +178,28 @@
 	margin-bottom: 5px;
 }
 
-.theme-toggle-btn {
+/* Icon Buttons (Unified Style) */
+.btn-icon-item {
 	width: 30px;
 	height: 30px;
 	background-color: transparent;
-	color: var(--color-text-sub);
-	border-width: 0;
-	font-size: 20px;
-	margin-left: 5px;
-}
-.theme-toggle-btn:hover {
 	color: var(--color-text-main);
+	border-width: 0;
+	border-radius: 4px;
+	font-size: 20px;
+	-unity-text-align: middle-center;
+	padding: 0;
+	margin-left: 5px;
+	transition-property: background-color;
+	transition-duration: 0.1s;
+}
+
+.btn-icon-item:hover {
+	background-color: rgba(255, 255, 255, 0.12);
+}
+
+.theme-light .btn-icon-item:hover {
+	background-color: rgba(0, 0, 0, 0.08);
 }
 
 .header-subtitle-input > .unity-text-field__input {

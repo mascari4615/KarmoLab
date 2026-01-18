@@ -21,8 +21,8 @@
 			</ui:VisualElement>
 			<ui:VisualElement class="header-right">
 				<ui:VisualElement class="header-tools">
-					<ui:Button name="BtnCompanionToggle" text="👤" class="theme-toggle-btn" tooltip="컴패니언 소환/해제"/>
-					<ui:Button name="BtnThemeToggle" text="◑" class="theme-toggle-btn" tooltip="테마 변경"/>
+					<ui:Button name="BtnCompanionToggle" text="👤" class="btn-icon-item" tooltip="컴패니언 소환/해제"/>
+					<ui:Button name="BtnThemeToggle" text="◑" class="btn-icon-item" tooltip="테마 변경"/>
 				</ui:VisualElement>
 				<ui:Label name="HeaderDateLabel" text="2026-01-09" class="header-date"/>
 				<ui:Label name="HeaderDDayLabel" text="D-416" class="header-dday"/>

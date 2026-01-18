@@ -24,6 +24,13 @@ namespace KarmoToys.Features.Preferences
 		private Button _btnResetData;
 		private Button _btnRefreshData;
 		private ScrollView _backupFileList;
+		private Label _backupDiffResult;
+
+		// Confirmation Popup
+		private VisualElement _confirmationOverlay;
+		private Label _confirmMessage;
+		private Button _btnConfirmCancel, _btnConfirmDelete;
+		private string _pendingDeletePath;
 
 		// Theme UI (Optional, if we want detailed control)
 		private DropdownField _themeDropdown;
@@ -81,6 +88,16 @@ namespace KarmoToys.Features.Preferences
 			_btnRefreshData.clicked += OnRefreshData;
 
 			_backupFileList = root.Q<ScrollView>("BackupFileList");
+			_backupDiffResult = root.Q<Label>("BackupDiffResult");
+
+			// 3. Confirmation Popup
+			_confirmationOverlay = root.Q<VisualElement>("ConfirmationOverlay");
+			_confirmMessage = root.Q<Label>("ConfirmMessage");
+			_btnConfirmCancel = root.Q<Button>("BtnConfirmCancel");
+			_btnConfirmDelete = root.Q<Button>("BtnConfirmDelete");
+
+			if (_btnConfirmCancel != null) _btnConfirmCancel.clicked += HideConfirmation;
+			if (_btnConfirmDelete != null) _btnConfirmDelete.clicked += ConfirmDelete;
 
 			// 3. Theme (Example)
 			// _themeDropdown = root.Q<DropdownField>("ThemeDropdown");
@@ -132,31 +149,37 @@ namespace KarmoToys.Features.Preferences
 			foreach (FileInfo file in backups)
 			{
 				VisualElement row = new VisualElement();
-				row.style.flexDirection = FlexDirection.Row;
-				row.style.alignItems = Align.Center;
-				row.style.marginBottom = 2;
-				row.style.justifyContent = Justify.SpaceBetween;
+				row.AddToClassList("backup-item");
 
 				// 파일명 전체 표시
 				string displayText = $"{file.Name} ({file.Length / 1024f:F1}KB)";
 
 				Label label = new Label(displayText);
-				label.style.flexGrow = 1;
-				label.style.color = new StyleColor(new Color(0.8f, 0.8f, 0.8f));
+				label.AddToClassList("backup-item-label");
 
 				Button btnDiff = new Button(() => ShowDiff(file.FullName));
-				btnDiff.text = "차이";
+				btnDiff.text = "🔍";
 				btnDiff.tooltip = "Compare with current";
-				btnDiff.style.width = 40;
+				btnDiff.AddToClassList("btn-icon-item");
+				btnDiff.style.width = 30;
 
 				Button btnLoad = new Button(() => OnClickBackupFile(file.FullName));
-				btnLoad.text = "로드";
+				btnLoad.text = "📂";
 				btnLoad.tooltip = "Load this backup";
-				btnLoad.style.width = 40;
+				btnLoad.AddToClassList("btn-icon-item");
+				btnLoad.style.width = 30;
+
+				Button btnDelete = new Button(() => RequestDeleteBackup(file.FullName));
+				btnDelete.text = "🗑️";
+				btnDelete.tooltip = "Delete this backup";
+				btnDelete.AddToClassList("btn-icon-item");
+				btnDelete.AddToClassList("danger");
+				btnDelete.style.width = 30;
 
 				row.Add(label);
 				row.Add(btnDiff);
 				row.Add(btnLoad);
+				row.Add(btnDelete);
 				_backupFileList.Add(row);
 			}
 		}
@@ -184,6 +207,41 @@ namespace KarmoToys.Features.Preferences
 			RefreshBackupList();
 			RefreshUI();
 			KarmoToysApp.Toast.Show("백업 데이터 로드 완료. (안전 백업 생성됨) 🛡️");
+		}
+
+		private void RequestDeleteBackup(string path)
+		{
+			_pendingDeletePath = path;
+			if (_confirmMessage != null) _confirmMessage.text = $"'{Path.GetFileName(path)}' 파일을\n정말 삭제하시겠습니까?";
+			if (_confirmationOverlay != null) _confirmationOverlay.style.display = DisplayStyle.Flex;
+		}
+
+		private void HideConfirmation()
+		{
+			if (_confirmationOverlay != null) _confirmationOverlay.style.display = DisplayStyle.None;
+			_pendingDeletePath = null;
+		}
+
+		private void ConfirmDelete()
+		{
+			if (string.IsNullOrEmpty(_pendingDeletePath)) return;
+
+			try
+			{
+				if (File.Exists(_pendingDeletePath))
+				{
+					File.Delete(_pendingDeletePath);
+					KarmoToysApp.Toast.Show("백업 파일이 삭제되었습니다. 🗑️");
+				}
+			}
+			catch (Exception e)
+			{
+				Debug.LogError($"Failed to delete backup: {e.Message}");
+				KarmoToysApp.Toast.Show("삭제 실패. ❌");
+			}
+
+			HideConfirmation();
+			RefreshBackupList();
 		}
 	}
 }
