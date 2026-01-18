@@ -15,8 +15,6 @@ namespace KarmoToys.Features.Companion
 
 		public override void Initialize(VisualElement root)
 		{
-			base.Initialize(root);
-
 			// Check command line args
 			string[] args = Environment.GetCommandLineArgs();
 			_isCompanionMode = args.Contains("-mode") && args.Contains("companion");

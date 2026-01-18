@@ -15,7 +15,7 @@ namespace KarmoToys.Features.ToolBox
 	public class ToolBoxFeature : FeatureBase
 	{
 		public override string FeatureName => Define.FeatureToolBox; // "ToolBox"
-		public override string TabButtonName => Define.TabTools;	 // "TabTools"
+		public override string TabButtonName => Define.TabTools;     // "TabTools"
 
 		// UI
 		private Label _toolTitle, _toolDescription;
@@ -26,7 +26,7 @@ namespace KarmoToys.Features.ToolBox
 		private Button _btnRunAction, _btnCopyOutput;
 
 		// Logic
-		private List<ITool> _tools = new List<ITool>();
+		private readonly List<ITool> _tools = new();
 		private ITool _currentTool;
 		private ToolAction _currentAction;
 
@@ -49,7 +49,7 @@ namespace KarmoToys.Features.ToolBox
 			_btnCopyOutput = root.Q<Button>("BtnCopyOutput");
 
 			_btnRunAction.clicked += RunCurrentAction;
-			_btnCopyOutput.clicked += () => { GUIUtility.systemCopyBuffer = _outputField.value; };
+			_btnCopyOutput.clicked += () => GUIUtility.systemCopyBuffer = _outputField.value;
 
 			_toolSelector.RegisterValueChangedCallback(evt => SelectTool(evt.newValue));
 			_actionSelector.RegisterValueChangedCallback(evt => SelectAction(evt.newValue));
@@ -57,27 +57,18 @@ namespace KarmoToys.Features.ToolBox
 			LoadTools();
 		}
 
-		public override void OnSelect()
-		{
-			base.OnSelect();
-			// ToolBox specific select logic if any (none for now)
-		}
-
+		public override void OnSelect() => base.OnSelect();// ToolBox specific select logic if any (none for now)
 
 		private void LoadTools()
 		{
 			_tools.Clear();
-			_tools.Add(new Tools.TextFormatTool());
-			_tools.Add(new Tools.FileNameTool());
-			_tools.Add(new Tools.YoutubeTool());
-			_tools.Add(new KarmoToys.Features.ToolBox.Tools.CompanionLauncherTool());
+			_tools.Add(new TextFormatTool());
+			_tools.Add(new FileNameTool());
+			_tools.Add(new YoutubeTool());
 
 			foreach (var t in _tools)
 			{
-				t.Initialize(msg =>
-				{
-					_outputField.value = msg;
-				});
+				t.Initialize(msg => _outputField.value = msg);
 			}
 
 			_toolSelector.choices = _tools.Select(t => t.Name).ToList();
@@ -95,7 +86,7 @@ namespace KarmoToys.Features.ToolBox
 			_inputSub.value = "";
 			_outputField.value = "";
 
-			var actions = _currentTool.GetActions();
+			List<ToolAction> actions = _currentTool.GetActions();
 			_actionSelector.choices = actions.Select(a => a.Name).ToList();
 			if (actions.Count > 0) _actionSelector.value = actions[0].Name;
 			else { _actionSelector.value = null; SelectAction(null); }
@@ -104,7 +95,7 @@ namespace KarmoToys.Features.ToolBox
 		private void SelectAction(string actionName)
 		{
 			if (_currentTool == null) return;
-			var actions = _currentTool.GetActions();
+			List<ToolAction> actions = _currentTool.GetActions();
 			_currentAction = actions.FirstOrDefault(a => a.Name == actionName);
 
 			if (_currentAction == null)

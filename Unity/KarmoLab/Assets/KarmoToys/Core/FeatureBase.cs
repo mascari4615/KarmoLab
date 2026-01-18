@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 namespace KarmoToys.Core
 {
 	/// <summary>
-	/// 모든 ?�처(기능)??기본 ?�래??
+	/// Base class for all features
 	/// </summary>
 	public abstract class FeatureBase : MonoBehaviour, IFeature
 	{
@@ -12,22 +12,22 @@ namespace KarmoToys.Core
 		public abstract string TabButtonName { get; }
 
 		/// <summary>
-		/// ???�처가 ?�당?�는 메인 �??�소
+		/// Main Element Container for this Feature's View
 		/// </summary>
 		protected VisualElement ViewContainer;
 
-		public virtual void Initialize(VisualElement root)
-		{
-			// ?�위 ?�래?�에??override?�여 UI 바인???�행
-			// ?? ViewContainer = root.Q("MyViewName");
-		}
+		/// <summary>
+		/// Initialize the feature with the given root VisualElement
+		/// </summary>
+		/// <param name="root"></param>
+		public abstract void Initialize(VisualElement root);
 
 		public virtual void OnSelect()
 		{
 			if (ViewContainer != null)
 			{
 				ViewContainer.style.display = DisplayStyle.Flex;
-				// ?�요??경우 ?�이???�로고침
+				// Refresh if needed
 				RefreshData();
 			}
 		}
@@ -41,7 +41,7 @@ namespace KarmoToys.Core
 		}
 
 		/// <summary>
-		/// ?�이??갱신???�요?????�출
+		/// Called when data needs to be refreshed
 		/// </summary>
 		protected virtual void RefreshData() { }
 	}

@@ -172,6 +172,12 @@
 	align-items: flex-end;
 }
 
+.header-tools {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 5px;
+}
+
 .theme-toggle-btn {
 	width: 30px;
 	height: 30px;
@@ -179,7 +185,7 @@
 	color: var(--color-text-sub);
 	border-width: 0;
 	font-size: 20px;
-	margin-bottom: 5px;
+	margin-left: 5px;
 }
 .theme-toggle-btn:hover {
 	color: var(--color-text-main);

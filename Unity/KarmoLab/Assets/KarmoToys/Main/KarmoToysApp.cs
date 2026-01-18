@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -8,32 +9,27 @@ using KarmoToys.Common.Data;
 namespace KarmoToys.Main
 {
 	[AddComponentMenu("KarmoLab/KarmoToysApp")]
+	[RequireComponent(typeof(UIDocument))]
 	public class KarmoToysApp : MonoBehaviour
 	{
-		[SerializeField] private UIDocument _uiDocument;
-		[SerializeField] private KarmoToysSettings _settings;
-
-		public KarmoToysSettings Settings => _settings;
-		public static TooltipService Tooltip { get; private set; }
-
 		public static KarmoToysApp Instance { get; private set; }
+		public static TooltipService Tooltip { get; private set; }
 		public static ToastService Toast { get; private set; }
 
+		[field: SerializeField] public KarmoToysSettings Settings { get; private set; }
 		public KarmoToysData Data { get; private set; }
-		private string _savePath;
+		public string SavePath { get; private set; }
+		public AppMode Mode { get; private set; }
 
-		private List<IFeature> _features = new();
-		private Dictionary<Button, IFeature> _tabMap = new();
+		private UIDocument _uiDocument;
+
+		private readonly List<IFeature> _features = new();
+		private readonly Dictionary<Button, IFeature> _tabMap = new();
+
 		// UI Refs (Global)
 		private Label _headerDateLabel;
 		private Label _headerDDayLabel;
-
 		private IFeature _currentFeature;
-
-		public bool IsCompanionMode { get; private set; }
-
-		// Mutex for Single Instance Check (Keep reference to prevent GC)
-		private static System.Threading.Mutex _appMutex;
 
 		private void Awake()
 		{
@@ -41,54 +37,36 @@ namespace KarmoToys.Main
 			else Destroy(gameObject);
 
 			// Check execution mode
-			var args = System.Environment.GetCommandLineArgs();
-			IsCompanionMode = System.Array.Exists(args, arg => arg == "-mode") &&
-							  System.Array.Exists(args, arg => arg == "companion");
+			string[] args = Environment.GetCommandLineArgs();
+			bool hasModeArg = Array.Exists(args, arg => arg == "-mode");
+			string modeStr = "";
 
-			CheckSingleInstance();
-		}
-
-		private void CheckSingleInstance()
-		{
-#if !UNITY_EDITOR
-			// Single Instance Protection (Mutex)
-			// Different mutex per mode allows Main + Companion to run simultaneously
-			string mutexName = IsCompanionMode ? "Global\\KarmoLab_Companion" : "Global\\KarmoLab_Main";
-			bool createdNew;
-
-			try
+			if (hasModeArg)
 			{
-				_appMutex = new System.Threading.Mutex(true, mutexName, out createdNew);
-			}
-			catch (System.Exception ex)
-			{
-				Debug.LogError($"[KarmoToysApp] Mutex creation failed: {ex}");
-				createdNew = true; // Fallback? Or fail safe? Let's assume fail safe.
+				int modeIndex = Array.IndexOf(args, "-mode") + 1;
+				if (modeIndex < args.Length) modeStr = args[modeIndex].ToLower();
 			}
 
-			if (!createdNew)
-			{
-				Debug.LogError($"[KarmoToysApp] Instance already running for mode: {(IsCompanionMode ? "Companion" : "Main")}. Quitting.");
-				Application.Quit();
-			}
-#endif
+			Mode = modeStr == "companion" ? AppMode.Companion : AppMode.Main;
+
+			AppLauncher.CheckSingleInstance(Mode);
 		}
 
 		private void Start()
 		{
-			if (_uiDocument == null) _uiDocument = GetComponent<UIDocument>();
+			_uiDocument = GetComponent<UIDocument>();
 
 			// Ensure run in background is active
 			Application.runInBackground = true;
 
 			// Window Mode Setup based on App Mode
-			if (IsCompanionMode)
+			if (Mode == AppMode.Companion)
 			{
 				// Companion Mode: Start Windowed, then we strip borders in WindowTransparencyUtils
 				Screen.fullScreenMode = FullScreenMode.Windowed;
 
 #if UNITY_STANDALONE_WIN
-				Rect workArea = KarmoToys.Features.Companion.WindowTransparencyUtils.GetWorkArea();
+				Rect workArea = Features.Companion.WindowTransparencyUtils.GetWorkArea();
 				int width = (int)workArea.width;
 				int height = (int)workArea.height;
 #else
@@ -106,26 +84,26 @@ namespace KarmoToys.Main
 			}
 
 			// Path Setup
-			_savePath = System.IO.Path.Combine(Application.persistentDataPath, Define.SaveFileName);
+			SavePath = System.IO.Path.Combine(Application.persistentDataPath, Define.SaveFileName);
 #if UNITY_EDITOR
-			_savePath = System.IO.Path.Combine(Application.dataPath, Define.EditorDataPath, Define.SaveFileName);
+			SavePath = System.IO.Path.Combine(Application.dataPath, Define.EditorDataPath, Define.SaveFileName);
 #endif
 
 			// Load Data
-			Data = DataService.Load(_savePath);
+			Data = DataService.Load(SavePath);
 
 			Initialize();
 		}
 
 		private void Initialize()
 		{
-			var root = _uiDocument.rootVisualElement;
+			VisualElement root = _uiDocument.rootVisualElement;
 			if (root == null) return;
 
 			// 0. Features Auto Addition
 			EnsureFeatures();
 
-			if (IsCompanionMode)
+			if (Mode == AppMode.Companion)
 			{
 				// In Companion Mode, UI setup is minimal or handled by CompanionFeature
 				root.Clear();
@@ -134,7 +112,7 @@ namespace KarmoToys.Main
 				root.style.backgroundColor = new StyleColor(Color.clear);
 
 				// 3. Camera Setup
-				var camera = Camera.main;
+				Camera camera = Camera.main;
 				if (camera != null)
 				{
 					camera.clearFlags = CameraClearFlags.SolidColor;
@@ -142,8 +120,7 @@ namespace KarmoToys.Main
 					camera.allowHDR = false;
 
 					// CRITICAL: Disable URP Post-Processing on Camera to preserve Alpha
-					var camData = camera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
-					if (camData != null)
+					if (camera.TryGetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>(out var camData))
 					{
 						camData.renderPostProcessing = false;
 					}
@@ -163,12 +140,12 @@ namespace KarmoToys.Main
 			_features.Clear();
 			_features.AddRange(GetComponentsInChildren<IFeature>());
 
-			foreach (var feature in _features)
+			foreach (IFeature feature in _features)
 			{
 				// 각 피처 초기화
 				feature.Initialize(root);
 
-				if (!IsCompanionMode)
+				if (Mode != AppMode.Companion)
 				{
 					// 탭 버튼 바인딩
 					if (!string.IsNullOrEmpty(feature.TabButtonName))
@@ -183,7 +160,7 @@ namespace KarmoToys.Main
 				}
 			}
 
-			if (IsCompanionMode)
+			if (Mode == AppMode.Companion)
 			{
 				// Companion Mode initialization ends here
 				return;
@@ -191,16 +168,19 @@ namespace KarmoToys.Main
 
 			// 3. 테마 초기화 및 버튼 바인딩
 			ApplyTheme();
-			var themeBtn = root.Q<Button>("BtnThemeToggle");
+			Button themeBtn = root.Q<Button>("BtnThemeToggle");
 			if (themeBtn != null) themeBtn.clicked += ToggleTheme;
+
+			Button companionBtn = root.Q<Button>("BtnCompanionToggle");
+			if (companionBtn != null) companionBtn.clicked += () => ToggleCompanion();
 
 			// 4. 첫 번째 탭 선택 (기본값)
 			if (_tabMap.Count > 0)
 			{
 				// Dictionary의 첫 번째 키를 가져오는 것은 순서가 보장되지 않으므로, Features 순서대로 찾음
-				foreach (var feature in _features)
+				foreach (IFeature feature in _features)
 				{
-					var btn = root.Q<Button>(feature.TabButtonName);
+					Button btn = root.Q<Button>(feature.TabButtonName);
 					if (btn != null && _tabMap.ContainsKey(btn))
 					{
 						SelectTab(btn);
@@ -215,6 +195,9 @@ namespace KarmoToys.Main
 			root.schedule.Execute(UpdateHeaderTime).Every(1000);
 			UpdateHeaderTime();
 
+			// 6. Auto-Launch Companion
+			if (Mode == AppMode.Main) ToggleCompanion();
+
 			// 환영 메시지
 			Toast.Show("KarmoToys에 오신 것을 환영함! 🎮", ToastType.Info);
 		}
@@ -223,14 +206,14 @@ namespace KarmoToys.Main
 		{
 			if (_headerDateLabel != null)
 			{
-				_headerDateLabel.text = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+				_headerDateLabel.text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 			}
 
 			if (_headerDDayLabel != null && Data?.Planner != null)
 			{
-				if (System.DateTime.TryParse(Data.Planner.TargetDateString, out System.DateTime target))
+				if (DateTime.TryParse(Data.Planner.TargetDateString, out System.DateTime target))
 				{
-					var diff = (target.Date - System.DateTime.Now.Date).Days;
+					int diff = (target.Date - DateTime.Now.Date).Days;
 					_headerDDayLabel.text = $"D{diff:+#;-#;0}";
 				}
 				else
@@ -242,7 +225,7 @@ namespace KarmoToys.Main
 
 		private void ToggleTheme()
 		{
-			var themes = (AppTheme[])System.Enum.GetValues(typeof(AppTheme));
+			var themes = (AppTheme[])Enum.GetValues(typeof(AppTheme));
 			int nextIndex = ((int)Instance.Data.Theme + 1) % themes.Length;
 			Instance.Data.Theme = themes[nextIndex];
 
@@ -251,13 +234,15 @@ namespace KarmoToys.Main
 			Toast.Show($"테마가 {Instance.Data.Theme} 모드로 변경됨! ✨");
 		}
 
+		public void ToggleCompanion(string extraArgs = "") => CompanionService.Launch(extraArgs);
+
 		private void ApplyTheme()
 		{
-			var root = _uiDocument.rootVisualElement;
+			VisualElement root = _uiDocument.rootVisualElement;
 			if (root == null) return;
 
 			// Enum에 정의된 모든 테마 클래스 제거 (소문자 기준)
-			foreach (var themeName in System.Enum.GetNames(typeof(AppTheme)))
+			foreach (string themeName in Enum.GetNames(typeof(AppTheme)))
 			{
 				root.RemoveFromClassList($"theme-{themeName.ToLower()}");
 			}
@@ -270,11 +255,11 @@ namespace KarmoToys.Main
 		{
 			if (!_tabMap.ContainsKey(selectedBtn)) return;
 
-			var targetFeature = _tabMap[selectedBtn];
+			IFeature targetFeature = _tabMap[selectedBtn];
 			if (_currentFeature == targetFeature) return;
 
 			// 1. 모든 탭 비활성화 UI 처리
-			foreach (var btn in _tabMap.Keys)
+			foreach (Button btn in _tabMap.Keys)
 			{
 				btn.RemoveFromClassList("selected");
 				_tabMap[btn].OnDeselect();
@@ -293,18 +278,14 @@ namespace KarmoToys.Main
 			string tag = string.IsNullOrEmpty(tagOverride) ? $"v{Application.version}" : tagOverride;
 
 			// 앱 버전 정보를 백업 태그로 전달 (기본 백업 로직은 DataService 내부에서 AutoBackup 설정에 따름)
-			DataService.Save(_savePath, Data, Data.MaxBackupCount, tag, forceBackup);
+			DataService.Save(SavePath, Data, Data.MaxBackupCount, tag, forceBackup);
 		}
 
-		private void OnApplicationQuit()
-		{
-			// 앱 종료 시 강제 백업 (SessionEnd)
-			SaveData(true, "SessionEnd");
-		}
+		private void OnApplicationQuit() => SaveData(true, "SessionEnd"); // 앱 종료 시 강제 백업 (SessionEnd)
 
 		public void LoadBackup(string backupPath)
 		{
-			if (DataService.LoadBackup(_savePath, backupPath, Data.MaxBackupCount))
+			if (DataService.LoadBackup(SavePath, backupPath, Data.MaxBackupCount))
 			{
 				LoadData();
 				Toast.Show("백업 데이터를 성공적으로 불러옴! 🕒✨");
@@ -315,30 +296,22 @@ namespace KarmoToys.Main
 			}
 		}
 
-		public string GetSaveDirectory()
-		{
-			if (string.IsNullOrEmpty(_savePath)) return Application.persistentDataPath;
-			return System.IO.Path.GetDirectoryName(_savePath);
-		}
-
-		public string GetSavePath()
-		{
-			return _savePath;
-		}
+		public string GetSaveDirectory() =>
+			string.IsNullOrEmpty(SavePath) ? Application.persistentDataPath : System.IO.Path.GetDirectoryName(SavePath);
 
 		public void LoadData()
 		{
-			Data = DataService.Load(_savePath);
-			if (Data != null) Data.MigrateLegacyData();
-			if (_currentFeature != null) _currentFeature.OnSelect();
+			Data = DataService.Load(SavePath);
+			Data?.MigrateLegacyData();
+			_currentFeature?.OnSelect();
 		}
 
 		private void EnsureFeatures()
 		{
-			if (IsCompanionMode)
+			if (Mode == AppMode.Companion)
 			{
 				// Companion Mode: Only CompanionFeature
-				var type = typeof(Features.Companion.CompanionFeature);
+				Type type = typeof(Features.Companion.CompanionFeature);
 				if (GetComponent(type) == null)
 				{
 					gameObject.AddComponent(type);
@@ -347,18 +320,18 @@ namespace KarmoToys.Main
 			else
 			{
 				// Main Mode: Standard Features
-				var features = new System.Type[]
+				Type[] features = new Type[]
 				{
 					typeof(Features.Dashboard.DashboardFeature),
 					typeof(Features.Planner.PlannerFeature),
-					typeof(KarmoToys.Features.LifeWeekly.LifeWeeklyFeature),
+					typeof(Features.LifeWeekly.LifeWeeklyFeature),
 					typeof(Features.QuestBoard.QuestBoardFeature),
 					typeof(Features.Note.NoteFeature),
 					typeof(Features.ToolBox.ToolBoxFeature),
 					typeof(Features.Preferences.PreferencesFeature)
 				};
 
-				foreach (var type in features)
+				foreach (Type type in features)
 				{
 					if (GetComponent(type) == null)
 					{

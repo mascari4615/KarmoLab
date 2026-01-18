@@ -27,6 +27,12 @@ namespace KarmoToys.Common
 		public const string DefaultTargetName = "Target: Project";
 	}
 
+	public enum AppMode
+	{
+		Main,
+		Companion
+	}
+
 	public enum AppTheme
 	{
 		Dark,

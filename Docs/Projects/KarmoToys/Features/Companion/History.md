@@ -1,5 +1,15 @@
 # Companion Mode History
 
+## 2026-01-18 (KST)
+
+- **실행 진입점 및 관리 체계 리팩토링 (Launch System Refactor)**:
+  - **서비스 분리**: 컴패니언 실행 로직을 `ToolBox`에서 `CompanionService`로 분리 및 독립 클래스화.
+  - **메인 앱 통합**: 메인 프로그램 시작 시 컴패니언 자동 실행 기능을 추가하여 실행 단계 간소화.
+  - **AppMode 표준화**: `-mode companion` 커맨드라인 인자 파싱을 `AppMode` Enum 기반으로 표준화하여 확장성 확보.
+
+- **UI 개선 (Toolbar Navigation)**:
+  - 헤더에 전용 토글 버튼(👤)을 추가하고 테마 버튼과 가로로 정렬하여 실시간 소환/해제 기능 제공.
+
 ## 2026-01-15 (KST)
 
 - **컴패니언 모드 (Companion Mode) 구현**:

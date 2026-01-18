@@ -121,7 +121,7 @@ namespace KarmoToys.Features.Preferences
 			if (_backupFileList == null) return;
 			_backupFileList.Clear();
 
-			string savePath = KarmoToysApp.Instance.GetSavePath();
+			string savePath = KarmoToysApp.Instance.SavePath;
 			if (string.IsNullOrEmpty(savePath)) return;
 
 			// Flat Structure: 현재 파일을 기반으로 필터링
