@@ -1,5 +1,12 @@
 # Companion Mode History
 
+## 2026-01-19 (KST)
+
+- **Editor Play Mode Support (Dev Experience)**:
+  - **Simulated Transparency**: 에디터 내에서 투명 윈도우 대신 회색(Grey) 배경을 렌더링하여 영역 시뮬레이션.
+  - **Input Hybrid**: 에디터(`UNITY_EDITOR`)에서는 Win32 API 대신 Unity Input API를 사용하여 마우스 클릭/드래그 지원.
+  - **Configuration**: `KarmoToysSettings.SimulateCompanionMode` 옵션을 통해 빌드 없이 모드 강제 진입 지원.
+
 ## 2026-01-18 (KST) - Part 2
 
 - **Companion Speech Bubble System**:

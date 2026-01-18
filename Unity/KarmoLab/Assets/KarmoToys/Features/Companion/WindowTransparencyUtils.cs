@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace KarmoToys.Features.Companion
 {
-#if UNITY_STANDALONE_WIN
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
 	public static class WindowTransparencyUtils
 	{
 		// --- P/Invoke Definitions ---
@@ -240,7 +240,18 @@ namespace KarmoToys.Features.Companion
 		public static void SetClickThrough(bool b) { Debug.Log($"[WindowTransparencyUtils] SetClickThrough: {b} (Mock)."); }
 		public static void SetAlwaysOnTop(bool b) { Debug.Log($"[WindowTransparencyUtils] SetAlwaysOnTop: {b} (Mock)."); }
 		public static Rect GetWorkArea() { return new Rect(0, 0, 1920, 1080); }
-		public static Vector2 GetMousePosInWindow() { return (Vector2)Input.mousePosition; }
+		public static Vector2 GetMousePosInWindow()
+		{
+			Vector2 pos = Input.mousePosition;
+			// Win32 GetCursorPos is Top-Left origin. Unity Input.mousePosition is Bottom-Left origin.
+			// We simulate Top-Left origin here.
+			return new Vector2(pos.x, Screen.height - pos.y);
+		}
+
+		public static bool IsLeftMouseButtonDown()
+		{
+			return Input.GetMouseButton(0);
+		}
 	}
 #endif
 }

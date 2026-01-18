@@ -15,9 +15,17 @@ namespace KarmoToys.Features.Companion
 
 		public override void Initialize(VisualElement root)
 		{
-			// Check command line args
-			string[] args = Environment.GetCommandLineArgs();
-			_isCompanionMode = args.Contains("-mode") && args.Contains("companion");
+			// Check Mode (Now handled centrally by KarmoToysApp)
+			if (KarmoToys.Main.KarmoToysApp.Instance != null)
+			{
+				_isCompanionMode = KarmoToys.Main.KarmoToysApp.Instance.Mode == KarmoToys.Common.AppMode.Companion;
+			}
+			else
+			{
+				// Fallback for standalone feature testing (if any)
+				string[] args = Environment.GetCommandLineArgs();
+				_isCompanionMode = args.Contains("-mode") && args.Contains("companion");
+			}
 
 			if (_isCompanionMode)
 			{
@@ -215,7 +223,12 @@ namespace KarmoToys.Features.Companion
 			// We just start the transparency routine here.
 			KarmoToys.Main.KarmoToysApp.Instance.StartCoroutine(TransparencyRoutine());
 #else
-			Debug.Log("Transparency simulation (check logs).");
+			Debug.Log("Transparency simulation: Setting Camera background to Grey.");
+			if (Camera.main != null)
+			{
+				Camera.main.clearFlags = CameraClearFlags.SolidColor;
+				Camera.main.backgroundColor = new Color(0.5f, 0.5f, 0.5f, 1.0f); // Solid Grey
+			}
 #endif
 		}
 

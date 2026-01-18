@@ -49,6 +49,15 @@ namespace KarmoToys.Main
 
 			Mode = modeStr == "companion" ? AppMode.Companion : AppMode.Main;
 
+#if UNITY_EDITOR
+			// Editor Play Mode Override
+			if (Settings != null && Settings.SimulateCompanionMode)
+			{
+				Mode = AppMode.Companion;
+				Debug.Log("[KarmoToysApp] Simulating Companion Mode in Editor!");
+			}
+#endif
+
 			AppLauncher.CheckSingleInstance(Mode);
 		}
 
