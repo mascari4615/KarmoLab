@@ -14,6 +14,20 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 	[SerializeField] protected string _idleTag = "Idle";
 	[SerializeField] protected string[] _idleStates = { "IDLE" };
 
+	public virtual Vector3 GetHeadPosition()
+	{
+		if (_animator != null && _animator.isHuman)
+		{
+			Transform head = _animator.GetBoneTransform(HumanBodyBones.Head);
+			if (head != null) return head.position + Vector3.up * 0.3f; // Slightly above head
+		}
+		// Fallback for non-humanoid or missing animator
+		Collider col = GetComponent<Collider>();
+		if (col != null) return col.bounds.center + Vector3.up * col.bounds.extents.y + Vector3.up * 0.2f;
+		
+		return transform.position + Vector3.up * 1.5f;
+	}
+
 	protected Coroutine _idleCoroutine;
 
 	// Hash Caching for performance

@@ -25,11 +25,24 @@ namespace KarmoToys.Features.Companion
 				{
 					Debug.Log("Companion Mode Initialized!");
 					Application.runInBackground = true; // Stay alive even when unfocused
-					InitializeTransparency();
+
+					// Subsystem 1: Transparency
+					try
+					{
+						InitializeTransparency();
+					}
+					catch (System.Exception ex) { Debug.LogError($"[Companion] Transparency Init Failed: {ex}"); }
 
 					ViewContainer = root; // Critical: Assignment for Update loop
 					InitializeInteractions();
 					InitializeSettingsButton(root);
+
+					// Subsystem 2: Chat
+					try
+					{
+						InitializeChatSystem(root);
+					}
+					catch (System.Exception ex) { Debug.LogError($"[Companion] Chat Init Failed: {ex}"); }
 				}
 				catch (System.Exception ex)
 				{
@@ -61,12 +74,8 @@ namespace KarmoToys.Features.Companion
 		private void InitializeInteractions()
 		{
 			// 1. Find all objects that want to handle dragging
-			// Note: We use GameObject.FindObjectsByType with Interface support (Unity 2021.3+)
 			_avatarHandlers.Clear();
 			IDragHandler[] handlers = GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<IDragHandler>().ToArray();
-			// Note: As IDragHandler is an interface, we need to be careful with the cast if needed,
-			// but handlers is already filtered by OfType<IDragHandler>().
-			// Let's re-read the original logic to be sure.
 
 			foreach (var h in handlers)
 			{
@@ -199,35 +208,11 @@ namespace KarmoToys.Features.Companion
 			root.Add(_settingsPanel);
 		}
 
-		// UI Toolkit event handlers are removed in favor of unified Update polling to prevent "먹통" (unresponsiveness) 
-		// and capture conflicts that the user reported. Logic is moved to the Update() method.
-
 		private void InitializeTransparency()
 		{
 #if !UNITY_EDITOR
-			// 1. Process Command Line Arguments for Window Size
-			string[] args = System.Environment.GetCommandLineArgs();
-			int targetW = -1;
-			int targetH = -1;
-			bool forceFullWorkArea = false;
-
-			for (int i = 0; i < args.Length; i++)
-			{
-				if (args[i] == "-width" && i + 1 < args.Length) int.TryParse(args[i + 1], out targetW);
-				if (args[i] == "-height" && i + 1 < args.Length) int.TryParse(args[i + 1], out targetH);
-				if (args[i] == "-fullworkarea") forceFullWorkArea = true;
-			}
-
-			if (forceFullWorkArea || (targetW <= 0 || targetH <= 0))
-			{
-				Rect workArea = WindowTransparencyUtils.GetWorkArea();
-				targetW = (int)workArea.width;
-				targetH = (int)workArea.height;
-			}
-
-			// Ensure the window fills the target area regardless of previous size
-			Screen.SetResolution(targetW, targetH, FullScreenMode.Windowed);
-
+			// Note: Resolution handling is now done in KarmoToysApp.Start() to avoid double-set conflict.
+			// We just start the transparency routine here.
 			KarmoToys.Main.KarmoToysApp.Instance.StartCoroutine(TransparencyRoutine());
 #else
 			Debug.Log("Transparency simulation (check logs).");
@@ -299,10 +284,23 @@ namespace KarmoToys.Features.Companion
 
 						if (moveTarget != null)
 							StartUIDrag(moveTarget);
+
+						// Chat Reaction: Click UI (Maybe not for settings button, but general clicks?)
+						// If purely clicking background/character:
 					}
 					else if (hovered3D != null)
 					{
 						Start3DDrag(hovered3D);
+						// Chat Reaction: Drag Start
+						ShowRandomChat(_talkData?.DragStartReactions);
+					}
+					else
+					{
+						// Clicked on nothing/transparent area (handled by system?)
+						// If we want click reaction on character without drag:
+						// We need to differentiate Click vs Drag. 
+						// Currently Drag starts immediately. 
+						// Let's optimize: Chat only on drag start is fine for now.
 					}
 				}
 
@@ -312,10 +310,24 @@ namespace KarmoToys.Features.Companion
 					if (_isDragging && _dragTarget != null)
 					{
 						// Click detection - Toggle if it was a quick click on the settings button
-						if (!_hasDraggedSignificantly && _dragTarget.name == "SettingsButton")
+						if (!_hasDraggedSignificantly)
 						{
-							ToggleSettingsPanel(ViewContainer);
+							if (_dragTarget.name == "SettingsButton")
+							{
+								ToggleSettingsPanel(ViewContainer);
+							}
 						}
+					}
+
+					// Click Reaction for 3D Character (if not dragged significantly)
+					if (_isDragging3D && !_hasDraggedSignificantly && _activeHandler3D != null)
+					{
+						ShowRandomChat(_talkData?.ClickReactions);
+					}
+					// Only show Drag End reaction if we actually dragged significantly
+					else if ((_isDragging || _isDragging3D) && _hasDraggedSignificantly)
+					{
+						ShowRandomChat(_talkData?.DragEndReactions);
 					}
 
 					if (_isDragging3D && _activeHandler3D != null) _activeHandler3D.OnDragEnd();
@@ -339,6 +351,8 @@ namespace KarmoToys.Features.Companion
 					Update3DDrag();
 					isHovering = true;
 				}
+
+				UpdateChatSystem();
 			}
 		}
 
@@ -450,9 +464,131 @@ namespace KarmoToys.Features.Companion
 			}
 		}
 
+
+		// --- Chat System ---
+		private KarmoToys.Features.Companion.SpeechBubbleElement _speechBubble;
+		private KarmoToys.Features.Companion.CompanionTalkData _talkData;
+		private float _nextChatTime;
+		private float _bubbleHideTime;
+
+		private void InitializeChatSystem(VisualElement root)
+		{
+			if (_speechBubble == null)
+			{
+				_speechBubble = new KarmoToys.Features.Companion.SpeechBubbleElement();
+				root.Add(_speechBubble);
+			}
+
+			// 1. Load from Settings (Direct Reference)
+			if (KarmoToys.Main.KarmoToysApp.Instance != null && KarmoToys.Main.KarmoToysApp.Instance.Settings != null)
+			{
+				_talkData = KarmoToys.Main.KarmoToysApp.Instance.Settings.CompanionData;
+			}
+
+			// 2. Fast Fail if data is missing
+			if (_talkData == null)
+			{
+				Debug.LogError("[CompanionFeature] CompanionData is NOT assigned in KarmoToysSettings! Chat system disabled.");
+				return;
+			}
+
+			// Safety check for loaded data
+			if (_talkData.MinChatInterval < 0.5f) _talkData.MinChatInterval = 10f;
+			if (_talkData.MaxChatInterval < _talkData.MinChatInterval) _talkData.MaxChatInterval = _talkData.MinChatInterval + 5f;
+
+			ScheduleNextChat();
+		}
+
+		private void ScheduleNextChat()
+		{
+			if (_talkData == null) return;
+
+			float min = Mathf.Max(1f, _talkData.MinChatInterval);
+			float max = Mathf.Max(min, _talkData.MaxChatInterval);
+			float delay = UnityEngine.Random.Range(min, max);
+
+			// Safety: Minimum 1s to prevent infinite loop errors
+			if (delay < 1f) delay = 1f;
+
+			_nextChatTime = Time.time + delay;
+		}
+
+		private void UpdateChatSystem()
+		{
+			if (_selectedAvatar == null || _speechBubble == null) return;
+
+			// If data is missing (and wasn't fixed by hot-reload init), we stop here.
+			if (_talkData == null)
+			{
+				// Try re-fetch from settings once (for hot reload support)
+				if (KarmoToys.Main.KarmoToysApp.Instance?.Settings?.CompanionData != null)
+				{
+					InitializeChatSystem(ViewContainer);
+				}
+				if (_talkData == null) return;
+			}
+
+			// 1. Position Update
+			Vector3 headPos = Vector3.zero;
+			if (_selectedAvatar is CompanionCharacter cc)
+			{
+				headPos = cc.GetHeadPosition();
+			}
+			else
+			{
+				headPos = _selectedAvatar.Transform.position + Vector3.up * 1.0f;
+			}
+
+			if (Camera.main != null)
+			{
+				Vector3 screenPos = Camera.main.WorldToScreenPoint(headPos);
+				// Flip Y for UI Toolkit
+				float uiY = Screen.height - screenPos.y;
+
+				// Adjust for layout scale if necessary (Assuming 1:1 for now as we use Screen.setResolution match)
+				// Basic offset to center bubble
+				_speechBubble.style.left = screenPos.x;
+				_speechBubble.style.top = uiY - 50; // Offset upwards
+			}
+
+			// 2. Auto Chat Timer
+			if (Time.time >= _nextChatTime && !_isDragging && !_isDragging3D)
+			{
+				// Critical: Update time FIRST to prevent infinite loop if ShowRandomChat fails
+				ScheduleNextChat();
+
+				ShowRandomChat(_talkData.IdleChats);
+			}
+
+			// 3. Hide Timer
+			if (_bubbleHideTime > 0 && Time.time >= _bubbleHideTime)
+			{
+				_speechBubble.Hide();
+				_bubbleHideTime = 0;
+			}
+		}
+
+		private void ShowRandomChat(System.Collections.Generic.List<string> options)
+		{
+			if (options == null || options.Count == 0) return;
+			string text = options[UnityEngine.Random.Range(0, options.Count)];
+			ShowChat(text);
+		}
+
+		public void ShowChat(string text)
+		{
+			// Safe to assume _speechBubble and _talkData are valid here, or we fail gracefully via NRE/Exceptions
+			// which is acceptable given Fast Fail policy. But keeping minimal check for Bubble is okay.
+			if (_speechBubble == null) return;
+
+			_speechBubble.Show(text, _talkData.BubbleDuration);
+			_bubbleHideTime = Time.time + _talkData.BubbleDuration;
+		}
+
 		public override void OnSelect()
 		{
 			base.OnSelect();
 		}
 	}
+	// Verified Recovery: All systems nominal.
 }

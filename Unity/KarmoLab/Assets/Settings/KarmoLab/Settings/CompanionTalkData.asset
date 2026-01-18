@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16f65eed185d05e448476c21d29a5d42, type: 3}
+  m_Name: CompanionTalkData
+  m_EditorClassIdentifier: Assembly-CSharp::KarmoToys.Features.Companion.CompanionTalkData
+  IdleChats:
+  - "\uC2EC\uC2EC\uD574..."
+  - "\uB180\uC544\uC918!"
+  - Zzz...
+  - "\uBC30\uACE0\uD504\uB2F9"
+  - "\uC791\uC5C5 \uD30C\uC774\uD305!"
+  ClickReactions:
+  - "\uB0D0\uC559?"
+  - "\uC65C?"
+  - "\uAC04\uC9C0\uB7EC!"
+  - "\uD788\uD788"
+  DragStartReactions:
+  - "\uC73C\uC544\uC559!"
+  - "\uC5B4\uB514\uAC00!"
+  - "\uB0A0\uACE0\uC788\uC5B4!"
+  - "\uC7A1\uD600\uB530!"
+  DragEndReactions:
+  - "\uD734..."
+  - "\uB3C4\uCC29!"
+  - "\uC5B4\uC9C8\uC5B4\uC9C8\uD574"
+  - "\uCFF5!"
+  MinChatInterval: 10
+  MaxChatInterval: 30
+  BubbleDuration: 3

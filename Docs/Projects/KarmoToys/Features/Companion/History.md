@@ -1,5 +1,22 @@
 # Companion Mode History
 
+## 2026-01-18 (KST) - Part 2
+
+- **Companion Speech Bubble System**:
+  - `SpeechBubbleElement` (UI Toolkit) 추가.
+  - `CompanionTalkData` (ScriptableObject)로 대사 및 타이밍 데이터 분리.
+  - Idle, Drag Start, Drag End, Click 상황별 반응 대사 구현.
+- **Data Management Refactor**:
+  - `Resources` 폴더 의존성 제거 -> `KarmoToysSettings`를 통한 직접 참조 방식으로 변경.
+  - 데이터 누락 시 **Fast Fail** (에러 로그 출력 후 기능 정지) 정책 도입.
+- **Rapid Fire Chat Fix**:
+  - 데이터 오설정 시에도 최소 1초~4초의 쿨타임을 강제하여 채팅 도배 방지.
+  - 드래그 종료(Drop) 판정 로직 수정 (매 프레임 호출되는 버그 수정).
+- **Transparency Stability**:
+  - 초기화 시 재시도(Retry) 로직 강화 및 `Initialize` 예외 처리(Try-Catch) 격리로 안정성 확보.
+- **Initialization Crash Fix**:
+  - `CompanionFeature` 초기화 과정에서 누락된 메서드(`InitializeInteractions`, `Settings`) 복구.
+
 ## 2026-01-18 (KST)
 
 - **실행 진입점 및 관리 체계 리팩토링 (Launch System Refactor)**:

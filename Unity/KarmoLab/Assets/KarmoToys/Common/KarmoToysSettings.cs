@@ -20,5 +20,9 @@ namespace KarmoToys.Common
 		[Header("Save Settings")]
 		[Tooltip("Maximum number of rolling backups to keep.")]
 		public int MaxBackupCount = 1000;
+
+		[Header("Companion Settings")]
+		[Tooltip("Data for Companion Speech Bubble and Reactions")]
+		public KarmoToys.Features.Companion.CompanionTalkData CompanionData;
 	}
 }
