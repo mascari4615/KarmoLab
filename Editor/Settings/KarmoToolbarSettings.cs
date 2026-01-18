@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using KarmoLab.KarmoEditor;
 
-namespace KarmoLab.KarmoEditor
+namespace KarmoLab.KarmoEditor.Settings
 {
 	/// <summary>
 	/// 툴바에 표시할 씬 정보를 저장하는 설정 파일
 	/// </summary>
-	[CreateAssetMenu(fileName = "ToolbarSceneConfig", menuName = "KarmoLab/Toolbar Scene Config")]
-	public class ToolbarSceneConfig : ScriptableObject
+	[CreateAssetMenu(fileName = nameof(KarmoToolbarSettings), menuName = Define.CreateAssetMenuSettings + "/" + nameof(KarmoToolbarSettings))]
+	public class KarmoToolbarSettings : ScriptableObject
 	{
 		[Header("Favorite Scenes")]
 		[Tooltip("툴바 드롭다운에 항상 표시할 씬 목록")]
