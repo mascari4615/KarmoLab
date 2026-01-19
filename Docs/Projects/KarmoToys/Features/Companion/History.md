@@ -1,11 +1,42 @@
 # Companion Mode History
 
-## 2026-01-19 (KST)
+## 2026-01-19 (KST) - Companion UX & System Polish (Final Draft)
 
-- **Editor Play Mode Support (Dev Experience)**:
-  - **Simulated Transparency**: 에디터 내에서 투명 윈도우 대신 회색(Grey) 배경을 렌더링하여 영역 시뮬레이션.
-  - **Input Hybrid**: 에디터(`UNITY_EDITOR`)에서는 Win32 API 대신 Unity Input API를 사용하여 마우스 클릭/드래그 지원.
-  - **Configuration**: `KarmoToysSettings.SimulateCompanionMode` 옵션을 통해 빌드 없이 모드 강제 진입 지원.
+- **UI/UX 개선 및 안정화**
+  - **탭 시스템 (Tab System)** 도입: `InteractionModule` 설정 창을 'Avatar'와 'Time'으로 분리하여 가독성 개선.
+  - **입력 씹힘 문제 해결**: 매 프레임 UI를 재생성하는 비효율적 로직을 제거하고, 텍스트(`RefreshSettingsUI`)만 업데이트하도록 최적화.
+  - **토스트 알림 (Toast Notification)**: 타이머 종료 시 화면 하단이 아닌, **중앙**에 직관적인 알림 메시지 표시.
+- **MDD (Moe Driven Development) 적용** 🌸
+  - **감성 대사 추가**: 기계적인 알람 메시지("Alarm Done") 대신, 캐릭터 성격이 반영된 반응 대사("시간 다 됐어!", "기록 시작! 파이팅!") 추가.
+  - 유저 상호작용(버튼 클릭) 시 랜덤 대사 출력으로 생동감 부여.
+- **Overhead HUD (Time Status)**
+  - 캐릭터 머리 위에 둥둥 떠다니는 **시간 상태창** 구현.
+  - 스톱워치/타이머 작동 시만 표시되며, 두 기능 동시 사용 시 파이프(`|`)로 구분하여 표시.
+  - **커스터마이징 & 저장**:
+    - HUD 높이 조절 슬라이더 제공 (`-0.5` ~ `1.5` range).
+    - **Custom Save System 통합**: `KarmoToysData` 내 `CompanionData`를 신설하여 높이 설정값을 영구 저장.
+
+## 2026-01-19 (KST) - Companion Time System & Idle Mode Update
+
+- **유휴 감지 시스템 강화 (Idle Monitor System Enhanced)**
+  - Win32 `GetLastInputInfo`를 활용하여 전역 유휴 감지(`IdleMonitorModule`) 구현.
+  - **수면 모드 (Sleep Mode)** 추가:
+    - 사라지지 않는 "Zzz..." 말풍선 표시 (Persistent Chat).
+    - `CompanionCharacter.SetSleepMode`를 통해 "SLEEP" 애니메이션 재생.
+    - 수면 중 일반 대화 무시 (`CompanionState` 패턴 적용).
+  - 에디터 내 입력 민감도 문제 해결 (마우스 이동 감도 완화).
+- **시간 시스템 확장 (Time System Expansion)**
+  - `TimeModule` 내 **타이머(Timer)** 및 **스톱워치(Stopwatch)** 로직 구현.
+  - 알람/타이머 알림 시스템 통합 (비프음 + 중요 메시지 처리).
+- **문서화**
+  - `IdleMonitorModule.md` 생성.
+  - `TimeSystem_Design.md` 업데이트.
+
+## 2026-01-19 (KST) - Editor Play Mode & Refactoringt (Dev Experience)**
+
+- **Simulated Transparency**: 에디터 내에서 투명 윈도우 대신 회색(Grey) 배경을 렌더링하여 영역 시뮬레이션.
+- **Input Hybrid**: 에디터(`UNITY_EDITOR`)에서는 Win32 API 대신 Unity Input API를 사용하여 마우스 클릭/드래그 지원.
+- **Configuration**: `KarmoToysSettings.SimulateCompanionMode` 옵션을 통해 빌드 없이 모드 강제 진입 지원.
 
 - **Modular Architecture Refactoring (Companion 2.0)**:
   - **Core Diet**: `CompanionFeature.cs`를 경량화(600줄 -> 130줄)하고 모듈 관리 역할(`RegisterModule`)로 전환.

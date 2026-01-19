@@ -7,11 +7,33 @@ namespace KarmoToys.Features.Companion.Modules
 {
 	public class TimeModule : ICompanionModule
 	{
+		// --- Internal Data Structures ---
+		public class TimerData
+		{
+			public string Id = System.Guid.NewGuid().ToString();
+			public string Label = "Timer";
+			public float Duration; // Seconds
+			public float RemainingTime;
+			public bool IsRunning;
+			public bool IsFinished;
+		}
+
+		public class StopwatchData
+		{
+			public bool IsRunning;
+			public float ElapsedTime;
+		}
+
 		private CompanionContext _context;
 		private ChatModule _chatModule;
 
 		private List<CompanionAlarmData> _alarms;
+
+		// State
 		private float _checkTimer;
+		private List<TimerData> _activeTimers = new List<TimerData>();
+		private StopwatchData _stopwatch = new StopwatchData();
+
 		private int _lastTriggeredMinute = -1; // To prevent multiple triggers in the same minute
 
 		private AudioSource _audioSource;
@@ -56,13 +78,105 @@ namespace KarmoToys.Features.Companion.Modules
 
 		public void Update()
 		{
-			// Check every 1 second (no need for frame-perfect accuracy)
-			_checkTimer += Time.deltaTime;
-			if (_checkTimer < 1.0f) return;
-			_checkTimer = 0f;
+			float dt = Time.deltaTime;
 
-			CheckAlarms();
+			// 1. Update Stopwatch
+			if (_stopwatch.IsRunning)
+			{
+				_stopwatch.ElapsedTime += dt;
+			}
+
+			// 2. Update Timers
+			for (int i = _activeTimers.Count - 1; i >= 0; i--)
+			{
+				var timer = _activeTimers[i];
+				if (timer.IsRunning && !timer.IsFinished)
+				{
+					timer.RemainingTime -= dt;
+					if (timer.RemainingTime <= 0)
+					{
+						timer.RemainingTime = 0;
+						timer.IsFinished = true;
+						timer.IsRunning = false;
+						TriggerTimerFinished(timer);
+					}
+				}
+			}
+
+			// 3. Update Alarms (Low frequency check)
+			_checkTimer += dt;
+			if (_checkTimer >= 1.0f)
+			{
+				_checkTimer = 0;
+				CheckAlarms();
+			}
 		}
+
+		// --- Public API for UI ---
+		public void StartTimer(float duration, string label = "Timer")
+		{
+			var timer = new TimerData
+			{
+				Label = label,
+				Duration = duration,
+				RemainingTime = duration,
+				IsRunning = true
+			};
+			_activeTimers.Add(timer);
+			Debug.Log($"[TimeModule] Started Timer: {label} ({duration}s)");
+		}
+
+		public void StopTimer(string id)
+		{
+			var timer = _activeTimers.Find(t => t.Id == id);
+			if (timer != null)
+			{
+				timer.IsRunning = false;
+				_activeTimers.Remove(timer);
+			}
+		}
+
+		public void ToggleStopwatch(bool start)
+		{
+			_stopwatch.IsRunning = start;
+		}
+
+		public void ResetStopwatch()
+		{
+			_stopwatch.IsRunning = false;
+			_stopwatch.ElapsedTime = 0f;
+		}
+
+		public float GetStopwatchTime() => _stopwatch.ElapsedTime;
+		public List<TimerData> GetTimers() => _activeTimers;
+
+		private void TriggerTimerFinished(TimerData timer)
+		{
+			Debug.Log($"[TimeModule] Timer Finished: {timer.Label}");
+
+			// 2. Chat Notification (MDD Mode 🌸)
+			if (_chatModule != null)
+			{
+				string[] moeMessages = new string[]
+				{
+					$"시간 다 됐어! ({timer.Label})", // Time's up!
+					$"{timer.Label} 끝났어! 얼른 확인해봐!", // Finished! Check it out!
+					"띠링띠링! 약속한 시간이야! ⏰", // Ring ring! It's the promised time!
+					"일어나! (라고 하기엔 짧은가?)" // Wake up! (Too short?)
+				};
+				string msg = moeMessages[UnityEngine.Random.Range(0, moeMessages.Length)];
+
+				_chatModule.ShowChat(msg, true); // Important
+			}
+
+			// 3. Event Notification (for Toast)
+			OnTimerFinished?.Invoke($"Finished: {timer.Label}");
+
+			// 2. Sound
+			PlayProceduralBeep(0.8f); // High volume
+		}
+
+		public event System.Action<string> OnTimerFinished; // Important
 
 		private void CheckAlarms()
 		{
@@ -106,7 +220,7 @@ namespace KarmoToys.Features.Companion.Modules
 			// 1. Show Message
 			if (_chatModule != null && !string.IsNullOrEmpty(alarm.Message))
 			{
-				_chatModule.ShowChat(alarm.Message);
+				_chatModule.ShowChat(alarm.Message, true); // Important: Alarm must penetrate sleep
 			}
 
 			// 2. Play Sound

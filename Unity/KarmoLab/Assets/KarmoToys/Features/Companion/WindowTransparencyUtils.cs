@@ -10,6 +10,74 @@ namespace KarmoToys.Features.Companion
 		// --- P/Invoke Definitions ---
 		[DllImport("user32.dll")] private static extern IntPtr GetActiveWindow();
 
+		[StructLayout(LayoutKind.Sequential)]
+		public struct LASTINPUTINFO
+		{
+			public uint cbSize;
+			public uint dwTime;
+		}
+
+		[DllImport("user32.dll")]
+		private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+		public static uint GetLastInputTime()
+		{
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+			LASTINPUTINFO lastInputInfo = new LASTINPUTINFO();
+			lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
+			lastInputInfo.dwTime = 0;
+
+			if (GetLastInputInfo(ref lastInputInfo))
+			{
+				return lastInputInfo.dwTime;
+			}
+#endif
+			// Fallback for editor or fail
+			return (uint)Environment.TickCount;
+		}
+
+		// Wrapper to get idle time in seconds
+		public static float GetIdleTimeSeconds()
+		{
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+			uint lastInputTick = GetLastInputTime();
+			uint systemTick = (uint)Environment.TickCount; 
+			// Note: TickCount wraps around every 49.7 days.
+			// Simple subtraction works for duration if unchecked, but let's be safe.
+			// Using long to handle potential wrap logic if needed, but uint subtraction is implicitly modulo 2^32.
+			// uint duration = systemTick - lastInputTick;
+			
+			return (systemTick - lastInputTick) / 1000f;
+#else
+			// Mock for Editor: Track mouse movement manually?
+			// Since we already have mouse polling in InteractionModule, 
+			// InteractionModule could update a 'LastActivityTime'.
+			// But for now, let's just use Input.anyKey logic for Editor.
+			
+			// Wait, GetLastInputInfo checks GLOBAL input (even outside window).
+			// Input.anyKey only checks focused window.
+			// In Editor, we only care about focus, so Input.anyKey is fine?
+			// Actually, for a 'Desktop Companion', global input is key.
+			// Simulating global idle in Editor is hard. Let's just return 0 (never idle) or implement a mock timer later.
+			// For now, let's return a mock value that increases if no Input in Game View.
+			return _editorIdleTimer; 
+#endif
+		}
+
+#if UNITY_EDITOR // Mock Field
+		private static float _editorIdleTimer = 0f;
+		public static void UpdateEditorIdle() // Call this from Feature Update
+		{
+			if (Input.anyKey || Input.anyKeyDown || Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0)
+			{
+				_editorIdleTimer = 0f;
+			}
+			else
+			{
+				_editorIdleTimer += Time.deltaTime;
+			}
+		}
+#endif
 		[DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
 
 		[DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
@@ -233,24 +301,43 @@ namespace KarmoToys.Features.Companion
 		}
 	}
 #else
-	// Dummy implementation for Editor/Non-Windows platforms
 	public static class WindowTransparencyUtils
 	{
+		private static float _editorIdleTimer = 0f;
+
 		public static void EnableTransparency() { Debug.Log("[WindowTransparencyUtils] EnableTransparency called (Mock)."); }
-		public static void SetClickThrough(bool b) { Debug.Log($"[WindowTransparencyUtils] SetClickThrough: {b} (Mock)."); }
-		public static void SetAlwaysOnTop(bool b) { Debug.Log($"[WindowTransparencyUtils] SetAlwaysOnTop: {b} (Mock)."); }
+		public static void SetClickThrough(bool b) { /* Too spammy */ }
+		public static void SetAlwaysOnTop(bool b) { /* Too spammy */ }
 		public static Rect GetWorkArea() { return new Rect(0, 0, 1920, 1080); }
 		public static Vector2 GetMousePosInWindow()
 		{
 			Vector2 pos = Input.mousePosition;
-			// Win32 GetCursorPos is Top-Left origin. Unity Input.mousePosition is Bottom-Left origin.
-			// We simulate Top-Left origin here.
 			return new Vector2(pos.x, Screen.height - pos.y);
 		}
 
 		public static bool IsLeftMouseButtonDown()
 		{
 			return Input.GetMouseButton(0);
+		}
+
+		public static void UpdateEditorIdle()
+		{
+			// Reset idle timer on any SIGNIFICANT input
+			if (Input.anyKey || Input.anyKeyDown ||
+				Mathf.Abs(Input.GetAxis("Mouse X")) > 1.0f ||
+				Mathf.Abs(Input.GetAxis("Mouse Y")) > 1.0f)
+			{
+				_editorIdleTimer = 0f;
+			}
+			else
+			{
+				_editorIdleTimer += Time.deltaTime;
+			}
+		}
+
+		public static float GetIdleTimeSeconds()
+		{
+			return _editorIdleTimer;
 		}
 	}
 #endif

@@ -20,6 +20,9 @@ namespace KarmoToys.Common.Data
 		public DashboardData Dashboard = new DashboardData();
 		public LifeWeeklyData LifeWeekly = new LifeWeeklyData();
 
+		// Companion Data
+		public CompanionData Companion = new CompanionData();
+
 		// Project Data
 		public List<ProjectItemData> ProjectItems = new List<ProjectItemData>();
 
@@ -27,5 +30,11 @@ namespace KarmoToys.Common.Data
 		/// Migrates data from legacy Planner structure to new specialized structures.
 		/// </summary>
 
+	}
+
+	[Serializable]
+	public class CompanionData
+	{
+		public float HudOffset = 0.2f;
 	}
 }

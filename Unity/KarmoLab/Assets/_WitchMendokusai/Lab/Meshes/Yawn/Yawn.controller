@@ -59,7 +59,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Rig|Swim_Idle_Loop
+  m_Name: SLEEP
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -73,7 +73,7 @@ AnimatorState:
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
   m_Motion: {fileID: 3552131155159585165, guid: 3cc8f949fedbae149933ef0147a9729c, type: 3}
-  m_Tag: Idle
+  m_Tag: SLEEP
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
@@ -139,7 +139,7 @@ AnimatorStateMachine:
     m_Position: {x: 250, y: 20, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -8247503300190604487}
-    m_Position: {x: 260, y: 30, z: 0}
+    m_Position: {x: 510, y: -20, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 8337592401484212340}
     m_Position: {x: 270, y: 40, z: 0}

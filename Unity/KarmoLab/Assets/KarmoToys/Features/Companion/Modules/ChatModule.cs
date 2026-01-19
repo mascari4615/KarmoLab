@@ -12,6 +12,7 @@ namespace KarmoToys.Features.Companion.Modules
 		private CompanionTalkData _talkData;
 		private float _nextChatTime;
 		private float _bubbleHideTime;
+		private bool _isPersistentBubble; // If true, do not auto-hide
 
 		public void Initialize(CompanionContext context)
 		{
@@ -59,11 +60,27 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 
 			// 3. Hide Timer
-			if (_bubbleHideTime > 0 && Time.time >= _bubbleHideTime)
+			if (!_isPersistentBubble && _bubbleHideTime > 0 && Time.time >= _bubbleHideTime)
 			{
 				_speechBubble.Hide();
 				_bubbleHideTime = 0;
 			}
+		}
+
+		public void HidePersistentChat()
+		{
+			_isPersistentBubble = false;
+			_bubbleHideTime = 0; // Hide immediately
+			if (_speechBubble != null) _speechBubble.Hide();
+		}
+
+		public void ShowPersistentChat(string text)
+		{
+			if (_speechBubble == null) return;
+			_isPersistentBubble = true;
+			// Pass a very long duration. 
+			// The update loop logic will prevent hiding anyway because _isPersistentBubble is true.
+			_speechBubble.Show(text, 99999f);
 		}
 
 		public void OnDestroy()
@@ -116,11 +133,19 @@ namespace KarmoToys.Features.Companion.Modules
 			ShowChat(text);
 		}
 
-		public void ShowChat(string text)
+		public void ShowChat(string text, bool isImportant = false)
 		{
 			if (_speechBubble == null || _talkData == null) return;
+
+			// Don't disturb sleep unless important
+			if (_context.CurrentState == CompanionState.Sleeping && !isImportant)
+			{
+				return;
+			}
+
 			_speechBubble.Show(text, _talkData.BubbleDuration);
 			_bubbleHideTime = Time.time + _talkData.BubbleDuration;
+			_isPersistentBubble = false; // Reset persistence on normal chat
 		}
 	}
 }

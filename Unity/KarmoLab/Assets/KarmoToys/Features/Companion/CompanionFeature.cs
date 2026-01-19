@@ -60,15 +60,19 @@ namespace KarmoToys.Features.Companion
 					_chatModule = new KarmoToys.Features.Companion.Modules.ChatModule();
 					_interactionModule = new KarmoToys.Features.Companion.Modules.InteractionModule();
 					var timeModule = new KarmoToys.Features.Companion.Modules.TimeModule();
+					var idleModule = new KarmoToys.Features.Companion.Modules.IdleMonitorModule();
 
 					// 4. Link Modules (Dependency Injection)
 					_interactionModule.SetChatModule(_chatModule);
+					_interactionModule.SetTimeModule(timeModule);
 					timeModule.SetChatModule(_chatModule);
+					idleModule.SetChatModule(_chatModule);
 
 					// 5. Register & Init
 					RegisterModule(_chatModule);
 					RegisterModule(_interactionModule); // Interaction last to handle input based on visual state
 					RegisterModule(timeModule);
+					RegisterModule(idleModule);
 				}
 				catch (System.Exception ex)
 				{
