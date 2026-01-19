@@ -1,6 +1,20 @@
 # KarmoLab Project History
 
-## 2026-01-18 (KST) - Part 5
+## 2026-01-19 (KST) - Phase 2 Completion
+
+- **UI 구조 전면 개편 (UI Overhaul - Sidebar Layout)**:
+  - **좌측 사이드바 네비게이션**: 기존 상단 탭(Tab) 방식을 모던한 좌측 사이드바(Icon-based Sidebar) 형태로 전면 교체하여 작업 공간 효율성 증대.
+  - **헤더/툴바 최적화**: 날짜, D-Day, 컴패니언 토글 등을 상단 `.top-bar`로 재배치하여 정보 밀도와 가독성 개선.
+  - **공통 컴포넌트 표준화**: 스크롤바(Overlay Ghost Scrollbar), 리스트 아이템(`.common-list-item`) 등 전역 UI 요소의 스타일을 통일.
+
+- **테마 시스템 아키텍처 재설계 (Theme System Re-engineering)**:
+  - **Single Source of Truth**: 모든 스타일 토큰을 `ThemeTokens.uss`로 일원화하고, `MainStyle.uss`에서 이를 참조하는 명확한 의존성 구조 확립.
+  - **Absolute Path Imports**: `project://database/...` 절대 경로를 사용하여 Unity USS 로드 시 컨텍스트에 따른 변수 참조 실패(NRE) 문제를 원천 차단.
+  - **Black-on-Black Fix**: 루트 컨테이너에 명시적 텍스트 색상 상속(`color: var(--color-text-main)`)을 적용하여 다크 모드 시인성 문제 해결.
+
+- **안정화 및 최적화 (Stabilization)**:
+  - **Critical NRE Hotfix**: `StyleVariableResolver` NRE를 유발하던 불필요한 인라인 스타일(`style="color: var(...)"`) 중복 정의를 제거하여 파서 안정성 확보.
+  - **Hot Reload 안전성**: UXML/USS 리로드 시에도 깨지지 않는 견고한 Import 구조 완성.
 
 - **Project Manager 아키텍처 고도화 (Refactoring & Architecture)**:
   - **단일 책임 원칙(SRP) 적용**: 거대해진 `ProjectManagerFeature` 클래스를 기능별 Partial Class(`Table`, `Kanban`, `Modal`)로 분리하여 유지보수성 및 가독성 대폭 향상.

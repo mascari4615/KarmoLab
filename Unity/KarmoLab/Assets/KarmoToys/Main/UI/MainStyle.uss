@@ -1,4 +1,4 @@
-@import url("ThemeTokens.uss");
+@import url("project://database/Assets/KarmoToys/Main/UI/ThemeTokens.uss");
 
 /* =========================================================================================
    Global Container & Typography
@@ -28,7 +28,7 @@
 .unity-text-field,
 .unity-base-text-field,
 .unity-text-field__input {
-	--unity-cursor-color: var(--unity-cursor-color);
+	--unity-cursor-color: var(--custom-cursor-color);
 }
 
 .planner-container .unity-text-field__input {
@@ -381,4 +381,188 @@
 	-unity-font: url('project://database/Assets/Fonts/Mabinogi_Classic/OTF/Mabinogi_Classic_OTF.otf');
 	-unity-font-definition: initial;
 	-unity-font-style: bold; 
+}
+
+/* =========================================================================================
+   Global Component Styles
+   ========================================================================================= */
+
+/* Standard Buttons */
+.btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+    border-radius: 4px;
+    padding: 8px 16px;
+    border-width: 0;
+    transition: 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.btn-danger {
+    background-color: transparent;
+    color: #ef4444; /* Red-500 */
+    border-width: 1px;
+    border-color: #ef4444;
+    border-radius: 4px;
+    padding: 8px 16px;
+    transition: 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* =========================================================================================
+   Ghost Scrollbar (Overlay Style)
+   ========================================================================================= */
+
+/* Base Scroller - Hidden by default */
+.unity-scroller {
+    background-color: transparent;
+    border-width: 0;
+    opacity: 0.3; /* Faintly visible */
+    transition: opacity 0.3s;
+}
+
+.unity-scroller:hover {
+    opacity: 1;
+}
+
+/* Vertical Scroller */
+.unity-scroller--vertical {
+    width: 8px;
+    margin-left: 2px;
+}
+
+.unity-scroller--vertical .unity-base-slider__dragger {
+    width: 6px;
+    margin-left: 1px;
+    border-radius: 4px;
+}
+
+/* Horizontal Scroller */
+.unity-scroller--horizontal {
+    height: 8px;
+    margin-top: 2px;
+}
+
+.unity-scroller--horizontal .unity-base-slider__dragger {
+    height: 6px;
+    margin-top: 1px;
+    border-radius: 4px;
+}
+
+/* Tracker & Dragger Bases */
+.unity-base-slider__tracker {
+    background-color: transparent;
+    border-width: 0;
+}
+
+.unity-base-slider__dragger {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-width: 0;
+}
+
+.unity-base-slider__dragger:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.unity-scroller__low-button, 
+
+/* =========================================================================================
+   Common List Items
+   ========================================================================================= */
+
+.common-list-item {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    background-color: var(--color-bg-surface);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: transparent;
+    transition-property: background-color, border-color, scale;
+    transition-duration: 0.2s;
+}
+
+.common-list-item:hover {
+    background-color: var(--color-bg-hover);
+    border-color: var(--color-border-hover);
+}
+
+
+/* =========================================================================================
+   Sidebar Layout "Vertical Era"
+   ========================================================================================= */
+
+.root-container {
+    flex-direction: row;
+    flex-grow: 1;
+    background-color: var(--color-bg-base);
+    color: var(--color-text-main);
+}
+
+.nav-sidebar {
+    width: 60px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-right-width: 1px;
+    border-right-color: var(--color-border);
+    align-items: center;
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+.nav-logo {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: var(--color-primary);
+    margin-bottom: 20px;
+}
+
+.nav-icon-btn {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 10px;
+    background-color: transparent;
+    border-width: 0;
+    border-radius: 8px;
+    font-size: 20px;
+    color: var(--color-text-sub);
+    transition: 0.2s;
+    justify-content: center;
+    align-items: center;
+}
+
+.nav-icon-btn:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-main);
+    scale: 1.1;
+}
+
+.nav-icon-btn.selected {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.content-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px 20px 20px;
+    overflow: hidden;
+}
+
+.top-bar {
+    height: 50px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.05);
 }
