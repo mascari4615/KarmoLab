@@ -6,45 +6,47 @@
 	<ui:Template name="PreferencesView" src="project://database/Assets/KarmoToys/Features/Preferences/PreferencesView.uxml" />
 	<ui:Template name="ProjectManagerView" src="project://database/Assets/KarmoToys/Features/ProjectManager/ProjectManagerView.uxml" />
 
+	<Style src="project://database/Assets/KarmoToys/Main/UI/ThemeTokens.uss"/>
 	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
 	<Style src="project://database/Assets/KarmoToys/Main/UI/LifeWeeklyStyle.uss"/>
 
-	<ui:VisualElement name="Container" class="planner-container bg-gray-900">
-		<ui:VisualElement class="top-header">
-			<ui:VisualElement class="header-left">
-				<ui:Label text="[ G ]" class="header-icon"/>
-				<ui:VisualElement>
-					<ui:Label text="Project: Next Level" class="header-title"/>
-					<ui:TextField name="HeaderTargetInput" value="Target: Project (yyyy.mm)" class="header-subtitle-input"/>
-				</ui:VisualElement>
-			</ui:VisualElement>
-			<ui:VisualElement class="header-right">
-				<ui:VisualElement class="header-tools">
-					<ui:Button name="BtnCompanionToggle" text="👤" class="btn-icon-item" tooltip="컴패니언 소환/해제"/>
-					<ui:Button name="BtnThemeToggle" text="◑" class="btn-icon-item" tooltip="테마 변경"/>
-				</ui:VisualElement>
-				<ui:Label name="HeaderDateLabel" text="2026-01-09" class="header-date"/>
-				<ui:Label name="HeaderDDayLabel" text="D-416" class="header-dday"/>
-			</ui:VisualElement>
-		</ui:VisualElement>
-		
-		<ui:VisualElement class="nav-tabs">
-			<ui:Button name="TabDashboard" text="대시보드" class="tab-button selected"/>
-			<ui:Button name="TabProject" text="프로젝트 관리" class="tab-button"/>
-			<ui:Button name="TabSchedule" text="전략 시간표" class="tab-button"/>
-			<ui:Button name="TabLifeWeekly" text="인생의 주" class="tab-button"/>
-			<ui:Button name="TabTools" text="도구함" class="tab-button"/>
-			<ui:Button name="TabPreferences" text="설정" class="tab-button"/>
+	<ui:VisualElement name="Container" class="root-container">
+		<!-- Sidebar Navigation -->
+		<ui:VisualElement class="nav-sidebar">
+			<ui:Label text="K" class="nav-logo" />
+			
+			<ui:Button name="TabDashboard" text="📊" class="nav-icon-btn selected" tooltip="대시보드" />
+			<ui:Button name="TabProject" text="🚀" class="nav-icon-btn" tooltip="프로젝트 관리" />
+			<ui:Button name="TabSchedule" text="📅" class="nav-icon-btn" tooltip="전략 시간표" />
+			<ui:Button name="TabLifeWeekly" text="🧬" class="nav-icon-btn" tooltip="인생의 주" />
+			<ui:Button name="TabTools" text="🧰" class="nav-icon-btn" tooltip="도구함" />
+			
+			<ui:VisualElement style="flex-grow: 1;" /> <!-- Spacer -->
+			
+			<ui:Button name="TabPreferences" text="⚙️" class="nav-icon-btn" tooltip="설정" />
 		</ui:VisualElement>
 
-		<ui:Instance template="DashboardView" />
-		<ui:Instance template="ScheduleView" />
-		<ui:Instance template="LifeWeeklyView" />
-		<ui:Instance template="ToolBoxView" />
-		<ui:Instance template="PreferencesView" />
-		<ui:Instance template="ProjectManagerView" />
+		<!-- Main Content Area -->
+		<ui:VisualElement class="content-area">
+			<!-- Top Bar (Metadata & Tools) -->
+			<ui:VisualElement class="top-bar">
+				<ui:Label name="HeaderDateLabel" text="2026-01-19" class="header-date" style="margin-right: 15px;" />
+				<ui:Label name="HeaderDDayLabel" text="D-xxx" class="header-dday" style="margin-right: 20px;" />
+				
+				<ui:Button name="BtnCompanionToggle" text="👤" class="btn-icon-item" tooltip="컴패니언 소환/해제" />
+				<ui:Button name="BtnThemeToggle" text="◑" class="btn-icon-item" tooltip="테마 변경" />
+			</ui:VisualElement>
 
-		<!-- Toast Container (Bottom Right) -->
-		<ui:VisualElement name="ToastContainer" style="position: absolute; right: 20px; bottom: 20px; align-items: flex-end; width: 300px; padding-bottom: 20px;" picking-mode="Ignore"/>
+			<!-- Feature Views -->
+			<ui:Instance template="DashboardView" />
+			<ui:Instance template="ScheduleView" />
+			<ui:Instance template="LifeWeeklyView" />
+			<ui:Instance template="ToolBoxView" />
+			<ui:Instance template="PreferencesView" />
+			<ui:Instance template="ProjectManagerView" />
+			
+			<!-- Toast Container -->
+			<ui:VisualElement name="ToastContainer" style="position: absolute; right: 0; bottom: 0; padding: 20px; align-items: flex-end;" picking-mode="Ignore"/>
+		</ui:VisualElement>
 	</ui:VisualElement>
 </ui:UXML>

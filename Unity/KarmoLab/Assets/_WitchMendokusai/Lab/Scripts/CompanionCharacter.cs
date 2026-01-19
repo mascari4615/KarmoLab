@@ -1,5 +1,8 @@
 using UnityEngine;
 using KarmoToys.Features.Companion;
+using UnityEditor.Animations;
+using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// 컴패니언 캐릭터 활동(드래그 등) 반응용 기본 클래스. 🐾
@@ -22,9 +25,9 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 			if (head != null) return head.position + Vector3.up * 0.3f; // Slightly above head
 		}
 		// Fallback for non-humanoid or missing animator
-		Collider col = GetComponent<Collider>();
-		if (col != null) return col.bounds.center + Vector3.up * col.bounds.extents.y + Vector3.up * 0.2f;
-		
+		if (TryGetComponent(out Collider col))
+			return col.bounds.center + Vector3.up * col.bounds.extents.y + Vector3.up * 0.2f;
+
 		return transform.position + Vector3.up * 1.5f;
 	}
 
@@ -33,6 +36,33 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 	// Hash Caching for performance
 	protected static readonly int AnimIdle = Animator.StringToHash("IDLE");
 	protected static readonly int AnimPickedUp = Animator.StringToHash("PICKED_UP");
+	protected static readonly int AnimSleep = Animator.StringToHash("SLEEP");
+
+	public virtual void SetSleepMode(bool isSleeping)
+	{
+		if (isSleeping)
+		{
+			StopIdleLoop();
+
+			if (_animator != null)
+			{
+				if (_animator.HasState(0, AnimSleep))
+				{
+					_animator.Play(AnimSleep);
+					Debug.Log($"[CompanionCharacter] Playing Sleep Animation ({name})");
+				}
+				else
+				{
+					Debug.LogWarning($"[CompanionCharacter] '{name}' Animator does not have 'SLEEP' state! Please add it.");
+				}
+			}
+		}
+		else
+		{
+			Debug.Log($"[CompanionCharacter] Resuming Idle Loop ({name})");
+			StartIdleLoop();
+		}
+	}
 
 	protected virtual void Awake()
 	{
@@ -137,14 +167,14 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 		}
 
 		// Handle both AnimatorController and AnimatorOverrideController
-		UnityEditor.Animations.AnimatorController controller = null;
-		if (_animator.runtimeAnimatorController is UnityEditor.Animations.AnimatorController ac)
+		AnimatorController controller = null;
+		if (_animator.runtimeAnimatorController is AnimatorController ac)
 		{
 			controller = ac;
 		}
 		else if (_animator.runtimeAnimatorController is AnimatorOverrideController oc)
 		{
-			controller = oc.runtimeAnimatorController as UnityEditor.Animations.AnimatorController;
+			controller = oc.runtimeAnimatorController as AnimatorController;
 		}
 
 		if (controller == null)
@@ -153,8 +183,8 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 			return;
 		}
 
-		var foundStates = new System.Collections.Generic.List<string>();
-		foreach (var layer in controller.layers)
+		List<string> foundStates = new List<string>();
+		foreach (AnimatorControllerLayer layer in controller.layers)
 		{
 			ExtractStatesFromStateMachine(layer.stateMachine, foundStates);
 		}
@@ -171,17 +201,10 @@ public class CompanionCharacter : MonoBehaviour, IDragHandler
 		}
 	}
 
-	private void ExtractStatesFromStateMachine(UnityEditor.Animations.AnimatorStateMachine machine, System.Collections.Generic.List<string> results)
+	private void ExtractStatesFromStateMachine(AnimatorStateMachine machine, List<string> results)
 	{
-		foreach (var state in machine.states)
-		{
-			if (state.state.tag == _idleTag)
-			{
-				results.Add(state.state.name);
-			}
-		}
-
-		foreach (var subMachine in machine.stateMachines)
+		results.AddRange(machine.states.Where(state => state.state.tag == _idleTag).Select(state => state.state.name));
+		foreach (ChildAnimatorStateMachine subMachine in machine.stateMachines)
 		{
 			ExtractStatesFromStateMachine(subMachine.stateMachine, results);
 		}

@@ -25,8 +25,11 @@
 
 	--color-primary: rgb(40, 40, 40);      /* 다크 그레이 버튼 베이스 */
 	--color-primary-hover: rgb(255, 255, 255); /* 호버 시 흰색 */
+	--color-primary-selected: rgb(70, 70, 70); /* 선택된 상태 */
 	--color-primary-text: rgb(255, 255, 255); /* 기본 흰색 텍스트 */
 	--color-primary-text-hover: rgb(10, 10, 10); /* 호버 시 검은색 텍스트 */
+
+	--color-border-hover: rgb(120, 120, 120);
 
 	--color-secondary: transparent;
 	--color-secondary-border: rgb(80, 80, 80);
@@ -36,7 +39,7 @@
 	--color-danger: rgb(255, 255, 255);
 	
 	--color-overlay: rgba(0, 0, 0, 0.85);
-	--unity-cursor-color: white;
+	--custom-cursor-color: white;
 
 	/* 일정 블록 색상 (다크 모드용 부드러운 파스텔톤) */
 	--block-color-0: rgb(252, 165, 165);
@@ -70,15 +73,18 @@
 
 	--color-primary: rgb(230, 230, 230);
 	--color-primary-hover: rgb(180, 180, 180);
+	--color-primary-selected: rgb(200, 200, 200);
 	--color-primary-text: rgb(0, 0, 0);
 	--color-primary-text-hover: rgb(0, 0, 0);
+
+	--color-border-hover: rgb(150, 150, 150);
 
 	--color-secondary: transparent;
 	--color-secondary-border: rgb(200, 200, 200);
 	--color-secondary-hover: rgb(235, 235, 235);
 
 	--color-overlay: rgba(255, 255, 255, 0.85);
-	--unity-cursor-color: black;
+	--custom-cursor-color: black;
 
 	/* 일정 블록 색상 (라이트 모드용 매우 연한 파스텔톤) */
 	--block-color-0: rgb(254, 202, 202);
