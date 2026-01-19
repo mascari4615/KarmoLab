@@ -1,4 +1,6 @@
-# Life Weekly Visualizer History
+# 라이프 위클리 히스토리 (Life Weekly Visualizer History)
+
+Summary: 인생의 주(Life Weekly) 시각화 피처의 초기 구현 및 그리드 최적화 업데이트 기록.
 
 ## 2026-01-15 (KST)
 

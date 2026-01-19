@@ -1,4 +1,6 @@
-# Planner Feature History
+# 플래너 피처 히스토리 (Planner Feature History)
+
+Summary: 유니티 기반 플래너(Planner) 기능의 주요 구현 내역 및 업데이트 기록.
 
 ## 2026-01-15 (KST)
 

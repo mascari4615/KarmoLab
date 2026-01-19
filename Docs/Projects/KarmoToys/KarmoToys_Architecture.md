@@ -1,4 +1,6 @@
-# KarmoToys Architecture
+# KarmoToys 아키텍처 (Architecture)
+
+Summary: 확장성과 유지보수성을 극대화한 KarmoToys 프로젝트의 모듈형 아키텍처 설계 명세.
 
 ## 1. 개요
 

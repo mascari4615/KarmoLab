@@ -1,4 +1,6 @@
-# YawnBot History
+# YawnBot 히스토리 (History)
+
+Summary: YawnBot 프로젝트의 주요 업데이트 기록 및 마일스톤.
 
 ## 2026-01-18 (KST)
 

@@ -1,5 +1,7 @@
 # WPF Quickstart (KarmoHub 용)
 
+Summary: KarmoHub 런처 개발을 위한 WPF(Windows Presentation Foundation) 핵심 개념 및 구조 가이드.
+
 ## 왜 WPF?
 
 - DPI 대응과 레이아웃 유연성

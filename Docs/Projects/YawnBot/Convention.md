@@ -1,6 +1,6 @@
-# YawnBot (Discord Bot) 개발 가이드
+# YawnBot 개발 가이드 (Development Convention)
 
-**YawnBot** 프로젝트 개발 시 준수해야 할 아키텍처 및 코딩 규칙.
+Summary: YawnBot 프로젝트의 아키텍처, 데이터 관리 및 코딩 규칙 가이드라인.
 
 ## 1. 아키텍처 (SOA & DI)
 

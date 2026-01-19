@@ -1,8 +1,6 @@
-# KarmoVSC-Ext 개요
+# KarmoVSC-Ext 개요 (Overview)
 
-## Summary
-
-VS Code 프로젝트 탐색기의 가독성을 높이기 위해 불필요한 파일/폴더를 그룹 단위로 토글하는 생산성 도구.
+Summary: VS Code 프로젝트 탐색기 가독성 향상을 위한 파일/폴더 그룹 토글 도구 명세.
 
 ## 주요 기능 (Features)
 

@@ -1,6 +1,6 @@
-# YawnBot Server Deployment Guide
+# YawnBot 서버 배포 가이드 (Server Deployment Guide)
 
-YawnBot을 Vultr 서버에 배포하고 GitHub Webhook을 연동한 과정을 정리한 가이드.
+Summary: YawnBot을 Vultr 서버에 배포하고 GitHub Webhook을 연동하는 절차 및 관리 가이드.
 
 ## 🖥️ Server Information
 
@@ -15,7 +15,9 @@ YawnBot을 Vultr 서버에 배포하고 GitHub Webhook을 연동한 과정을 �
 - **Working Directory**: `/root/yawn-bot`
 - **Port**: `8080` (Webhook Endpoint)
 - **Environment Variables**:
+
   보안을 위해 실제 값은 `.env` 파일에 보관하고, 레포지토리에는 `.env.template`만 공유
+
   - `DISCORD_TOKEN`: 디스코드 봇 토큰
   - `GITHUB_WEBHOOK_CHANNEL_ID`: 알림을 보낼 채널 ID
   - `ASPNETCORE_URLS`: `http://*:8080` (웹훅 수신용)

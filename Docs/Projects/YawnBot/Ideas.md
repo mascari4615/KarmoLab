@@ -1,4 +1,6 @@
-# 💡 YawnBot 기획 아이디어
+# YawnBot 기획 아이디어 (Project Ideas)
+
+Summary: YawnBot의 향후 기능 확장 및 컨텐츠 기획 아이디어 모음.
 
 ## 🃏 블랙잭 (Blackjack)
 

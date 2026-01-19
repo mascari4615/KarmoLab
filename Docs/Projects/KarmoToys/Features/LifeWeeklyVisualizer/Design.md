@@ -1,4 +1,6 @@
-# Life Weekly Visualizer 구현 설계서 🛠️
+# 라이프 위클리 디자인 (Life Weekly Visualizer Design)
+
+Summary: 5,200주 인생 시각화 도구의 데이터 모델, UI 구조 및 성능 최적화 설계 사양.
 
 ## 1. 개요
 

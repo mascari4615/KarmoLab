@@ -1,4 +1,6 @@
-# KarmoLab Project History
+# KarmoToys 히스토리 (History)
+
+Summary: KarmoToys 및 KarmoLab 프로젝트의 주요 업데이트 기록 및 아키텍처 변화 내역.
 
 ## 2026-01-18 (KST) - Part 5
 

@@ -1,8 +1,6 @@
-# KarmoVSC-Ext History
+# KarmoVSC-Ext 히스토리 (History)
 
-## Summary
-
-VS Code에서 특정 파일 확장자(Meta 파일 등)와 폴더를 그룹별로 손쉽게 토글하여 숨기거나 표시하는 확장 프로그램 개발 기록.
+Summary: VS Code 특정 파일/폴더 그룹 토글 확장 프로그램의 개발 및 업데이트 기록.
 
 ## 2026-01-18 (KST)
 

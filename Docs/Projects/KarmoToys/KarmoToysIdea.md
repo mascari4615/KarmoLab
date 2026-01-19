@@ -1,4 +1,6 @@
-# Core Concept: Life Dashboard
+# 인생 대시보드 기획 (Life Dashboard Concept)
+
+Summary: 사용자의 100세 인생(5,200주)을 시각화하고 데이터를 분석하는 핵심 기획 컨셉 정리.
 
 사용자의 100세 인생(5,200주) 시각화 및 데이터 분석 아이디어 정리.
 

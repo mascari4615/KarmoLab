@@ -1,4 +1,6 @@
-# Planner Feature Event Flow
+# 플래너 이벤트 흐름 (Planner Event Flow)
+
+Summary: 플래너 피처의 시간표 렌더링 및 드래그 앤 드롭 등 주요 이벤트 처리 로직 명세.
 
 ## 1. 개요
 

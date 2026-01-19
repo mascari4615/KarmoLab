@@ -1,4 +1,6 @@
-# Companion Mode History
+# 컴패니언 모드 히스토리 (Companion Mode History)
+
+Summary: 유니티 기반 컴패니언(Companion) 모드의 데스크탑 투명 오버레이 및 인터랙션 구현 기록.
 
 ## 2026-01-19 (KST)
 

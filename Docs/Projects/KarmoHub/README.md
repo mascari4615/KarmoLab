@@ -1,3 +1,5 @@
+Summary: KarmoHub 프로젝트의 개요, 디렉터리 구조 및 주요 기능 안내 문서.
+
 # KarmoHub 개요
 
 ## 목표
@@ -10,8 +12,9 @@
 
 ```text
 KarmoLab/
-  Doc/
-    KarmoHub.md          <- 본 문서
+  Docs/
+    Projects/
+      KarmoHub/          <- 전용 문서 공간
   KarmoHub/              <- WPF 프로젝트 (메인 Hub + 트레이 + 서비스)
   Unity/...
 ```

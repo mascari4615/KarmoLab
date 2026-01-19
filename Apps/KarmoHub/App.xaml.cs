@@ -55,14 +55,14 @@ public partial class App : Application
 
 		try
 		{
-			// 싱글 인스턴스 보장 (디버깅을 위해 임시 주석 처리)
-			// _mutex = new System.Threading.Mutex(true, "KarmoHub_Unique_Mutex_Name", out bool createdNew);
-			// if (!createdNew)
-			// {
-			// 	System.Windows.MessageBox.Show("이미 KarmoHub가 실행 중입니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
-			// 	Shutdown();
-			// 	return;
-			// }
+			// 싱글 인스턴스 보장
+			_mutex = new System.Threading.Mutex(true, "KarmoHub_Unique_Mutex_Name", out bool createdNew);
+			if (!createdNew)
+			{
+				System.Windows.MessageBox.Show("이미 KarmoHub가 실행 중입니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+				Shutdown();
+				return;
+			}
 
 			// 언인스톨 모드 확인
 			if (e.Args.Length >= 2 && e.Args[0] == "--uninstall")

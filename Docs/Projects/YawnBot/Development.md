@@ -1,6 +1,6 @@
 # YawnBot 개발 문서 (Development Documentation)
 
-**YawnBot** 프로젝트의 기술적 구조와 개발 가이드를 설명함.
+Summary: YawnBot 프로젝트의 기술적 아키텍처, 메시지 시스템 및 코딩 가이드라인.
 
 ## 1. 프로젝트 구조
 

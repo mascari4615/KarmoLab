@@ -1,4 +1,6 @@
-# Preferences Feature Todo
+# 환경 설정 작업 목록 (Preferences Feature Todo)
+
+Summary: KarmoToys 환경 설정 기능의 고도화 계획 및 잔여 작업 목록.
 
 ## ⚙️ UI & UX
 

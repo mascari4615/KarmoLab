@@ -1,31 +1,32 @@
-# Architecture Overview (전체 구조도)
+# KarmoLab 아키텍처 개요 (Architecture Overview)
 
-## 1. Repository Structure (Option C)
+Summary: KarmoLab 전체 시스템 아키텍처 및 모듈 구조 설명.
 
-- **Unity/**: 유니티 프로젝트 및 패키지
-  - `KarmoLab/`: 메인 유니티 프로젝트 (KarmoToys, KarmoEditor 포함)
-  - `LocalPackages/`: 프로젝트 간 공유되는 유니티 패키지
-- **Apps/**: 일반 애플리케이션 (Unity 외 프로젝트)
-  - `KarmoHub/`: WPF 런처
-  - `YawnBot/`: 봇 프로젝트
-- **Docs/**: 통합 문서 저장소 (3대 기둥)
-  - **`Roadmap.md`**: 프로젝트 전체 이정표
-  - **`Standards/`**: 공식 규칙 및 가이드라인 (What we must follow)
-    - `Architecture_Overview.md`: 전체 구조도
-    - `Global_Instructions.md`: 전역 지침
-    - `Conventions/`: 코드/문서 작성 규칙
-  - **`Archive/`**: 기술 연구 및 지식 창고 (Why/How it works)
-    - `TechNotes/`: 구현 상세 및 알고리즘 연구
-    - `Concepts_Git_OS_Basics.md`: 개발 기초 개념 정리 (Symlink, .gitkeep 등)
-    - `Ideas/`: 기획 및 기능 구상
-    - `CheatSheets/`: 핵심 명령어 모음
-    - `Tutorials/`: 단계별 튜토리얼
-    - `Workflows/`: 반복적인 작업 절차
-  - **`Projects/`**: 각 프로젝트별 세부 문서 (History, Convention 등)
-- **Lab/**: 실험 및 학습용 폴더 (Playgrounds, Study)
+## 🏗️ 전체 시스템 구조
 
-## 2. Key Projects
+KarmoLab은 사용자의 로컬 환경에서 구동되는 앱들과 Unity 기반의 게임 콘텐츠, 그리고 이를 서포트하는 자동화 도구들로 구성됨.
 
-- **KarmoHub (WPF)**: Prism/MVVM 패턴 기반 게임 런처 및 설치기.
-- **KarmoLab (Unity)**: `KarmoToys` 모듈형 아키텍처 기반 메인 게임 프로젝트. UI Toolkit 적극 활용.
-- **KarmoToys**: `KarmoLab` 내부 핵심 기능 모듈 시스템.
+### 1. KarmoHub (C# / WPF)
+
+- 모든 앱과 콘텐츠의 진입점.
+- 사용자 인증, 업데이트 관리, 설정 동기화 담당.
+
+### 2. KarmoToys (Unity)
+
+- 메인 게임 콘텐츠.
+- 인형 메이드와의 상호작용 및 수집 요소 구현.
+
+### 3. KarmoEditor (Unity Editor)
+
+- 마스터(개발자)를 위한 콘텐츠 에디팅 도구.
+- 자동화된 에셋 파이프라인.
+
+### 4. YawnBot (Discord)
+
+- 커뮤니티 및 프로젝트 알림 봇.
+
+## 📡 데이터 흐름
+
+1. 사용자가 KarmoHub 실행.
+2. Hub가 최신 상태 체크 후 게임(Toys) 실행.
+3. 게임 내 데이터는 향후 클라우드 또는 로컬 데이터베이스와 동기화 계획.

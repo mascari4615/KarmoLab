@@ -1,8 +1,8 @@
 # GitHub & Discord Webhook Research
 
-디스코드 봇을 통해 깃허브 상황을 확인하고 생산성을 높이기 위한 조사 결과임.
+Summary: GitHub와 Discord를 연동하여 생산성을 높이기 위한 기술적 조사 및 서버 예산 분석 결과.
 
-## Summary
+디스코드 봇을 통해 깃허브 상황을 확인하고 생산성을 높이기 위한 조사 결과임.
 
 - **웹훅 개념**: 깃허브-디스코드 연동 방식(직접 연동 vs 봇 미들웨어) 비교함.
 - **서버 분석**: 업계 표준(DigitalOcean, Vultr) vs 대기업(AWS) 비교 분석함.

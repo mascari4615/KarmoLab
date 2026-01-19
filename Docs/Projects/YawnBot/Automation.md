@@ -1,6 +1,6 @@
-# Deployment Automation Guide
+# 배포 자동화 가이드 (Deployment Automation Guide)
 
-`deploy.ps1` 스크립트를 사용하여 빌드, 전송, 재시작을 원클릭으로 자동화하는 방법.
+Summary: YawnBot 배포 프로세스를 스크립트로 자동화하는 과정 및 환경 설정 안내.
 
 ## 1. 사전 준비 (Environment Setup)
 

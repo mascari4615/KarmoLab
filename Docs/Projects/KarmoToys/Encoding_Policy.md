@@ -1,4 +1,6 @@
-# Encoding Policy: Prevent Corruption
+# 인코딩 정책 (Encoding Policy: Prevent Corruption)
+
+Summary: AI 도구 사용 시 발생하는 한글 깨짐 및 파일 손상을 방지하기 위한 인코딩 표준 가이드.
 
 AI 도구로 소스 코드를 수정할 때 한글이나 이모지 같은 유니코드 문자가 깨지는 현상을 방지하기 위한 가이드라인임.
 

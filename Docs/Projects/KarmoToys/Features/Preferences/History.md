@@ -1,4 +1,6 @@
-# Preferences Feature History
+# 환경 설정 히스토리 (Preferences Feature History)
+
+Summary: KarmoToys 환경 설정 기능의 UI 리팩토링 및 데이터 관리 개선 업데이트 기록.
 
 ## 2026-01-18 (KST)
 

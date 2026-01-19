@@ -1,25 +1,11 @@
 # KarmoHub 개발 히스토리
 
+Summary: KarmoHub 프로젝트의 주요 업데이트 기록, 빌드 시스템 구현 및 UI 개편 내역.
+
 ## 2026-01-19 (KST) - UI Redesign & Brand Identity (Steam Style)
 
-1. **Steam 스타일 UI 전면 개편**:
-   - **Dual-Pane Layout**: 사이드바(게임 목록)와 메인 뷰(디테일/홈) 구조 도입.
-   - **Immersive Detail View**: 게임 배너 아트와 상세 정보를 보여주는 몰입형 페이지 구현.
-   - **Glassmorphism**: 반투명 오버레이와 블러 효과를 적용하여 프리미엄 감성 강화.
-2. **멀티 테마 시스템 (Multi-Theme System)**:
-   - **Obsidian Ember** (기본): Charcoal Black & Volcanic Orange (`#ff8c00`) 조합.
-   - **Monochrome**: 오직 Black & White로 구성된 시크한 고대비 테마.
-   - **Light Mode**: 밝은 테마 가독성 문제 해결 (Adaptive Text Color).
-   - **Theme Selector**: 토글 버튼 대신 직관적인 **Dropdown(콤보박스)** 메뉴 도입.
-   - **Adaptive Accents**: 테마에 따라 디테일 뷰 히어로 배너 색상 등이 동적으로 변화.
-3. **UX 및 기능 개선**:
-   - **Overlay Scrollbars**: 콘텐츠를 가리지 않는 모던한 플로팅 스크롤바 구현.
-   - **UI Scaling**: 80% ~ 120%까지 조절 가능한 줌 슬라이더 추가.
-   - **Compact Mode**: 데스크톱 환경에 맞춰 전반적인 폰트 및 패딩 최적화.
-4. **안정성 및 버그 수정**:
-   - **Startup Crash Fix**: 초기화 시점의 Race Condition(NullReference) 해결.
-   - **Visibility Issue Fix**: 트레이 아이콘 및 메인 윈도우 표시 문제 해결.
-   - **Zombie Process Cleanup**: 빌드/실행 중 멈춘 프로세스 자동 정리 로직 적용.
+- **UI 전면 개편**: Steam 스타일의 입체적 레이아웃 및 멀티 테마 시스템 도입 완료.
+- **세부 내역**: [UI_Redesign_Steam 히스토리](file:///c:/Users/masca/source/repos/KarmoLab/Docs/Projects/KarmoHub/Features/UI_Redesign_Steam/History.md) 참고.
 
 ## 2026-01-10 (KST) - 라이브러리 확장 및 안정화
 
@@ -79,16 +65,17 @@
 4. 리소스 아이콘 `tray.ico` 적용.
 5. 시작 프로그램 등록 기능 추가 (`StartupService`).
 
-
 ## Development Roadmap (KarmoHub)
 
 ### 🎯 최종 목표
+
 - **KarmoHub**: 통합 런처. 게임 설치, 실행, 업데이트 관리.
 - **배포 자동화**: GitHub Actions를 통해 빌드부터 배포까지 원클릭 처리.
 
 ### 📝 TODO 리스트 (Status Snapshot)
 
 #### Phase 1: KarmoHub 자체 설치 기능 구현 (완료)
+
 - [x] **GitHub API 연동**: `KarmoLab` 리포지토리의 최신 Release 정보(`version`, `asset url`) 가져오기.
 - [x] **다운로드 및 설치 로직**:
   - `DownloadUrl`로 ZIP 파일 다운로드 (스트림 처리).
@@ -99,11 +86,13 @@
   - 실시간 로그 콘솔 추가.
 
 #### Phase 1.5: 시스템 통합 (완료)
+
 - [x] **사용자 수준 설치 (User Scope Install)**
   - 설치 경로 변경: `AppData/Local/KarmoLab/Games`.
   - **Windows 레지스트리 등록**: 제어판/설정 앱 연동.
 
 #### Phase 2: 배포 자동화 (GitHub Actions)
+
 - [x] **Unity Build Action**: 클라우드 상에서 Unity 프로젝트 빌드.
 - [ ] **Zip Artifact**: 빌드 결과물을 `.zip`으로 압축.
 - [x] **Release Upload**: 자동으로 태그 생성하고 Release에 업로드 (`upm-publish.yml`).

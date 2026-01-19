@@ -1,4 +1,6 @@
-# KarmoEditor History
+# KarmoEditor 히스토리 (History)
+
+Summary: 유니티 에디터 확장 도구(KarmoEditor)의 주요 기능 업데이트, 툴바 API 통합 및 패키지 구조화 기록.
 
 ## 2026-01-18 (KST)
 
