@@ -1,3 +1,15 @@
+
+param (
+	[string]$ServerIp = $env:SERVER_IP,
+	[string]$User = "root"
+)
+
+# Check if ServerIp is provided
+if ([string]::IsNullOrEmpty($ServerIp)) {
+	Write-Host "Error: ServerIp is required. Please provide it as a parameter or set the SERVER_IP environment variable." -ForegroundColor Red
+	exit 1
+}
+
 # Deploy.ps1 - YawnBot Deployment Script
 
 # Ensure we are running from Project Root
@@ -7,22 +19,6 @@ if (Test-Path "$ScriptDir\..\YawnBot.sln") {
 	Set-Location "$ScriptDir\.."
 }
 
-# 1. Load Environment Variables from src/YawnBot/.env
-if (Test-Path "src/YawnBot/.env") {
-	Get-Content "src/YawnBot/.env" | ForEach-Object {
-		if ($_ -match "^(?!#)(.+?)=(.*)") {
-			[Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
-		}
-	}
-}
-
-$ServerIp = $env:SERVER_IP
-if ([string]::IsNullOrEmpty($ServerIp)) {
-	Write-Host "Error: SERVER_IP not found in src/YawnBot/.env or environment variables." -ForegroundColor Red
-	exit 1
-}
-
-$User = "root"
 $RemotePath = "/root/yawn-bot"
 # Path relative to Project Root (after Set-Location)
 $LocalPath = "src\YawnBot\bin\Release\net9.0\linux-x64\publish\*"

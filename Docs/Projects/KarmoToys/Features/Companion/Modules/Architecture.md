@@ -1,5 +1,7 @@
 # Companion Feature Architecture
 
+Summary: Companion 기능의 모듈형 아키텍처 설계 문서. Coordinator-Module 패턴을 통해 입력, 채팅, 시간 관리 등의 기능을 독립된 모듈로 분리하여 확장성과 유지보수성을 확보함.
+
 > **작성일**: 2026-01-19
 > **버전**: 2.0 (Modular Update)
 

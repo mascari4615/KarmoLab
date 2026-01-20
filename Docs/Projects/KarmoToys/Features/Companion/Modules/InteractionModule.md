@@ -1,6 +1,6 @@
 # InteractionModule (UI & Input)
 
-`InteractionModule`은 사용자와 컴패니언 간의 **직접적인 상호작용**과 **UI 제어**를 담당하는 핵심 모듈입니다. 마우스 입력(드래그, 클릭) 처리뿐만 아니라, 컴패니언의 설정 및 기능 제어를 위한 UI 패널을 관리합니다.
+Summary: 사용자와 컴패니언 간의 직접적인 상호작용 및 UI 제어를 담당하는 모듈. 마우스 입력(드래그, 클릭) 처리, 설정 패널 관리, Overhead HUD 표시 등을 담당함.
 
 ## 주요 역할 (Responsibilities)
 

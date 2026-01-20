@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YawnBot", "Apps\YawnBot\Yaw
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KarmoHub", "Apps\KarmoHub\KarmoHub.csproj", "{49A63773-1421-48E9-B90D-F013F278D86A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{1787FE1D-075E-9E68-7218-25F1BD1BBEAB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KarmoAI", "Apps\KarmoAI\KarmoAI.csproj", "{C4311C3B-913D-4912-ACAC-7C643CF113DA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,8 +45,23 @@ Global
 		{49A63773-1421-48E9-B90D-F013F278D86A}.Release|x64.Build.0 = Release|Any CPU
 		{49A63773-1421-48E9-B90D-F013F278D86A}.Release|x86.ActiveCfg = Release|Any CPU
 		{49A63773-1421-48E9-B90D-F013F278D86A}.Release|x86.Build.0 = Release|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Debug|x64.Build.0 = Debug|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Debug|x86.Build.0 = Debug|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Release|x64.ActiveCfg = Release|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Release|x64.Build.0 = Release|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Release|x86.ActiveCfg = Release|Any CPU
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C4311C3B-913D-4912-ACAC-7C643CF113DA} = {1787FE1D-075E-9E68-7218-25F1BD1BBEAB}
 	EndGlobalSection
 EndGlobal

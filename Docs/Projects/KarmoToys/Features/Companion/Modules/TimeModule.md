@@ -1,5 +1,7 @@
 # Time Module Documentation
 
+Summary: 컴패니언의 시간 관리 기능을 담당하는 모듈. 알람, 타이머, 정각 알림 등 시간 기반 이벤트를 관장하고 절차적 사운드 생성을 통해 피드백을 제공함.
+
 > **작성일**: 2026-01-19
 > **담당 모듈**: `KarmoToys.Features.Companion.Modules.TimeModule`
 

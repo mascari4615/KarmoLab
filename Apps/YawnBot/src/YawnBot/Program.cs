@@ -2,10 +2,12 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using KarmoLab.YawnBot.Services;
 using KarmoLab.YawnBot.Models;
-using dotenv.net;
+using KarmoAI.Interfaces;
+using KarmoAI.Services;
 
 namespace KarmoLab.YawnBot
 {
@@ -20,7 +22,6 @@ namespace KarmoLab.YawnBot
 		public async Task MainAsync()
 		{
 			Directory.SetCurrentDirectory(AppContext.BaseDirectory);
-			DotEnv.Load();
 
 			DiscordSocketConfig config = new DiscordSocketConfig
 			{
@@ -28,6 +29,9 @@ namespace KarmoLab.YawnBot
 			};
 
 			WebApplicationBuilder builder = WebApplication.CreateBuilder();
+			
+			// Configuration 설정 (User Secrets는 WebApplicationBuilder가 자동으로 포함함)
+			// 필요한 경우 추가적인 설정 소스를 여기서 정의할 수 있음.
 
 			// DI 설정
 			builder.Services.AddSingleton(config);
@@ -40,6 +44,24 @@ namespace KarmoLab.YawnBot
 			builder.Services.AddSingleton<RaidService>();
 			builder.Services.AddSingleton<StockService>();
 			builder.Services.AddSingleton<Random>();
+
+			// KarmoAI 및 AI 관련 서비스 등록
+			builder.Services.AddSingleton<IAIService>(sp => 
+			{
+				var configuration = sp.GetRequiredService<IConfiguration>();
+				string? apiKey = configuration["GEMINI_API_KEY"];
+				string modelName = configuration["GEMINI_MODEL"] ?? "gemini-1.5-flash";
+
+				if (string.IsNullOrWhiteSpace(apiKey))
+				{
+					// 봇 실행 중단 대신 에러 로그 출력 후 기본 서비스 반환 (또는 예외)
+					Console.WriteLine("警告: GEMINI_API_KEY가 설정되지 않았습니다. AI 기능이 제한될 수 있습니다.");
+					return new GeminiService("DUMMY_KEY", modelName); 
+				}
+
+				return new GeminiService(apiKey, modelName);
+			});
+			builder.Services.AddSingleton<NexonNewsService>();
 
 			WebApplication app = builder.Build();
 			_services = app.Services;
@@ -60,17 +82,12 @@ namespace KarmoLab.YawnBot
 			// 웹훅 엔드포인트 설정 (Extracted to WebhookService)
 			app.MapPost("/webhook/github", WebhookService.ProcessGitHubWebhookAsync);
 
-			string? token = Environment.GetEnvironmentVariable("DISCORD_TOKEN");
+			// Configuration에서 토큰 로드
+			string? token = builder.Configuration["DISCORD_TOKEN"];
 
 			if (string.IsNullOrWhiteSpace(token))
 			{
-				Console.WriteLine("봇 토큰을 입력하세요:");
-				token = Console.ReadLine();
-			}
-
-			if (string.IsNullOrWhiteSpace(token))
-			{
-				Console.WriteLine("토큰이 입력되지 않았습니다. 프로그램을 종료합니다.");
+				Console.WriteLine("DISCORD_TOKEN이 설정되지 않았습니다. 환경 변수 또는 User Secrets를 확인하세요.");
 				return;
 			}
 
@@ -111,7 +128,8 @@ namespace KarmoLab.YawnBot
 				Console.WriteLine("슬래시 커맨드 등록 완료!");
 
 				// 서버 시작 알림 (Webhook Channel)
-				string? webhookChannelIdStr = Environment.GetEnvironmentVariable("GITHUB_WEBHOOK_CHANNEL_ID");
+				var configuration = _services.GetRequiredService<IConfiguration>();
+				string? webhookChannelIdStr = configuration["GITHUB_WEBHOOK_CHANNEL_ID"];
 				if (ulong.TryParse(webhookChannelIdStr, out ulong webhookChannelId))
 				{
 					if (_client.GetChannel(webhookChannelId) is SocketTextChannel channel)
