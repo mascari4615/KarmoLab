@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoToys.Core;
+using KarmoToys.Features.ProjectManager.Timeline;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
 
@@ -332,12 +333,14 @@ namespace KarmoToys.Main
 				// Main Mode: Standard Features
 				Type[] features = new Type[]
 				{
-					typeof(Features.Dashboard.DashboardFeature),
+					typeof(Features.ProjectManager.Dashboard.DashboardFeature),
 					typeof(Features.Planner.PlannerFeature),
 					typeof(Features.LifeWeekly.LifeWeeklyFeature),
 					typeof(Features.ToolBox.ToolBoxFeature),
 					typeof(Features.Preferences.PreferencesFeature),
-					typeof(KarmoToys.Features.ProjectManager.ProjectManagerFeature)
+					typeof(KarmoToys.Features.ProjectManager.ProjectManagerFeature),
+					typeof(Features.ProjectManager.Whiteboard.WhiteboardFeature),
+					typeof(TimelineFeature)
 				};
 
 				foreach (Type type in features)

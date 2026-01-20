@@ -1,0 +1,39 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+	<Style src="project://database/Assets/KarmoToys/Main/UI/ThemeTokens.uss"/>
+	<Style src="project://database/Assets/KarmoToys/Features/ProjectManager/Timeline/TimelineStyle.uss"/>
+	
+	<ui:VisualElement name="TimelineContainer" class="timeline-container">
+		<!-- Header (Days / Controls) -->
+		<ui:VisualElement class="timeline-header">
+			<ui:Label text="Timeline" class="timeline-title" />
+            <ui:VisualElement style="flex-grow: 1;" />
+            <ui:Button name="BtnAddTimelineItem" text="+ Task" class="btn-primary" style="width: 80px;" />
+		</ui:VisualElement>
+		
+		<!-- Body Area -->
+		<ui:VisualElement style="flex-grow: 1; overflow: hidden;">
+			
+			<!-- Fixed Header Row (Ruler) -->
+			<ui:VisualElement class="timeline-header-row">
+				<!-- Sidebar Header Spacer -->
+				<ui:VisualElement class="timeline-sidebar-header">
+					<ui:Label text="Tasks" class="timeline-column-title"/>
+				</ui:VisualElement>
+				
+				<!-- Ruler Container -->
+				<ui:VisualElement name="TimelineRuler" class="timeline-ruler-container" style="position: relative; flex-grow: 1; height: 30px;" />
+			</ui:VisualElement>
+
+			<!-- Shared Scroll View (Sidebar + Canvas) -->
+			<ui:ScrollView name="TimelineBodyScroll" class="timeline-body-scroll" mode="Vertical">
+				<ui:VisualElement class="timeline-body-row">
+					<!-- Sidebar Content -->
+					<ui:VisualElement name="TimelineSidebar" class="timeline-sidebar-content" />
+					
+					<!-- Canvas Content -->
+					<ui:VisualElement name="TimelineCanvas" class="timeline-canvas-area" style="flex-grow: 1;" />
+				</ui:VisualElement>
+			</ui:ScrollView>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

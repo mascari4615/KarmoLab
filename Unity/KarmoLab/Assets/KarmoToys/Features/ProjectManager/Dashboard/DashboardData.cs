@@ -1,6 +1,6 @@
 using System;
 
-namespace KarmoToys.Features.Dashboard
+namespace KarmoToys.Features.ProjectManager.Dashboard
 {
 	[Serializable]
 	public class DashboardData

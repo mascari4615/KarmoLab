@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
 	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
-	<Style src="project://database/Assets/KarmoToys/Features/Dashboard/DashboardStyle.uss"/>
+	<Style src="project://database/Assets/KarmoToys/Features/ProjectManager/Dashboard/DashboardStyle.uss"/>
 	<ui:ScrollView name="ViewDashboard" class="tab-content">
 		<ui:VisualElement class="advice-banner">
 			<ui:Label text="NPC 멘토의 한마디: 지금 자면 꿈을 꾸지만, 지금 코딩하면 꿈을 이룬다." class="advice-text"/>

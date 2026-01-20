@@ -461,6 +461,7 @@ MonoBehaviour:
   - Rig|Push_Loop
   - Rig|Sprint_Loop
   - Rig|Swim_Fwd_Loop
+  - Rig|Swim_Idle_Loop
   - Rig|Sword_Idle
   - Rig|Walk_Loop
 --- !u!4 &1034031817 stripped

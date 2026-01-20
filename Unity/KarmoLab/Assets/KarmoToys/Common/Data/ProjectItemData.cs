@@ -48,7 +48,13 @@ namespace KarmoToys.Common.Data
 		public long CreatedAtTicks;
 
 		// New fields
-		public DateTime? DueDate;
+        // Wrapper Property for JSON Compatibility (JsonUtility doesn't support DateTime?)
+        public DateTime? DueDate
+        {
+            get => EndDateTicks == 0 ? null : (DateTime?)new DateTime(EndDateTicks);
+            set => EndDateTicks = value?.Ticks ?? 0;
+        }
+
 		public List<string> Tags = new List<string>();
 
 		// Whiteboard Visualization
@@ -67,8 +73,8 @@ namespace KarmoToys.Common.Data
 			Type = MemoType.Task;
 			Status = MemoStatus.Todo;
 			Priority = Priority.Medium;
-			DueDate = null; // Initialize new field
-			Tags = new List<string>(); // Initialize new field
+			// DueDate is property now
+			Tags = new List<string>();
 			CreatedAtTicks = DateTime.UtcNow.Ticks;
 			Position = Vector2.zero;
 			Angle = 0f;

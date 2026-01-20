@@ -14,8 +14,8 @@ namespace KarmoToys.Features.ProjectManager
 		public override string FeatureName => Define.FeatureProjectManager;
 		public override string TabButtonName => Define.TabProject;
 
-		private VisualElement _tableView, _kanbanView;
-		private Button _btnViewTable, _btnViewKanban;
+		private VisualElement _tableView, _kanbanView, _timelineWrapper;
+		private Button _btnViewTable, _btnViewKanban, _btnViewTimeline;
 		private ScrollView _tableList;
 		private ScrollView _listTodo, _listDoing, _listDone;
 		private TextField _inputNewItem;
@@ -44,11 +44,15 @@ namespace KarmoToys.Features.ProjectManager
 			// View Switcher
 			_tableView = ViewContainer.Q("TableView");
 			_kanbanView = ViewContainer.Q("KanbanView");
+            _timelineWrapper = ViewContainer.Q("TimelineWrapper");
+
 			_btnViewTable = ViewContainer.Q<Button>("BtnViewTable");
 			_btnViewKanban = ViewContainer.Q<Button>("BtnViewKanban");
+            _btnViewTimeline = ViewContainer.Q<Button>("BtnViewTimeline");
 
-			_btnViewTable.clicked += () => SwitchView(true);
-			_btnViewKanban.clicked += () => SwitchView(false);
+			_btnViewTable.clicked += () => SwitchView(ViewType.Table);
+			_btnViewKanban.clicked += () => SwitchView(ViewType.Kanban);
+            _btnViewTimeline.clicked += () => SwitchView(ViewType.Timeline);
 
 			// Table View
 			_tableList = ViewContainer.Q<ScrollView>("ProjectItemList");
@@ -191,13 +195,19 @@ namespace KarmoToys.Features.ProjectManager
 			RefreshViews();
 		}
 
-		private void SwitchView(bool isTable)
-		{
-			_tableView.style.display = isTable ? DisplayStyle.Flex : DisplayStyle.None;
-			_kanbanView.style.display = isTable ? DisplayStyle.None : DisplayStyle.Flex;
+        enum ViewType { Table, Kanban, Timeline }
 
-			_btnViewTable.EnableInClassList("selected", isTable);
-			_btnViewKanban.EnableInClassList("selected", !isTable);
+		private void SwitchView(ViewType type)
+		{
+			_tableView.style.display = type == ViewType.Table ? DisplayStyle.Flex : DisplayStyle.None;
+			_kanbanView.style.display = type == ViewType.Kanban ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_timelineWrapper != null) 
+                _timelineWrapper.style.display = type == ViewType.Timeline ? DisplayStyle.Flex : DisplayStyle.None;
+
+			_btnViewTable.EnableInClassList("selected", type == ViewType.Table);
+			_btnViewKanban.EnableInClassList("selected", type == ViewType.Kanban);
+            if (_btnViewTimeline != null)
+                _btnViewTimeline.EnableInClassList("selected", type == ViewType.Timeline);
 
 			RefreshViews();
 		}
@@ -205,7 +215,10 @@ namespace KarmoToys.Features.ProjectManager
 		private void RefreshViews()
 		{
 			if (_tableView.resolvedStyle.display == DisplayStyle.Flex) RefreshTable();
-			else RefreshKanban();
+			else if (_kanbanView.resolvedStyle.display == DisplayStyle.Flex) RefreshKanban();
+            // Timeline refresh is handled by TimelineFeature's own logic implicitly, 
+            // or we can explicitly call it if we have reference.
+            // Currently setup: TimelineFeature is separate.
 		}
 	}
 }

@@ -19,6 +19,7 @@ Summary: KarmoToys 프로젝트 작업을 위한 필수 컨텍스트 및 규칙 
 - **Engine**: Unity 6 (6000.3.2f1)
 - **Language**: C#
 - **UI**: UI Toolkit
+  - **Note**: `z-index` 속성 미지원 (Hierarchy 순서로 렌더링 순서 결정).
 
 ## 3. 📂 참고 문서 (Context Links)
 
