@@ -1,4 +1,4 @@
-# KarmoEditor 히스토리 (History)
+﻿# KarmoEditor 히스토리 (History)
 
 Summary: 유니티 에디터 확장 도구(KarmoEditor)의 주요 기능 업데이트, 툴바 API 통합 및 패키지 구조화 기록.
 
@@ -34,7 +34,7 @@ Summary: 유니티 에디터 확장 도구(KarmoEditor)의 주요 기능 업데�
 - **명칭 및 네임스페이스 리팩토링 (Final Refinement)**:
   - **네임스페이스 통일**: 모든 코드의 네임스페이스를 `KarmoLab.KarmoEditor`로 변경하고, `MenuItem` 경로를 `KarmoLab`으로 단일화.
   - **ID/브랜드 일치**: `com.mascari4615.karmo-editor`, `KarmoDDrine` 등 유저 요청 명칭을 프로젝트 전반(package.json, docs, code)에 전수 적용.
-  - **가이드 구축**: 프로젝트 통합 네이밍 규칙(`Naming_Convention_Guide.md`) 및 시멘틱 버저닝 가이드(`Semantic_Versioning_Guide.md`) 작성.
+  - **가이드 구축**: 프로젝트 통합 네이밍 규칙(`Naming_Convention_Guide.md`) 및 시멘틱 버저닝 가이드(`semantic-versioning-guide.md`) 작성.
   - **문서 정리**: `Doc/KarmoEditor` 폴더 구조를 인간 중심의 PascalCase로 정리하여 가독성 향상.
 
 ## 2026-01-13 (KST)

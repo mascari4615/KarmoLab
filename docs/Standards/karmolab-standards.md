@@ -1,4 +1,4 @@
-# KarmoLab Project Standards
+﻿# KarmoLab Project Standards
 
 Summary: KarmoLab 모노레포 프로젝트의 통합 개발 표준 및 규칙.
 
@@ -66,7 +66,7 @@ ProjectName/
 
 ## 📝 네이밍 규칙
 
-상세 내용은 [Naming_Convention.md](Naming_Convention.md) 참조
+상세 내용은 [naming-convention.md](naming-convention.md) 참조
 
 ### 요약
 
@@ -211,8 +211,8 @@ MAJOR.MINOR.PATCH
 ### 내부 문서
 
 - [Commit Guide](Commit_Guide.md) - Git 커밋 메시지 작성 가이드
-- [Naming Convention](Naming_Convention.md) - 파일/폴더 네이밍 규칙
-- [Project Documentation Convention](../Conventions/Project_Doc_Convention.md) - 문서 작성 규칙
+- [Naming Convention](naming-convention.md) - 파일/폴더 네이밍 규칙
+- [Project Documentation Convention](../Conventions/project-doc-convention.md) - 문서 작성 규칙
 
 ### 외부 리소스
 

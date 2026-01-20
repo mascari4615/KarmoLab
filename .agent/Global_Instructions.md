@@ -1,1 +1,1 @@
-C:/Users/masca/source/repos/KarmoLab/Docs/Standards/Global_Instructions.md
+﻿C:/Users/masca/source/repos/KarmoLab/Docs/Standards/global-instructions.md

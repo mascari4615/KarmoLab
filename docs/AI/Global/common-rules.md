@@ -1,4 +1,4 @@
-# Common Agent Rules (공통 규칙)
+﻿# Common Agent Rules (공통 규칙)
 
 Summary: 모든 KarmoLab 에이전트가 공통적으로 준수해야 할 최소 규칙.
 
@@ -19,7 +19,7 @@ Summary: 모든 KarmoLab 에이전트가 공통적으로 준수해야 할 최소
     - 예: `dotnet build`, `npm run build`
 2. **방어적 코딩**: `null` 체크, 예외 처리를 생활화하여 높은 안정성을 확보함.
 3. **파일 보존**: 기존 코드를 수정할 때는 전체를 덮어쓰기보다, 변경된 부분을 수동으로 처리하여 실수를 줄임.
-4. **보안 우선 (Security First)**: 민감 정보(API 키 등)는 소스 코드 및 프로젝트 내 파일에 저장하지 않음. 상세 내용은 **[보안 및 설정 관리 표준](../../Standards/Conventions/Security_Config_Convention.md)**을 따름.
+4. **보안 우선 (Security First)**: 민감 정보(API 키 등)는 소스 코드 및 프로젝트 내 파일에 저장하지 않음. 상세 내용은 **[보안 및 설정 관리 표준](../../Standards/Conventions/security-config-convention.md)**을 따름.
 
 ## 3. 문서화 및 일관성 (Documentation & Consistency)
 

@@ -1,4 +1,4 @@
-# Development Basics (개발 기초 지식)
+﻿# Development Basics (개발 기초 지식)
 
 Summary: KarmoLab 개발 환경에서 필수적으로 알아야 할 OS 및 Git 기본 개념.
 
@@ -9,7 +9,7 @@ Summary: KarmoLab 개발 환경에서 필수적으로 알아야 할 OS 및 Git �
 - **PowerShell 활용 예시**:
 
   ```powershell
-  New-Item -ItemType SymbolicLink -Path ".agent\Global_Instructions.md" -Target "Docs\Standards\Global_Instructions.md"
+  New-Item -ItemType SymbolicLink -Path ".agent\global-instructions.md" -Target "Docs\Standards\global-instructions.md"
   ```
 
 ## 2. .gitkeep
@@ -34,7 +34,7 @@ Summary: KarmoLab 개발 환경에서 필수적으로 알아야 할 OS 및 Git �
 ## 5. 설정 관리 (Configuration Management)
 
 - **핵심**: 보안을 위해 민감 정보는 코드와 분리함.
-- **상세 분석**: [.env vs 환경변수 기술 분석](Config_Management_DeepDive.md) 문서를 참조.
+- **상세 분석**: [.env vs 환경변수 기술 분석](config-management-deepdive.md) 문서를 참조.
 
 ---
 > **기록 주체**: Alisa (PM)

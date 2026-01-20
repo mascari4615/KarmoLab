@@ -1,4 +1,4 @@
----
+﻿---
 description: 새로운 피처의 표준 문서 구조(Spec, History, Todo)를 자동으로 생성함
 ---
 
@@ -11,7 +11,7 @@ description: 새로운 피처의 표준 문서 구조(Spec, History, Todo)를 �
 1. **마스터 확인**: 마스터로부터 `[프로젝트명]`과 `[피처명]`을 확인받는다.
 2. **기술 스택 판별**: 해당 프로젝트 폴더를 분석하여 기술 스택을 판별한다. (Unity, Standard C#, Node.js 등)
 3. **디렉터리 생성**: `Docs/Projects/[프로젝트명]/Features/[피처명]` 경로를 생성한다.
-4. **표준 문서 생성** (`Project_Doc_Convention.md` 준수):
+4. **표준 문서 생성** (`project-doc-convention.md` 준수):
    - `Spec.md`: 기능 명세와 함께 **[검증 기준(Test Cases)]** 섹션을 반드시 포함한다.
    - `History.md`: 초기 생성 기록 및 TDD 워크플로우 시작을 기록한다.
    - `Todo.md`: 기능 구현 및 **[테스트 통과 여부]** 체크리스트를 구성한다.

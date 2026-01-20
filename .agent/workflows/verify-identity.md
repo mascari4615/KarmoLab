@@ -1,4 +1,4 @@
----
+﻿---
 description: 에이전트가 자신의 페르소나와 컨텍스트를 재확인하고 검증함
 ---
 
@@ -8,10 +8,10 @@ Summary: 현재 활성화된 페르소나를 명확히 하고, 수행해야 할 
 
 ## 1. 페르소나 식별 (Identify Persona)
 
-자신의 역할(Role)과 이름(Name)을 선언하고, `Common_Rules.md`의 **페르소나 태그** 규칙에 따라 대답을 시작하라.
+자신의 역할(Role)과 이름(Name)을 선언하고, `common-rules.md`의 **페르소나 태그** 규칙에 따라 대답을 시작하라.
 
 - **Format**: `[PersonaName]` (예: `[Alisa]`, `[KarmoAI]`)
-- **Action**: `.agent/Persona.md` 또는 `Docs/AI/Projects/.../Implementer.md`를 참조하여 자신이 누구인지 정의하라.
+- **Action**: `.agent/persona.md` 또는 `Docs/AI/Projects/.../Implementer.md`를 참조하여 자신이 누구인지 정의하라.
 
 ## 2. 핵심 지침 재확인 (Core Directives Check)
 

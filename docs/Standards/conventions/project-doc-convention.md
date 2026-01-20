@@ -1,4 +1,4 @@
-# 프로젝트 문서화 규칙 (Project Documentation Convention)
+﻿# 프로젝트 문서화 규칙 (Project Documentation Convention)
 
 Summary: KarmoLab 프로젝트별 문서 구조 및 피처 단위 관리 규칙을 정의하는 가이드라인.
 
@@ -47,6 +47,6 @@ Summary: KarmoLab 프로젝트별 문서 구조 및 피처 단위 관리 규칙�
 
 1. **명사형 종결**: 다른 모든 문서와 마찬가지로 `~함`, `~임` 스타일을 유지함.
 2. **Summary 필수**: 모든 `.md` 파일 상단에 `Summary:` 섹션을 필히 작성함. (H1 헤더 다음 줄에 위치)
-3. **Cross-linking**: 관련 있는 피처나 전역 아키텍처 문서(`Architecture_Overview.md`)를 적극적으로 링크함.
+3. **Cross-linking**: 관련 있는 피처나 전역 아키텍처 문서(`architecture-overview.md`)를 적극적으로 링크함.
 
 > 이 가이드는 **Alisa(Secretary)**가 감시하며 위반 시 마스터에게 보고함.

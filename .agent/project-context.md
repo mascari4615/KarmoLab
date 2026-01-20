@@ -1,4 +1,4 @@
-# KarmoLab Project Context
+﻿# KarmoLab Project Context
 
 Summary: KarmoLab 모노레포 프로젝트의 전체 컨텍스트 및 배경 정보.
 
@@ -147,13 +147,13 @@ KarmoLab/
 
 ### Project Management
 
-- `Docs/AI/Global/Backlog.md`: 통합 백로그
-- `Docs/AI/Global/Common_Rules.md`: 공통 규칙
+- `Docs/AI/Global/backlog.md`: 통합 백로그
+- `Docs/AI/Global/common-rules.md`: 공통 규칙
 
 ### Conventions
 
-- `Docs/Standards/Conventions/Project_Doc_Convention.md`: 문서 규칙
-- `Docs/Standards/Conventions/Markdown_Convention.md`: 마크다운 규칙
+- `Docs/Standards/Conventions/project-doc-convention.md`: 문서 규칙
+- `Docs/Standards/Conventions/markdown-convention.md`: 마크다운 규칙
 
 ## 🚀 Getting Started
 

@@ -1,4 +1,4 @@
-# 네이밍 컨벤션 가이드 (Naming Convention Guide)
+﻿# 네이밍 컨벤션 가이드 (Naming Convention Guide)
 
 Summary: KarmoLab 및 KarmoToys 프로젝트의 일관성을 위한 브랜드, 패키지 및 코드 네이밍 규칙.
 
@@ -39,4 +39,4 @@ C# 표준 관례에 따라 **PascalCase**를 사용합니다.
 - **사람이 읽는 곳**(메뉴, 가이드 폴더, 클래스 이름): `KarmoEditor`
 - **시스템이 읽는 곳**(패키지 ID, 브랜치 주소, 폴더 ID): `karmo-editor`
 
-> **참고**: 이 가이드는 `Docs/Standards/Conventions/Naming_Convention.md`를 기반으로 함.
+> **참고**: 이 가이드는 `Docs/Standards/Conventions/naming-convention.md`를 기반으로 함.

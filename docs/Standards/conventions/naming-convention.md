@@ -1,4 +1,4 @@
-# Naming Convention (네이밍 규칙)
+﻿# Naming Convention (네이밍 규칙)
 
 Summary: KarmoLab 리포지토리 파일 및 폴더 명명 규칙 가이드.
 
@@ -31,7 +31,7 @@ KarmoLab은 .NET 및 Unity 환경 기반이므로, 해당 생태계 관습 우�
 
 - **표준**: **PascalCase** 또는 **Pascal_Snake_Case** (혼용 허용되나 PascalCase 권장)
 - **일반 문서**: **PascalCase** (`ArchitectureOverview.md`, `Roadmap.md`)
-- **핵심 허브 문서**: 가독성을 위해 언더바(`_`)를 섞은 **Pascal_Snake_Case** 허용 (`Global_Instructions.md`)
+- **핵심 허브 문서**: 가독성을 위해 언더바(`_`)를 섞은 **Pascal_Snake_Case** 허용 (`global-instructions.md`)
 - **이유**: 윈도우 환경에서 가독성이 좋으며, 대소문자 구분이 명확하지 않은 시스템에서도 안전함.
 
 ### 2.4. 에셋 및 리소스 (Assets/Resources)

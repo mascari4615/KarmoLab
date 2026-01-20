@@ -1,4 +1,4 @@
-# 🦾 AI 작업 공간 (AI Workspace)
+﻿# 🦾 AI 작업 공간 (AI Workspace)
 
 Summary: KarmoLab AI 작업 공간의 전체 구조와 사용 가이드라인.
 
@@ -10,9 +10,9 @@ Summary: KarmoLab AI 작업 공간의 전체 구조와 사용 가이드라인.
 ### 1. 🌐 [Global/](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Global/)
 
 - 모든 프로젝트에 공통적으로 적용되는 규칙과 팀 관리 도구.
-- **[Common_Rules.md](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Global/Common_Rules.md)**: 언어, 빌드, 스타일 등 절대 지침.
-- **[Roster.md](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Global/Roster.md)**: 전체 팀 명단.
-- **[Backlog.md](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Global/Backlog.md)**: 통합 백로그.
+- **[common-rules.md](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Global/common-rules.md)**: 언어, 빌드, 스타일 등 절대 지침.
+- **[roster.md](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Global/roster.md)**: 전체 팀 명단.
+- **[backlog.md](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Global/backlog.md)**: 통합 백로그.
 
 ### 2. 🏛️ [Projects/](file:///c:/Users/masca/source/repos/KarmoLab/Docs/AI/Projects/)
 

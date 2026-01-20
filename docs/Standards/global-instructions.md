@@ -1,4 +1,4 @@
-# Global Instructions
+﻿# Global Instructions
 
 Summary: KarmoLab 프로젝트에 참여하는 모든 AI 에이전트가 준수해야 할 전역 지침.
 
@@ -69,13 +69,13 @@ Alisa입니다. [토큰: X/200K (Y%)]
 - **Project Standards**: `Docs/Standards/karmolab-standards.md`
 - **Commit Guide**: `Docs/Standards/guides/commit-guide.md`
 - **Naming Convention**: `Docs/Standards/guides/naming-convention.md`
-- **Doc Convention**: `Docs/Standards/Conventions/Project_Doc_Convention.md`
+- **Doc Convention**: `Docs/Standards/Conventions/project-doc-convention.md`
 
 ### Project Context
 
-- **Project Overview**: `.agent/Project_Context.md`
-- **Backlog**: `Docs/AI/Global/Backlog.md`
-- **Common Rules**: `Docs/AI/Global/Common_Rules.md`
+- **Project Overview**: `.agent/project-context.md`
+- **Backlog**: `Docs/AI/Global/backlog.md`
+- **Common Rules**: `Docs/AI/Global/common-rules.md`
 
 ## 🚀 Workflow Integration
 
