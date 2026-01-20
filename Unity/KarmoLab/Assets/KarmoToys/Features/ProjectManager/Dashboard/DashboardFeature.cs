@@ -5,11 +5,11 @@ using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
-
-
-namespace KarmoToys.Features.Dashboard
-{
-	[AddComponentMenu("KarmoLab/Features/Dashboard")]
+ // Common.Data is used for DashboardData.
+ 
+ namespace KarmoToys.Features.ProjectManager.Dashboard
+ {
+     [AddComponentMenu("KarmoToys/Features/DashboardFeature")]
 	public class DashboardFeature : FeatureBase
 	{
 		public override string FeatureName => Define.FeatureDashboard;

@@ -1,0 +1,130 @@
+/* Timeline Style */
+.timeline-container {
+    flex-grow: 1;
+    background-color: var(--color-bg-base);
+    flex-direction: column;
+}
+
+.timeline-header {
+    height: 40px;
+    background-color: var(--color-bg-surface);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-border);
+    flex-direction: row;
+    align-items: center;
+    padding-left: 10px;
+}
+
+.timeline-title {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: var(--color-text-main);
+}
+
+/* New Shared Layout Structure */
+.timeline-header-row {
+    flex-direction: row;
+    height: 30px;
+    background-color: var(--color-bg-surface);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-border);
+    /* z-index removed (not supported) */
+}
+
+.timeline-sidebar-header {
+    width: 200px;
+    border-right-width: 1px;
+    border-right-color: var(--color-border);
+    justify-content: center;
+    padding-left: 10px;
+    background-color: var(--color-bg-surface);
+}
+
+.timeline-column-title {
+    -unity-font-style: bold;
+    color: var(--color-text-subtle);
+}
+
+.timeline-body-scroll {
+    flex-grow: 1;
+}
+
+.timeline-body-row {
+    flex-direction: row;
+    flex-grow: 1;
+    min-height: 100%; /* Ensure it fills scroll view */
+}
+
+.timeline-sidebar-content {
+    width: 200px;
+    border-right-width: 1px;
+    border-right-color: var(--color-border);
+    background-color: var(--color-bg-surface);
+}
+
+.timeline-item-row {
+    height: 30px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-secondary-border);
+    justify-content: center;
+    padding-left: 10px;
+}
+
+/* Zebra Striping */
+.timeline-row-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 30px;
+}
+
+.timeline-row-odd {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.timeline-row-even {
+    background-color: transparent;
+}
+
+/* Ruler Styles - Updated for Header Row */
+.timeline-ruler-container {
+    overflow: hidden; 
+    /* Position relative to parent flex item */
+    flex-grow: 1;
+}
+
+.timeline-ruler-tick {
+    position: absolute;
+    bottom: 0;
+    width: 1px;
+    background-color: var(--color-border);
+}
+
+.timeline-ruler-tick-minor {
+    position: absolute;
+    bottom: 0;
+    width: 1px;
+    height: 8px;
+    background-color: var(--color-secondary-border);
+}
+
+.timeline-ruler-label {
+    position: absolute;
+    top: 5px;
+    font-size: 10px;
+    color: var(--color-text-subtle);
+}
+
+.timeline-canvas-area {
+    position: relative;
+    overflow: hidden; /* Fix: Clip bars so they don't bleed into sidebar */
+    flex-grow: 1;
+}
+
+.timeline-bar {
+    position: absolute;
+    height: 20px;
+    background-color: var(--block-color-4);
+    border-radius: 4px;
+    top: 5px;
+}

@@ -1,10 +1,11 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-	<ui:Template name="DashboardView" src="project://database/Assets/KarmoToys/Features/Dashboard/DashboardView.uxml" />
+	<ui:Template name="DashboardView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Dashboard/DashboardView.uxml" />
 	<ui:Template name="ScheduleView" src="project://database/Assets/KarmoToys/Features/Planner/ScheduleView.uxml" />
 	<ui:Template name="LifeWeeklyView" src="project://database/Assets/KarmoToys/Features/LifeWeekly/LifeWeeklyView.uxml" />
 	<ui:Template name="ToolBoxView" src="project://database/Assets/KarmoToys/Features/ToolBox/ToolBoxView.uxml" />
 	<ui:Template name="PreferencesView" src="project://database/Assets/KarmoToys/Features/Preferences/PreferencesView.uxml" />
 	<ui:Template name="ProjectManagerView" src="project://database/Assets/KarmoToys/Features/ProjectManager/ProjectManagerView.uxml" />
+	<ui:Template name="WhiteboardView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Whiteboard/WhiteboardView.uxml" />
 
 	<Style src="project://database/Assets/KarmoToys/Main/UI/ThemeTokens.uss"/>
 	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
@@ -17,6 +18,7 @@
 			
 			<ui:Button name="TabDashboard" text="📊" class="nav-icon-btn selected" tooltip="대시보드" />
 			<ui:Button name="TabProject" text="🚀" class="nav-icon-btn" tooltip="프로젝트 관리" />
+			<ui:Button name="TabWhiteboard" text="🎨" class="nav-icon-btn" tooltip="화이트보드" />
 			<ui:Button name="TabSchedule" text="📅" class="nav-icon-btn" tooltip="전략 시간표" />
 			<ui:Button name="TabLifeWeekly" text="🧬" class="nav-icon-btn" tooltip="인생의 주" />
 			<ui:Button name="TabTools" text="🧰" class="nav-icon-btn" tooltip="도구함" />
@@ -44,6 +46,7 @@
 			<ui:Instance template="ToolBoxView" />
 			<ui:Instance template="PreferencesView" />
 			<ui:Instance template="ProjectManagerView" />
+			<ui:Instance template="WhiteboardView" style="flex-grow: 1;" />
 			
 			<!-- Toast Container -->
 			<ui:VisualElement name="ToastContainer" style="position: absolute; right: 0; bottom: 0; padding: 20px; align-items: flex-end;" picking-mode="Ignore"/>

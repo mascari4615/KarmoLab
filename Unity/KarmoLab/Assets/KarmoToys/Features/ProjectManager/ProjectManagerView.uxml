@@ -9,10 +9,17 @@
             <ui:VisualElement class="view-switcher">
                 <ui:Button name="BtnViewTable" text="Table" class="btn-tab selected" />
                 <ui:Button name="BtnViewKanban" text="Kanban" class="btn-tab" />
+                <ui:Button name="BtnViewTimeline" text="Timeline" class="btn-tab" />
             </ui:VisualElement>
         </ui:VisualElement>
         
         <ui:VisualElement name="ProjectContent" class="tab-content" style="flex-direction: row;">
+            <!-- Timeline View Container (Initialized by TimelineFeature) -->
+            <ui:Template name="TimelineView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Timeline/TimelineView.uxml" />
+            <ui:VisualElement name="TimelineWrapper" style="display: none; flex-grow: 1;">
+                 <ui:Instance template="TimelineView" />
+            </ui:VisualElement>
+
             <!-- Table View Container -->
             <ui:VisualElement name="TableView" class="view-container">
                 

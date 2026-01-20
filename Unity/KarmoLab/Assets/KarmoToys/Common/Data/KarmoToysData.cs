@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using KarmoToys.Features.Planner;
-using KarmoToys.Features.Dashboard;
+using KarmoToys.Features.ProjectManager.Dashboard;
 
 namespace KarmoToys.Common.Data
 {
@@ -26,6 +26,9 @@ namespace KarmoToys.Common.Data
 		// Project Data
 		public List<ProjectItemData> ProjectItems = new List<ProjectItemData>();
 
+		// Whiteboard Data
+		public List<WhiteboardNodeData> WhiteboardNodes = new List<WhiteboardNodeData>();
+
 		/// <summary>
 		/// Migrates data from legacy Planner structure to new specialized structures.
 		/// </summary>
@@ -36,5 +39,18 @@ namespace KarmoToys.Common.Data
 	public class CompanionData
 	{
 		public float HudOffset = 0.2f;
+	}
+
+	[Serializable]
+	public class WhiteboardNodeData
+	{
+		public string Id;
+		public string Title;
+		public string Content;
+		public float X;
+		public float Y;
+		public float Width;
+		public float Height;
+		public string ColorHex; // For future styling
 	}
 }
