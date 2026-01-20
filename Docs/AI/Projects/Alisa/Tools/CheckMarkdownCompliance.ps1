@@ -1,5 +1,11 @@
-$docsDir = "Docs"
-$files = Get-ChildItem -Path $docsDir -Recurse -Filter "*.md" | Where-Object { $_.FullName -notmatch "Archive" }
+# Search paths: Docs/ (global) + Apps/*/docs/ + Unity/*/docs/ (project-local)
+$searchPaths = @("Docs", "Apps/*/docs", "Unity/*/docs")
+$files = @()
+foreach ($pattern in $searchPaths) {
+    if (Test-Path $pattern) {
+        $files += Get-ChildItem -Path $pattern -Recurse -Filter "*.md" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notmatch "Archive" }
+    }
+}
 $foundErrors = $false
 
 Write-Host "--- Compliance Check Report ---" -ForegroundColor Cyan
