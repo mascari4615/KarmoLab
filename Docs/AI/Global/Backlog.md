@@ -4,8 +4,10 @@ Summary: KarmoLab 전체 프로젝트의 개선 아이디어 및 작업 대기 �
 
 ## 1. 🚀 현재 진행 중 (In Progress)
 
-- [ ] **AI Persona Rebranding**: Antigravity -> Alisa 명칭 변경 및 컨텍스트 동기화.
-- [ ] **Markdown Compliance**: 모든 문서의 마크다운 규칙 준수 확인 및 자동화 스크립트 고도화.
+- [x] **AI Persona Rebranding**: Antigravity -> Alisa 명칭 변경 및 컨텍스트 동기화.
+- [x] **Markdown Compliance**: 모든 문서의 마크다운 규칙 준수 확인 및 자동화 스크립트 고도화.
+- [x] **KarmoAI Service Layer Implementation**: 중앙 집중형 AI 서비스 레이어 구축 및 Gemini 연동 (MVP 완료).
+- [/] **YawnBot Gemini Integration**: Gemini API를 연동한 지능형 응답 및 뉴스 요약 기능 구현.
 
 ## 2. 📅 우선순위 높음 (High Priority)
 

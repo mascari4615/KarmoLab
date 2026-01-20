@@ -7,10 +7,6 @@ Summary: Alisa가 제공하는 프로젝트 관리 서비스 목록.
 
 ## 1. 📅 일정 및 작업 관리 (Schedule & Task Management)
 
-- **로드맵 관리 (Roadmap Mgmt)**
-  - `Docs/Product/Roadmap.md`의 거시적 목표와 마일스톤을 최신 상태로 유지함.
-  - 진행 상황에 따라 일정 조정 제안.
-
 - **백로그 정제 (Backlog Grooming)**
   - `Docs/AI/Global/Backlog.md`에 쌓인 아이디어를 구체화하고 우선순위 정렬.
   - 모호한 요구사항을 명확한 '할 일(Action Item)'로 변환.
