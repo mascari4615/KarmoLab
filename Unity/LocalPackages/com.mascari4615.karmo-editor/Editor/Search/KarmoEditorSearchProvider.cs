@@ -35,7 +35,7 @@ namespace KarmoLab.KarmoEditor.Search
 					AddAction(actions, provider, "Kill App Mutex", "실행 중인 앱 뮤텍스 강제 종료 및 정적 필드 초기화", "d_DebuggerAttached", KarmoDebugMenu.KillMutex);
 					AddAction(actions, provider, "Open Build Helper", "빌드 및 배포 도구 창 열기", "BuildSettings.Editor.Small", KarmoBuildWindow.ShowWindow);
 					AddAction(actions, provider, "Open Karmo Settings", "Project Settings 내 KarmoLab 설정으로 이동", "SettingsIcon", () => SettingsService.OpenProjectSettings(Define.ProjectSettingsPath));
-					AddAction(actions, provider, "Create KarmoSettings", "새로운 KarmoSettings 에셋 생성", "ScriptableObject Icon", KarmoSettingsUtility.CreateKarmoSettings);
+					AddAction(actions, provider, "Create KarmoEditorSettings", "새로운 KarmoEditorSettings 에셋 생성", "ScriptableObject Icon", KarmoSettingsUtility.CreateKarmoSettings);
 
 					// 검색어 필터링
 					var filtered = actions.Where(i => i.label != null && i.label.ToLower().Contains(searchPattern.ToLower())).ToList();

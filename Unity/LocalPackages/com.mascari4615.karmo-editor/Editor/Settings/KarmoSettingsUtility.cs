@@ -13,8 +13,8 @@ namespace KarmoLab.KarmoEditor.Settings
 		[MenuItem(Define.RootMenu + "Settings/Open Karmo Settings %&k")]
 		public static void OpenSettings() => SettingsService.OpenProjectSettings(Define.ProjectSettingsPath);
 
-		[MenuItem(Define.RootMenu + "Settings/Create KarmoSettings")]
-		public static void CreateKarmoSettings() => CreateAsset<KarmoSettings>();
+		[MenuItem(Define.RootMenu + "Settings/Create KarmoEditorSettings")]
+		public static void CreateKarmoSettings() => CreateAsset<KarmoEditorSettings>();
 
 		[MenuItem(Define.RootMenu + "Settings/Create KarmoToolbarSettings")]
 		public static void CreateKarmoToolbarSettings() => CreateAsset<KarmoToolbarSettings>();

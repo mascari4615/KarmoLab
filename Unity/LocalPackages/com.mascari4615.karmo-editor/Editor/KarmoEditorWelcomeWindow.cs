@@ -39,7 +39,7 @@ namespace KarmoLab.KarmoEditor
 
 		private static bool HasAnySettings()
 		{
-			return AssetDatabase.FindAssets("t:KarmoSettings").Length > 0 ||
+			return AssetDatabase.FindAssets("t:KarmoEditorSettings").Length > 0 ||
 				   AssetDatabase.FindAssets("t:KarmoToolbarSettings").Length > 0;
 		}
 

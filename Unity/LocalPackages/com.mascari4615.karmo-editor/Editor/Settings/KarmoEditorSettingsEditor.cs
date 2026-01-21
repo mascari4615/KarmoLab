@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace KarmoLab.KarmoEditor.Settings
 {
-	[CustomEditor(typeof(KarmoSettings))]
-	public class KarmoSettingsEditor : Editor
+	[CustomEditor(typeof(KarmoEditorSettings))]
+	public class KarmoEditorSettingsEditor : Editor
 	{
 		private ReorderableList _mutexNamesList;
 		private ReorderableList _fieldsToResetList;
@@ -13,7 +13,7 @@ namespace KarmoLab.KarmoEditor.Settings
 		private void OnEnable()
 		{
 			// Mutex Names List
-			_mutexNamesList = new ReorderableList(serializedObject, serializedObject.FindProperty("MutexNames"), true, true, true, true);
+			_mutexNamesList = new ReorderableList(serializedObject, serializedObject.FindProperty("ApplicationMutexNames"), true, true, true, true);
 			_mutexNamesList.drawHeaderCallback = (Rect rect) => EditorGUI.LabelField(rect, "Mutex Names (App instance prevention)");
 			_mutexNamesList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
 			{
@@ -23,7 +23,7 @@ namespace KarmoLab.KarmoEditor.Settings
 			};
 
 			// Fields To Reset List
-			_fieldsToResetList = new ReorderableList(serializedObject, serializedObject.FindProperty("FieldsToReset"), true, true, true, true);
+			_fieldsToResetList = new ReorderableList(serializedObject, serializedObject.FindProperty("ReflectionFieldResets"), true, true, true, true);
 			_fieldsToResetList.drawHeaderCallback = (Rect rect) => EditorGUI.LabelField(rect, "Reset Fields (Reflection based cleanup)");
 			_fieldsToResetList.elementHeight = EditorGUIUtility.singleLineHeight * 2 + 10;
 			_fieldsToResetList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>

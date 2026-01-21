@@ -17,6 +17,8 @@ namespace KarmoLab.KarmoEditor.Builder
 		private const string KEY_LIVE_PATH = "KarmoLab_LivePath";
 		private const string KEY_PREFIX = "KarmoLab_Prefix";
 		private const string KEY_BACKUP_PATTERNS = "KarmoLab_BackupPatterns";
+		private const string KEY_RUN_AFTER_BUILD = "KarmoLab_RunAfterBuild";
+		private const string KEY_DEPLOY_AFTER_BUILD = "KarmoLab_DeployAfterBuild";
 
 		// Fields
 		private string _outputPath;
@@ -26,6 +28,8 @@ namespace KarmoLab.KarmoEditor.Builder
 		private string _buildMemo = "";
 		private bool _openFolderAfterBuild = true;
 		private bool _deleteDoNotShip = true;
+		private bool _runAfterBuild = false;
+		private bool _deployAfterBuild = false;
 
 		private void OnEnable()
 		{
@@ -33,6 +37,8 @@ namespace KarmoLab.KarmoEditor.Builder
 			_livePath = EditorPrefs.GetString(KEY_LIVE_PATH, "");
 			_filePrefix = EditorPrefs.GetString(KEY_PREFIX, "KarmoLab");
 			_backupPatterns = EditorPrefs.GetString(KEY_BACKUP_PATTERNS, "*.json;Data/");
+			_runAfterBuild = EditorPrefs.GetBool(KEY_RUN_AFTER_BUILD, false);
+			_deployAfterBuild = EditorPrefs.GetBool(KEY_DEPLOY_AFTER_BUILD, false);
 		}
 
 		private void OnDisable()
@@ -41,6 +47,8 @@ namespace KarmoLab.KarmoEditor.Builder
 			EditorPrefs.SetString(KEY_LIVE_PATH, _livePath);
 			EditorPrefs.SetString(KEY_PREFIX, _filePrefix);
 			EditorPrefs.SetString(KEY_BACKUP_PATTERNS, _backupPatterns);
+			EditorPrefs.SetBool(KEY_RUN_AFTER_BUILD, _runAfterBuild);
+			EditorPrefs.SetBool(KEY_DEPLOY_AFTER_BUILD, _deployAfterBuild);
 		}
 
 		private void OnGUI()
@@ -76,33 +84,38 @@ namespace KarmoLab.KarmoEditor.Builder
 			EditorGUILayout.HelpBox("Semicolon-separated patterns to protect (e.g. *.json;Data/)", MessageType.None);
 			_openFolderAfterBuild = EditorGUILayout.Toggle("Open Folder After Build", _openFolderAfterBuild);
 			_deleteDoNotShip = EditorGUILayout.Toggle("Delete DoNotShip Folders", _deleteDoNotShip);
+			
+			EditorGUILayout.Space();
+			GUILayout.Label("Post-Build Actions", EditorStyles.boldLabel);
+			_runAfterBuild = EditorGUILayout.Toggle("Run after Build", _runAfterBuild);
+			_deployAfterBuild = EditorGUILayout.Toggle("Deploy after Build", _deployAfterBuild);
 
 			EditorGUILayout.Space();
 			EditorGUILayout.HelpBox($"Preview: {_outputPath}/{GetFolderName()}/{_filePrefix}.exe", MessageType.Info);
 
 			EditorGUILayout.Space();
 
-			if (GUILayout.Button("Build Only", GUILayout.Height(30)))
-			{
-				BuildApp(false);
-			}
+			string buttonText = "Build App";
+			if (_deployAfterBuild) buttonText = "Build & Deploy (Patch)";
+			else if (_runAfterBuild) buttonText = "Build & Run";
 
-			if (GUILayout.Button("Build & Run", GUILayout.Height(30)))
+			if (_deployAfterBuild) GUI.backgroundColor = Color.green;
+
+			if (GUILayout.Button(buttonText, GUILayout.Height(40)))
 			{
-				string builtExe = BuildApp(false);
-				if (!string.IsNullOrEmpty(builtExe))
+				if (_deployAfterBuild)
+				{
+					if (!EditorUtility.DisplayDialog("Deploy Warning",
+						"This will overwrite files in the Live Deploy Path.\nEnsure the application is closed.\nProceed?", "Yes, Patch it!", "Cancel"))
+					{
+						return;
+					}
+				}
+
+				string builtExe = BuildApp(_deployAfterBuild);
+				if (!string.IsNullOrEmpty(builtExe) && _runAfterBuild)
 				{
 					RunApp(builtExe);
-				}
-			}
-
-			GUI.backgroundColor = Color.green;
-			if (GUILayout.Button("Build & Deploy (Patch)", GUILayout.Height(40)))
-			{
-				if (EditorUtility.DisplayDialog("Deploy Warning",
-					"This will overwrite files in the Live Deploy Path.\nEnsure the application is closed.\nProceed?", "Yes, Patch it!", "Cancel"))
-				{
-					BuildApp(true);
 				}
 			}
 			GUI.backgroundColor = Color.white;

@@ -24,7 +24,7 @@ namespace KarmoLab.KarmoEditor.Settings
 
 		private void LoadEditors()
 		{
-			var karmoSettings = FindAsset<KarmoSettings>();
+			var karmoSettings = FindAsset<KarmoEditorSettings>();
 			if (karmoSettings != null && _karmoSettingsEditor == null)
 				_karmoSettingsEditor = Editor.CreateEditor(karmoSettings);
 
@@ -39,7 +39,7 @@ namespace KarmoLab.KarmoEditor.Settings
 			EditorGUILayout.LabelField("KarmoLab Editor Settings", EditorStyles.boldLabel);
 			EditorGUILayout.Space();
 
-			DrawSettingsSection("General Settings", _karmoSettingsEditor, typeof(KarmoSettings));
+			DrawSettingsSection("General Settings", _karmoSettingsEditor, typeof(KarmoEditorSettings));
 			EditorGUILayout.Space(10);
 			DrawSettingsSection("Toolbar Settings", _karmoToolbarSettingsEditor, typeof(KarmoToolbarSettings));
 
