@@ -1,4 +1,4 @@
-# 컴패니언 모드 히스토리 (Companion Mode History)
+﻿# 컴패니언 모드 히스토리 (Companion Mode History)
 
 Summary: 유니티 기반 컴패니언(Companion) 모드의 데스크탑 투명 오버레이 및 인터랙션 구현 기록.
 
@@ -32,7 +32,7 @@ Summary: 유니티 기반 컴패니언(Companion) 모드의 데스크탑 투명 
   - 알람/타이머 알림 시스템 통합 (비프음 + 중요 메시지 처리).
 - **문서화**
   - `IdleMonitorModule.md` 생성.
-  - `TimeSystem_Design.md` 업데이트.
+  - `time-system-design.md` 업데이트.
 
 ## 2026-01-19 (KST) - Editor Play Mode & Refactoringt (Dev Experience)**
 

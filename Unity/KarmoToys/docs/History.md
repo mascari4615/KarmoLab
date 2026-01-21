@@ -1,4 +1,4 @@
-# KarmoToys 히스토리 (History)
+﻿# KarmoToys 히스토리 (History)
 
 Summary: KarmoToys 및 KarmoLab 프로젝트의 주요 업데이트 기록 및 아키텍처 변화 내역.
 
@@ -74,7 +74,7 @@ Summary: KarmoToys 및 KarmoLab 프로젝트의 주요 업데이트 기록 및 �
 
 - **인코딩 표준화 및 복구 (Encoding Standardization & Recovery)**:
   - **문자열 복구**: AI 수정 과정에서 깨진 `CompanionFeature.cs`의 설정 아이콘(`⚙️`) 및 기타 유니코드 문자열 복구.
-  - **인코딩 가이드 수립**: `Encoding_Policy.md`를 작성하여 모든 프로젝트 파일의 인코딩을 **UTF-8 with BOM**으로 고수하도록 규정.
+  - **인코딩 가이드 수립**: `encoding-policy.md`를 작성하여 모든 프로젝트 파일의 인코딩을 **UTF-8 with BOM**으로 고수하도록 규정.
   - **원인 분석**: AI 도구의 기본 인코딩(UTF-8)과 윈도우 환경(UTF-8 BOM) 간의 불일치 문제를 파악하고 방지 대책 마련.
 
 - **컴패니언 관리 체계 전면 개편 (Companion Management)**:

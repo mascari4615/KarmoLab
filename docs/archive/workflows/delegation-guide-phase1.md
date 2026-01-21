@@ -1,4 +1,4 @@
-# 🤖 Phase 1: 데이터 통합 구현 지시서 (For Implementation Agent)
+﻿# 🤖 Phase 1: 데이터 통합 구현 지시서 (For Implementation Agent)
 
 이 문서는 '통합 프로젝트 매니저' 구축의 첫 단계인 **데이터 통합** 작업을 다른 구현 에이전트에게 요청하기 위한 상세 가이드임.
 
@@ -40,7 +40,7 @@
 >
 > **수행할 작업:**
 >
-> 1. `KarmoToys.Common.Data`에 통합 모델인 `ProjectItemData` 클래스를 만들어줘. (상세 필드는 `Project_Management_System_Spec.md` 참고)
+> 1. `KarmoToys.Common.Data`에 통합 모델인 `ProjectItemData` 클래스를 만들어줘. (상세 필드는 `project-management-system-spec.md` 참고)
 > 2. 기존 데이터를 새 모델로 옮기는 마이그레이션 로직을 작성해줘.
 > 3. `DataService`가 이 통합 데이터를 관리하도록 업데이트해줘.
 >

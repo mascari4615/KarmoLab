@@ -29,7 +29,7 @@ Summary: 유니티 에디터 확장 도구(KarmoEditor)의 주요 기능 업데�
   - **Unity 6 최적화**: 최신 Unity 6 (6000.3) 버전을 최소 사양으로 지정하고 `karmo-editor`로 네이밍 간소화.
   - **모노레포 구조화 (Local Packages)**: 패키지들을 `Assets`가 아닌 `LocalPackages/` 폴더로 격리하여 관리하는 전문적인 아키텍처 도입. `manifest.json`을 통한 로컬 경로 참조 방식 채택.
   - **자동 배포 파이프라인 (CI)**: GitHub Actions를 활용하여 `main` 푸시 및 버전 태그(`패키지명/v*`) 생성 시 자동으로 배포용(`upm/*`) 브랜치를 갱신하는 워크플로우(`upm-publish.yml`) 구축.
-  - **기술 가이드 제공**: 배포 전략, 프로젝트 구조, IDE 트러블슈팅 등을 통합한 `UPM_Package_Distribution_Guide.md` 작성.
+  - **기술 가이드 제공**: 배포 전략, 프로젝트 구조, IDE 트러블슈팅 등을 통합한 `upm-package-distribution-guide.md` 작성.
 
 - **명칭 및 네임스페이스 리팩토링 (Final Refinement)**:
   - **네임스페이스 통일**: 모든 코드의 네임스페이스를 `KarmoLab.KarmoEditor`로 변경하고, `MenuItem` 경로를 `KarmoLab`으로 단일화.
