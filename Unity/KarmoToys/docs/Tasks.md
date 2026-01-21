@@ -1,5 +1,7 @@
 # Task List
 
+Summary: KarmoToys 프로젝트의 주요 작업 목록 및 진행 상태.
+
 - [x] **Phase 2: 익숙한 기능의 재구성 (Core Views & Refinement)**
   - [x] Create `ProjectManager` feature folder and files
   - [x] Implement Table View (Project Items List)
