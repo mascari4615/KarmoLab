@@ -1,4 +1,4 @@
-# Config Management: .env vs. Environment Variables
+﻿# Config Management: .env vs. Environment Variables
 
 Summary: KarmoLab 프로젝트에서 .env 대신 환경 변수와 User Secrets를 사용하는 기술적 배경과 장단점 분석.
 
@@ -39,7 +39,3 @@ Summary: KarmoLab 프로젝트에서 .env 대신 환경 변수와 User Secrets�
 1. **로컬 개발**: `.NET User Secrets`를 최우선으로 사용함 (`dotnet user-secrets`).
 2. **서버/배포**: 인프라 수준의 **환경 변수**를 사용함.
 3. **코드 구현**: 특정 파일 형식에 의존하지 않고 .NET의 `IConfiguration`이나 `Environment.GetEnvironmentVariable()`을 사용하여 추상화된 값만 가져오도록 설계함.
-
----
-> **작성자**: Alisa (PM)  
-> **날짜**: 2026-01-20

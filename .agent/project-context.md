@@ -8,7 +8,7 @@ KarmoLab은 개인 프로젝트 모노레포입니다. 다양한 플랫폼과 �
 
 ### Repository Structure
 
-```
+```plaintext
 KarmoLab/
 ├── Apps/              # .NET 애플리케이션
 ├── Unity/             # Unity 프로젝트
@@ -30,7 +30,7 @@ KarmoLab/
 
 - **Platform**: Unity
 - **Purpose**: 데스크탑 컴패니언 애플리케이션
-- **Location**: `Unity/KarmoToys/`
+- **Location**: `Unity/KarmoLab/Assets/KarmoToys/`
 - **Features**: Companion 캐릭터, 타이머/알람, 프로젝트 관리
 
 ### KarmoHub (Project Management)
@@ -44,7 +44,7 @@ KarmoLab/
 
 - **Platform**: Unity Editor
 - **Purpose**: Unity 에디터 확장 도구
-- **Location**: `Unity/KarmoEditor/`
+- **Location**: `Unity/LocalPackages/com.mascari4615.karmo-editor/`
 - **Features**: Scene Toolbar, 커스텀 에디터 도구
 
 ### KarmoAI (AI Services)
@@ -83,7 +83,7 @@ KarmoLab/
 
 각 프로젝트는 자체 `docs/` 폴더 보유:
 
-```
+```plaintext
 <project>/docs/
 ├── features/          # 기능별 문서
 │   └── <feature>/
@@ -93,14 +93,6 @@ KarmoLab/
 ├── history.md         # 프로젝트 전체 이력
 └── todo.md            # 작업 목록
 ```
-
-### Global Docs
-
-전역 문서는 `Docs/`에 위치:
-
-- **AI/**: AI 에이전트 관련
-- **Standards/**: 개발 표준 및 가이드
-- **Archive/**: 과거 기록
 
 ## 🔄 Workflow Integration
 
@@ -201,7 +193,4 @@ KarmoLab/
 - 의미 있는 PR 설명
 - 코드 리뷰 적극 참여
 
----
-
 **Maintained by**: Alisa (PM & Secretary)  
-**Last Updated**: 2026-01-21

@@ -35,6 +35,3 @@ Summary: KarmoLab 개발 환경에서 필수적으로 알아야 할 OS 및 Git �
 
 - **핵심**: 보안을 위해 민감 정보는 코드와 분리함.
 - **상세 분석**: [.env vs 환경변수 기술 분석](config-management-deepdive.md) 문서를 참조.
-
----
-> **기록 주체**: Alisa (PM)

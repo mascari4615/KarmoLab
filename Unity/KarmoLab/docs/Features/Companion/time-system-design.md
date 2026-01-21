@@ -1,4 +1,4 @@
-# Companion Time System & Modular Architecture Design
+﻿# Companion Time System & Modular Architecture Design
 
 Summary: Companion 기능의 시간 관리 시스템 및 모듈형 아키텍처 설계 문서. 알람, 타이머, 유휴 감지 등의 기능을 모듈 기반으로 구현하여 확장성과 유지보수성을 확보함.
 
@@ -35,8 +35,6 @@ Companion 기능이 단순한 '말하는 인형'을 넘어, 사용자의 생산�
 - **Stretch Reminder**: 유휴 시간 없이 50분 연속 입력 감지 시 "허리 좀 펴세요" 알림.
 - **World Clock**: 마우스 오버 시 다른 국가 시간 보여주기.
 - **D-Day Counter**: 중요한 날짜(프로젝트 마감일 등) 머리 위에 띄워두기.
-
----
 
 ## 3. How (기술 설계 & 모듈화)
 

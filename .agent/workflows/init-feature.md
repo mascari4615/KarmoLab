@@ -1,6 +1,5 @@
 ﻿---
 description: 새로운 피처의 표준 문서 구조(Spec, History, Todo)를 자동으로 생성함
----
 
 # 🚀 모노레포 통합 TDD 마스터 워크플로우 (Unity/Standard 분기형)
 

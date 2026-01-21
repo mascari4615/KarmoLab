@@ -1,4 +1,4 @@
-# ⌨️ 에이전트 커맨드 가이드 (Workflow Commands)
+﻿# ⌨️ 에이전트 커맨드 가이드 (Workflow Commands)
 
 Summary: KarmoLab AI 에이전트를 효율적으로 제어하기 위한 슬래시 커맨드(워크플로우) 사용 가이드.
 
@@ -31,8 +31,6 @@ Summary: KarmoLab AI 에이전트를 효율적으로 제어하기 위한 슬래�
 
 - **용도**: 구현 에이전트(Implementer)가 업무를 시작할 수 있도록 컨텍스트 번들을 준비함.
 - **상세**: 연관된 `Spec.md`, `Todo.md`, `Context.md`를 모아서 브리핑함.
-
----
 
 ## 🚀 사용 방법 (How to Use)
 

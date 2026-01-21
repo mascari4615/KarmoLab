@@ -1,4 +1,4 @@
-# Feature: KarmoAI General (Spec)
+﻿# Feature: KarmoAI General (Spec)
 
 Summary: KarmoAI의 기본적인 LLM 연동 및 구조화된 데이터 추출 기능에 대한 명세.
 
@@ -36,5 +36,3 @@ KarmoAI는 보안 및 플랫폼 독립성을 위해 다음 표준을 준수함:
 | TC1 | 단순 텍스트 생성 | "안녕?" | 인사말을 포함한 텍스트 응답 |
 | TC2 | 구조화된 데이터 추출 | "JSON으로 이름 '철수' 반환해줘" | `{"name": "철수"}` 객체 반환 |
 | TC3 | 시스템 명령 테스트 | System: "너는 고양이야", User: "누구니?" | "나는 고양이다냥" 스타일의 응답 |
-
-> **작성자**: KarmoAI

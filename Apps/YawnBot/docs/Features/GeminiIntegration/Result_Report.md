@@ -1,4 +1,4 @@
-# Result Report: YawnBot Gemini Integration
+﻿# Result Report: YawnBot Gemini Integration
 
 Summary: YawnBot의 KarmoAI 서비스 연동 및 보안 표준화 작업 완료 보고. User Secrets 기반 구성 관리, AI 페르소나 적용, 뉴스 요약 기능 구현을 완료함.
 
@@ -41,4 +41,3 @@ dotnet user-secrets set DISCORD_TOKEN "YOUR_DISCORD_TOKEN" --project Apps/YawnBo
 dotnet run --project Apps/YawnBot/src/YawnBot/YawnBot.csproj
 ```
 
-> **작성자**: Antigravity

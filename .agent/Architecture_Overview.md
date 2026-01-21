@@ -1,1 +1,0 @@
-﻿C:/Users/masca/source/repos/KarmoLab/Docs/Standards/architecture-overview.md

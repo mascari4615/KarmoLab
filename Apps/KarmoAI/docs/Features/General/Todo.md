@@ -1,4 +1,4 @@
-# Feature: KarmoAI General (Todo)
+﻿# Feature: KarmoAI General (Todo)
 
 Summary: KarmoAI General 기능의 향후 작업 목록.
 
@@ -17,5 +17,3 @@ Summary: KarmoAI General 기능의 향후 작업 목록.
 - [x] 소스 코드 XML 주석 보강 및 문서화 규칙 준수.
 - [x] API 키 관리 방식 개선 (User Secrets 도입).
 - [x] `SystemInstruction` 및 `UseJsonMode` 적용 완료.
-
-> **관리 주체**: KarmoAI

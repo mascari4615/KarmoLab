@@ -1,9 +1,9 @@
-# Search paths: Docs/ (global) + Apps/*/docs/ + Unity/*/docs/ (project-local)
-$searchPaths = @("Docs", "Apps/*/docs", "Unity/*/docs")
+# Search paths: docs/ (global) + Apps/*/docs/ + Unity/*/docs/ (project-local)
+$searchPaths = @("docs", "Apps/*/docs", "Unity/*/docs")
 $files = @()
 foreach ($pattern in $searchPaths) {
     if (Test-Path $pattern) {
-        $files += Get-ChildItem -Path $pattern -Recurse -Filter "*.md" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notmatch "Archive" }
+        $files += Get-ChildItem -Path $pattern -Recurse -Filter "*.md" -ErrorAction SilentlyContinue
     }
 }
 $foundErrors = $false

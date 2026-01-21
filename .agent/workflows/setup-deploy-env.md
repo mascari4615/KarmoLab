@@ -1,6 +1,5 @@
----
+﻿---
 description: How to configure environment variables for YawnBot on Linux (Systemd)
----
 
 This workflow guides you through setting up the necessary environment variables (`DISCORD_TOKEN`, `GEMINI_API_KEY`) on the Linux server hosting YawnBot.
 

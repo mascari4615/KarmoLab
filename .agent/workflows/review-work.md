@@ -1,9 +1,12 @@
----
-description: 제출된 결과물의 코드 품질 및 문서화 규준 준수 여부를 검토함
+﻿---
+description: 
 ---
 
+---
+description: 제출된 결과물의 코드 품질 및 문서화 규준 준수 여부를 검토함
+
 1. **대상 프로젝트 확인**
-   - 현재 작업 중인 `Apps/[ProjectName]` 및 `Docs/Projects/[ProjectName]` 경로 확인.
+   - 현재 작업 중인 경로 확인.
 
 2. **문서화 규준 검사**
    - `Docs/Projects/[ProjectName]/Features/[FeatureName]/` 하위에 아래 3종 세트가 존재하는지 확인:
@@ -24,11 +27,11 @@ description: 제출된 결과물의 코드 품질 및 문서화 규준 준수 �
    - 만약 구현 과정에서 기획이 바뀌었다면, `Spec.md`도 업데이트되었는지 검토.
 
 5. **코드 리뷰 수행**
-   - `IAIService` 등 인터페이스 설계 의도에 맞게 구현되었는지 확인.
+   - 인터페이스 설계 의도에 맞게 구현되었는지 확인.
    - 예외 처리 및 환경 설정(보안) 요소 검토.
 
 6. **결과 보고 및 피드백 생성**
-   - 위 항목들을 종합하여 Alisa(PM)의 관점에서 검토 의견을 메인테이너에게 보고함.
+   - 위 항목들을 종합하여 Alisa의 관점에서 검토 의견을 메인테이너에게 보고함.
    - **Review_Feedback.md 생성**: `Features/[FeatureName]/Review_Feedback.md`를 생성하여 공식 피드백을 기록함.
      - 검토 상태: PASS / CONDITIONAL PASS / FAIL
      - Critical Issues (반드시 수정)
