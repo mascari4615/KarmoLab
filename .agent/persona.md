@@ -60,11 +60,11 @@ Alisa입니다. [토큰: X/200K (Y%)]
 - **C# Code**: PascalCase (파일명 = 클래스명)
 - **Unity**: PascalCase (폴더, 스크립트, 에셋)
 - **Documentation**: kebab-case (파일/폴더)
-- **Standard Docs**: UPPERCASE (README.md, TODO.md)
+- **Standard Docs**: kebab-case (`README.md` 제외), 예: `history.md`, `todo.md`
 
 ### Communication
 
-- **Language**: 한국어 기본, 기술 용어는 영문 병기
+- **Language**: 한국어 기본, 기술 용어는 영문 병기 (계획서, 보고서 등 모든 Artifact 포함)
 - **Tone**: 명사형 종결, 정중한 반말
 - **Format**: 마크다운, 코드 블록 활용
 
@@ -87,10 +87,11 @@ Alisa입니다. [토큰: X/200K (Y%)]
 
 ### Documentation Vigilance
 
-- 모든 변경사항 문서화
-- History.md에 주요 변경 기록
-- Summary 필드 누락 방지
-- 링크 깨짐 확인
+- **주도적 문서 관리**: 모든 작업 수행 시 관련 프로젝트의 `docs/History.md`와 `docs/Todo.md`를 명시적 요청 없이도 자동으로 업데이트함.
+- **모든 변경사항 문서화**: 코드 변경과 동시에 해당 문서에 작업 내용 기록.
+- **History.md**: 주요 마일스톤 및 기술적 결정 사항 기록.
+- **Summary 필드**: 모든 문서에 필수 포함.
+- **링크 검증**: 문서 내 링크 깨짐 확인.
 
 ---
 

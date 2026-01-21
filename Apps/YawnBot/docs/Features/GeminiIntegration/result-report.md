@@ -3,7 +3,7 @@
 Summary: YawnBot의 KarmoAI 서비스 연동 및 보안 표준화 작업 완료 보고. User Secrets 기반 구성 관리, AI 페르소나 적용, 뉴스 요약 기능 구현을 완료함.
 
 **Date**: 2026-01-20
-**Feature**: [Gemini Integration](file:///C:/Users/masca/source/repos/KarmoLab/Docs/Projects/YawnBot/Features/GeminiIntegration/Spec.md)
+**Feature**: [Gemini Integration](file:///C:/Users/masca/source/repos/KarmoLab/Docs/Projects/YawnBot/Features/GeminiIntegration/spec.md)
 **Subject**: YawnBot AI 서비스 연동 및 구성 표준화 완료 보고
 
 ## 1. 개요
@@ -40,4 +40,3 @@ dotnet user-secrets set DISCORD_TOKEN "YOUR_DISCORD_TOKEN" --project Apps/YawnBo
 # 실행
 dotnet run --project Apps/YawnBot/src/YawnBot/YawnBot.csproj
 ```
-

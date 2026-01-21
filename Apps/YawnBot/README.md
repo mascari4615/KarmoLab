@@ -63,7 +63,7 @@ YawnBot은 C# .NET 9.0과 Discord.Net 라이브러리를 사용하여 개발된 
 프로젝트의 상세 문서는 [`docs/`](docs/) 폴더에서 확인할 수 있습니다:
 
 - **[Features/](docs/Features/)** - 기능별 상세 명세 및 구현 내역
-- **[Development.md](docs/Development.md)** - 개발 가이드 및 환경 설정
-- **[History.md](docs/History.md)** - 프로젝트 변경 이력
-- **[Todo.md](docs/Todo.md)** - 진행 중인 작업 및 계획
-- **[ServerDeployment.md](docs/ServerDeployment.md)** - 서버 배포 가이드
+- **[development.md](docs/development.md)** - 개발 가이드 및 환경 설정
+- **[history.md](docs/history.md)** - 프로젝트 변경 이력
+- **[todo.md](docs/todo.md)** - 진행 중인 작업 및 계획
+- **[server-deployment.md](docs/server-deployment.md)** - 서버 배포 가이드

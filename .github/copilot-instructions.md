@@ -1,1 +1,0 @@
-﻿C:/Users/masca/source/repos/_Mascari4615/KarmoLab/Docs/Standards/global-instructions.md

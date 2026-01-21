@@ -5,7 +5,7 @@ Summary: KarmoHub 프로젝트의 주요 업데이트 기록, 빌드 시스템 �
 ## 2026-01-19 (KST) - UI Redesign & Brand Identity (Steam Style)
 
 - **UI 전면 개편**: Steam 스타일의 입체적 레이아웃 및 멀티 테마 시스템 도입 완료.
-- **세부 내역**: [UI_Redesign_Steam 히스토리](file:///c:/Users/masca/source/repos/KarmoLab/Docs/Projects/KarmoHub/Features/UI_Redesign_Steam/History.md) 참고.
+- **세부 내역**: [UI_Redesign_Steam 히스토리](file:///c:/Users/masca/source/repos/KarmoLab/Docs/Projects/KarmoHub/Features/UI_Redesign_Steam/history.md) 참고.
 
 ## 2026-01-10 (KST) - 라이브러리 확장 및 안정화
 

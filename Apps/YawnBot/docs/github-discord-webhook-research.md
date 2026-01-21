@@ -50,7 +50,7 @@ Summary: GitHub와 Discord를 연동하여 생산성을 높이기 위한 기술�
 
 ## 3. 서버 배포 및 설정 (Deployment)
 
-상세한 배포 과정 및 명령어는 [ServerDeployment.md](ServerDeployment.md) 에 정리해둠.
+상세한 배포 과정 및 명령어는 [server-deployment.md](server-deployment.md) 에 정리해둠.
 
 - **서버**: Vultr Seoul Region (Ubuntu 24.04)
 - **런타임**: .NET 9.0

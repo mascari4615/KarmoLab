@@ -34,8 +34,8 @@ Summary: KarmoAI의 LLM 연동 레이어 및 모델 폴백 시스템 구현 결�
 
 ## 4. 검토 대상 문서
 
-- [History.md](file:///C:/Users/masca/source/repos/KarmoLab/Docs/Projects/KarmoAI/Features/General/History.md) (최종 결정 이력)
-- [Todo.md](file:///C:/Users/masca/source/repos/KarmoLab/Docs/Projects/KarmoAI/Features/General/Todo.md) (작업 완료 현황)
+- [history.md](file:///C:/Users/masca/source/repos/KarmoLab/Docs/Projects/KarmoAI/Features/General/history.md) (최종 결정 이력)
+- [todo.md](file:///C:/Users/masca/source/repos/KarmoLab/Docs/Projects/KarmoAI/Features/General/todo.md) (작업 완료 현황)
 - [GeminiService.cs](file:///C:/Users/masca/source/repos/KarmoLab/Apps/KarmoAI/Services/GeminiService.cs) (폴백 핵심 로직)
 
 > **보고자**: Antigravity

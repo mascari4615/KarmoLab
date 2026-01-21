@@ -70,7 +70,8 @@ KarmoLab/
 | **C# 코드** | PascalCase | `MainWindow.cs` |
 | **Unity 에셋** | PascalCase | `PlayerController.cs` |
 | **Node.js** | kebab-case | `package.json` |
-| **표준 문서** | UPPERCASE | `README.md` |
+| **표준 문서** | kebab-case | `history.md`, `todo.md` |
+| **최상위 요약** | UPPERCASE | `README.md` |
 
 ### 원칙
 
@@ -85,18 +86,18 @@ KarmoLab/
 ### 필수 문서 (프로젝트 루트)
 
 - `README.md`: 프로젝트 개요, 빌드 가이드
-- `History.md`: 주요 마일스톤 및 릴리스 내역
-- `Todo.md`: 현재 작업 및 계획
+- `history.md`: 주요 마일스톤 및 릴리스 내역
+- `todo.md`: 현재 작업 및 계획
 
 ### 피처 단위 관리 (Features/)
 
 각 피처는 독립 폴더로 관리:
 
-- `Spec.md`: 기능 명세 및 기획
-- `History.md`: 변경 이력
-- `Todo.md`: 작업 목록
-- `Result_Report.md`: 작업 완료 보고
-- `Review_Feedback.md`: PM 리뷰 결과
+- `spec.md`: 기능 명세 및 기획
+- `history.md`: 변경 이력
+- `todo.md`: 작업 목록
+- `result-report.md`: 작업 완료 보고
+- `review-feedback.md`: PM 리뷰 결과
 
 ### 작성 규칙
 

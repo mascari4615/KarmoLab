@@ -2,6 +2,13 @@
 
 Summary: 유니티 에디터 확장 도구(KarmoEditor)의 주요 기능 업데이트, 툴바 API 통합 및 패키지 구조화 기록.
 
+## 2026-01-21 (KST)
+
+- **KarmoEditor 설정 리팩토링 및 빌드 시스템 고도화**:
+  - **설정 네이밍 명확화**: `KarmoSettings`를 `KarmoEditorSettings`로 변경하고, `ApplicationMutexNames`, `ReflectionFieldResets` 등 필드명을 더 직관적으로 리팩토링함.
+  - **빌드 윈도우(Build Helper) UI 통합**: 개별 버튼(`Build Only`, `Build & Run`, `Build & Deploy`)을 단일 `Build` 버튼과 체크박스 옵션(`Run after Build`, `Deploy after Build`)으로 통합하여 사용성 개선.
+  - **워크플로우 개선**: `persona.md` 지침 강화를 통해 모든 작업 시 아티팩트 한글화 및 프로젝트별 자동 문서화 체계 구축.
+
 ## 2026-01-18 (KST)
 
 - **KarmoEditor Professional Upgrade (Massive Feature Update)**:

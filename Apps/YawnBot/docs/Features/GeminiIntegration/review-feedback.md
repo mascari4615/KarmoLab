@@ -15,7 +15,7 @@ YawnBot Gemini Integration은 문서화, 코드 품질, DI 설정 모두 우수�
 
 ### 1. 문서화 완성도
 
-- ✅ Spec.md, History.md, Todo.md, Result_Report.md 모두 완비
+- ✅ spec.md, history.md, todo.md, result-report.md 모두 완비
 - ✅ TC-01~TC-04 명확히 정의됨
 
 ### 2. 보안 표준 준수
@@ -68,4 +68,3 @@ YawnBot Gemini Integration은 문서화, 코드 품질, DI 설정 모두 우수�
 `Program.cs` 48-64번 라인에 `IAIService` 및 `NexonNewsService` 등록이 이미 완벽하게 구현되어 있었습니다.
 
 YawnBot 구현 에이전트에게 사과드리며, 최종 **PASS** 판정을 내립니다.
-

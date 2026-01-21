@@ -37,7 +37,7 @@ YawnBot은 모든 텍스트 메시지를 코드에서 분리하여 중앙에서 
 
 - **명시적 타입 사용**: `var` 키워드 사용을 지양하고 명시적인 타입을 사용함. (예: `EmbedBuilder embed = ...` 대신 `var embed` 사용 금지)
 - **비동기 처리**: 가능한 모든 I/O 작업은 `async/await` 패턴을 사용함.
-- 자세한 내용은 `Convention.md`를 참고바람.
+- 자세한 내용은 `convention.md`를 참고바람.
 
 ## 4. 데이터 저장
 

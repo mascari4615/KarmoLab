@@ -4,8 +4,7 @@ Summary: 유니티 에디터 확장 도구(KarmoEditor/Build)의 전체 진행 �
 
 ## 🚀 진행 중 (Active Tasks)
 
-- [ ] **설정 이름 변경**: 현재 모호한 에디터 설정 필드명 및 클래스명 정립. <!-- id: editor-todo-1 -->
-- [ ] **KarmoBuild Window 개선**: 'Build & Play'를 별도 버튼이 아닌 체크박스 옵션으로 구현. <!-- id: editor-todo-2 -->
+(현재 진행 중인 작업 없음)
 
 ## 📅 계획됨 (Planned)
 
@@ -14,6 +13,8 @@ Summary: 유니티 에디터 확장 도구(KarmoEditor/Build)의 전체 진행 �
 
 ## ✅ 완료됨 (Done)
 
+- [x] **설정 이름 변경**: 현재 모호한 에디터 설정 필드명 및 클래스명 정립. <!-- id: editor-todo-1 -->
+- [x] **KarmoBuild Window 개선**: 'Build & Play'를 체크박스 옵션과 통합 버튼으로 구현. <!-- id: editor-todo-2 -->
 - [x] 기본적인 에디터 윈도우 프레임워크 구축. <!-- id: editor-todo-5 -->
 
 > **관리자**: Alisa (PM)
