@@ -14,20 +14,20 @@ namespace KarmoLab.KarmoEditor.DebugUtils
 		public static void KillMutex()
 		{
 			// 1. 설정 파일 찾기
-			var guids = AssetDatabase.FindAssets("t:" + nameof(KarmoSettings));
+			var guids = AssetDatabase.FindAssets("t:" + nameof(KarmoEditorSettings));
 			if (guids.Length == 0)
 			{
-				Debug.LogWarning($"{Define.LogPrefix} KarmoSettings asset not found! Please create one.");
+				Debug.LogWarning($"{Define.LogPrefix} KarmoEditorSettings asset not found! Please create one.");
 				return;
 			}
 
-			var settings = AssetDatabase.LoadAssetAtPath<KarmoSettings>(AssetDatabase.GUIDToAssetPath(guids[0]));
+			var settings = AssetDatabase.LoadAssetAtPath<KarmoEditorSettings>(AssetDatabase.GUIDToAssetPath(guids[0]));
 			if (settings == null) return;
 
 			// 2. Mutex 해제
-			if (settings.MutexNames != null)
+			if (settings.ApplicationMutexNames != null)
 			{
-				foreach (var name in settings.MutexNames)
+				foreach (var name in settings.ApplicationMutexNames)
 				{
 					if (Mutex.TryOpenExisting(name, out Mutex mutex))
 					{
@@ -55,9 +55,9 @@ namespace KarmoLab.KarmoEditor.DebugUtils
 			}
 
 			// 3. 필드 초기화 (리플렉션)
-			if (settings.FieldsToReset != null)
+			if (settings.ReflectionFieldResets != null)
 			{
-				foreach (var info in settings.FieldsToReset)
+				foreach (var info in settings.ReflectionFieldResets)
 				{
 					System.Type targetType = System.Type.GetType(info.FullTypeName);
 					if (targetType != null)

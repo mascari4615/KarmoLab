@@ -5,14 +5,14 @@ using KarmoLab.KarmoEditor;
 
 namespace KarmoLab.KarmoEditor.Settings
 {
-	[CreateAssetMenu(fileName = nameof(KarmoSettings), menuName = Define.CreateAssetMenuSettings + "/" + nameof(KarmoSettings))]
-	public class KarmoSettings : ScriptableObject
+	[CreateAssetMenu(fileName = nameof(KarmoEditorSettings), menuName = Define.CreateAssetMenuSettings + "/" + nameof(KarmoEditorSettings))]
+	public class KarmoEditorSettings : ScriptableObject
 	{
 		[Header("Mutex Settings")]
-		public string[] MutexNames;
+		public string[] ApplicationMutexNames;
 
 		[Header("Reset Fields (Reflection)")]
-		public List<FieldResetInfo> FieldsToReset;
+		public List<FieldResetInfo> ReflectionFieldResets;
 
 		[Serializable]
 		public class FieldResetInfo
