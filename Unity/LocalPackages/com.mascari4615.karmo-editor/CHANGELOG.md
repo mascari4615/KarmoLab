@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0] - 2026-01-23
+
+### Added
+
+- **Asset Selector Toolbar**: 툴바에 Asset Selector 드롭다운 추가로 등록된 에셋을 빠르게 Inspector에서 확인 가능.
+- **FavoriteAssets 설정**: KarmoToolbarSettings에 자주 사용하는 에셋 목록 관리 기능 추가.
+- **Config 캐싱**: AssetDatabase 호출 최소화를 위한 1초 캐싱 시스템 적용.
+
+### Changed
+
+- **코드 품질 개선**: `var` 대신 명시적 타입 선언 사용.
+- **Settings 재구성**: Scene Selector와 Asset Selector 섹션으로 주제별 그룹화.
+- **nameof() 적용**: 문자열 하드코딩 대신 타입 안전 참조 사용.
+- **코드 스타일**: 간단한 구문에서 중괄호 생략 적용.
+
 ## [1.1.0] - 2026-01-18
 
 ### Added
