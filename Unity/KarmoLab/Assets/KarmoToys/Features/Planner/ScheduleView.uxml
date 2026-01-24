@@ -1,6 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
-	<Style src="project://database/Assets/KarmoToys/Features/Planner/ScheduleStyle.uss"/>
 	<ui:VisualElement name="ViewSchedule" class="tab-content" style="display: none;">
 		<ui:VisualElement class="section-header" style="flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 15px;">
 			<ui:VisualElement style="flex-direction: row; align-items: center;">

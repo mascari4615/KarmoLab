@@ -1,2 +1,13 @@
 @import url("unity-theme://default");
-@import url("PlannerStyle.uss");
+
+/* Global & Theme Tokens */
+@import url("project://database/Assets/KarmoToys/Main/UI/ThemeTokens.uss");
+@import url("project://database/Assets/KarmoToys/Main/UI/MainStyle.uss");
+
+/* Feature Styles */
+@import url("project://database/Assets/KarmoToys/Features/Dashboard/DashboardStyle.uss");
+@import url("project://database/Assets/KarmoToys/Features/Planner/ScheduleStyle.uss");
+@import url("project://database/Assets/KarmoToys/Features/LifeWeekly/LifeWeeklyStyle.uss");
+@import url("project://database/Assets/KarmoToys/Features/ProjectManager/ProjectManagerStyle.uss");
+@import url("project://database/Assets/KarmoToys/Features/ProjectManager/Whiteboard/WhiteboardStyle.uss");
+@import url("project://database/Assets/KarmoToys/Features/ProjectManager/Timeline/TimelineStyle.uss");
