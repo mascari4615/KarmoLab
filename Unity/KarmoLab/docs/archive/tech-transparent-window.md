@@ -141,3 +141,22 @@ Windows OS 환경에서 윈도우 배경을 투명하게 만들기 위해 `User3
 - [ ] **Window Sitting**: 활성화된 창 위에 앉기.
 - [ ] **Gravity**: 바닥으로 떨어지기.
 - [ ] **Chat GPT**: 대화형 AI 연동.
+
+---
+
+정리 안된 내용
+
+- **투명 오버레이 기술 (Transparent Window System)**:
+  - **창 모드 전략 (Windowed Mode Strategy)**: 전체화면 제약을 피하기 위해 창 모드로 시작 후, Win32 API(`user32.dll`, `dwmapi.dll`)를 사용하여 테두리 제거 및 DWM 유리 효과(`DwmExtendFrameIntoClientArea`) 적용. (Chroma Key 사용 금지. 알파 블렌딩을 위해)
+  - **알파 채널 이슈 해결 (Black Screen Fix)**: URP 환경의 알파 유실을 막기 위해 `PlayerSettings.preserveFramebufferAlpha` 활성화 및 Post-Processing 강제 비활성화.
+  - **작업 영역 준수 (Work Area Compliance)**: `SystemParametersInfo(SPI_GETWORKAREA)`를 사용하여 작업표시줄을 가리지 않는 해상도 자동 조절.
+- **인터랙션 및 입력 처리 (Interaction & Input)**:
+  - **입력 투과 (Input Passthrough)**: 마우스 위치가 투명 공간일 경우 클릭이 바탕화면으로 통과되도록 동적 히트 테스트 로직 구현.
+  - **최상단 유지 (Always On Top)**: `SetWindowPos` 주기적 호출로 포커스 유실 시에도 창이 숨지 않도록 보장.
+  - **하이브리드 입력 시스템 (Hybrid Robust Input)**: 유니티 이벤트의 불확실성을 해결하기 위해 `Update` 루프에서 Win32 `GetAsyncKeyState`를 폴링하는 방식 채택.
+- **프로세스 및 인스턴스 보호 (Process Architecture)**:
+  - **멀티 인스턴스**: 메인 앱과 컴패니언을 독립 프로세스로 분리하고, `-mode` 인자로 실행 분기 처리.
+  - **뮤텍스 보호 (Mutex Protection)**: `Global\KarmoLab_{Mode}` 개별 뮤텍스를 사용하여 각 모드별 단일 인스턴스 실행 보장.
+- **에디터 및 아바타 지원 (Editor & Avatar)**:
+  - **Build Helper**: 투명화에 최적화된 Player Settings를 자동으로 구성하는 에디터 도구 제공.
+  - **아바타 시스템**: 애니메이션 회전 누적(Drift) 방지 로직 및 태그 기반 애니메이션 자동 수집 도구 구축.
