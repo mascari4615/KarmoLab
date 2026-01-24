@@ -8,6 +8,7 @@ Summary: 유니티 에디터 확장 도구(KarmoEditor/Build)의 전체 진행 �
 
 ## 📅 계획됨 (Planned)
 
+- [ ] **Git 태그 기반 버전 관리**: v1.2.0 등 버전별 Git 태그 생성 및 Git URL 방식으로 특정 버전 설치 가능하도록 개선. <!-- id: editor-todo-5 -->
 - [ ] **Deploy 통합**: 빌드 후 즉시 지정된 플랫폼으로 배포하는 프로세스 자동화. <!-- id: editor-todo-3 -->
 - [ ] **Toolbar UI 고도화**: 자주 사용하는 에디터 기능을 툴바에 동적으로 배치하는 기능. <!-- id: editor-todo-4 -->
 
