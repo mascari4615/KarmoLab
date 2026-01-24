@@ -186,11 +186,8 @@ namespace KarmoToys.Features.LifeWeekly
 			// 스크롤 영역 확보를 위해 컨테이너 크기 조절.
 			// (그리드가 center 기준이므로 컨테이너가 딱 이 크기면 내부에서 중앙 정렬됨)
 			VisualElement container = _grid.parent;
-			if (container != null)
-			{
-				container.style.width = originalWidth * scale;
-				container.style.height = originalHeight * scale;
-			}
+			container.style.width = originalWidth * scale;
+			container.style.height = originalHeight * scale;
 
 			if (!DateTime.TryParse(data.BirthDate, out var birthDate)) return;
 
