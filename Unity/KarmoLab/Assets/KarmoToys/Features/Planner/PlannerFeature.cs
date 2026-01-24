@@ -6,8 +6,6 @@ using UnityEngine.UIElements;
 using KarmoToys.Core;
 using KarmoToys.Main;
 using KarmoToys.Common;
-using KarmoToys.Common.Data;
-
 
 namespace KarmoToys.Features.Planner
 {
@@ -61,15 +59,8 @@ namespace KarmoToys.Features.Planner
 		{
 			// UI Bindings
 			ViewContainer = root.Q("ViewSchedule");
-			if (ViewContainer == null) Debug.LogError("[PlannerFeature] ViewSchedule not found!");
 
 			_prevDayBtn = root.Q<Button>("PrevDayBtn");
-			if (_prevDayBtn == null)
-			{
-				Debug.LogError("[PlannerFeature] PrevDayBtn not found!");
-				return;
-			}
-
 			_nextDayBtn = root.Q<Button>("NextDayBtn");
 			_schedDateLabel = root.Q<Label>("CurrentDateLabel");
 			_weekendToggle = root.Q<Toggle>("WeekendToggle");
@@ -83,59 +74,40 @@ namespace KarmoToys.Features.Planner
 			_tagFilterDropdown = root.Q<DropdownField>("TagFilterDropdown");
 
 			// Events
-			if (_prevDayBtn != null) _prevDayBtn.clicked += OnPrevWeek;
-			if (_nextDayBtn != null) _nextDayBtn.clicked += OnNextWeek;
+			_prevDayBtn.clicked += OnPrevWeek;
+			_nextDayBtn.clicked += OnNextWeek;
 
 			// Config Events
-			if (_uiStartDay != null)
+			_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
+			_uiStartDay.value = _startDayOfWeek.ToString();
+			_uiStartDay.RegisterValueChangedCallback(evt =>
 			{
-				_uiStartDay.choices = Enum.GetNames(typeof(DayOfWeek)).ToList();
-				_uiStartDay.value = _startDayOfWeek.ToString();
-				_uiStartDay.RegisterValueChangedCallback(evt =>
+				if (Enum.TryParse(evt.newValue, out DayOfWeek day))
 				{
-					if (Enum.TryParse(evt.newValue, out DayOfWeek day))
-					{
-						_startDayOfWeek = day;
-						AdjustCurrentDateToStartOfWeek();
-						RefreshSchedule();
-					}
-				});
-			}
-
-
-			if (_uiZoom != null)
-			{
-				_uiZoom.value = _pixelsPerMinute;
-				_uiZoom.RegisterValueChangedCallback(evt =>
-				{
-					_pixelsPerMinute = evt.newValue;
+					_startDayOfWeek = day;
+					AdjustCurrentDateToStartOfWeek();
 					RefreshSchedule();
-				});
-			}
+				}
+			});
 
-			if (_uiSnap != null)
+			_uiZoom.value = _pixelsPerMinute;
+			_uiZoom.RegisterValueChangedCallback(evt =>
 			{
-				_uiSnap.value = (int)_snapInterval;
-				_uiSnap.RegisterValueChangedCallback(evt => _snapInterval = Mathf.Max(1, evt.newValue));
-			}
+				_pixelsPerMinute = evt.newValue;
+				RefreshSchedule();
+			});
 
-			if (_tagFilterDropdown != null)
-			{
-				_tagFilterDropdown.RegisterValueChangedCallback(evt => RefreshSchedule());
-			}
+			_uiSnap.value = (int)_snapInterval;
+			_uiSnap.RegisterValueChangedCallback(evt => _snapInterval = Mathf.Max(1, evt.newValue));
 
-			if (_weekendToggle != null)
-			{
-				_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
-			}
+			_tagFilterDropdown.RegisterValueChangedCallback(evt => RefreshSchedule());
+
+			_weekendToggle.RegisterValueChangedCallback(evt => RefreshSchedule());
 
 			// Init Defaults from Settings
-			if (KarmoToysApp.Instance.Settings != null)
-			{
-				_snapInterval = KarmoToysApp.Instance.Settings.DefaultSnapInterval;
-				_pixelsPerMinute = KarmoToysApp.Instance.Settings.DefaultPixelsPerMinute;
-				_startDayOfWeek = KarmoToysApp.Instance.Settings.DefaultStartDay;
-			}
+			_snapInterval = KarmoToysApp.Instance.Settings.DefaultSnapInterval;
+			_pixelsPerMinute = KarmoToysApp.Instance.Settings.DefaultPixelsPerMinute;
+			_startDayOfWeek = KarmoToysApp.Instance.Settings.DefaultStartDay;
 
 			// Init Logic
 			AdjustCurrentDateToStartOfWeek();

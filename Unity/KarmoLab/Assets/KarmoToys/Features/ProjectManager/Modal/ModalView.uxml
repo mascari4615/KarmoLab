@@ -1,0 +1,37 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    
+    <!-- Modal 오버레이: 전체 화면 덮기 + Flexbox 중앙 정렬 -->
+    <ui:VisualElement name="ProjectDetailModal" class="modal-overlay" 
+        style="display: none; position: absolute; left: 0; top: 0; right: 0; bottom: 0; 
+               justify-content: center; align-items: center;">
+        
+        <!-- 반투명 배경 -->
+        <ui:VisualElement style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; 
+                                 background-color: rgb(0, 0, 0); opacity: 0.7;" />
+        
+        <!-- Modal 컨텐츠 (중앙 정렬) -->
+        <ui:VisualElement class="modal-container">
+            <ui:VisualElement class="modal-header">
+                <ui:Label text="Edit Item" name="ModalHeaderTitle" class="header-title" />
+                <ui:Button name="BtnCloseModal" text="✕" class="btn-icon-item" />
+            </ui:VisualElement>
+            
+            <ui:VisualElement class="modal-body">
+                <ui:TextField label="Title" name="EditTitle" class="modal-input" />
+                <ui:EnumField label="Type" name="EditType" type="KarmoToys.Common.Data.MemoType, Assembly-CSharp" class="modal-input" />
+                <ui:EnumField label="Status" name="EditStatus" type="KarmoToys.Common.Data.MemoStatus, Assembly-CSharp" class="modal-input" />
+                <ui:EnumField label="Priority" name="EditPriority" type="KarmoToys.Common.Data.Priority, Assembly-CSharp" class="modal-input" />
+                <ui:TextField label="Due Date (yyyy-MM-dd)" name="EditDueDate" class="modal-input" />
+                <ui:TextField label="Tags (e.g. #work, #game)" name="EditTags" class="modal-input" />
+                <ui:Label text="Content" class="input-label" style="margin-top: 10px;" />
+                <ui:TextField name="EditContent" multiline="true" class="modal-input content-editor" />
+            </ui:VisualElement>
+            
+            <ui:VisualElement class="modal-footer">
+                <ui:Button name="BtnDeleteProjectItem" text="Delete" class="btn-danger" />
+                <ui:VisualElement style="flex-grow: 1;" />
+                <ui:Button name="BtnSaveProjectItem" text="Save Changes" class="btn-primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

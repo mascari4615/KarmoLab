@@ -8,8 +8,8 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 	{
 		// Grid Settings
 		private float _baseGridSize = 50f;
-		private Color _lineColor = new Color(0.3f, 0.3f, 0.3f, 1f);
-		private Color _thickLineColor = new Color(0.15f, 0.15f, 0.15f, 1f); // Darker/distinct for chunks
+		private Color _lineColor = new(0.3f, 0.3f, 0.3f, 1f);
+		private Color _thickLineColor = new(0.15f, 0.15f, 0.15f, 1f); // Darker/distinct for chunks
 
 		private Vector3 _panOffset;
 		private float _currentScale = 1.0f;

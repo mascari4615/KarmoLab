@@ -1,0 +1,109 @@
+/* Kanban View Styles */
+.kanban-column {
+    flex: 1;
+    margin: 0 5px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    height: 100%;
+}
+
+.column-title {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: var(--color-text-main);
+    margin-bottom: 10px;
+    -unity-text-align: middle-center;
+}
+
+.column-list {
+    flex-grow: 1;
+    min-height: 100px;
+}
+
+/* Kanban Item - 부모 컨텍스트 명시로 Whiteboard 노드와 충돌 방지 */
+.column-list .kanban-item {
+    background-color: var(--color-bg-surface);
+    border-radius: 8px;
+    padding: 10px 10px 10px 16px;
+    margin-bottom: 8px;
+    border-width: 1px;
+    border-color: var(--color-border);
+    overflow: hidden;
+    transition: 0.1s;
+    min-height: 80px;  /* 최소 높이 보장 */
+    flex-shrink: 0;    /* 축소 방지 */
+}
+
+.kanban-item:hover {
+    border-color: var(--color-primary);
+    scale: 1.02;
+}
+
+.kanban-item.dragging {
+    opacity: 0.5;
+    scale: 0.95;
+    border-color: var(--color-primary);
+}
+
+.priority-strip {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+}
+
+.strip-high { background-color: #f87171; }
+.strip-medium { background-color: #fbbf24; }
+.strip-low { background-color: #60a5fa; }
+
+.tags-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.tag-chip {
+    font-size: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-sub);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-bottom: 2px;
+}
+
+.item-title {
+    font-size: 13px;
+    color: var(--color-text-main);
+}
+
+.item-meta {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 5px;
+}
+
+.badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+}
+
+.badge-task { background-color: #3b82f6; }
+.badge-secret { background-color: #ef4444; }
+.badge-idea { background-color: #10b981; }
+
+.priority-high { color: #f87171; }
+.priority-mid { color: #fbbf24; }
+.priority-low { color: #60a5fa; }
+
+.btn-quick-add {
+    background-color: transparent;
+    border-width: 0;
+    color: #888;
+    margin-top: 5px;
+    padding: 5px;
+    font-size: 12px;
+    transition: 0.2s;
+}

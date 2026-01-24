@@ -19,10 +19,7 @@ namespace KarmoToys.Features.Companion.Modules
 			// Todo: Load threshold from settings
 		}
 
-		public void SetChatModule(ChatModule chatModule)
-		{
-			_chatModule = chatModule;
-		}
+		public void SetChatModule(ChatModule chatModule) => _chatModule = chatModule;
 
 		public void Update()
 		{
@@ -61,10 +58,7 @@ namespace KarmoToys.Features.Companion.Modules
 			Debug.Log("[IdleMonitor] Entering Sleep Mode (Zzz)");
 
 			// 1. Chat: Persistent Zzz
-			if (_chatModule != null)
-			{
-				_chatModule.ShowPersistentChat(SleepMessage);
-			}
+			_chatModule.ShowPersistentChat(SleepMessage);
 
 			// 2. Avatar: Sleep Animation
 			if (_context.SelectedAvatar is CompanionCharacter character)
@@ -85,11 +79,8 @@ namespace KarmoToys.Features.Companion.Modules
 			Debug.Log("[IdleMonitor] Waking Up!");
 
 			// 1. Chat: Restore normal chat
-			if (_chatModule != null)
-			{
-				_chatModule.HidePersistentChat();
-				_chatModule.ShowChat(WakeMessage, true); // Important: Notify wake up
-			}
+			_chatModule.HidePersistentChat();
+			_chatModule.ShowChat(WakeMessage, true); // Important: Notify wake up
 
 			// 2. Avatar: Wake up
 			if (_context.SelectedAvatar is CompanionCharacter character)

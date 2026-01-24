@@ -7,10 +7,12 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 {
 	public class WhiteboardNode : VisualElement
 	{
-		public string NodeId => _data?.Id;
+		public string NodeId => _dataItem?.Id;
 
-		private WhiteboardNodeData _data;
+		private ProjectItemData _dataItem;
 		private Action _onSave;
+		private Action<string> _onDelete;
+		private Action<Vector2> _onPositionChanged;
 
 		private float _lastClickTime;
 
@@ -45,27 +47,45 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			RegisterCallback<ContextClickEvent>(evt => evt.StopPropagation());
 		}
 
-		public void Bind(WhiteboardNodeData data, Action onSave)
+		public void Bind(ProjectItemData data, Action onSave, Action<string> onDelete, Action<Vector2> onPositionChanged)
 		{
-			_data = data;
+			_dataItem = data;
 			_onSave = onSave;
+			_onDelete = onDelete;
+			_onPositionChanged = onPositionChanged;
 
 			RefreshUI();
 
 			// Interaction: Editing
 			RegisterEditTrigger(this.Q<Label>("Title"), (val) =>
 			{
-				_data.Title = val;
+				_dataItem.Title = val;
 				RefreshUI();
 				_onSave?.Invoke();
 			});
 
 			RegisterEditTrigger(this.Q<Label>("Content"), (val) =>
 			{
-				_data.Content = val;
+				_dataItem.Content = val;
 				RefreshUI();
 				_onSave?.Invoke();
 			}, multiline: true);
+		}
+
+		public void UpdatePosition(Vector2 newPos)
+		{
+			_onPositionChanged?.Invoke(newPos);
+		}
+
+		private void RefreshUI()
+		{
+			if (_dataItem == null) return;
+
+			var title = this.Q<Label>("Title");
+			var content = this.Q<Label>("Content");
+
+			if (title != null) title.text = _dataItem.Title;
+			if (content != null) content.text = _dataItem.Content;
 		}
 
 		private void RegisterEditTrigger(Label label, Action<string> onCommit, bool multiline = false)
@@ -92,100 +112,25 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		private void StartEditing(Label label, Action<string> onCommit, bool multiline)
 		{
-			Debug.Log($"[WhiteboardNode] StartEditing: {label.text}");
-			var parent = label.parent;
-			var index = parent.IndexOf(label);
+			var field = new TextField();
+			field.multiline = multiline;
+			field.value = label.text;
+			field.style.position = Position.Absolute;
+			field.style.left = label.layout.xMin;
+			field.style.top = label.layout.yMin;
+			field.style.width = label.layout.width;
+			if (!multiline) field.style.height = label.layout.height;
 
-			// Swap Label with TextField
-			var input = new TextField();
-			input.value = label.text;
-			input.AddToClassList(multiline ? "node-content-edit" : "node-title-edit"); // CSS needed
-			if (multiline) input.multiline = true;
-
-			// Hide Label
-			label.style.display = DisplayStyle.None;
-
-			// Insert Input
-			parent.Insert(index, input);
-
-			// Focus (Delayed to ensure layout update)
-			input.schedule.Execute(() =>
+			field.RegisterCallback<FocusOutEvent>(evt =>
 			{
-				var textInput = input.Q("unity-text-input");
-				textInput.Focus();
-				Debug.Log("[WhiteboardNode] Input Focused");
+				onCommit?.Invoke(field.value);
+				field.RemoveFromHierarchy();
+				label.style.visibility = Visibility.Visible;
 			});
 
-			// Commit Logic
-			void Commit()
-			{
-				Debug.Log($"[WhiteboardNode] Committing: {input.value}");
-				onCommit(input.value);
-				parent.Remove(input);
-				label.style.display = DisplayStyle.Flex;
-			}
-
-			// Register FocusOut
-			input.RegisterCallback<FocusOutEvent>(evt =>
-			{
-				Debug.Log("[WhiteboardNode] FocusOut Detected -> Commiting");
-				Commit();
-			});
-
-			// Enter key for single line
-			if (!multiline)
-			{
-				input.RegisterCallback<KeyDownEvent>(evt =>
-				{
-					if (evt.keyCode == KeyCode.Return)
-					{
-						Debug.Log("[WhiteboardNode] Enter Key Detected -> Commiting");
-						Commit();
-					}
-				});
-			}
-		}
-
-		private void RefreshUI()
-		{
-			if (_data == null) return;
-
-			this.Q<Label>("Title").text = _data.Title;
-			this.Q<Label>("Content").text = _data.Content;
-
-			// Layout
-			style.left = _data.X;
-			style.top = _data.Y;
-
-			// Future: Width/Height/Color
-		}
-
-		public void SetTitle(string text)
-		{
-			if (_data != null) _data.Title = text;
-			this.Q<Label>("Title").text = text;
-			_onSave?.Invoke();
-		}
-
-		public void SetContent(string text)
-		{
-			if (_data != null) _data.Content = text;
-			this.Q<Label>("Content").text = text;
-			_onSave?.Invoke();
-		}
-
-		public void UpdatePosition(Vector2 pos)
-		{
-			if (_data != null)
-			{
-				_data.X = pos.x;
-				_data.Y = pos.y;
-			}
-
-			style.left = pos.x;
-			style.top = pos.y;
-
-			_onSave?.Invoke();
+			label.parent.Add(field);
+			field.Focus();
+			label.style.visibility = Visibility.Hidden;
 		}
 	}
 }

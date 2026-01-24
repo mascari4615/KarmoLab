@@ -23,28 +23,28 @@ namespace KarmoToys.Features.ToolBox.Tools
 		{
 			return new List<ToolAction>
 			{
-				new ToolAction {
+				new() {
 					Name = "Kakao Format",
 					Description = "Reformat KakaoTalk export files.",
 					MainInputLabel = "File Path (Empty for Auto)",
 					SubInputLabel = null,
 					Execute = (main, sub) => KakaoFormat(main)
 				},
-				new ToolAction {
+				new() {
 					Name = "Unique Characters",
 					Description = "Extract unique characters from text.",
 					MainInputLabel = "Source Text",
 					SubInputLabel = null,
 					Execute = (main, sub) => UniqueCharacters(main)
 				},
-				new ToolAction {
+				new() {
 					Name = "Karmo Encode",
 					Description = "Encode file with KarmoSpec.",
 					MainInputLabel = "File Path",
 					SubInputLabel = null,
 					Execute = (main, sub) => KarmoEncodeDecode(main, decode: false)
 				},
-				new ToolAction {
+				new() {
 					Name = "Karmo Decode",
 					Description = "Decode KarmoSpec file.",
 					MainInputLabel = "File Path",

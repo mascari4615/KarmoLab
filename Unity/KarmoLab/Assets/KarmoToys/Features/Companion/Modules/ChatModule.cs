@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
-using KarmoToys.Features.Companion;
 
 namespace KarmoToys.Features.Companion.Modules
 {
@@ -19,17 +17,11 @@ namespace KarmoToys.Features.Companion.Modules
 			_context = context;
 
 			// 1. Setup UI
-			if (_context.RootUI != null)
-			{
-				_speechBubble = new SpeechBubbleElement();
-				_context.RootUI.Add(_speechBubble);
-			}
+			_speechBubble = new SpeechBubbleElement();
+			_context.RootUI.Add(_speechBubble);
 
 			// 2. Load Data
-			if (_context.Settings != null)
-			{
-				_talkData = _context.Settings.CompanionData;
-			}
+			_talkData = _context.Settings.CompanionData;
 
 			if (_talkData == null)
 			{
@@ -71,12 +63,11 @@ namespace KarmoToys.Features.Companion.Modules
 		{
 			_isPersistentBubble = false;
 			_bubbleHideTime = 0; // Hide immediately
-			if (_speechBubble != null) _speechBubble.Hide();
+			_speechBubble.Hide();
 		}
 
 		public void ShowPersistentChat(string text)
 		{
-			if (_speechBubble == null) return;
 			_isPersistentBubble = true;
 			// Pass a very long duration. 
 			// The update loop logic will prevent hiding anyway because _isPersistentBubble is true.
@@ -85,15 +76,12 @@ namespace KarmoToys.Features.Companion.Modules
 
 		public void OnDestroy()
 		{
-			if (_speechBubble != null)
-			{
-				_speechBubble.RemoveFromHierarchy();
-			}
+			_speechBubble.RemoveFromHierarchy();
 		}
 
 		private void UpdateBubblePosition()
 		{
-			Vector3 headPos = Vector3.zero;
+			Vector3 headPos;
 			if (_context.SelectedAvatar is CompanionCharacter cc)
 			{
 				headPos = cc.GetHeadPosition();
@@ -115,11 +103,9 @@ namespace KarmoToys.Features.Companion.Modules
 
 		private void ScheduleNextChat()
 		{
-			if (_talkData == null) return;
-
 			float min = Mathf.Max(1f, _talkData.MinChatInterval);
 			float max = Mathf.Max(min, _talkData.MaxChatInterval);
-			float delay = UnityEngine.Random.Range(min, max);
+			float delay = Random.Range(min, max);
 
 			if (delay < 1f) delay = 1f;
 
@@ -128,15 +114,15 @@ namespace KarmoToys.Features.Companion.Modules
 
 		public void ShowRandomChat(List<string> options)
 		{
-			if (options == null || options.Count == 0) return;
-			string text = options[UnityEngine.Random.Range(0, options.Count)];
+			if (options == null || options.Count == 0)
+				return;
+
+			string text = options[Random.Range(0, options.Count)];
 			ShowChat(text);
 		}
 
 		public void ShowChat(string text, bool isImportant = false)
 		{
-			if (_speechBubble == null || _talkData == null) return;
-
 			// Don't disturb sleep unless important
 			if (_context.CurrentState == CompanionState.Sleeping && !isImportant)
 			{

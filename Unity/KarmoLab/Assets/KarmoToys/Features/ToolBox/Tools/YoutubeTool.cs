@@ -25,7 +25,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 		{
 			return new List<ToolAction>
 			{
-				new ToolAction {
+				new() {
 					Name = "Fetch Playlist",
 					Description = "Fetch all video metadata from a playlist.",
 					MainInputLabel = "Playlist ID",
@@ -45,7 +45,7 @@ namespace KarmoToys.Features.ToolBox.Tools
 			public override string ToString() => $"[{publishedAt}] {channelTitle}: {title}";
 		}
 
-		private List<VideoData> _allVideoData = new List<VideoData>();
+		private List<VideoData> _allVideoData = new();
 
 		private void FetchPlaylist(string playlistId, string apiKey)
 		{

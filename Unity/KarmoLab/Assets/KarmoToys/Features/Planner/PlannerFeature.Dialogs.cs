@@ -3,7 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-using KarmoToys.Common.Data;
 using KarmoToys.Main;
 
 namespace KarmoToys.Features.Planner
@@ -24,9 +23,9 @@ namespace KarmoToys.Features.Planner
 		private VisualElement _editTagsContainer;
 		private TextField _editTagInputField;
 		private Button _editTagAddBtn;
-		private List<string> _tempEditTags = new List<string>();
+		private List<string> _tempEditTags = new();
 
-		private List<VisualElement> _colorBtns = new List<VisualElement>();
+		private List<VisualElement> _colorBtns = new();
 		private int _selectedColorIndex = 0;
 
 		private Toggle _editRecurrenceToggle;
@@ -98,22 +97,19 @@ namespace KarmoToys.Features.Planner
 			_editDeleteBtn.clicked += OnDeleteEdit;
 			_editCancelBtn.clicked += HideEditDialog;
 
-			if (_editOverlay != null)
-			{
-				// Force full screen overlay style
-				_editOverlay.style.position = Position.Absolute;
-				_editOverlay.style.left = 0; _editOverlay.style.right = 0;
-				_editOverlay.style.top = 0; _editOverlay.style.bottom = 0;
-				_editOverlay.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.5f));
-				_editOverlay.style.justifyContent = Justify.Center;
-				_editOverlay.style.alignItems = Align.Center;
+			// Force full screen overlay style
+			_editOverlay.style.position = Position.Absolute;
+			_editOverlay.style.left = 0; _editOverlay.style.right = 0;
+			_editOverlay.style.top = 0; _editOverlay.style.bottom = 0;
+			_editOverlay.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.5f));
+			_editOverlay.style.justifyContent = Justify.Center;
+			_editOverlay.style.alignItems = Align.Center;
 
-				// Click background to close (check target)
-				_editOverlay.RegisterCallback<PointerDownEvent>(evt =>
-				{
-					if (evt.target == _editOverlay) HideEditDialog();
-				});
-			}
+			// Click background to close (check target)
+			_editOverlay.RegisterCallback<PointerDownEvent>(evt =>
+			{
+				if (evt.target == _editOverlay) HideEditDialog();
+			});
 
 			// Colors
 			_colorBtns.Clear();
@@ -158,10 +154,7 @@ namespace KarmoToys.Features.Planner
 
 			// 2. Scroll to Close DetailPopup
 			ScrollView scheduleScroll = root.Q<ScrollView>("ScheduleScroll");
-			if (scheduleScroll != null)
-			{
-				scheduleScroll.RegisterCallback<WheelEvent>(evt => HideDetailPopup());
-			}
+			scheduleScroll.RegisterCallback<WheelEvent>(evt => HideDetailPopup());
 		}
 
 
@@ -334,8 +327,6 @@ namespace KarmoToys.Features.Planner
 			_editEndMin.value = block.EndMinute % 60;
 
 			_editDescInput.value = block.Description;
-			_editDescInput.value = block.Description;
-
 
 			UpdateColorSelection();
 			_editOverlay.style.display = DisplayStyle.Flex;
@@ -451,7 +442,7 @@ namespace KarmoToys.Features.Planner
 				// For now, simple implementation to close flow:
 				if (isThisInstanceOnly)
 				{
-					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates ??= new List<string>();
 					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
 					TimeBlock newBlock = CreateBlockFromUI();
 					newBlock.RecurrenceRule = "";
@@ -469,19 +460,23 @@ namespace KarmoToys.Features.Planner
 			{
 				if (isThisInstanceOnly)
 				{
-					if (masterBlock.ExceptionDates == null) masterBlock.ExceptionDates = new List<string>();
+					masterBlock.ExceptionDates ??= new List<string>();
 					masterBlock.ExceptionDates.Add(_selectedBlock.DateString);
-					TimeBlock newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
-					newBlock.ColorIndex = masterBlock.ColorIndex;
+					TimeBlock newBlock = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title)
+					{
+						ColorIndex = masterBlock.ColorIndex
+					};
 					Data.TimeBlocks.Add(newBlock);
 				}
 				else
 				{
 					DateTime targetDate = DateTime.Parse(_selectedBlock.DateString);
 					masterBlock.RecurrenceEnd = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
-					TimeBlock newMaster = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title);
-					newMaster.RecurrenceRule = masterBlock.RecurrenceRule;
-					newMaster.ColorIndex = masterBlock.ColorIndex;
+					TimeBlock newMaster = new TimeBlock(_pendingMoveDate, _pendingMoveStart, _pendingMoveEnd, masterBlock.Title)
+					{
+						RecurrenceRule = masterBlock.RecurrenceRule,
+						ColorIndex = masterBlock.ColorIndex
+					};
 					Data.TimeBlocks.Add(newMaster);
 				}
 			}
@@ -499,7 +494,7 @@ namespace KarmoToys.Features.Planner
 			RenderTrashList();
 			_trashPopup.style.display = DisplayStyle.Flex;
 		}
-		private void HideTrashPopup() { _trashPopup.style.display = DisplayStyle.None; }
+		private void HideTrashPopup() => _trashPopup.style.display = DisplayStyle.None;
 
 		private void RenderTrashList()
 		{

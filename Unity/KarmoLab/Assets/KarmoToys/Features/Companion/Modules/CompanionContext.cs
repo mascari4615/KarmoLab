@@ -1,4 +1,3 @@
-using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoToys.Common;
 
@@ -25,9 +24,6 @@ namespace KarmoToys.Features.Companion.Modules
 		public bool IsDragging3D { get; set; }
 
 		// Helper to find specific UI elements
-		public T GetUIElement<T>(string name) where T : VisualElement
-		{
-			return RootUI?.Q<T>(name);
-		}
+		public T GetUIElement<T>(string name) where T : VisualElement => RootUI?.Q<T>(name);
 	}
 }

@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="TableView" class="view-root">
+        <ui:VisualElement class="table-header">
+            <ui:Label name="HeaderTitle" text="Title ↕" class="table-col header-col" style="flex-grow: 1;" />
+            <ui:Label name="HeaderStatus" text="Status ↕" class="table-col header-col" style="width: 80px;" />
+            <ui:Label name="HeaderPriority" text="Priority ↕" class="table-col header-col" style="width: 80px;" />
+            <ui:Label name="HeaderType" text="Type ↕" class="table-col header-col" style="width: 80px;" />
+            <ui:Label name="HeaderDate" text="Due ↕" class="table-col header-col" style="width: 60px;" />
+            <ui:Label text="Edit" class="table-col header-col" style="width: 50px;" />
+        </ui:VisualElement>
+        <ui:ScrollView name="ProjectItemList" class="table-body" />
+        <ui:VisualElement class="table-footer">
+            <ui:TextField name="InputNewItem" placeholder-text="Add new item..." style="flex-grow: 1;" />
+            <ui:Button name="BtnAddNewItem" text="+" class="btn-primary" style="width: 40px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

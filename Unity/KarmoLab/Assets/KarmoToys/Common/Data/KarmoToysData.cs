@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using KarmoToys.Features.Planner;
-using KarmoToys.Features.ProjectManager.Dashboard;
+using KarmoToys.Features.Dashboard;
 
 namespace KarmoToys.Common.Data
 {
@@ -16,18 +16,18 @@ namespace KarmoToys.Common.Data
 		public string SaveId = ""; // Unique ID for this save file
 
 		// Feature Data
-		public ScheduleData Schedule = new ScheduleData();
-		public DashboardData Dashboard = new DashboardData();
-		public LifeWeeklyData LifeWeekly = new LifeWeeklyData();
+		public ScheduleData Schedule = new();
+		public DashboardData Dashboard = new();
+		public LifeWeeklyData LifeWeekly = new();
 
 		// Companion Data
-		public CompanionData Companion = new CompanionData();
+		public CompanionData Companion = new();
 
 		// Project Data
-		public List<ProjectItemData> ProjectItems = new List<ProjectItemData>();
+		public List<ProjectItemData> ProjectItems = new();
 
 		// Whiteboard Data
-		public List<WhiteboardNodeData> WhiteboardNodes = new List<WhiteboardNodeData>();
+		public List<WhiteboardNodeData> WhiteboardNodes = new();
 
 		/// <summary>
 		/// Migrates data from legacy Planner structure to new specialized structures.

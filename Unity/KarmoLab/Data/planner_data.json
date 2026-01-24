@@ -1,64 +1,9 @@
 {
-    "Planner": {
-        "Items": [],
-        "TimeBlocks": [],
-        "SecretNotes": [],
-        "MemoContent": "adwawdawdawdawd",
-        "TargetName": "Target Project",
-        "TargetDateString": "2027-03-01",
-        "PersonalQuestTitle": "MAIN QUEST: Personal",
-        "StudyQuestTitle": "SKILL GRINDING: Study",
-        "TeamQuestTitle": "SIDE QUEST: Team",
-        "StatPersonalTitle": "Personal Project",
-        "StatPersonalValue": "In Progress",
-        "StatTeamTitle": "Team Project",
-        "StatTeamValue": "In Progress",
-        "Hp": 75,
-        "Mp": 60,
-        "Exp": 30,
-        "LastUpdatedTicks": 0
-    },
-    "Dashboard": {
-        "MemoContent": "adwawdawdawdawd",
-        "TargetName": "Target Project",
-        "TargetDateString": "2027-03-01",
-        "StatPersonalTitle": "Personal Project",
-        "StatPersonalValue": "In Progress",
-        "StatTeamTitle": "Team Project",
-        "StatTeamValue": "In Progress",
-        "Hp": 75,
-        "Mp": 60,
-        "Exp": 30,
-        "LastUpdatedTicks": 0
-    },
-    "Quest": {
-        "Items": [
-            {
-                "Id": "cf9d7abb-33d6-4018-a0ca-a5de12f9c1d4",
-                "Content": "afwefawef",
-                "IsCompleted": false,
-                "Category": "personal",
-                "CreatedAtTicks": 639039942649552923
-            },
-            {
-                "Id": "760a18a5-52ba-4f25-92b1-ad28907ebacf",
-                "Content": "zvsdzvsd",
-                "IsCompleted": false,
-                "Category": "study",
-                "CreatedAtTicks": 639039942662324528
-            },
-            {
-                "Id": "89dd7c0f-3beb-4dc2-bf5b-d8e11bb4373c",
-                "Content": "zsdvsdsss",
-                "IsCompleted": false,
-                "Category": "team",
-                "CreatedAtTicks": 639039942675634138
-            }
-        ],
-        "PersonalQuestTitle": "MAIN QUEST: Personal",
-        "StudyQuestTitle": "SKILL GRINDING: Study",
-        "TeamQuestTitle": "SIDE QUEST: Team"
-    },
+    "Theme": "0",
+    "AutoBackupOnSave": true,
+    "SignificantChangeThreshold": 10,
+    "MaxBackupCount": 1000,
+    "SaveId": "d75f5253-2cb4-4133-b89b-6e35c7f31d3b",
     "Schedule": {
         "TimeBlocks": [
             {
@@ -720,30 +665,364 @@
             }
         ]
     },
-    "Note": {
-        "SecretNotes": [
-            {
-                "Id": "f28e2cd5-3f14-4e21-8ca3-a9fa79d72976",
-                "DateString": "2026-01-14",
-                "Problem": "gegsrgs",
-                "Why": "rgsergsrr",
-                "Solution": "rrrrrrrrrrrrrr"
-            }
-        ]
+    "Dashboard": {
+        "MemoContent": "adwawdawdawdawd",
+        "TargetName": "Target Project",
+        "TargetDateString": "2027-03-01",
+        "StatPersonalTitle": "Personal Project",
+        "StatPersonalValue": "In Progress",
+        "StatTeamTitle": "Team Project",
+        "StatTeamValue": "In Progress"
     },
     "LifeWeekly": {
         "BirthDate": "2002-10-12",
         "TargetAge": 50,
         "WeeksPerRow": 70,
-        "BlockSize": 17,
+        "BlockSize": 24,
         "ShowYearlyHighlight": false,
         "ShowCalendarYearHighlight": true,
         "ShowDecadeHighlight": false,
         "Milestones": []
     },
-    "SaveId": "d75f5253-2cb4-4133-b89b-6e35c7f31d3b",
-    "Theme": 0,
-    "MaxBackupCount": 1000,
-    "AutoBackupOnSave": true,
-    "SignificantChangeThreshold": 10
+    "Companion": {
+        "HudOffset": 0.20000000298023225
+    },
+    "ProjectItems": [
+        {
+            "Id": "02643fb1-313f-490f-b5b2-d6b6540a4193",
+            "Title": "New Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639044943000000000,
+            "EndDateTicks": 639045807000000000,
+            "CreatedAtTicks": 639047164218307316,
+            "Tags": [],
+            "Position": {
+                "x": -325.0,
+                "y": 25.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "e09a76bc-336e-4a10-be17-c11983929a62",
+            "Title": "New Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 1,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639047166549725261,
+            "Tags": [],
+            "Position": {
+                "x": -100.0,
+                "y": 150.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "d7226813-9370-4c37-bfdd-425efda5a2c8",
+            "Title": "New Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639047166553165679,
+            "Tags": [],
+            "Position": {
+                "x": -200.0,
+                "y": 150.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "4b0c0733-4e88-4d0f-9a4f-ca7a211c105d",
+            "Title": "New Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639047166568597662,
+            "Tags": [],
+            "Position": {
+                "x": -450.0,
+                "y": 125.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "ae25260b-ef16-4839-8fde-a570c0c02344",
+            "Title": "New Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639047166570334066,
+            "Tags": [],
+            "Position": {
+                "x": -125.0,
+                "y": 175.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "5b0edfdb-e6be-462b-8850-11d83296a398",
+            "Title": "New Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639047166571831566,
+            "Tags": [],
+            "Position": {
+                "x": -225.0,
+                "y": 125.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "af17ec5e-77f7-4af2-bd3b-ef5240903e6c",
+            "Title": "New Timeline Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639047232000000000,
+            "EndDateTicks": 639049824000000000,
+            "CreatedAtTicks": 639047166891394462,
+            "Tags": [],
+            "Position": {
+                "x": 75.0,
+                "y": -300.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "9221a151-4d11-4927-ad0f-15eb5e949b65",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "Type": 3,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048084199027891,
+            "Tags": [],
+            "Position": {
+                "x": -97.0,
+                "y": -104.5
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "a67d2c1c-7698-4aae-8350-cd47ceaab70c",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "Type": 3,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048086511070758,
+            "Tags": [],
+            "Position": {
+                "x": -397.0,
+                "y": -246.5
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "25ff6208-98b0-41bc-b07e-0339a65edb1e",
+            "Title": "New Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639047166556879043,
+            "Tags": [],
+            "Position": {
+                "x": 75.0,
+                "y": 150.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "5dab5128-b29c-41d8-8778-5748e17c6d69",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "Type": 3,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048086516296971,
+            "Tags": [],
+            "Position": {
+                "x": -125.0,
+                "y": -325.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "ba579930-8a52-4ecf-bdb8-98be9984fb8a",
+            "Title": "New Timeline Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048146074991057,
+            "Tags": [],
+            "Position": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "be45bef9-8645-4183-a5f7-43f94c53c001",
+            "Title": "New Timeline Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048146082867232,
+            "Tags": [],
+            "Position": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "b6052c9d-2593-43fc-9aca-745805c9748f",
+            "Title": "New Timeline Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048146084632283,
+            "Tags": [],
+            "Position": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "c1baf92a-5901-4902-8639-e7269bca159d",
+            "Title": "New Timeline Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048146086437467,
+            "Tags": [],
+            "Position": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "3fce3353-88b5-4ce4-9a45-173db3f8e53a",
+            "Title": "New Timeline Task",
+            "Content": "",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 639048096000000000,
+            "EndDateTicks": 639050688000000000,
+            "CreatedAtTicks": 639048146090959260,
+            "Tags": [],
+            "Position": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        }
+    ],
+    "WhiteboardNodes": [
+        {
+            "Id": "194ad759-5363-4d93-9985-47c4263a816c",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "X": 49826.86328125,
+            "Y": 49818.984375,
+            "Width": 200.0,
+            "Height": 150.0,
+            "ColorHex": ""
+        },
+        {
+            "Id": "42297eff-3d47-4cc8-b2a4-cbbbd2d9102f",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "X": 49885.44140625,
+            "Y": 49993.77734375,
+            "Width": 200.0,
+            "Height": 150.0,
+            "ColorHex": ""
+        },
+        {
+            "Id": "7f79e66b-36ce-4d59-b029-09603a3ca524",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "X": 49885.44140625,
+            "Y": 49993.77734375,
+            "Width": 200.0,
+            "Height": 150.0,
+            "ColorHex": ""
+        }
+    ]
 }

@@ -31,8 +31,8 @@ namespace KarmoToys.Features.Companion.Modules
 
 		// State
 		private float _checkTimer;
-		private List<TimerData> _activeTimers = new List<TimerData>();
-		private StopwatchData _stopwatch = new StopwatchData();
+		private List<TimerData> _activeTimers = new();
+		private StopwatchData _stopwatch = new();
 
 		private int _lastTriggeredMinute = -1; // To prevent multiple triggers in the same minute
 

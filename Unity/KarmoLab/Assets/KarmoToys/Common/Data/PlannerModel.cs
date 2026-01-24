@@ -56,12 +56,12 @@ namespace KarmoToys.Common.Data
 		public int ColorIndex;	// ?�상 구분??
 		public bool IsDeleted;	// ?��????��?
 		public long DeletedTicks; // ??��???�간 (복구/?�구??�� 기�?)
-		public List<string> Tags = new List<string>(); // ?�그 목록
+		public List<string> Tags = new(); // ?�그 목록
 
 		// --- Recurring Fields ---
 		public string RecurrenceRule;   // "NONE", "DAILY", "WEEKLY", "MONTHLY"
 		public string RecurrenceEnd;	// 종료 ?�짜 문자??(yyyy-MM-dd) or null if infinite
-		public List<string> ExceptionDates = new List<string>(); // 반복?�서 ?�외???�짜??(??��/개별?�정)
+		public List<string> ExceptionDates = new(); // 반복?�서 ?�외???�짜??(??��/개별?�정)
 
 		public TimeBlock(string date, int start, int end, string title)
 		{
@@ -77,9 +77,9 @@ namespace KarmoToys.Common.Data
 	[Serializable]
 	public class PlannerData
 	{
-		public List<TodoItem> Items = new List<TodoItem>();
-		public List<TimeBlock> TimeBlocks = new List<TimeBlock>();
-		public List<SecretNote> SecretNotes = new List<SecretNote>();
+		public List<TodoItem> Items = new();
+		public List<TimeBlock> TimeBlocks = new();
+		public List<SecretNote> SecretNotes = new();
 
 		public string MemoContent = "";
 

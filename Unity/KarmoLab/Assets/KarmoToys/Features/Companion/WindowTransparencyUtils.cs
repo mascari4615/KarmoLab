@@ -269,7 +269,7 @@ namespace KarmoToys.Features.Companion
 			return _cachedHWnd;
 		}
 
-	public static Vector2 GetMousePosInWindow()
+		public static Vector2 GetMousePosInWindow()
 		{
 			IntPtr hWnd = GetUnityWindowHandle();
 			if (hWnd == IntPtr.Zero) return Vector2.zero; // Logic fail if no hWnd cached

@@ -55,8 +55,8 @@ namespace KarmoToys.Features.Companion
 			// Default hidden
 			style.position = Position.Absolute;
 			style.opacity = 0;
-			style.transitionDuration = new System.Collections.Generic.List<TimeValue> { new TimeValue(0.2f) };
-			style.transitionProperty = new System.Collections.Generic.List<StylePropertyName> { new StylePropertyName("opacity"), new StylePropertyName("scale") };
+			style.transitionDuration = new System.Collections.Generic.List<TimeValue> { new(0.2f) };
+			style.transitionProperty = new System.Collections.Generic.List<StylePropertyName> { new("opacity"), new("scale") };
 			style.transformOrigin = new TransformOrigin(0, 100, 0); // Bottom-Left origin for pop effect
 			style.scale = new Scale(Vector3.zero);
 		}

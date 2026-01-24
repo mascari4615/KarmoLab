@@ -1,6 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-	<Style src="project://database/Assets/KarmoToys/Main/UI/ThemeTokens.uss"/>
-	<Style src="project://database/Assets/KarmoToys/Features/ProjectManager/Timeline/TimelineStyle.uss"/>
 	
 	<ui:VisualElement name="TimelineContainer" class="timeline-container">
 		<!-- Header (Days / Controls) -->

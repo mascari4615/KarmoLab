@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="KanbanView" class="view-root" style="flex-direction: row;">
+        <ui:VisualElement class="kanban-column" name="ColTodo">
+            <ui:Label name="HeaderTodo" text="TODO" class="column-title" />
+            <ui:ScrollView name="ListTodo" class="column-list" />
+            <ui:Button name="BtnAddTodo" text="+ Add" class="btn-quick-add" />
+        </ui:VisualElement>
+        <ui:VisualElement class="kanban-column" name="ColDoing">
+            <ui:Label name="HeaderDoing" text="DOING" class="column-title" />
+            <ui:ScrollView name="ListDoing" class="column-list" />
+            <ui:Button name="BtnAddDoing" text="+ Add" class="btn-quick-add" />
+        </ui:VisualElement>
+        <ui:VisualElement class="kanban-column" name="ColDone">
+            <ui:Label name="HeaderDone" text="DONE" class="column-title" />
+            <ui:ScrollView name="ListDone" class="column-list" />
+            <ui:Button name="BtnAddDone" text="+ Add" class="btn-quick-add" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

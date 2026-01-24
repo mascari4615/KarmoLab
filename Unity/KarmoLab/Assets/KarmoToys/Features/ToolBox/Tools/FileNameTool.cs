@@ -25,63 +25,63 @@ namespace KarmoToys.Features.ToolBox.Tools
 		{
 			return new List<ToolAction>
 			{
-				new ToolAction {
+				new() {
 					Name = "Win Screenshot Fix",
 					Description = "Rename 'Screenshot YYYY-MM-DD' to 'YYMMDD_HHMMSS'.",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = null,
 					Execute = (path, sub) => ChangeWinScreenshotName(path)
 				},
-				new ToolAction {
+				new() {
 					Name = "VRC Screenshot Fix",
 					Description = "Fix VRChat screenshots (Placeholder).",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = null,
 					Execute = (path, sub) => ChangeVRCScreenshotName(path)
 				},
-				new ToolAction {
+				new() {
 					Name = "Remove String",
 					Description = "Remove specific string from filenames.",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = "String to Remove",
 					Execute = (path, sub) => RemoveSomeString(path, sub)
 				},
-				new ToolAction {
+				new() {
 					Name = "File Name To String",
 					Description = "Generate Markdown image list.",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = "URL Path (Optional)",
 					Execute = (path, sub) => FileNameToString(path, sub)
 				},
-				new ToolAction {
+				new() {
 					Name = "Change Name To Date",
 					Description = "Rename files to 'YYMMDD-HHMMSS' based on modify time.",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = "Prefix Filter",
 					Execute = (path, sub) => ChangeNameToDate(path, sub)
 				},
-				new ToolAction {
+				new() {
 					Name = "Mod Sub Index",
 					Description = "Reindex 'YYMMDD_HHMMSS_XX' files.",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = "Prefix Filter",
 					Execute = (path, sub) => ModSubIndex(path, sub)
 				},
-				new ToolAction {
+				new() {
 					Name = "Convert Case",
 					Description = "Upper/Lower case conversion.",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = "'true' for Upper",
 					Execute = (path, sub) => ConvertCase(path, sub)
 				},
-				new ToolAction {
+				new() {
 					Name = "Convert String",
 					Description = "Replace string in filenames.",
 					MainInputLabel = "Folder Path",
 					SubInputLabel = "From,To",
 					Execute = (path, sub) => ConvertString(path, sub)
 				},
-				new ToolAction {
+				new() {
 					Name = "Func4 (Remove Prefix)",
 					Description = "Remove first 2 chars from '2023...'",
 					MainInputLabel = "Folder Path",

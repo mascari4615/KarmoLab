@@ -13,21 +13,21 @@ namespace KarmoToys.Features.Companion
 	{
 		[Header("💬 Idle Chatter")]
 		[Tooltip("가만히 있을 때 랜덤하게 하는 혼잣말")]
-		public List<string> IdleChats = new List<string>();
+		public List<string> IdleChats = new();
 
 		[Header("👆 Interactions")]
 		[Tooltip("클릭했을 때 반응")]
-		public List<string> ClickReactions = new List<string>();
+		public List<string> ClickReactions = new();
 
 		[Tooltip("드래그 시작할 때 반응")]
-		public List<string> DragStartReactions = new List<string>();
+		public List<string> DragStartReactions = new();
 
 		[Tooltip("드래그 끝났을 때 반응")]
-		public List<string> DragEndReactions = new List<string>();
+		public List<string> DragEndReactions = new();
 
 		[Header("🕰️ Time & Utility")]
 		[Tooltip("설정된 알람 목록")]
-		public List<CompanionAlarmData> Alarms = new List<CompanionAlarmData>();
+		public List<CompanionAlarmData> Alarms = new();
 
 		[Header("⚙️ Settings")]
 		[Tooltip("혼잣말 최소 간격 (초)")]

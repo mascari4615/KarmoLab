@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace KarmoToys.Features.Companion.Modules
 {
 	public interface ICompanionModule

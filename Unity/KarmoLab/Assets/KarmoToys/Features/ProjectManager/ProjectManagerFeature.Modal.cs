@@ -6,7 +6,7 @@ namespace KarmoToys.Features.ProjectManager
 {
 	public partial class ProjectManagerFeature
 	{
-		private void OpenModal(ProjectItemData item)
+		public void OpenModal(ProjectItemData item)
 		{
 			_selectedItem = item;
 			_editTitle.value = item.Title;
@@ -20,7 +20,7 @@ namespace KarmoToys.Features.ProjectManager
 			_detailModal.style.display = DisplayStyle.Flex;
 		}
 
-		private void CloseModal()
+		public void CloseModal()
 		{
 			_detailModal.style.display = DisplayStyle.None;
 			_selectedItem = null;

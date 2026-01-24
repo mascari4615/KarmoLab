@@ -55,7 +55,7 @@ namespace KarmoToys.Common.Data
             set => EndDateTicks = value?.Ticks ?? 0;
         }
 
-		public List<string> Tags = new List<string>();
+		public List<string> Tags = new();
 
 		// Whiteboard Visualization
 		public Vector2 Position;

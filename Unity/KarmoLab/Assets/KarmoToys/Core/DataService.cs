@@ -7,7 +7,7 @@ using System.Text;
 using UnityEngine;
 using KarmoToys.Common.Data;
 using KarmoToys.Features.Planner;
-using KarmoToys.Features.ProjectManager.Dashboard;
+using KarmoToys.Features.Dashboard;
 
 namespace KarmoToys.Core
 {
