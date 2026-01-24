@@ -34,7 +34,18 @@ C# 표준 관례에 따라 **PascalCase**를 사용합니다.
 - **Unity Assets**: `PascalCase` (예: `Settings/ToolbarSceneConfig.asset`)
 - **JSON/Configs**: `camelCase` 또는 `kebab-case` (용도에 따라 선택)
 
-## 5. 요약: "인간은 Pascal, 기계는 kebab"
+## 5. UI Toolkit
+
+### 5.1. 스타일 관리 (Styling)
+
+- **개별 스타일 권장**: 각 UXML 파일은 자신의 쌍이 되는 USS 파일을 `<ui:Style>` 태그로 직접 포함하는 것을 권장함. (경로가 짧고 모듈화가 용이함)
+- **TSS 최소화**: `MainTheme.tss`는 전역 토큰(`ThemeTokens.uss`) 및 기본 공통 스타일(`MainStyle.uss`) 등 프로젝트 전반에 걸친 공통 항목만 관리함.
+
+### 5.2. UI 레이아웃 (Layout)
+
+- **높이 확장**: 프로젝트 전체 화면을 사용하는 서브 뷰(UXML Template)의 경우, 반드시 `.stretch-container` 클래스를 **래퍼, 인스턴스, 자식 루트** 3단계에 모두 적용하여 `TemplateContainer`에 의한 높이 단절을 방지함.
+
+## 6. 요약: "인간은 Pascal, 기계는 kebab"
 
 - **사람이 읽는 곳**(메뉴, 가이드 폴더, 클래스 이름): `KarmoEditor`
 - **시스템이 읽는 곳**(패키지 ID, 브랜치 주소, 폴더 ID): `karmo-editor`

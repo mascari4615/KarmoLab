@@ -23,10 +23,11 @@ namespace KarmoToys.Common.Data
 		// Companion Data
 		public CompanionData Companion = new();
 
-		// Project Data
+		// Project Data (Whiteboard 포함 - Position 필드 사용)
 		public List<ProjectItemData> ProjectItems = new();
 
-		// Whiteboard Data
+		// [Obsolete] Legacy Whiteboard Data - ProjectItemData.Position으로 통합됨
+		[Obsolete("Use ProjectItemData.Position instead. Kept for data migration.")]
 		public List<WhiteboardNodeData> WhiteboardNodes = new();
 
 		/// <summary>

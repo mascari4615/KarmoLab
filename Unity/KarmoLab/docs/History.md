@@ -8,6 +8,11 @@ Summary: KarmoToys 및 KarmoLab 프로젝트의 주요 업데이트 기록 및 �
   - **ProjectManager 분할**: 하나의 거대한 `ProjectManagerView.uxml`에 존재하던 Table, Kanban, Modal, ContextMenu를 각각의 독립된 UXML/USS 파일로 분리.
   - **Template 재사용**: 분리된 UXML을 `<ui:Template>` 및 `<ui:Instance>` 태그를 활용하여 메인 뷰에서 조립하는 컴포넌트 기반 아키텍처 적용.
   - **경로 최적화 (Path Fix)**: UXML 로드 시 `ArgumentException`을 유발하던 절대 경로(`project://database/`) 문제를 상대 경로 전환으로 해결.
+  - **높이 단절 해결 (Height Collapse Fix)**: `<ui:Instance>`가 생성하는 `TemplateContainer`의 높이 전달 버그를 포착.
+  - **스마트 스코핑 (Smart Scoping)**: 래퍼 클래스 남발 대신, CSS 계층 선택자(`#ProjectContent TemplateContainer`)를 활용해 중첩 UXML의 전체 화면 확장을 자동화하는 구조적 해법 도달.
+  - **스타일 정책 수립 (Local Syling)**: 중앙 집중형 TSS 관리 대신 각 UXML이 쌍이 되는 USS를 직접 참조하는 로컬 스타일 방식을 공식화하여 개발 편의성 및 모듈성 극대화.
+  - **상호작용 수명 주기 관리 (Professional Lifecycle)**: 화이트보드 노드 편집 시 발생하는 포커스 레이스 현상을 `AttachToPanelEvent`와 결정론적 프레임 시퀀싱으로 해결하여 안정적인 텍스트 편집 환경 구축.
+  - **코드 스타일 정제**: `var` 대신 명시적 타입 사용, 식별자 명확화 등 전반적인 코드 가독성 제고.
 
 - **코드 아키텍처 개선 (Code Architecture)**:
   - **Hybrid Singleton 패턴**: 완전한 DI 전환 대신, 접근 편의성을 위해 `ProjectManagerFeature.Instance`를 유지하되 하위 뷰(`Table`, `Kanban` 등)를 모듈화하는 실용적 접근 선택.

@@ -9,11 +9,11 @@ description: 프로젝트 내의 '숨겨진 폭탄'과 '죽은 코드'를 소탕
 
 2. **숨겨진 폭탄 (Hidden Bombs) 수색 및 제거**
    - **UI Toolkit**:
-     - 모든 UXML 파일에서 개별 `<Style>` 태그 제거 (`MainTheme.tss` 통합 원칙).
+     - **로컬 스타일 권장**: 각 UXML 파일은 자신의 쌍이 되는 USS 파일을 `<ui:Style>` 태그로 직접 포함하는 것을 권장함. (중앙 관리 방식 강제 금지)
      - 모든 USS 파일에서 `.otf`, `.ttf` 등 원본 폰트 직접 참조 제거.
      - 폰트 설정이 필요한 경우 반드시 SDF Font Asset(`.asset`) 사용 여부 확인.
    - **TSS 관리**:
-     - `MainTheme.tss` 내의 임포트 경로가 절대 경로(`project://database/`)인지 확인.
+     - `MainTheme.tss`는 전역 토큰 및 공통 스타일만 관리하며, 임포트 경로는 절대 경로(`project://database/`) 사용 확인.
 
 3. **죽은 코드 (Dead Code) 소탕**
    - **C# 스크립트**:
