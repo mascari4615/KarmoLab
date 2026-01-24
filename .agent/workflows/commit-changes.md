@@ -114,7 +114,7 @@ git diff --cached --stat
 
 ### 기본 형식
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -152,7 +152,7 @@ git diff --cached --stat
 
 ### 예시
 
-```
+```text
 feat(karmo-toys): integrate whiteboard into project manager
 
 - Whiteboard를 독립 탭에서 ProjectManager의 서브 탭으로 통합
@@ -176,10 +176,13 @@ git log -1
 git commit --amend
 ```
 
-## 7단계: 푸시
+## 7단계: 푸시 (사용자 승인 필수)
+
+> [!IMPORTANT]
+> 원격 저장소로의 푸시는 반드시 사용자의 명시적인 승인이 있을 때만 실행함.
 
 ```powershell
-# 원격 저장소로 푸시
+# 사용자의 승인을 받은 후 실행
 git push origin main
 ```
 
