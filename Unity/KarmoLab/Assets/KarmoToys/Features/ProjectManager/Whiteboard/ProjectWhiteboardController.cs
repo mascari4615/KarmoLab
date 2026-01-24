@@ -27,10 +27,10 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			_canvas = wbRoot.Q("Canvas");
 			GridBackground grid = wbRoot.Q<GridBackground>("GridPattern"); // WhiteboardRoot의 자식으로 변경
 
-			if (_canvas == null) return;
-
-			PanZoomManipulator manipulator = new PanZoomManipulator(_canvas);
-			manipulator.Grid = grid;
+			PanZoomManipulator manipulator = new PanZoomManipulator(_canvas)
+			{
+				Grid = grid
+			};
 			wbRoot.AddManipulator(manipulator);
 
 			wbRoot.RegisterCallback<ContextClickEvent>(OnWhiteboardContextClick);
@@ -113,10 +113,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			_nodeVisuals[data.Id] = node;
 		}
 
-		private void OnNodeChanged()
-		{
-			KarmoToysApp.Instance.SaveData();
-		}
+		private void OnNodeChanged() => KarmoToysApp.Instance.SaveData();
 
 		private void OnNodeDelete(string nodeId)
 		{

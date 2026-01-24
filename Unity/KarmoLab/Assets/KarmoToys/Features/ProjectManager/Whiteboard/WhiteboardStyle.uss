@@ -4,6 +4,7 @@
     flex-grow: 1;
     overflow: hidden; /* Clip content outside the view */
     background-color: var(--color-bg-base);
+    flex-direction: column;
 }
 
 .whiteboard-canvas {

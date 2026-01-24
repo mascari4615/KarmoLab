@@ -34,8 +34,8 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		private void OnGenerateVisualContent(MeshGenerationContext mgc)
 		{
-			var painter = mgc.painter2D;
-			var rect = contentRect;
+			Painter2D painter = mgc.painter2D;
+			Rect rect = contentRect;
 
 			// Calculate Efficient Grid Spacing (LOD)
 			float visualSize = _baseGridSize * _currentScale;
@@ -69,15 +69,15 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			// We draw this MANUALLY so it is clipped exactly same as the grid.
 			// Z-Order: Background -> Lines -> Nodes (Separate Element)
 
-			var bgMesh = painter; // Use same painter
-			bgMesh.fillColor = new Color(0.125f, 0.125f, 0.125f, 1f); // #202020
-			bgMesh.BeginPath();
-			bgMesh.MoveTo(new Vector2(drawStartX, drawStartY));
-			bgMesh.LineTo(new Vector2(drawEndX, drawStartY));
-			bgMesh.LineTo(new Vector2(drawEndX, drawEndY));
-			bgMesh.LineTo(new Vector2(drawStartX, drawEndY));
-			bgMesh.ClosePath();
-			bgMesh.Fill();
+			// Use same painter
+			painter.fillColor = new Color(0.125f, 0.125f, 0.125f, 1f); // #202020
+			painter.BeginPath();
+			painter.MoveTo(new Vector2(drawStartX, drawStartY));
+			painter.LineTo(new Vector2(drawEndX, drawStartY));
+			painter.LineTo(new Vector2(drawEndX, drawEndY));
+			painter.LineTo(new Vector2(drawStartX, drawEndY));
+			painter.ClosePath();
+			painter.Fill();
 
 			// 2. Draw Grid Lines
 			painter.lineWidth = 1.0f;

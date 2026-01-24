@@ -18,33 +18,44 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		public WhiteboardNode()
 		{
-			// Style
+			name = "WhiteboardNode";
 			AddToClassList("whiteboard-node");
+			pickingMode = PickingMode.Position;
+			focusable = true;
 
 			// Structure
-			var header = new VisualElement();
+			VisualElement header = new VisualElement { name = "node-header" };
 			header.AddToClassList("node-header");
+			header.pickingMode = PickingMode.Position;
 			Add(header);
 
-			var title = new Label("Node Title");
+			Label title = new Label("Node Title") { name = "Title" };
 			title.AddToClassList("node-title");
-			title.name = "Title";
+			title.pickingMode = PickingMode.Position;
 			header.Add(title);
 
-			var body = new VisualElement();
+			VisualElement body = new VisualElement { name = "node-body" };
 			body.AddToClassList("node-body");
+			body.pickingMode = PickingMode.Position;
 			Add(body);
 
-			var content = new Label("Content goes here...");
+			Label content = new Label("Content goes here...") { name = "Content" };
 			content.AddToClassList("node-content");
-			content.name = "Content";
+			content.pickingMode = PickingMode.Position;
 			body.Add(content);
 
 			// Interaction
 			this.AddManipulator(new NodeDragManipulator());
 
+			// Diagnostic log
+			RegisterCallback<PointerDownEvent>(evt => Debug.Log($"[WhiteboardNode] Raw Click on {evt.target}"), TrickleDown.NoTrickleDown);
+
 			// Prevent Context Click (Right Click) from bubbling to Canvas (which creates new nodes)
-			RegisterCallback<ContextClickEvent>(evt => evt.StopPropagation());
+			RegisterCallback<ContextClickEvent>(evt =>
+			{
+				Debug.Log("[WhiteboardNode] Context Click prevented bubbling");
+				evt.StopPropagation();
+			});
 		}
 
 		public void Bind(ProjectItemData data, Action onSave, Action<string> onDelete, Action<Vector2> onPositionChanged)
@@ -74,6 +85,13 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		public void UpdatePosition(Vector2 newPos)
 		{
+			style.left = newPos.x;
+			style.top = newPos.y;
+
+			if (_dataItem != null)
+			{
+				_dataItem.Position = newPos;
+			}
 			_onPositionChanged?.Invoke(newPos);
 		}
 
@@ -81,8 +99,8 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 		{
 			if (_dataItem == null) return;
 
-			var title = this.Q<Label>("Title");
-			var content = this.Q<Label>("Content");
+			Label title = this.Q<Label>("Title");
+			Label content = this.Q<Label>("Content");
 
 			if (title != null) title.text = _dataItem.Title;
 			if (content != null) content.text = _dataItem.Content;
@@ -95,12 +113,13 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 				if (evt.button == 0) // Left Click
 				{
 					float now = Time.unscaledTime;
-					if (now - _lastClickTime < 0.3f) // Double Click Threshold (300ms)
+					if (now - _lastClickTime < 0.4f)
 					{
-						Debug.Log("[WhiteboardNode] Double Click (Manual) Detected! Starting Edit.");
+						Debug.Log($"[WhiteboardNode] 🟢 Double Click Triggered: {label.name}");
 						StartEditing(label, onCommit, multiline);
-						evt.StopPropagation();
-						_lastClickTime = 0; // Reset
+						evt.PreventDefault();
+						evt.StopImmediatePropagation();
+						_lastClickTime = 0;
 					}
 					else
 					{
@@ -112,25 +131,59 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		private void StartEditing(Label label, Action<string> onCommit, bool multiline)
 		{
-			var field = new TextField();
-			field.multiline = multiline;
-			field.value = label.text;
-			field.style.position = Position.Absolute;
-			field.style.left = label.layout.xMin;
-			field.style.top = label.layout.yMin;
-			field.style.width = label.layout.width;
-			if (!multiline) field.style.height = label.layout.height;
-
-			field.RegisterCallback<FocusOutEvent>(evt =>
+			TextField field = new TextField
 			{
-				onCommit?.Invoke(field.value);
-				field.RemoveFromHierarchy();
-				label.style.visibility = Visibility.Visible;
+				multiline = multiline,
+				value = label.text
+			};
+			field.style.position = Position.Absolute;
+
+			// Layout sync
+			Rect layout = label.layout;
+			field.style.left = layout.xMin;
+			field.style.top = layout.yMin;
+			field.style.width = layout.width > 0 ? layout.width : 180;
+			if (!multiline) field.style.height = layout.height > 0 ? layout.height : 25;
+
+			field.AddToClassList(multiline ? "node-content-edit" : "node-title-edit");
+
+			// 1. Setup attachment focus
+			field.RegisterCallback<AttachToPanelEvent>(evt =>
+			{
+				field.Focus();
+				if (!multiline) field.SelectAll();
+
+				// 2. Deterministic sequencing: wait one frame for layout to settle
+				field.schedule.Execute(() =>
+				{
+					// Hide label ONLY after field is established to prevent focus-vacuum
+					label.style.display = DisplayStyle.None;
+
+					// Register commit listener ONLY after focus is stable
+					field.RegisterCallback<FocusOutEvent>(OnFocusLost);
+				});
 			});
 
+			field.RegisterCallback<KeyDownEvent>(evt =>
+			{
+				if (evt.keyCode == KeyCode.Return && !multiline) field.Blur();
+				else if (evt.keyCode == KeyCode.Escape)
+				{
+					field.value = label.text;
+					field.Blur();
+				}
+			});
+
+			// Independent named method/lambda for clean removal
+			void OnFocusLost(FocusOutEvent evt)
+			{
+				Debug.Log($"[WhiteboardNode] 🔵 Edit Resolved for {label.name}");
+				onCommit?.Invoke(field.value);
+				field.RemoveFromHierarchy();
+				label.style.display = DisplayStyle.Flex;
+			}
+
 			label.parent.Add(field);
-			field.Focus();
-			label.style.visibility = Visibility.Hidden;
 		}
 	}
 }

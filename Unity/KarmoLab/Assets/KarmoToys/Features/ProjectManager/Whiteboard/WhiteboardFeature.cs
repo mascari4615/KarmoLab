@@ -11,42 +11,63 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 		public override string FeatureName => Common.Define.FeatureWhiteboard;
 		public override string TabButtonName => string.Empty; // Sub-feature of ProjectManager
 
+		private VisualElement _container;
 		private VisualElement _canvas;
 
 		public override void Initialize(VisualElement root)
 		{
 			ViewContainer = root;
-			VisualElement container = root.Q("WhiteboardContainer");
+			_container = root.Q("WhiteboardContainer");
 
-			// Setup Canvas Interactability
-			_canvas = container.Q("Canvas");
-			if (_canvas != null)
+			if (_container == null)
 			{
-				// Attach manipulator to the Container (receives events), but transform the Canvas (visuals)
-				container.AddManipulator(new PanZoomManipulator(_canvas));
-
-				// Register Create Node Context Menu
-				container.RegisterCallback<ContextClickEvent>(OnContextClick);
-				container.RegisterCallback<PointerUpEvent>(OnPointerUp);
-				// Load Existing Nodes
-				LoadNodes();
+				Debug.LogError("[WhiteboardFeature] WhiteboardContainer not found in root!");
+				return;
 			}
+
+			_canvas = _container.Q("Canvas");
+			if (_canvas == null)
+			{
+				Debug.LogError("[WhiteboardFeature] Canvas not found in WhiteboardContainer!");
+				return;
+			}
+
+			// Attach manipulator to the Container (receives events), but transform the Canvas (visuals)
+			_container.AddManipulator(new PanZoomManipulator(_canvas));
+
+			// Register Create Node Context Menu
+			_container.RegisterCallback<ContextClickEvent>(OnContextClick);
+			_container.RegisterCallback<PointerUpEvent>(OnPointerUp);
+
+			Debug.Log("[WhiteboardFeature] Initialized successfully.");
 		}
 
-		private void LoadNodes()
+		public override void Refresh()
 		{
-			if (KarmoToysApp.Instance.Data == null || KarmoToysApp.Instance.Data.WhiteboardNodes == null) return;
+			if (_canvas == null) return;
 
-			foreach (WhiteboardNodeData nodeData in KarmoToysApp.Instance.Data.WhiteboardNodes)
+			// Clear existing nodes
+			_canvas.Query<WhiteboardNode>().ForEach(node => node.RemoveFromHierarchy());
+
+			// Reload from data
+			if (KarmoToysApp.Instance.Data?.ProjectItems == null) return;
+
+			foreach (ProjectItemData item in KarmoToysApp.Instance.Data.ProjectItems)
 			{
-				SpawnNodeVisual(nodeData);
+				// Whiteboard에 표시할 아이템만 필터링 (Position이 설정된 것)
+				if (item.Position.x != 0 || item.Position.y != 0)
+				{
+					SpawnNodeVisual(item);
+				}
 			}
+
+			Debug.Log($"[WhiteboardFeature] Refreshed. Nodes: {_canvas.Query<WhiteboardNode>().ToList().Count}");
 		}
 
 		private void OnPointerUp(PointerUpEvent evt)
 		{
 			// Fallback for Right Click if ContextClick doesn't fire
-			if (evt.button == 1) // Right Mouse Button
+			if (evt.button == 1)
 			{
 				Debug.Log($"[Whiteboard] Right Click detected via PointerUp at {evt.localPosition}");
 				CalculateAndSpawnNode(evt.localPosition);
@@ -63,7 +84,6 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		private void CalculateAndSpawnNode(Vector3 containerPos)
 		{
-			// Calculation logic extracted
 			Translate styleTranslate = _canvas.style.translate.value;
 			Vector3 styleScale = _canvas.style.scale.value.value;
 
@@ -78,39 +98,39 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		private void CreateNode(Vector2 position, string title = "New Note", string content = "Double-click to edit...")
 		{
-			KarmoToysApp.Instance.Data.WhiteboardNodes.Add(new WhiteboardNodeData
+			ProjectItemData newItem = new ProjectItemData(title, content)
 			{
-				Id = System.Guid.NewGuid().ToString(),
-				Title = title,
-				Content = content,
-				X = position.x,
-				Y = position.y,
-				Width = 200,
-				Height = 150
-			});
+				Position = position
+			};
+
+			KarmoToysApp.Instance.Data.ProjectItems.Add(newItem);
 			KarmoToysApp.Instance.SaveData();
 
-			SpawnNodeVisual(new WhiteboardNodeData
-			{
-				Id = System.Guid.NewGuid().ToString(),
-				Title = title,
-				Content = content,
-				X = position.x,
-				Y = position.y,
-				Width = 200,
-				Height = 150
-			});
+			SpawnNodeVisual(newItem);
 		}
 
-		private void SpawnNodeVisual(WhiteboardNodeData data)
+		private void SpawnNodeVisual(ProjectItemData data)
 		{
-			new WhiteboardNode().Bind(null, OnNodeChanged, null, null);
-			_canvas.Add(new WhiteboardNode());
+			WhiteboardNode node = new WhiteboardNode();
+			node.Bind(data, OnNodeChanged, OnNodeDeleted, OnNodePositionChanged);
+
+			// Set position on canvas
+			node.style.position = Position.Absolute;
+			node.style.left = data.Position.x;
+			node.style.top = data.Position.y;
+
+			_canvas.Add(node);
 		}
 
-		private void OnNodeChanged()
+		private void OnNodeChanged() => KarmoToysApp.Instance.SaveData();
+
+		private void OnNodeDeleted(string id)
 		{
+			KarmoToysApp.Instance.Data.ProjectItems.RemoveAll(item => item.Id == id);
 			KarmoToysApp.Instance.SaveData();
+			Refresh();
 		}
+
+		private void OnNodePositionChanged(Vector2 newPos) => KarmoToysApp.Instance.SaveData();
 	}
 }

@@ -151,7 +151,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			if (!_isPanning || !target.HasPointerCapture(evt.pointerId))
 				return;
 
-			Vector3 delta = (Vector3)evt.position - _startPos;
+			Vector3 delta = evt.position - _startPos;
 
 			// No Damping in Input (1:1 Control)
 			// But Output is Damped (Lerp)
@@ -219,7 +219,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 		private void ApplyTransform()
 		{
 			// Sync logic in OnUpdate handles the calls
-			var transformTarget = ContentTarget ?? target;
+			VisualElement transformTarget = ContentTarget ?? target;
 			if (transformTarget != null)
 			{
 				transformTarget.style.translate = new Translate(_currentPosition.x, _currentPosition.y, 0);
@@ -228,10 +228,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 			// Dynamic Grid Update
 			EnsureGridReference();
-			if (Grid != null)
-			{
-				Grid.UpdateView(_currentPosition, _currentScale);
-			}
+			Grid.UpdateView(_currentPosition, _currentScale);
 		}
 	}
 }

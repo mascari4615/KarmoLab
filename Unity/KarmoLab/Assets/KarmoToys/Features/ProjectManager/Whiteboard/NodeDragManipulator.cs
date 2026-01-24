@@ -11,10 +11,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 		private bool _isActive;
 		private Vector3 _startClickPos;
 
-		public NodeDragManipulator()
-		{
-			activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-		}
+		public NodeDragManipulator() => activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 
 		protected override void RegisterCallbacksOnTarget()
 		{
@@ -32,7 +29,8 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		private void OnPointerDown(PointerDownEvent evt)
 		{
-			Debug.Log($"[DragManipulator] Down: {evt.target} (Capture? {target.HasPointerCapture(evt.pointerId)})");
+			Debug.Log($"[NodeDrag] PointerDown on {evt.target} (Node: {target.name})");
+
 			if (CanStartManipulation(evt))
 			{
 				_isActive = true;
@@ -40,11 +38,15 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 				_startClickPos = evt.position;
 				_startPointerPosition = evt.position;
 
-				// Use resolvedStyle for current layout position instead of transform.position (Obsolete)
-				_startPosition = new Vector3(target.resolvedStyle.left, target.resolvedStyle.top, 0);
+				// Use style values for more predictable math than resolvedStyle
+				float startX = target.style.left.value.value;
+				float startY = target.style.top.value.value;
 
-				// Do NOT capture yet. Wait for move.
-				// target.CapturePointer(evt.pointerId); 
+				if (float.IsNaN(startX)) startX = 0;
+				if (float.IsNaN(startY)) startY = 0;
+
+				_startPosition = new Vector3(startX, startY, 0);
+
 				evt.StopPropagation();
 			}
 		}
@@ -56,40 +58,29 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 			if (_isActive && !_isDragging)
 			{
-				// Check Threshold
 				if (Vector3.Distance(evt.position, _startClickPos) > 5f)
 				{
-					// Start Drag
 					_isDragging = true;
 					target.CapturePointer(evt.pointerId);
 					target.BringToFront();
+					Debug.Log("[NodeDrag] Drag Started");
 				}
-				else
-				{
-					return; // Ignore small moves
-				}
+				else return;
 			}
 
 			if (!_isDragging) return;
 
-			Vector3 delta = (Vector3)evt.position - _startPointerPosition;
+			Vector3 delta = evt.position - _startPointerPosition;
 
-			// CRITICAL: We are dragging an element INSIDE a scaled container (Canvas).
-			// The mouse delta is in Screen/Panel space (scaled by UI scale, but NOT by Canvas scale).
-			// To move the node 1:1 with the mouse, we must divide the delta by the Canvas Scale.
-
-			// We can get the Canvas Scale from the parent's style (set by PanZoomManipulator).
-			// transform.scale is obsolete.
+			// Get scale from Canvas (parent)
 			float canvasScale = 1.0f;
 			if (target.parent != null)
 			{
 				canvasScale = target.parent.style.scale.value.value.x;
 			}
-
-			if (canvasScale < 0.0001f) canvasScale = 1.0f; // Safety
+			if (canvasScale < 0.001f) canvasScale = 1.0f;
 
 			Vector3 localDelta = delta / canvasScale;
-
 			Vector3 newPos = _startPosition + localDelta;
 
 			// Snap to Grid (25px)
@@ -120,6 +111,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 				if (target.HasPointerCapture(evt.pointerId))
 				{
 					target.ReleasePointer(evt.pointerId);
+					Debug.Log("[NodeDrag] Drag Released");
 				}
 
 				evt.StopPropagation();

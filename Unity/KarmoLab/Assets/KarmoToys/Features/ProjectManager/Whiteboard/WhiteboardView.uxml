@@ -1,22 +1,15 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xmlns:kt="KarmoToys.Features.ProjectManager.Whiteboard" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-
-	<ui:VisualElement name="WhiteboardContainer" class="whiteboard-container" style="flex-grow: 1; width: 100%; height: 100%; background-color: #000000;">
+	<ui:Style src="WhiteboardStyle.uss" />
+	<ui:VisualElement name="WhiteboardContainer" class="whiteboard-container" style="background-color: #000000;">
 		<!-- Grid Background (Stationary, renders based on view state) -->
 		<kt:GridBackground name="GridBackground" class="grid-background" picking-mode="Ignore" />
 		
-		<!-- Infinite Canvas -->
-		<ui:VisualElement name="Canvas" class="whiteboard-canvas" picking-mode="Ignore">
-			
-			<!-- Visual Reference for Pan/Zoom Testing -->
-			<ui:VisualElement style="position: absolute; left: 50000px; top: 50000px; width: 100px; height: 100px; background-color: #ef4444; border-radius: 10px;">
-				<ui:Label text="Center (0,0)" style="color: white; -unity-text-align: middle-center; height: 100%;" />
-			</ui:VisualElement>
-			<ui:VisualElement style="position: absolute; left: 50200px; top: 50000px; width: 100px; height: 100px; background-color: #3b82f6; border-radius: 10px;">
-				<ui:Label text="Right Item" style="color: white; -unity-text-align: middle-center; height: 100%;" />
-			</ui:VisualElement>
+		<!-- Infinite Canvas (Must be Position to allow child interaction) -->
+		<ui:VisualElement name="Canvas" class="whiteboard-canvas">
+			<!-- Nodes are spawned here -->
 		</ui:VisualElement>
 		
-		<!-- Floating UI Controls (Zoom buttons etc. can go here later) -->
-		<ui:Label text="Middle Mouse / Alt+Drag to Pan. Wheel to Zoom." style="position: absolute; bottom: 10px; right: 10px; color: rgba(255,255,255,0.5); font-size: 10px;"/>
+		<!-- Floating UI Controls -->
+		<ui:Label text="Middle Mouse / Alt+Drag to Pan. Wheel to Zoom. Right Click to Spawn." picking-mode="Ignore" style="position: absolute; bottom: 10px; right: 10px; color: rgba(255,255,255,0.5); font-size: 10px;"/>
 	</ui:VisualElement>
 </ui:UXML>
