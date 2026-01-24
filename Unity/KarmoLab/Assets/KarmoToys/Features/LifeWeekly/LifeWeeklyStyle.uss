@@ -1,4 +1,3 @@
-@import url("ThemeTokens.uss");
 
 .life-weekly-scroll {
 	flex-grow: 1;

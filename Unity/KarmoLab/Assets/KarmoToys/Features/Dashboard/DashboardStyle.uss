@@ -49,17 +49,18 @@
 
 .dashboard-row {
 	flex-direction: row;
+	flex-grow: 1; /* Ensure row takes remaining space */
 }
 
 .dashboard-col {
 	flex-grow: 1;
+	height: 100%; /* Force full height in the flex row */
 	background-color: var(--color-bg-surface);
 	border-width: 1px;
 	border-color: var(--color-border);
 	border-radius: 8px;
 	padding: 20px;
 	margin-right: 10px;
-	height: 300px;
 }
 
 .memo-input {

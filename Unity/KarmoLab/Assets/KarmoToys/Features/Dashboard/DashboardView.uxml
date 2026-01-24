@@ -1,9 +1,7 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-	<Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss"/>
-	<Style src="project://database/Assets/KarmoToys/Features/ProjectManager/Dashboard/DashboardStyle.uss"/>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
 	<ui:ScrollView name="ViewDashboard" class="tab-content">
 		<ui:VisualElement class="advice-banner">
-			<ui:Label text="NPC 멘토의 한마디: 지금 자면 꿈을 꾸지만, 지금 코딩하면 꿈을 이룬다." class="advice-text"/>
+			<ui:Label name="AdviceLabel" text="NPC 멘토의 한마디: 여기에 한 마디가 표시됩니다." class="advice-text"/>
 		</ui:VisualElement>
 		<ui:VisualElement class="stats-grid">
 			<ui:VisualElement class="stat-card bg-blue">
@@ -22,6 +20,10 @@
 		<ui:VisualElement class="dashboard-row">
 			<ui:VisualElement class="dashboard-col memo-panel" style="flex-grow: 1;">
 				<ui:Label text="메모 &amp; 설정" class="section-title"/>
+				<ui:VisualElement style="flex-direction: row; margin-bottom: 5px;">
+					<ui:Label text="목표 이름:" style="width: 70px; align-self: center; color: rgb(136, 136, 136);"/>
+					<ui:TextField name="HeaderTargetInput" value="My Project" style="flex-grow: 1;"/>
+				</ui:VisualElement>
 				<ui:VisualElement style="flex-direction: row; margin-bottom: 5px;">
 					<ui:Label text="목표 날짜:" style="width: 70px; align-self: center; color: rgb(136, 136, 136);"/>
 					<ui:TextField name="ConfigTargetDate" value="2027-03-01" style="flex-grow: 1;"/>

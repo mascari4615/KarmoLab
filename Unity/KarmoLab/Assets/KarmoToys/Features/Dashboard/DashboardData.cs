@@ -1,6 +1,6 @@
 using System;
 
-namespace KarmoToys.Features.ProjectManager.Dashboard
+namespace KarmoToys.Features.Dashboard
 {
 	[Serializable]
 	public class DashboardData
@@ -16,12 +16,5 @@ namespace KarmoToys.Features.ProjectManager.Dashboard
 		public string StatPersonalValue = "In Progress";
 		public string StatTeamTitle = "Team Project";
 		public string StatTeamValue = "In Progress";
-
-		// RPG ?�탯 ?��??�이??
-		public int Hp = 75;
-		public int Mp = 60;
-		public int Exp = 30;
-
-		public long LastUpdatedTicks;
 	}
 }
