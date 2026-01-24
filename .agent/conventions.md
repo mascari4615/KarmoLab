@@ -17,7 +17,7 @@ KarmoLab은 사용자의 로컬 환경에서 구동되는 앱들과 Unity 기반
 
 ### 모노레포 구조
 
-```
+```plaintext
 KarmoLab/
 ├── Apps/              # .NET 애플리케이션
 ├── Unity/             # Unity 프로젝트
@@ -51,6 +51,15 @@ KarmoLab/
 - 코드 블록 언어 태그 필수 (```csharp,```bash, ```json)
 - 들여쓰기 일관성 유지
 - 테이블 파이프 양쪽에 공백 추가 (MD060)
+- **중복 헤더 금지 (MD024)**: 동일 문서 내에 완전히 일치하는 헤더 텍스트 사용 금지 (내부 앵커 링크 충돌 방지)
+- **고유성 확보**: `개념`, `특징` 등 범용적 단어는 `UXML 개념`, `UXML 특징`과 같이 상위 맥락을 포함하여 고유하게 명명함
+
+### 🎨 스타일 및 폰트 안전 규칙 (Hidden Bombs 방지)
+
+- **TSS 단일 관리**: `MainTheme.tss`를 사용하는 프로젝트에서는 개별 UXML 파일 내에서 `<Style>` 태그 사용을 금지함. 모든 스타일 임포트는 TSS에서 절대 경로(`project://database/`)로 관리함.
+- **원본 폰트 직접 참조 금지**: USS 파일 내에서 `.otf`, `.ttf` 등 원본 폰트 파일을 직접 `--unity-font` 등에 할당하는 것을 엄격히 금지함. (멀티스레드 렌더링 엔진 NRE 유발 방지)
+- **SDF 에셋 전용**: 폰트 적용 시 반드시 TextMeshPro를 통해 생성된 `.asset`(SDF Font Asset)만을 사용하며, 가급적 `UITK Text Settings` 전역 설정을 통해 적용함.
+- **죽은 코드 제거**: 사용하지 않는 테마 변수나 템플릿 참조는 발견 즉시 제거하여 로딩 최적화를 유지함.
 
 ### 언어 및 스타일
 
@@ -115,6 +124,14 @@ KarmoLab/
 - **파일/클래스**: PascalCase, 1 파일 = 1 클래스
 - **네임스페이스**: 폴더 구조와 일치
 - **비동기**: async/await 사용, Task 반환
+- **명시적 선언**: `var` 대신 명시적인 타입을 사용함 (가독성 및 타입 안정성 확보)
+
+### 🗑️ 죽은 코드 및 레거시 제거 규칙 (Dead Code Elimination)
+
+- **Unused Members**: 사용되지 않는 private 필드, 메서드, 프로퍼티는 발견 즉시 제거함. IDE의 '회색조' 경고를 무시하지 않음.
+- **Commented-out Logic**: 나중에 쓸 것 같은 주석 처리된 코드 뭉치는 가급적 제거하고 Git History에 의존함.
+- **Redundant Namespaces**: 사용하지 않는 `using` 문은 정리함.
+- **Obsolete Data**: 데이터 구조 변경 시 예전 필드는 `[Obsolete]` 처리 후 안정화 단계에서 반드시 삭제함.
 
 ### Unity (C#)
 
@@ -136,7 +153,7 @@ KarmoLab/
 
 ### 커밋 메시지 (Conventional Commits)
 
-```
+```plaintext
 <type>(<scope>): <subject>
 
 <body>
@@ -238,6 +255,7 @@ dotnet user-secrets set "Gemini:ApiKey" "YOUR_KEY"
 - [ ] 테스트 코드 포함
 - [ ] 성능 고려사항 검토
 - [ ] 보안 취약점 확인
+- [ ] **빌드 검증 완료**: 모든 코드 수정 후 반드시 CLI(`dotnet build`, `Unity.exe -runTests` 등)를 통해 컴파일 에러 및 테스트 패스 여부를 확인하였는가? (수정하면 끝이 아님, 반드시 검증할 것)
 
 ### 리뷰 원칙
 
