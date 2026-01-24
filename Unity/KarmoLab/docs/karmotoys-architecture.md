@@ -53,16 +53,32 @@ Summary: 확장성과 유지보수성을 극대화한 KarmoToys 프로젝트의 
   - `ProjectManagerFeature.Table.cs`: 테이블 뷰 렌더링, 정렬(Sorting), 필터링, 인라인 편집.
   - `ProjectManagerFeature.Kanban.cs`: 칸반 보드 렌더링, 드래그 앤 드롭(Ghost Icon), Priority Strip.
   - `ProjectManagerFeature.Modal.cs`: 상세 아이템 편집 모달 제어.
+  - `ProjectManagerFeature.Whiteboard.cs`: 무한 캔버스 화이트보드 렌더링 및 Pan/Zoom 제어.
 
 - **Architecture Pattern**: **"One Data, Multi-View"**
-  - 단일 데이터 소스(`ProjectItemData`)를 공유하며, Table과 Kanban 뷰가 각자의 방식으로 데이터를 렌더링.
+  - 단일 데이터 소스(`ProjectItemData`)를 공유하며, Table, Kanban, Whiteboard 뷰가 각자의 방식으로 데이터를 렌더링.
   - 데이터 변경 시 `RefreshViews()`를 호출하여 두 뷰를 동시에 갱신.
 
 - **Key Features**:
   - **Inline Editing**: 테이블 셀 클릭으로 즉시 상태/우선순위 변경 (Cycle Logic).
   - **Context Menu**: 우클릭 메뉴를 통한 빠른 이동 및 관리.
   - **Visual Richness**: Trello 스타일의 우선순위 색상 띠, 태그 칩 시각화.
+  - **Visual Richness**: Trello 스타일의 우선순위 색상 띠, 태그 칩 시각화.
   - **Compact Toolbar**: 공간 효율성을 극대화한 상단 툴바 레이아웃.
+
+### 3.3.1. Whiteboard Architecture (Coordinate System)
+
+Whiteboard는 **Infinite Canvas** 구현을 위해 데이터 모델과 시각적 표현을 분리하는 **이중 좌표계**를 사용함.
+
+- **Logical Coordinates (Data Layer)**
+  - **Center**: `(0, 0)` (논리적 중심).
+  - **Storage**: `ProjectItemData.Position`에는 이 논리적 좌표가 저장됨.
+  - **Concept**: 무한히 확장 가능한 2D 평면.
+
+- **Visual Coordinates (Presentation Layer)**
+  - **Implementation**: Unity UI Toolkit Canvas (Size: `100,000px x 100,000px`).
+  - **Center**: 시각적 캔버스의 중심인 `(50,000, 50,000)`이 논리적 `(0, 0)`에 대응됨.
+  - **Conversion**: `WhiteboardFeature`가 `Render` 및 `Save` 시점에 오프셋(`50,000`)을 더하거나 빼서 변환.
 
 ### 3.4. ToolBox (도구함)
 

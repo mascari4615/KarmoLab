@@ -2,6 +2,52 @@
 
 Summary: KarmoToys 및 KarmoLab 프로젝트의 주요 업데이트 기록 및 아키텍처 변화 내역.
 
+## 2026-01-24 (KST) - Part 2
+
+- **피처 아키텍처 재구성 (Feature Architecture Reorganization)**:
+  - **Dashboard 독립화**: `ProjectManager/Dashboard`에 혼재되어 있던 Dashboard 피처를 `Features/Dashboard`로 완전 분리하여 모듈 독립성 확보.
+  - **데이터 모델 중앙화**: `DashboardData.cs`를 `Common/Data`로 이동하여 전역 데이터 접근성 개선.
+  - **UI 캡슐화**: Dashboard 내부 UI 요소(`HeaderTargetInput`, `StatProgress`)를 ViewContainer 기반으로 조회하도록 리팩토링하여 결합도 감소.
+
+- **Whiteboard 통합 및 렌더링 수정 (Whiteboard Integration)**:
+  - **서브탭 통합**: 독립 탭이었던 Whiteboard를 ProjectManager의 서브 뷰로 통합하여 프로젝트 관리 도구 응집도 향상.
+  - **가시성 버그 수정**: 서브탭 이동 후 발생한 렌더링 불가 문제 해결 (`display: none` 중첩 제거).
+  - **TabButtonName 정리**: 더 이상 독립 탭이 아니므로 `string.Empty`로 설정.
+
+- **스타일 시스템 전면 통합 (Style System Consolidation)**:
+  - **TSS 단일 관리 강화**: `MainTheme.tss`에 모든 피처 스타일을 통합하고, 개별 UXML의 `<Style>` 태그 제거.
+  - **LifeWeeklyStyle 이동**: `Main/UI/LifeWeeklyStyle.uss`를 `Features/LifeWeekly/`로 이동하여 피처별 스타일 격리.
+  - **로딩 최적화**: 중복 스타일 임포트 제거로 Unity 로딩 성능 개선.
+
+- **시스템 안정화 (System Stabilization)**:
+  - **KarmoToysApp 복구**: 파손된 시작 로직(전처리기 지시문, 중괄호 누락)을 복구하여 빌드 안정성 확보.
+  - **명시적 타입 선언**: 코드 가독성 및 타입 안정성 강화를 위한 `var` 제거 정책 지속 적용.
+
+- **프로젝트 구조 정비 (Project Structure Refinement)**:
+  - **Conventions 이동**: `docs/standards/conventions.md`를 `.agent/conventions.md`로 이동하여 AI 에이전트 접근성 향상.
+  - **워크플로우 정리**: `/cleanup-project` 워크플로우 추가, `/check-compliance` 제거.
+
+## 2026-01-24 (KST) - Part 1
+
+- **모달 시스템 아키텍처 정밀화 (Modal System Refinement)**:
+  - **Z-Order 격리**: 모달 인스턴스를 `MainView.uxml`의 루트 최하단으로 이동시켜 최상위 출력 보장. 템플릿 컨테이너 레이아웃 제약 해결.
+  - **입력 전파 차단 해결**: `picking-mode`를 UXML(Ignore)과 C#(Position)에서 이원화 관리하여 투명 배경이 뒤쪽 버튼을 가로막는 문제 해결.
+  - **가시성 에러 교정**: 인라인 스타일 중복 정의를 제거하여 초기화 시 모달이 강제 표시되던 현상 수정.
+
+- **UXML 파싱 및 로딩 표준화 (UXML Standardization)**:
+  - **네임스페이스 정상화**: 모든 UXML 파일의 루트 태그를 표준 XML 구문(`xmlns:xsi`)으로 전수 교정하여 `XmlException` 방지.
+  - **자산 식별 식별자 추가**: `ui:Template`의 `src` 경로 끝에 `#TemplateName` 접미사를 필수 적용하여 `ArgumentException` 해결 및 로딩 안정성 확보.
+
+- **TSS 기반 전역 테마 통합 (Global Theme Integration)**:
+  - **Theme Style Sheet (TSS) 도입**: `MainTheme.tss`에 `ThemeTokens.uss` 및 `MainStyle.uss`를 통합하여 전역 스타일 관리 일원화.
+  - **중복 코드 제거 (Optimization)**: 프로젝트 내 10개 이상의 UXML 파일에서 불필요한 스타일 임포트 태그를 일괄 제거하여 유지보수성 극대화.
+
+- **기술 문서 자산화 (Technical Documentation)**:
+  - `overlay-guide.md`, `template-system.md`, `theme-system.md` 등 3종의 가이드를 신설하여 핵심 지식 자산화 및 에러 재발 방지책 마련.
+
+- **페르소나 및 가이드라인 정렬 (Persona Alignment)**:
+  - `.agent` 지침 재검토를 통한 Alisa 페르소나 강화 및 프로젝트 컨벤션(음슴체) 준수 상태 전수 점검.
+
 ## 2026-01-19 (KST) - Phase 2 Completion
 
 - **UI 구조 전면 개편 (UI Overhaul - Sidebar Layout)**:

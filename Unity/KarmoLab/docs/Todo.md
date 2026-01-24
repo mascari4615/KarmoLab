@@ -20,5 +20,8 @@ Summary: KarmoToys 유니티 게임 프로젝트의 전체 진행 상황 및 통
 - [x] **Companion 에디터 테스트 지원**: 빌드 없이 에디터 내 컴패니언 시뮬레이션 환경 구축. <!-- id: toys-todo-7 -->
 - [x] **UI 구조 전면 개편**: 좌측 사이드바 네비게이션 적용 (Phase 2). <!-- id: toys-todo-9 -->
 - [x] **Companion 기능 폴리싱**: 머리 위 HUD, 유휴 감지, 타이머/스톱워치 시스템. <!-- id: toys-todo-10 -->
+- [x] **UI Refactoring**: UI Toolkit 모범 사례(UXML 템플릿, TSS 전역 테마) 도입으로 전체 UI 구조 최적화 완료. <!-- id: toys-todo-11 -->
+- [x] **에러 재발 방지 체계 구축**: 모달 Z-Order 및 UXML 파싱 관련 기술 문서화 완료. <!-- id: toys-todo-12 -->
+- [x] **에이전트 페르소나 정렬**: `.agent` 지침에 따른 Alisa 정체성 및 컨벤션 준수 강화. <!-- id: toys-todo-13 -->
 
-> **관리자**: Alisa (PM)
+> **관리자**: Alisa (Doll Maid Secretary)

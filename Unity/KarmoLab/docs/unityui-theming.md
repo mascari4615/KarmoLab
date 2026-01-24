@@ -61,3 +61,10 @@ TSS는 애플리케이션 **전체에 적용될 기본 테마**를 정의하는 
 4. Inspector 창의 **Theme Style Sheet** 항목에 만든 `.tss` 파일을 할당함.
 
 이렇게 하면 화면 밖으로 튀어나오는(Expanded) 드롭다운 리스트에도 스타일이 정상적으로 적용됨.
+
+## 4. Best Practices (주의사항)
+
+- **z-index 사용 금지**: `z-index` 속성은 Unity UI Toolkit에서 동작이 불안정하거나 경고(Warning)를 유발할 수 있음.
+  - **해결책**:
+    1. **Hierarchy 순서 조정**: UXML 또는 코드에서 요소 추가 순서를 변경.
+    2. **API 사용**: C# 스크립트에서 `BringToFront()`, `SendToBack()` 메서드 호출.
