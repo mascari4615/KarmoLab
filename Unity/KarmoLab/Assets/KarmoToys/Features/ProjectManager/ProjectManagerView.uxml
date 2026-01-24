@@ -13,88 +13,30 @@
         </ui:VisualElement>
         
         <ui:VisualElement name="ProjectContent" class="tab-content" style="flex-direction: row;">
-            <!-- Timeline View Container (Initialized by TimelineFeature) -->
-            <ui:Template name="TimelineView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Timeline/TimelineView.uxml" />
-            <ui:Template name="WhiteboardView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Whiteboard/WhiteboardView.uxml" />
+            <ui:VisualElement name="TableWrapper" style="display: flex; flex-grow: 1;">
+                <ui:Template name="TableView" src="Table/TableView.uxml" />
+                <ui:Instance template="TableView" />
+            </ui:VisualElement>
+            <ui:VisualElement name="KanbanWrapper" style="display: none; flex-grow: 1;">
+                <ui:Template name="KanbanView" src="Kanban/KanbanView.uxml" />
+                <ui:Instance template="KanbanView" />
+            </ui:VisualElement>
             <ui:VisualElement name="TimelineWrapper" style="display: none; flex-grow: 1;">
+                 <ui:Template name="TimelineView" src="Timeline/TimelineView.uxml" />
                  <ui:Instance template="TimelineView" />
             </ui:VisualElement>
             <ui:VisualElement name="WhiteboardWrapper" style="display: none; flex-grow: 1;">
-                 <ui:Instance template="WhiteboardView" />
-            </ui:VisualElement>
-
-            <!-- Table View Container -->
-            <ui:VisualElement name="TableView" class="view-container">
-                
-                <ui:VisualElement class="table-header">
-                    <ui:Label name="HeaderTitle" text="Title ↕" class="table-col header-col" style="flex-grow: 1;" />
-                    <ui:Label name="HeaderStatus" text="Status ↕" class="table-col header-col" style="width: 80px;" />
-                    <ui:Label name="HeaderPriority" text="Priority ↕" class="table-col header-col" style="width: 80px;" />
-                    <ui:Label name="HeaderType" text="Type ↕" class="table-col header-col" style="width: 80px;" />
-                    <ui:Label name="HeaderDate" text="Due ↕" class="table-col header-col" style="width: 60px;" />
-                    <ui:Label text="Edit" class="table-col header-col" style="width: 50px;" />
-                </ui:VisualElement>
-                <ui:ScrollView name="ProjectItemList" class="table-body" />
-                <ui:VisualElement class="table-footer">
-                    <ui:TextField name="InputNewItem" placeholder-text="Add new item..." style="flex-grow: 1;" />
-                    <ui:Button name="BtnAddNewItem" text="+" class="btn-primary" style="width: 40px;" />
-                </ui:VisualElement>
-            </ui:VisualElement>
-
-            <ui:VisualElement name="KanbanView" class="view-container" style="display: none; flex-direction: row;">
-                <ui:VisualElement class="kanban-column" name="ColTodo">
-                    <ui:Label name="HeaderTodo" text="TODO" class="column-title" />
-                    <ui:ScrollView name="ListTodo" class="column-list" />
-                    <ui:Button name="BtnAddTodo" text="+ Add" class="btn-quick-add" />
-                </ui:VisualElement>
-                <ui:VisualElement class="kanban-column" name="ColDoing">
-                    <ui:Label name="HeaderDoing" text="DOING" class="column-title" />
-                    <ui:ScrollView name="ListDoing" class="column-list" />
-                    <ui:Button name="BtnAddDoing" text="+ Add" class="btn-quick-add" />
-                </ui:VisualElement>
-                <ui:VisualElement class="kanban-column" name="ColDone">
-                    <ui:Label name="HeaderDone" text="DONE" class="column-title" />
-                    <ui:ScrollView name="ListDone" class="column-list" />
-                    <ui:Button name="BtnAddDone" text="+ Add" class="btn-quick-add" />
-                </ui:VisualElement>
+                <ui:Template name="WhiteboardView" src="Whiteboard/WhiteboardView.uxml" />
+                <ui:Instance template="WhiteboardView" />
             </ui:VisualElement>
         </ui:VisualElement>
         
         <!-- Detail Editor Modal -->
-        <ui:VisualElement name="ProjectDetailModal" class="modal-overlay" style="display: none;">
-            <ui:VisualElement class="modal-container">
-                <ui:VisualElement class="modal-header">
-                    <ui:Label text="Edit Item" name="ModalHeaderTitle" class="header-title" />
-                    <ui:Button name="BtnCloseModal" text="✕" class="btn-icon-item" />
-                </ui:VisualElement>
-                
-                <ui:VisualElement class="modal-body">
-                    <ui:TextField label="Title" name="EditTitle" class="modal-input" />
-                    <ui:EnumField label="Type" name="EditType" type="KarmoToys.Common.Data.MemoType, Assembly-CSharp" class="modal-input" />
-                    <ui:EnumField label="Status" name="EditStatus" type="KarmoToys.Common.Data.MemoStatus, Assembly-CSharp" class="modal-input" />
-                    <ui:EnumField label="Priority" name="EditPriority" type="KarmoToys.Common.Data.Priority, Assembly-CSharp" class="modal-input" />
-                    <ui:TextField label="Due Date (yyyy-MM-dd)" name="EditDueDate" class="modal-input" />
-                    <ui:TextField label="Tags (e.g. #work, #game)" name="EditTags" class="modal-input" />
-                    <ui:Label text="Content" class="input-label" style="margin-top: 10px;" />
-                    <ui:TextField name="EditContent" multiline="true" class="modal-input content-editor" />
-                </ui:VisualElement>
-                
-                <ui:VisualElement class="modal-footer">
-                    <ui:Button name="BtnDeleteProjectItem" text="Delete" class="btn-danger" />
-                    <ui:VisualElement style="flex-grow: 1;" />
-                    <ui:Button name="BtnSaveProjectItem" text="Save Changes" class="btn-primary" />
-                </ui:VisualElement>
-            </ui:VisualElement>
-        </ui:VisualElement>
+        <ui:Template name="ProjectDetailModal" src="Modal/ProjectDetailModal.uxml" />
+        <ui:Instance template="ProjectDetailModal" />
 
-        <!-- Context Menu (Hidden initially) -->
-        <ui:VisualElement name="ContextMenu" class="context-menu" style="display: none; position: absolute;">
-            <ui:Button name="BtnCtxTodo" text="Move to Todo" class="ctx-btn" />
-            <ui:Button name="BtnCtxDoing" text="Move to Doing" class="ctx-btn" />
-            <ui:Button name="BtnCtxDone" text="Move to Done" class="ctx-btn" />
-            <ui:VisualElement style="height: 1px; background-color: #444; margin: 4px 0;" />
-            <ui:Button name="BtnCtxArchive" text="Archive" class="ctx-btn" />
-            <ui:Button name="BtnCtxDelete" text="Delete" class="ctx-btn btn-danger" />
-        </ui:VisualElement>
+        <!-- Warning: Context Menu Template is loaded but hidden by default inside the UXML itself -->
+        <ui:Template name="ContextMenu" src="ContextMenu/ProjectContextMenu.uxml" />
+        <ui:Instance template="ContextMenu" />
     </ui:VisualElement>
 </ui:UXML>

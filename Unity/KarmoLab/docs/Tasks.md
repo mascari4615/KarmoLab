@@ -18,6 +18,7 @@ Summary: KarmoToys 프로젝트의 주요 작업 목록 및 진행 상태.
     - [x] **Table View**: Inline Editing (Status/Priority)
     - [x] **Kanban View**: Quick Add Button per Column
     - [x] **General**: Context Menu (Right Click)
+  - [x] **Refactoring**: Convert Partials to Feature Classes (Table/Kanban)
   - [x] **Kanban View**: Column Item Counts & UI Polish
   - [x] **Data**: Add `DueDate` & `Tags` (Planner Integration Prep)
   - [x] **UI Polish**: Sidebar Layout, Ghost Scrollbar, Theme Tokens

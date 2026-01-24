@@ -90,7 +90,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			KarmoToysApp.Instance.Data.ProjectItems.Add(newItem);
 			KarmoToysApp.Instance.SaveData();
 
-			_owner.RefreshViews();
+			Refresh();
 			SpawnNodeVisual(newItem);
 		}
 
@@ -130,10 +130,10 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			}
 
 			KarmoToysApp.Instance.SaveData();
-			_owner.RefreshViews();
+			Refresh();
 		}
 
-		public void Refresh() => SyncWhiteboardVisuals();
+		protected void Refresh() => SyncWhiteboardVisuals();
 
 		private void SyncWhiteboardVisuals()
 		{

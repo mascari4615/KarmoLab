@@ -2,6 +2,21 @@
 
 Summary: KarmoToys 및 KarmoLab 프로젝트의 주요 업데이트 기록 및 아키텍처 변화 내역.
 
+## 2026-01-24 (KST) - Part 3
+
+- **UI 모듈화 및 자산 분리 (UI Modularization)**:
+  - **ProjectManager 분할**: 하나의 거대한 `ProjectManagerView.uxml`에 존재하던 Table, Kanban, Modal, ContextMenu를 각각의 독립된 UXML/USS 파일로 분리.
+  - **Template 재사용**: 분리된 UXML을 `<ui:Template>` 및 `<ui:Instance>` 태그를 활용하여 메인 뷰에서 조립하는 컴포넌트 기반 아키텍처 적용.
+  - **경로 최적화 (Path Fix)**: UXML 로드 시 `ArgumentException`을 유발하던 절대 경로(`project://database/`) 문제를 상대 경로 전환으로 해결.
+
+- **코드 아키텍처 개선 (Code Architecture)**:
+  - **Hybrid Singleton 패턴**: 완전한 DI 전환 대신, 접근 편의성을 위해 `ProjectManagerFeature.Instance`를 유지하되 하위 뷰(`Table`, `Kanban` 등)를 모듈화하는 실용적 접근 선택.
+  - **뷰 로직 캡슐화**: `TableFeature`, `KanbanFeature` 등이 `ProjectViewBase`를 상속받아 공통된 생명주기(`Initialize`, `Refresh` 등)를 가지도록 표준화.
+  - **이벤트 기반 결합**: `ProjectDetailModal` 및 `ContextMenu`를 정적 프로퍼티로 개방하여 하위 뷰에서 손쉽게 접근 가능하도록 구조 변경.
+
+- **안정성 강화 (Fail Fast)**:
+  - **Null Check 제거**: 필수적인 UI 요소(버튼, 리스트 등)에 대한 방어적 코드를 제거하고, 없으면 즉시 예외가 발생하도록 수정하여 개발 단계에서 문제를 조기에 발견(Fail Fast)하도록 정책 변경.
+
 ## 2026-01-24 (KST) - Part 2
 
 - **피처 아키텍처 재구성 (Feature Architecture Reorganization)**:

@@ -1,0 +1,28 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Style src="ProjectDetailModal.uss" />
+    <ui:VisualElement name="ProjectDetailModal" class="modal-overlay" style="display: none;">
+        <ui:VisualElement class="modal-container">
+            <ui:VisualElement class="modal-header">
+                <ui:Label text="Edit Item" name="ModalHeaderTitle" class="header-title" />
+                <ui:Button name="BtnCloseModal" text="✕" class="btn-icon-item" />
+            </ui:VisualElement>
+            
+            <ui:VisualElement class="modal-body">
+                <ui:TextField label="Title" name="EditTitle" class="modal-input" />
+                <ui:EnumField label="Type" name="EditType" type="KarmoToys.Common.Data.MemoType, Assembly-CSharp" class="modal-input" />
+                <ui:EnumField label="Status" name="EditStatus" type="KarmoToys.Common.Data.MemoStatus, Assembly-CSharp" class="modal-input" />
+                <ui:EnumField label="Priority" name="EditPriority" type="KarmoToys.Common.Data.Priority, Assembly-CSharp" class="modal-input" />
+                <ui:TextField label="Due Date (yyyy-MM-dd)" name="EditDueDate" class="modal-input" />
+                <ui:TextField label="Tags (e.g. #work, #game)" name="EditTags" class="modal-input" />
+                <ui:Label text="Content" class="input-label" style="margin-top: 10px;" />
+                <ui:TextField name="EditContent" multiline="true" class="modal-input content-editor" />
+            </ui:VisualElement>
+            
+            <ui:VisualElement class="modal-footer">
+                <ui:Button name="BtnDeleteProjectItem" text="Delete" class="btn-danger" />
+                <ui:VisualElement style="flex-grow: 1;" />
+                <ui:Button name="BtnSaveProjectItem" text="Save Changes" class="btn-primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

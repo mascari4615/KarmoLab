@@ -1,5 +1,6 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="KanbanView" class="view-root" style="flex-direction: row;">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Style src="KanbanStyle.uss" />
+    <ui:VisualElement name="KanbanView" class="view-container" style="flex-direction: row;">
         <ui:VisualElement class="kanban-column" name="ColTodo">
             <ui:Label name="HeaderTodo" text="TODO" class="column-title" />
             <ui:ScrollView name="ListTodo" class="column-list" />

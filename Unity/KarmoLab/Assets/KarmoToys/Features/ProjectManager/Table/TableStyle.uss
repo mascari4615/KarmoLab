@@ -32,3 +32,7 @@
     border-top-width: 1px;
     border-top-color: var(--color-border);
 }
+
+.priority-high { color: #f87171; }
+.priority-mid { color: #fbbf24; }
+.priority-low { color: #60a5fa; }

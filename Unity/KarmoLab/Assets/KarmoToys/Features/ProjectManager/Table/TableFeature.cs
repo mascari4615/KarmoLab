@@ -7,64 +7,83 @@ using KarmoToys.Common.Data;
 
 namespace KarmoToys.Features.ProjectManager.Table
 {
-	public class ProjectTableController
+	[AddComponentMenu("KarmoToys/Features/TableFeature")]
+	public class TableFeature : ProjectViewBase
 	{
-		private readonly ProjectManagerFeature _owner;
-		private readonly VisualElement _root;
+		public override string FeatureName => "Table";
+		public override string TabButtonName => string.Empty; // Sub-feature
 
+		private VisualElement _tableView;
 		private ScrollView _tableList;
 		private TextField _inputNewItem;
 		private Button _btnAddNewItem;
 		private TextField _searchField;
-		private Label _headerTitle, _headerStatus, _headerPriority, _headerType, _headerDate;
+		private Label _headerTitle;
+		private Label _headerStatus;
+		private Label _headerPriority;
+		private Label _headerType;
+		private Label _headerDate;
 
 		private string _sortColumn = "Title";
 		private bool _sortAscending = true;
 
-		public ProjectTableController(ProjectManagerFeature owner, VisualElement root, TextField searchField)
+		public override void Initialize(VisualElement root)
 		{
-			_owner = owner;
-			_root = root;
-			_searchField = searchField;
-			Initialize();
-		}
+			ViewContainer = root;
 
-		private void Initialize()
-		{
-			_tableList = _root.Q<ScrollView>("ProjectItemList");
-			_inputNewItem = _root.Q<TextField>("InputNewItem");
-			_btnAddNewItem = _root.Q<Button>("BtnAddNewItem");
-			// _searchField assigned from constructor
+			// Find shared ProjectManager root containers
+			_tableView = root.Q("TableView");
+			_tableList = root.Q<ScrollView>("ProjectItemList");
+			_inputNewItem = root.Q<TextField>("InputNewItem");
+			_btnAddNewItem = root.Q<Button>("BtnAddNewItem");
 
-			_headerTitle = _root.Q<Label>("HeaderTitle");
-			_headerStatus = _root.Q<Label>("HeaderStatus");
-			_headerPriority = _root.Q<Label>("HeaderPriority");
-			_headerType = _root.Q<Label>("HeaderType");
-			_headerDate = _root.Q<Label>("HeaderDate");
+			// Table Toolbar
+			_searchField = root.Q<TextField>("SearchField");
+
+			_headerTitle = root.Q<Label>("HeaderTitle");
+			_headerStatus = root.Q<Label>("HeaderStatus");
+			_headerPriority = root.Q<Label>("HeaderPriority");
+			_headerType = root.Q<Label>("HeaderType");
+			_headerDate = root.Q<Label>("HeaderDate");
 
 			// Events
-			_searchField?.RegisterValueChangedCallback(_ => Refresh());
+			_searchField.RegisterValueChangedCallback(_ => Refresh());
 
-			_headerTitle?.RegisterCallback<ClickEvent>(_ => ToggleSort("Title"));
-			_headerStatus?.RegisterCallback<ClickEvent>(_ => ToggleSort("Status"));
-			_headerPriority?.RegisterCallback<ClickEvent>(_ => ToggleSort("Priority"));
-			_headerType?.RegisterCallback<ClickEvent>(_ => ToggleSort("Type"));
-			_headerDate?.RegisterCallback<ClickEvent>(_ => ToggleSort("Due"));
+			_headerTitle.RegisterCallback<ClickEvent>(_ => ToggleSort("Title"));
+			_headerStatus.RegisterCallback<ClickEvent>(_ => ToggleSort("Status"));
+			_headerPriority.RegisterCallback<ClickEvent>(_ => ToggleSort("Priority"));
+			_headerType.RegisterCallback<ClickEvent>(_ => ToggleSort("Type"));
+			_headerDate.RegisterCallback<ClickEvent>(_ => ToggleSort("Due"));
 
-			if (_btnAddNewItem != null) _btnAddNewItem.clicked += AddNewItem;
-			_inputNewItem?.RegisterCallback<KeyDownEvent>(evt => { if (evt.keyCode == KeyCode.Return) AddNewItem(); });
+			_btnAddNewItem.clicked += AddNewItem;
+
+			_inputNewItem.RegisterCallback<KeyDownEvent>(evt =>
+			{
+				if (evt.keyCode == KeyCode.Return) AddNewItem();
+			});
+
+			// Initial Refresh
+			Refresh();
 		}
 
 		private void ToggleSort(string column)
 		{
-			if (_sortColumn == column) _sortAscending = !_sortAscending;
-			else { _sortColumn = column; _sortAscending = true; }
+			if (_sortColumn == column)
+			{
+				_sortAscending = !_sortAscending;
+			}
+			else
+			{
+				_sortColumn = column;
+				_sortAscending = true;
+			}
 			Refresh();
 		}
 
-		public void Refresh()
+		public override void Refresh()
 		{
 			if (_tableList == null) return;
+
 			_tableList.Clear();
 
 			List<ProjectItemData> allItems = KarmoToysApp.Instance.Data.ProjectItems;
@@ -100,22 +119,22 @@ namespace KarmoToys.Features.ProjectManager.Table
 			UpdateHeaderVisuals();
 
 			// 3. Render
-			foreach (var item in filteredItems)
+			foreach (ProjectItemData item in filteredItems)
 			{
-				var row = CreateRow(item);
+				VisualElement row = CreateRow(item);
 				_tableList.Add(row);
 			}
 		}
 
 		private VisualElement CreateRow(ProjectItemData item)
 		{
-			var row = new VisualElement();
+			VisualElement row = new VisualElement();
 			row.AddToClassList("table-row");
 
-			var title = new Label(item.Title) { style = { flexGrow = 1 } };
+			Label title = new Label(item.Title) { style = { flexGrow = 1 } };
 			title.AddToClassList("table-col");
 
-			var status = new Label(item.Status.ToString()) { style = { width = 80 } };
+			Label status = new Label(item.Status.ToString()) { style = { width = 80 } };
 			status.AddToClassList("table-col");
 			status.RegisterCallback<MouseDownEvent>(evt =>
 			{
@@ -124,11 +143,12 @@ namespace KarmoToys.Features.ProjectManager.Table
 					evt.StopPropagation();
 					item.Status = (MemoStatus)(((int)item.Status + 1) % 3); // Simple cycle Todo->Doing->Done
 					KarmoToysApp.Instance.SaveData();
-					_owner.RefreshViews();
+
+					Refresh();
 				}
 			});
 
-			var priority = new Label(item.Priority.ToString()) { style = { width = 80 } };
+			Label priority = new Label(item.Priority.ToString()) { style = { width = 80 } };
 			priority.AddToClassList("table-col");
 			priority.AddToClassList($"priority-{item.Priority.ToString().ToLower().Substring(0, 3)}");
 			priority.RegisterCallback<MouseDownEvent>(evt =>
@@ -138,19 +158,22 @@ namespace KarmoToys.Features.ProjectManager.Table
 					evt.StopPropagation();
 					item.Priority = (Priority)(((int)item.Priority + 1) % 3);
 					KarmoToysApp.Instance.SaveData();
-					_owner.RefreshViews();
+					Refresh();
 				}
 			});
 
-			var type = new Label(item.Type.ToString()) { style = { width = 80 } };
+			Label type = new Label(item.Type.ToString()) { style = { width = 80 } };
 			type.AddToClassList("table-col");
 
-			var dateText = item.DueDate.HasValue ? item.DueDate.Value.ToString("MM/dd") : "-";
-			var date = new Label(dateText) { style = { width = 60 } };
+			string dateText = item.DueDate.HasValue ? item.DueDate.Value.ToString("MM/dd") : "-";
+			Label date = new Label(dateText) { style = { width = 60 } };
 			date.AddToClassList("table-col");
-			if (item.DueDate.HasValue && item.DueDate.Value < DateTime.Now.Date) date.style.color = Color.red;
+			if (item.DueDate.HasValue && item.DueDate.Value < DateTime.Now.Date)
+			{
+				date.style.color = Color.red;
+			}
 
-			var btnEdit = new Button(() => _owner.OpenModal(item)) { text = "✎", style = { width = 50 } };
+			Button btnEdit = new Button(() => ProjectManagerFeature.Modal.Open(item)) { text = "✎", style = { width = 50 } };
 			btnEdit.AddToClassList("table-col");
 
 			row.Add(title);
@@ -165,13 +188,13 @@ namespace KarmoToys.Features.ProjectManager.Table
 				if (evt.button == 1)
 				{
 					evt.StopPropagation();
-					_owner.ShowContextMenu(evt.position, item);
+					ProjectManagerFeature.ContextMenu.Show(evt.position, item);
 				}
 			});
 
 			row.RegisterCallback<ClickEvent>(evt =>
 			{
-				if (evt.clickCount == 2 && evt.button == 0) _owner.OpenModal(item);
+				if (evt.clickCount == 2 && evt.button == 0) ProjectManagerFeature.Modal.Open(item);
 			});
 
 			return row;
@@ -190,8 +213,14 @@ namespace KarmoToys.Features.ProjectManager.Table
 		{
 			if (label == null) return;
 			string text = columnName;
-			if (_sortColumn == columnName) text += _sortAscending ? " ▲" : " ▼";
-			else text += " ↕";
+			if (_sortColumn == columnName)
+			{
+				text += _sortAscending ? " ▲" : " ▼";
+			}
+			else
+			{
+				text += " ↕";
+			}
 			label.text = text;
 		}
 
@@ -199,12 +228,12 @@ namespace KarmoToys.Features.ProjectManager.Table
 		{
 			if (string.IsNullOrWhiteSpace(_inputNewItem.value)) return;
 
-			var newItem = new ProjectItemData(_inputNewItem.value, string.Empty);
+			ProjectItemData newItem = new ProjectItemData(_inputNewItem.value, string.Empty);
 			KarmoToysApp.Instance.Data.ProjectItems.Add(newItem);
 			_inputNewItem.value = string.Empty;
 
 			KarmoToysApp.Instance.SaveData();
-			_owner.RefreshViews();
+			Refresh();
 			KarmoToysApp.Toast.Show("New item added! 🚀");
 		}
 	}

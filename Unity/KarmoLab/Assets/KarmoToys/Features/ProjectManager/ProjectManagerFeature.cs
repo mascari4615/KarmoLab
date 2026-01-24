@@ -1,51 +1,66 @@
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoToys.Core;
 using KarmoToys.Common;
-using KarmoToys.Common.Data;
-using KarmoToys.Main;
+using KarmoToys.Features.ProjectManager.Modal;
+using KarmoToys.Features.ProjectManager.ContextMenu;
 
 namespace KarmoToys.Features.ProjectManager
 {
+	public enum ViewType { Table, Kanban, Timeline, Whiteboard }
+
 	[AddComponentMenu("KarmoLab/Features/ProjectManager")]
-	public partial class ProjectManagerFeature : FeatureBase
+	public class ProjectManagerFeature : FeatureBase
 	{
+		public static ProjectManagerFeature Instance { get; private set; }
+
+		public static ProjectDetailModal Modal { get; private set; }
+		public static ProjectContextMenu ContextMenu { get; private set; }
+
+		public Table.TableFeature TableFeature { get; set; }
+		public Kanban.KanbanFeature KanbanFeature { get; set; }
+		public Timeline.TimelineFeature TimelineFeature { get; set; }
+		public Whiteboard.WhiteboardFeature WhiteboardFeature { get; set; }
+
+		public ViewType CurrentViewType { get; private set; } = ViewType.Table;
+		public ProjectViewBase CurrentView => CurrentViewType switch
+		{
+			ViewType.Table => TableFeature,
+			ViewType.Kanban => KanbanFeature,
+			ViewType.Timeline => TimelineFeature,
+			ViewType.Whiteboard => WhiteboardFeature,
+			_ => null,
+		};
+
 		public override string FeatureName => Define.FeatureProjectManager;
 		public override string TabButtonName => Define.TabProject;
 
-		private VisualElement _tableView, _kanbanView, _timelineWrapper, _whiteboardWrapper;
+		// View Containers
 		private Button _btnViewTable, _btnViewKanban, _btnViewTimeline, _btnViewWhiteboard;
-		private ScrollView _tableList;
-		private ScrollView _listTodo, _listDoing, _listDone;
-		private TextField _inputNewItem;
-		private Button _btnAddNewItem;
 
-		// Table Toolbar & Headers
-		private TextField _searchField;
-		private Label _headerTitle, _headerStatus, _headerPriority, _headerType, _headerDate;
-
-		// Kanban Headers
-		private Label _headerTodo, _headerDoing, _headerDone;
-		private Button _btnAddTodo, _btnAddDoing, _btnAddDone;
-
-		// Modal UI
-		private VisualElement _detailModal;
-		private TextField _editTitle, _editContent, _editDueDate, _editTags;
-		private EnumField _editType, _editStatus, _editPriority;
-		private Button _btnSaveItem, _btnDeleteItem, _btnCloseModal;
-		private ProjectItemData _selectedItem;
+		private void Awake()
+		{
+			if (Instance == null) Instance = this;
+			else Destroy(this);
+		}
 
 		public override void Initialize(VisualElement root)
 		{
 			ViewContainer = root.Q("ViewProjectManager");
 			if (ViewContainer == null) return;
 
+			Modal = new ProjectDetailModal(this, ViewContainer.Q("ProjectDetailModal"));
+			ContextMenu = new ProjectContextMenu(this, ViewContainer.Q("ContextMenu"));
+
 			// View Switcher
-			_tableView = ViewContainer.Q("TableView");
-			_kanbanView = ViewContainer.Q("KanbanView");
-			_timelineWrapper = ViewContainer.Q("TimelineWrapper");
-			_whiteboardWrapper = ViewContainer.Q("WhiteboardWrapper");
+			TableFeature = new Table.TableFeature();
+			TableFeature.Initialize(ViewContainer.Q("TableWrapper"));
+			KanbanFeature = new Kanban.KanbanFeature();
+			KanbanFeature.Initialize(ViewContainer.Q("KanbanWrapper"));
+			TimelineFeature = new Timeline.TimelineFeature();
+			TimelineFeature.Initialize(ViewContainer.Q("TimelineWrapper"));
+			WhiteboardFeature = new Whiteboard.WhiteboardFeature();
+			WhiteboardFeature.Initialize(ViewContainer.Q("WhiteboardWrapper"));
 
 			_btnViewTable = ViewContainer.Q<Button>("BtnViewTable");
 			_btnViewKanban = ViewContainer.Q<Button>("BtnViewKanban");
@@ -57,172 +72,36 @@ namespace KarmoToys.Features.ProjectManager
 			_btnViewTimeline.clicked += () => SwitchView(ViewType.Timeline);
 			_btnViewWhiteboard.clicked += () => SwitchView(ViewType.Whiteboard);
 
-			// Table View
-			_tableList = ViewContainer.Q<ScrollView>("ProjectItemList");
-			_inputNewItem = ViewContainer.Q<TextField>("InputNewItem");
-			_btnAddNewItem = ViewContainer.Q<Button>("BtnAddNewItem");
-
-			// Table Toolbar
-			_searchField = ViewContainer.Q<TextField>("SearchField");
-			if (_searchField != null) _searchField.RegisterValueChangedCallback(evt => RefreshTable()); // Real-time search
-
-			// Table Headers
-			_headerTitle = ViewContainer.Q<Label>("HeaderTitle");
-			_headerStatus = ViewContainer.Q<Label>("HeaderStatus");
-			_headerPriority = ViewContainer.Q<Label>("HeaderPriority");
-			_headerType = ViewContainer.Q<Label>("HeaderType");
-			_headerDate = ViewContainer.Q<Label>("HeaderDate");
-
-			_headerTitle?.RegisterCallback<ClickEvent>(evt => ToggleSort("Title"));
-			_headerStatus?.RegisterCallback<ClickEvent>(evt => ToggleSort("Status"));
-			_headerPriority?.RegisterCallback<ClickEvent>(evt => ToggleSort("Priority"));
-			_headerType?.RegisterCallback<ClickEvent>(evt => ToggleSort("Type"));
-			_headerDate?.RegisterCallback<ClickEvent>(evt => ToggleSort("Due"));
-
-			_btnAddNewItem.clicked += AddNewItem;
-			_inputNewItem.RegisterCallback<KeyDownEvent>(evt => { if (evt.keyCode == KeyCode.Return) AddNewItem(); });
-
-			// Kanban View
-			_listTodo = ViewContainer.Q<ScrollView>("ListTodo");
-			_listDoing = ViewContainer.Q<ScrollView>("ListDoing");
-			_listDone = ViewContainer.Q<ScrollView>("ListDone");
-			_headerTodo = ViewContainer.Q<Label>("HeaderTodo");
-			_headerDoing = ViewContainer.Q<Label>("HeaderDoing");
-			_headerDone = ViewContainer.Q<Label>("HeaderDone");
-
-			_btnAddTodo = ViewContainer.Q<Button>("BtnAddTodo");
-			_btnAddDoing = ViewContainer.Q<Button>("BtnAddDoing");
-			_btnAddDone = ViewContainer.Q<Button>("BtnAddDone");
-
-			_btnAddTodo.clicked += () => AddNewItemToColumn(MemoStatus.Todo);
-			_btnAddDoing.clicked += () => AddNewItemToColumn(MemoStatus.Doing);
-			_btnAddDone.clicked += () => AddNewItemToColumn(MemoStatus.Done);
-
-			// Context Menu
-			_contextMenu = ViewContainer.Q("ContextMenu");
-			_btnCtxTodo = ViewContainer.Q<Button>("BtnCtxTodo");
-			_btnCtxDoing = ViewContainer.Q<Button>("BtnCtxDoing");
-			_btnCtxDone = ViewContainer.Q<Button>("BtnCtxDone");
-			_btnCtxArchive = ViewContainer.Q<Button>("BtnCtxArchive");
-			_btnCtxDelete = ViewContainer.Q<Button>("BtnCtxDelete");
-
-			_btnCtxTodo.clicked += () => OnContextAction("todo");
-			_btnCtxDoing.clicked += () => OnContextAction("doing");
-			_btnCtxDone.clicked += () => OnContextAction("done");
-			_btnCtxArchive.clicked += () => OnContextAction("archive");
-			_btnCtxDelete.clicked += () => OnContextAction("delete");
-
-			// Detail Modal
-			_detailModal = ViewContainer.Q("ProjectDetailModal");
-			_editTitle = _detailModal.Q<TextField>("EditTitle");
-			_editContent = _detailModal.Q<TextField>("EditContent");
-			_editType = _detailModal.Q<EnumField>("EditType");
-			_editStatus = _detailModal.Q<EnumField>("EditStatus");
-			_editPriority = _detailModal.Q<EnumField>("EditPriority");
-			_editDueDate = _detailModal.Q<TextField>("EditDueDate");
-			_editTags = _detailModal.Q<TextField>("EditTags");
-			_btnSaveItem = _detailModal.Q<Button>("BtnSaveProjectItem");
-			_btnDeleteItem = _detailModal.Q<Button>("BtnDeleteProjectItem");
-			_btnCloseModal = _detailModal.Q<Button>("BtnCloseModal");
-
-			_btnSaveItem.clicked += SaveSelectedItem;
-			_btnDeleteItem.clicked += DeleteSelectedItem;
-			_btnCloseModal.clicked += CloseModal;
-
-			// Initialize EnumFields
-			_editType.Init(MemoType.Task);
-			_editStatus.Init(MemoStatus.Todo);
-			_editPriority.Init(Priority.Medium);
-
 			// Close Context Menu on click outside
 			ViewContainer.RegisterCallback<PointerDownEvent>(evt =>
 			{
-				// If clicking outside context menu, close it
-				if (_contextMenu.style.display == DisplayStyle.Flex && !_contextMenu.ContainsPoint(evt.localPosition))
-				{
-					HideContextMenu();
-				}
+				ContextMenu.HideIfVisible(evt);
 			}, TrickleDown.TrickleDown);
-		}
 
-		// Context Menu Logic
-		private VisualElement _contextMenu;
-		private Button _btnCtxTodo, _btnCtxDoing, _btnCtxDone, _btnCtxArchive, _btnCtxDelete;
-		private ProjectItemData _contextItem;
-
-		public void ShowContextMenu(Vector2 mousePosition, ProjectItemData item)
-		{
-			_contextItem = item;
-			_contextMenu.style.display = DisplayStyle.Flex;
-
-			// Position menu
-			Vector2 localPos = ViewContainer.WorldToLocal(mousePosition);
-			_contextMenu.style.left = localPos.x;
-			_contextMenu.style.top = localPos.y;
-
-			// Bring to front
-			_contextMenu.BringToFront();
-		}
-
-		private void HideContextMenu()
-		{
-			_contextMenu.style.display = DisplayStyle.None;
-			_contextItem = null;
-		}
-
-		private void OnContextAction(string action)
-		{
-			if (_contextItem == null) return;
-
-			switch (action)
-			{
-				case "todo": _contextItem.Status = MemoStatus.Todo; break;
-				case "doing": _contextItem.Status = MemoStatus.Doing; break;
-				case "done": _contextItem.Status = MemoStatus.Done; break;
-				case "archive": _contextItem.Status = MemoStatus.Archive; break;
-				case "delete":
-					KarmoToysApp.Instance.Data.ProjectItems.Remove(_contextItem);
-					KarmoToysApp.Toast.Show("Item deleted 🗑️");
-					break;
-			}
-
-			if (action != "delete") KarmoToysApp.Instance.SaveData();
-
-			RefreshViews();
-			HideContextMenu();
+			SwitchView(ViewType.Table);
 		}
 
 		public override void OnSelect()
 		{
 			base.OnSelect();
-			RefreshViews();
+			CurrentView.Refresh();
 		}
-
-
-		enum ViewType { Table, Kanban, Timeline, Whiteboard }
 
 		private void SwitchView(ViewType type)
 		{
-			_tableView.style.display = type == ViewType.Table ? DisplayStyle.Flex : DisplayStyle.None;
-			_kanbanView.style.display = type == ViewType.Kanban ? DisplayStyle.Flex : DisplayStyle.None;
-			_timelineWrapper.style.display = type == ViewType.Timeline ? DisplayStyle.Flex : DisplayStyle.None;
-			_whiteboardWrapper.style.display = type == ViewType.Whiteboard ? DisplayStyle.Flex : DisplayStyle.None;
+			CurrentViewType = type;
+
+			TableFeature.SetActive(type == ViewType.Table);
+			KanbanFeature.SetActive(type == ViewType.Kanban);
+			TimelineFeature.SetActive(type == ViewType.Timeline);
+			WhiteboardFeature.SetActive(type == ViewType.Whiteboard);
 
 			_btnViewTable.EnableInClassList("selected", type == ViewType.Table);
 			_btnViewKanban.EnableInClassList("selected", type == ViewType.Kanban);
 			_btnViewTimeline.EnableInClassList("selected", type == ViewType.Timeline);
 			_btnViewWhiteboard.EnableInClassList("selected", type == ViewType.Whiteboard);
 
-			RefreshViews();
-		}
-
-		public void RefreshViews()
-		{
-			if (_tableView.resolvedStyle.display == DisplayStyle.Flex) RefreshTable();
-			else if (_kanbanView.resolvedStyle.display == DisplayStyle.Flex) RefreshKanban();
-			// Timeline refresh is handled by TimelineFeature's own logic implicitly, 
-			// or we can explicitly call it if we have reference.
-			// Currently setup: TimelineFeature is separate.
+			CurrentView.Refresh();
 		}
 	}
 }

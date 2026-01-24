@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Style src="ProjectContextMenu.uss" />
+    <ui:VisualElement name="ContextMenu" class="context-menu" style="display: none; position: absolute;">
+        <ui:Button name="BtnCtxTodo" text="Move to Todo" class="ctx-btn" />
+        <ui:Button name="BtnCtxDoing" text="Move to Doing" class="ctx-btn" />
+        <ui:Button name="BtnCtxDone" text="Move to Done" class="ctx-btn" />
+        <ui:VisualElement style="height: 1px; background-color: #444; margin: 4px 0;" />
+        <ui:Button name="BtnCtxArchive" text="Archive" class="ctx-btn" />
+        <ui:Button name="BtnCtxDelete" text="Delete" class="ctx-btn btn-danger" />
+    </ui:VisualElement>
+</ui:UXML>

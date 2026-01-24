@@ -1,13 +1,12 @@
 using UnityEngine;
 using UnityEngine.UIElements;
-using KarmoToys.Core;
 using KarmoToys.Main;
-
+using KarmoToys.Common.Data;
 
 namespace KarmoToys.Features.ProjectManager.Whiteboard
 {
 	[AddComponentMenu("KarmoToys/Features/WhiteboardFeature")]
-	public class WhiteboardFeature : FeatureBase
+	public class WhiteboardFeature : ProjectViewBase
 	{
 		public override string FeatureName => Common.Define.FeatureWhiteboard;
 		public override string TabButtonName => string.Empty; // Sub-feature of ProjectManager
@@ -16,16 +15,8 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		public override void Initialize(VisualElement root)
 		{
-			Debug.Log("[Whiteboard] Initializing...");
-			var container = root.Q("WhiteboardContainer");
-			if (container == null)
-			{
-				Debug.LogError("[Whiteboard] Container not found!");
-				return;
-			}
-
-			// Link to FeatureBase ViewContainer for standard tab switching
-			ViewContainer = container;
+			ViewContainer = root;
+			VisualElement container = root.Q("WhiteboardContainer");
 
 			// Setup Canvas Interactability
 			_canvas = container.Q("Canvas");
@@ -46,7 +37,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 		{
 			if (KarmoToysApp.Instance.Data == null || KarmoToysApp.Instance.Data.WhiteboardNodes == null) return;
 
-			foreach (var nodeData in KarmoToysApp.Instance.Data.WhiteboardNodes)
+			foreach (WhiteboardNodeData nodeData in KarmoToysApp.Instance.Data.WhiteboardNodes)
 			{
 				SpawnNodeVisual(nodeData);
 			}
@@ -73,8 +64,8 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 		private void CalculateAndSpawnNode(Vector3 containerPos)
 		{
 			// Calculation logic extracted
-			var styleTranslate = _canvas.style.translate.value;
-			var styleScale = _canvas.style.scale.value.value;
+			Translate styleTranslate = _canvas.style.translate.value;
+			Vector3 styleScale = _canvas.style.scale.value.value;
 
 			Vector3 pan = new Vector3(styleTranslate.x.value, styleTranslate.y.value, 0);
 			float scale = styleScale.x;
@@ -87,7 +78,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 
 		private void CreateNode(Vector2 position, string title = "New Note", string content = "Double-click to edit...")
 		{
-			var newData = new Common.Data.WhiteboardNodeData
+			KarmoToysApp.Instance.Data.WhiteboardNodes.Add(new WhiteboardNodeData
 			{
 				Id = System.Guid.NewGuid().ToString(),
 				Title = title,
@@ -96,32 +87,30 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 				Y = position.y,
 				Width = 200,
 				Height = 150
-			};
-
-			KarmoToysApp.Instance.Data.WhiteboardNodes.Add(newData);
+			});
 			KarmoToysApp.Instance.SaveData();
 
-			SpawnNodeVisual(newData);
+			SpawnNodeVisual(new WhiteboardNodeData
+			{
+				Id = System.Guid.NewGuid().ToString(),
+				Title = title,
+				Content = content,
+				X = position.x,
+				Y = position.y,
+				Width = 200,
+				Height = 150
+			});
 		}
 
-		private void SpawnNodeVisual(Common.Data.WhiteboardNodeData data)
+		private void SpawnNodeVisual(WhiteboardNodeData data)
 		{
-			var node = new WhiteboardNode();
-			node.Bind(null, OnNodeChanged, null, null);
-			_canvas.Add(node);
+			new WhiteboardNode().Bind(null, OnNodeChanged, null, null);
+			_canvas.Add(new WhiteboardNode());
 		}
 
 		private void OnNodeChanged()
 		{
 			KarmoToysApp.Instance.SaveData();
-		}
-
-
-		public override void OnSelect()
-		{
-			base.OnSelect();
-			Debug.Log("[Whiteboard] OnSelect called. Visibility should be Flex.");
-			// Additional initialization on show (e.g. centering view) can go here
 		}
 	}
 }

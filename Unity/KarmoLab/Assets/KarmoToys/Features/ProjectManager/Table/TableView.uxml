@@ -1,5 +1,6 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="TableView" class="view-root">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Style src="TableStyle.uss" />
+    <ui:VisualElement name="TableView" class="view-container">
         <ui:VisualElement class="table-header">
             <ui:Label name="HeaderTitle" text="Title ↕" class="table-col header-col" style="flex-grow: 1;" />
             <ui:Label name="HeaderStatus" text="Status ↕" class="table-col header-col" style="width: 80px;" />

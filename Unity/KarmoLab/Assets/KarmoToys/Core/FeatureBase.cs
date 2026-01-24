@@ -27,8 +27,6 @@ namespace KarmoToys.Core
 			if (ViewContainer != null)
 			{
 				ViewContainer.style.display = DisplayStyle.Flex;
-				// Refresh if needed
-				RefreshData();
 			}
 		}
 
@@ -39,10 +37,5 @@ namespace KarmoToys.Core
 				ViewContainer.style.display = DisplayStyle.None;
 			}
 		}
-
-		/// <summary>
-		/// Called when data needs to be refreshed
-		/// </summary>
-		protected virtual void RefreshData() { }
 	}
 }

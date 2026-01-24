@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoToys.Core;
-using KarmoToys.Features.ProjectManager.Timeline;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
-using KarmoToys.Features.Dashboard;
 
 namespace KarmoToys.Main
 {
@@ -355,9 +353,7 @@ namespace KarmoToys.Main
 					typeof(Features.LifeWeekly.LifeWeeklyFeature),
 					typeof(Features.ToolBox.ToolBoxFeature),
 					typeof(Features.Preferences.PreferencesFeature),
-					typeof(KarmoToys.Features.ProjectManager.ProjectManagerFeature),
-					typeof(Features.ProjectManager.Whiteboard.WhiteboardFeature),
-					typeof(TimelineFeature)
+					typeof(Features.ProjectManager.ProjectManagerFeature),
 				};
 
 				foreach (Type type in features)
@@ -370,7 +366,7 @@ namespace KarmoToys.Main
 				}
 
 				// Remove Companion Mode Features if they exist
-				if (TryGetComponent<Features.Companion.CompanionFeature>(out Features.Companion.CompanionFeature comp))
+				if (TryGetComponent(out Features.Companion.CompanionFeature comp))
 				{
 					DestroyImmediate(comp);
 				}

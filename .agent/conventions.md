@@ -139,6 +139,7 @@ KarmoLab/
 - **MonoBehaviour**: PascalCase, 파일명 = 클래스명
 - **에셋**: 카테고리_대상_상태 형식
 - **씬**: 의미 있는 이름 (MainMenu, GamePlay_Level01)
+- **Fast Fail 원칙**: 반드시 존재해야 하는 UI 요소(버튼, 컨테이너 등)에 대해 불필요한 null 체크를 하지 않음. 찾지 못하면 즉시 예외가 발생하도록 두어 문제를 조기에 발견하고 수정함.
 
 ---
 

@@ -1,0 +1,55 @@
+/* Modal Styles */
+.modal-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-container {
+    background-color: var(--color-bg-surface);
+    width: 500px;
+    max-height: 90%;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: var(--color-border);
+    padding: 20px;
+}
+
+.modal-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--color-border);
+}
+
+.modal-body {
+    flex-grow: 1;
+}
+
+.modal-input {
+    margin-bottom: 15px;
+}
+
+.content-editor {
+    height: 150px;
+    white-space: normal;
+}
+
+.modal-footer {
+    flex-direction: row;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top-width: 1px;
+    border-top-color: var(--color-border);
+}
+
+/* Unity Base Field Layout Fix in Modal */
+.modal-input .unity-base-field__label {
+    min-width: 80px;
+}

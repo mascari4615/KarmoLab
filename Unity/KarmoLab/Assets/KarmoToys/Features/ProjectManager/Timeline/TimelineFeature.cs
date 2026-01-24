@@ -1,16 +1,14 @@
 using System;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoToys.Core;
-using KarmoToys.Common;
 using KarmoToys.Main;
 using KarmoToys.Common.Data;
 
 namespace KarmoToys.Features.ProjectManager.Timeline
 {
 	[AddComponentMenu("KarmoToys/Features/TimelineFeature")]
-	public class TimelineFeature : FeatureBase
+	public class TimelineFeature : ProjectViewBase
 	{
 		public override string FeatureName => "Timeline";
 
@@ -32,6 +30,8 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 
 		public override void Initialize(VisualElement root)
 		{
+			ViewContainer = root;
+
 			_container = root.Q("TimelineContainer");
 			_timelineCanvas = root.Q("TimelineCanvas");
 			_timelineRuler = root.Q("TimelineRuler");
@@ -59,7 +59,7 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 			Debug.Log("[TimelineFeature] Initialized.");
 
 			// Initial Render (might be hidden, relying on GeometryChanged for actual layout-dependent render)
-			RefreshData();
+			Refresh();
 		}
 
 		private void OnWheel(WheelEvent evt)
@@ -198,6 +198,11 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 			}
 		}
 
+		public override void Refresh()
+		{
+			RenderTimeline();
+		}
+
 		private void RenderTimeline()
 		{
 			try
@@ -301,8 +306,6 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 			RenderTimeline();
 		}
 
-
-
 		private void RenderRuler()
 		{
 			float screenWidth = _timelineCanvas.resolvedStyle.width;
@@ -384,8 +387,6 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 			_timelineCanvas.Add(gridLine);
 		}
 
-
-
 		private void CreateBar(ProjectItemData item, float topPos)
 		{
 			// Parse Logic using Ticks (JsonUtility friendly)
@@ -403,7 +404,7 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 
 			float width = durationDays * _pixelsPerDay;
 
-			var bar = new TimelineItem(item);
+			TimelineItem bar = new TimelineItem(item);
 			bar.style.top = topPos + 5; // +5 padding to center in 30px row (20px height)
 			bar.style.left = startOffset;
 			bar.style.width = width;
@@ -450,7 +451,7 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 
 		private void OnAddNewItem()
 		{
-			var newItem = new ProjectItemData
+			KarmoToysApp.Instance.Data.ProjectItems.Add(new ProjectItemData
 			{
 				Id = Guid.NewGuid().ToString(),
 				Title = "New Timeline Task",
@@ -459,12 +460,10 @@ namespace KarmoToys.Features.ProjectManager.Timeline
 				StartDateTicks = DateTime.Today.Ticks,
 				DueDate = DateTime.Today.AddDays(3),
 				CreatedAtTicks = DateTime.UtcNow.Ticks
-			};
-
-			KarmoToysApp.Instance.Data.ProjectItems.Add(newItem);
+			});
 			KarmoToysApp.Instance.SaveData();
 
-			RefreshData();
+			Refresh();
 			KarmoToysApp.Toast.Show("New Task Added to Timeline 📅");
 		}
 	}

@@ -120,7 +120,7 @@ namespace KarmoToys.Features.ProjectManager.Modal
 			}
 
 			KarmoToysApp.Instance.SaveData();
-			_owner.RefreshViews();
+			_owner.CurrentView.Refresh();
 			Close();
 			KarmoToysApp.Toast.Show("Changes saved! ✨");
 		}
@@ -130,7 +130,7 @@ namespace KarmoToys.Features.ProjectManager.Modal
 			if (_selectedItem == null) return;
 			KarmoToysApp.Instance.Data.ProjectItems.Remove(_selectedItem);
 			KarmoToysApp.Instance.SaveData();
-			_owner.RefreshViews();
+			_owner.CurrentView.Refresh();
 			Close();
 			KarmoToysApp.Toast.Show("Item deleted. 🗑️");
 		}
