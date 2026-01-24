@@ -65,6 +65,7 @@ KarmoLab/
 
 - 기본 언어: 한국어
 - 어조: 간결하고 명확, 음슴체 권장
+- **미사어구 배제**: 문서 및 대화에서 실질적 내용과 무관한 수사(Flavor Text)를 사용하지 않음
 - 시간 표기: KST 기준
 
 ---
@@ -95,18 +96,16 @@ KarmoLab/
 ### 필수 문서 (프로젝트 루트)
 
 - `README.md`: 프로젝트 개요, 빌드 가이드
-- `history.md`: 주요 마일스톤 및 릴리스 내역
-- `todo.md`: 현재 작업 및 계획
+- `history.md`: 프로젝트의 모든 변경 이력 통합 관리.
+- `todo.md`: 프로젝트의 모든 작업 및 계획 통합 관리.
 
 ### 피처 단위 관리 (Features/)
 
-각 피처는 독립 폴더로 관리:
+각 피처는 독립 폴더로 관리하되, 세부 명세만 포함함:
 
 - `spec.md`: 기능 명세 및 기획
-- `history.md`: 변경 이력
-- `todo.md`: 작업 목록
-- `result-report.md`: 작업 완료 보고
-- `review-feedback.md`: PM 리뷰 결과
+- `result-report.md`: 작업 완료 보고 (필요 시)
+- `review-feedback.md`: PM 리뷰 결과 (필요 시)
 
 ### 작성 규칙
 

@@ -662,6 +662,21 @@
                 "RecurrenceRule": "",
                 "RecurrenceEnd": "",
                 "ExceptionDates": []
+            },
+            {
+                "Id": "9c28bbbe-9eea-4800-a10d-71dae93aa52a",
+                "Title": "New Event",
+                "Description": "",
+                "DateString": "2026-01-21",
+                "StartMinute": 155,
+                "EndMinute": 995,
+                "ColorIndex": 0,
+                "IsDeleted": false,
+                "DeletedTicks": 0,
+                "Tags": [],
+                "RecurrenceRule": "",
+                "RecurrenceEnd": "",
+                "ExceptionDates": []
             }
         ]
     },
@@ -678,7 +693,7 @@
         "BirthDate": "2002-10-12",
         "TargetAge": 50,
         "WeeksPerRow": 70,
-        "BlockSize": 24,
+        "BlockSize": 16,
         "ShowYearlyHighlight": false,
         "ShowCalendarYearHighlight": true,
         "ShowDecadeHighlight": false,
@@ -809,8 +824,8 @@
             "Type": 0,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639047232000000000,
-            "EndDateTicks": 639049824000000000,
+            "StartDateTicks": 639051231000000000,
+            "EndDateTicks": 639053823000000000,
             "CreatedAtTicks": 639047166891394462,
             "Tags": [],
             "Position": {
@@ -828,8 +843,8 @@
             "Type": 3,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639048096000000000,
-            "EndDateTicks": 639050688000000000,
+            "StartDateTicks": 639047343000000000,
+            "EndDateTicks": 639049935000000000,
             "CreatedAtTicks": 639048084199027891,
             "Tags": [],
             "Position": {
@@ -847,8 +862,8 @@
             "Type": 3,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639048096000000000,
-            "EndDateTicks": 639050688000000000,
+            "StartDateTicks": 639053574000000000,
+            "EndDateTicks": 639056166000000000,
             "CreatedAtTicks": 639048086511070758,
             "Tags": [],
             "Position": {
@@ -885,8 +900,8 @@
             "Type": 3,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639048096000000000,
-            "EndDateTicks": 639050688000000000,
+            "StartDateTicks": 639051222000000000,
+            "EndDateTicks": 639053814000000000,
             "CreatedAtTicks": 639048086516296971,
             "Tags": [],
             "Position": {
@@ -904,8 +919,8 @@
             "Type": 0,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639048096000000000,
-            "EndDateTicks": 639050688000000000,
+            "StartDateTicks": 639051129000000000,
+            "EndDateTicks": 639053721000000000,
             "CreatedAtTicks": 639048146074991057,
             "Tags": [],
             "Position": {
@@ -923,8 +938,8 @@
             "Type": 0,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639048096000000000,
-            "EndDateTicks": 639050688000000000,
+            "StartDateTicks": 639053661000000000,
+            "EndDateTicks": 639056253000000000,
             "CreatedAtTicks": 639048146082867232,
             "Tags": [],
             "Position": {
@@ -942,8 +957,8 @@
             "Type": 0,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639048096000000000,
-            "EndDateTicks": 639050688000000000,
+            "StartDateTicks": 639053763000000000,
+            "EndDateTicks": 639056355000000000,
             "CreatedAtTicks": 639048146084632283,
             "Tags": [],
             "Position": {
@@ -961,8 +976,8 @@
             "Type": 0,
             "Status": 0,
             "Priority": 1,
-            "StartDateTicks": 639048096000000000,
-            "EndDateTicks": 639050688000000000,
+            "StartDateTicks": 639056475000000000,
+            "EndDateTicks": 639059067000000000,
             "CreatedAtTicks": 639048146086437467,
             "Tags": [],
             "Position": {
@@ -987,6 +1002,82 @@
             "Position": {
                 "x": 0.0,
                 "y": 0.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "e9d119b5-2c8b-41e4-b2db-1687a4613abd",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639048442664635067,
+            "Tags": [],
+            "Position": {
+                "x": 49850.0,
+                "y": 50500.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "887e47c0-362c-401a-b68f-9040f09df506",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639048467461569675,
+            "Tags": [],
+            "Position": {
+                "x": 50050.0,
+                "y": 50500.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "4e44217e-d622-47df-98f7-6d06f9930e3a",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639048467503002892,
+            "Tags": [],
+            "Position": {
+                "x": 49850.0,
+                "y": 50350.0
+            },
+            "Angle": 0.0,
+            "ColorIndex": 0,
+            "MetadataJson": ""
+        },
+        {
+            "Id": "c633466b-4af1-483b-8099-3cffc01aca33",
+            "Title": "New Note",
+            "Content": "Double-click to edit...",
+            "Type": 0,
+            "Status": 0,
+            "Priority": 1,
+            "StartDateTicks": 0,
+            "EndDateTicks": 0,
+            "CreatedAtTicks": 639048467513800291,
+            "Tags": [],
+            "Position": {
+                "x": 50050.0,
+                "y": 50350.0
             },
             "Angle": 0.0,
             "ColorIndex": 0,
