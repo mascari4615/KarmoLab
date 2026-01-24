@@ -10,7 +10,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 	public class WhiteboardFeature : FeatureBase
 	{
 		public override string FeatureName => Common.Define.FeatureWhiteboard;
-		public override string TabButtonName => Common.Define.TabWhiteboard;
+		public override string TabButtonName => string.Empty; // Sub-feature of ProjectManager
 
 		private VisualElement _canvas;
 
@@ -107,7 +107,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 		private void SpawnNodeVisual(Common.Data.WhiteboardNodeData data)
 		{
 			var node = new WhiteboardNode();
-			node.Bind(data, OnNodeChanged);
+			node.Bind(null, OnNodeChanged, null, null);
 			_canvas.Add(node);
 		}
 

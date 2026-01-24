@@ -1,7 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xmlns:kt="KarmoToys.Features.ProjectManager.Whiteboard" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-	<Style src="project://database/Assets/KarmoToys/Features/ProjectManager/Whiteboard/WhiteboardStyle.uss"/>
 
-	<ui:VisualElement name="WhiteboardContainer" class="whiteboard-container" style="flex-grow: 1; width: 100%; height: 100%; background-color: #000000; display: none;">
+	<ui:VisualElement name="WhiteboardContainer" class="whiteboard-container" style="flex-grow: 1; width: 100%; height: 100%; background-color: #000000;">
 		<!-- Grid Background (Stationary, renders based on view state) -->
 		<kt:GridBackground name="GridBackground" class="grid-background" picking-mode="Ignore" />
 		

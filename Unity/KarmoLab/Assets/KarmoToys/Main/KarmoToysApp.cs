@@ -6,6 +6,7 @@ using KarmoToys.Core;
 using KarmoToys.Features.ProjectManager.Timeline;
 using KarmoToys.Common;
 using KarmoToys.Common.Data;
+using KarmoToys.Features.Dashboard;
 
 namespace KarmoToys.Main
 {
@@ -130,7 +131,7 @@ namespace KarmoToys.Main
 					camera.allowHDR = false;
 
 					// CRITICAL: Disable URP Post-Processing on Camera to preserve Alpha
-					if (camera.TryGetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>(out var camData))
+					if (camera.TryGetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>(out UnityEngine.Rendering.Universal.UniversalAdditionalCameraData camData))
 					{
 						camData.renderPostProcessing = false;
 					}
@@ -148,7 +149,14 @@ namespace KarmoToys.Main
 
 			// 2. 피처 검색 및 초기화
 			_features.Clear();
-			_features.AddRange(GetComponentsInChildren<IFeature>());
+			foreach (IFeature feature in GetComponentsInChildren<IFeature>())
+			{
+				bool isCompanion = feature is Features.Companion.CompanionFeature;
+				if (Mode == AppMode.Companion == isCompanion)
+				{
+					_features.Add(feature);
+				}
+			}
 
 			foreach (IFeature feature in _features)
 			{
@@ -322,10 +330,19 @@ namespace KarmoToys.Main
 			if (Mode == AppMode.Companion)
 			{
 				// Companion Mode: Only CompanionFeature
-				Type type = typeof(Features.Companion.CompanionFeature);
-				if (GetComponent(type) == null)
+				Type companionType = typeof(Features.Companion.CompanionFeature);
+				if (GetComponent(companionType) == null)
 				{
-					gameObject.AddComponent(type);
+					gameObject.AddComponent(companionType);
+				}
+
+				// Remove Main Mode Features if they exist
+				foreach (IFeature feature in GetComponents<IFeature>())
+				{
+					if (feature is not Features.Companion.CompanionFeature)
+					{
+						if (feature is MonoBehaviour mb) DestroyImmediate(mb);
+					}
 				}
 			}
 			else
@@ -333,7 +350,7 @@ namespace KarmoToys.Main
 				// Main Mode: Standard Features
 				Type[] features = new Type[]
 				{
-					typeof(Features.ProjectManager.Dashboard.DashboardFeature),
+					typeof(Features.Dashboard.DashboardFeature),
 					typeof(Features.Planner.PlannerFeature),
 					typeof(Features.LifeWeekly.LifeWeeklyFeature),
 					typeof(Features.ToolBox.ToolBoxFeature),
@@ -350,6 +367,12 @@ namespace KarmoToys.Main
 						gameObject.AddComponent(type);
 						Debug.Log($"[KarmoToys] Auto-added missing feature: {type.Name}");
 					}
+				}
+
+				// Remove Companion Mode Features if they exist
+				if (TryGetComponent<Features.Companion.CompanionFeature>(out Features.Companion.CompanionFeature comp))
+				{
+					DestroyImmediate(comp);
 				}
 			}
 		}

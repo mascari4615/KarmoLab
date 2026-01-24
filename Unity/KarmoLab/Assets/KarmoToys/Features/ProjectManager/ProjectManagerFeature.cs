@@ -14,8 +14,8 @@ namespace KarmoToys.Features.ProjectManager
 		public override string FeatureName => Define.FeatureProjectManager;
 		public override string TabButtonName => Define.TabProject;
 
-		private VisualElement _tableView, _kanbanView, _timelineWrapper;
-		private Button _btnViewTable, _btnViewKanban, _btnViewTimeline;
+		private VisualElement _tableView, _kanbanView, _timelineWrapper, _whiteboardWrapper;
+		private Button _btnViewTable, _btnViewKanban, _btnViewTimeline, _btnViewWhiteboard;
 		private ScrollView _tableList;
 		private ScrollView _listTodo, _listDoing, _listDone;
 		private TextField _inputNewItem;
@@ -44,15 +44,18 @@ namespace KarmoToys.Features.ProjectManager
 			// View Switcher
 			_tableView = ViewContainer.Q("TableView");
 			_kanbanView = ViewContainer.Q("KanbanView");
-            _timelineWrapper = ViewContainer.Q("TimelineWrapper");
+			_timelineWrapper = ViewContainer.Q("TimelineWrapper");
+			_whiteboardWrapper = ViewContainer.Q("WhiteboardWrapper");
 
 			_btnViewTable = ViewContainer.Q<Button>("BtnViewTable");
 			_btnViewKanban = ViewContainer.Q<Button>("BtnViewKanban");
-            _btnViewTimeline = ViewContainer.Q<Button>("BtnViewTimeline");
+			_btnViewTimeline = ViewContainer.Q<Button>("BtnViewTimeline");
+			_btnViewWhiteboard = ViewContainer.Q<Button>("BtnViewWhiteboard");
 
 			_btnViewTable.clicked += () => SwitchView(ViewType.Table);
 			_btnViewKanban.clicked += () => SwitchView(ViewType.Kanban);
-            _btnViewTimeline.clicked += () => SwitchView(ViewType.Timeline);
+			_btnViewTimeline.clicked += () => SwitchView(ViewType.Timeline);
+			_btnViewWhiteboard.clicked += () => SwitchView(ViewType.Whiteboard);
 
 			// Table View
 			_tableList = ViewContainer.Q<ScrollView>("ProjectItemList");
@@ -195,30 +198,31 @@ namespace KarmoToys.Features.ProjectManager
 			RefreshViews();
 		}
 
-        enum ViewType { Table, Kanban, Timeline }
+
+		enum ViewType { Table, Kanban, Timeline, Whiteboard }
 
 		private void SwitchView(ViewType type)
 		{
 			_tableView.style.display = type == ViewType.Table ? DisplayStyle.Flex : DisplayStyle.None;
 			_kanbanView.style.display = type == ViewType.Kanban ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_timelineWrapper != null) 
-                _timelineWrapper.style.display = type == ViewType.Timeline ? DisplayStyle.Flex : DisplayStyle.None;
+			_timelineWrapper.style.display = type == ViewType.Timeline ? DisplayStyle.Flex : DisplayStyle.None;
+			_whiteboardWrapper.style.display = type == ViewType.Whiteboard ? DisplayStyle.Flex : DisplayStyle.None;
 
 			_btnViewTable.EnableInClassList("selected", type == ViewType.Table);
 			_btnViewKanban.EnableInClassList("selected", type == ViewType.Kanban);
-            if (_btnViewTimeline != null)
-                _btnViewTimeline.EnableInClassList("selected", type == ViewType.Timeline);
+			_btnViewTimeline.EnableInClassList("selected", type == ViewType.Timeline);
+			_btnViewWhiteboard.EnableInClassList("selected", type == ViewType.Whiteboard);
 
 			RefreshViews();
 		}
 
-		private void RefreshViews()
+		public void RefreshViews()
 		{
 			if (_tableView.resolvedStyle.display == DisplayStyle.Flex) RefreshTable();
 			else if (_kanbanView.resolvedStyle.display == DisplayStyle.Flex) RefreshKanban();
-            // Timeline refresh is handled by TimelineFeature's own logic implicitly, 
-            // or we can explicitly call it if we have reference.
-            // Currently setup: TimelineFeature is separate.
+			// Timeline refresh is handled by TimelineFeature's own logic implicitly, 
+			// or we can explicitly call it if we have reference.
+			// Currently setup: TimelineFeature is separate.
 		}
 	}
 }

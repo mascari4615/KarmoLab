@@ -1,6 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <Style src="project://database/Assets/KarmoToys/Main/UI/MainStyle.uss" />
-    <Style src="project://database/Assets/KarmoToys/Features/ProjectManager/ProjectManagerStyle.uss" />
     <ui:VisualElement name="ViewProjectManager" class="planner-container">
         <!-- Compact Toolbar -->
         <ui:VisualElement class="pm-toolbar">
@@ -10,14 +8,19 @@
                 <ui:Button name="BtnViewTable" text="Table" class="btn-tab selected" />
                 <ui:Button name="BtnViewKanban" text="Kanban" class="btn-tab" />
                 <ui:Button name="BtnViewTimeline" text="Timeline" class="btn-tab" />
+                <ui:Button name="BtnViewWhiteboard" text="Whiteboard" class="btn-tab" />
             </ui:VisualElement>
         </ui:VisualElement>
         
         <ui:VisualElement name="ProjectContent" class="tab-content" style="flex-direction: row;">
             <!-- Timeline View Container (Initialized by TimelineFeature) -->
             <ui:Template name="TimelineView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Timeline/TimelineView.uxml" />
+            <ui:Template name="WhiteboardView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Whiteboard/WhiteboardView.uxml" />
             <ui:VisualElement name="TimelineWrapper" style="display: none; flex-grow: 1;">
                  <ui:Instance template="TimelineView" />
+            </ui:VisualElement>
+            <ui:VisualElement name="WhiteboardWrapper" style="display: none; flex-grow: 1;">
+                 <ui:Instance template="WhiteboardView" />
             </ui:VisualElement>
 
             <!-- Table View Container -->
