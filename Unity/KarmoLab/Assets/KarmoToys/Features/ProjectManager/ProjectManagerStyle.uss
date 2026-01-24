@@ -1,5 +1,22 @@
 .view-container {
     flex-grow: 1;
+    height: 100%;
+}
+
+/* Context-Aware Height Delegation (ProjectManager Sub-views) */
+/* Targeted height delegation within ProjectContent only */
+/* This ensures wrappers and nested templates stretch, leaving Modals unaffected */
+#ProjectContent,
+#ProjectContent > VisualElement,
+#ProjectContent TemplateContainer,
+#ProjectContent TemplateContainer > * {
+    flex-grow: 1;
+    height: 100%;
+}
+
+.tab-content {
+    flex-grow: 1;
+    height: 100%;
 }
 
 /* Shared Styles are kept here */

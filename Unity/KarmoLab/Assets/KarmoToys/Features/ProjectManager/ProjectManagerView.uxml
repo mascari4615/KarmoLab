@@ -1,5 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="ViewProjectManager" class="planner-container">
+    <ui:Style src="ProjectManagerStyle.uss" />
+    <ui:VisualElement name="ViewProjectManager" class="planner-container" style="flex-grow: 1; height: 100%;">
         <!-- Compact Toolbar -->
         <ui:VisualElement class="pm-toolbar">
             <ui:TextField name="SearchField" placeholder-text="🔍 Search..." class="pm-search" />
@@ -12,20 +13,20 @@
             </ui:VisualElement>
         </ui:VisualElement>
         
-        <ui:VisualElement name="ProjectContent" class="tab-content" style="flex-direction: row;">
-            <ui:VisualElement name="TableWrapper" style="display: flex; flex-grow: 1;">
+        <ui:VisualElement name="ProjectContent" class="tab-content">
+            <ui:VisualElement name="TableWrapper" style="display: flex;">
                 <ui:Template name="TableView" src="Table/TableView.uxml" />
                 <ui:Instance template="TableView" />
             </ui:VisualElement>
-            <ui:VisualElement name="KanbanWrapper" style="display: none; flex-grow: 1;">
+            <ui:VisualElement name="KanbanWrapper" style="display: none;">
                 <ui:Template name="KanbanView" src="Kanban/KanbanView.uxml" />
                 <ui:Instance template="KanbanView" />
             </ui:VisualElement>
-            <ui:VisualElement name="TimelineWrapper" style="display: none; flex-grow: 1;">
+            <ui:VisualElement name="TimelineWrapper" style="display: none;">
                  <ui:Template name="TimelineView" src="Timeline/TimelineView.uxml" />
                  <ui:Instance template="TimelineView" />
             </ui:VisualElement>
-            <ui:VisualElement name="WhiteboardWrapper" style="display: none; flex-grow: 1;">
+            <ui:VisualElement name="WhiteboardWrapper" style="display: none;">
                 <ui:Template name="WhiteboardView" src="Whiteboard/WhiteboardView.uxml" />
                 <ui:Instance template="WhiteboardView" />
             </ui:VisualElement>

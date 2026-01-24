@@ -24,8 +24,8 @@
 			<ui:Button name="TabPreferences" text="⚙️" class="nav-icon-btn" tooltip="설정" />
 		</ui:VisualElement>
 
-		<!-- Main Content Area -->
-		<ui:VisualElement class="content-area">
+		<!-- Right Panel -->
+		<ui:VisualElement class="right-panel">
 			<!-- Top Bar (Metadata & Tools) -->
 			<ui:VisualElement class="top-bar">
 				<ui:Label name="HeaderDateLabel" text="2026-01-19" class="header-date" style="margin-right: 15px;" />
@@ -35,16 +35,19 @@
 				<ui:Button name="BtnThemeToggle" text="◑" class="btn-icon-item" tooltip="테마 변경" />
 			</ui:VisualElement>
 
-			<!-- Feature Views -->
-			<ui:Instance template="DashboardView" />
-			<ui:Instance template="ScheduleView" />
-			<ui:Instance template="LifeWeeklyView" />
-			<ui:Instance template="ToolBoxView" />
-			<ui:Instance template="PreferencesView" />
-			<ui:Instance template="ProjectManagerView" />
+			<!-- Content Area -->
+			<ui:VisualElement class="content-area" style="flex-grow: 1; height: 100%;">
+				<!-- Feature Views -->
+				<ui:Instance template="DashboardView" />
+				<ui:Instance template="ScheduleView" />
+				<ui:Instance template="LifeWeeklyView" />
+				<ui:Instance template="ToolBoxView" />
+				<ui:Instance template="PreferencesView" />
+				<ui:Instance template="ProjectManagerView" class="stretch-container" />
 
-			<!-- Toast Container -->
-			<ui:VisualElement name="ToastContainer" style="position: absolute; right: 0; bottom: 0; padding: 20px; align-items: flex-end;" picking-mode="Ignore"/>
+				<!-- Toast Container -->
+				<ui:VisualElement name="ToastContainer" style="position: absolute; right: 0; bottom: 0; padding: 20px; align-items: flex-end;" picking-mode="Ignore"/>
+			</ui:VisualElement>
 		</ui:VisualElement>
 	</ui:VisualElement>
 </ui:UXML>

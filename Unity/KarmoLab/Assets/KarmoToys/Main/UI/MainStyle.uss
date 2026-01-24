@@ -8,6 +8,13 @@
 	background-color: var(--color-bg-base);
 	padding: 15px;
 	color: var(--color-text-main);
+	overflow: hidden;
+}
+
+/* Base stretching utility */
+.stretch-container {
+	flex-grow: 1;
+	height: 100%;
 }
 
 /* Force Font application */
@@ -546,6 +553,11 @@
 .nav-icon-btn.selected {
     background-color: var(--color-primary);
     color: white;
+}
+
+.right-panel {
+    flex-grow: 1;
+    flex-direction: column;
 }
 
 .content-area {
