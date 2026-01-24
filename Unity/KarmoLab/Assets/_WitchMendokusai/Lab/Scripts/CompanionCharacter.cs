@@ -1,6 +1,8 @@
 using UnityEngine;
 using KarmoToys.Features.Companion;
+#if UNITY_EDITOR
 using UnityEditor.Animations;
+#endif
 using System.Collections.Generic;
 using System.Linq;
 

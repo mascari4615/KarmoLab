@@ -58,6 +58,7 @@ Summary: KarmoToys 프로젝트의 기술적 히스토리, 현재 작업 및 미
 
 ### ✅ 완료 (Done: Companion)
 
+- [x] **CompanionCharacter 컴파일 에러 수정**: `UnityEditor.Animations` 참조에 전처리 가드(`#if UNITY_EDITOR`) 적용하여 빌드 에러 해결. <!-- 2026-01-24 -->
 - [x] **Companion 에디터 테스트 지원**: 빌드 없이 에디터 내 컴패니언 시뮬레이션 환경 구축. <!-- 2026-01-XX -->
 - [x] **Companion 기능 폴리싱**: 유휴 감지 (Win32 API: `GetLastInputInfo`), 타이머/스톱워치 시스템, 머리 위 HUD <!-- 2026-01-19 -->
 
