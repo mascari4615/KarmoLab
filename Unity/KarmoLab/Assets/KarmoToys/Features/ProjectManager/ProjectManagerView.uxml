@@ -32,12 +32,12 @@
             </ui:VisualElement>
         </ui:VisualElement>
         
-        <!-- Detail Editor Modal -->
-        <ui:Template name="ProjectDetailModal" src="Modal/ProjectDetailModal.uxml" />
-        <ui:Instance template="ProjectDetailModal" />
-
-        <!-- Warning: Context Menu Template is loaded but hidden by default inside the UXML itself -->
-        <ui:Template name="ContextMenu" src="ContextMenu/ProjectContextMenu.uxml" />
-        <ui:Instance template="ContextMenu" />
     </ui:VisualElement>
+
+    <!-- Detail Editor Modal & Context Menu (Moved to Root for Absolute Positioning) -->
+    <ui:Template name="ProjectDetailModal" src="Modal/ProjectDetailModal.uxml" />
+    <ui:Instance name="ProjectDetailModalInstance" template="ProjectDetailModal" picking-mode="Ignore" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0;" />
+
+    <ui:Template name="ContextMenu" src="ContextMenu/ProjectContextMenu.uxml" />
+    <ui:Instance name="ContextMenuInstance" template="ContextMenu" picking-mode="Ignore" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0;" />
 </ui:UXML>

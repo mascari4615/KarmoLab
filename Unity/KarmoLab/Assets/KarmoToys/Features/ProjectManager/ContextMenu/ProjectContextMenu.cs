@@ -11,6 +11,7 @@ namespace KarmoToys.Features.ProjectManager.ContextMenu
 		private readonly VisualElement _root;
 
 		private Button _btnCtxTodo, _btnCtxDoing, _btnCtxDone, _btnCtxArchive, _btnCtxDelete;
+		private VisualElement _menuContent;
 		private ProjectItemData _contextItem;
 
 		public ProjectContextMenu(ProjectManagerFeature owner, VisualElement root)
@@ -27,12 +28,27 @@ namespace KarmoToys.Features.ProjectManager.ContextMenu
 			_btnCtxDone = _root.Q<Button>("BtnCtxDone");
 			_btnCtxArchive = _root.Q<Button>("BtnCtxArchive");
 			_btnCtxDelete = _root.Q<Button>("BtnCtxDelete");
-		
+			_menuContent = _root.Q("ContextMenuContent");
+
 			_btnCtxTodo.clicked += () => OnContextAction("todo");
 			_btnCtxDoing.clicked += () => OnContextAction("doing");
 			_btnCtxDone.clicked += () => OnContextAction("done");
 			_btnCtxArchive.clicked += () => OnContextAction("archive");
 			_btnCtxDelete.clicked += () => OnContextAction("delete");
+
+			// 배경 클릭 시 컨텍스트 메뉴 닫기
+			_root.RegisterCallback<PointerDownEvent>(evt =>
+			{
+				if (_menuContent != null && !_menuContent.worldBound.Contains(evt.position))
+				{
+					HideContextMenu();
+					evt.StopPropagation();
+				}
+			});
+
+			// 초기 상태: 숨김 및 클릭 통과
+			_root.style.display = DisplayStyle.None;
+			_root.pickingMode = PickingMode.Ignore;
 		}
 
 		private void OnContextAction(string action)
@@ -57,19 +73,10 @@ namespace KarmoToys.Features.ProjectManager.ContextMenu
 			HideContextMenu();
 		}
 
-		public void HideIfVisible(PointerDownEvent evt)
-		{
-			// If clicking outside context menu, close it
-			if (_root.style.display == DisplayStyle.Flex &&
-				!_root.ContainsPoint(evt.localPosition))
-			{
-				HideContextMenu();
-			}
-		}
-
 		private void HideContextMenu()
 		{
 			_root.style.display = DisplayStyle.None;
+			_root.pickingMode = PickingMode.Ignore;
 			_contextItem = null;
 		}
 
@@ -77,11 +84,12 @@ namespace KarmoToys.Features.ProjectManager.ContextMenu
 		{
 			_contextItem = item;
 			_root.style.display = DisplayStyle.Flex;
+			_root.pickingMode = PickingMode.Position;
 
-			// Position menu
+			// Position menu content instead of root container
 			Vector2 localPos = _root.WorldToLocal(mousePosition);
-			_root.style.left = localPos.x;
-			_root.style.top = localPos.y;
+			_menuContent.style.left = localPos.x;
+			_menuContent.style.top = localPos.y;
 
 			_root.BringToFront();
 		}

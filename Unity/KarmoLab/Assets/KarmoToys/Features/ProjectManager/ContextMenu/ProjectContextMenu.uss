@@ -1,5 +1,6 @@
 /* Context Menu */
 .context-menu {
+    position: absolute;
     background-color: var(--color-bg-surface);
     border-width: 1px;
     border-color: var(--color-border);

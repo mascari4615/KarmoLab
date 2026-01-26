@@ -49,8 +49,8 @@ namespace KarmoToys.Features.ProjectManager
 			ViewContainer = root.Q("ViewProjectManager");
 			if (ViewContainer == null) return;
 
-			Modal = new ProjectDetailModal(this, ViewContainer.Q("ProjectDetailModal"));
-			ContextMenu = new ProjectContextMenu(this, ViewContainer.Q("ContextMenu"));
+			Modal = new ProjectDetailModal(this, root.Q("ProjectDetailModalInstance"));
+			ContextMenu = new ProjectContextMenu(this, root.Q("ContextMenuInstance"));
 
 			// View Switcher
 			TableFeature = new Table.TableFeature();
@@ -71,12 +71,6 @@ namespace KarmoToys.Features.ProjectManager
 			_btnViewKanban.clicked += () => SwitchView(ViewType.Kanban);
 			_btnViewTimeline.clicked += () => SwitchView(ViewType.Timeline);
 			_btnViewWhiteboard.clicked += () => SwitchView(ViewType.Whiteboard);
-
-			// Close Context Menu on click outside
-			ViewContainer.RegisterCallback<PointerDownEvent>(evt =>
-			{
-				ContextMenu.HideIfVisible(evt);
-			}, TrickleDown.TrickleDown);
 
 			SwitchView(ViewType.Table);
 		}
