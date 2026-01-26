@@ -2,6 +2,7 @@
 .modal-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
     justify-content: center;
     align-items: center;
@@ -10,35 +11,88 @@
 
 .modal-container {
     background-color: var(--color-bg-surface);
-    width: 500px;
+    width: 85%;
+    max-width: 1400px;
+    min-width: 700px;
     max-height: 90%;
     border-radius: 12px;
     border-width: 1px;
     border-color: var(--color-border);
-    padding: 20px;
+    padding: 24px;
 }
 
 .modal-header {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
     border-bottom-width: 1px;
     border-bottom-color: var(--color-border);
 }
 
+.header-title {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: var(--color-text-primary);
+}
+
 .modal-body {
+    flex-grow: 1;
+    flex-direction: row;
+    min-height: 500px;
+}
+
+.modal-metadata {
+    width: 320px;
+    margin-right: 24px;
+    padding-right: 24px;
+    border-right-width: 1px;
+    border-right-color: var(--color-border);
+}
+
+.modal-content-area {
     flex-grow: 1;
 }
 
-.modal-input {
-    margin-bottom: 15px;
+.modal-metadata .modal-input {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.modal-metadata .modal-input .unity-base-field__label {
+    min-width: 100px;
+    margin-bottom: 6px;
+    color: var(--color-text-secondary);
+    -unity-font-style: bold;
+}
+
+.modal-content-area {
+    flex-grow: 1;
+    padding-left: 12px;
+}
+
+.input-label {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: var(--color-text-secondary);
+    margin-bottom: 10px;
 }
 
 .content-editor {
-    height: 150px;
+    flex-grow: 1;
     white-space: normal;
+}
+
+.content-editor .unity-base-text-field__input {
+    flex-grow: 1;
+    -unity-text-align: upper-left;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 12px;
+    border-width: 1px;
+    border-color: var(--color-border);
 }
 
 .modal-footer {
@@ -50,6 +104,6 @@
 }
 
 /* Unity Base Field Layout Fix in Modal */
-.modal-input .unity-base-field__label {
-    min-width: 80px;
+.modal-input .unity-base-field__input {
+    border-radius: 4px;
 }

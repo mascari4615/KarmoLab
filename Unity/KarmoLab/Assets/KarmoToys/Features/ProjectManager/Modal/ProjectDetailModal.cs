@@ -46,7 +46,8 @@ namespace KarmoToys.Features.ProjectManager.Modal
 			_editStatus.Init(MemoStatus.Todo);
 			_editPriority.Init(Priority.Medium);
 
-			// 초기 상태: picking-mode Ignore (클릭 통과)
+			// 초기 상태: 숨김 및 클릭 통과
+			_root.style.display = DisplayStyle.None;
 			_root.pickingMode = PickingMode.Ignore;
 
 			// 배경 클릭 시 모달 닫기
