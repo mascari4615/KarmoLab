@@ -109,13 +109,35 @@ namespace KarmoToys.Main
 			VisualElement root = _uiDocument.rootVisualElement;
 			if (root == null) return;
 
-			// 0. Features Auto Addition
+			bool isCompanion = Mode == AppMode.Companion;
+
+			// 1. Add mode-based class to root (CSS control)
+			root.RemoveFromClassList("mode-main");
+			root.RemoveFromClassList("mode-companion");
+			root.AddToClassList(isCompanion ? "mode-companion" : "mode-main");
+
+			// 2. Explicit Visibility Fallback (Code control)
+			VisualElement container = root.Q("Container");
+			if (container != null)
+			{
+				container.style.display = isCompanion ? DisplayStyle.None : DisplayStyle.Flex;
+			}
+
+			VisualElement btnSettings = root.Q("BtnCompanionSettings");
+			if (btnSettings != null)
+			{
+				btnSettings.style.display = isCompanion ? DisplayStyle.Flex : DisplayStyle.None;
+			}
+
+			// Note: CompanionSettingsPanel display is managed by InteractionModule (default None)
+
+			// 3. Features Auto Addition
 			EnsureFeatures();
 
-			if (Mode == AppMode.Companion)
+			if (isCompanion)
 			{
 				// In Companion Mode, UI setup is minimal or handled by CompanionFeature
-				root.Clear();
+				// Note: root.Clear() removed to support UXML composition
 
 				// Ensure root is circular transparent
 				root.style.backgroundColor = new StyleColor(Color.clear);
@@ -149,10 +171,11 @@ namespace KarmoToys.Main
 			_features.Clear();
 			foreach (IFeature feature in GetComponentsInChildren<IFeature>())
 			{
-				bool isCompanion = feature is Features.Companion.CompanionFeature;
-				if (Mode == AppMode.Companion == isCompanion)
+				bool isCompanionFeature = feature is Features.Companion.CompanionFeature;
+				if (Mode == AppMode.Companion == isCompanionFeature)
 				{
 					_features.Add(feature);
+
 				}
 			}
 

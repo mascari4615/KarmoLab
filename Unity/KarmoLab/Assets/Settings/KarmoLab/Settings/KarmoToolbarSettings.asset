@@ -16,3 +16,5 @@ MonoBehaviour:
   TargetFolders:
   - {fileID: 102900000, guid: 573b86a5a1bac8544bb3c2df5959cb68, type: 3}
   ShowOnlyBuildSettingsScenes: 0
+  FavoriteAssets:
+  - {fileID: 11400000, guid: 11c433de3e801ac4a9575f7a95c43c18, type: 2}

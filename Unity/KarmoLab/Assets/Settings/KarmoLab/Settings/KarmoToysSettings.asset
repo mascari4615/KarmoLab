@@ -17,4 +17,5 @@ MonoBehaviour:
   DefaultStartDay: 1
   MaxBackupCount: 1000
   CompanionData: {fileID: 11400000, guid: 034b11ea7e6825e41b29a811381a70a2, type: 2}
-  SimulateCompanionMode: 0
+  DefaultAlarmClip: {fileID: 0}
+  SimulateCompanionMode: 1
