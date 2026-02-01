@@ -51,18 +51,18 @@ Summary: KarmoToys 프로젝트의 아키텍처 설계, 네이밍 컨벤션, UI 
 
 ```text
 [MainView.uxml] (Root)
- ├── Container (.root-container)
- │    ├── Sidebar Navigation (.nav-sidebar)
- │    │    ├── TabDashboard / TabProject / TabSchedule ...
- │    │
- │    └── Content Area (.content-area)
- │         ├── Top Bar (.top-bar)
- │         ├── <Instance> DashboardView
- │         └── <Instance> ProjectManagerView
- │              └── ProjectContent (.tab-content)
- │                   ├── TableWrapper / KanbanWrapper / ...
- │                   └── <Instance> ModalView / ContextMenu
- └── ToastContainer
+ ├── <Instance> KarmoToysContainer (name="KarmoToysContainer")
+ │    └── Container (.root-container .main-only)
+ │         ├── Sidebar Navigation (.nav-sidebar)
+ │         └── Right Panel (.right-panel)
+ │              ├── Top Bar (.top-bar)
+ │              └── Content Area (.content-area)
+ │                   └── <Instance> DashboardView / ProjectManagerView ...
+ ├── <Instance> CompanionContainer (name="CompanionContainer")
+ │    ├── BtnCompanionSettings (.companion-only)
+ │    └── <Instance> CompanionSettingsPanel (.companion-only)
+ └── <Instance> CommonContainer (name="CommonContainer")
+      └── ToastContainer
 ```
 
 ### 3.2. 스타일링 가이드 (Styling)
@@ -112,5 +112,22 @@ Summary: KarmoToys 프로젝트의 아키텍처 설계, 네이밍 컨벤션, UI 
   - [화이트보드 그리드 렌더링 (LOD)](./archive/whiteboard-grid-rendering.md)
 
 ---
-**최종 업데이트**: 2026-01-24
+
+## 6. UI Toolkit 현대화 (Modernization)
+
+Unity 6+ 버전의 최신 UI Toolkit 표준을 준수함.
+
+### 6.1. UXML 컴포넌트 선언
+
+- **Obsolete**: `UxmlFactory`, `UxmlTraits` 사용 금지함.
+- **Modern**: `[UxmlElement]` 및 `[UxmlAttribute]` 어노테이션 사용함.
+- 클래스는 반드시 `partial`로 선언해야 코드 생성이 정상 작동함.
+
+### 6.2. 이벤트 처리
+
+- **Obsolete**: `evt.PreventDefault()` 사용 자제함. (구버전 API임)
+- **Modern**: `evt.StopPropagation()`, `evt.StopImmediatePropagation()` 사용함. 인풋 포커스 제어가 필요한 경우 `FocusController.IgnoreEvent` 고려함.
+
+---
+**최종 업데이트**: 2026-02-01
 **작성자**: Alisa (Doll Maid Secretary)

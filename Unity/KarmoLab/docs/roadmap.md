@@ -16,6 +16,7 @@ Summary: KarmoToys 프로젝트의 기술적 히스토리, 현재 작업 및 미
 
 ### ✅ 완료 (Done: Common)
 
+- [x] **MainView UI 구조 개편**: `MainView.uxml`을 `Common`, `Companion`, `KarmoToys` 3대 컨테이너로 리팩토링하여 관심사 분리 및 유지보수성 향상. <!-- 2026-02-01 -->
 - [x] **ProjectManager 분할**: Table/Kanban/Timeline/Whiteboard 뷰를 `TableWrapper` 등의 컨테이너로 격리하고 UXML 템플릿화. `Modal` 및 `ContextMenu` UI를 독립적인 UXML/USS 파일로 분리하고 로직을 정적 프로퍼티로 개방. <!-- 2026-01-24 -->
 - [x] **Standardization**: Z-Order 기반 모달 시스템 정립 및 `xmlns:xsi` 네임스페이스 표준화. <!-- 2026-01-24 -->
 - [x] `Dashboard` 피처 독립화 및 데이터 모델 중앙화 <!-- 2026-01-24 -->
@@ -33,7 +34,6 @@ Summary: KarmoToys 프로젝트의 기술적 히스토리, 현재 작업 및 미
 ### 🚀 진행 중 (Active Tasks: Companion)
 
 - [ ] **'Companion' 네이밍 변경 고민**: 더 어울리거나 직관적인 이름 아이디에이션.
-- [ ] **타이머 및 뽀모도로**: 집중 시간 관리를 위한 타이머 시스템 및 UI 구현.
 - [ ] **상태 리포트**: 유휴 상태 복귀 시 부재 기간 활동 및 알람 요약 대사 출력.
 
 ### 📅 계획됨 (Planned: Companion)
@@ -55,9 +55,14 @@ Summary: KarmoToys 프로젝트의 기술적 히스토리, 현재 작업 및 미
 - [ ] **시선 추적 (Eye Tracking)**: 마우스 커서 위치를 따라 아바타의 눈동자나 고개가 움직임.
 - [ ] **쓰다듬기 (Petting)**: 마우스 커서를 아바타 머리 위에서 좌우로 빠르게 움직이면 '쓰다듬기'로 인식 -> 하트 파티클 방출.
 - [ ] 환경 별 변화 (시간, 요일, 모드 등)
+- [ ] 미션 (방송 미션 같은 거)
+- [ ] 망상 방송 (AI 채팅, AI 슈퍼챗/도네이션/구독/팔로우, AI 미션 등)
 
 ### ✅ 완료 (Done: Companion)
 
+- [x] **Timer 편의성**: 타이머 즉시 재시작(Reset) 버튼 추가. <!-- 2026-01-26 -->
+- [x] **Timer/Pomodoro 고도화**: 커스텀 사운드 파일(mp3/wav/ogg) 지원, 사운드 미리듣기, 분:초 단위 정밀 입력(TimePickerField). <!-- 2026-01-26 -->
+- [x] **Timer/Pomodoro MVP**: 집중 시간 관리를 위한 뽀모도로(Work/Break) 시스템 및 머리 위 HUD 구현. <!-- 2026-01-26 -->
 - [x] **CompanionCharacter 컴파일 에러 수정**: `UnityEditor.Animations` 참조에 전처리 가드(`#if UNITY_EDITOR`) 적용하여 빌드 에러 해결. <!-- 2026-01-24 -->
 - [x] **Companion 에디터 테스트 지원**: 빌드 없이 에디터 내 컴패니언 시뮬레이션 환경 구축. <!-- 2026-01-XX -->
 - [x] **Companion 기능 폴리싱**: 유휴 감지 (Win32 API: `GetLastInputInfo`), 타이머/스톱워치 시스템, 머리 위 HUD <!-- 2026-01-19 -->
