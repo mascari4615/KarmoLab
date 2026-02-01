@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" 
+         xmlns:uie="UnityEditor.UIElements" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         engine="UnityEngine.UIElements" 
+         editor="UnityEditor.UIElements" 
+         xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" 
+         editor-extension-mode="False">
+    <ui:Template name="CompanionSettingsView" src="project://database/Assets/KarmoToys/Features/Companion/CompanionSettingsView.uxml#CompanionSettingsView" />
+    <ui:Style src="project://database/Assets/KarmoToys/Features/Companion/CompanionSettingsView.uss" />
+
+	<!-- Companion Specific UI (Absolute Layers) -->
+	<ui:Button name="BtnCompanionSettings" text="⚙️" class="btn-companion-settings" />
+	<ui:Instance name="CompanionSettingsPanel" template="CompanionSettingsView" style="display: none; position: absolute;" />
+</ui:UXML>

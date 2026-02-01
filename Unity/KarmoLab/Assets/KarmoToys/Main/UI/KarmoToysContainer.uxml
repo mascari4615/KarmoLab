@@ -1,0 +1,55 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" 
+         xmlns:uie="UnityEditor.UIElements" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         engine="UnityEngine.UIElements" 
+         editor="UnityEditor.UIElements" 
+         xsi:noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" 
+         editor-extension-mode="False">
+	<ui:Template name="DashboardView" src="project://database/Assets/KarmoToys/Features/Dashboard/DashboardView.uxml#DashboardView" />
+	<ui:Template name="ScheduleView" src="project://database/Assets/KarmoToys/Features/Planner/ScheduleView.uxml#ScheduleView" />
+	<ui:Template name="LifeWeeklyView" src="project://database/Assets/KarmoToys/Features/LifeWeekly/LifeWeeklyView.uxml#LifeWeeklyView" />
+	<ui:Template name="ToolBoxView" src="project://database/Assets/KarmoToys/Features/ToolBox/ToolBoxView.uxml#ToolBoxView" />
+	<ui:Template name="PreferencesView" src="project://database/Assets/KarmoToys/Features/Preferences/PreferencesView.uxml#PreferencesView" />
+	<ui:Template name="ProjectManagerView" src="project://database/Assets/KarmoToys/Features/ProjectManager/ProjectManagerView.uxml#ProjectManagerView" />
+	<ui:Template name="WhiteboardView" src="project://database/Assets/KarmoToys/Features/ProjectManager/Whiteboard/WhiteboardView.uxml#WhiteboardView" />
+
+	<ui:VisualElement name="Container" class="root-container">
+		<!-- Sidebar Navigation -->
+		<ui:VisualElement class="nav-sidebar">
+			<ui:Label text="K" class="nav-logo" />
+
+			<ui:Button name="TabDashboard" text="📊" class="nav-icon-btn selected" tooltip="대시보드" />
+			<ui:Button name="TabProject" text="🚀" class="nav-icon-btn" tooltip="프로젝트 관리" />
+			<ui:Button name="TabSchedule" text="📅" class="nav-icon-btn" tooltip="전략 시간표" />
+			<ui:Button name="TabLifeWeekly" text="🧬" class="nav-icon-btn" tooltip="인생의 주" />
+			<ui:Button name="TabTools" text="🧰" class="nav-icon-btn" tooltip="도구함" />
+
+			<ui:VisualElement style="flex-grow: 1;" /> <!-- Spacer -->
+
+			<ui:Button name="TabPreferences" text="⚙️" class="nav-icon-btn" tooltip="설정" />
+		</ui:VisualElement>
+
+		<!-- Right Panel -->
+		<ui:VisualElement class="right-panel">
+			<!-- Top Bar (Metadata & Tools) -->
+			<ui:VisualElement class="top-bar">
+				<ui:Label name="HeaderDateLabel" text="2026-01-19" class="header-date" style="margin-right: 15px;" />
+				<ui:Label name="HeaderDDayLabel" text="D-xxx" class="header-dday" style="margin-right: 20px;" />
+
+				<ui:Button name="BtnCompanionToggle" text="👤" class="btn-icon-item" tooltip="컴패니언 소환/해제" />
+				<ui:Button name="BtnThemeToggle" text="◑" class="btn-icon-item" tooltip="테마 변경" />
+			</ui:VisualElement>
+
+			<!-- Content Area -->
+			<ui:VisualElement class="content-area" style="flex-grow: 1; height: 100%;">
+				<!-- Feature Views -->
+				<ui:Instance name="DashboardInstance" template="DashboardView" />
+				<ui:Instance name="ScheduleInstance" template="ScheduleView" />
+				<ui:Instance name="LifeWeeklyInstance" template="LifeWeeklyView" />
+				<ui:Instance name="ToolBoxInstance" template="ToolBoxView" />
+				<ui:Instance name="PreferencesInstance" template="PreferencesView" />
+				<ui:Instance name="ProjectManagerInstance" template="ProjectManagerView" class="stretch-container" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>
