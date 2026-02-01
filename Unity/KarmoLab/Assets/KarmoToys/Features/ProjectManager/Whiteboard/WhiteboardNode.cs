@@ -117,7 +117,6 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 					{
 						Debug.Log($"[WhiteboardNode] 🟢 Double Click Triggered: {label.name}");
 						StartEditing(label, onCommit, multiline);
-						evt.PreventDefault();
 						evt.StopImmediatePropagation();
 						_lastClickTime = 0;
 					}
@@ -138,8 +137,7 @@ namespace KarmoToys.Features.ProjectManager.Whiteboard
 			};
 			field.style.position = Position.Absolute;
 
-			// Layout sync
-			Rect layout = label.layout;
+			// Layout syncabel.layout;
 			field.style.left = layout.xMin;
 			field.style.top = layout.yMin;
 			field.style.width = layout.width > 0 ? layout.width : 180;
