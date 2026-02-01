@@ -88,9 +88,9 @@ namespace KarmoToys.Features.ProjectManager.Kanban
 				}
 			}
 
-			if (_headerTodo != null) _headerTodo.text = $"TODO ({countTodo})";
-			if (_headerDoing != null) _headerDoing.text = $"DOING ({countDoing})";
-			if (_headerDone != null) _headerDone.text = $"DONE ({countDone})";
+			_headerTodo.text = $"TODO ({countTodo})";
+			_headerDoing.text = $"DOING ({countDoing})";
+			_headerDone.text = $"DONE ({countDone})";
 
 			AddEmptyState(_listTodo, countTodo);
 			AddEmptyState(_listDoing, countDoing);
