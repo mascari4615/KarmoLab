@@ -25,6 +25,9 @@ namespace KarmoToys.Common
 		[Tooltip("Data for Companion Speech Bubble and Reactions")]
 		public KarmoToys.Features.Companion.CompanionTalkData CompanionData;
 
+		[Tooltip("Default Alarm Sound Clip (Editor Setting)")]
+		public AudioClip DefaultAlarmClip;
+
 		[Header("Debug Settings")]
 		[Tooltip("Check this to force Companion Mode when playing in Unity Editor")]
 		public bool SimulateCompanionMode;

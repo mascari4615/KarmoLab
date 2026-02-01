@@ -59,8 +59,8 @@ namespace KarmoToys.Features.Companion
 					// 3. Create Modules
 					_chatModule = new KarmoToys.Features.Companion.Modules.ChatModule();
 					_interactionModule = new KarmoToys.Features.Companion.Modules.InteractionModule();
-					var timeModule = new KarmoToys.Features.Companion.Modules.TimeModule();
-					var idleModule = new KarmoToys.Features.Companion.Modules.IdleMonitorModule();
+					KarmoToys.Features.Companion.Modules.TimeModule timeModule = new KarmoToys.Features.Companion.Modules.TimeModule();
+					KarmoToys.Features.Companion.Modules.IdleMonitorModule idleModule = new KarmoToys.Features.Companion.Modules.IdleMonitorModule();
 
 					// 4. Link Modules (Dependency Injection)
 					_interactionModule.SetChatModule(_chatModule);
@@ -135,7 +135,7 @@ namespace KarmoToys.Features.Companion
 			}
 
 			// Update all modules
-			foreach (var module in _modules)
+			foreach (KarmoToys.Features.Companion.Modules.ICompanionModule module in _modules)
 			{
 				module.Update();
 			}
@@ -143,7 +143,7 @@ namespace KarmoToys.Features.Companion
 
 		private void OnDestroy()
 		{
-			foreach (var module in _modules)
+			foreach (KarmoToys.Features.Companion.Modules.ICompanionModule module in _modules)
 			{
 				module.OnDestroy();
 			}

@@ -57,10 +57,10 @@ namespace KarmoToys.Features.Companion
 		}
 
 #if UNITY_EDITOR
-		[MenuItem("KarmoLab/KarmoToys/Open Companion Talk Data")]
+	[MenuItem("KarmoLab/KarmoToys/Open Companion Talk Data")]
 		public static void OpenStats()
 		{
-			var asset = Resources.Load<CompanionTalkData>("CompanionTalkData");
+			CompanionTalkData asset = Resources.Load<CompanionTalkData>("CompanionTalkData");
 			if (asset == null)
 			{
 				// Find anywhere in assets

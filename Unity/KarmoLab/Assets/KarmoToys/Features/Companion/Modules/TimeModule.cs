@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
+using System.Collections;
 using KarmoToys.Features.Companion.Data;
 
 namespace KarmoToys.Features.Companion.Modules
@@ -24,6 +26,16 @@ namespace KarmoToys.Features.Companion.Modules
 			public float ElapsedTime;
 		}
 
+		public enum PomodoroPhase { None, Work, ShortBreak, LongBreak }
+
+		public class PomodoroData
+		{
+			public PomodoroPhase Phase = PomodoroPhase.None;
+			public float RemainingTime;
+			public bool IsRunning;
+			public int CompletedCycles;
+		}
+
 		private CompanionContext _context;
 		private ChatModule _chatModule;
 
@@ -33,6 +45,7 @@ namespace KarmoToys.Features.Companion.Modules
 		private float _checkTimer;
 		private List<TimerData> _activeTimers = new();
 		private StopwatchData _stopwatch = new();
+		private PomodoroData _pomodoro = new();
 
 		private int _lastTriggeredMinute = -1; // To prevent multiple triggers in the same minute
 
@@ -89,7 +102,7 @@ namespace KarmoToys.Features.Companion.Modules
 			// 2. Update Timers
 			for (int i = _activeTimers.Count - 1; i >= 0; i--)
 			{
-				var timer = _activeTimers[i];
+				TimerData timer = _activeTimers[i];
 				if (timer.IsRunning && !timer.IsFinished)
 				{
 					timer.RemainingTime -= dt;
@@ -103,7 +116,19 @@ namespace KarmoToys.Features.Companion.Modules
 				}
 			}
 
-			// 3. Update Alarms (Low frequency check)
+			// 3. Update Pomodoro
+			if (_pomodoro.IsRunning && _pomodoro.Phase != PomodoroPhase.None)
+			{
+				_pomodoro.RemainingTime -= dt;
+				if (_pomodoro.RemainingTime <= 0)
+				{
+					_pomodoro.RemainingTime = 0;
+					_pomodoro.IsRunning = false;
+					TriggerPomodoroFinished();
+				}
+			}
+
+			// 4. Update Alarms (Low frequency check)
 			_checkTimer += dt;
 			if (_checkTimer >= 1.0f)
 			{
@@ -115,7 +140,7 @@ namespace KarmoToys.Features.Companion.Modules
 		// --- Public API for UI ---
 		public void StartTimer(float duration, string label = "Timer")
 		{
-			var timer = new TimerData
+			TimerData timer = new TimerData
 			{
 				Label = label,
 				Duration = duration,
@@ -128,11 +153,23 @@ namespace KarmoToys.Features.Companion.Modules
 
 		public void StopTimer(string id)
 		{
-			var timer = _activeTimers.Find(t => t.Id == id);
+			TimerData timer = _activeTimers.Find(t => t.Id == id);
 			if (timer != null)
 			{
 				timer.IsRunning = false;
 				_activeTimers.Remove(timer);
+			}
+		}
+
+		public void RestartTimer(string id)
+		{
+			TimerData timer = _activeTimers.Find(t => t.Id == id);
+			if (timer != null)
+			{
+				timer.RemainingTime = timer.Duration;
+				timer.IsRunning = true;
+				timer.IsFinished = false; // Reset finished state
+				Debug.Log($"[TimeModule] Restarted Timer: {timer.Label}");
 			}
 		}
 
@@ -149,6 +186,84 @@ namespace KarmoToys.Features.Companion.Modules
 
 		public float GetStopwatchTime() => _stopwatch.ElapsedTime;
 		public List<TimerData> GetTimers() => _activeTimers;
+		public PomodoroData GetPomodoro() => _pomodoro;
+
+		// --- Pomodoro Methods ---
+		public void StartPomodoro()
+		{
+			if (_pomodoro.Phase == PomodoroPhase.None)
+			{
+				SetPomodoroPhase(PomodoroPhase.Work);
+			}
+			_pomodoro.IsRunning = true;
+			Debug.Log($"[TimeModule] Pomodoro Started: {_pomodoro.Phase}");
+		}
+
+		public void PausePomodoro()
+		{
+			_pomodoro.IsRunning = false;
+		}
+
+		public void SkipPomodoro()
+		{
+			TriggerPomodoroFinished();
+		}
+
+		public void ResetPomodoro()
+		{
+			_pomodoro.IsRunning = false;
+			_pomodoro.Phase = PomodoroPhase.None;
+			_pomodoro.CompletedCycles = 0;
+			_pomodoro.RemainingTime = 0;
+		}
+
+		private void SetPomodoroPhase(PomodoroPhase phase)
+		{
+			_pomodoro.Phase = phase;
+			KarmoToys.Common.Data.CompanionData data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (data == null) return;
+
+			_pomodoro.RemainingTime = phase switch
+			{
+				PomodoroPhase.Work => data.PomodoroWorkDuration,
+				PomodoroPhase.ShortBreak => data.PomodoroShortBreakDuration,
+				PomodoroPhase.LongBreak => data.PomodoroLongBreakDuration,
+				_ => 0
+			};
+
+			// Notify
+			string msg = phase switch
+			{
+				PomodoroPhase.Work => "집중 모드 시작! 🍅",
+				PomodoroPhase.ShortBreak => "잠깐 쉬는 시간이야! ☕",
+				PomodoroPhase.LongBreak => "고생했어! 길게 쉬자! 🛀",
+				_ => ""
+			};
+			if (!string.IsNullOrEmpty(msg)) _chatModule?.ShowChat(msg, true);
+		}
+
+		private void TriggerPomodoroFinished()
+		{
+			KarmoToys.Common.Data.CompanionData data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (data == null) return;
+
+			if (_pomodoro.Phase == PomodoroPhase.Work)
+			{
+				_pomodoro.CompletedCycles++;
+				if (_pomodoro.CompletedCycles % data.PomodoroLongBreakInterval == 0)
+					SetPomodoroPhase(PomodoroPhase.LongBreak);
+				else
+					SetPomodoroPhase(PomodoroPhase.ShortBreak);
+			}
+			else
+			{
+				SetPomodoroPhase(PomodoroPhase.Work);
+			}
+
+			_pomodoro.IsRunning = true; // Auto-start next phase
+
+			PlayAlarm(data);
+		}
 
 		private void TriggerTimerFinished(TimerData timer)
 		{
@@ -173,7 +288,11 @@ namespace KarmoToys.Features.Companion.Modules
 			OnTimerFinished?.Invoke($"Finished: {timer.Label}");
 
 			// 2. Sound
-			PlayProceduralBeep(0.8f); // High volume
+			KarmoToys.Common.Data.CompanionData data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (data != null)
+			{
+				PlayAlarm(data);
+			}
 		}
 
 		public event System.Action<string> OnTimerFinished; // Important
@@ -191,7 +310,7 @@ namespace KarmoToys.Features.Companion.Modules
 			DayOfWeek currentDay = now.DayOfWeek;
 			DaysOfWeekFlags currentDayFlag = GetDayFlag(currentDay);
 
-			foreach (var alarm in _alarms)
+			foreach (KarmoToys.Features.Companion.Data.CompanionAlarmData alarm in _alarms)
 			{
 				if (!alarm.IsEnabled) continue;
 
@@ -237,6 +356,64 @@ namespace KarmoToys.Features.Companion.Modules
 			if (alarm.ShakeWindow && _context.SelectedAvatar != null)
 			{
 				// Todo: Implement shake
+			}
+		}
+
+		public void PlayAlarm(KarmoToys.Common.Data.CompanionData data)
+		{
+			// Priority 1: Custom File
+			if (!string.IsNullOrEmpty(data.CustomAlarmPath) && System.IO.File.Exists(data.CustomAlarmPath))
+			{
+				if (KarmoToys.Main.KarmoToysApp.Instance != null)
+				{
+					KarmoToys.Main.KarmoToysApp.Instance.StartCoroutine(LoadAndPlayAudio(data.CustomAlarmPath, data.AlarmVolume));
+					return;
+				}
+			}
+
+			// Priority 2: Editor Default Clip
+			KarmoToys.Common.KarmoToysSettings settings = KarmoToys.Main.KarmoToysApp.Instance?.Settings;
+			if (settings != null && settings.DefaultAlarmClip != null)
+			{
+				_audioSource.PlayOneShot(settings.DefaultAlarmClip, data.AlarmVolume);
+				return;
+			}
+
+			// Priority 3: Procedural Beep (if enabled or fallback)
+			if (data.UseBeep)
+			{
+				PlayProceduralBeep(data.AlarmVolume);
+			}
+		}
+
+		private IEnumerator LoadAndPlayAudio(string path, float volume)
+		{
+			string url = "file://" + path;
+			string ext = System.IO.Path.GetExtension(path).ToLower();
+			AudioType type = AudioType.UNKNOWN; // Default
+
+			if (ext == ".mp3") type = AudioType.MPEG;
+			else if (ext == ".wav") type = AudioType.WAV;
+			else if (ext == ".ogg") type = AudioType.OGGVORBIS;
+
+			using (UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(url, type))
+			{
+				yield return uwr.SendWebRequest();
+
+				if (uwr.result == UnityWebRequest.Result.ConnectionError || uwr.result == UnityWebRequest.Result.ProtocolError)
+				{
+					Debug.LogError($"[TimeModule] Failed to load audio: {uwr.error}");
+					// Fallback to beep
+					PlayProceduralBeep(volume);
+				}
+				else
+				{
+					AudioClip clip = DownloadHandlerAudioClip.GetContent(uwr);
+					if (clip != null)
+					{
+						_audioSource.PlayOneShot(clip, volume);
+					}
+				}
 			}
 		}
 

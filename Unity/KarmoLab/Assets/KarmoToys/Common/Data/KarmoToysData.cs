@@ -40,6 +40,17 @@ namespace KarmoToys.Common.Data
 	public class CompanionData
 	{
 		public float HudOffset = 0.2f;
+
+		// Pomodoro Settings
+		public float PomodoroWorkDuration = 25 * 60; // 25 mins
+		public float PomodoroShortBreakDuration = 5 * 60; // 5 mins
+		public float PomodoroLongBreakDuration = 15 * 60; // 15 mins
+		public int PomodoroLongBreakInterval = 4; // Cycles before long break
+
+		// Notification Settings
+		public bool UseBeep = true;
+		public float AlarmVolume = 0.5f;
+		public string CustomAlarmPath = ""; // Path to user selected audio file
 	}
 
 	[Serializable]
