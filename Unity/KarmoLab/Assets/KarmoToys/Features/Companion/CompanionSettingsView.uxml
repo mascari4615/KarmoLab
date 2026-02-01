@@ -1,0 +1,95 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xmlns:kt="KarmoToys.Common.UI" editor-extension-mode="False">
+    <ui:Style src="CompanionSettingsView.uss" />
+    <ui:VisualElement name="SettingsPanel" class="settings-panel">
+        
+        <!-- Header with Tabs -->
+        <ui:VisualElement name="Header" class="header-row">
+            <ui:Button name="TabAvatar" text="Avatar" class="tab-button" />
+            <ui:Button name="TabTime" text="Time" class="tab-button" />
+        </ui:VisualElement>
+
+        <!-- Content Container -->
+        <ui:VisualElement name="TabContent" class="tab-content">
+            
+            <!-- Avatar Tab -->
+            <ui:VisualElement name="AvatarTabContent" style="display: none;">
+                <ui:Label text="Avatar Settings" class="section-title" style="color: yellow;" />
+                <ui:Label name="AvatarTargetLabel" text="Target: None" class="info-label" style="color: cyan; margin-bottom: 10px;" />
+                
+                <ui:Label text="Scale" class="info-label" />
+                <ui:Slider name="ScaleSlider" low-value="0.1" high-value="5.0" />
+                
+                <ui:Label text="Rotation (Y)" class="info-label" style="margin-top: 10px;" />
+                <ui:Slider name="RotateSlider" low-value="0" high-value="360" />
+            </ui:VisualElement>
+
+            <!-- Time Tab -->
+            <ui:VisualElement name="TimeTabContent" style="display: none;">
+                <ui:Label text="Stopwatch &amp; Timers" class="section-title" style="color: green;" />
+                
+                <!-- Stopwatch -->
+                <ui:VisualElement class="control-row sw-container">
+                    <ui:Label name="StopwatchLabel" text="00:00" class="timer-display" />
+                    <ui:Button name="BtnStopwatchToggle" text="Start" class="action-button start-button" />
+                    <ui:Button name="BtnStopwatchReset" text="R" class="action-button reset-button" />
+                </ui:VisualElement>
+
+                <!-- Quick Timer -->
+                <ui:Label text="Quick Timer" class="info-label" style="margin-top: 15px;" />
+                <ui:VisualElement class="control-row">
+                    <ui:TextField name="TimerDurationMap" value="60" style="width: 50px;" />
+                    <ui:Button name="BtnAddTimer" text="+ Set" class="action-button" style="flex-grow: 1; margin-left: 5px;" />
+                </ui:VisualElement>
+
+                <!-- Timer List Container -->
+                <ui:VisualElement name="TimerList" style="margin-top: 5px;" />
+
+                <!-- Pomodoro -->
+                <ui:Label text="Pomodoro (Focus)" class="section-title" style="color: red; margin-top: 15px;" />
+                <ui:VisualElement class="control-row" style="margin-top: 5px;">
+                    <ui:Label name="PomodoroLabel" text="00:00" class="timer-display" style="width: 80px; font-size: 20px;" />
+                    <ui:Button name="BtnPomoToggle" text="Start" class="action-button" style="flex-grow: 1;" />
+                    <ui:Button name="BtnPomoSkip" text="⏩" class="action-button icon-button" />
+                    <ui:Button name="BtnPomoReset" text="🔄" class="action-button icon-button" />
+                </ui:VisualElement>
+                
+                <ui:Label name="PomodoroCycles" text="Cycles: 0" class="sub-label" />
+
+                <!-- Pomodoro Settings -->
+                <ui:VisualElement class="pomo-settings">
+                    <ui:Label text="Durations (Minutes)" class="sub-label" />
+                    <kt:TimePickerField name="PomoWorkDuration" label="Work" />
+                    <kt:TimePickerField name="PomoBreakDuration" label="Break" />
+                </ui:VisualElement>
+
+                <!-- Sound Settings -->
+                <ui:VisualElement class="notify-section">
+                    <ui:Label text="Sound Settings" class="section-title" style="color: yellow; font-size: 10px;" />
+                    <ui:Toggle name="BeepToggle" label="Use Beep" class="settings-toggle" />
+                    
+                    <ui:VisualElement class="control-row" style="margin-top: 2px;">
+                        <ui:Label text="Volume" class="info-label" style="width: 60px; font-size: 10px;" />
+                        <ui:Slider name="VolumeSlider" low-value="0" high-value="1" style="flex-grow: 1;" />
+                    </ui:VisualElement>
+                    
+                     <ui:VisualElement class="control-row" style="margin-top: 5px;">
+                        <ui:Label text="Custom Sound:" class="info-label" style="font-size: 10px;" />
+                        <ui:Label name="SoundPathLabel" text="Default" class="path-label" />
+                    </ui:VisualElement>
+                     <ui:VisualElement class="control-row">
+                        <ui:Button name="BtnBrowseSound" text="Browse" class="mini-button" />
+                        <ui:Button name="BtnPreviewSound" text="▶" class="mini-button" />
+                        <ui:Button name="BtnClearSound" text="X" class="mini-button" />
+                     </ui:VisualElement>
+
+                     <ui:Label text="HUD Settings" class="sub-label" style="margin-top: 10px;" />
+                     <ui:Slider name="HudHeightSlider" label="HUD Height" low-value="-0.5" high-value="1.5" />
+ 
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+            
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>
