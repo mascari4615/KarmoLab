@@ -4,6 +4,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using KarmoToys.Features.Companion;
+using KarmoToys.Common;
+using KarmoToys.Common.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace KarmoToys.Features.Companion.Modules
 {
@@ -30,14 +35,14 @@ namespace KarmoToys.Features.Companion.Modules
 		private bool _isClickThrough = false;
 
 		// Reference to ChatModule (injected or found)
-		// Reference to ChatModule (injected or found)
 		private ChatModule _chatModule;
 		private TimeModule _timeModule;
 
 		// UI State
 		private float _uiUpdateTimer;
 		private Label _lblStopwatch;
-		private VisualElement _timerListContainer; // Container that holds timer rows
+		private Label _lblPomodoro;
+		private VisualElement _timerListContainer;
 
 		// HUD Settings
 		private float _hudOffset = 0.2f;
@@ -45,7 +50,10 @@ namespace KarmoToys.Features.Companion.Modules
 		// Tab State
 		private enum SettingsTab { Avatar, Time }
 		private SettingsTab _currentTab = SettingsTab.Avatar;
-		private VisualElement _tabContentContainer;
+
+		// UXML Elements References
+		private VisualElement _avatarTabContent;
+		private VisualElement _timeTabContent;
 
 		public void Initialize(CompanionContext context)
 		{
@@ -54,38 +62,24 @@ namespace KarmoToys.Features.Companion.Modules
 			// Load Persisted Settings
 			LoadSettings();
 
-			// Init Settings UI
+			// Init Settings UI (Gear Icon)
 			InitializeSettingsButton();
 
 			// Find Avatar (Moved from Feature)
 			InitializeAvatar();
-
-			// Hook up TimeModule Events if already set (or do in Setter)
 		}
 
 		private void InitializeSettingsButton()
 		{
 			if (_context.RootUI == null) return;
 
-			Label settingsButton = new Label("⚙️")
+			// Find pre-composed button from MainView
+			_settingsButton = _context.RootUI.Q<Button>("BtnCompanionSettings");
+
+			if (_settingsButton == null)
 			{
-				name = "SettingsButton",
-				style =
-				{
-					fontSize = 40,
-					top = 20,
-					left = 20,
-					color = Color.white,
-					position = Position.Absolute,
-					cursor = new StyleCursor(StyleKeyword.Auto)
-				}
-			};
-
-			_settingsButton = settingsButton;
-			_context.RootUI.Add(settingsButton);
-
-			// Register click here to avoid re-registration issues
-			// Actually Interaction logic handles click, but UI Toolkit click is safer for static buttons
+				Debug.LogWarning("[InteractionModule] BtnCompanionSettings not found in RootUI. Composition might be missing.");
+			}
 		}
 
 		public void SetChatModule(ChatModule chatParams)
@@ -102,13 +96,14 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 		}
 
+
 		private void InitializeAvatar()
 		{
 			// Find all objects that want to handle dragging
-			var handlers = GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<IDragHandler>().ToArray();
-			List<IDragHandler> avatarHandlers = new();
+			IDragHandler[] handlers = GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<IDragHandler>().ToArray();
+			List<IDragHandler> avatarHandlers = new List<IDragHandler>();
 
-			foreach (var h in handlers)
+			foreach (IDragHandler h in handlers)
 			{
 				if (h.Dimension == InteractionDimension.ThreeD)
 					avatarHandlers.Add(h);
@@ -145,11 +140,8 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 
 			// --- CRITICAL: Apply Click-Through state BEFORE polling input ---
-			// If settings panel is open, be less aggressive with click-through?
 			bool isSettingsOpen = _settingsPanel != null;
 			bool shouldBeClickThrough = !isHovering && !_context.IsDragging && !_context.IsDragging3D;
-
-			// Force non-transparent if settings open and hovering near it? (Already handled by hoveredUI check)
 
 			if (shouldBeClickThrough != _isClickThrough)
 			{
@@ -164,19 +156,16 @@ namespace KarmoToys.Features.Companion.Modules
 			{
 				if (hoveredUI != null)
 				{
-					// Check if it's the settings button
-					if (hoveredUI == _settingsButton)
+					// Check if it's the settings button (or any of its children, e.g. the gear icon text)
+					if (_settingsButton == hoveredUI || _settingsButton.Contains(hoveredUI))
 					{
-						StartUIDrag(hoveredUI);
+						StartUIDrag(_settingsButton);
 					}
-					// For other UI elements (inside panel), we usually let UI Toolkit handle clicks.
-					// But we need to prevent 3D drag if UI is clicked.
 				}
 				else if (hovered3D != null)
 				{
 					Start3DDrag(hovered3D);
-					if (_chatModule != null)
-						_chatModule.ShowRandomChat(_context.Settings.CompanionData?.DragStartReactions);
+					_chatModule.ShowRandomChat(_context.Settings.CompanionData?.DragStartReactions);
 				}
 			}
 
@@ -196,13 +185,11 @@ namespace KarmoToys.Features.Companion.Modules
 
 				if (_context.IsDragging3D && !_hasDraggedSignificantly && _activeHandler3D != null)
 				{
-					if (_chatModule != null)
-						_chatModule.ShowRandomChat(_context.Settings.CompanionData?.ClickReactions);
+					_chatModule.ShowRandomChat(_context.Settings.CompanionData?.ClickReactions);
 				}
 				else if (_context.IsDragging3D && _hasDraggedSignificantly)
 				{
-					if (_chatModule != null)
-						_chatModule.ShowRandomChat(_context.Settings.CompanionData?.DragEndReactions);
+					_chatModule.ShowRandomChat(_context.Settings.CompanionData?.DragEndReactions);
 				}
 
 				if (_context.IsDragging3D && _activeHandler3D != null) _activeHandler3D.OnDragEnd();
@@ -226,17 +213,14 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 
 			// UI Updates (Text Only)
-			if (_settingsPanel != null && _timeModule != null)
+			_uiUpdateTimer += Time.deltaTime;
+			if (_uiUpdateTimer > 0.1f)
 			{
-				_uiUpdateTimer += Time.deltaTime;
-				if (_uiUpdateTimer > 0.1f)
-				{
-					_uiUpdateTimer = 0f;
-					RefreshSettingsUI(); // Renamed to Generic
-				}
+				_uiUpdateTimer = 0f;
+				RefreshSettingsUI();
 			}
 
-			// Overhead HUD Update (Run every frame for smooth movement, or throttle if heavy)
+			// Overhead HUD Update 
 			UpdateOverheadUI();
 		}
 
@@ -244,8 +228,6 @@ namespace KarmoToys.Features.Companion.Modules
 
 		private void CreateOverheadUI()
 		{
-			if (_overheadLabel != null) return;
-
 			_overheadLabel = new Label()
 			{
 				name = "OverheadTimeHUD",
@@ -270,32 +252,29 @@ namespace KarmoToys.Features.Companion.Modules
 		private void UpdateOverheadUI()
 		{
 			// 1. Check Requirements
-			if (_context.SelectedAvatar == null || _timeModule == null)
+			if (_context.SelectedAvatar == null)
 			{
 				if (_overheadLabel != null) _overheadLabel.style.visibility = Visibility.Hidden;
 				return;
 			}
 
-			// Ensure UI exists
-			CreateOverheadUI();
+			if (_overheadLabel == null) EnsureOverheadUI();
 
 			// 2. Gather Data
-			bool swRunning = _timeModule.GetStopwatchTime() > 0; // Simple check, ideally need IsRunning state
-																 // Better check: If stopwatch value > 0.1f. 
-																 // We need a better way to know if stopwatch is "active" vs "paused/reset".
-																 // For now, let's show if > 0.
-
-			var timers = _timeModule.GetTimers();
+			bool swRunning = _timeModule.GetStopwatchTime() > 0;
+			List<TimeModule.TimerData> timers = _timeModule.GetTimers();
 			bool timerRunning = timers.Count > 0;
+			TimeModule.PomodoroData pomo = _timeModule.GetPomodoro();
+			bool pomoRunning = pomo.Phase != TimeModule.PomodoroPhase.None;
 
-			if (!swRunning && !timerRunning)
+			if (!swRunning && !timerRunning && !pomoRunning)
 			{
 				_overheadLabel.style.visibility = Visibility.Hidden;
 				return;
 			}
 
 			// 3. compose Text
-			System.Text.StringBuilder sb = new System.Text.StringBuilder();
+			System.Text.StringBuilder sb = new();
 
 			if (swRunning)
 			{
@@ -305,15 +284,18 @@ namespace KarmoToys.Features.Companion.Modules
 
 			if (timerRunning)
 			{
-				if (swRunning) sb.Append("  |  "); // Separator
-
-				// Show shortest timer or just count?
-				// Showing the first one (most urgent usually if sorted, but List is adding order)
-				// Let's Find min time
-				var urgentTimer = timers.OrderBy(t => t.RemainingTime).First();
+				if (swRunning) sb.Append("  |  ");
+				TimeModule.TimerData urgentTimer = timers.OrderBy(t => t.RemainingTime).First();
 				sb.Append($"⏳ {urgentTimer.RemainingTime:F0}s");
-
 				if (timers.Count > 1) sb.Append($" (+{timers.Count - 1})");
+			}
+
+			if (pomo.Phase != TimeModule.PomodoroPhase.None)
+			{
+				if (swRunning || timerRunning) sb.Append("  |  ");
+				string icon = pomo.Phase == TimeModule.PomodoroPhase.Work ? "🍅" : (pomo.Phase == TimeModule.PomodoroPhase.LongBreak ? "🛀" : "☕");
+				TimeSpan ts = TimeSpan.FromSeconds(pomo.RemainingTime);
+				sb.Append($"{icon} {ts.Minutes:00}:{ts.Seconds:00}");
 			}
 
 			_overheadLabel.text = sb.ToString();
@@ -322,50 +304,50 @@ namespace KarmoToys.Features.Companion.Modules
 			// 4. Update Position
 			if (Camera.main != null)
 			{
-				// Get Head Position (Approximate via Collider bounds or Transform + Offset)
-				Vector3 worldPos = _context.SelectedAvatar.Transform.position;
-
-				// Try to find height
-				float height = 1.8f; // Default human height
-				var col = _context.SelectedAvatar.Transform.GetComponentInChildren<Collider>();
-				if (col != null) height = col.bounds.max.y - _context.SelectedAvatar.Transform.position.y;
+				// Get Head Position
+				Vector3 worldPos;
+				if (_context.SelectedAvatar is CompanionCharacter cc)
+				{
+					worldPos = cc.GetHeadPosition();
+				}
+				else
+				{
+					// Fallback
+					float height = 1.8f; // Default human height
+					Collider col = _context.SelectedAvatar.Transform.GetComponentInChildren<Collider>();
+					if (col != null) height = col.bounds.max.y - _context.SelectedAvatar.Transform.position.y;
+					worldPos = _context.SelectedAvatar.Transform.position + Vector3.up * height;
+				}
 
 				// Add offset
-				worldPos.y += height + _hudOffset; // Floating above head
+				worldPos.y += _hudOffset;
 
 				Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
 
-				// Check if behind camera
 				if (screenPos.z < 0)
 				{
 					_overheadLabel.style.visibility = Visibility.Hidden;
 				}
 				else
 				{
-					// Convert Screen Space to UI Toolkit Panel Space
-					// UI Toolkit coordinates match Screen coordinates (0,0 is top-left usually, but Unity Screen is bottom-left)
-					// Warning: Runtime UI Toolkit PanelSettings matchScreenSize might affect this.
-
-					// Assuming PanelSettings is set to Scale With Screen Size or similar, we might need adjustments.
-					// But for Screen Space Overlay, simple conversion usually works if we flip Y.
-
 					float panelHeight = _context.ViewContainer.layout.height;
-					// If layout hasn't calculated yet, this might be 0.
 					if (float.IsNaN(panelHeight) || panelHeight == 0) panelHeight = Screen.height;
 
-					// Screen.height - sc.y is standard conversion for UIElements (Top-Left origin) vs Unity Screen (Bottom-Left)
 					float uiX = screenPos.x;
 					float uiY = Screen.height - screenPos.y;
 
-					// Center alignment adjustment
 					float labelWidth = _overheadLabel.layout.width;
 					float labelHeight = _overheadLabel.layout.height;
 
-					// Apply
 					_overheadLabel.style.left = uiX - (labelWidth / 2);
 					_overheadLabel.style.top = uiY - (labelHeight / 2);
 				}
 			}
+		}
+
+		private void EnsureOverheadUI()
+		{
+			if (_overheadLabel == null) CreateOverheadUI();
 		}
 
 		public void OnDestroy()
@@ -376,7 +358,7 @@ namespace KarmoToys.Features.Companion.Modules
 			if (_overheadLabel != null) _overheadLabel.RemoveFromHierarchy();
 		}
 
-		// --- Helpers (Raycast, Drag Logic, SettingsPanel) ---
+		// --- Helpers (Raycast, Drag Logic) ---
 
 		private GameObject Perform3DRaycast()
 		{
@@ -480,250 +462,270 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 		}
 
+		private bool _isSettingsBound = false;
+
 		private void ToggleSettingsPanel(VisualElement root)
 		{
-			if (_settingsPanel != null)
+			if (_settingsPanel == null)
 			{
-				root.Remove(_settingsPanel);
-				_settingsPanel = null;
+				_settingsPanel = root.Q<VisualElement>("CompanionSettingsPanel");
+			}
+
+			if (_settingsPanel == null)
+			{
+				Debug.LogError("[InteractionModule] CompanionSettingsPanel not found in RootUI!");
 				return;
 			}
 
-			float panelTop = 80;
-			float panelLeft = 20;
+			bool isVisible = _settingsPanel.style.display == DisplayStyle.Flex;
 
-			if (_settingsButton != null)
+			if (isVisible)
 			{
-				panelTop = _settingsButton.resolvedStyle.top + _settingsButton.resolvedStyle.height + 10;
-				panelLeft = _settingsButton.resolvedStyle.left;
+				_settingsPanel.style.display = DisplayStyle.None;
+			}
+			else
+			{
+				_settingsPanel.style.display = DisplayStyle.Flex;
+
+				// Position panel below button
+				float panelTop = _settingsButton.resolvedStyle.top + _settingsButton.resolvedStyle.height + 10;
+				float panelLeft = _settingsButton.resolvedStyle.left;
+
+				_settingsPanel.style.top = panelTop;
+				_settingsPanel.style.left = panelLeft;
+
+				// Bind only once
+				if (!_isSettingsBound)
+				{
+					BindUIElements();
+					_isSettingsBound = true;
+				}
+
+				UpdateTabDisplay();
+			}
+		}
+
+		private void BindUIElements()
+		{
+			if (_settingsPanel == null) return;
+
+			// 1. Tabs
+			_settingsPanel.Q<Button>("TabAvatar")?.RegisterCallback<ClickEvent>(evt => { _currentTab = SettingsTab.Avatar; UpdateTabDisplay(); });
+			_settingsPanel.Q<Button>("TabTime")?.RegisterCallback<ClickEvent>(evt => { _currentTab = SettingsTab.Time; UpdateTabDisplay(); });
+
+			_avatarTabContent = _settingsPanel.Q<VisualElement>("AvatarTabContent");
+			_timeTabContent = _settingsPanel.Q<VisualElement>("TimeTabContent");
+
+			// 2. Avatar Settings
+			BindAvatarSettings();
+
+			// 3. Time Settings
+			BindTimeSettings();
+
+			// 4. Other Settings
+			BindOtherSettings();
+		}
+
+		private void BindAvatarSettings()
+		{
+			Label targetLabel = _settingsPanel.Q<Label>("AvatarTargetLabel");
+			if (targetLabel != null && _context.SelectedAvatar != null)
+			{
+				targetLabel.text = $"Target: {_context.SelectedAvatar.Transform.name}";
 			}
 
-			_settingsPanel = new VisualElement
+			Slider scaleSlider = _settingsPanel.Q<Slider>("ScaleSlider");
+			if (scaleSlider != null && _context.SelectedAvatar != null)
 			{
-				name = "SettingsPanel",
-				style =
+				scaleSlider.value = _context.SelectedAvatar.Transform.localScale.x;
+				scaleSlider.RegisterValueChangedCallback(evt =>
 				{
-					backgroundColor = new Color(0, 0, 0, 0.9f),
-					paddingTop = 10, paddingBottom = 10, paddingLeft = 10, paddingRight = 10,
-					borderTopLeftRadius = 10, borderTopRightRadius = 10,
-					borderBottomLeftRadius = 10, borderBottomRightRadius = 10,
-					position = Position.Absolute,
-					top = panelTop, left = panelLeft,
-					width = 280
-				}
+					if (_context.SelectedAvatar != null)
+						_context.SelectedAvatar.Transform.localScale = Vector3.one * evt.newValue;
+				});
+			}
+
+			Slider rotateSlider = _settingsPanel.Q<Slider>("RotateSlider");
+			if (rotateSlider != null && _context.SelectedAvatar != null)
+			{
+				rotateSlider.value = _context.SelectedAvatar.Transform.localEulerAngles.y;
+				rotateSlider.RegisterValueChangedCallback(evt =>
+				{
+					if (_context.SelectedAvatar != null)
+					{
+						Vector3 rot = _context.SelectedAvatar.Transform.localEulerAngles;
+						rot.y = evt.newValue;
+						_context.SelectedAvatar.Transform.localEulerAngles = rot;
+					}
+				});
+			}
+		}
+
+		private void BindTimeSettings()
+		{
+			// Stopwatch
+			_lblStopwatch = _settingsPanel.Q<Label>("StopwatchLabel");
+			Button btnSwToggle = _settingsPanel.Q<Button>("BtnStopwatchToggle");
+			Button btnSwReset = _settingsPanel.Q<Button>("BtnStopwatchReset");
+
+			if (btnSwToggle != null)
+			{
+				btnSwToggle.clicked += () =>
+				{
+					bool currentlyRunning = btnSwToggle.text == "Stop";
+					_timeModule.ToggleStopwatch(!currentlyRunning);
+					btnSwToggle.text = currentlyRunning ? "Start" : "Stop";
+
+					// Reactions
+					if (!currentlyRunning) _chatModule?.ShowChat("시작! 집중해! 👀");
+					else _chatModule?.ShowChat("수고했어! 🍵");
+				};
+			}
+			if (btnSwReset != null)
+			{
+				btnSwReset.clicked += () =>
+				{
+					_timeModule.ResetStopwatch();
+					if (btnSwToggle != null) btnSwToggle.text = "Start";
+					_chatModule?.ShowChat("리셋 완료! 🔄");
+				};
+			}
+
+			// Quick Timer
+			TextField txtDur = _settingsPanel.Q<TextField>("TimerDurationMap");
+			Button btnAddTimer = _settingsPanel.Q<Button>("BtnAddTimer");
+
+			// Bind Timer List Container from UXML
+			_timerListContainer = _settingsPanel.Q<VisualElement>("TimerList");
+
+			if (btnAddTimer != null && txtDur != null)
+			{
+				btnAddTimer.clicked += () =>
+				{
+					if (float.TryParse(txtDur.value, out float d))
+					{
+						_timeModule.StartTimer(d);
+						_chatModule?.ShowChat($"{d:F0}초 뒤에 알려줄게!");
+						RefreshSettingsUI(); // Immediate update
+					}
+				};
+			}
+
+			// Pomodoro
+			_lblPomodoro = _settingsPanel.Q<Label>("PomodoroLabel");
+			Button btnPomoToggle = _settingsPanel.Q<Button>("BtnPomoToggle");
+			Button btnPomoSkip = _settingsPanel.Q<Button>("BtnPomoSkip");
+			Button btnPomoReset = _settingsPanel.Q<Button>("BtnPomoReset");
+
+			if (btnPomoToggle != null)
+			{
+				// Sync Initial State
+				btnPomoToggle.text = _timeModule.GetPomodoro().IsRunning ? "Pause" : "Start";
+
+				btnPomoToggle.clicked += () =>
+				{
+					TimeModule.PomodoroData p = _timeModule.GetPomodoro();
+					if (p.IsRunning) _timeModule.PausePomodoro();
+					else _timeModule.StartPomodoro();
+					btnPomoToggle.text = _timeModule.GetPomodoro().IsRunning ? "Pause" : "Start";
+				};
+			}
+
+			if (btnPomoSkip != null) btnPomoSkip.clicked += () => _timeModule.SkipPomodoro();
+			if (btnPomoReset != null) btnPomoReset.clicked += () =>
+			{
+				_timeModule.ResetPomodoro();
+				if (btnPomoToggle != null) btnPomoToggle.text = "Start";
 			};
 
-			// Header with Tabs
-			VisualElement header = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 10, justifyContent = Justify.SpaceBetween } };
-
-			// Tab Buttons
-			header.Add(CreateTabButton("Avatar", SettingsTab.Avatar));
-			header.Add(CreateTabButton("Time", SettingsTab.Time));
-
-			_settingsPanel.Add(header);
-
-			// Content Container
-			_tabContentContainer = new VisualElement { name = "TabContent" };
-			_settingsPanel.Add(_tabContentContainer);
-
-			root.Add(_settingsPanel);
-
-			// Render Initial Tab
-			RenderCurrentTab();
-		}
-
-		private Button CreateTabButton(string text, SettingsTab tab)
-		{
-			Button btn = new Button(() =>
+			// Pomodoro Durations (TimePickerField)
+			KarmoToys.Common.Data.CompanionData data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (data != null)
 			{
-				_currentTab = tab;
-				RenderCurrentTab();
-			})
-			{ text = text };
+				TimePickerField workPicker = _settingsPanel.Q<TimePickerField>("PomoWorkDuration");
+				if (workPicker != null)
+				{
+					workPicker.SetValueWithoutNotify(data.PomodoroWorkDuration);
+					workPicker.OnValueChanged += (float val) => { data.PomodoroWorkDuration = val; SaveSettings(); };
+				}
 
-			// Style (Simple)
-			btn.style.flexGrow = 1;
-			btn.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
-			btn.style.color = Color.white;
-			btn.style.borderRightWidth = 0; btn.style.borderLeftWidth = 0; btn.style.borderTopWidth = 0; btn.style.borderBottomWidth = 0;
-
-			// Highlight current? (Will be refreshed in RenderCurrentTab if we want, or just simple logic)
-
-			return btn;
-		}
-
-		private void RenderCurrentTab()
-		{
-			if (_tabContentContainer == null) return;
-			_tabContentContainer.Clear();
-
-			switch (_currentTab)
-			{
-				case SettingsTab.Avatar:
-					BuildAvatarTab(_tabContentContainer);
-					break;
-				case SettingsTab.Time:
-					BuildTimeTab(_tabContentContainer);
-					// Important: Reset UI references that need updates
-					_timerListContainer = _tabContentContainer.Q<VisualElement>("TimerList");
-					_lblStopwatch = _tabContentContainer.Q<Label>("StopwatchLabel");
-					break;
+				TimePickerField breakPicker = _settingsPanel.Q<TimePickerField>("PomoBreakDuration");
+				if (breakPicker != null)
+				{
+					breakPicker.SetValueWithoutNotify(data.PomodoroShortBreakDuration);
+					breakPicker.OnValueChanged += (float val) => { data.PomodoroShortBreakDuration = val; SaveSettings(); };
+				}
 			}
 		}
 
-		private void BuildAvatarTab(VisualElement parent)
+		private void BindOtherSettings()
 		{
-			parent.Add(new Label("Avatar Settings") { style = { color = Color.yellow, marginTop = 5, unityFontStyleAndWeight = FontStyle.Bold } });
-
-			if (_context.SelectedAvatar == null)
+			// Sounds
+			KarmoToys.Common.Data.CompanionData compData = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (compData != null)
 			{
-				parent.Add(new Label("No Avatar Selected") { style = { color = Color.gray } });
-				return;
-			}
-
-			// Info
-			parent.Add(new Label($"Target: {_context.SelectedAvatar.Transform.name}") { style = { fontSize = 12, marginBottom = 10, color = Color.cyan } });
-
-			// Scale
-			parent.Add(new Label("Scale") { style = { fontSize = 12, color = Color.white } });
-			Slider scaleSlider = new Slider(0.1f, 5.0f) { value = _context.SelectedAvatar.Transform.localScale.x };
-			scaleSlider.RegisterValueChangedCallback((ChangeEvent<float> evt) =>
-			{
-				if (_context.SelectedAvatar != null) _context.SelectedAvatar.Transform.localScale = Vector3.one * evt.newValue;
-			});
-			parent.Add(scaleSlider);
-
-			// Rotation
-			parent.Add(new Label("Rotation (Y)") { style = { fontSize = 12, color = Color.white, marginTop = 10 } });
-			Slider rotateSlider = new Slider(0f, 360f) { value = _context.SelectedAvatar.Transform.localEulerAngles.y };
-			rotateSlider.RegisterValueChangedCallback((ChangeEvent<float> evt) =>
-			{
-				if (_context.SelectedAvatar != null)
+				Toggle beepToggle = _settingsPanel.Q<Toggle>("BeepToggle");
+				if (beepToggle != null)
 				{
-					Vector3 rot = _context.SelectedAvatar.Transform.localEulerAngles;
-					rot.y = evt.newValue;
-					_context.SelectedAvatar.Transform.localEulerAngles = rot;
+					beepToggle.value = compData.UseBeep;
+					beepToggle.RegisterValueChangedCallback(evt => { compData.UseBeep = evt.newValue; SaveSettings(); });
 				}
-			});
-			parent.Add(rotateSlider);
+
+				Slider volSlider = _settingsPanel.Q<Slider>("VolumeSlider");
+				if (volSlider != null)
+				{
+					volSlider.value = compData.AlarmVolume;
+					volSlider.RegisterValueChangedCallback(evt => { compData.AlarmVolume = evt.newValue; SaveSettings(); });
+				}
+
+				Label pathLabel = _settingsPanel.Q<Label>("SoundPathLabel");
+				if (pathLabel != null)
+				{
+					pathLabel.text = string.IsNullOrEmpty(compData.CustomAlarmPath) ? "Default Beep/Clip" : System.IO.Path.GetFileName(compData.CustomAlarmPath);
+					pathLabel.tooltip = compData.CustomAlarmPath;
+				}
+
+				_settingsPanel.Q<Button>("BtnBrowseSound")?.RegisterCallback<ClickEvent>(evt =>
+				{
+					// File Browser Logic
+					string path = "";
+#if UNITY_EDITOR
+					path = EditorUtility.OpenFilePanel("Select Alarm Sound", "", "mp3,wav,ogg");
+#else
+					// TODO: Implement Runtime File Browser or use built-in if available
+#endif
+					if (!string.IsNullOrEmpty(path))
+					{
+						compData.CustomAlarmPath = path;
+						if (beepToggle != null) beepToggle.value = false;
+						compData.UseBeep = false;
+						if (pathLabel != null) pathLabel.text = System.IO.Path.GetFileName(path);
+						SaveSettings();
+					}
+				});
+
+				_settingsPanel.Q<Button>("BtnClearSound")?.RegisterCallback<ClickEvent>(evt =>
+				{
+					compData.CustomAlarmPath = "";
+					if (pathLabel != null) pathLabel.text = "Default Beep/Clip";
+					SaveSettings();
+				});
+
+				_settingsPanel.Q<Button>("BtnPreviewSound")?.RegisterCallback<ClickEvent>(evt => _timeModule.PlayAlarm(compData));
+
+				Slider hudSlider = _settingsPanel.Q<Slider>("HudHeightSlider");
+				if (hudSlider != null)
+				{
+					hudSlider.value = _hudOffset;
+					hudSlider.RegisterValueChangedCallback(evt => { _hudOffset = evt.newValue; SaveSettings(); });
+				}
+			}
 		}
 
-		private void BuildTimeTab(VisualElement parent)
+		private void UpdateTabDisplay()
 		{
-			if (_timeModule == null)
-			{
-				parent.Add(new Label("Time Module Not Loaded") { style = { color = Color.red } });
-				return;
-			}
-
-			parent.Add(new Label("Stopwatch & Timers") { style = { color = Color.green, marginTop = 5, unityFontStyleAndWeight = FontStyle.Bold } });
-
-			// Stopwatch Row
-			VisualElement swRow = new VisualElement();
-			swRow.style.flexDirection = FlexDirection.Row;
-			swRow.style.alignItems = Align.Center;
-			swRow.style.marginTop = 10;
-			swRow.style.backgroundColor = new Color(0.1f, 0.1f, 0.1f);
-			swRow.style.paddingLeft = 5;
-			swRow.style.paddingRight = 5;
-			swRow.style.paddingTop = 5;
-			swRow.style.paddingBottom = 5;
-			swRow.style.borderBottomLeftRadius = 5;
-			swRow.style.borderBottomRightRadius = 5;
-			swRow.style.borderTopLeftRadius = 5;
-			swRow.style.borderTopRightRadius = 5;
-
-			Label lblSw = new Label("00:00")
-			{
-				name = "StopwatchLabel",
-				style = { color = Color.white, fontSize = 24, unityFontStyleAndWeight = FontStyle.Bold, width = 100 }
-			};
-			swRow.Add(lblSw);
-
-			// Buttons
-			Button btnToggle = new Button();
-			btnToggle.text = "Start";
-			btnToggle.name = "BtnStopwatchToggle";
-			btnToggle.style.width = 60;
-			btnToggle.style.height = 30;
-			btnToggle.style.backgroundColor = new Color(0, 0.5f, 0);
-
-			// Click handler
-			btnToggle.clicked += () =>
-			{
-				bool currentlyRunning = btnToggle.text == "Stop";
-				_timeModule.ToggleStopwatch(!currentlyRunning);
-
-				// Immediate visual feedback
-				btnToggle.text = currentlyRunning ? "Start" : "Stop";
-				lblSw.name = currentlyRunning ? "Paused" : "Running"; // Used for state tracking
-
-				// MDD Reaction 🌸
-				if (!currentlyRunning) // Starting
-				{
-					string[] startMsg = { "시작! 집중해! 👀", "파이팅! 지켜볼게!", "기록 시작! 달리자! 🏃‍♀️" };
-					_chatModule?.ShowChat(startMsg[UnityEngine.Random.Range(0, startMsg.Length)]);
-				}
-				else // Stopping
-				{
-					string[] stopMsg = { "수고했어! 🍵", "기록은 어때?", "잠깐 쉬는거야?" };
-					_chatModule?.ShowChat(stopMsg[UnityEngine.Random.Range(0, stopMsg.Length)]);
-				}
-			};
-			btnToggle.style.backgroundColor = new Color(0, 0.5f, 0); // Correct style application logic
-			btnToggle.style.width = 60;
-			btnToggle.style.height = 30;
-			swRow.Add(btnToggle);
-
-			Button btnReset = new Button(() =>
-			{
-				_timeModule.ResetStopwatch();
-				lblSw.text = "00:00";
-				btnToggle.text = "Start";
-				lblSw.name = "Reset";
-				_chatModule?.ShowChat("리셋 완료! 다시 해볼까? 🔄");
-			})
-			{ text = "R", style = { width = 30, height = 30, marginLeft = 5, backgroundColor = new Color(0.5f, 0, 0) } };
-			swRow.Add(btnReset);
-
-			parent.Add(swRow);
-
-			// --- Timer ---
-			parent.Add(new Label("Quick Timer") { style = { color = Color.white, marginTop = 15, fontSize = 12 } });
-			VisualElement timerRow = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
-			TextField txtDur = new TextField { value = "60", style = { width = 50 } };
-			timerRow.Add(txtDur);
-
-			Button btnAddTimer = new Button(() =>
-			{
-				if (float.TryParse(txtDur.value, out float d))
-				{
-					_timeModule.StartTimer(d);
-					// Rebuild list will happen in Refresh
-					// ShowToast($"Timer connected: {d}s"); // REmoved to avoid confusion
-
-					// MDD Reaction 🌸
-					string[] setMsg = { $"{d:F0}초 뒤에 알려줄게!", "타이머 설정 완료! 👌", "절대 안 까먹을게!" };
-					_chatModule?.ShowChat(setMsg[UnityEngine.Random.Range(0, setMsg.Length)]);
-				}
-			})
-			{ text = "+ Set", style = { flexGrow = 1, marginLeft = 5 } };
-			timerRow.Add(btnAddTimer);
-			parent.Add(timerRow);
-
-			// HUD Settings Section
-			VisualElement hudSection = new VisualElement { style = { marginTop = 15, borderTopWidth = 1, borderTopColor = new Color(0.3f, 0.3f, 0.3f), paddingTop = 5 } };
-			hudSection.Add(new Label("HUD Height Adjustment") { style = { color = Color.gray, fontSize = 10 } });
-
-			Slider offsetSlider = new Slider(-0.5f, 1.5f) { value = _hudOffset };
-			offsetSlider.RegisterValueChangedCallback(evt =>
-			{
-				_hudOffset = evt.newValue;
-				SaveSettings();
-			});
-			hudSection.Add(offsetSlider);
-
-			parent.Add(hudSection);
+			if (_avatarTabContent != null) _avatarTabContent.style.display = (_currentTab == SettingsTab.Avatar) ? DisplayStyle.Flex : DisplayStyle.None;
+			if (_timeTabContent != null) _timeTabContent.style.display = (_currentTab == SettingsTab.Time) ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
 		private void LoadSettings()
@@ -749,6 +751,7 @@ namespace KarmoToys.Features.Companion.Modules
 			// Only update if Time Tab is active
 			if (_currentTab != SettingsTab.Time) return;
 			if (_timeModule == null) return;
+			if (_settingsPanel == null) return;
 
 			// 1. Update Stopwatch Text
 			if (_lblStopwatch != null)
@@ -758,23 +761,42 @@ namespace KarmoToys.Features.Companion.Modules
 				_lblStopwatch.text = string.Format("{0:00}:{1:00}", ts.Minutes, ts.Seconds);
 			}
 
-			// 2. Update Timer List (Without full rebuild if possible, but full rebuild of list is okay for small item counts)
+			// 2. Update Pomodoro
+			if (_lblPomodoro != null)
+			{
+				TimeModule.PomodoroData p = _timeModule.GetPomodoro();
+				TimeSpan ts = TimeSpan.FromSeconds(p.RemainingTime);
+				string phaseName = p.Phase switch
+				{
+					TimeModule.PomodoroPhase.Work => "Work",
+					TimeModule.PomodoroPhase.ShortBreak => "Break",
+					TimeModule.PomodoroPhase.LongBreak => "Long Break",
+					_ => "Idle"
+				};
+				_lblPomodoro.text = $"{ts.Minutes:00}:{ts.Seconds:00}";
+
+				Label cyclesLabel = _settingsPanel.Q<Label>("PomodoroCycles");
+				if (cyclesLabel != null) cyclesLabel.text = $"Phase: {phaseName} | Cycles: {p.CompletedCycles}";
+			}
+
+			// 3. Update Timer List
 			// Optimizaion: Only rebuild if count changes to avoid button flicker?
-			// For now, let's do a partial update strategy: 
-			// Check existing children vs TimeModule active timers.
 			if (_timerListContainer != null)
 			{
-				var timers = _timeModule.GetTimers();
+				List<TimeModule.TimerData> timers = _timeModule.GetTimers();
 				int childCount = _timerListContainer.childCount;
 
-				// Simple approach: Clear and rebuild ONLY if count differs. 
-				// Otherwise just update text.
-				// (This assumes order doesn't change, which is true for List usually)
+				// Check count AND if the row structure is correct (must have 3 children: Label, Reset, Kill)
+				bool needsRebuild = childCount != timers.Count;
+				if (!needsRebuild && childCount > 0)
+				{
+					if (_timerListContainer[0].childCount != 3) needsRebuild = true;
+				}
 
-				if (childCount != timers.Count)
+				if (needsRebuild)
 				{
 					_timerListContainer.Clear();
-					foreach (var timer in timers)
+					foreach (TimeModule.TimerData timer in timers)
 					{
 						VisualElement row = new VisualElement();
 						row.style.flexDirection = FlexDirection.Row;
@@ -794,6 +816,14 @@ namespace KarmoToys.Features.Companion.Modules
 						{ text = "x", style = { width = 20, height = 18, fontSize = 10, backgroundColor = Color.gray } };
 
 						row.Add(lbl);
+
+						Button restartBtn = new Button { text = "↺", tooltip = "Restart", style = { width = 20, height = 18, fontSize = 10, marginRight = 2, backgroundColor = new Color(0.2f, 0.4f, 0.2f) } };
+						restartBtn.clicked += () =>
+						{
+							if (_timeModule != null) _timeModule.RestartTimer(timer.Id);
+						};
+						row.Add(restartBtn);
+
 						row.Add(btnKill);
 						_timerListContainer.Add(row);
 					}
@@ -804,9 +834,9 @@ namespace KarmoToys.Features.Companion.Modules
 				{
 					if (i < _timerListContainer.childCount)
 					{
-						var row = _timerListContainer[i];
-						var label = row.Q<Label>();
-						var timer = timers[i];
+						VisualElement row = _timerListContainer[i];
+						Label label = row.Q<Label>();
+						TimeModule.TimerData timer = timers[i];
 						if (label != null)
 						{
 							label.text = $"{timer.Label}: {timer.RemainingTime:F0}s";
@@ -839,11 +869,6 @@ namespace KarmoToys.Features.Companion.Modules
 					translate = new Translate(Length.Percent(-50), Length.Percent(-50), 0)
 				}
 			};
-
-			// Center logic is handled by top/left/translate
-			// toast.style.marginLeft = Length.Auto(); 
-			// toast.style.marginRight = Length.Auto();
-			// toast.style.width = 200; // Let it auto-size or set min-width?
 
 			_context.RootUI.Add(toast);
 

@@ -44,24 +44,18 @@ namespace KarmoToys.Features.Companion
 				{
 					VisualElement child = parent[i];
 
-					// Skip hidden or un-layouted elements
-					if (child.style.display == DisplayStyle.None) continue;
-					// Optional: Check pickingMode? For now assume everything visible is clickable.
+					// Skip hidden elements
+					if (child.resolvedStyle.display == DisplayStyle.None) continue;
 
-					// Recursively check children first (if you want deep picking)
-					// But for now, let's just check direct children of root or leaf nodes?
-					// Standard pick logic goes deep.
+					// Recursive Search: Depth-first, backwards (top-most first)
+					// We ALWAYS recurse into children, even if this parent ignores picking,
+					// because children might have PickingMode.Position.
+					VisualElement found = FindTopMostElement(child, point);
+					if (found != null) return found;
 
-					bool contains = child.layout.Contains(point);
-
-					// If container, check inside it?
-					// For simple Companion app, usually we want the specific interactive element.
-
-					// Simple implementation: Check child bounds.
-					if (contains)
+					// If no interactive child found, check this element itself
+					if (child.pickingMode != PickingMode.Ignore && child.worldBound.Contains(point))
 					{
-						// If this child has children, we might want to drill down?
-						// For now, let's return this child.
 						return child;
 					}
 				}
