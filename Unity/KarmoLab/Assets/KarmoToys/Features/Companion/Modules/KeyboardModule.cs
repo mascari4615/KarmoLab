@@ -18,7 +18,7 @@ namespace KarmoToys.Features.Companion.Modules
 	/// KeyboardModule: 전역 키보드 후킹 및 오버레이 레이아웃 관리 모듈.
 	/// 
 	/// [시스템 아키텍처 및 입력 파이프라인]
-	/// KarmoLab 키보드 시스템은 안정성과 실시간성을 확보하기 위해 Win32 전역 후킹과 버퍼링 레이어를 사용함.
+	/// 안정성과 실시간성을 확보하기 위해 Win32 전역 후킹과 버퍼링 레이어를 사용함.
 	/// 1. Input Layer (Win32): WH_KEYBOARD_LL(Low-level) 후킹을 통해 시스템 전체의 키 이벤트를 가로챔.
 	/// 2. Buffer Layer (ConcurrentQueue): 후킹 콜백에서 발생하는 입력을 실시간으로 큐에 적재하여 유니티 메인 스레드와의 경합을 방지함.
 	/// 3. Processing Layer (Update): 유니티 루프 내에서 입력을 분석하고(ProcessEvents) Modifier 상태를 판정함.
@@ -58,7 +58,6 @@ namespace KarmoToys.Features.Companion.Modules
 		private VisualElement _rowContainer;
 		private Label _activeLabel;
 		private Label _comboLabel;
-
 
 		// EKLS (Extensible Keyboard Layout System)
 		private KeyboardView _keyboardView;
@@ -213,25 +212,22 @@ namespace KarmoToys.Features.Companion.Modules
 
 		private void PollUnityInput()
 		{
-			// Optimize: check generic anyKey first
-			if (Input.anyKey || Input.anyKeyDown)
+			// Poll all known keys
+			foreach (KeyCode k in _allKeyCodes)
 			{
-				foreach (KeyCode k in _allKeyCodes)
-				{
-					// Skip Mouse buttons and None
-					// Optimization for common keys: skip range check if needed, but Enum iteration is fast enough usually
-					if ((int)k < (int)KeyCode.Space && k != KeyCode.Backspace && k != KeyCode.Tab && k != KeyCode.Return && k != KeyCode.Escape) continue;
+				// Skip Mouse buttons and None
+				// Optimization for common keys: skip range check if needed, but Enum iteration is fast enough usually
+				if ((int)k < (int)KeyCode.Backspace) continue; // Skip None(0) to Backspace(7) range roughly
 
-					bool down = Input.GetKeyDown(k);
-					bool up = Input.GetKeyUp(k);
-					
-					if (down || up)
+				bool down = Input.GetKeyDown(k);
+				bool up = Input.GetKeyUp(k);
+				
+				if (down || up)
+				{
+					int vk = KeyboardUtils.TranslateUnityKeyToVkCode(k);
+					if (vk > 0)
 					{
-						int vk = KeyboardUtils.TranslateUnityKeyToVkCode(k);
-						if (vk > 0)
-						{
-							_eventQueue.Enqueue(new KeyboardEvent { VkCode = vk, IsDown = down });
-						}
+						_eventQueue.Enqueue(new KeyboardEvent { VkCode = vk, IsDown = down });
 					}
 				}
 			}
@@ -655,7 +651,9 @@ namespace KarmoToys.Features.Companion.Modules
 			float activeElapsed = Time.time - _lastInputTime;
 			if (activeElapsed > OverlayHideDelay && _currentRowKeys.Count > 0)
 			{
-				MoveCurrentRowToStack();
+				_currentRowKeys.Clear();
+				_lastSoloKeyName = null;
+				_repeatCount = 0;
 			}
 			
 			if (_currentRowKeys.Count == 0 && _historyRows.Count == 0 && !_isInComboMode)

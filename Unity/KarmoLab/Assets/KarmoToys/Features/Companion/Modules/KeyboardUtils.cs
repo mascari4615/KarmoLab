@@ -18,9 +18,12 @@ namespace KarmoToys.Features.Companion.Modules
 				case KeyCode.Backspace: return 0x08;
 				case KeyCode.Tab: return 0x09;
 				case KeyCode.Return: case KeyCode.KeypadEnter: return 0x0D;
-				case KeyCode.LeftShift: case KeyCode.RightShift: return 0x10; // Simple mapping
-				case KeyCode.LeftControl: case KeyCode.RightControl: return 0x11;
-				case KeyCode.LeftAlt: case KeyCode.RightAlt: return 0x12;
+				case KeyCode.LeftShift: return 0xA0;
+				case KeyCode.RightShift: return 0xA1;
+				case KeyCode.LeftControl: return 0xA2;
+				case KeyCode.RightControl: return 0xA3;
+				case KeyCode.LeftAlt: return 0xA4;
+				case KeyCode.RightAlt: return 0xA5;
 				case KeyCode.CapsLock: return 0x14;
 				case KeyCode.Escape: return 0x1B;
 				case KeyCode.Space: return 0x20;
