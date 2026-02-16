@@ -1,0 +1,52 @@
+
+.keyboard-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+}
+
+.keyboard-row {
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.key {
+    background-color: rgb(60, 60, 60);
+    border-width: 1px;
+    border-color: rgb(100, 100, 100);
+    border-radius: 4px;
+    margin-right: 4px; /* KeySpacing is handled dynamically, but default margin helps */
+    align-items: center;
+    justify-content: center;
+    color: white;
+    -unity-font-style: bold;
+    transition-duration: 0.1s;
+}
+
+.key > Label {
+    font-size: 14px;
+    padding: 0;
+    margin: 0;
+}
+
+.key.active {
+    background-color: rgb(255, 100, 150); /* Pinkish highlight */
+    border-color: white;
+    scale: 0.95;
+    transition-duration: 0.05s;
+}
+
+.key.modifier {
+    background-color: rgb(80, 70, 90); /* Dark Purple-ish Gray */
+    color: rgb(220, 220, 220);
+    border-color: rgb(120, 100, 130);
+}
+
+.key.modifier.active {
+    background-color: rgb(255, 150, 180);
+    color: white;
+}

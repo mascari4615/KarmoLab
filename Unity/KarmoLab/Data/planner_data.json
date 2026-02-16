@@ -700,7 +700,32 @@
         "Milestones": []
     },
     "Companion": {
-        "HudOffset": 0.20000000298023225
+        "HudOffset": 0.20000000298023225,
+        "CurrentLayout": 2,
+        "PomodoroWorkDuration": 1500.0,
+        "PomodoroShortBreakDuration": 300.0,
+        "PomodoroLongBreakDuration": 900.0,
+        "PomodoroLongBreakInterval": 4,
+        "UseBeep": true,
+        "AlarmVolume": 0.5,
+        "CustomAlarmPath": "",
+        "ShowKeyboardOverlay": true,
+        "ShowVirtualKeyboard": true,
+        "PlayKeyboardSfx": true,
+        "KeyboardSfxVolume": 0.1720000058412552,
+        "KeyboardRowSeparationThreshold": 1.7000000476837159,
+        "KeyboardSfxPath": "C:\\Users\\masca\\Downloads\\voice_sans.mp3",
+        "KeyboardFontSize": 28.0,
+        "KeyboardScale": 1.0099999904632569
+    },
+    "KeyboardStats": {
+        "TotalKeyPresses": 294,
+        "DailyStats": [
+            {
+                "Date": "2026-02-16",
+                "Count": 119
+            }
+        ]
     },
     "ProjectItems": [
         {

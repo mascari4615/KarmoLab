@@ -61,6 +61,7 @@ namespace KarmoToys.Features.Companion
 					_interactionModule = new KarmoToys.Features.Companion.Modules.InteractionModule();
 					KarmoToys.Features.Companion.Modules.TimeModule timeModule = new KarmoToys.Features.Companion.Modules.TimeModule();
 					KarmoToys.Features.Companion.Modules.IdleMonitorModule idleModule = new KarmoToys.Features.Companion.Modules.IdleMonitorModule();
+					KarmoToys.Features.Companion.Modules.KeyboardModule keyboardModule = new KarmoToys.Features.Companion.Modules.KeyboardModule();
 
 					// 4. Link Modules (Dependency Injection)
 					_interactionModule.SetChatModule(_chatModule);
@@ -73,6 +74,7 @@ namespace KarmoToys.Features.Companion
 					RegisterModule(_interactionModule); // Interaction last to handle input based on visual state
 					RegisterModule(timeModule);
 					RegisterModule(idleModule);
+					RegisterModule(keyboardModule);
 				}
 				catch (System.Exception ex)
 				{
@@ -85,6 +87,7 @@ namespace KarmoToys.Features.Companion
 		{
 			try
 			{
+				Debug.Log($"[Companion] Registering module: {module.GetType().Name}");
 				module.Initialize(_context);
 				_modules.Add(module);
 			}

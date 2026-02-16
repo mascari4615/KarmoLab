@@ -15,6 +15,7 @@ namespace KarmoToys.Features.Companion.Modules
 	public class InteractionModule : ICompanionModule
 	{
 		private CompanionContext _context;
+		private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _mainThreadActions = new();
 
 		// Drag State
 		private Vector2 _dragOffset;
@@ -42,18 +43,20 @@ namespace KarmoToys.Features.Companion.Modules
 		private float _uiUpdateTimer;
 		private Label _lblStopwatch;
 		private Label _lblPomodoro;
+		private Label _lblKeyboardStats;
 		private VisualElement _timerListContainer;
 
 		// HUD Settings
 		private float _hudOffset = 0.2f;
 
 		// Tab State
-		private enum SettingsTab { Avatar, Time }
+		private enum SettingsTab { Avatar, Time, Keyboard }
 		private SettingsTab _currentTab = SettingsTab.Avatar;
 
 		// UXML Elements References
 		private VisualElement _avatarTabContent;
 		private VisualElement _timeTabContent;
+		private VisualElement _keyboardTabContent;
 
 		public void Initialize(CompanionContext context)
 		{
@@ -211,6 +214,9 @@ namespace KarmoToys.Features.Companion.Modules
 			{
 				Update3DDrag();
 			}
+
+			// Main Thread Actions
+			while (_mainThreadActions.TryDequeue(out Action action)) action?.Invoke();
 
 			// UI Updates (Text Only)
 			_uiUpdateTimer += Time.deltaTime;
@@ -512,9 +518,11 @@ namespace KarmoToys.Features.Companion.Modules
 			// 1. Tabs
 			_settingsPanel.Q<Button>("TabAvatar")?.RegisterCallback<ClickEvent>(evt => { _currentTab = SettingsTab.Avatar; UpdateTabDisplay(); });
 			_settingsPanel.Q<Button>("TabTime")?.RegisterCallback<ClickEvent>(evt => { _currentTab = SettingsTab.Time; UpdateTabDisplay(); });
+			_settingsPanel.Q<Button>("TabKeyboard")?.RegisterCallback<ClickEvent>(evt => { _currentTab = SettingsTab.Keyboard; UpdateTabDisplay(); });
 
 			_avatarTabContent = _settingsPanel.Q<VisualElement>("AvatarTabContent");
 			_timeTabContent = _settingsPanel.Q<VisualElement>("TimeTabContent");
+			_keyboardTabContent = _settingsPanel.Q<VisualElement>("KeyboardTabContent");
 
 			// 2. Avatar Settings
 			BindAvatarSettings();
@@ -522,8 +530,115 @@ namespace KarmoToys.Features.Companion.Modules
 			// 3. Time Settings
 			BindTimeSettings();
 
-			// 4. Other Settings
+			// 4. Keyboard Settings
+			BindKeyboardSettings();
+
+			// 5. Other Settings
 			BindOtherSettings();
+		}
+
+		private void BindKeyboardSettings()
+		{
+			KarmoToys.Common.Data.CompanionData compData = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (compData == null) return;
+
+			Toggle overlayToggle = _settingsPanel.Q<Toggle>("KeyboardOverlayToggle");
+			if (overlayToggle != null)
+			{
+				overlayToggle.value = compData.ShowKeyboardOverlay;
+				overlayToggle.value = compData.ShowKeyboardOverlay;
+				overlayToggle.RegisterValueChangedCallback(evt => { compData.ShowKeyboardOverlay = evt.newValue; SaveSettings(); });
+			}
+
+            Toggle vkToggle = _settingsPanel.Q<Toggle>("VirtualKeyboardToggle");
+			if (vkToggle != null)
+			{
+				vkToggle.value = compData.ShowVirtualKeyboard;
+				vkToggle.RegisterValueChangedCallback(evt => { compData.ShowVirtualKeyboard = evt.newValue; SaveSettings(); });
+			}
+
+			// Layout & Scale
+			EnumField layoutEnum = _settingsPanel.Q<EnumField>("LayoutEnum");
+			if (layoutEnum != null)
+			{
+				layoutEnum.Init(compData.CurrentLayout);
+				layoutEnum.RegisterValueChangedCallback(evt => 
+				{ 
+					compData.CurrentLayout = (KarmoToys.Common.Data.KeyboardLayoutType)evt.newValue; 
+					SaveSettings(); 
+				});
+			}
+
+			Slider scaleSlider = _settingsPanel.Q<Slider>("KeyboardScaleSlider");
+			if (scaleSlider != null)
+			{
+				scaleSlider.value = compData.KeyboardScale;
+				scaleSlider.RegisterValueChangedCallback(evt => { compData.KeyboardScale = evt.newValue; SaveSettings(); });
+			}
+
+			Toggle sfxToggle = _settingsPanel.Q<Toggle>("KeyboardSfxToggle");
+			if (sfxToggle != null)
+			{
+				sfxToggle.value = compData.PlayKeyboardSfx;
+				sfxToggle.RegisterValueChangedCallback(evt => { compData.PlayKeyboardSfx = evt.newValue; SaveSettings(); });
+			}
+
+			Slider volSlider = _settingsPanel.Q<Slider>("KeyboardVolumeSlider");
+			if (volSlider != null)
+			{
+				volSlider.value = compData.KeyboardSfxVolume;
+				volSlider.RegisterValueChangedCallback(evt => { compData.KeyboardSfxVolume = evt.newValue; SaveSettings(); });
+			}
+
+			Label kbSfxPathLabel = _settingsPanel.Q<Label>("KeyboardSfxPathLabel");
+			_settingsPanel.Q<Button>("BtnBrowseKeyboardSfx")?.RegisterCallback<ClickEvent>(evt =>
+			{
+#if UNITY_EDITOR && !UNITY_STANDALONE_WIN
+				string path = UnityEditor.EditorUtility.OpenFilePanel("Select Keyboard SFX", "", "mp3,wav,ogg");
+				if (!string.IsNullOrEmpty(path))
+				{
+					compData.KeyboardSfxPath = path;
+					if (kbSfxPathLabel != null) kbSfxPathLabel.text = System.IO.Path.GetFileName(path);
+					SaveSettings();
+				}
+#else
+				KarmoToys.Core.Utils.Win32FileBrowser.OpenFilePanelAsync("Select Keyboard SFX", "", "Audio Files\0*.mp3;*.wav;*.ogg\0All Files\0*.*\0\0", path => 
+				{
+					_mainThreadActions.Enqueue(() => 
+					{
+						if (!string.IsNullOrEmpty(path))
+						{
+							compData.KeyboardSfxPath = path;
+							if (kbSfxPathLabel != null) kbSfxPathLabel.text = System.IO.Path.GetFileName(path);
+							SaveSettings();
+						}
+					});
+				});
+#endif
+			});
+
+			_settingsPanel.Q<Button>("BtnClearKeyboardSfx")?.RegisterCallback<ClickEvent>(evt =>
+			{
+				compData.KeyboardSfxPath = "";
+				if (kbSfxPathLabel != null) kbSfxPathLabel.text = "Default";
+				SaveSettings();
+			});
+
+			Slider thresholdSlider = _settingsPanel.Q<Slider>("KeyboardRowThresholdSlider");
+			if (thresholdSlider != null)
+			{
+				thresholdSlider.value = compData.KeyboardRowSeparationThreshold;
+				thresholdSlider.RegisterValueChangedCallback(evt => { compData.KeyboardRowSeparationThreshold = evt.newValue; SaveSettings(); });
+			}
+
+			Slider fontSizeSlider = _settingsPanel.Q<Slider>("KeyboardFontSizeSlider");
+			if (fontSizeSlider != null)
+			{
+				fontSizeSlider.value = compData.KeyboardFontSize;
+				fontSizeSlider.RegisterValueChangedCallback(evt => { compData.KeyboardFontSize = evt.newValue; SaveSettings(); });
+			}
+
+			_lblKeyboardStats = _settingsPanel.Q<Label>("KeyboardTotalStatsLabel");
 		}
 
 		private void BindAvatarSettings()
@@ -687,13 +802,8 @@ namespace KarmoToys.Features.Companion.Modules
 
 				_settingsPanel.Q<Button>("BtnBrowseSound")?.RegisterCallback<ClickEvent>(evt =>
 				{
-					// File Browser Logic
-					string path = "";
-#if UNITY_EDITOR
-					path = EditorUtility.OpenFilePanel("Select Alarm Sound", "", "mp3,wav,ogg");
-#else
-					// TODO: Implement Runtime File Browser or use built-in if available
-#endif
+#if UNITY_EDITOR && !UNITY_STANDALONE_WIN
+					string path = UnityEditor.EditorUtility.OpenFilePanel("Select Alarm Sound", "", "mp3,wav,ogg");
 					if (!string.IsNullOrEmpty(path))
 					{
 						compData.CustomAlarmPath = path;
@@ -702,6 +812,22 @@ namespace KarmoToys.Features.Companion.Modules
 						if (pathLabel != null) pathLabel.text = System.IO.Path.GetFileName(path);
 						SaveSettings();
 					}
+#else
+					KarmoToys.Core.Utils.Win32FileBrowser.OpenFilePanelAsync("Select Alarm Sound", "", "Audio Files\0*.mp3;*.wav;*.ogg\0All Files\0*.*\0\0", path => 
+					{
+						_mainThreadActions.Enqueue(() => 
+						{
+							if (!string.IsNullOrEmpty(path))
+							{
+								compData.CustomAlarmPath = path;
+								if (beepToggle != null) beepToggle.value = false;
+								compData.UseBeep = false;
+								if (pathLabel != null) pathLabel.text = System.IO.Path.GetFileName(path);
+								SaveSettings();
+							}
+						});
+					});
+#endif
 				});
 
 				_settingsPanel.Q<Button>("BtnClearSound")?.RegisterCallback<ClickEvent>(evt =>
@@ -726,6 +852,7 @@ namespace KarmoToys.Features.Companion.Modules
 		{
 			if (_avatarTabContent != null) _avatarTabContent.style.display = (_currentTab == SettingsTab.Avatar) ? DisplayStyle.Flex : DisplayStyle.None;
 			if (_timeTabContent != null) _timeTabContent.style.display = (_currentTab == SettingsTab.Time) ? DisplayStyle.Flex : DisplayStyle.None;
+			if (_keyboardTabContent != null) _keyboardTabContent.style.display = (_currentTab == SettingsTab.Keyboard) ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
 		private void LoadSettings()
@@ -748,8 +875,8 @@ namespace KarmoToys.Features.Companion.Modules
 
 		private void RefreshSettingsUI()
 		{
-			// Only update if Time Tab is active
-			if (_currentTab != SettingsTab.Time) return;
+			// Refresh if either Time or Keyboard Tab is active
+			if (_currentTab != SettingsTab.Time && _currentTab != SettingsTab.Keyboard) return;
 			if (_timeModule == null) return;
 			if (_settingsPanel == null) return;
 
@@ -777,6 +904,27 @@ namespace KarmoToys.Features.Companion.Modules
 
 				Label cyclesLabel = _settingsPanel.Q<Label>("PomodoroCycles");
 				if (cyclesLabel != null) cyclesLabel.text = $"Phase: {phaseName} | Cycles: {p.CompletedCycles}";
+			}
+
+			// 2.5 Update Keyboard Stats
+			if (_lblKeyboardStats != null)
+			{
+				KarmoToys.Common.Data.KeyboardStatistics stats = KarmoToys.Main.KarmoToysApp.Instance?.Data?.KeyboardStats;
+				if (stats != null)
+				{
+					_lblKeyboardStats.text = $"Total Key Presses: {stats.TotalKeyPresses:N0}";
+				}
+			}
+
+			Label kbSfxPathLabel = _settingsPanel.Q<Label>("KeyboardSfxPathLabel");
+			if (kbSfxPathLabel != null)
+			{
+				KarmoToys.Common.Data.CompanionData compData = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+				if (compData != null)
+				{
+					kbSfxPathLabel.text = string.IsNullOrEmpty(compData.KeyboardSfxPath) ? "Default" : System.IO.Path.GetFileName(compData.KeyboardSfxPath);
+					kbSfxPathLabel.tooltip = compData.KeyboardSfxPath;
+				}
 			}
 
 			// 3. Update Timer List

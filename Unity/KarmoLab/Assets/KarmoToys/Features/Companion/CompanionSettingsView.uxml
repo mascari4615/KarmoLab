@@ -6,6 +6,7 @@
         <ui:VisualElement name="Header" class="header-row">
             <ui:Button name="TabAvatar" text="Avatar" class="tab-button" />
             <ui:Button name="TabTime" text="Time" class="tab-button" />
+            <ui:Button name="TabKeyboard" text="Keyboard" class="tab-button" />
         </ui:VisualElement>
 
         <!-- Content Container -->
@@ -87,6 +88,52 @@
  
                 </ui:VisualElement>
 
+            </ui:VisualElement>
+            <!-- Keyboard Tab -->
+            <ui:VisualElement name="KeyboardTabContent" style="display: none;">
+                <ui:Label text="Keyboard Interaction" class="section-title" style="color: #FF69B4;" />
+                
+                <ui:Label text="Overlay Settings" class="info-label" />
+                <ui:Toggle name="KeyboardOverlayToggle" label="Show Keyboard Overlay" class="settings-toggle" />
+                <ui:Toggle name="VirtualKeyboardToggle" label="Show Virtual Keyboard" class="settings-toggle" />
+                
+                <ui:Label text="Layout &amp; Scale" class="info-label" style="margin-top: 10px;" />
+                <ui:EnumField name="LayoutEnum" label="Layout" />
+                
+                <ui:VisualElement class="control-row" style="margin-top: 5px;">
+                    <ui:Label text="Scale" class="info-label" style="width: 120px;" />
+                    <ui:Slider name="KeyboardScaleSlider" low-value="0.2" high-value="2.0" style="flex-grow: 1;" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="control-row" style="margin-top: 5px;">
+                    <ui:Label text="Row Separation (Sec)" class="info-label" style="width: 120px;" />
+                    <ui:Slider name="KeyboardRowThresholdSlider" low-value="0.1" high-value="5.0" style="flex-grow: 1;" />
+                </ui:VisualElement>
+
+                <ui:Label text="SFX Settings" class="info-label" style="margin-top: 15px;" />
+                <ui:Toggle name="KeyboardSfxToggle" label="Play Keyboard SFX" class="settings-toggle" />
+                
+                <ui:VisualElement class="control-row" style="margin-top: 5px;">
+                    <ui:Label text="SFX Volume" class="info-label" style="width: 80px;" />
+                    <ui:Slider name="KeyboardVolumeSlider" low-value="0" high-value="1" style="flex-grow: 1;" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="control-row" style="margin-top: 5px;">
+                    <ui:Label text="Font Size" class="info-label" style="width: 80px;" />
+                    <ui:Slider name="KeyboardFontSizeSlider" low-value="10" high-value="60" style="flex-grow: 1;" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="control-row" style="margin-top: 5px;">
+                    <ui:Label text="Custom Sound:" class="info-label" style="font-size: 10px;" />
+                    <ui:Label name="KeyboardSfxPathLabel" text="Default" class="path-label" />
+                </ui:VisualElement>
+                <ui:VisualElement class="control-row">
+                    <ui:Button name="BtnBrowseKeyboardSfx" text="Browse" class="mini-button" />
+                    <ui:Button name="BtnClearKeyboardSfx" text="X" class="mini-button" />
+                </ui:VisualElement>
+
+                <ui:Label text="Statistics" class="info-label" style="margin-top: 15px;" />
+                <ui:Label name="KeyboardTotalStatsLabel" text="Total Key Presses: 0" class="sub-label" />
             </ui:VisualElement>
             
         </ui:VisualElement>

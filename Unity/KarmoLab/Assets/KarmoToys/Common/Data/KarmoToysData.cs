@@ -23,6 +23,9 @@ namespace KarmoToys.Common.Data
 		// Companion Data
 		public CompanionData Companion = new();
 
+		// Statistics
+		public KeyboardStatistics KeyboardStats = new();
+
 		// Project Data (Whiteboard 포함 - Position 필드 사용)
 		public List<ProjectItemData> ProjectItems = new();
 
@@ -36,10 +39,19 @@ namespace KarmoToys.Common.Data
 
 	}
 
+	public enum KeyboardLayoutType
+	{
+		ANSI_104,
+		Game_WASD,
+		MOBA_QWER
+	}
+
 	[Serializable]
 	public class CompanionData
 	{
 		public float HudOffset = 0.2f;
+		
+		public KeyboardLayoutType CurrentLayout = KeyboardLayoutType.ANSI_104;
 
 		// Pomodoro Settings
 		public float PomodoroWorkDuration = 25 * 60; // 25 mins
@@ -51,6 +63,45 @@ namespace KarmoToys.Common.Data
 		public bool UseBeep = true;
 		public float AlarmVolume = 0.5f;
 		public string CustomAlarmPath = ""; // Path to user selected audio file
+
+		// Keyboard Settings
+		public bool ShowKeyboardOverlay = false;
+		public bool ShowVirtualKeyboard = true; // Toggle for EKLS view
+		public bool PlayKeyboardSfx = false;
+		public float KeyboardSfxVolume = 0.5f;
+		public float KeyboardRowSeparationThreshold = 1.5f; // Seconds
+		public string KeyboardSfxPath = ""; // Path to custom keyboard sound
+		public float KeyboardFontSize = 28f;
+		public float KeyboardScale = 1.0f;
+	}
+
+	[Serializable]
+	public class DailyStat
+	{
+		public string Date;
+		public long Count;
+	}
+
+	[Serializable]
+	public class KeyboardStatistics
+	{
+		public long TotalKeyPresses = 0;
+		public List<DailyStat> DailyStats = new List<DailyStat>();
+		
+		// Helper to record a key press for today
+		public void RecordKeyPress()
+		{
+			TotalKeyPresses++;
+			string today = DateTime.Now.ToString("yyyy-MM-dd");
+			
+			DailyStat stat = DailyStats.Find(s => s.Date == today);
+			if (stat == null)
+			{
+				stat = new DailyStat { Date = today, Count = 0 };
+				DailyStats.Add(stat);
+			}
+			stat.Count++;
+		}
 	}
 
 	[Serializable]
