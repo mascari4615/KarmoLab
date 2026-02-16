@@ -1,14 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Collections;
 using UnityEngine;
-using UnityEngine.UIElements;
 using UnityEngine.Networking;
+using UnityEngine.UIElements;
 using KarmoToys.Common.Data;
-
 using KarmoToys.Main;
 using KarmoToys.Features.Companion.Data;
 using KarmoToys.Features.Companion.UI;
@@ -19,14 +17,21 @@ namespace KarmoToys.Features.Companion.Modules
 	/// <summary>
 	/// KeyboardModule: 전역 키보드 후킹 및 오버레이 레이아웃 관리 모듈.
 	/// 
-	/// [구현 세부 사항]
-	/// 1. 전역 키보드 후킹 (Win32 API): WH_KEYBOARD_LL(13) 사용. kernel32/user32 P/Invoke 연동.
-	/// 2. 입력 처리 파이프라인: Win32 Hook -> ConcurrentQueue -> ProcessEvents(Update) -> UIToolkit(UpdateOverlay).
-	/// 3. 조합키(Modifier) 로직: Shift, Ctrl, Alt, Win 키 눌림 상태 관리 및 KeyUp 시점에 조합 완성 기록.
-	/// 4. UI 레이아웃: 역방향 전개(최신 항목 하단), 개별 페이드아웃 시스템, 폰트 크기 커스터마이징 지원.
+	/// [시스템 아키텍처 및 입력 파이프라인]
+	/// KarmoLab 키보드 시스템은 안정성과 실시간성을 확보하기 위해 Win32 전역 후킹과 버퍼링 레이어를 사용함.
+	/// 1. Input Layer (Win32): WH_KEYBOARD_LL(Low-level) 후킹을 통해 시스템 전체의 키 이벤트를 가로챔.
+	/// 2. Buffer Layer (ConcurrentQueue): 후킹 콜백에서 발생하는 입력을 실시간으로 큐에 적재하여 유니티 메인 스레드와의 경합을 방지함.
+	/// 3. Processing Layer (Update): 유니티 루프 내에서 입력을 분석하고(ProcessEvents) Modifier 상태를 판정함.
+	/// 4. UI Layer (UIToolkit): 분석된 데이터를 바탕으로 동적인 시각적 오버레이를 생성 및 렌더링함(UpdateOverlay).
+	/// 
+	/// [주요 기술적 구현]
+	/// - 수식키 판정: Shift, Ctrl, Alt, Win 키 등을 추적하여 Modifier 조합(Combo) 모드로의 진입/이탈을 관리함.
+	/// - 조합 완성: 수식키가 떼어지는(KeyUp) 시점에 현재 활성 조합을 하나의 행(Row)으로 확정하여 히스토리에 기록함.
+	/// - 역방향 스택 UI: 최신 입력 행이 하단에 배치되고, 이전 행들은 위로 밀려 올라가는 Bottom-up 레이아웃.
+	/// - 독립적 페이드아웃: 각 RowData는 고유 타임스탬프를 가져 개별적으로 투명도가 조절됨.
 	/// 
 	/// [주의사항]
-	/// - 유니티 앱이 포커스를 가졌을 때 Win32 메시지 루프 점유로 인해 입력 누락이 발생할 수 있음.
+	/// - 유니티 앱이 포커스를 가졌을 때 Win32 메시지 루프 점유로 인해 입력 누락이 발생할 수 있어, 포커스 시엔 Hybrid Polling을 병행함.
 	/// </summary>
 	public class KeyboardModule : ICompanionModule
 	{
@@ -97,7 +102,7 @@ namespace KarmoToys.Features.Companion.Modules
 		private LowLevelKeyboardProc _proc;
 
 		private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
-        private static readonly KeyCode[] _allKeyCodes = (KeyCode[])Enum.GetValues(typeof(KeyCode));
+		private static readonly KeyCode[] _allKeyCodes = (KeyCode[])Enum.GetValues(typeof(KeyCode));
 
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
@@ -181,8 +186,6 @@ namespace KarmoToys.Features.Companion.Modules
 			_rowContainer.pickingMode = PickingMode.Ignore;
 			_overlayContainer.Add(_rowContainer);
 
-
-
 			// 3. EKLS Visual Keyboard (Hidden by default until toggled)
 			InitializeEKLS();
 			if (_keyboardView != null)
@@ -190,33 +193,12 @@ namespace KarmoToys.Features.Companion.Modules
 				_overlayContainer.Add(_keyboardView);
 			}
 
-            // 4. Hybrid Input (IMGUI Hook)
-            // When application is focused, Unity consumes input before LL Hook sees it.
-            // So we capture input directly from Unity via IMGUI (OnGUI).
-            /* IMGUI Disabled - Using Update Polling instead
-            var imguiContainer = new IMGUIContainer(OnGUIHandler);
-            // Make it invisible but active
-            imguiContainer.style.position = Position.Absolute;
-            imguiContainer.style.width = 10;
-            imguiContainer.style.height = 10;
-            imguiContainer.style.opacity = 0;
-            imguiContainer.pickingMode = PickingMode.Ignore;
-            _overlayContainer.Add(imguiContainer);
-            */
-
 			_context.RootUI.Add(_overlayContainer);
 		}
 
-        /*
-        private void OnGUIHandler()
-        {
-            // ... (original code removed) ...
-        }
-        */
-
 		private void InitializeEKLS()
 		{
-			var companion = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			CompanionData companion = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
 			_lastLayoutType = companion != null ? companion.CurrentLayout : KeyboardLayoutType.ANSI_104;
 
 			LoadLayout(_lastLayoutType);
@@ -229,124 +211,30 @@ namespace KarmoToys.Features.Companion.Modules
 			_keyboardController.Initialize(_keyboardView);
 		}
 
-        private int TranslateUnityKeyToVkCode(KeyCode key)
-        {
-            // Basic mapping for common keys
-            int k = (int)key;
-            if (k >= (int)KeyCode.A && k <= (int)KeyCode.Z) return k - 32; // 'a'(97) -> 'A'(65)
-            if (k >= (int)KeyCode.Alpha0 && k <= (int)KeyCode.Alpha9) return k; // 0-9 match
-            if (k >= (int)KeyCode.F1 && k <= (int)KeyCode.F12) return 112 + (k - (int)KeyCode.F1); // F1(282) -> 112
-
-            switch (key)
-            {
-                case KeyCode.Backspace: return 0x08;
-                case KeyCode.Tab: return 0x09;
-                case KeyCode.Return: case KeyCode.KeypadEnter: return 0x0D;
-                case KeyCode.LeftShift: case KeyCode.RightShift: return 0x10; // Simple mapping
-                case KeyCode.LeftControl: case KeyCode.RightControl: return 0x11;
-                case KeyCode.LeftAlt: case KeyCode.RightAlt: return 0x12;
-                case KeyCode.CapsLock: return 0x14;
-                case KeyCode.Escape: return 0x1B;
-                case KeyCode.Space: return 0x20;
-                case KeyCode.PageUp: return 0x21;
-                case KeyCode.PageDown: return 0x22;
-                case KeyCode.End: return 0x23;
-                case KeyCode.Home: return 0x24;
-                case KeyCode.LeftArrow: return 0x25;
-                case KeyCode.UpArrow: return 0x26;
-                case KeyCode.RightArrow: return 0x27;
-                case KeyCode.DownArrow: return 0x28;
-                case KeyCode.Insert: return 0x2D;
-                case KeyCode.Delete: return 0x2E;
-                case KeyCode.Semicolon: return 186;
-                case KeyCode.Equals: return 187; // +
-                case KeyCode.Comma: return 188;
-                case KeyCode.Minus: return 189;
-                case KeyCode.Period: return 190;
-                case KeyCode.Slash: return 191;
-                case KeyCode.BackQuote: return 192; // ~
-                case KeyCode.LeftBracket: return 219;
-                case KeyCode.Backslash: return 220;
-                case KeyCode.RightBracket: return 221;
-                case KeyCode.Quote: return 222;
-            }
-            return 0;
-        }
-
-        private void PollUnityInput()
-        {
-            // Optimize: check generic anyKey first
-            if (Input.anyKey || Input.anyKeyDown)
-            {
-                foreach (KeyCode k in _allKeyCodes)
-                {
-                    // Skip Mouse buttons and None
-                    if ((int)k < (int)KeyCode.Space && k != KeyCode.Backspace && k != KeyCode.Tab && k != KeyCode.Return && k != KeyCode.Escape) continue; // Optimization for common keys
-
-                    bool down = Input.GetKeyDown(k);
-                    bool up = Input.GetKeyUp(k);
-                    
-                    if (down || up)
-                    {
-                        int vk = TranslateUnityKeyToVkCode(k);
-                        if (vk > 0)
-                        {
-                            _eventQueue.Enqueue(new KeyboardEvent { VkCode = vk, IsDown = down });
-                        }
-                    }
-                }
-            }
-        }
-
-		private string GetKeyName(int vkCode, int scanCode)
+		private void PollUnityInput()
 		{
-			switch (vkCode)
+			// Optimize: check generic anyKey first
+			if (Input.anyKey || Input.anyKeyDown)
 			{
-				case 0x08: return "Back";
-				case 0x09: return "Tab";
-				case 0x0D: return "Enter";
-				case 0x10: case 0xA0: case 0xA1: return "Shift";
-				case 0x11: case 0xA2: case 0xA3: return "Ctrl";
-				case 0x12: case 0xA4: case 0xA5: return "Alt";
-				case 0x14: return "Caps";
-				case 0x15: return "한/영";
-				case 0x19: return "한자";
-				case 0x1B: return "Esc";
-				case 0x20: return "Space";
-				case 0x2E: return "Del";
-                case 0x21: return "PgUp";
-				case 0x22: return "PgDn";
-				case 0x23: return "End";
-				case 0x24: return "Home";
-				case 0x25: return "←";
-				case 0x26: return "↑";
-				case 0x27: return "→";
-				case 0x28: return "↓";
-				case 0x2C: return "PrtSc";
-				case 0x2D: return "Ins";
-				case 0x5B: case 0x5C: return "Win";
-                // Symbols
-				case 186: return ";";
-				case 187: return "=";
-				case 188: return ",";
-				case 189: return "-";
-				case 190: return ".";
-				case 191: return "/";
-				case 192: return "`";
-				case 219: return "[";
-				case 220: return "\\";
-				case 221: return "]";
-				case 222: return "'";
-                
-                // F-Keys
-                case int n when (n >= 112 && n <= 123): return "F" + (n - 111);
+				foreach (KeyCode k in _allKeyCodes)
+				{
+					// Skip Mouse buttons and None
+					// Optimization for common keys: skip range check if needed, but Enum iteration is fast enough usually
+					if ((int)k < (int)KeyCode.Space && k != KeyCode.Backspace && k != KeyCode.Tab && k != KeyCode.Return && k != KeyCode.Escape) continue;
+
+					bool down = Input.GetKeyDown(k);
+					bool up = Input.GetKeyUp(k);
+					
+					if (down || up)
+					{
+						int vk = KeyboardUtils.TranslateUnityKeyToVkCode(k);
+						if (vk > 0)
+						{
+							_eventQueue.Enqueue(new KeyboardEvent { VkCode = vk, IsDown = down });
+						}
+					}
+				}
 			}
-            // Fallback for letters/numbers
-            if ((vkCode >= 65 && vkCode <= 90) || (vkCode >= 48 && vkCode <= 57))
-            {
-                return ((char)vkCode).ToString();
-            }
-			return "K" + vkCode;
 		}
 
 		private void LoadLayout(KeyboardLayoutType type)
@@ -373,6 +261,7 @@ namespace KarmoToys.Features.Companion.Modules
 			_audioSource = audioGo.AddComponent<AudioSource>();
 			UnityEngine.Object.DontDestroyOnLoad(audioGo);
 
+			// Procedural Click Sound Generation
 			int frequency = 1200;
 			int sampleRate = 44100;
 			float duration = 0.05f;
@@ -398,7 +287,6 @@ namespace KarmoToys.Features.Companion.Modules
 			return SetWindowsHookEx(WH_KEYBOARD_LL, proc, hModule, 0);
 		}
 
-
 		/// <summary>
 		/// 훅 콜백: 시스템 이벤트를 KeyboardEvent 구조체에 담아 ConcurrentQueue에 삽입.
 		/// </summary>
@@ -422,8 +310,31 @@ namespace KarmoToys.Features.Companion.Modules
 			return CallNextHookEx(_hookId, nCode, wParam, lParam);
 		}
 
-
 		public void Update()
+		{
+			HandleFocusReHook();
+			
+			// Hybrid Input Polling (Focus only)
+			if (Application.isFocused)
+			{
+				PollUnityInput();
+			}
+
+			_heartbeatTimer += Time.deltaTime;
+			if (_heartbeatTimer > 5.0f)
+			{
+				_heartbeatTimer = 0f;
+				Debug.Log($"[KeyboardModule] Active. RawCalls: {_callbackRawCount}, Queue: {_eventQueue.Count}");
+			}
+
+			ProcessEvents();
+			UpdateOverlay();
+			_keyboardController?.OnUpdate();
+
+			CheckRuntimeSettingsChanges();
+		}
+
+		private void HandleFocusReHook()
 		{
 			// Re-hook on Focus Gain to preempt Unity's internal hooks
 			bool isFocused = Application.isFocused;
@@ -438,28 +349,15 @@ namespace KarmoToys.Features.Companion.Modules
 				}
 			}
 			_wasFocused = isFocused;
+		}
 
-            // Hybrid Input Polling (Focus only)
-            if (isFocused)
-            {
-                PollUnityInput();
-            }
-
-			_heartbeatTimer += Time.deltaTime;
-			if (_heartbeatTimer > 5.0f)
-			{
-				_heartbeatTimer = 0f;
-				CompanionData data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
-				Debug.Log($"[KeyboardModule] Active. RawCalls: {_callbackRawCount}, Queue: {_eventQueue.Count}");
-			}
-
-			ProcessEvents();
-			UpdateOverlay();
-			_keyboardController?.OnUpdate();
+		private void CheckRuntimeSettingsChanges()
+		{
+			CompanionData companion = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (companion == null) return;
 
 			// Handle Runtime Scaling
-			var companion = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
-			if (companion != null && Mathf.Abs(_lastScale - companion.KeyboardScale) > 0.01f)
+			if (Mathf.Abs(_lastScale - companion.KeyboardScale) > 0.01f)
 			{
 				float newScale = Mathf.Max(0.2f, companion.KeyboardScale);
 				_lastScale = companion.KeyboardScale; // Update tracker
@@ -470,7 +368,7 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 
 			// Handle Runtime Layout Switch
-			if (companion != null && _lastLayoutType != companion.CurrentLayout)
+			if (_lastLayoutType != companion.CurrentLayout)
 			{
 				_lastLayoutType = companion.CurrentLayout;
 				LoadLayout(_lastLayoutType);
@@ -491,7 +389,7 @@ namespace KarmoToys.Features.Companion.Modules
 
 			while (_eventQueue.TryDequeue(out KeyboardEvent ev))
 			{
-				string keyName = GetKeyName(ev.VkCode, ev.ScanCode);
+				string keyName = KeyboardUtils.GetKeyName(ev.VkCode);
 				
 				// Notify EKLS Controller
 				try 
@@ -505,130 +403,128 @@ namespace KarmoToys.Features.Companion.Modules
 
 				if (ev.IsDown)
 				{
-					if (!_pressedVkCodes.Contains(ev.VkCode))
-					{
-						_pressedVkCodes.Add(ev.VkCode);
-						_pressedKeys.Add(keyName);
-					}
-
-					bool isModifier = _modifierVkCodes.Contains(ev.VkCode);
-					string displayKeyName = keyName;
-					if (isModifier)
-					{
-						displayKeyName = $"<color=#FF8C00>{keyName}</color>"; // Dark Orange for modifiers
-					}
-
-					if (isModifier)
-					{
-						_isInComboMode = true;
-						if (!_activeComboKeys.Contains(keyName)) 
-						{
-							_activeComboKeys.Add(keyName);
-							_lastInputTime = Time.time;
-						}
-					}
-					else
-					{
-						if (_isInComboMode)
-						{
-							if (!_activeComboKeys.Contains(keyName)) 
-							{
-								_activeComboKeys.Add(keyName);
-								_lastInputTime = Time.time;
-							}
-						}
-						else
-						{
-							float timeSinceLast = Time.time - _lastInputTime;
-							if (timeSinceLast > companion.KeyboardRowSeparationThreshold && _currentRowKeys.Count > 0)
-							{
-								MoveCurrentRowToStack();
-							}
-
-							// Repeat Key Counter: 같은 키가 연속 입력되면 카운트 증가
-							if (keyName == _lastSoloKeyName && _currentRowKeys.Count > 0)
-							{
-								_repeatCount++;
-								string countText = $"<color=#00FFFF>x{_repeatCount}</color>"; // Cyan for count
-								_currentRowKeys[_currentRowKeys.Count - 1] = $"{displayKeyName}{countText}";
-							}
-							else
-							{
-								_lastSoloKeyName = keyName;
-								_repeatCount = 1;
-								_currentRowKeys.Add(displayKeyName);
-							}
-						}
-					}
-
-					// SFX and Stats
-					if (_currentSfxPath != companion.KeyboardSfxPath) LoadCustomSfx(companion.KeyboardSfxPath);
-					_lastInputTime = Time.time;
-					if (companion.PlayKeyboardSfx)
-					{
-						AudioClip clipToPlay = _customClickClip != null ? _customClickClip : _clickClip;
-						_audioSource.PlayOneShot(clipToPlay, companion.KeyboardSfxVolume);
-					}
-					appData.KeyboardStats.RecordKeyPress();
+					HandleKeyDown(ev.VkCode, keyName, companion, appData);
 				}
 				else
 				{
-					// Key Up
-					if (_pressedVkCodes.Contains(ev.VkCode))
+					HandleKeyUp(ev.VkCode, keyName, companion);
+				}
+			}
+		}
+
+		private void HandleKeyDown(int vkCode, string keyName, CompanionData companion, KarmoToysData appData)
+		{
+			if (!_pressedVkCodes.Contains(vkCode))
+			{
+				_pressedVkCodes.Add(vkCode);
+				_pressedKeys.Add(keyName);
+			}
+
+			bool isModifier = _modifierVkCodes.Contains(vkCode);
+			string displayKeyName = keyName;
+			if (isModifier)
+			{
+				displayKeyName = $"<color=#FF8C00>{keyName}</color>"; // Dark Orange for modifiers
+			}
+
+			if (isModifier)
+			{
+				_isInComboMode = true;
+				if (!_activeComboKeys.Contains(keyName)) 
+				{
+					_activeComboKeys.Add(keyName);
+					_lastInputTime = Time.time;
+				}
+			}
+			else
+			{
+				if (_isInComboMode)
+				{
+					if (!_activeComboKeys.Contains(keyName)) 
 					{
-						_pressedVkCodes.Remove(ev.VkCode);
-						_pressedKeys.Remove(keyName);
+						_activeComboKeys.Add(keyName);
+						_lastInputTime = Time.time;
+					}
+				}
+				else
+				{
+					float timeSinceLast = Time.time - _lastInputTime;
+					if (timeSinceLast > companion.KeyboardRowSeparationThreshold && _currentRowKeys.Count > 0)
+					{
+						MoveCurrentRowToStack();
+					}
 
-						bool isModifier = _modifierVkCodes.Contains(ev.VkCode);
+					// Repeat Key Counter: 같은 키가 연속 입력되면 카운트 증가
+					if (keyName == _lastSoloKeyName && _currentRowKeys.Count > 0)
+					{
+						_repeatCount++;
+						string countText = $"<color=#00FFFF>x{_repeatCount}</color>"; // Cyan for count
+						_currentRowKeys[_currentRowKeys.Count - 1] = $"{displayKeyName}{countText}";
+					}
+					else
+					{
+						_lastSoloKeyName = keyName;
+						_repeatCount = 1;
+						_currentRowKeys.Add(displayKeyName);
+					}
+				}
+			}
 
-						if (isModifier)
+			// SFX and Stats
+			if (_currentSfxPath != companion.KeyboardSfxPath) LoadCustomSfx(companion.KeyboardSfxPath);
+			_lastInputTime = Time.time;
+			if (companion.PlayKeyboardSfx)
+			{
+				AudioClip clipToPlay = _customClickClip != null ? _customClickClip : _clickClip;
+				_audioSource.PlayOneShot(clipToPlay, companion.KeyboardSfxVolume);
+			}
+			appData.KeyboardStats.RecordKeyPress();
+		}
+
+		private void HandleKeyUp(int vkCode, string keyName, CompanionData companion)
+		{
+			if (_pressedVkCodes.Contains(vkCode))
+			{
+				_pressedVkCodes.Remove(vkCode);
+				_pressedKeys.Remove(keyName);
+
+				bool isModifier = _modifierVkCodes.Contains(vkCode);
+
+				if (isModifier)
+				{
+					// When a modifier is released, commit the combo/modifier to history
+					if (_activeComboKeys.Count > 0)
+					{
+						float timeSinceLast = Time.time - _lastInputTime;
+						if (timeSinceLast > companion.KeyboardRowSeparationThreshold && _currentRowKeys.Count > 0)
 						{
-							// When a modifier is released, commit the combo/modifier to history
-							if (_activeComboKeys.Count > 0)
-							{
-								float timeSinceLast = Time.time - _lastInputTime;
-								if (timeSinceLast > companion.KeyboardRowSeparationThreshold && _currentRowKeys.Count > 0)
-								{
-									MoveCurrentRowToStack();
-								}
-
-								string result;
-								if (_activeComboKeys.Count == 1)
-								{
-									string modKey = _activeComboKeys[0];
-									result = $"<color=#FF8C00>{modKey}</color>";
-								}
-								else
-								{
-									// Combo display
-									List<string> styledKeys = new List<string>();
-									foreach(var k in _activeComboKeys)
-									{
-										// Since we store pure names in _activeComboKeys, we need to style them here if needed
-										// But let's keep it simple or style modifier parts
-										// Actually typically combos are like Ctrl + C.
-										// Let's just join them.
-										styledKeys.Add(k);
-									}
-									result = string.Join(" + ", styledKeys);
-								}
-
-								_currentRowKeys.Add(result);
-								_lastSoloKeyName = null; // Modifier combo breaks solo repeat
-								_repeatCount = 0;
-								
-								// Force new row for next input
-								// MoveCurrentRowToStack(); // Optional: commit immediately? 
-								// Carnac usually keeps it in current row until timeout
-								_activeComboKeys.Clear();
-								_isInComboMode = false;
-								_lastInputTime = Time.time;
-							}
+							MoveCurrentRowToStack();
 						}
+
+						string result;
+						if (_activeComboKeys.Count == 1)
+						{
+							string modKey = _activeComboKeys[0];
+							result = $"<color=#FF8C00>{modKey}</color>";
+						}
+						else
+						{
+							// Combo display: join them.
+							result = string.Join(" + ", _activeComboKeys);
+						}
+
+						_currentRowKeys.Add(result);
+						_lastSoloKeyName = null; // Modifier combo breaks solo repeat
+						_repeatCount = 0;
+						
+						_activeComboKeys.Clear();
+						_isInComboMode = false;
+						_lastInputTime = Time.time;
 					}
 				}
 			}
 		}
+
 		private void LoadCustomSfx(string path)
 		{
 			_currentSfxPath = path;
