@@ -84,7 +84,7 @@ KarmoLab/
 | **C# 코드** | PascalCase | `MainWindow.cs` |
 | **Unity 에셋** | PascalCase | `PlayerController.cs` |
 | **Node.js** | kebab-case | `package.json` |
-| **표준 문서** | kebab-case | `history.md`, `todo.md` |
+| **표준 문서** | kebab-case | `roadmap.md` |
 | **최상위 요약** | UPPERCASE | `README.md` |
 
 ### 원칙
@@ -100,8 +100,7 @@ KarmoLab/
 ### 필수 문서 (프로젝트 루트)
 
 - `README.md`: 프로젝트 개요, 빌드 가이드
-- `history.md`: 프로젝트의 모든 변경 이력 통합 관리.
-- `todo.md`: 프로젝트의 모든 작업 및 계획 통합 관리.
+- `roadmap.md`: 프로젝트의 기술적 히스토리, 작업 현황 및 로드맵 통합 관리.
 
 ### 피처 단위 관리 (Features/)
 

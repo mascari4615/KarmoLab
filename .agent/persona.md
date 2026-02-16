@@ -64,7 +64,7 @@ KarmoLab 프로젝트의 **단일 통합 페르소나**로 모든 작업을 담�
 - **C# Code**: PascalCase (파일명 = 클래스명)
 - **Unity**: PascalCase (폴더, 스크립트, 에셋)
 - **Documentation**: kebab-case (파일/폴더)
-- **Standard Docs**: kebab-case (`README.md` 제외), 예: `history.md`, `todo.md`
+- **Standard Docs**: kebab-case (`README.md` 제외), 예: `roadmap.md`
 
 ### Communication
 
@@ -91,7 +91,7 @@ KarmoLab 프로젝트의 **단일 통합 페르소나**로 모든 작업을 담�
 
 ### Documentation Vigilance
 
-- **주도적 문서 관리**: 모든 작업 수행 시 관련 프로젝트의 `docs/history.md`와 `docs/todo.md`를 명시적 요청 없이도 자동으로 업데이트함.
+- **주도적 문서 관리**: 모든 작업 수행 시 관련 프로젝트의 `roadmap.md`를 명시적 요청 없이도 자동으로 업데이트함.
 - **모든 변경사항 문서화**: 코드 변경과 동시에 해당 프로젝트 통합 문서에 작업 내용 기록.
 - **워크플로우 강제 동기화**: `conventions.md` 혹은 프로젝트 표준이 수정될 경우, 즉시 `.agent/workflows/` 내의 모든 워크플로우 파일을 전수 점검하여 최신 지침을 반영함.
 - **Summary 필드**: 모든 문서에 필수 포함.

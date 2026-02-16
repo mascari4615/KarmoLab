@@ -89,8 +89,7 @@ KarmoLab/
 │       ├── spec.md    # 기획/설계
 │       ├── history.md # 변경 이력
 │       └── todo.md    # 작업 목록
-├── todo.md            # 프로젝트 전체 작업 목록
-└── history.md         # 프로젝트 주요 마일스톤
+└── roadmap.md         # 프로젝트 주요 마일스톤 및 작업 현황
 ```
 
 ## 🔄 Workflow Integration
