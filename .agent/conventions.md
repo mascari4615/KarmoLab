@@ -138,6 +138,7 @@ KarmoLab/
 ### Unity (C#)
 
 - **스타일**: Unity 공식 스타일 가이드 준수
+- **들여쓰기**: 탭(Tab) 사용 (스페이스바 금지)
 - **MonoBehaviour**: PascalCase, 파일명 = 클래스명
 - **에셋**: 카테고리_대상_상태 형식
 - **씬**: 의미 있는 이름 (MainMenu, GamePlay_Level01)

@@ -591,16 +591,37 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 
 			Label kbSfxPathLabel = _settingsPanel.Q<Label>("KeyboardSfxPathLabel");
-			_settingsPanel.Q<Button>("BtnBrowseKeyboardSfx")?.RegisterCallback<ClickEvent>(evt =>
-			{
-#if UNITY_EDITOR && !UNITY_STANDALONE_WIN
-				string path = UnityEditor.EditorUtility.OpenFilePanel("Select Keyboard SFX", "", "mp3,wav,ogg");
-				if (!string.IsNullOrEmpty(path))
-				{
-					compData.KeyboardSfxPath = path;
-					if (kbSfxPathLabel != null) kbSfxPathLabel.text = System.IO.Path.GetFileName(path);
 					SaveSettings();
 				}
+#endif
+			});
+
+			// --- Edit Mode (Draggable UI) ---
+			Toggle editModeToggle = new Toggle("UI Edit Mode (Move)");
+			editModeToggle.name = "KeyboardEditModeToggle";
+			editModeToggle.value = compData.KeyboardEditMode;
+			editModeToggle.RegisterValueChangedCallback(evt => 
+			{ 
+				compData.KeyboardEditMode = evt.newValue; 
+				// We don't save EditMode to disk usually, but if we want to persist it:
+				// SaveSettings(); 
+				// However, KeyboardModule needs to know. It checks CompanionData every frame or on change.
+			});
+			// Add to UI. Assuming _keyboardTabContent is a VisualElement that we can add to.
+			// But wait, the existing code queries existing elements from UXML.
+			// We need to inject this new toggle since it's not in UXML.
+			// Let's add it at the top or bottom of the keyboard settings.
+			// Currently BindKeyboardSettings binds existing elements.
+			// We should Check if we can add it to _keyboardTabContent directly.
+			if (_keyboardTabContent != null)
+			{
+				// Style it to match existing
+				editModeToggle.style.marginTop = 10;
+				editModeToggle.style.marginBottom = 10;
+				// Insert at index 0 or append? Let's append for now or insert before something.
+				// Let's just add it to the container.
+				_keyboardTabContent.Insert(0, editModeToggle);
+			}
 #else
 				KarmoToys.Core.Utils.Win32FileBrowser.OpenFilePanelAsync("Select Keyboard SFX", "", "Audio Files\0*.mp3;*.wav;*.ogg\0All Files\0*.*\0\0", path => 
 				{

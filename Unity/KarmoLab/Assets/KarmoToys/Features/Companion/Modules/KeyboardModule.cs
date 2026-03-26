@@ -55,6 +55,7 @@ namespace KarmoToys.Features.Companion.Modules
 		private string _currentSfxPath;
 		
 		private VisualElement _overlayContainer;
+		private VisualElement _textGroup; // Grouping Combo and RowContainer
 		private VisualElement _rowContainer;
 		private Label _activeLabel;
 		private Label _comboLabel;
@@ -88,6 +89,13 @@ namespace KarmoToys.Features.Companion.Modules
 		private KeyboardLayoutType _lastLayoutType = KeyboardLayoutType.ANSI_104;
 		private KeyboardLayoutData _currentLayoutData;
 		private bool _wasFocused = false;
+
+		// Drag State
+		private bool _isEditMode = false;
+		private bool _isDragging = false;
+		private VisualElement _dragTarget;
+		private Vector2 _dragStartPos; // Element local or parent? Parent local.
+		private Vector2 _dragStartMouse;
 
 		// Modifier Keys (0x10~0x12, 0x5B~0x5C 및 L/R 버전)
 		private readonly HashSet<int> _modifierVkCodes = new HashSet<int> 
@@ -160,39 +168,81 @@ namespace KarmoToys.Features.Companion.Modules
 			_overlayContainer = new VisualElement();
 			_overlayContainer.name = "KeyboardOverlay";
 			
+			// Full Screen Container
 			IStyle style = _overlayContainer.style;
 			style.position = Position.Absolute;
-			style.bottom = 100;
-			style.left = 0;
-			style.right = 0;
-			style.visibility = Visibility.Hidden;
-			style.alignItems = Align.Center;
-			style.flexDirection = FlexDirection.Column; // Combo top, Rows bottom
-			_overlayContainer.pickingMode = PickingMode.Ignore;
+			style.left = 0; style.top = 0; style.right = 0; style.bottom = 0;
+			style.visibility = Visibility.Hidden; // Controlled by UpdateOverlay
+			style.pickingMode = PickingMode.Ignore;
+			
+			// 1. Text Group (Combo + Rows)
+			_textGroup = new VisualElement();
+			_textGroup.name = "TextGroup";
+			_textGroup.style.position = Position.Absolute;
+			_textGroup.style.alignItems = Align.Center;
+			_textGroup.style.flexDirection = FlexDirection.Column;
+			_textGroup.pickingMode = PickingMode.Ignore; 
 
-			// 1. Combo Label at the TOP
+			// Default Position (Bottom Center approx)
+			// Note: We'll apply saved position in SyncPositions or Update
+			_textGroup.style.bottom = 100; 
+			_textGroup.style.left = Length.Percent(50);
+			_textGroup.style.translate = new Translate(Length.Percent(-50), 0, 0);
+
 			_comboLabel = CreateRowLabel("");
 			_comboLabel.name = "ComboLabel";
 			_comboLabel.style.marginBottom = 10;
 			_comboLabel.style.color = new Color(1f, 0.4f, 0.7f); // Pinkish
 			_comboLabel.style.display = DisplayStyle.None;
-			_overlayContainer.Add(_comboLabel);
+			_textGroup.Add(_comboLabel);
 
-			// 2. Row History below combo
 			_rowContainer = new VisualElement();
 			_rowContainer.name = "RowContainer";
 			_rowContainer.style.alignItems = Align.Center;
 			_rowContainer.pickingMode = PickingMode.Ignore;
-			_overlayContainer.Add(_rowContainer);
+			_textGroup.Add(_rowContainer);
 
-			// 3. EKLS Visual Keyboard (Hidden by default until toggled)
+			_overlayContainer.Add(_textGroup);
+
+			// 2. EKLS Visual Keyboard
 			InitializeEKLS();
 			if (_keyboardView != null)
 			{
+				// Default Position
+				_keyboardView.style.position = Position.Absolute;
+				_keyboardView.style.bottom = 300; // Higher than text
+				_keyboardView.style.left = Length.Percent(50);
+				_keyboardView.style.translate = new Translate(Length.Percent(-50), 0, 0);
+				
 				_overlayContainer.Add(_keyboardView);
 			}
 
 			_context.RootUI.Add(_overlayContainer);
+
+			// Initial Position Sync
+			SyncPositionsFromData();
+		}
+
+		private void SyncPositionsFromData()
+		{
+			CompanionData data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+			if (data == null) return;
+
+			if (data.TextOverlayPosition != Vector2.zero)
+			{
+				_textGroup.style.bottom = StyleKeyword.Auto; // Clear bottom
+				_textGroup.style.translate = StyleKeyword.None; // Clear center translate
+				_textGroup.style.left = data.TextOverlayPosition.x;
+				_textGroup.style.top = data.TextOverlayPosition.y;
+			}
+			
+			if (data.KeyboardLayoutPosition != Vector2.zero && _keyboardView != null)
+			{
+				_keyboardView.style.bottom = StyleKeyword.Auto;
+				_keyboardView.style.translate = StyleKeyword.None;
+				_keyboardView.style.left = data.KeyboardLayoutPosition.x;
+				_keyboardView.style.top = data.KeyboardLayoutPosition.y;
+			}
 		}
 
 		private void InitializeEKLS()
@@ -208,6 +258,18 @@ namespace KarmoToys.Features.Companion.Modules
 			// Init Controller
 			_keyboardController = new RealtimeInputController(this);
 			_keyboardController.Initialize(_keyboardView);
+
+			// Register Drag for KeyboardView
+			RegisterDragCallbacks(_keyboardView,
+				() => KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion.KeyboardLayoutPosition ?? Vector2.zero,
+				(pos) => 
+				{
+					var data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
+					if (data != null) data.KeyboardLayoutPosition = pos;
+				});
+				
+			// Apply Edit Mode state to new view
+			UpdateEditModeVisuals();
 		}
 
 		private void PollUnityInput()
@@ -324,7 +386,7 @@ namespace KarmoToys.Features.Companion.Modules
 			}
 
 			ProcessEvents();
-			UpdateOverlay();
+			UpdateOverlay(); // Uses _textGroup logic inside? We need to update that.
 			_keyboardController?.OnUpdate();
 
 			CheckRuntimeSettingsChanges();
@@ -352,6 +414,12 @@ namespace KarmoToys.Features.Companion.Modules
 			CompanionData companion = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
 			if (companion == null) return;
 
+			// Handle Edit Mode Toggle
+			if (_isEditMode != companion.KeyboardEditMode)
+			{
+				UpdateEditModeVisuals();
+			}
+
 			// Handle Runtime Scaling
 			if (Mathf.Abs(_lastScale - companion.KeyboardScale) > 0.01f)
 			{
@@ -373,6 +441,13 @@ namespace KarmoToys.Features.Companion.Modules
 					_keyboardView.Initialize(_currentLayoutData);
 					// Re-apply scale immediately
 					_keyboardView.style.scale = new Scale(Vector2.one * _lastScale);
+                    // Re-register callbacks logic handled in InitializeEKLS called by CheckRuntimeSettingsChanges? 
+                    // No, CheckRuntimeSettingsChanges calls InitializeEKLS? No.
+                    // We need to re-init view if layout changes.
+                    // Wait, existing code:
+                    // if (_lastLayoutType != companion.CurrentLayout) { ... _keyboardView.Initialize(...); }
+                    // It does NOT recreate _keyboardView, just reinits data.
+                    // So callbacks persist! Good.
 				}
 			}
 		}
@@ -609,7 +684,7 @@ namespace KarmoToys.Features.Companion.Modules
 		private void UpdateOverlay()
 		{
 			CompanionData data = KarmoToys.Main.KarmoToysApp.Instance?.Data?.Companion;
-			if (data == null || !data.ShowKeyboardOverlay)
+			if (data == null || (!data.ShowKeyboardOverlay && !_isEditMode)) // If not showing overlay and not in edit mode, hide.
 			{
 				_overlayContainer.style.visibility = Visibility.Hidden;
 				return;
@@ -620,8 +695,31 @@ namespace KarmoToys.Features.Companion.Modules
 
 			if (_keyboardView != null)
 			{
-				_keyboardView.style.display = data.ShowVirtualKeyboard ? DisplayStyle.Flex : DisplayStyle.None;
+				// Keep edit mode visibility in mind?
+                // If Edit Mode is ON, we might want to force show everything?
+                bool showVK = data.ShowVirtualKeyboard || _isEditMode;
+				_keyboardView.style.display = showVK ? DisplayStyle.Flex : DisplayStyle.None;
 			}
+            
+            // Text Group Visibility
+            if (_isEditMode)
+            {
+                // In Edit Mode, always show text group so user can find it
+                _textGroup.style.display = DisplayStyle.Flex;
+                // Maybe add a placeholder label if empty?
+                if (_rowContainer.childCount == 0 && _comboLabel.style.display == DisplayStyle.None)
+                {
+                    // Ensure _activeLabel exists at least
+			        if (_activeLabel == null)
+			        {
+				        _activeLabel = CreateRowLabel("Example Text");
+				        _rowContainer.Add(_activeLabel); 
+			        }
+                    _activeLabel.style.display = DisplayStyle.Flex;
+                    _activeLabel.text = "Drag Me";
+                    _activeLabel.style.opacity = 1.0f;
+                }
+            }
 
 			if (_activeLabel == null)
 			{
@@ -634,6 +732,10 @@ namespace KarmoToys.Features.Companion.Modules
 			{
 				RowData row = _historyRows[i];
 				float elapsed = Time.time - row.LastUpdateTime;
+				// In Edit Mode, don't fade out history? Or just let it be.
+                // Better to freeze fading in Edit Mode so user can grab it.
+                if (_isEditMode) elapsed = 0; // Freeze
+
 				if (elapsed > OverlayHideDelay)
 				{
 					_rowContainer.Remove(row.Label);
@@ -649,6 +751,8 @@ namespace KarmoToys.Features.Companion.Modules
 
 			// Active Label
 			float activeElapsed = Time.time - _lastInputTime;
+            if (_isEditMode) activeElapsed = 0; // Freeze
+
 			if (activeElapsed > OverlayHideDelay && _currentRowKeys.Count > 0)
 			{
 				_currentRowKeys.Clear();
@@ -656,24 +760,39 @@ namespace KarmoToys.Features.Companion.Modules
 				_repeatCount = 0;
 			}
 			
-			if (_currentRowKeys.Count == 0 && _historyRows.Count == 0 && !_isInComboMode)
-			{
-				_overlayContainer.style.visibility = Visibility.Hidden;
-			}
-			else
-			{
-				_activeLabel.style.display = _currentRowKeys.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-				_activeLabel.text = string.Join(" ", _currentRowKeys);
-				float activeAlpha = Mathf.Clamp01(1.0f - (activeElapsed / OverlayHideDelay));
-				_activeLabel.style.opacity = activeAlpha;
-				_activeLabel.style.fontSize = data.KeyboardFontSize;
-				
-				// Ensure active label is ALWAYS the last child
+            // Visibility Logic Calculation
+            bool showText = (_currentRowKeys.Count > 0 || _historyRows.Count > 0 || _isInComboMode || _isEditMode);
+            bool showEKLS = (data.ShowVirtualKeyboard || _isEditMode) && _keyboardView != null;
+            
+            if (!showText && !showEKLS)
+            {
+                 _overlayContainer.style.visibility = Visibility.Hidden;
+            }
+            else
+            {
+                 _overlayContainer.style.visibility = Visibility.Visible;
+            }
+            
+            // Text Group Opacity/Display
+            if (showText)
+            {
+                // _textGroup.style.display = DisplayStyle.Flex; // Already default
+                _activeLabel.style.display = _currentRowKeys.Count > 0 || _isEditMode ? DisplayStyle.Flex : DisplayStyle.None;
+                if (_currentRowKeys.Count > 0) _activeLabel.text = string.Join(" ", _currentRowKeys);
+                else if (_isEditMode && _activeLabel.text == "") _activeLabel.text = "Drag Me"; 
+                
+                float activeAlpha = Mathf.Clamp01(1.0f - (activeElapsed / OverlayHideDelay));
+                _activeLabel.style.opacity = activeAlpha;
+                _activeLabel.style.fontSize = data.KeyboardFontSize;
+                
 				if (_rowContainer.IndexOf(_activeLabel) != _rowContainer.childCount - 1)
 				{
 					_activeLabel.BringToFront();
 				}
-			}
+            }
+            // If !showText, checking children inside Update loop effectively hides them via opacity or logic above.
+            // But if we want to ensure _textGroup is effectively hidden if empty:
+            // _textGroup is just a container.
 
 			// Combo Label
 			if (_isInComboMode && _activeComboKeys.Count > 1)

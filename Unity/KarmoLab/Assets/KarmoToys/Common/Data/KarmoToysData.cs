@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using KarmoToys.Features.Planner;
 using KarmoToys.Features.Dashboard;
+using UnityEngine;
 
 namespace KarmoToys.Common.Data
 {
@@ -73,6 +74,11 @@ namespace KarmoToys.Common.Data
 		public string KeyboardSfxPath = ""; // Path to custom keyboard sound
 		public float KeyboardFontSize = 28f;
 		public float KeyboardScale = 1.0f;
+
+		// UI Positioning
+		public bool KeyboardEditMode = false; // Runtime toggle, not necessarily saved but good to keep state
+		public Vector2 KeyboardLayoutPosition = Vector2.zero; // (0,0) means default
+		public Vector2 TextOverlayPosition = Vector2.zero;
 	}
 
 	[Serializable]
