@@ -1,0 +1,16 @@
+{
+  "name": "WitchMendokusai.Domain",
+  "rootNamespace": "WitchMendokusai.Domain",
+  "references": [
+    "WitchMendokusai.DomainSDK"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
