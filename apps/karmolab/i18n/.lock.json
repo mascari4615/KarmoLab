@@ -15100,7 +15100,9 @@
     "my-ai.login.button": "e225a6fd75",
     "my-ai.login.opened": "8371e6db55",
     "my-ai.login.failed": "b420519d59",
-    "my-ai.note.why": "f2efa80652"
+    "my-ai.note.why": "f2efa80652",
+    "account.menu.about": "fa255f0ccc",
+    "shell.nav.about": "fa255f0ccc"
   },
   "ja": {
     "about.failed": "f11e2dbbfa",
@@ -30203,6 +30205,8 @@
     "my-ai.login.button": "e225a6fd75",
     "my-ai.login.opened": "8371e6db55",
     "my-ai.login.failed": "b420519d59",
-    "my-ai.note.why": "f2efa80652"
+    "my-ai.note.why": "f2efa80652",
+    "account.menu.about": "fa255f0ccc",
+    "shell.nav.about": "fa255f0ccc"
   }
 }

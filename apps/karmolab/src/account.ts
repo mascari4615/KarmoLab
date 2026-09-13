@@ -663,7 +663,6 @@ function mountHeaderAccount(): void {
         bell: svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
         chat: svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.4A8 8 0 1 1 21 12z"/>'),
         folder: svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
-        mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
     };
     const isDark = (): boolean => document.documentElement.getAttribute('data-theme') !== 'light';
 
@@ -737,7 +736,7 @@ function mountHeaderAccount(): void {
                            ${document.querySelector('#headerBell .kl-bell-btn') ? `<button type="button" role="menuitem" data-bell>${ICON.bell}<span>${esc(t('account.menu.bell'))}</span>${bellCountText()}</button>` : ''}
                            ${document.getElementById('klChatDock') ? `<button type="button" role="menuitem" data-chat>${ICON.chat}<span>${esc(t('account.menu.chat'))}</span></button>` : ''}
                            ${filesMenuItem()}
-                           <a role="menuitem" href="/about/">${ICON.mail}<span>${esc(t('account.menu.links'))}</span></a>
+                           <a role="menuitem" href="/about/">${ICON.card}<span>${esc(t('account.menu.about'))}</span></a>
                        </div>
                        ${me || canAccount ? `<div class="kam-group kam-foot">
                            ${me ? t('account.t08') : ''}
