@@ -89,10 +89,12 @@ import type { DashPanelCtx } from './kit';
       '@media(min-width:560px){.au-chart{height:200px}}',
       '.au-sec{display:flex;flex-direction:column;gap:6px}',
       '.au-sec h4{margin:0;font-size:var(--font-size-2xs);color:var(--text-tertiary);font-weight:600}',
-      '.au-line{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:var(--font-size-2xs)}',
-      '.au-line em{font-style:normal;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      /* 가로 넘침 방지. 2026-09-13 실측에서 .au-bar 가 29,375px 로 자라 가로 스크롤 24배 */
+      '.au-sec{min-width:0;max-width:100%;overflow-x:hidden}',
+      '.au-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;font-size:var(--font-size-2xs);min-width:0;max-width:100%}',
+      '.au-line em{font-style:normal;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}',
       '.au-line i{font-style:normal;font-variant-numeric:tabular-nums;color:var(--text-primary)}',
-      '.au-bar{grid-column:1/-1;height:3px;border-radius:var(--radius-pill);background:var(--accent);opacity:.45}',
+      '.au-bar{grid-column:1/-1;height:3px;max-width:100%;border-radius:var(--radius-pill);background:var(--accent);opacity:.45}',
       '.au-foot{font-size:var(--font-size-3xs);color:var(--text-tertiary);line-height:1.7}',
     ].join('');
     document.head.appendChild(el);

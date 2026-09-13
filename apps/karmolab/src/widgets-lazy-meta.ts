@@ -218,11 +218,15 @@ window.KARMOLAB_LAZY_META = [
     get title() { return t('widgets.mydash.title', undefined, "내 대시보드"); },
     category: 'app',
     get desc() { return t('widgets-desc.mydash.desc', undefined, "내 private 저장소를 폰에서 본다. 로그인한 사람만 보인다"); },
-    layout: 'form',
+    /* 자체 화면틀. 도구 장 머리(큰 번호와 설명) 없이 내용 칸을 통째로 사용.
+       왼쪽 목록과 오른쪽 내용이 각각 따로 구르려면 높이가 화면에 묶여야 한다
+       (`html.is-layout-full` 규칙, css/toolbox.css). 커뮤니티, WM, memo 도구와 같은 손 */
+    layout: 'full',
+    noHero: true,
     icon: '<rect x="3" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/>',
     /* ★ **순서가 규약이다.** 패널이 먼저 명부(`window.KarmoDash`)에 붙고, 셸이 마지막에
-       그 명부를 읽어 칩을 만든다. 패널을 더 붙일 때는 이 배열의 **셸 앞에** 넣는다. */
-    lazyScriptPaths: ['mydash/me', 'mydash/ai-usage', 'mydash/bookmarks', 'mydash/pc-vitals', 'mydash/career', 'mydash/shell']
+       그 명부를 읽어 목록을 만든다. 패널을 더 붙일 때는 이 배열의 **셸 앞에** 넣는다. */
+    lazyScriptPaths: ['mydash/home', 'mydash/me', 'mydash/ai-usage', 'mydash/bookmarks', 'mydash/pc-vitals', 'mydash/career', 'mydash/shell']
   },
   {
     id: 'activity',

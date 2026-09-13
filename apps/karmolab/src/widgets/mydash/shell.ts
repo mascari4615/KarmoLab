@@ -27,6 +27,8 @@
  */
 import { dashRegistry, esc, httpsUrl } from './kit';
 import type { DashEntry, DashPanel, DashPanelCtx, DashReadOpts, DashRepoWrite } from './kit';
+import mydashCss from './mydash.css';
+import { t, loadNamespace } from '../../lib/i18n';
 
 declare const Toolbox:
   | {
@@ -670,6 +672,50 @@ declare const Toolbox:
         }
         return out;
       },
+      /**
+       * 브랜치 하나의 파일 전부. **요청 한 번**.
+       *
+       * 이벤트 폴더는 없는 것이 정상인 자리다. 그것을 `list` 로 물으면 GitHub 이 404 를 주고,
+       * 셸이 빈 배열로 바꿔도 브라우저 콘솔에는 빨간 404 가 남는다 (fetch 가 낸 줄이라 코드가
+       * 못 지움). 트리는 브랜치가 있으면 200 이라 콘솔이 조용함
+       *
+       * 브랜치가 아예 없으면 그때만 404 고, 그것은 아직 아무것도 안 쓴 상태라 빈 배열.
+       * `truncated` 는 미처리. 10만 항목 위에서만 잘리고, 그때는 `list` 로 돌아갈 자리
+       */
+      async tree(ref?: string): Promise<DashEntry[]> {
+        const branch = ref || cfg.branch || 'main';
+        const url =
+          API + '/repos/' + cfg.owner + '/' + cfg.repo + '/git/trees/' +
+          encodeURIComponent(branch) + '?recursive=1';
+        let res: Response;
+        try {
+          res = await callUrl(url, 'application/vnd.github+json', branch + ' 트리');
+        } catch (e) {
+          if ((e as DashError).kind === 'notfound') return [];
+          throw e;
+        }
+        let raw: unknown;
+        try {
+          raw = await res.json();
+        } catch {
+          throw new DashError('net', branch + ' 트리가 JSON 이 아니다');
+        }
+        const list = (raw as { tree?: unknown }).tree;
+        if (!Array.isArray(list)) return [];
+        const out: DashEntry[] = [];
+        for (const e of list as Array<{ path?: string; type?: string; size?: number }>) {
+          const p = typeof e.path === 'string' ? e.path : '';
+          if (!p) continue;
+          const at = p.lastIndexOf('/');
+          out.push({
+            name: at >= 0 ? p.slice(at + 1) : p,
+            path: p,
+            type: e.type === 'tree' ? 'dir' : 'file',
+            size: e.size || 0,
+          });
+        }
+        return out;
+      },
       putNewJson,
       enqueueJson,
       flushOutbox,
@@ -686,38 +732,89 @@ declare const Toolbox:
     if (document.getElementById(STYLE_ID)) return;
     const el = document.createElement('style');
     el.id = STYLE_ID;
-    /* 폰이 주 용도다. 기본이 한 칸이고, 넓어지면 늘어난다 (그 반대로 짜면 폰이 늘 남는다). */
-    el.textContent = [
-      '.myd{display:flex;flex-direction:column;gap:12px}',
-      '.myd-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
-      '.myd-title{font-weight:600}',
-      '.myd-stat{font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
-      '.myd-who{margin-left:auto;font-size:var(--font-size-2xs);color:var(--text-tertiary);display:flex;gap:8px;align-items:center}',
-      '.myd-nav{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}',
-      /* 누르는 것은 폰에서 44x44 아래로 안 내려간다. 칩도 예외가 아니다. */
-      '.myd-nav button{flex:0 0 auto;padding:6px 12px;font:inherit;font-size:var(--font-size-2xs);cursor:pointer;',
-      'min-height:44px;min-width:44px;',
-      'background:transparent;color:var(--text-secondary);border:1px solid currentColor;border-radius:var(--radius-pill)}',
-      '.myd-nav button.on{color:var(--text-primary);background:var(--bg-hover)}',
-      '.myd-body{min-height:200px}',
-      '.myd-card{padding:12px 14px;border-radius:var(--radius-lg);background:var(--bg-tertiary);',
-      'display:flex;flex-direction:column;gap:8px}',
-      '.myd-note{font-size:var(--font-size-2xs);color:var(--text-secondary);line-height:1.6}',
-      '.myd-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.6rem;letter-spacing:.16em;',
-      'text-align:center;padding:12px;border-radius:var(--radius-lg);background:var(--bg-secondary);',
-      'border:1px solid var(--border);user-select:all;word-break:break-all}',
-      '.myd-btn{padding:10px 16px;font:inherit;cursor:pointer;border-radius:var(--radius-md);',
-      'background:var(--accent-dim);color:var(--text-primary);border:1px solid var(--accent);text-decoration:none;',
-      'display:inline-block;text-align:center;min-height:44px;min-width:44px;line-height:24px}',
-      '.myd-btn.ghost{background:transparent;border-color:var(--border);color:var(--text-secondary)}',
-      '.myd-btn:hover{background:var(--bg-hover)}',
-      '.myd-warn{padding:10px 12px;border-radius:var(--radius-md);background:var(--warning-subtle);',
-      'border:1px solid var(--warning);font-size:var(--font-size-2xs);line-height:1.6}',
-      '.myd-paths{font-size:var(--font-size-3xs);color:var(--text-tertiary);word-break:break-all;line-height:1.7}',
-      '.myd-row{display:flex;gap:8px;flex-wrap:wrap}',
-      '@media(min-width:640px){.myd-code{font-size:2rem}}',
-    ].join('');
+    /* 오락실(`arcade.css`)과 같은 방식. 위젯 옆의 `.css` 를 글자로 묶어 여기서 삽입
+       위젯이 지연 로드라 셸의 캐시 목록을 안 건드리고 같이 실려 온다. */
+    el.textContent = mydashCss;
     document.head.appendChild(el);
+  }
+
+  /* ── 왼쪽 목록 ──────────────────────────────────────────────────
+     ★ **목록이 탭이다.** 칩 줄을 없앴다. 패널 명부(`dashRegistry`)는 그대로 쓰되, 사람이 보는
+     자리는 이 표가 정한다. 항목과 패널이 1:1 이 아니라서다. 북마크는 두 자리(북마크, 판정 대기)
+     에서 열리고 뒤쪽은 `mode: 'judge'` 로 들어간다. 캘린더와 카톡 메모는 아직 패널이 없어
+     자리만 있다(누르면 준비 중 한 줄).
+
+     여기 없는 패널은 화면에 안 뜬다. 패널을 새로 붙이면 이 표에도 한 줄 넣는다. */
+  type NavItem = {
+    /** 주소(`?dash=`)에 남는 이름. 영소문자와 붙임표만 */
+    id: string;
+    label: string;
+    /** 열 패널 id. 없으면 아직 패널이 없는 자리 */
+    panel?: string;
+    /** 패널에 넘길 갈래 (`DashPanelCtx.mode`) */
+    mode?: string;
+  };
+  type NavGroup = { label: string; items: NavItem[] };
+
+  /** 묶음 셋. i18n 이 늦게 오므로 부를 때마다 다시 만든다 */
+  function navGroups(): NavGroup[] {
+    return [
+      {
+        label: t('mydash.nav.now', undefined, '지금'),
+        items: [
+          { id: 'today', label: t('mydash.nav.today', undefined, '오늘'), panel: 'home' },
+          { id: 'me', label: t('mydash.nav.me', undefined, '나'), panel: 'me' },
+        ],
+      },
+      {
+        label: t('mydash.nav.kept', undefined, '모은 것'),
+        items: [
+          { id: 'bookmarks', label: t('mydash.nav.bookmarks', undefined, '북마크'), panel: 'bookmarks' },
+          { id: 'judge', label: t('mydash.nav.judge', undefined, '판정 대기'), panel: 'bookmarks', mode: 'judge' },
+          { id: 'kakao', label: t('mydash.nav.kakao', undefined, '카톡 메모') },
+        ],
+      },
+      {
+        label: t('mydash.nav.measured', undefined, '재는 것'),
+        items: [
+          { id: 'ai', label: t('mydash.nav.ai', undefined, 'AI 사용'), panel: 'ai-usage' },
+          { id: 'pc', label: t('mydash.nav.pc', undefined, 'PC 성능'), panel: 'pc-vitals' },
+          { id: 'career', label: t('mydash.nav.career', undefined, '커리어'), panel: 'career' },
+          { id: 'calendar', label: t('mydash.nav.calendar', undefined, '캘린더') },
+        ],
+      },
+    ];
+  }
+
+  function navItems(): NavItem[] {
+    const out: NavItem[] = [];
+    for (const g of navGroups()) for (const it of g.items) out.push(it);
+    return out;
+  }
+
+  /* ── 주소 ───────────────────────────────────────────────────────
+     해시는 이미 셸 소관이다 (`#mydash` 가 도구 id). 그래서 패널은 쿼리에 남긴다
+     (`?dash=<항목 id>#mydash`). 커뮤니티가 게시판을 주소에 남기는 방식과 같음.
+     `replaceState` 다. 목록을 훑는 동안 뒤로 가기가 대시보드 안에서만 스무 번 쌓이면
+     사람이 이 도구를 못 빠져나간다. */
+  const URL_KEY = 'dash';
+  function urlItem(): string {
+    try {
+      return new URLSearchParams(location.search).get(URL_KEY) || '';
+    } catch {
+      return '';
+    }
+  }
+  function setUrlItem(id: string): void {
+    try {
+      const q = new URLSearchParams(location.search);
+      if (id) q.set(URL_KEY, id);
+      else q.delete(URL_KEY);
+      const s = q.toString();
+      history.replaceState({}, '', location.pathname + (s ? '?' + s : '') + location.hash);
+    } catch {
+      /* 주소를 못 고쳐도 화면은 바뀐다. 새로고침 때 첫 항목으로 돌아갈 뿐 */
+    }
   }
 
   /* ── 그리기 ────────────────────────────────────────────────────── */
@@ -725,21 +822,39 @@ declare const Toolbox:
     ensureStyle();
     root.innerHTML =
       '<div class="myd">' +
-      '<div class="myd-bar"><span class="myd-title">내 대시보드</span>' +
-      '<span class="myd-stat"></span><span class="myd-who"></span></div>' +
-      '<div class="myd-nav" hidden></div>' +
+      '<nav class="myd-side">' +
+      '<div class="myd-brand">' +
+      esc(t('mydash.shell.title', undefined, '내 대시보드')) +
+      '<small class="myd-when"></small></div>' +
+      '<div class="myd-groups"></div>' +
+      '<div class="myd-foot"><span class="myd-acct"></span>' +
+      '<button type="button" class="myd-btn ghost" data-logout="1" hidden></button></div>' +
+      '</nav>' +
+      '<section class="myd-main">' +
+      '<div class="myd-head"><h2 class="myd-title"></h2><span class="myd-stat"></span></div>' +
       '<div class="myd-body"></div>' +
+      '</section>' +
       '</div>';
-    const whoEl = root.querySelector('.myd-who') as HTMLElement;
+    const whenEl = root.querySelector('.myd-when') as HTMLElement;
+    const acctEl = root.querySelector('.myd-acct') as HTMLElement;
+    const outBtn = root.querySelector('[data-logout]') as HTMLButtonElement;
+    const navEl = root.querySelector('.myd-groups') as HTMLElement;
+    const titleEl = root.querySelector('.myd-title') as HTMLElement;
     const statEl = root.querySelector('.myd-stat') as HTMLElement;
-    const navEl = root.querySelector('.myd-nav') as HTMLElement;
     const bodyEl = root.querySelector('.myd-body') as HTMLElement;
+
+    whenEl.textContent = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    outBtn.textContent = t('mydash.shell.logout', undefined, '나가기');
 
     /* 패널이 붙여 둔 뒷정리. 패널을 갈아 끼울 때마다 부른다. 안 부르면 타이머가 쌓인다. */
     let cleanups: Array<() => void> = [];
-    /* 지금 보던 패널을 다시 그리는 함수. 오류 카드의 "다시 시도" 가 호출
+    /* 지금 보던 자리를 다시 그리는 함수. 오류 카드의 다시 시도 가 호출.
        로그인 화면으로 갈 때마다 비운다. */
-    let reopenPanel: (() => void) | null = null;
+    let reopen: (() => void) | null = null;
     /* ★ **패널마다 제 칸 하나.** 셸이 `bodyEl` 을 그대로 건네면 늦게 끝난 async render 가
        이미 다음 패널이 그려 놓은 화면 위에 덮어쓰기 (패널을 빨리 두 번 바꿀 때).
        그래서 패널을 열 때마다 새 div 를 만들어 붙이고 그 div 만 건넴. 갈아 끼울 때 이전 div 는
@@ -750,6 +865,11 @@ declare const Toolbox:
     /* 머리말 한 줄(statEl)과 실패 보고는 화면에 하나뿐이라 칸으로 못 가름. 세대 번호로 가름.
        지금 세대가 아닌 패널이 부르면 무시. */
     let panelGen = 0;
+    /** 지금 열린 목록 항목 id */
+    let currentItem = '';
+    /** 목록의 작은 수. 홈이 채운다. 목록을 다시 그려도 남게 여기 든다 */
+    const counts: Record<string, string> = {};
+
     function disposePanel(): void {
       panelGen++;
       for (const fn of cleanups) {
@@ -778,11 +898,83 @@ declare const Toolbox:
       bodyEl.innerHTML = html;
     }
 
+    /** 목록에 있는 그 항목. 없으면 null */
+    function itemById(id: string): NavItem | null {
+      return navItems().filter((x) => x.id === id)[0] || null;
+    }
+    /** 그 항목이 열 패널. 코드가 아직 안 실렸으면 null */
+    function panelFor(it: NavItem): DashPanel | null {
+      if (!it.panel) return null;
+      return reg.panels.filter((p) => p.id === it.panel)[0] || null;
+    }
+
+    /**
+     * 목록을 처음부터 다시 그린다. `enabled` 가 거짓이면 회색으로 보이되 못 누름
+     * (로그인 전. 무엇이 있는 화면인지는 보이고, 눌러 봐야 읽을 것이 없다).
+     */
+    function paintNav(enabled: boolean): void {
+      navEl.textContent = '';
+      for (const g of navGroups()) {
+        const box = document.createElement('div');
+        box.className = 'myd-group';
+        const h = document.createElement('h3');
+        h.textContent = g.label;
+        box.appendChild(h);
+        for (const it of g.items) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'myd-item' + (it.id === currentItem ? ' on' : '');
+          b.setAttribute('data-item', it.id);
+          if (it.panel) b.setAttribute('data-panel', it.panel);
+          b.disabled = !enabled;
+          const label = document.createElement('span');
+          label.className = 'myd-label';
+          label.textContent = it.label;
+          const n = document.createElement('span');
+          n.className = 'myd-n';
+          n.setAttribute('data-n', it.id);
+          n.textContent = counts[it.id] || '';
+          b.appendChild(label);
+          b.appendChild(n);
+          b.addEventListener('click', () => openItem(it.id));
+          box.appendChild(b);
+        }
+        navEl.appendChild(box);
+      }
+    }
+
+    function markNav(): void {
+      for (const b of Array.from(navEl.querySelectorAll('.myd-item'))) {
+        b.classList.toggle('on', b.getAttribute('data-item') === currentItem);
+      }
+    }
+
+    /** 목록 오른쪽 작은 수. 홈이 읽은 값을 그대로 쓴다 */
+    function setCount(id: string, value: string): void {
+      counts[id] = value;
+      const el = navEl.querySelector('[data-n="' + id + '"]');
+      if (el) el.textContent = value;
+    }
+
+    /** 여는 손. 로그인 뒤에 `showDashboard` 가 갈아 끼운다 */
+    let openItem = (id: string): void => {
+      /* 로그인 전에는 목록이 회색이라 여기 올 일이 없다 */
+      void id;
+    };
+
     /* ── 로그인 전 화면.
        이 사이트는 공개다. 남이 이 주소를 열 수 있고, 열면 **이게 뭔지**와 **왜 안 보이는지**가
        바로 보여야 한다. 데이터는 한 줄도 안 그린다. 로그인 전에는 그릴 데이터가 아예 없다
        (셸이 아무것도 안 받아 왔다). 대신 무엇을 읽는 화면인지는 밝힌다. */
     function showLoggedOut(cfg: Config | null, why?: string): void {
+      currentItem = '';
+      reopen = null;
+      openItem = (): void => undefined;
+      paintNav(false);
+      acctEl.textContent = '';
+      outBtn.hidden = true;
+      statEl.textContent = '';
+      titleEl.textContent = t('mydash.shell.title', undefined, '내 대시보드');
       const paths = reg.panels.map((p) => p.title + ', ' + p.paths.join(', '));
       say(
         '<div class="myd-card">' +
@@ -806,6 +998,8 @@ declare const Toolbox:
     }
 
     function showConfigHelp(msg: string): void {
+      paintNav(false);
+      titleEl.textContent = t('mydash.shell.title', undefined, '내 대시보드');
       say(
         '<div class="myd-card">' +
           '<div class="myd-warn">아직 설정이 없습니다. ' + esc(msg) + '</div>' +
@@ -956,45 +1150,48 @@ declare const Toolbox:
       saveToken(null);
       /* 토큰이 없으면 보낼 수도 없음. 남은 outbox 는 안 지움. 다시 로그인하면 그때 감 */
       stopOnline?.();
-      reopenPanel = null;
-      navEl.hidden = true;
-      navEl.textContent = '';
-      whoEl.textContent = '';
-      /* 머리말에는 패널이 적어 둔 host 이름이 남아 있다. 안 지우면 로그아웃한 화면에
-         읽던 저장소 이름이 그대로 걸린다. 로그인 전 화면과 같아야 한다. */
-      statEl.textContent = '';
+      for (const k of Object.keys(counts)) delete counts[k];
+      setUrlItem('');
       showLoggedOut(cfg);
     }
 
-    /* ── 로그인 뒤. 패널 명부를 그대로 칩으로 만든다. */
+    /* ── 로그인 뒤 ── */
     async function showDashboard(cfg: Config): Promise<void> {
       const repo = makeRepo(cfg);
       /* 로그인 뒤 한 번. 지난 화면에서 그물이 끊겨 못 보낸 것이 남아 있을 수 있음 */
       void flushAndSay(repo);
       watchOnline(repo);
-      whoEl.innerHTML =
-        '<span>' + esc(cfg.owner + '/' + cfg.repo) + '</span>' +
-        /* 여기만 44px 아래로 내리면 폰에서 못 누른다. 좁게 보이려고 padding 만 줄인다. */
-        '<button class="myd-btn ghost" data-logout="1" style="padding:4px 10px">나가기</button>';
-      (whoEl.querySelector('[data-logout]') as HTMLElement | null)?.addEventListener('click', () => logout(cfg));
+      acctEl.textContent = cfg.owner + '/' + cfg.repo;
+      acctEl.title = cfg.owner + '/' + cfg.repo;
+      outBtn.hidden = false;
+      outBtn.onclick = (): void => logout(cfg);
 
-      const panels = reg.panels;
-      if (!panels.length) {
-        say('<div class="myd-card"><div class="myd-note">붙은 패널이 없습니다.</div></div>');
-        return;
+      /** 아직 패널이 없는 자리. 자리는 두고 그 말만 한다 */
+      function showSoon(it: NavItem): void {
+        titleEl.textContent = it.label;
+        statEl.textContent = '';
+        say(
+          '<div class="myd-card"><div class="myd-note">' +
+            esc(t('mydash.shell.soon', undefined, '아직 준비 중입니다. 자리만 잡아 뒀습니다.')) +
+            '</div></div>'
+        );
       }
-      navEl.hidden = panels.length < 2;
-      navEl.textContent = '';
-      let current = '';
 
-      const open = (panel: DashPanel): void => {
-        if (current === panel.id) return;
-        current = panel.id;
-        for (const b of Array.from(navEl.querySelectorAll('button'))) {
-          b.classList.toggle('on', b.getAttribute('data-panel') === panel.id);
-        }
+      /** 패널 코드가 안 실린 자리. 지연 로드가 반쯤 실패하면 여기로 온다 */
+      function showMissing(it: NavItem): void {
+        titleEl.textContent = it.label;
+        statEl.textContent = '';
+        say(
+          '<div class="myd-card"><div class="myd-warn">' +
+            esc(t('mydash.shell.noPanel', undefined, '이 화면의 코드가 안 실렸습니다. 새로고침하세요.')) +
+            '</div></div>'
+        );
+      }
+
+      function openPanel(it: NavItem, panel: DashPanel): void {
         disposePanel();
         bodyEl.textContent = '';
+        titleEl.textContent = it.label;
 
         /* 이 패널의 칸. 다음 패널로 넘어가면 `disposePanel` 이 떼어 냄. */
         const gen = panelGen;
@@ -1015,6 +1212,15 @@ declare const Toolbox:
           /* 링크 조립용 이름 셋. 패널이 근거에서 원본 파일로 내려갈 때 씀 */
           repoInfo: { owner: cfg.owner, repo: cfg.repo, branch: cfg.branch || 'main' },
           status,
+          mode: it.mode,
+          setCount: (id, value) => {
+            if (!isCurrent()) return;
+            setCount(id, value);
+          },
+          openItem: (id) => {
+            if (!isCurrent()) return;
+            openItem(id);
+          },
           isCurrent,
           /* 이미 넘어간 패널이 뒤늦게 맡기면 다음 패널 목록에 섞임. 그 자리에서 치우기. */
           onDispose: (fn) => {
@@ -1034,30 +1240,41 @@ declare const Toolbox:
              putNewJson 이 없어 부를 수가 없음. 화면 쪽 차단 문구는 없앰 (쓰기가 붙었다).
              토큰에 쓰기 권한이 있는지는 여기서 못 알아냄. 첫 쓰기가 403, 404 로 막힐 때
              `perm` 으로 안내 (makeRepo 의 putNewJson). */
-          const out = panel.access === 'read' ? panel.render(ctx) : panel.render(ctx);
+          const out = panel.render(ctx);
           void Promise.resolve(out).catch((e: unknown) => {
             if (isCurrent()) onPanelFail(cfg, e);
           });
         } catch (e) {
           onPanelFail(cfg, e);
         }
-      };
-
-      /* 같은 패널을 다시 연다. `open` 은 같은 id 면 아무것도 안 하므로 표식을 먼저 비운다. */
-      reopenPanel = (): void => {
-        const p = panels.filter((x) => x.id === current)[0] || panels[0];
-        current = '';
-        open(p);
-      };
-
-      for (const p of panels) {
-        const b = document.createElement('button');
-        b.textContent = p.title;
-        b.setAttribute('data-panel', p.id);
-        b.addEventListener('click', () => open(p));
-        navEl.appendChild(b);
       }
-      open(panels[0]);
+
+      openItem = (id: string): void => {
+        const it = itemById(id);
+        if (!it) return;
+        currentItem = it.id;
+        markNav();
+        setUrlItem(it.id);
+        reopen = (): void => {
+          currentItem = '';
+          openItem(it.id);
+        };
+        if (!it.panel) {
+          showSoon(it);
+          return;
+        }
+        const panel = panelFor(it);
+        if (!panel) {
+          showMissing(it);
+          return;
+        }
+        openPanel(it, panel);
+      };
+
+      paintNav(true);
+      /* 새로고침해도 같은 화면. 주소에 남은 자리가 먼저고, 없거나 모르는 이름이면 오늘 */
+      const want = itemById(urlItem());
+      openItem(want ? want.id : 'today');
     }
 
     /**
@@ -1068,7 +1285,7 @@ declare const Toolbox:
      * 기기 흐름을 처음부터 다시 타게 됨 (한도에 걸린 사람에게 더 많은 요청을 시킴).
      * - ratelimit, net: 잠깐 못 닿음. 그대로 두고 다시 시도
      * - notfound: 파일 하나가 없거나 그 경로에 권한이 없는 것. **토큰 문제가 아님.**
-     *   경로를 문구에 그대로 보이고 다시 시도. 계정을 바꾸려면 머리말의 나가기
+     *   경로를 문구에 그대로 보이고 다시 시도. 계정을 바꾸려면 목록 맨 아래 나가기
      * - perm: 읽기는 되는데 쓰기가 막힌 것. 토큰을 지우면 안 됨. 다시 로그인해도 같은 자리에서
      *   또 막히고, 사람이 보는 것은 로그인이 자꾸 풀리는 화면뿐. GitHub App 설치 화면에서
      *   Contents 를 Read & write 로 바꾸고 승인해야 풀림
@@ -1079,12 +1296,7 @@ declare const Toolbox:
       const kind: FailKind = err && err.kind ? err.kind : 'net';
       const msg = err && err.message ? err.message : '알 수 없는 실패';
       if (kind === 'auth') {
-        reopenPanel = null;
         showLoggedOut(cfg, '로그인이 풀렸습니다. 다시 로그인하세요.');
-        navEl.hidden = true;
-        navEl.textContent = '';
-        whoEl.textContent = '';
-        statEl.textContent = '';
         return;
       }
       statEl.textContent = '';
@@ -1098,7 +1310,7 @@ declare const Toolbox:
           '</div>' +
           (kind === 'notfound'
             ? '<div class="myd-note">로그인은 그대로입니다. 저장소에 그 경로가 없거나, ' +
-              '이 계정이 그 경로를 못 읽습니다. 계정을 바꾸려면 머리말의 나가기.</div>'
+              '이 계정이 그 경로를 못 읽습니다. 계정을 바꾸려면 목록 맨 아래 나가기.</div>'
             : '') +
           (kind === 'perm'
             ? '<div class="myd-note">로그인은 그대로입니다. 읽기는 되는데 <b>쓰기 권한</b>이 ' +
@@ -1110,13 +1322,15 @@ declare const Toolbox:
           '</div>'
       );
       (bodyEl.querySelector('[data-retry]') as HTMLElement | null)?.addEventListener('click', () => {
-        /* 토큰은 그대로. 보던 패널만 다시 그린다. 패널이 없으면 목록부터 다시. */
-        if (reopenPanel) reopenPanel();
+        /* 토큰은 그대로. 보던 자리만 다시 그린다. 없으면 목록부터 다시. */
+        if (reopen) reopen();
         else void showDashboard(cfg);
       });
     }
 
     /* ── 첫 진입 ── */
+    paintNav(false);
+    titleEl.textContent = t('mydash.shell.title', undefined, '내 대시보드');
     void (async () => {
       let cfg: Config;
       try {
@@ -1139,6 +1353,9 @@ declare const Toolbox:
       else showLoggedOut(cfg);
     })();
   }
+
+  /* 목록의 이름은 그리는 그 순간에 정해진다. 옮긴 말을 미리 받아 둔다 */
+  void loadNamespace('mydash').catch(() => undefined);
 
   /* ── 등록.
      맨바깥 이름 `Toolbox` 를 먼저 본다 (셸은 `const Toolbox` 로 만든다. const 는 window 에 안 붙는다).
