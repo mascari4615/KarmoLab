@@ -4014,24 +4014,19 @@ html[data-skin="field"][data-theme="dark"] {
 .sidebar-list .nav-item.active .nav-icon { opacity: 1; }
 .sidebar-list .nav-icon { left: 13px; }
 
-/* 하위 항목 (트리). 지금 열린 도구가 Toolbox.setSubNav 로 꽂은 줄. 부모 줄 아래 한 단 더 들여쓰고
-   아이콘 자리에 세로 선 하나. 묶음 사이는 머리 없이 간격만 (2026-09-13) */
+/* 하위 항목 (트리). 지금 열린 도구가 Toolbox.setSubNav 로 꽂은 줄. 부모 줄 아래 한 단 더 들여쓰기,
+   아이콘 없음. 왼쪽 강조는 켜진 줄 하나에만 (2026-09-13 사용자: 왼쪽 강조가 둘이면 어색). 묶음 사이는 간격만 */
 .sidebar-list .nav-sub-item { padding-left: 44px; }
-.sidebar-list .nav-sub-item::before {
-    content: '';
-    position: absolute;
-    left: 20px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--border);
-}
-.sidebar-list .nav-sub-item.active::before { background: var(--accent); }
 .sidebar-list .nav-sub-item.nav-sub-gap { margin-top: 8px; }
 .sidebar-list .nav-sub-item.is-disabled { color: var(--text-tertiary); cursor: default; }
 .sidebar-list .nav-sub-item.is-disabled:hover { background: var(--row-bg); }
-/* 하위가 켜지면 부모는 줄기만 남긴다. 켜진 줄이 둘로 보이지 않게 */
-.sidebar-list .nav-item.active:has(~ .nav-sub-item.active) { background: var(--row-bg); color: var(--text-primary); font-weight: 600; }
+/* 하위가 켜지면 부모는 글자만 굵게. 배경과 왼쪽 선은 켜진 하위 줄 것 */
+.sidebar-list .nav-item.active:has(~ .nav-sub-item.active) {
+    background: var(--row-bg);
+    color: var(--text-primary);
+    border-left-color: transparent;
+    font-weight: 600;
+}
 
 /* 레일: 탭은 세로 아이콘만, 목록은 숨김 */
 html[data-sidebar="rail"] .sidebar-tabs { flex-direction: column; align-items: center; padding: 8px 0; }

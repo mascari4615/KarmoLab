@@ -3220,21 +3220,16 @@ html[data-skin="field"][data-theme="dark"] {
 .sidebar-list .nav-icon { left: 13px; }
 
 .sidebar-list .nav-sub-item { padding-left: 44px; }
-.sidebar-list .nav-sub-item::before {
-    content: '';
-    position: absolute;
-    left: 20px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--border);
-}
-.sidebar-list .nav-sub-item.active::before { background: var(--accent); }
 .sidebar-list .nav-sub-item.nav-sub-gap { margin-top: 8px; }
 .sidebar-list .nav-sub-item.is-disabled { color: var(--text-tertiary); cursor: default; }
 .sidebar-list .nav-sub-item.is-disabled:hover { background: var(--row-bg); }
 
-.sidebar-list .nav-item.active:has(~ .nav-sub-item.active) { background: var(--row-bg); color: var(--text-primary); font-weight: 600; }
+.sidebar-list .nav-item.active:has(~ .nav-sub-item.active) {
+    background: var(--row-bg);
+    color: var(--text-primary);
+    border-left-color: transparent;
+    font-weight: 600;
+}
 
 html[data-sidebar="rail"] .sidebar-tabs { flex-direction: column; align-items: center; padding: 8px 0; }
 html[data-sidebar="rail"] .sidebar-tab { width: 32px; height: 32px; padding: 0; justify-content: center; }
