@@ -380,6 +380,7 @@
     "test:meong": "node scripts/smoke-meong.mjs",
     "test:mesh3d": "node scripts/smoke-mesh3d.mjs",
     "test:mp3": "node scripts/test-mp3.mjs",
+    "test:mydash-cal": "node scripts/test-mydash-calendar.mjs",
     "test:names": "node scripts/check-input-names.mjs",
     "test:navigation": "node scripts/smoke-navigation.mjs",
     "test:new-tool": "node scripts/test-new-tool.mjs",

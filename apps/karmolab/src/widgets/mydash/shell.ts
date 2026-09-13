@@ -741,7 +741,7 @@ declare const Toolbox:
   /* ── 왼쪽 목록 ──────────────────────────────────────────────────
      ★ **목록이 탭이다.** 칩 줄을 없앴다. 패널 명부(`dashRegistry`)는 그대로 쓰되, 사람이 보는
      자리는 이 표가 정한다. 항목과 패널이 1:1 이 아니라서다. 북마크는 두 자리(북마크, 판정 대기)
-     에서 열리고 뒤쪽은 `mode: 'judge'` 로 들어간다. 캘린더와 카톡 메모는 아직 패널이 없어
+     에서 열리고 뒤쪽은 `mode: 'judge'` 로 들어간다. 카톡 메모는 아직 패널이 없어
      자리만 있다(누르면 준비 중 한 줄).
 
      여기 없는 패널은 화면에 안 뜬다. 패널을 새로 붙이면 이 표에도 한 줄 넣는다. */
@@ -780,7 +780,7 @@ declare const Toolbox:
           { id: 'ai', label: t('mydash.nav.ai', undefined, 'AI 사용'), panel: 'ai-usage' },
           { id: 'pc', label: t('mydash.nav.pc', undefined, 'PC 성능'), panel: 'pc-vitals' },
           { id: 'career', label: t('mydash.nav.career', undefined, '커리어'), panel: 'career' },
-          { id: 'calendar', label: t('mydash.nav.calendar', undefined, '캘린더') },
+          { id: 'calendar', label: t('mydash.nav.calendar', undefined, '캘린더'), panel: 'calendar' },
         ],
       },
     ];
