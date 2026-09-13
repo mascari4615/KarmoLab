@@ -4,9 +4,9 @@
  * 무엇인가: 나머지 여섯 화면이 무엇을 들고 있는지 한 장으로. 카드마다 숫자 셋까지고,
  * 점수도 진행률도 없음. 판정은 사람, 화면은 재기만
  *
- * ★ **카드 하나가 파일 하나.** 카드마다 자기 summary 만 읽고, 실패하면 **그 카드만**
- * 못 읽음 과 이유로 바뀐다. 하나가 없다고 홈 전체가 오류 카드가 되면, 아직 안 구운 생성기
- * 하나 때문에 다 있는 여섯을 못 보는 일 방지
+ * ★ **카드 하나가 출처 하나.** 카드마다 자기 summary 만 읽고 (캘린더만 저장소가 아니라
+ * 구글에서 받는다), 실패하면 **그 카드만** 못 읽음 과 이유로 바뀐다. 하나가 없다고 홈 전체가
+ * 오류 카드가 되면, 아직 안 구운 생성기 하나 때문에 다 있는 여섯을 못 보는 일 방지
  *
  * ★ **왼쪽 목록의 작은 수도 여기서 채운다** (`ctx.setCount`). 목록이 제 숫자를 따로 받아 오면
  * 같은 파일을 두 번 읽으면 두 값이 갈리는 순간 발생. 읽는 자리는 하나
@@ -14,6 +14,9 @@
 import { dashRegistry, esc, short, usd } from './kit';
 import type { DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
+import { storedToken } from '../planner/gauth';
+import { fetchCalendars, fetchEvents } from '../planner/gcal';
+import type { FcEvent } from '../planner/gcal';
 
 (function (): void {
   'use strict';
@@ -249,13 +252,64 @@ import { t, loadNamespace } from '../../lib/i18n';
     };
   }
 
-  /** 캘린더는 아직 읽을 파일이 없다. 자리와 다음에 무엇이 오는지만 */
-  function calendarCard(): Card {
+  /**
+   * 캘린더. **저장소가 아니라 구글에서** 받는 카드 하나.
+   *
+   * 토큰은 캘린더 패널과 플래너가 같이 쓰는 그것(`planner/gauth`). 없으면 연결 필요 와 열기만
+   * 그린다. 여기서 로그인 창은 안 띄움. 홈은 여섯 카드를 한 번에 그리는 자리, 하나가 팝업을
+   * 열면 어느 카드가 누른 것인지 구분 불가.
+   */
+  async function calendarCard(): Promise<Card> {
+    const title = t('mydash.nav.calendar', undefined, '캘린더');
+    const needAuth: Card = {
+      item: 'calendar',
+      title,
+      lines: [t('mydash.cal.needAuth', undefined, '연결 필요')],
+      quiet: t(
+        'mydash.cal.connectNote',
+        undefined,
+        '브라우저에서 Google 에 직접 로그인. 토큰은 이 브라우저에만, 1시간 뒤 다시 누름'
+      ),
+      open: true,
+    };
+    const token = storedToken();
+    if (!token) return needAuth;
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from.getTime() + 86400000);
+    let items: FcEvent[];
+    try {
+      items = await fetchEvents(token, await fetchCalendars(token), from, to);
+    } catch (e) {
+      /* 401 은 토큰이 죽은 것. 못 읽음 이 아니라 연결 필요 다. 그 밖은 그대로 던져
+         카드 자리에 못 읽음 과 이유가 뜨게 한다 */
+      if (/\b401\b/.test((e as Error).message || '')) return needAuth;
+      throw e;
+    }
+    /* 종일이 먼저, 그 다음 시작 시각 순. 패널의 칸 순서와 같은 규칙 */
+    const sorted = items.slice().sort((a, b) => {
+      if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+      return a.start < b.start ? -1 : a.start > b.start ? 1 : 0;
+    });
+    const first = sorted[0];
+    let line = t('mydash.cal.homeNone', undefined, '오늘 일정 없음');
+    if (first) {
+      const at = new Date(first.start);
+      const time = first.allDay
+        ? t('mydash.cal.allDay', undefined, '종일')
+        : Number.isFinite(at.getTime())
+          ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0')
+          : '';
+      const name = first.title || t('mydash.cal.noTitle', undefined, '제목 없음');
+      line = t('mydash.cal.homeFirst', { time, title: name }, '{time} {title}');
+    }
     return {
       item: 'calendar',
-      title: t('mydash.nav.calendar', undefined, '캘린더'),
-      lines: [t('mydash.shell.soon', undefined, '아직 준비 중입니다. 자리만 잡아 뒀습니다.')],
-      quiet: t('mydash.home.cal.plan', undefined, 'Google 로그인으로 연결 예정'),
+      title,
+      big: { value: String(sorted.length), unit: t('mydash.cal.homeUnit', undefined, '오늘 일정') },
+      lines: [line],
+      count: String(sorted.length),
+      open: true,
     };
   }
 
