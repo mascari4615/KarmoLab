@@ -47,6 +47,17 @@
       ]
     },
     {
+      "name": "test:mydash-cal",
+      "watch": [
+        "src/widgets/mydash/calendar.ts",
+        "src/widgets/mydash/home.ts",
+        "src/widgets/planner/gauth.ts",
+        "src/widgets/planner/gcal.ts",
+        "scripts/test-mydash-calendar.mjs",
+        "i18n/*/mydash.json"
+      ]
+    },
+    {
       "name": "test:planner",
       "watch": [
         "src/widgets/planner/**",
