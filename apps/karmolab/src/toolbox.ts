@@ -155,6 +155,47 @@ const Toolbox = (() => {
     /** 옆줄의 내 것 칸을 다시 그리는 손잡이. 옆줄이 만들어질 때 채워진다. */
     let rebuildMineGroup = null;
 
+    /* ── 도구의 하위 항목 (2026-09-13, 사용자 결정) ──────────────────────────
+       도구가 자기 안의 갈래(대시보드의 오늘, 북마크, 캘린더 같은 것)를 옆줄에 꽂는 공용 통로.
+       도구마다 사이드바를 하나 더 세우면 사이드바가 둘이 되고 KarmoLab 모양도 깨진다.
+       규약: 지금 열린 도구의 것만 그린다. 다른 도구로 가면 자동으로 걷힌다.
+       모양은 기존 목록 항목(`.nav-item`)과 같은 클래스라 스킨을 따로 안 맞춘다. */
+    /** { toolId, groups: [{ label, items: [{ id, label, count?, active?, onSelect }] }] } */
+    let subNav = null;
+
+    function setSubNav(toolId, groups) {
+        if (!toolId || !Array.isArray(groups) || !groups.length) { subNav = null; }
+        else subNav = { toolId, groups };
+        rebuildMineGroup?.();
+    }
+
+    function clearSubNav(toolId) {
+        if (subNav && (!toolId || subNav.toolId === toolId)) { subNav = null; rebuildMineGroup?.(); }
+    }
+
+    /** 하위 항목의 작은 수나 켜짐만 갱신. 목록 전체를 다시 안 그린다 */
+    function patchSubNav(toolId, itemId, patch) {
+        if (!subNav || subNav.toolId !== toolId) return;
+        for (const g of subNav.groups) for (const it of g.items) {
+            if (it.id !== itemId) continue;
+            if (patch && typeof patch.count !== 'undefined') it.count = patch.count;
+            if (patch && typeof patch.active === 'boolean') {
+                for (const g2 of subNav.groups) for (const o of g2.items) o.active = false;
+                it.active = patch.active;
+            }
+        }
+        const root = document.getElementById('sidebar-nav');
+        if (!root) return;
+        root.querySelectorAll('[data-subnav]').forEach((el) => {
+            const id = el.getAttribute('data-subnav');
+            const found = subNav.groups.flatMap(g => g.items).find(x => x.id === id);
+            if (!found) return;
+            el.classList.toggle('active', !!found.active);
+            const num = el.querySelector('.nav-item-num');
+            if (num) num.textContent = found.count == null ? '' : String(found.count);
+        });
+    }
+
     function getPins() {
         try {
             const raw = localStorage.getItem(PINNED_KEY);
@@ -1553,6 +1594,25 @@ const Toolbox = (() => {
                 /* 지금 열린 도구 한 줄 (app-shell 공백 2026-08-30, 2026-09-05 실측). 탭이 안 따라가니
                    고른 탭에 그 도구가 없으면 옆줄 어디에도 표시가 없었다 (내 것 0개일 때 늘).
                    목록 위 한 줄. 목록 안에 있으면 거기서 켜지니 안 그림 (두 번 표시 X) */
+                /* 지금 열린 도구가 꽂아 둔 하위 항목. 부모 줄 바로 아래, 한 단 들여서 (트리).
+                   묶음 머리는 안 그리고 묶음 사이만 띄운다 (사용자 결정 2026-09-13) */
+                const appendSubItems = (list, toolId) => {
+                    if (!subNav || subNav.toolId !== toolId) return;
+                    subNav.groups.forEach((g, gi) => {
+                        g.items.forEach((it, ii) => {
+                            const a = document.createElement('a');
+                            a.className = 'nav-item nav-sub-item' + (it.active ? ' active' : '')
+                                + (it.onSelect ? '' : ' is-disabled') + (gi > 0 && ii === 0 ? ' nav-sub-gap' : '');
+                            a.href = '#';
+                            a.dataset.subnav = it.id;
+                            a.title = it.label;
+                            a.innerHTML = '<span class="nav-item-text">' + escapeHtml(it.label || '') + '</span>'
+                                + '<span class="nav-item-num">' + (it.count == null ? '' : escapeHtml(String(it.count))) + '</span>';
+                            a.onclick = (e) => { e.preventDefault(); if (it.onSelect) it.onSelect(it.id); };
+                            list.appendChild(a);
+                        });
+                    });
+                };
                 const nowTool = (currentPageId !== 'home' && !cur.tools.some(t => t.id === currentPageId))
                     ? tools.find(t => t.id === currentPageId) : null;
                 if (nowTool) {
@@ -1564,6 +1624,7 @@ const Toolbox = (() => {
                     nowList.className = 'sidebar-list sidebar-now';
                     addNavItem(nowList, nowTool);
                     nowList.lastElementChild.classList.add('active');
+                    appendSubItems(nowList, nowTool.id);
                     sidebarNavEl.appendChild(nowList);
                 }
                 const head = document.createElement('div');
@@ -1580,6 +1641,7 @@ const Toolbox = (() => {
                         num.className = 'nav-item-num';
                         num.textContent = String(i + 1).padStart(2, '0');
                         list.lastElementChild.appendChild(num);
+                        if (tool.id === currentPageId) appendSubItems(list, tool.id);
                     });
                 } else {
                     const note = document.createElement('p');
@@ -2194,6 +2256,8 @@ const Toolbox = (() => {
         if (currentPageId !== pageId) {
             runLifecycle(hiders, currentPageId);
             unloadTool(currentPageId);
+            /* 떠나는 도구의 하위 항목은 걷는다. 도착한 도구가 제 것을 다시 꽂는다 */
+            if (subNav && subNav.toolId === currentPageId) subNav = null;
         }
         currentPageId = pageId;
         /* 머리띠에 지금 연 도구 이름. 왼쪽 목록이 접혀 있어도 여기가 어디인지 보인다 */
@@ -3147,6 +3211,7 @@ const Toolbox = (() => {
         register, registerDeferred, init, initTheme, switchPage, switchTab, getTools, mountTool, findBundleFor,
         openSettingsModal, closeSettingsModal,
         takeBundleRequest,
+        setSubNav, clearSubNav, patchSubNav,
         onDispose,
         // 안 보는 동안 멈춘다 (change.widget-idle-cost). 상태는 살리고 그리기만 멈춘다
         onHide, onShow, raf, keepAlive,
