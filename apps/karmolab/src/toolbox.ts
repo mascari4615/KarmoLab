@@ -1523,7 +1523,7 @@ const Toolbox = (() => {
             const recent = window.KarmoPalette?.getRecent?.() || [];
             const last = (() => { try { return localStorage.getItem(LAST_PAGE_KEY); } catch (_) { return null; } })();
             return [
-                { label: text2('shell.nav.mine', '내 것'), tools: pickTools(pins, 12),
+                { label: text2('shell.nav.mine', '즐겨찾기'), tools: pickTools(pins, 12),
                   empty: text2('shell.nav.mine.empty', '도구 옆 별을 누르면 여기 모입니다') },
                 { label: text2('shell.nav.popular', '많이 쓰는 것'), tools: pickTools(popular, 6) },
                 { label: text2('shell.nav.recent', '최근 본 것'), tools: pickTools([last, ...recent].filter(Boolean), 6) },
@@ -1542,7 +1542,7 @@ const Toolbox = (() => {
                첫 화면 카드 다섯과 같은 차례. 유틸 갈래는 그 뒤 */
             const MADE_IDS = ['meok', 'heung', 'karmograph', 'arcade', 'wm'];
             const MADE_ICON = '<path d="M4 20l4-1 10-10-3-3L5 16z"/><path d="M13 7l3 3"/>';
-            let sidebarTab = localStorage.getItem(SIDEBAR_TAB_KEY) || 'made';
+            let sidebarTab = localStorage.getItem(SIDEBAR_TAB_KEY) || 'mine';
             function catToolsOf(catId) {
                 const list = tools.filter(t => t.category === catId
                     && !hiddenSet.has(t.id)
@@ -1564,11 +1564,15 @@ const Toolbox = (() => {
                 const allTools = tools.filter(t => t.category !== 'app' && !hiddenSet.has(t.id) && !(isDesktopOnlyTool(t) && !isDesktopApp()))
                     .sort((a, b) => String(a.title || a.id).localeCompare(String(b.title || b.id), 'ko'));
                 tabs.push({ id: 'all', label: text2('shell.nav.all', '전부'), icon: '', tools: allTools, empty: '' });
-                if (!tabs.some(t => t.id === sidebarTab)) sidebarTab = 'made';
+                /* 보이는 탭은 즐겨찾기 하나 (사용자 2026-09-13: 만든 것과 갈래 분류는 지금 뜻이 없다. 시스템은 남김,
+                   나중에 분류가 필요해지면 이 목록에 id 를 더한다). 켜진 탭을 다시 누르면 전부 */
+                const SHOWN_TABS = ['mine'];
+                tabs.forEach(t => { t.hiddenTab = t.id !== 'all' && !SHOWN_TABS.includes(t.id); });
+                if (!tabs.some(t => t.id === sidebarTab && !t.hiddenTab)) sidebarTab = SHOWN_TABS[0];
                 const row = document.createElement('div');
                 row.className = 'sidebar-tabs';
                 row.setAttribute('role', 'tablist');
-                tabs.filter(t => t.id !== 'all').forEach(t => {
+                tabs.filter(t => t.id !== 'all' && !t.hiddenTab).forEach(t => {
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     const on = t.id === sidebarTab;
