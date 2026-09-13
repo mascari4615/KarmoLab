@@ -35,11 +35,21 @@ declare const Toolbox:
       register: (m: unknown) => void;
       getLazyWidgetPublicMeta?: (id: string) => object;
       onDispose?: (fn: () => void) => void;
+      /** 셸 사이드바에 이 도구의 하위 항목을 꽂는다. 도구를 떠나면 셸이 걷는다 */
+      setSubNav?: (toolId: string, groups: SubNavGroup[]) => void;
+      clearSubNav?: (toolId?: string) => void;
+      patchSubNav?: (toolId: string, itemId: string, patch: { count?: string; active?: boolean }) => void;
     }
   | undefined;
 
+type SubNavItem = { id: string; label: string; count?: string; active?: boolean; onSelect?: (id: string) => void };
+type SubNavGroup = { label: string; items: SubNavItem[] };
+
 (function (): void {
   'use strict';
+
+  /** 셸 도구 id. `#mydash` 와 setSubNav 의 첫 인자 */
+  const TOOL_ID = 'mydash';
 
   type Config = {
     /** 기기 흐름 릴레이의 뿌리 주소. 끝의 빗금은 있어도 없어도 된다. */
@@ -738,9 +748,11 @@ declare const Toolbox:
     document.head.appendChild(el);
   }
 
-  /* ── 왼쪽 목록 ──────────────────────────────────────────────────
-     ★ **목록이 탭이다.** 칩 줄을 없앴다. 패널 명부(`dashRegistry`)는 그대로 쓰되, 사람이 보는
-     자리는 이 표가 정한다. 항목과 패널이 1:1 이 아니라서다. 북마크는 두 자리(북마크, 판정 대기)
+  /* ── 목록 ───────────────────────────────────────────────────────
+     ★ **목록이 탭이다.** PC 에서는 셸 사이드바의 하위 항목(`Toolbox.setSubNav`)으로 뜨고,
+     좁은 화면과 접힌 사이드바에서는 내용 위 가로 줄(`.myd-strip`)로 뜬다. 자체 왼쪽 열은
+     없앴다 (사이드바가 둘이면 KarmoLab 모양이 깨짐. 사용자 2026-09-13).
+     패널 명부(`dashRegistry`)는 그대로 쓰되, 사람이 보는 자리는 이 표가 정한다. 항목과 패널이 1:1 이 아니라서다. 북마크는 두 자리(북마크, 판정 대기)
      에서 열리고 뒤쪽은 `mode: 'judge'` 로 들어간다. 카톡 메모는 아직 패널이 없어
      자리만 있다(누르면 준비 중 한 줄).
 
@@ -822,20 +834,16 @@ declare const Toolbox:
     ensureStyle();
     root.innerHTML =
       '<div class="myd">' +
-      '<nav class="myd-side">' +
-      '<div class="myd-brand">' +
-      esc(t('mydash.shell.title', undefined, '내 대시보드')) +
-      '<small class="myd-when"></small></div>' +
+      '<nav class="myd-strip" aria-label="' + esc(t('mydash.shell.title', undefined, '내 대시보드')) + '">' +
       '<div class="myd-groups"></div>' +
-      '<div class="myd-foot"><span class="myd-acct"></span>' +
-      '<button type="button" class="myd-btn ghost" data-logout="1" hidden></button></div>' +
       '</nav>' +
       '<section class="myd-main">' +
-      '<div class="myd-head"><h2 class="myd-title"></h2><span class="myd-stat"></span></div>' +
+      '<div class="myd-head"><h2 class="myd-title"></h2><span class="myd-stat"></span>' +
+      '<span class="myd-acct"></span>' +
+      '<button type="button" class="myd-btn ghost" data-logout="1" hidden></button></div>' +
       '<div class="myd-body"></div>' +
       '</section>' +
       '</div>';
-    const whenEl = root.querySelector('.myd-when') as HTMLElement;
     const acctEl = root.querySelector('.myd-acct') as HTMLElement;
     const outBtn = root.querySelector('[data-logout]') as HTMLButtonElement;
     const navEl = root.querySelector('.myd-groups') as HTMLElement;
@@ -843,11 +851,6 @@ declare const Toolbox:
     const statEl = root.querySelector('.myd-stat') as HTMLElement;
     const bodyEl = root.querySelector('.myd-body') as HTMLElement;
 
-    whenEl.textContent = new Date().toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
     outBtn.textContent = t('mydash.shell.logout', undefined, '나가기');
 
     /* 패널이 붙여 둔 뒷정리. 패널을 갈아 끼울 때마다 부른다. 안 부르면 타이머가 쌓인다. */
@@ -891,6 +894,7 @@ declare const Toolbox:
     toolbox()?.onDispose?.(() => {
       disposePanel();
       stopOnline?.();
+      toolbox()?.clearSubNav?.(TOOL_ID);
     });
 
     function say(html: string): void {
@@ -911,15 +915,26 @@ declare const Toolbox:
     /**
      * 목록을 처음부터 다시 그린다. `enabled` 가 거짓이면 회색으로 보이되 못 누름
      * (로그인 전. 무엇이 있는 화면인지는 보이고, 눌러 봐야 읽을 것이 없다).
+     * 두 자리에 같은 것을 그린다. 셸 사이드바 하위 항목과 좁은 화면용 가로 줄.
      */
     function paintNav(enabled: boolean): void {
+      toolbox()?.setSubNav?.(
+        TOOL_ID,
+        navGroups().map((g) => ({
+          label: g.label,
+          items: g.items.map((it) => ({
+            id: it.id,
+            label: it.label,
+            count: counts[it.id],
+            active: it.id === currentItem,
+            onSelect: enabled ? (id: string): void => openItem(id) : undefined,
+          })),
+        }))
+      );
       navEl.textContent = '';
       for (const g of navGroups()) {
         const box = document.createElement('div');
         box.className = 'myd-group';
-        const h = document.createElement('h3');
-        h.textContent = g.label;
-        box.appendChild(h);
         for (const it of g.items) {
           const b = document.createElement('button');
           b.type = 'button';
@@ -947,6 +962,7 @@ declare const Toolbox:
       for (const b of Array.from(navEl.querySelectorAll('.myd-item'))) {
         b.classList.toggle('on', b.getAttribute('data-item') === currentItem);
       }
+      if (currentItem) toolbox()?.patchSubNav?.(TOOL_ID, currentItem, { active: true });
     }
 
     /** 목록 오른쪽 작은 수. 홈이 읽은 값을 그대로 쓴다 */
@@ -954,6 +970,7 @@ declare const Toolbox:
       counts[id] = value;
       const el = navEl.querySelector('[data-n="' + id + '"]');
       if (el) el.textContent = value;
+      toolbox()?.patchSubNav?.(TOOL_ID, id, { count: value });
     }
 
     /** 여는 손. 로그인 뒤에 `showDashboard` 가 갈아 끼운다 */

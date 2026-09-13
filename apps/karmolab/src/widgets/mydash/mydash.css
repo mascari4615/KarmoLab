@@ -2,16 +2,16 @@
  * 개인 대시보드 자체 화면틀.
  *
  * 도구 장 머리(큰 번호와 설명)를 안 쓰고 내용 칸을 통째로 쓴다 (`layout: 'full'`).
- * 왼쪽 236px 록록과 오른쪽 내용, 세로 스크롤은 각각 따로.
+ * 목록은 셸 사이드바의 하위 항목 (`Toolbox.setSubNav`), 자체 왼쪽 열 없음
+ * 좁은 화면(900 미만)과 접힌 사이드바(레일)에서만 내용 위 가로 줄(`.myd-strip`)
  *
  * 색, 둥글기, 글자 크기는 전부 `css/toolbox.css` 의 스킨 토큰. 여기 직접 적는 값은
- * 목록 폭, 옆판 폭, 손가락 표적 크기 셋뿐. 그 셋도 이름을 붙여 한 곳에서만 사용
+ * 옆판 폭과 손가락 표적 크기 둘뿐. 그 둘도 이름을 붙여 한 곳에서만 사용
  */
 .myd {
-  --myd-side: 236px;
   --myd-tap: 44px;
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   height: 100%;
@@ -20,53 +20,33 @@
   color: var(--text-primary);
 }
 
-/* ── 왼쪽 록록 ─────────────────────────────────────────── */
-.myd-side {
-  flex: 0 0 var(--myd-side);
-  width: var(--myd-side);
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
+/* ── 가로 줄 (좁은 화면과 레일 전용) ────────────────────── */
+.myd-strip {
+  display: none;
+  flex: none;
+  border-bottom: 1px solid var(--border);
   background: var(--bg-primary);
 }
-.myd-brand {
-  padding: var(--space-md) var(--space-md) var(--space-sm);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  line-height: 1.4;
-}
-.myd-brand small {
+html[data-sidebar="rail"] .myd-strip {
   display: block;
-  font-size: var(--font-size-xs);
-  font-weight: 400;
-  color: var(--text-tertiary);
-  word-break: break-all;
 }
-/* 목록만 따로 스크롤. 계정 줄은 늘 바닥에 고정 */
 .myd-groups {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 var(--space-sm) var(--space-md);
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-xs) var(--space-sm);
 }
-.myd-group + .myd-group {
-  margin-top: var(--space-md);
-}
-.myd-group h3 {
-  margin: 0 0 var(--space-xs);
-  padding: 0 var(--space-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--text-tertiary);
+.myd-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
 .myd-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  width: 100%;
+  gap: var(--space-xs);
   min-height: var(--myd-tap);
   padding: var(--space-xs) var(--space-sm);
   border: 0;
@@ -75,7 +55,7 @@
   color: var(--text-primary);
   font: inherit;
   font-size: var(--font-size-sm);
-  text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 .myd-item:hover:not(:disabled) {
@@ -96,28 +76,17 @@
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
 }
-.myd-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.myd-foot {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-top: 1px solid var(--border);
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
+.myd-item .myd-n:empty {
+  display: none;
 }
 .myd-acct {
+  margin-left: auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
 }
 
 /* ── 오른쪽 내용 ───────────────────────────────────────── */
@@ -302,44 +271,10 @@
   color: var(--text-tertiary);
 }
 
-/* ── 좁은 화면. 록록이 위 가로 줄로 접힌다 ──────────────── */
+/* ── 좁은 화면. 가로 줄이 뜨고 내용 여백이 줄어든다 ─────────── */
 @media (max-width: 899px) {
-  .myd {
-    flex-direction: column;
-  }
-  .myd-side {
-    flex: none;
-    width: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .myd-brand {
-    padding-bottom: var(--space-xs);
-  }
-  .myd-groups {
-    flex: none;
-    display: flex;
-    gap: var(--space-md);
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 var(--space-sm) var(--space-sm);
-  }
-  .myd-group + .myd-group {
-    margin-top: 0;
-  }
-  .myd-group {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-  }
-  .myd-group h3 {
-    margin: 0;
-    white-space: nowrap;
-  }
-  .myd-item {
-    width: auto;
-    white-space: nowrap;
+  .myd-strip {
+    display: block;
   }
   .myd-main {
     padding: var(--space-md) var(--space-md) var(--space-2xl);

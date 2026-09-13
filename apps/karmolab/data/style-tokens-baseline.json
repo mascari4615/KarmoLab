@@ -1,5 +1,5 @@
 {
- "total": 122,
+ "total": 120,
  "files": {
   "css/community.css": 15,
   "css/lotto.css": 1,
@@ -7,7 +7,7 @@
   "css/toolbox.css": 5,
   "css/tools.css": 17,
   "src/widgets/alarm.ts": 1,
-  "src/widgets/arcade/arcade.css": 61,
+  "src/widgets/arcade/arcade.css": 59,
   "src/widgets/cockpit/task-tab.ts": 1,
   "src/widgets/conch.ts": 1,
   "src/widgets/countdown.ts": 1,
@@ -26,7 +26,7 @@
   "src/widgets/toast.ts": 1,
   "src/widgets/user.ts": 1
  },
- "colorTotal": 1379,
+ "colorTotal": 1372,
  "colorFiles": {
   "css/community.css": 16,
   "css/lotto.css": 3,
@@ -45,7 +45,7 @@
   "src/secrets.ts": 2,
   "src/toolbox.ts": 1,
   "src/widgets/alarm.ts": 2,
-  "src/widgets/arcade/arcade.css": 480,
+  "src/widgets/arcade/arcade.css": 474,
   "src/widgets/arcade/three-board.ts": 2,
   "src/widgets/bluemarble/bluemarble.ts": 36,
   "src/widgets/bon/styles.ts": 9,
@@ -88,7 +88,7 @@
   "src/widgets/password.ts": 2,
   "src/widgets/perf/perf.ts": 5,
   "src/widgets/pet.ts": 2,
-  "src/widgets/planner/planner.ts": 5,
+  "src/widgets/planner/planner.ts": 4,
   "src/widgets/plaza.ts": 5,
   "src/widgets/quest-log/quest-log.ts": 16,
   "src/widgets/servermonitor.ts": 1,
