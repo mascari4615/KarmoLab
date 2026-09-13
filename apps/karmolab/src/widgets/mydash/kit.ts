@@ -29,6 +29,18 @@ export interface DashRepoRead {
    * 없는 폴더는 던지지 않고 빈 배열. 아직 안 만든 이벤트 달을 매번 try 로 감싸지 않게.
    */
   list(path: string, opts?: DashReadOpts): Promise<DashEntry[]>;
+  /**
+   * 브랜치 하나의 **파일 전부**를 한 번에 (git trees, recursive).
+   *
+   * 왜 따로 있나. `list` 는 폴더마다 한 번씩 물어 본다. 아직 안 만든 폴더를 물으면
+   * GitHub 이 404 를 주고, 그것이 브라우저 콘솔에 빨간 줄로 남는다. 셸이 잡아 빈 배열로
+   * 바꿔도 콘솔의 404 는 안 지워진다 (fetch 가 낸 것이라 코드가 못 막는다). 이벤트처럼
+   * **없는 것이 정상인 폴더**는 트리 한 번(200)으로 훑고 접두로 거름
+   *
+   * 브랜치 자체가 없을 때만 404 가 나고, 그때는 빈 배열.
+   * `path` 는 폴더 경로 없이 저장소 뿌리 기준 전체 목록을 준다. 거르는 것은 부르는 쪽.
+   */
+  tree(ref?: string): Promise<DashEntry[]>;
 }
 
 export interface DashEntry {
@@ -109,6 +121,21 @@ export interface DashPanelCtx<R extends DashRepoRead = DashRepoRead> {
   repoInfo: DashRepoInfo;
   /** 머리말 오른쪽에 한 줄. 굽는 중, 언제 구운 것인가 같은 말. 지난 패널이 부르면 셸이 무시. */
   status(text: string): void;
+  /**
+   * 이 패널을 **어느 목록 항목으로** 열었나. 없으면 기본.
+   *
+   * 목록 항목과 패널이 1:1 이 아니다. 북마크는 북마크 와 판정 대기 두 자리에서 열리고,
+   * 뒤쪽은 바로 한 장 모드로 들어가야 한다. 항목 id 를 통째로 넘기면 패널이 셸의 목록 구성을
+   * 알아야 하므로, 셸이 갈래 이름만 골라 넘긴다 (`'judge'`).
+   */
+  mode?: string;
+  /**
+   * 왼쪽 목록 항목 오른쪽의 **작은 수** 채우기. 홈이 읽은 값 그대로
+   * 모르는 항목 id 는 조용히 무시. 지난 패널이 부르면 셸이 무시.
+   */
+  setCount(itemId: string, text: string): void;
+  /** 다른 목록 항목으로 옮긴다. 홈 카드의 열기. 모르는 id 는 무시 */
+  openItem(itemId: string): void;
   /**
    * 이 패널이 아직 화면에 있나. 셸이 `root` 와 `status` 를 이미 막아 주므로 보통은 안 봐도 됨.
    * 긴 async 를 도중에 접거나, 셸이 안 막아 주는 것(전역 타이머, 바깥 저장)을 건드릴 때만.

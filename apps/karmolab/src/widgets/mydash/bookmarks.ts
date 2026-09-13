@@ -206,6 +206,13 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-row.is-pick{cursor:pointer}',
       /* 아래에서 올라오는 시트. 폰은 바닥에 붙고 넓은 화면은 가운데 */
       '.bm-sheet{position:fixed;inset:0;z-index:3000;display:flex;flex-direction:column;justify-content:flex-end}',
+      /* 닫힌 시트가 화면 전체를 덮어 마우스를 먹던 결함 (2026-09-13 실측 1440x900 전부 차단). UA 의 [hidden] 을 이 규칙이 이겼음 */
+      '.bm-sheet[hidden]{display:none!important}',
+      /* PC 에서는 오른쪽 서랍. 목록은 그대로 눌리고 막은 없음 */
+      '@media(min-width:900px){.bm-sheet{left:auto;right:0;top:var(--header-h,0px);width:420px;justify-content:flex-start;align-items:stretch;',
+      'border-left:1px solid var(--border-color)}',
+      '.bm-sheet .bm-scrim{display:none}',
+      '.bm-sheet .bm-sheet-card{max-height:none;height:100%;max-width:none;width:100%;border-radius:0;border-top:0}}',
       '.bm-scrim{position:absolute;inset:0;background:var(--modal-scrim)}',
       '.bm-sheet-card{position:relative;max-height:85vh;overflow:auto;background:var(--bg-secondary);',
       'border-top:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;',
@@ -639,26 +646,36 @@ import { t, loadNamespace } from '../../lib/i18n';
       eventCount = 0;
       latest.clear();
       const ref = repo.eventsBranch;
-      const months = await repo.list(EVENTS_DIR, { ref }).catch(() => []);
+      /* 브랜치 트리 한 번. 빈 폴더를 contents API 로 물으면 404 가 콘솔에 찍히던 소음 제거 (2026-09-13).
+         브랜치 자체가 없을 때만 빈 배열 */
+      const entries = await repo.tree(ref).catch(() => []);
+      type Entry = (typeof entries)[number];
+      const prefix = EVENTS_DIR + '/';
+      const byMonth = new Map<string, Entry[]>();
+      for (const e of entries) {
+        if (e.type !== 'file' || e.path.indexOf(prefix) !== 0 || !/\.json$/i.test(e.name)) continue;
+        const month = e.path.slice(prefix.length).split('/')[0];
+        if (!month) continue;
+        const bag = byMonth.get(month);
+        if (bag) bag.push(e);
+        else byMonth.set(month, [e]);
+      }
       const keep = recentMonthKeys(Date.now());
-      const dirs = months.filter(
-        (e) =>
-          e.type === 'dir' &&
-          (keep.indexOf(e.name) >= 0 || foldedThrough < 0 || monthEndMs(e.name) > foldedThrough)
+      const dirs = Array.from(byMonth.keys()).filter(
+        (name) => keep.indexOf(name) >= 0 || foldedThrough < 0 || monthEndMs(name) > foldedThrough
       );
       /* 달 단위로 병렬. 한 달이 실패해도 나머지는 그린다 (침묵 금지, 아래에서 한 줄로 알림) */
       const perMonth = await Promise.all(
-        dirs.map(async (d) => {
+        dirs.map(async (name) => {
           try {
-            const files = await repo.list(d.path, { ref });
             /* 이름으로는 안 자른다. 자르는 자는 위의 달 폴더뿐 */
-            const want = files.filter((f) => f.type === 'file' && /\.json$/i.test(f.name));
+            const want = byMonth.get(name) || [];
             const read = await mapLimit(want, EVENT_READ_LIMIT, (f) =>
               repo.readJson<unknown>(f.path, { ref }).catch(() => null)
             );
             return read;
           } catch {
-            skippedMonths.push(d.name);
+            skippedMonths.push(name);
             return [] as unknown[];
           }
         })

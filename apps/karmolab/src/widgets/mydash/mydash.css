@@ -1,0 +1,351 @@
+/*
+ * 개인 대시보드 자체 화면틀.
+ *
+ * 도구 장 머리(큰 번호와 설명)를 안 쓰고 내용 칸을 통째로 쓴다 (`layout: 'full'`).
+ * 왼쪽 236px 록록과 오른쪽 내용, 세로 스크롤은 각각 따로.
+ *
+ * 색, 둥글기, 글자 크기는 전부 `css/toolbox.css` 의 스킨 토큰. 여기 직접 적는 값은
+ * 목록 폭, 옆판 폭, 손가락 표적 크기 셋뿐. 그 셋도 이름을 붙여 한 곳에서만 사용
+ */
+.myd {
+  --myd-side: 236px;
+  --myd-tap: 44px;
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* ── 왼쪽 록록 ─────────────────────────────────────────── */
+.myd-side {
+  flex: 0 0 var(--myd-side);
+  width: var(--myd-side);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg-primary);
+}
+.myd-brand {
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.myd-brand small {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--text-tertiary);
+  word-break: break-all;
+}
+/* 목록만 따로 스크롤. 계정 줄은 늘 바닥에 고정 */
+.myd-groups {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 var(--space-sm) var(--space-md);
+}
+.myd-group + .myd-group {
+  margin-top: var(--space-md);
+}
+.myd-group h3 {
+  margin: 0 0 var(--space-xs);
+  padding: 0 var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.myd-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--myd-tap);
+  padding: var(--space-xs) var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.myd-item:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.myd-item.on {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+}
+.myd-item:disabled {
+  color: var(--text-tertiary);
+  cursor: default;
+}
+.myd-item .myd-n {
+  flex: none;
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.myd-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.myd-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--border);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+.myd-acct {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 오른쪽 내용 ───────────────────────────────────────── */
+.myd-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-md) var(--space-lg) var(--space-2xl);
+}
+.myd-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+.myd-title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 600;
+}
+.myd-stat {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+.myd-body {
+  min-height: 0;
+}
+
+/* ── 카드와 버튼. 로그인 화면과 안내가 쓴다 ─────────────── */
+.myd-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 44em;
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+.myd-note {
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.myd-note b {
+  color: var(--text-primary);
+}
+.myd-paths {
+  font-size: var(--font-size-xs);
+  line-height: 1.7;
+  color: var(--text-tertiary);
+  word-break: break-all;
+}
+.myd-warn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-md);
+  background: var(--warning-subtle);
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+}
+.myd-row {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.myd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--myd-tap);
+  min-width: var(--myd-tap);
+  padding: 0 var(--space-md);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  cursor: pointer;
+}
+.myd-btn.ghost {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+.myd-btn:hover {
+  background: var(--bg-hover);
+}
+.myd-code {
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--font-size-display-md);
+  letter-spacing: 0.16em;
+  text-align: center;
+  user-select: all;
+  word-break: break-all;
+}
+
+/* ── 홈 ────────────────────────────────────────────────── */
+.mydh-date {
+  margin: 0 0 var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+.mydh-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+@media (min-width: 680px) {
+  .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1040px) {
+  .mydh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.mydh-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+.mydh-card h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+.mydh-big {
+  margin: 0;
+  font-size: var(--font-size-display-sm);
+  font-weight: 500;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+.mydh-big small {
+  margin-left: var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--text-secondary);
+}
+.mydh-card p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.mydh-card p.mydh-quiet {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+.mydh-open {
+  margin-top: auto;
+  padding-top: var(--space-sm);
+}
+.mydh-open button {
+  min-height: var(--myd-tap);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.mydh-bad {
+  color: var(--text-tertiary);
+}
+
+/* ── 좁은 화면. 록록이 위 가로 줄로 접힌다 ──────────────── */
+@media (max-width: 899px) {
+  .myd {
+    flex-direction: column;
+  }
+  .myd-side {
+    flex: none;
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .myd-brand {
+    padding-bottom: var(--space-xs);
+  }
+  .myd-groups {
+    flex: none;
+    display: flex;
+    gap: var(--space-md);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 var(--space-sm) var(--space-sm);
+  }
+  .myd-group + .myd-group {
+    margin-top: 0;
+  }
+  .myd-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .myd-group h3 {
+    margin: 0;
+    white-space: nowrap;
+  }
+  .myd-item {
+    width: auto;
+    white-space: nowrap;
+  }
+  .myd-main {
+    padding: var(--space-md) var(--space-md) var(--space-2xl);
+  }
+}
+
+/* 나가기 같은 짧은 버튼이 좁은 칸에서 두 줄로 꺾이지 않게 */
+.myd-btn { white-space: nowrap; }
+
