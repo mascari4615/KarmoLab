@@ -982,36 +982,70 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     /* ── 로그인 전 화면.
        이 사이트는 공개다. 남이 이 주소를 열 수 있고, 열면 **이게 뭔지**와 **왜 안 보이는지**가
        바로 보여야 한다. 데이터는 한 줄도 안 그린다. 로그인 전에는 그릴 데이터가 아예 없다
-       (셸이 아무것도 안 받아 왔다). 대신 무엇을 읽는 화면인지는 밝힌다. */
+       (셸이 아무것도 안 받아 왔다). 대신 무엇을 읽는 화면인지는 밝힌다.
+
+       ★ 화면틀은 로그인 전에도 보인다 (사용자 2026-09-16). 목록은 살아 있고, 오늘은 빈 카드
+       일곱, 다른 자리는 로그인 안내. 로그인 카드가 화면을 통째로 차지하던 것을 위쪽 한 장으로. */
     function showLoggedOut(cfg: Config | null, why?: string): void {
-      currentItem = '';
       reopen = null;
-      openItem = (): void => undefined;
-      paintNav(false);
       acctEl.textContent = '';
       outBtn.hidden = true;
       statEl.textContent = '';
-      titleEl.textContent = t('mydash.shell.title', undefined, '내 대시보드');
-      const paths = reg.panels.map((p) => p.title + ', ' + p.paths.join(', '));
-      say(
-        '<div class="myd-card">' +
+
+      function loginCardHtml(compact: boolean): string {
+        const paths = reg.panels.map((p) => p.title + ', ' + p.paths.join(', '));
+        return (
+          '<div class="myd-card myd-card--login">' +
           (why ? '<div class="myd-warn">' + esc(why) + '</div>' : '') +
           '<div class="myd-note">' +
-          '차곡의 개인 대시보드입니다. 데이터는 이 사이트가 아니라 <b>private 저장소</b>' +
-          (cfg ? ' (' + esc(cfg.owner + '/' + cfg.repo) + ')' : '') +
-          '에 있고, 로그인한 브라우저가 GitHub 에서 <b>직접</b> 받아 갑니다. ' +
-          '이 사이트의 서버는 그 데이터를 보관하지도 거치지도 않습니다.<br>' +
-          '그 저장소에 접근 권한이 없는 계정으로 로그인하면 GitHub 이 404 를 줍니다. ' +
-          '읽을 수 있는 사람만 읽힙니다.' +
+          (compact
+            ? '데이터는 <b>private 저장소</b>' +
+              (cfg ? ' (' + esc(cfg.owner + '/' + cfg.repo) + ')' : '') +
+              '에 있고, 로그인한 브라우저가 GitHub 에서 직접 받아 갑니다.'
+            : '차곡의 개인 대시보드입니다. 데이터는 이 사이트가 아니라 <b>private 저장소</b>' +
+              (cfg ? ' (' + esc(cfg.owner + '/' + cfg.repo) + ')' : '') +
+              '에 있고, 로그인한 브라우저가 GitHub 에서 <b>직접</b> 받아 갑니다. ' +
+              '이 사이트의 서버는 그 데이터를 보관하지도 거치지도 않습니다.<br>' +
+              '그 저장소에 접근 권한이 없는 계정으로 로그인하면 GitHub 이 404 를 줍니다. ' +
+              '읽을 수 있는 사람만 읽힙니다.') +
           '</div>' +
-          (paths.length
+          (!compact && paths.length
             ? '<div class="myd-paths">읽는 것: ' + esc(paths.join(' / ')) + '</div>'
             : '') +
           '<div class="myd-row"><button class="myd-btn" data-login="1">GitHub 로 로그인</button></div>' +
           '</div>'
-      );
-      const btn = bodyEl.querySelector('[data-login]') as HTMLButtonElement | null;
-      btn?.addEventListener('click', () => void startLogin());
+        );
+      }
+
+      function wireLogin(): void {
+        const btn = bodyEl.querySelector('[data-login]') as HTMLButtonElement | null;
+        btn?.addEventListener('click', () => void startLogin());
+      }
+
+      /* 로그인 전의 열기. 화면틀이 있는 패널(홈)은 그것을, 나머지는 안내 한 장 */
+      openItem = (id: string): void => {
+        const it = itemById(id);
+        if (!it) return;
+        currentItem = it.id;
+        markNav();
+        setUrlItem(it.id);
+        titleEl.textContent = it.label;
+        const panel = panelFor(it);
+        disposePanel();
+        if (panel && panel.renderEmpty) {
+          bodyEl.innerHTML = loginCardHtml(true);
+          const box = document.createElement('div');
+          bodyEl.appendChild(box);
+          panel.renderEmpty(box);
+        } else {
+          bodyEl.innerHTML = loginCardHtml(false);
+        }
+        wireLogin();
+      };
+
+      paintNav(true);
+      const want = itemById(urlItem());
+      openItem(want ? want.id : 'today');
     }
 
     function showConfigHelp(msg: string): void {

@@ -22,7 +22,6 @@
   "my-ai.connection.manage": "設定で API を管理",
   "my-ai.t01": "サブスクごとの残量。可能ならライブで照会し、塞がれていれば最後に使ったときの値を出す。",
   "my-ai.t02": "再読み込み",
-  "my-ai.t03": "デスクトップアプリ専用. トークンとログはこの PC にしかない。",
   "my-ai.t04": "読み込んだ直後",
   "my-ai.t10": "数値なし",
   "my-ai.t11": "残り {n}%",
@@ -70,5 +69,12 @@
   "my-ai.login.button": "ログイン",
   "my-ai.login.opened": "ターミナル窓でログインを済ませると、ここが読み直す。",
   "my-ai.login.failed": "ログイン窓を開けなかった ({why})",
-  "my-ai.note.why": "止まった理由: {why}"
+  "my-ai.note.why": "止まった理由: {why}",
+  "my-ai.note.from": "{host} が送った値。ノートPCでは直接測れないため、そのPCの最後の観測を表示する。",
+  "my-ai.key.placeholder": "ノートPCのパスワード",
+  "my-ai.key.show": "表示",
+  "my-ai.key.forget": "忘れる",
+  "my-ai.key.need": "ノートPCに問い合わせるにはパスワードが必要。保存先はこのブラウザだけ。",
+  "my-ai.key.wrong": "パスワードが違う。",
+  "my-ai.env.desktop_only": "環境検査はこのPCのファイルを読むため、デスクトップアプリでのみ動く。"
 }

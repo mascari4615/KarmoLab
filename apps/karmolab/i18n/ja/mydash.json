@@ -197,5 +197,6 @@
   "mydash.cal.needAuth": "未接続",
   "mydash.cal.homeUnit": "今日の予定",
   "mydash.cal.homeNone": "今日の予定はありません",
-  "mydash.cal.homeFirst": "{time} {title}"
+  "mydash.cal.homeFirst": "{time} {title}",
+  "mydash.home.needLogin": "ログイン後に埋まる"
 }
