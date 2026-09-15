@@ -284,3 +284,8 @@ html[data-sidebar="rail"] .myd-strip {
 /* 나가기 같은 짧은 버튼이 좁은 칸에서 두 줄로 꺾이지 않게 */
 .myd-btn { white-space: nowrap; }
 
+
+/* 로그인 전 화면틀. 값 자리는 하이픈, 카드는 흐리게. 로그인 카드는 위쪽 한 장 */
+.mydh-card--empty { opacity: 0.6; }
+.mydh-card--empty .mydh-big { color: var(--text-tertiary); }
+.myd-card--login { margin-bottom: var(--space-md); }

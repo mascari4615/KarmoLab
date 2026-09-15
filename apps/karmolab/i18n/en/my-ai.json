@@ -22,7 +22,6 @@
   "my-ai.connection.manage": "Manage APIs in Settings",
   "my-ai.t01": "How much is left per subscription. Asked live where possible; otherwise the value from the last time you used that tool.",
   "my-ai.t02": "Refresh",
-  "my-ai.t03": "Desktop app only. the tokens and logs live on this machine.",
   "my-ai.t04": "Just read",
   "my-ai.t10": "No figure",
   "my-ai.t11": "{n}% left",
@@ -70,5 +69,12 @@
   "my-ai.login.button": "Login",
   "my-ai.login.opened": "Finish signing in in the terminal window and this card reloads.",
   "my-ai.login.failed": "Could not open the login window ({why})",
-  "my-ai.note.why": "Blocked by: {why}"
+  "my-ai.note.why": "Blocked by: {why}",
+  "my-ai.note.from": "Pushed by {host}. The laptop cannot measure this itself, so this is that PC's last observation.",
+  "my-ai.key.placeholder": "Laptop password",
+  "my-ai.key.show": "Show",
+  "my-ai.key.forget": "Forget",
+  "my-ai.key.need": "Asking the laptop needs its password. It stays in this browser only.",
+  "my-ai.key.wrong": "Wrong password.",
+  "my-ai.env.desktop_only": "The environment audit reads files on this machine, so it only works in the desktop app."
 }

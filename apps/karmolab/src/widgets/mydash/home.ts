@@ -332,6 +332,38 @@ import type { FcEvent } from '../planner/gcal';
     );
   }
 
+  /** 로그인 전. 같은 배치, 값은 하이픈. 열기 없음 (눌러도 읽을 것이 없다) */
+  function emptyHtml(title: string): string {
+    return (
+      '<div class="mydh-card mydh-card--empty">' +
+      '<h3>' + esc(title) + '</h3>' +
+      '<p class="mydh-big">-</p>' +
+      '<p class="mydh-quiet">' + esc(t('mydash.home.needLogin', undefined, '로그인 뒤 채워진다')) + '</p>' +
+      '</div>'
+    );
+  }
+
+  function renderEmpty(root: HTMLElement): void {
+    const today = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    });
+    const titles = [
+      t('mydash.nav.bookmarks', undefined, '북마크'),
+      t('mydash.nav.me', undefined, '나'),
+      t('mydash.nav.career', undefined, '커리어'),
+      t('mydash.nav.ai', undefined, 'AI 사용'),
+      t('mydash.nav.pc', undefined, 'PC 성능'),
+      t('mydash.nav.kakao', undefined, '카톡 메모'),
+      t('mydash.nav.calendar', undefined, '캘린더'),
+    ];
+    root.innerHTML =
+      '<p class="mydh-date">' + esc(today) + '</p>' +
+      '<div class="mydh-grid">' + titles.map(emptyHtml).join('') + '</div>';
+  }
+
   function failHtml(item: string, title: string, why: string): string {
     return (
       '<div class="mydh-card" data-fail="' + esc(item) + '">' +
@@ -410,6 +442,7 @@ import type { FcEvent } from '../planner/gcal';
     access: 'read',
     paths: [BOOKMARKS_PATH, ME_PATH, CAREER_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
     render,
+    renderEmpty,
   });
 })();
 

@@ -22,7 +22,6 @@
   "my-ai.connection.manage": "환경 설정에서 API 관리",
   "my-ai.t01": "구독별 남은 양. 실시간으로 물어보고, 막히면 마지막으로 그 도구를 썼을 때의 값을 보여준다.",
   "my-ai.t02": "새로고침",
-  "my-ai.t03": "데스크톱 앱에서만 동작한다. 토큰과 로그가 이 컴퓨터에만 있다.",
   "my-ai.t04": "방금 읽음",
   "my-ai.t10": "수치 없음",
   "my-ai.t11": "{n}% 남음",
@@ -70,5 +69,12 @@
   "my-ai.login.button": "로그인",
   "my-ai.login.opened": "터미널 창에서 로그인을 마치면 여기가 다시 읽는다.",
   "my-ai.login.failed": "로그인 창을 못 띄웠다 ({why})",
-  "my-ai.note.why": "막힌 이유: {why}"
+  "my-ai.note.why": "막힌 이유: {why}",
+  "my-ai.note.from": "{host} 이(가) 밀어 둔 값. 노트북이 직접 재지 못해 그 PC 의 마지막 관측을 보여준다.",
+  "my-ai.key.placeholder": "노트북 비밀번호",
+  "my-ai.key.show": "보기",
+  "my-ai.key.forget": "잊기",
+  "my-ai.key.need": "노트북에 물어보려면 비밀번호가 필요하다. 이 브라우저에만 저장된다.",
+  "my-ai.key.wrong": "비밀번호가 틀렸다.",
+  "my-ai.env.desktop_only": "환경 검사는 이 컴퓨터의 파일을 읽는 일이라 데스크톱 앱에서만 된다."
 }

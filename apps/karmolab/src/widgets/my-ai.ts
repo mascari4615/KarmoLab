@@ -9,7 +9,11 @@
  * 마지막 관측은 칩과 명도로 구분한다. 스냅샷을 라이브처럼 그리면 20% 남았네
  * 하고 들어갔다 벽 친다 (실제로 Codex 스냅샷 20% 옆에서 라이브는 96% 였다).
  *
- * 데스크톱 전용. 토큰과 로컬 로그는 Tauri 백엔드(ai_quota)만 만진다.
+ * 두 표면, 그리기는 하나. 데스크톱은 Tauri 백엔드(ai_quota)가 이 컴퓨터의 토큰과 로그를
+ * 읽고, 브라우저(폰)는 노트북 laptop-ops `/ai-quota/api` 가 내주는 같은 모양의 카드를
+ * 받음. 노트북은 켜져 있는 PC 가 밀어 둔 값을 `live:false` 와 출처 노트로 내줌.
+ * 비밀번호는 노트북 위젯과 같은 열쇠(`laptop.pc.key`), 이 브라우저에만 보관.
+ * 환경 탭은 로컬 파일 검사라 데스크톱에서만. 정본: memo/changes/ai-quota-phone.md
  */
 import { isDesktop, invoke } from '../tauri-bridge';
 import { t, loadNamespace } from '../lib/i18n';
@@ -49,6 +53,13 @@ import { t, loadNamespace } from '../lib/i18n';
 
   /** 라이브 카드만 의미가 있는 주기. 스냅샷은 다시 읽어도 그대로다. */
   const AUTO_REFRESH_MS = 60_000;
+
+  /** 브라우저 소스. 노트북 위젯(laptop.ts)과 같은 주소, 같은 비밀번호 열쇠. */
+  const LAPTOP_BASE = 'https://laptop.mascari4615.com';
+  const KEY_AT = 'laptop.pc.key';
+  const savedKey = (): string => { try { return localStorage.getItem(KEY_AT) ?? ''; } catch { return ''; } };
+  const keepKey = (v: string): void => { try { localStorage.setItem(KEY_AT, v); } catch { /* 막힌 브라우저 */ } };
+  const dropKey = (): void => { try { localStorage.removeItem(KEY_AT); } catch { /* 막힌 브라우저 */ } };
 
   /**
    * 같은 수치를 남음으로 볼지 사용으로 볼지는 사람마다 갈린다. 한쪽으로
@@ -172,6 +183,8 @@ import { t, loadNamespace } from '../lib/i18n';
       return t('my-ai.note.no_percent_api', undefined, 'x.ai 에 잔량 조회 API 가 없어 퍼센트는 못 뽑는다. 아래는 로그에 남은 사실.');
     if (code.startsWith('why:'))
       return t('my-ai.note.why', { why: errorText(code.slice(4)) }, `막힌 이유: ${errorText(code.slice(4))}`);
+    // 노트북이 직접 못 재고 다른 PC 가 밀어 둔 값. 어느 기계 것인지 표기
+    if (code.startsWith('from:')) return t('my-ai.note.from', { host: code.slice(5) });
     return code;
   }
 
@@ -320,8 +333,9 @@ import { t, loadNamespace } from '../lib/i18n';
       }
       chips.push(freshnessHtml(card.quota));
     }
+    // 로그인 창은 이 컴퓨터의 터미널을 띄우는 것. 브라우저에서는 노트북 값이라 무의미
     const login =
-      card.id === 'claude' && needsLogin(card)
+      isDesktop() && card.id === 'claude' && needsLogin(card)
         ? `<button type="button" class="myai-login" data-claude-login>${esc(t('my-ai.login.button', undefined, '로그인'))}</button>`
         : '';
     const body = card.error
@@ -384,6 +398,8 @@ import { t, loadNamespace } from '../lib/i18n';
       .myai-note, .myai-wall, .myai-error { margin: 0; font-size: var(--font-size-2xs); color: var(--text-tertiary); line-height: 1.5; }
       .myai-error { color: var(--error); }
       .myai-updated { font-size: var(--font-size-2xs); color: var(--text-tertiary); }
+      .myai-keyrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .myai-key { flex: 1 1 160px; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font: inherit; }
       `
     );
 
@@ -434,19 +450,79 @@ import { t, loadNamespace } from '../lib/i18n';
     wrap.append(top, cards, updated);
     container.appendChild(wrap);
 
-    if (!isDesktop()) {
-      cards.innerHTML = '';
-      const note = document.createElement('p');
-      note.className = 'myai-note';
-      note.textContent = t('my-ai.t03', undefined, '데스크톱 앱에서만 동작한다. 토큰과 로그가 이 컴퓨터에만 있다.');
-      cards.appendChild(note);
-      refreshBtn.disabled = true;
-      modeGroup.hidden = true;
-      return;
-    }
-
     let cards_data: VendorCard[] = [];
     let fatal = '';
+
+    /* ── 브라우저 소스. 노트북에 비밀번호로 묻는다 ──
+       열쇠는 이 브라우저에만 보관 (laptop.ts 와 같은 원칙, 같은 저장 자리). 없으면 카드
+       대신 입력 줄, 401 이면 열쇠 폐기 후 다시 질문 */
+    const keyRow = document.createElement('div');
+    keyRow.className = 'myai-keyrow';
+    keyRow.hidden = true;
+    const keyInput = document.createElement('input');
+    keyInput.type = 'password';
+    keyInput.className = 'myai-key';
+    keyInput.autocomplete = 'current-password';
+    keyInput.placeholder = t('my-ai.key.placeholder');
+    const keyBtn = document.createElement('button');
+    keyBtn.type = 'button';
+    keyBtn.className = 'btn btn-primary btn-sm';
+    keyBtn.textContent = t('my-ai.key.show');
+    const forgetBtn = document.createElement('button');
+    forgetBtn.type = 'button';
+    forgetBtn.className = 'btn btn-secondary btn-sm';
+    forgetBtn.textContent = t('my-ai.key.forget');
+    const keyWhy = document.createElement('span');
+    keyWhy.className = 'myai-note';
+    keyRow.append(keyInput, keyBtn, forgetBtn, keyWhy);
+    wrap.insertBefore(keyRow, cards);
+
+    function askKey(why: string): void {
+      keyRow.hidden = false;
+      keyWhy.textContent = why;
+      // `.btn` 의 display 가 hidden 속성을 이기므로 style 로 숨김 (실측 2026-09-16)
+      forgetBtn.style.display = savedKey() === '' ? 'none' : '';
+    }
+
+    async function loadFromLaptop(): Promise<VendorCard[]> {
+      const key = savedKey() || keyInput.value.trim();
+      if (!key) {
+        askKey(t('my-ai.key.need'));
+        return [];
+      }
+      const res = await fetch(`${LAPTOP_BASE}/ai-quota/api?k=${encodeURIComponent(key)}`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (res.status === 401) {
+        dropKey();
+        askKey(t('my-ai.key.wrong'));
+        return [];
+      }
+      if (!res.ok) throw new Error(`http-${res.status}`);
+      const body = (await res.json()) as { ok?: boolean; cards?: VendorCard[] };
+      if (body.ok !== true || !Array.isArray(body.cards)) throw new Error('bad-response');
+      keepKey(key);
+      keyRow.hidden = true;
+      return body.cards;
+    }
+
+    const load = (): Promise<VendorCard[]> =>
+      isDesktop() ? invoke<VendorCard[]>('ai_quota_all') : loadFromLaptop();
+
+    keyBtn.addEventListener('click', () => {
+      if (keyInput.value.trim() !== '') refresh();
+    });
+    keyInput.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') keyBtn.click();
+    });
+    forgetBtn.addEventListener('click', () => {
+      dropKey();
+      keyInput.value = '';
+      cards_data = [];
+      paint();
+      askKey(t('my-ai.key.need'));
+    });
 
     function syncModeButtons(): void {
       for (const { mode, el } of modeButtons) {
@@ -524,7 +600,7 @@ import { t, loadNamespace } from '../lib/i18n';
       if (inFlight) return;
       inFlight = true;
       refreshBtn.disabled = true;
-      void invoke<VendorCard[]>('ai_quota_all')
+      void load()
         .then((list) => {
           cards_data = list;
           fatal = '';
@@ -536,7 +612,7 @@ import { t, loadNamespace } from '../lib/i18n';
           inFlight = false;
           refreshBtn.disabled = false;
           paint();
-          updated.textContent = t('my-ai.t04', undefined, '방금 읽음');
+          updated.textContent = cards_data.length ? t('my-ai.t04', undefined, '방금 읽음') : '';
         });
     }
 
@@ -578,6 +654,14 @@ import { t, loadNamespace } from '../lib/i18n';
   }
 
   function buildEnvironment(container: HTMLElement): void {
+    // 로컬 파일(지침, 훅, MCP) 검사라 이 컴퓨터의 데스크톱 앱에서만 유효
+    if (!isDesktop()) {
+      const note = document.createElement('p');
+      note.className = 'myai-note';
+      note.textContent = t('my-ai.env.desktop_only');
+      container.appendChild(note);
+      return;
+    }
     Mdd.injectCSS('my-ai-environment', `
       .myai-environment-audit { margin-bottom: 28px; }
       .myai-env-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:12px; }
@@ -692,7 +776,6 @@ import { t, loadNamespace } from '../lib/i18n';
     id: 'my-ai',
     title: t('widgets.my-ai.title', undefined, '내 AI'),
     category: 'ai',
-    desktopOnly: true,
     desc: t('widgets-desc.my-ai.desc', undefined, '내가 쓰는 AI의 구독, 환경, 연결 상태를 한곳에서'),
     layout: 'form',
     icon: '<path d="M4 19a8 8 0 1116 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 19l4.5-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>',

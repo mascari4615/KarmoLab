@@ -795,7 +795,6 @@ window.KARMOLAB_LAZY_META = [
     id: 'my-ai',
     get title() { return t('widgets.my-ai.title', undefined, "내 AI"); },
     category: 'ai',
-    desktopOnly: true,
     get desc() { return t('widgets-desc.my-ai.desc', undefined, "내가 쓰는 AI의 구독, 환경, 운영, 연결을 한곳에서"); },
     layout: 'form',
     icon: '<path d="M4 19a8 8 0 1116 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 19l4.5-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>',

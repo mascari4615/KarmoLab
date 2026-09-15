@@ -197,5 +197,6 @@
   "mydash.cal.needAuth": "Not connected",
   "mydash.cal.homeUnit": "events today",
   "mydash.cal.homeNone": "No events today",
-  "mydash.cal.homeFirst": "{time} {title}"
+  "mydash.cal.homeFirst": "{time} {title}",
+  "mydash.home.needLogin": "Fills in after login"
 }

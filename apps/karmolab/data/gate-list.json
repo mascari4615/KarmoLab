@@ -47,6 +47,18 @@
       ]
     },
     {
+      "name": "test:my-ai-web",
+      "watch": [
+        "src/widgets/my-ai.ts",
+        "src/widgets/mydash/home.ts",
+        "src/widgets/mydash/shell.ts",
+        "src/widgets/mydash/kit.ts",
+        "scripts/test-my-ai-web.mjs",
+        "i18n/*/my-ai.json",
+        "i18n/*/mydash.json"
+      ]
+    },
+    {
       "name": "test:mydash-cal",
       "watch": [
         "src/widgets/mydash/calendar.ts",

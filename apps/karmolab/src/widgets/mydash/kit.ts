@@ -155,6 +155,11 @@ interface DashPanelBase {
    * 적어 두려고. 남이 열었을 때 무엇을 못 보는지가 분명해야 함.
    */
   paths: string[];
+  /**
+   * 로그인 전 화면틀. 저장소 없이 **배치만** 그린다 (값 자리는 하이픈). 없으면 셸이
+   * 로그인 안내 카드를 그린다. 사용자 결정 (2026-09-16): 홈만 빈 카드, 다른 패널은 안내.
+   */
+  renderEmpty?(root: HTMLElement): void;
 }
 
 export interface DashReadPanel extends DashPanelBase {

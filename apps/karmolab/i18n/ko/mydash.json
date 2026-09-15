@@ -197,5 +197,6 @@
   "mydash.cal.needAuth": "연결 필요",
   "mydash.cal.homeUnit": "오늘 일정",
   "mydash.cal.homeNone": "오늘 일정 없음",
-  "mydash.cal.homeFirst": "{time} {title}"
+  "mydash.cal.homeFirst": "{time} {title}",
+  "mydash.home.needLogin": "로그인 뒤 채워진다"
 }
