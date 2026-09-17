@@ -52,13 +52,20 @@ const blogRoot = path.dirname(root);
  *   `<noscript>` 안까지 세는 바람에 도구 화면이 68.7KB 로 잡혔는데, 자바스크립트가 켜진 판에서
  *   실제로 첫 그림을 붙잡는 것은 41.4KB. 세는 자리를 고쳤으니 천장은 68 그대로
  *
- * 천장(gz, KB). 2026-08-08 KL-128 ①-c/⑱ 직후 실측값 + 여유 10%.
+ *, 2026-09-18 JS 상한을 깃허브 기준으로 (사용자 결정). 첫 화면 45 → 100, 도구 화면과 목록 26 → 90
+ *   전 값은 2026-08-08 실측 + 10% 라 6주에 5번 올렸고 매번 세션 하나가 막혔다 (도구 화면 26.1 로 또 막힘)
+ *   실측 2026-09-18 (로그아웃, gz): github.com 저장소 페이지 script 태그 JS 86KB, modulepreload 까지 773KB,
+ *   CSS 554KB. 첫 화면은 693KB + 1,209KB, CSS 478KB. 우리는 43 / 26, CSS 21 / 31
+ *   상한은 저장소 페이지의 태그 JS 86 을 반올림한 90, 첫 화면은 100. CSS 는 이미 10분의 1 이라 그대로
+ * 상한(gz, KB). JS 는 2026-09-18 깃허브 실측 기준, CSS 는 2026-08-08 실측값 + 여유 10%
+ *
+ * 상한(gz, KB). JS 는 2026-09-18 깃허브 실측 기준, CSS 는 2026-08-08 실측값 + 여유 10%.
  * 실측: 첫 화면 JS 35.1 / CSS 47.3, 도구 화면, 목록 JS 18.7 / CSS 62.1.
  * 첫 화면 JS 가 큰 것은 **맞다**. 팔레트가 그 화면의 본체라 미룰 수 없다(도구 화면에선 뺐다). */
 const BUDGET = {
-  '앱 첫 화면': { file: path.join(root, 'index.html'), js: 45, css: 52 },
-  '도구 화면': { file: path.join(blogRoot, 'blog/t/loan/index.html'), js: 26, css: 68 },
-  '도구 목록': { file: path.join(blogRoot, 'blog/t/index.html'), js: 26, css: 68 }
+  '앱 첫 화면': { file: path.join(root, 'index.html'), js: 100, css: 52 },
+  '도구 화면': { file: path.join(blogRoot, 'blog/t/loan/index.html'), js: 90, css: 68 },
+  '도구 목록': { file: path.join(blogRoot, 'blog/t/index.html'), js: 90, css: 68 }
 };
 
 const gz = (p) => {
@@ -109,18 +116,18 @@ for (const [label, spec] of Object.entries(BUDGET)) {
   const js = sum(jsUrls);
   const css = sum(cssUrls);
   rows.push(`  ${label.padEnd(10)} JS ${js.toFixed(1)}KB / ${spec.js} ,  CSS ${css.toFixed(1)}KB / ${spec.css}  (파일 ${jsUrls.length}+${cssUrls.length}개)`);
-  if (js > spec.js) problems.push(`${label}: 뜨기 전 JS ${js.toFixed(1)}KB. 천장 ${spec.js}KB 를 넘었다`);
-  if (css > spec.css) problems.push(`${label}: 뜨기 전 CSS ${css.toFixed(1)}KB. 천장 ${spec.css}KB 를 넘었다`);
+  if (js > spec.js) problems.push(`${label}: 로딩 필수 JS ${js.toFixed(1)}KB. 상한 ${spec.js}KB 를 넘었다`);
+  if (css > spec.css) problems.push(`${label}: 로딩 필수 CSS ${css.toFixed(1)}KB. 상한 ${spec.css}KB 를 넘었다`);
 }
 
 console.log('[audit-boot-budget] 뜨기 전에 받는 양 (gzip)');
 rows.forEach((r) => console.log(r));
 
 if (problems.length) {
-  console.error('[audit-boot-budget] 천장을 넘은 화면 ' + problems.length + '개');
+  console.error('[audit-boot-budget] 상한을 넘은 화면 ' + problems.length + '개');
   problems.forEach((p) => console.error('  - ' + p));
-  console.error('  → 새로 넣은 것이 **첫 그림에 정말 필요한가** 부터 봐라.');
+  console.error('  → 새로 넣은 것이 **페이지가 뜨는 데 정말 필요한가** 부터 봐라.');
   console.error('    나중에 써도 되는 것이면 태그로 걸지 말고, 쓸 때 데려와라(팔레트, 계정이 그렇게 빠졌다).');
   process.exit(1);
 }
-console.log('[audit-boot-budget] 전부 천장 안');
+console.log('[audit-boot-budget] 전부 상한 안');
