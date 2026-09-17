@@ -198,5 +198,9 @@
   "mydash.cal.homeUnit": "events today",
   "mydash.cal.homeNone": "No events today",
   "mydash.cal.homeFirst": "{time} {title}",
-  "mydash.home.needLogin": "Fills in after login"
+  "mydash.home.needLogin": "Fills in after login",
+  "mydash.bm.filter.sum": "Filters",
+  "mydash.bm.filter.sumOn": "Filters {n}",
+  "mydash.bm.keys.move": "move",
+  "mydash.bm.sheet.empty": "Click a row to see it here"
 }

@@ -198,5 +198,9 @@
   "mydash.cal.homeUnit": "今日の予定",
   "mydash.cal.homeNone": "今日の予定はありません",
   "mydash.cal.homeFirst": "{time} {title}",
-  "mydash.home.needLogin": "ログイン後に埋まる"
+  "mydash.home.needLogin": "ログイン後に埋まる",
+  "mydash.bm.filter.sum": "フィルター",
+  "mydash.bm.filter.sumOn": "フィルター {n}",
+  "mydash.bm.keys.move": "移動",
+  "mydash.bm.sheet.empty": "行を押すとここに出ます"
 }

@@ -198,6 +198,16 @@ import { t, loadNamespace } from '../../lib/i18n';
       'font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
       '.bm-row .bm-meta .tool-chip{pointer-events:none}',
       '.bm-kid .tool-list-key{padding-left:var(--space-md)}',
+      /* 목록이 주인공 (MVP 3, 사용자 2026-09-17 "칩 벽"). 수 타일과 칩 34개는 접힌 필터 안 */
+      '.bm-filters{display:flex;flex-direction:column;gap:var(--space-md)}',
+      '.bm-filters[hidden]{display:none}',
+      '.bm-head-acts .btn[aria-expanded="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
+      '.bm-main{display:flex;flex-direction:column;gap:var(--space-md);min-width:0}',
+      '.bm-row.is-cur{background:var(--bg-tertiary)}',
+      '.bm-keys{font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
+      '.bm-keys kbd{font-family:inherit;padding:0 var(--space-xs);border:1px solid var(--border);border-radius:var(--radius-sm)}',
+      /* 옆판이 비었을 때. 줄을 누르라는 한 줄 */
+      '.bm-sheet-empty{color:var(--text-tertiary);padding:var(--space-md)}',
       '.bm-revisit{display:flex;flex-direction:column;gap:var(--space-xs)}',
       /* 머리 버튼 줄. 선택 모드와 한 장 모드로 드는 문 */
       '.bm-head-acts{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center}',
@@ -208,11 +218,15 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-sheet{position:fixed;inset:0;z-index:3000;display:flex;flex-direction:column;justify-content:flex-end}',
       /* 닫힌 시트가 화면 전체를 덮어 마우스를 먹던 결함 (2026-09-13 실측 1440x900 전부 차단). UA 의 [hidden] 을 이 규칙이 이겼음 */
       '.bm-sheet[hidden]{display:none!important}',
-      /* PC 에서는 오른쪽 서랍. 목록은 그대로 눌리고 막은 없음 */
-      '@media(min-width:900px){.bm-sheet{left:auto;right:0;top:var(--header-h,0px);width:420px;justify-content:flex-start;align-items:stretch;',
-      'border-left:1px solid var(--border)}',
+      /* PC 는 두 열. 목록과 옆판 420px 이 나란히, 옆판은 늘 떠 있고 위에 붙어 따라온다 (MVP 3).
+         전에는 fixed 서랍이라 목록 오른쪽을 덮었다 */
+      '@media(min-width:900px){.bm{display:grid;grid-template-columns:minmax(0,1fr) 420px;align-items:start}',
+      '.bm-sheet{position:sticky;inset:auto;top:var(--header-h,0px);z-index:auto;display:block;',
+      'max-height:calc(100vh - var(--header-h,0px));overflow:auto;border-left:1px solid var(--border);padding-left:var(--space-md)}',
       '.bm-sheet .bm-scrim{display:none}',
-      '.bm-sheet .bm-sheet-card{max-height:none;height:100%;max-width:none;width:100%;border-radius:0;border-top:0}}',
+      '.bm-sheet .bm-sheet-card{max-height:none;max-width:none;width:100%;border-radius:0;border-top:0;padding:0;background:transparent}',
+      '.bm-row .bm-open{display:none}',
+      '.bm-row{cursor:pointer}}',
       '.bm-scrim{position:absolute;inset:0;background:var(--modal-scrim)}',
       '.bm-sheet-card{position:relative;max-height:85vh;overflow:auto;background:var(--bg-secondary);',
       'border-top:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;',
@@ -840,14 +854,18 @@ import { t, loadNamespace } from '../../lib/i18n';
       .join('');
 
     wrap.innerHTML =
-      '<div class="bm-nums">' + numHtml.join('') + '</div>' +
+      '<div class="bm-main">' +
       notes.join('') +
       '<div class="tool-status" data-evline="1"></div>' +
       '<div class="bm-head-acts">' +
+      '<button type="button" class="btn btn-ghost" data-act="filters" data-filters-sum="1" aria-expanded="false"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="select"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="judge"></button>' +
       '</div>' +
+      '<div class="bm-filters" data-filters="1" hidden>' +
+      '<div class="bm-nums">' + numHtml.join('') + '</div>' +
       '<div class="bm-groups">' + groupHtml + '</div>' +
+      '</div>' +
       '<div class="field-group"><label class="field-label" for="bm-q">' +
       esc(t('mydash.bm.search.label', undefined, '검색')) + '</label>' +
       '<input id="bm-q" type="search" autocomplete="off" placeholder="' +
@@ -859,9 +877,15 @@ import { t, loadNamespace } from '../../lib/i18n';
       '<button type="button" class="btn btn-ghost" data-act="more"></button></div>' +
       '<div class="bm-judge" data-judge="1" hidden></div>' +
       '<div class="bm-bar" data-bar="1" hidden></div>' +
+      '</div>' +
       '<div class="bm-sheet" data-sheet="1" hidden></div>';
 
     const qEl = wrap.querySelector('#bm-q') as HTMLInputElement;
+    const filtersEl = wrap.querySelector('[data-filters]') as HTMLElement;
+    const filtersSumEl = wrap.querySelector('[data-filters-sum]') as HTMLElement;
+    /** PC 두 열인가. 옆판이 늘 떠 있고 자판으로 훑는 것은 이 폭에서만 */
+    const wideMq = window.matchMedia('(min-width:900px)');
+    const isWide = (): boolean => wideMq.matches;
     const evLineEl = wrap.querySelector('[data-evline]') as HTMLElement;
     const revisitEl = wrap.querySelector('[data-revisit]') as HTMLElement;
     const countEl = wrap.querySelector('[data-count]') as HTMLElement;
@@ -874,8 +898,6 @@ import { t, loadNamespace } from '../../lib/i18n';
     const barEl = wrap.querySelector('[data-bar]') as HTMLElement;
     const sheetEl = wrap.querySelector('[data-sheet]') as HTMLElement;
     const searchEl = qEl.parentElement as HTMLElement;
-    const groupsEl = wrap.querySelector('.bm-groups') as HTMLElement;
-    const numsEl = wrap.querySelector('.bm-nums') as HTMLElement;
     const headActsEl = wrap.querySelector('.bm-head-acts') as HTMLElement;
 
     const picked: Record<string, Set<string>> = {};
@@ -883,6 +905,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     const opened = new Set<string>();
     let query = '';
     let shown = PAGE;
+    /** 옆판이 보고 있는 줄. 자판 위아래가 이 줄에서 움직인다 */
+    let curId = '';
 
     /* 선택 모드. 고른 것과 바에서 고른 의도 */
     let selectMode = false;
@@ -1110,7 +1134,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     function openBtnHtml(target: string): string {
       if (selectMode) return '';
       return (
-        '<div class="tool-actions tight"><button type="button" class="btn btn-ghost" ' +
+        '<div class="tool-actions tight bm-open"><button type="button" class="btn btn-ghost" ' +
         'data-act="open" data-target="' + esc(target) + '">' +
         esc(t('mydash.bm.row.open', undefined, '분류')) + '</button></div>'
       );
@@ -1126,10 +1150,12 @@ import { t, loadNamespace } from '../../lib/i18n';
     }
 
     function rowHtml(it: Item, extra: string): string {
-      const cls = 'tool-list-row bm-row' + (extra ? ' ' + extra : '') + (selectMode ? ' is-pick' : '');
-      const rowAct = selectMode ? ' data-act="pick" data-id="' + esc(text(it.id)) + '"' : '';
+      const cls =
+        'tool-list-row bm-row' + (extra ? ' ' + extra : '') + (selectMode ? ' is-pick' : '') +
+        (curId === text(it.id) ? ' is-cur' : '');
+      const rowAct = selectMode ? ' data-act="pick" data-id="' + esc(text(it.id)) + '"' : ' data-act="row"';
       return (
-        '<div class="' + cls + '"' + rowAct + '>' +
+        '<div class="' + cls + '"' + rowAct + ' data-row="' + esc(text(it.id)) + '">' +
         checkHtml(it) +
         '<div class="tool-list-key">' + esc(srcLabel(text(it.src))) + '</div>' +
         '<div class="tool-list-val bm-body">' + titleHtml(it) + metaHtml(it) +
@@ -1145,8 +1171,10 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* 머리 줄도 항목 하나. 자식과 같은 meta (날짜, 작성자, 의도 칩, 판정 대기 칩) 를 부착.
          접힌 상태에서 보이는 것이 이 줄뿐이라, 빠지면 묶음 첫 항목만 정보 결여. */
       const head =
-        '<div class="tool-list-row bm-row' + (selectMode ? ' is-pick' : '') + '"' +
-        (selectMode ? ' data-act="pick" data-id="' + esc(text(head0.id)) + '"' : '') + '>' +
+        '<div class="tool-list-row bm-row' + (selectMode ? ' is-pick' : '') +
+        (curId === text(head0.id) ? ' is-cur' : '') + '"' +
+        (selectMode ? ' data-act="pick" data-id="' + esc(text(head0.id)) + '"' : ' data-act="row"') +
+        ' data-row="' + esc(text(head0.id)) + '">' +
         checkHtml(head0) +
         '<div class="tool-list-key">' + esc(srcLabel(text(head0.src))) + '</div>' +
         '<div class="tool-list-val bm-body">' +
@@ -1300,6 +1328,11 @@ import { t, loadNamespace } from '../../lib/i18n';
       selectBtn.textContent = selectMode
         ? t('mydash.bm.act.selectOff', undefined, '선택 끄기')
         : t('mydash.bm.act.select', undefined, '선택');
+      let on = 0;
+      for (const g of groups) on += picked[g.key].size;
+      filtersSumEl.textContent = on
+        ? t('mydash.bm.filter.sumOn', { n: on }, '필터 {n}')
+        : t('mydash.bm.filter.sum', undefined, '필터');
       evLineEl.textContent = eventCount
         ? t('mydash.bm.events.applied', { n: eventCount }, '이벤트 {n}건 반영')
         : '';
@@ -1349,6 +1382,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       const list = touched(target);
       if (!list.length) return;
       sheet = { target, items: list, bundle: target.indexOf('bundle:') === 0 };
+      if (!sheet.bundle) setCur(target);
       const s = stateOf(list[0]);
       draftBase = { intent: s.intent.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
       draft = { intent: s.intent.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
@@ -1362,8 +1396,54 @@ import { t, loadNamespace } from '../../lib/i18n';
       sheet = null;
       draft = null;
       draftBase = null;
-      sheetEl.hidden = true;
-      sheetEl.innerHTML = '';
+      paintSheet();
+    }
+
+    /** 옆판이 보는 줄 바꾸기. 목록은 다시 안 그리고 표식만 옮긴다 */
+    function setCur(id: string): void {
+      if (curId === id) return;
+      curId = id;
+      const rows = Array.from(wrap.querySelectorAll('.bm-row[data-row]')) as HTMLElement[];
+      for (const r of rows) r.classList.toggle('is-cur', r.getAttribute('data-row') === id);
+    }
+
+    /** 지금 화면에 있는 줄의 id 차례 (접힌 묶음은 머리 줄만). 자판 위아래가 도는 줄 */
+    function visibleRowIds(): string[] {
+      const rows = Array.from(listEl.querySelectorAll('.bm-row[data-row]')) as HTMLElement[];
+      return rows.map((r) => r.getAttribute('data-row') || '').filter((x) => !!x);
+    }
+
+    /** 위아래로 한 줄. 끝이면 그대로. 옆판이 그 줄을 보고 목록이 그 줄까지 스크롤 */
+    function moveCur(delta: number): void {
+      const ids = visibleRowIds();
+      if (!ids.length) return;
+      const at = ids.indexOf(curId);
+      const next = at < 0 ? (delta > 0 ? 0 : ids.length - 1) : Math.min(ids.length - 1, Math.max(0, at + delta));
+      const id = ids[next];
+      openSheet(id);
+      const row = listEl.querySelector('.bm-row[data-row="' + id + '"]') as HTMLElement | null;
+      if (row && typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** 자판 숫자 하나가 무엇인가. 우선순위 값 차례대로, 그 다음 수가 버림 */
+    function keyPicks(): Array<{ key: string; label: string; act: 'prio' | 'drop' }> {
+      const out: Array<{ key: string; label: string; act: 'prio' | 'drop' }> = [];
+      for (const p of axisPicks('priority')) out.push({ key: p.key, label: p.label, act: 'prio' });
+      out.push({ key: 'dropped', label: valueLabel('status', 'dropped'), act: 'drop' });
+      return out;
+    }
+
+    function keysHtml(): string {
+      if (!isWide()) return '';
+      const picks = keyPicks()
+        .map((p, i) => '<kbd>' + (i + 1) + '</kbd> ' + esc(p.label))
+        .join(' ');
+      return (
+        '<div class="bm-keys"><kbd>\u2191</kbd><kbd>\u2193</kbd> ' +
+        esc(t('mydash.bm.keys.move', undefined, '이동')) + ' ' + picks + ' <kbd>Enter</kbd> ' +
+        esc(t('mydash.bm.sheet.save', undefined, '저장')) + ' <kbd>Esc</kbd> ' +
+        esc(t('mydash.bm.sheet.close', undefined, '닫기')) + '</div>'
+      );
     }
 
     function chipsHtml(axisKey: string, on: (v: string) => boolean, act: string): string {
@@ -1386,7 +1466,15 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     function paintSheet(): void {
       if (!sheet || !draft || !draftBase) {
-        sheetEl.hidden = true;
+        if (isWide()) {
+          sheetEl.hidden = false;
+          sheetEl.innerHTML =
+            '<div class="bm-sheet-empty">' +
+            esc(t('mydash.bm.sheet.empty', undefined, '줄을 누르면 여기에 뜹니다')) + '</div>' + keysHtml();
+        } else {
+          sheetEl.hidden = true;
+          sheetEl.innerHTML = '';
+        }
         return;
       }
       const head = sheet.items[0];
@@ -1443,6 +1531,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         '<div class="bm-sheet-head"><div class="bm-sheet-title">' + esc(title) + '</div>' +
         '<button type="button" class="btn btn-ghost" data-act="sheet-close">' +
         esc(t('mydash.bm.sheet.close', undefined, '닫기')) + '</button></div>' +
+        keysHtml() +
         (url
           ? '<div><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
             esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a></div>'
@@ -1490,6 +1579,13 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (noteEl) {
         noteEl.addEventListener('input', () => {
           if (draft) draft.note = noteEl.value;
+        });
+        /* 메모 칸에서 Enter 는 저장. 자판 훑기의 손이 칸 안에서도 안 끊기게 */
+        noteEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            void saveSheet();
+          }
         });
       }
     }
@@ -1567,6 +1663,16 @@ import { t, loadNamespace } from '../../lib/i18n';
         sheetMsgBad = true;
         paintSheet();
         return;
+      }
+      /* PC 는 저장하면 다음 줄로. 훑는 손이 저장마다 목록으로 안 돌아가게. 낱개일 때만
+         (묶음은 다음 줄이 무엇인지 애매) */
+      if (isWide() && !sheet.bundle) {
+        const ids = visibleRowIds();
+        const at = ids.indexOf(curId);
+        if (at >= 0 && at + 1 < ids.length) {
+          moveCur(1);
+          return;
+        }
       }
       closeSheet();
     }
@@ -1684,10 +1790,16 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /** 한 장 모드에서는 목록 쪽을 통째로 감춘다. 화면에 판단할 것 하나만 남기려는 것 */
     function setListVisible(on: boolean): void {
-      for (const el of [numsEl, groupsEl, searchEl, revisitEl, countEl, listEl, moreEl]) {
+      for (const el of [searchEl, revisitEl, countEl, listEl, moreEl]) {
         if (el) el.hidden = !on;
       }
       headActsEl.hidden = !on;
+      /* 필터는 자기 접힘 상태가 있다. 한 장 모드에서는 무조건 숨기고, 나올 때는 접힌 채로 */
+      if (!on) filtersEl.hidden = true;
+      if (on) filtersSumEl.setAttribute('aria-expanded', 'false');
+      /* 옆판도 같이. 한 장 모드에 "줄을 누르면" 안내가 떠 있으면 거짓말 */
+      if (!on) sheetEl.hidden = true;
+      else paintSheet();
     }
 
     function paintJudge(): void {
@@ -1835,12 +1947,22 @@ import { t, loadNamespace } from '../../lib/i18n';
         toggleSelect(!selectMode);
         return;
       }
+      if (act === 'filters') {
+        filtersEl.hidden = !filtersEl.hidden;
+        filtersSumEl.setAttribute('aria-expanded', filtersEl.hidden ? 'false' : 'true');
+        return;
+      }
       if (act === 'judge') {
         enterJudge();
         return;
       }
       if (act === 'open') {
         openSheet(el.getAttribute('data-target') || '');
+        return;
+      }
+      if (act === 'row') {
+        /* 줄 어디를 눌러도 옆판. 링크는 위에서 걸렀고, 버튼은 자기 act 가 먼저 잡힌다 */
+        openSheet(el.getAttribute('data-row') || '');
         return;
       }
       if (act === 'pick' || el.hasAttribute('data-pick')) {
@@ -1972,6 +2094,57 @@ import { t, loadNamespace } from '../../lib/i18n';
       paint();
     });
 
+    /* ── 자판 (PC) ──
+       위아래로 줄, 숫자로 판정, Enter 저장, Esc 닫기. 글 쓰는 칸 안에서는 안 잡는다.
+       이 패널이 화면에 없으면 안 잡고, 떠날 때 셸이 떼어 준다 */
+    function onKey(e: KeyboardEvent): void {
+      if (!isWide() || !ctx.isCurrent() || selectMode || judge) return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      const tgt = e.target as HTMLElement | null;
+      const tag = tgt ? tgt.tagName : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (tgt && tgt.isContentEditable)) return;
+      const k = e.key;
+      /* 초점이 버튼이나 링크에 있으면 Enter 는 그것의 몫 */
+      if (k === 'Enter' && (tag === 'BUTTON' || tag === 'A')) return;
+      if (k === 'ArrowDown' || k === 'j') {
+        e.preventDefault();
+        moveCur(1);
+        return;
+      }
+      if (k === 'ArrowUp' || k === 'k') {
+        e.preventDefault();
+        moveCur(-1);
+        return;
+      }
+      if (!sheet || !draft || !draftBase) return;
+      if (k === 'Escape') {
+        closeSheet();
+        return;
+      }
+      if (k === 'Enter') {
+        e.preventDefault();
+        void saveSheet();
+        return;
+      }
+      if (/^[1-9]$/.test(k)) {
+        const pick = keyPicks()[parseInt(k, 10) - 1];
+        if (!pick) return;
+        e.preventDefault();
+        if (pick.act === 'prio') draft.priority = draft.priority === pick.key ? null : pick.key;
+        else draft.status = draft.status === 'dropped' ? draftBase.status : 'dropped';
+        showNowList = false;
+        sheetMsg = '';
+        sheetMsgBad = false;
+        paintSheet();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    ctx.onDispose(() => document.removeEventListener('keydown', onKey));
+    /* 폭이 바뀌면 옆판 모양이 바뀐다 (빈 자리 글, 자판 안내) */
+    const onWide = (): void => paintSheet();
+    wideMq.addEventListener('change', onWide);
+    ctx.onDispose(() => wideMq.removeEventListener('change', onWide));
+
     qEl.addEventListener('input', () => {
       query = qEl.value.trim().toLowerCase();
       shown = PAGE;
@@ -1980,6 +2153,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     paintRevisit();
     paint();
+    paintSheet();
 
     /* 밀린 쓰기 비우기. 보낸 것이 있으면 브랜치가 바뀐 것이라 이벤트를 다시 읽는다 */
     void (async () => {
