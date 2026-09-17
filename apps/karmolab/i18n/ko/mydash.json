@@ -198,5 +198,9 @@
   "mydash.cal.homeUnit": "오늘 일정",
   "mydash.cal.homeNone": "오늘 일정 없음",
   "mydash.cal.homeFirst": "{time} {title}",
-  "mydash.home.needLogin": "로그인 뒤 채워진다"
+  "mydash.home.needLogin": "로그인 뒤 채워진다",
+  "mydash.bm.filter.sum": "필터",
+  "mydash.bm.filter.sumOn": "필터 {n}",
+  "mydash.bm.keys.move": "이동",
+  "mydash.bm.sheet.empty": "줄을 누르면 여기에 뜹니다"
 }
