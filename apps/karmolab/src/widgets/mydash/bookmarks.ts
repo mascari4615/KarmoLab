@@ -210,7 +210,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-sheet[hidden]{display:none!important}',
       /* PC 에서는 오른쪽 서랍. 목록은 그대로 눌리고 막은 없음 */
       '@media(min-width:900px){.bm-sheet{left:auto;right:0;top:var(--header-h,0px);width:420px;justify-content:flex-start;align-items:stretch;',
-      'border-left:1px solid var(--border-color)}',
+      'border-left:1px solid var(--border)}',
       '.bm-sheet .bm-scrim{display:none}',
       '.bm-sheet .bm-sheet-card{max-height:none;height:100%;max-width:none;width:100%;border-radius:0;border-top:0}}',
       '.bm-scrim{position:absolute;inset:0;background:var(--modal-scrim)}',

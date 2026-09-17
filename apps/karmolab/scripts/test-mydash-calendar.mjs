@@ -40,6 +40,13 @@ function ymd(d) {
 function addDays(d, n) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 }
+// 픽스처 시각은 프로세스 시간대 오프셋으로. +09:00 고정이면 CI(UTC) 에서 어긋남
+function at(ymdStr, hhmm) {
+  const off = -new Date().getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '-';
+  const a = Math.abs(off);
+  return ymdStr + 'T' + hhmm + ':00' + sign + String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0');
+}
 
 /** 새 창 하나. 묶음을 실어 명부(`window.KarmoDash`)에 패널이 붙은 상태로 돌려줌 */
 function boot({ token, fetchImpl }) {
@@ -126,15 +133,15 @@ function googleFetch({ status401 = false } = {}) {
             {
               id: 'e1',
               summary: '치과',
-              start: { dateTime: d0 + 'T14:00:00+09:00' },
-              end: { dateTime: d0 + 'T15:00:00+09:00' },
+              start: { dateTime: at(d0, '14:00') },
+              end: { dateTime: at(d0, '15:00') },
             },
             { id: 'e2', summary: '휴가', start: { date: d1 }, end: { date: d2 } },
             {
               id: 'e3',
               summary: '스터디',
-              start: { dateTime: d2 + 'T19:30:00+09:00' },
-              end: { dateTime: d2 + 'T21:00:00+09:00' },
+              start: { dateTime: at(d2, '19:30') },
+              end: { dateTime: at(d2, '21:00') },
               colorId: '11',
             },
           ],
@@ -149,8 +156,8 @@ const bookmarks = {
   schema: 'bookmarks/1',
   data: {
     items: [
-      { id: 'a', label: '첫 북마크', recordedAt: d0 + 'T09:00:00+09:00' },
-      { id: 'b', label: '둘째 북마크', recordedAt: d0 + 'T21:00:00+09:00' },
+      { id: 'a', label: '첫 북마크', recordedAt: at(d0, '09:00') },
+      { id: 'b', label: '둘째 북마크', recordedAt: at(d0, '21:00') },
       { id: 'c', label: '옛 것', recordedAt: '2001-01-01T00:00:00+09:00' },
       { id: 'd', label: '날짜 없음' },
     ],
