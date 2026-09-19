@@ -165,6 +165,12 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** 출처 칸 차례. 나머지는 뒤에 이름순으로 붙는다 */
   const SRC_ORDER = ['x', 'edge', 'kakao'];
   const KST_OFFSET_MS = 9 * 3600000;
+  /** 보기 셋. 목록 (묶음 접힘, 옆판), 피드 (한 장씩 세로, 카드 아래 판정), 격자 (그림 타일) */
+  type View = 'list' | 'feed' | 'grid';
+  const VIEWS: View[] = ['list', 'feed', 'grid'];
+  const VIEW_KEY = 'karmolab.mydash.bm.view';
+  /** 피드 카드에 보이는 의도 칩 수. 나머지는 옆판에서 */
+  const FEED_TAGS = 6;
 
   function gap(): Promise<void> {
     return new Promise<void>((done) => window.setTimeout(done, BULK_GAP_MS));
@@ -236,6 +242,45 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-ai summary{cursor:pointer;list-style:none;display:flex;gap:var(--space-sm);align-items:baseline}',
       '.bm-ai summary::-webkit-details-marker{display:none}',
       '.bm-ai-peek{color:var(--text-tertiary);font-size:var(--font-size-3xs)}',
+      /* 보기 전환. 눌린 것만 채움 */
+      '.bm-views{display:inline-flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}',
+      '.bm-views .btn{border-radius:0;border:0}',
+      '.bm-views .btn[aria-pressed="true"],.bm-head-acts [data-act="pending"][aria-pressed="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
+      /* 피드 (트위터 식). 카드 한 줄, 폭 600 가운데 */
+      '.bm-view-feed{display:flex;flex-direction:column;gap:var(--space-md);max-width:600px;border:0;background:transparent}',
+      '.bm-card{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-md);border:1px solid var(--border);',
+      'border-radius:var(--radius-lg);background:var(--bg-secondary);cursor:pointer}',
+      '.bm-card.is-cur{border-color:var(--accent)}',
+      '.bm-card.is-done,.bm-tile.is-done{opacity:.45}',
+      '.bm-card-head{display:flex;justify-content:space-between;gap:var(--space-sm);align-items:baseline}',
+      '.bm-card-who{font-weight:600;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.bm-card-src{color:var(--text-tertiary);font-size:var(--font-size-3xs);flex:none}',
+      '.bm-card-pic{position:relative}',
+      '.bm-card-more{position:absolute;right:var(--space-sm);bottom:var(--space-sm);background:var(--modal-scrim);color:var(--text-primary);',
+      'font-size:var(--font-size-3xs);padding:2px var(--space-sm);border-radius:var(--radius-pill)}',
+      '.bm-card-acts{display:flex;gap:var(--space-sm)}',
+      '.bm-card-acts .bm-act{flex:1;min-height:48px;font-weight:600;border:1px solid var(--border)}',
+      '.bm-act-drop{color:var(--error)}.bm-act-keep{color:var(--success)}.bm-act-now{color:var(--warning)}',
+      '.bm-card-tags{display:flex;gap:var(--space-xs);overflow-x:auto;scrollbar-width:none;padding-bottom:2px}',
+      '.bm-card-tags .tool-chip{flex:none;min-height:36px}',
+      /* 격자 (핀터레스트 식). 열 240, 폰은 2열 */
+      '.bm-view-grid{display:block;columns:240px;column-gap:var(--space-sm);border:0;background:transparent}',
+      '@media(max-width:559px){.bm-view-grid{columns:2}}',
+      '.bm-tile{break-inside:avoid;margin:0 0 var(--space-sm);position:relative;border-radius:var(--radius-lg);overflow:hidden;',
+      'background:var(--bg-secondary);border:1px solid var(--border);cursor:pointer}',
+      '.bm-tile.is-cur{border-color:var(--accent)}',
+      '.bm-tile img{width:100%;display:block}',
+      '.bm-tile-text{padding:var(--space-md) var(--space-md) var(--space-xs);font-weight:600;overflow:hidden;display:-webkit-box;',
+      '-webkit-line-clamp:5;-webkit-box-orient:vertical;color:var(--text-primary)}',
+      '.bm-tile figcaption{padding:var(--space-sm) var(--space-sm) var(--space-md);display:flex;flex-direction:column;gap:2px}',
+      '.bm-tile-cap{font-size:var(--font-size-2xs);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+      '.bm-tile-meta{font-size:var(--font-size-3xs);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.bm-tile-meta b{color:var(--warning);font-weight:500}',
+      '.bm-tile-acts{position:absolute;top:var(--space-sm);right:var(--space-sm);display:flex;gap:var(--space-xs);opacity:0;transition:opacity .15s}',
+      '.bm-tile:hover .bm-tile-acts,.bm-tile:focus-within .bm-tile-acts,.bm-tile.is-cur .bm-tile-acts{opacity:1}',
+      '@media(hover:none){.bm-tile-acts{opacity:1}}',
+      '@media(prefers-reduced-motion:reduce){.bm-tile-acts{transition:none}}',
+      '.bm-tile-btn{min-height:36px;padding:0 var(--space-sm);border-radius:var(--radius-md);border:0;background:var(--modal-scrim);color:var(--text-primary);font:inherit;font-size:var(--font-size-3xs);cursor:pointer}',
       /* 목록이 주인공 (MVP 3, 사용자 2026-09-17 "칩 벽"). 수 타일과 칩 34개는 접힌 필터 안 */
       '.bm-filters{display:flex;flex-direction:column;gap:var(--space-md)}',
       '.bm-filters[hidden]{display:none}',
@@ -247,6 +292,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* 옆판이 비었을 때. 줄을 누르라는 한 줄 */
       '.bm-sheet-empty{color:var(--text-tertiary);padding:var(--space-md)}',
       '.bm-revisit{display:flex;flex-direction:column;gap:var(--space-xs)}',
+      '.bm-revisit[hidden]{display:none}',
       /* 머리 버튼 줄. 선택 모드와 한 장 모드로 드는 문 */
       '.bm-head-acts{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center}',
       /* 고르기 칸. 손가락 표적이라 칸 전체가 44px */
@@ -518,6 +564,12 @@ import { t, loadNamespace } from '../../lib/i18n';
   type Unit = { key: string; items: Item[] };
   /** 시트가 지금 무엇을 고치고 있나. 묶음이면 items 가 그 묶음 전부 */
   type SheetTarget = { target: string; items: Item[]; bundle: boolean };
+
+  function viewLabel(v: string): string {
+    if (v === 'feed') return t('mydash.bm.view.feed', undefined, '피드');
+    if (v === 'grid') return t('mydash.bm.view.grid', undefined, '격자');
+    return t('mydash.bm.view.list', undefined, '목록');
+  }
 
   function srcLabel(key: string): string {
     /* 아는 갈래 셋만 옮긴 말이 있다. 새 갈래는 값 그대로 보인다. */
@@ -946,7 +998,13 @@ import { t, loadNamespace } from '../../lib/i18n';
       notes.join('') +
       '<div class="tool-status" data-evline="1"></div>' +
       '<div class="bm-head-acts">' +
+      '<div class="bm-views" role="group">' +
+      VIEWS.map((v) =>
+        '<button type="button" class="btn btn-ghost" data-act="view" data-view="' + v + '" aria-pressed="false">' +
+        esc(viewLabel(v)) + '</button>').join('') +
+      '</div>' +
       '<button type="button" class="btn btn-ghost" data-act="filters" data-filters-sum="1" aria-expanded="false"></button>' +
+      '<button type="button" class="btn btn-ghost" data-act="pending" aria-pressed="false"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="select"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="judge"></button>' +
       '</div>' +
@@ -995,6 +1053,29 @@ import { t, loadNamespace } from '../../lib/i18n';
     let shown = PAGE;
     /** 옆판이 보고 있는 줄. 자판 위아래가 이 줄에서 움직인다 */
     let curId = '';
+    /* 보기. 사이드바 "판정 대기" 로 들어오면 대기만 걸러 폰은 피드, PC 는 격자 (사용자 2026-09-19) */
+    const judgeMode = ctx.mode === 'judge';
+    let pendingOnly = judgeMode;
+    let view: View = judgeMode ? (isWide() ? 'grid' : 'feed') : readView();
+    /** 피드 카드마다 고른 의도. 저장 전까지 여기 */
+    const feedPicks = new Map<string, Set<string>>();
+    /** 피드에서 방금 저장한 카드. 흐리게 두고 다음으로 */
+    const feedDone = new Set<string>();
+
+    function readView(): View {
+      try {
+        const v = window.localStorage.getItem(VIEW_KEY) as View | null;
+        return v && VIEWS.indexOf(v) >= 0 ? v : 'list';
+      } catch {
+        return 'list';
+      }
+    }
+    function setView(v: View): void {
+      view = v;
+      try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* 저장 막힌 브라우저 */ }
+      shown = PAGE;
+      paint();
+    }
 
     /* 선택 모드. 고른 것과 바에서 고른 의도 */
     let selectMode = false;
@@ -1119,6 +1200,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /* ── 고르기 ── */
     function matches(it: Item): boolean {
+      if (pendingOnly && !isPending(it)) return false;
       const s = stateOf(it);
       /* 버림과 승격은 아카이브다. 필터를 안 켜면 기본 목록에서 뺀다 */
       if (!picked.status || !picked.status.size) {
@@ -1266,6 +1348,135 @@ import { t, loadNamespace } from '../../lib/i18n';
       const sub = subOf(it);
       if (!sub) return '';
       return '<div class="bm-sub">' + esc(sub) + '</div>';
+    }
+
+    /** 카드가 보이는 사진 (첫 장) 과 나머지 수 */
+    function firstPic(it: Item, size: 'small' | 'medium'): { url: string; more: number; w?: number; h?: number } | null {
+      const m = mediaOf(it);
+      if (!m) return null;
+      const ph = m.photos && m.photos.length ? m.photos[0] : null;
+      if (ph && ph.url) return { url: picUrl(ph.url, size), more: (m.photos as MediaPhoto[]).length - 1, w: ph.w, h: ph.h };
+      if (m.video && m.video.poster) return { url: picUrl(m.video.poster, size), more: 0 };
+      const img = m.image ? safeLinkUrl(m.image) : '';
+      return img ? { url: img, more: 0 } : null;
+    }
+
+    function whoOf(it: Item): string {
+      const m = mediaOf(it);
+      if (m && m.kind === 'tweet' && m.who) {
+        return [text(m.who.name), m.who.handle ? '@' + text(m.who.handle) : ''].filter(Boolean).join(' ');
+      }
+      if (text(it.author)) return text(it.author);
+      return hostOf(it.url);
+    }
+
+    /**
+     * 피드 카드 (트위터 식). 누가와 출처, 내가 쓴 말, 원문, 사진, 아래 판정 셋과 의도 칩.
+     * 저장한 카드는 흐려지고 다음 카드로. 카드 어디를 눌러도 옆판 (버튼 제외)
+     */
+    function cardHtml(it: Item): string {
+      const id = text(it.id);
+      const s = stateOf(it);
+      const m = mediaOf(it);
+      const said = text(it.src) === 'kakao' ? text(it.label).trim() : '';
+      const memo = text(s.note).trim();
+      const body = m && m.kind === 'tweet' ? text(m.text).trim() : m && m.kind === 'page' ? text(m.description).trim() : '';
+      const title = m && m.kind === 'page' ? text(m.title).trim() : '';
+      const pic = firstPic(it, 'medium');
+      const picks = feedPicks.get(id) || new Set(s.intent);
+      const cls = 'bm-card' + (feedDone.has(id) ? ' is-done' : '') + (curId === id ? ' is-cur' : '');
+      const parts: string[] = [];
+      parts.push(
+        '<div class="bm-card-head"><span class="bm-card-who">' + esc(whoOf(it)) + '</span>' +
+        '<span class="bm-card-src">' + esc(srcLabel(text(it.src))) + ' ' + esc(text(it.recordedAt).slice(0, 10)) + '</span></div>'
+      );
+      if (said) parts.push('<div class="bm-said">' + esc(said) + '</div>');
+      if (memo && memo !== said) parts.push('<div class="bm-said bm-said-memo">' + esc(memo) + '</div>');
+      if (title && title !== said && title !== text(it.label).trim()) parts.push('<div class="bm-ptitle">' + esc(title) + '</div>');
+      if (!said && !title && !body && !pic) parts.push('<div class="bm-ptitle">' + esc(displayLabel(it, s.note)) + '</div>');
+      if (body) parts.push('<div class="bm-tw">' + esc(body) + '</div>');
+      if (m && m.kind === 'tweet' && m.deleted) {
+        parts.push('<div class="tool-hint">' + esc(t('mydash.bm.media.deleted', undefined, 'X 에서 못 받음. 지워졌거나 로그인이 필요한 트윗')) + '</div>');
+      }
+      if (pic) {
+        const ratio = pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
+        parts.push(
+          '<div class="bm-card-pic"><img class="bm-pic" src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '>' +
+          (pic.more > 0 ? '<span class="bm-card-more">+' + pic.more + '</span>' : '') + '</div>'
+        );
+      }
+      const url = safeLinkUrl(it.url);
+      if (url) {
+        parts.push('<a class="bm-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
+          esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a>');
+      }
+      parts.push(
+        '<div class="bm-card-acts">' +
+        '<button type="button" class="btn btn-ghost bm-act bm-act-drop" data-act="c-drop" data-id="' + esc(id) + '">' +
+        esc(valueLabel('status', 'dropped')) + '</button>' +
+        '<button type="button" class="btn btn-ghost bm-act bm-act-keep" data-act="c-keep" data-id="' + esc(id) + '">' +
+        esc(t('mydash.bm.card.keep', undefined, '둔다')) + '</button>' +
+        '<button type="button" class="btn btn-ghost bm-act bm-act-now" data-act="c-now" data-id="' + esc(id) + '">' +
+        esc(valueLabel('priority', 'now')) + '</button>' +
+        '</div>' +
+        '<div class="bm-card-tags">' +
+        axisPicks('intent').slice(0, FEED_TAGS).map((p) =>
+          '<button type="button" class="tool-chip' + (picks.has(p.key) ? ' active' : '') +
+          '" data-act="c-intent" data-id="' + esc(id) + '" data-value="' + esc(p.key) + '">' + esc(p.label) + '</button>').join('') +
+        '<button type="button" class="tool-chip" data-act="open" data-target="' + esc(id) + '">' +
+        esc(t('mydash.bm.card.more', undefined, '더')) + '</button>' +
+        '</div>' +
+        '<div class="tool-status" data-cmsg="' + esc(id) + '"></div>'
+      );
+      return '<article class="' + cls + '" data-row="' + esc(id) + '" data-act="row">' + parts.join('') + '</article>';
+    }
+
+    /** 격자 타일 (핀터레스트 식). 사진이 타일, 없으면 글 타일. 누르면 옆판, 위에 버림과 지금 */
+    function tileHtml(it: Item): string {
+      const id = text(it.id);
+      const s = stateOf(it);
+      const pic = firstPic(it, 'small');
+      const head = headOf(it, s.note);
+      const cls = 'bm-tile' + (pic ? '' : ' is-text') + (curId === id ? ' is-cur' : '') + (feedDone.has(id) ? ' is-done' : '');
+      const ratio = pic && pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
+      return (
+        '<figure class="' + cls + '" data-row="' + esc(id) + '" data-act="row">' +
+        (pic
+          ? '<img src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '>'
+          : '<div class="bm-tile-text">' + esc(head) + '</div>') +
+        '<figcaption>' +
+        (pic && head ? '<div class="bm-tile-cap">' + esc(head) + '</div>' : '') +
+        '<div class="bm-tile-meta">' + esc(whoOf(it)) +
+        (isPending(it) ? ' <b>' + esc(t('mydash.bm.pendingChip', undefined, '판정 대기')) + '</b>' : '') +
+        (s.priority ? ' <span>' + esc(valueLabel('priority', s.priority)) + '</span>' : '') +
+        '</div></figcaption>' +
+        '<div class="bm-tile-acts">' +
+        '<button type="button" class="bm-tile-btn" data-act="c-drop" data-id="' + esc(id) + '" title="' + esc(valueLabel('status', 'dropped')) + '">' +
+        esc(valueLabel('status', 'dropped')) + '</button>' +
+        '<button type="button" class="bm-tile-btn" data-act="c-now" data-id="' + esc(id) + '" title="' + esc(valueLabel('priority', 'now')) + '">' +
+        esc(valueLabel('priority', 'now')) + '</button>' +
+        '</div></figure>'
+      );
+    }
+
+    /** 피드와 격자의 한 손 판정. 보내고, 카드를 흐리게, 다음 카드로 */
+    async function cardJudge(id: string, out: Outgoing): Promise<void> {
+      const r = await sendEvent(out);
+      const msgEl = listEl.querySelector('[data-cmsg="' + id + '"]') as HTMLElement | null;
+      if (isBad(r)) {
+        if (msgEl) { msgEl.textContent = sendWord(r); msgEl.classList.add('error'); }
+        return;
+      }
+      feedDone.add(id);
+      feedPicks.delete(id);
+      const ids = visibleRowIds();
+      const at = ids.indexOf(id);
+      paint();
+      paintHead();
+      if (at >= 0 && at + 1 < ids.length) {
+        const next = listEl.querySelector('[data-row="' + ids[at + 1] + '"]') as HTMLElement | null;
+        if (next && typeof next.scrollIntoView === 'function') next.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
     }
 
     function unitHtml(u: Unit): string {
@@ -1461,12 +1672,38 @@ import { t, loadNamespace } from '../../lib/i18n';
         { n: list.length, m: units.length },
         '항목 {n} (묶음 {m})'
       );
-      listEl.innerHTML = units.slice(0, shown).map(unitHtml).join('') ||
+      const empty =
         '<div class="tool-list-row"><div class="tool-list-val">' +
-          esc(t('mydash.bm.noMatch', undefined, '조건에 맞는 것이 없습니다')) +
-          '</div></div>';
-      const restUnits = units.length - shown;
-      const restItems = units.slice(shown).reduce((n, u) => n + u.items.length, 0);
+        esc(t('mydash.bm.noMatch', undefined, '조건에 맞는 것이 없습니다')) +
+        '</div></div>';
+      listEl.className = 'tool-list bm-list bm-view-' + view;
+      wrap.classList.toggle('is-feed', view === 'feed');
+      if (view === 'list') {
+        listEl.innerHTML = units.slice(0, shown).map(unitHtml).join('') || empty;
+      } else if (view === 'feed') {
+        /* 피드와 격자는 묶음을 안 접는다. 한 장이 한 항목. 못 받은 트윗 (지워짐, 로그인 필요) 은
+           볼 것이 없어 뒤로. 판정 대기 453 중 142 가 그것이라 앞에 두면 첫 화면이 빈 카드 (2026-09-19 실측) */
+        const gone = (it: Item): boolean => { const m = mediaOf(it); return !!(m && m.kind === 'tweet' && m.deleted); };
+        const live = list.filter((it) => !gone(it));
+        const dead = list.filter(gone);
+        listEl.innerHTML = live.concat(dead).slice(0, shown).map(cardHtml).join('') || empty;
+      } else {
+        /* 격자는 그림이 주인공. 그림 있는 것을 앞에, 글만 있는 것은 뒤에 (각각 최근순 유지) */
+        const withPic = list.filter((it) => !!firstPic(it, 'small'));
+        const noPic = list.filter((it) => !firstPic(it, 'small'));
+        listEl.innerHTML = withPic.concat(noPic).slice(0, shown).map(tileHtml).join('') || empty;
+      }
+      /* 재발굴 칸은 목록 보기에서만. 피드와 격자는 넘기는 화면이라 위에 딴 것을 안 둔다 */
+      revisitEl.hidden = view !== 'list' || pendingOnly;
+      const viewBtns = Array.from(wrap.querySelectorAll('[data-act="view"]')) as HTMLElement[];
+      for (const b of viewBtns) b.setAttribute('aria-pressed', b.getAttribute('data-view') === view ? 'true' : 'false');
+      const pendBtn = wrap.querySelector('[data-act="pending"]') as HTMLElement | null;
+      if (pendBtn) {
+        pendBtn.setAttribute('aria-pressed', pendingOnly ? 'true' : 'false');
+        pendBtn.textContent = t('mydash.bm.act.pendingOnly', undefined, '대기만');
+      }
+      const restUnits = (view === 'list' ? units.length : list.length) - shown;
+      const restItems = view === 'list' ? units.slice(shown).reduce((n, u) => n + u.items.length, 0) : Math.max(0, restUnits);
       moreEl.style.display = restUnits > 0 ? '' : 'none';
       if (restUnits > 0) {
         moreBtn.textContent = t(
@@ -1509,13 +1746,13 @@ import { t, loadNamespace } from '../../lib/i18n';
     function setCur(id: string): void {
       if (curId === id) return;
       curId = id;
-      const rows = Array.from(wrap.querySelectorAll('.bm-row[data-row]')) as HTMLElement[];
+      const rows = Array.from(wrap.querySelectorAll('[data-row]')) as HTMLElement[];
       for (const r of rows) r.classList.toggle('is-cur', r.getAttribute('data-row') === id);
     }
 
     /** 지금 화면에 있는 줄의 id 차례 (접힌 묶음은 머리 줄만). 자판 위아래가 도는 줄 */
     function visibleRowIds(): string[] {
-      const rows = Array.from(listEl.querySelectorAll('.bm-row[data-row]')) as HTMLElement[];
+      const rows = Array.from(listEl.querySelectorAll('[data-row]')) as HTMLElement[];
       return rows.map((r) => r.getAttribute('data-row') || '').filter((x) => !!x);
     }
 
@@ -1527,7 +1764,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       const next = at < 0 ? (delta > 0 ? 0 : ids.length - 1) : Math.min(ids.length - 1, Math.max(0, at + delta));
       const id = ids[next];
       openSheet(id);
-      const row = listEl.querySelector('.bm-row[data-row="' + id + '"]') as HTMLElement | null;
+      const row = listEl.querySelector('[data-row="' + id + '"]') as HTMLElement | null;
       if (row && typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
     }
 
@@ -2134,6 +2371,53 @@ import { t, loadNamespace } from '../../lib/i18n';
       }
       if (act === 'select') {
         toggleSelect(!selectMode);
+        return;
+      }
+      if (act === 'view') {
+        setView((el.getAttribute('data-view') as View) || 'list');
+        return;
+      }
+      if (act === 'pending') {
+        pendingOnly = !pendingOnly;
+        shown = PAGE;
+        paint();
+        return;
+      }
+      if (act === 'c-intent') {
+        const id = el.getAttribute('data-id') || '';
+        const v = el.getAttribute('data-value') || '';
+        const it = itemById.get(id);
+        if (!it) return;
+        const set = feedPicks.get(id) || new Set(stateOf(it).intent);
+        if (set.has(v)) set.delete(v);
+        else set.add(v);
+        feedPicks.set(id, set);
+        el.classList.toggle('active', set.has(v));
+        return;
+      }
+      if (act === 'c-drop' || act === 'c-now' || act === 'c-keep') {
+        const id = el.getAttribute('data-id') || '';
+        const it = itemById.get(id);
+        if (!it) return;
+        if (act === 'c-drop') {
+          void cardJudge(id, makeEvent('status', id, { status: 'dropped' }));
+        } else if (act === 'c-now') {
+          /* 지금 자리 상한. 넘치면 옆판이 내릴 것을 보인다 */
+          if (nowItems(new Set([id])).length + 1 > nowCap()) {
+            openSheet(id);
+            if (draft) { draft.priority = 'now'; showNowList = true; paintSheet(); }
+            return;
+          }
+          void cardJudge(id, makeEvent('priority', id, { priority: 'now' }));
+        } else {
+          const set = feedPicks.get(id) || new Set(stateOf(it).intent);
+          if (!set.size) {
+            const msgEl = listEl.querySelector('[data-cmsg="' + id + '"]') as HTMLElement | null;
+            if (msgEl) { msgEl.textContent = t('mydash.bm.judge.needIntent', undefined, '의도를 하나 이상 고르세요'); msgEl.classList.add('error'); }
+            return;
+          }
+          void cardJudge(id, makeEvent('tag', id, { intent: Array.from(set), domain: stateOf(it).domain }));
+        }
         return;
       }
       if (act === 'filters') {
