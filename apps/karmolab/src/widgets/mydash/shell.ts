@@ -296,8 +296,10 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       throw new DashError('config', '설정 파일이 JSON 이 아니다');
     }
     if (!v.relay || !v.owner || !v.repo) throw new DashError('config', '설정에 relay, owner, repo 가 있어야 한다');
+    /* 로컬 dev 서버(127.0.0.1, localhost)에서는 릴레이가 origin 을 거부한다. dev.mjs 의 /__relay 대행으로 */
+    const local = /^(127\.0\.0\.1|localhost)$/.test(window.location.hostname);
     configCache = {
-      relay: String(v.relay).replace(/\/+$/, ''),
+      relay: local ? window.location.origin + '/__relay' : String(v.relay).replace(/\/+$/, ''),
       owner: v.owner,
       repo: v.repo,
       branch: v.branch || 'main',
