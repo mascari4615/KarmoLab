@@ -175,6 +175,27 @@ ${body}
     return;
   }
 
+  /* 대시보드 로그인 릴레이 대행. 릴레이는 블로그 origin 만 받아 로컬(127.0.0.1)에서는 로그인 불가
+     여기서 대신 두드리고 Origin 을 블로그 것으로. 셸은 로컬이면 same-origin /__relay (shell.ts loadConfig) */
+  if (url.pathname.startsWith('/__relay/') && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', async () => {
+      try {
+        const cfg = JSON.parse(fs.readFileSync(path.join(here, 'data', 'mydash-config.json'), 'utf8'));
+        const target = String(cfg.relay).replace(/\/+$/, '') + url.pathname.slice('/__relay'.length);
+        const r = await fetch(target, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://blog.mascari4615.com' }, body });
+        const text = await r.text();
+        res.writeHead(r.status, { 'content-type': r.headers.get('content-type') || 'application/json' });
+        res.end(text);
+      } catch (e) {
+        res.writeHead(502, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: 'relay_proxy', detail: String(e).slice(0, 200) }));
+      }
+    });
+    return;
+  }
+
   let rel = decodeURIComponent(url.pathname);
   if (rel.endsWith('/')) rel += 'index.html';
   const file = resolveFile(rel);
