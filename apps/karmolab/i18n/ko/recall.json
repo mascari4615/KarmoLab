@@ -54,5 +54,15 @@
   "recall.read.code": "예제 코드",
   "recall.read.result": "실행 결과",
   "recall.export.manual": "복사가 막혔다. 아래 글을 직접 고르면 된다",
-  "recall.say.hint2": "이 제목이 가리키는 것이 무엇이고 왜 그런지, 아는 사람에게 말하듯 두세 줄"
+  "recall.say.hint2": "이 제목이 가리키는 것이 무엇이고 왜 그런지, 아는 사람에게 말하듯 두세 줄",
+  "recall.start.sub2": "오늘 물어야 할 것은 이미 정해져 있다. 밀린 것부터, 고른 갈래 안에서 섞어서.",
+  "recall.tracks.change": "갈래 바꾸기 ({on} / {all})",
+  "recall.tracks.tag": "갈래",
+  "recall.tracks.head.first": "지금 붙잡을 갈래를 고른다.",
+  "recall.tracks.head": "갈래 바꾸기",
+  "recall.tracks.sub": "고른 갈래에서만 낸다. 안 고른 것은 사라지지 않고, 켜면 밀린 것부터 그대로 나온다.",
+  "recall.tracks.save": "이걸로",
+  "recall.tracks.all": "전부",
+  "recall.tracks.none": "비우기",
+  "recall.tracks.count": "{n}개 켜짐"
 }

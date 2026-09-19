@@ -54,5 +54,15 @@
   "recall.read.code": "Example code",
   "recall.read.result": "Result",
   "recall.export.manual": "Copying was blocked. Select the text below instead",
-  "recall.say.hint2": "Say what this title refers to and why, in two or three lines, as if explaining it to someone"
+  "recall.say.hint2": "Say what this title refers to and why, in two or three lines, as if explaining it to someone",
+  "recall.start.sub2": "Today's questions are already decided. Overdue first, mixed within the tracks you picked.",
+  "recall.tracks.change": "Change tracks ({on} / {all})",
+  "recall.tracks.tag": "Tracks",
+  "recall.tracks.head.first": "Pick the tracks you are on right now.",
+  "recall.tracks.head": "Change tracks",
+  "recall.tracks.sub": "Questions come only from picked tracks. Unpicked ones are not lost; turn one on and its overdue items come back first.",
+  "recall.tracks.save": "Use these",
+  "recall.tracks.all": "All",
+  "recall.tracks.none": "Clear",
+  "recall.tracks.count": "{n} on"
 }

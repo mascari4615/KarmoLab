@@ -54,5 +54,15 @@
   "recall.read.code": "サンプルコード",
   "recall.read.result": "実行結果",
   "recall.export.manual": "コピーが塞がれた。下の文を直接選べばよい",
-  "recall.say.hint2": "この見出しが指すものと、なぜそうなのかを二三行で、人に話すように"
+  "recall.say.hint2": "この見出しが指すものと、なぜそうなのかを二三行で、人に話すように",
+  "recall.start.sub2": "今日聞くことはもう決まっている。遅れたものから、選んだ分野の中で混ぜて。",
+  "recall.tracks.change": "分野を変える ({on} / {all})",
+  "recall.tracks.tag": "分野",
+  "recall.tracks.head.first": "いま取り組む分野を選ぶ。",
+  "recall.tracks.head": "分野を変える",
+  "recall.tracks.sub": "選んだ分野からだけ出す。選ばなかったものは消えず、オンにすれば遅れたものから戻ってくる。",
+  "recall.tracks.save": "これで",
+  "recall.tracks.all": "全部",
+  "recall.tracks.none": "空にする",
+  "recall.tracks.count": "{n}件オン"
 }
