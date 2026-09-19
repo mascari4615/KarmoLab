@@ -33,6 +33,14 @@ try {
   pages = await Promise.all(ids.map(async (id, seat) => {
     const context = await browser.newContext({ serviceWorkers: 'block' });
     contexts.push(context);
+    /* 로비가 여는 열린 방 목록과 내 지난 판. 막지 않으면 라이브 yawnbot 으로 나가고, CI 의
+       임의 포트 origin 은 CORS 허용 목록에 없어 콘솔 오류 158건으로 판이 빨갛다 (2026-09-19 실측) */
+    await context.route('**/kl/arcade/rooms*', (route) => route.fulfill({
+      contentType: 'application/json', body: JSON.stringify({ rooms: [] })
+    }));
+    await context.route('**/kl/arcade/tapes/me*', (route) => route.fulfill({
+      contentType: 'application/json', body: JSON.stringify({ tapes: [] })
+    }));
     await context.route('**/kl/arcade/rating/me*', (route) => route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({ signedIn: true, rating: 1500, games: 0, wins: 0 })
