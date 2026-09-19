@@ -293,9 +293,11 @@ const beforeJitter = await page.evaluate(() => window.__rw.fires.filter((f) => f
 await page.evaluate(() => window.__stage.set('box', '#c02020'));
 await page.waitForTimeout(260);
 await page.evaluate(() => window.__stage.set('box', '#20c040'));
+/* 재움-의도: 튄 프레임(판정 1~2개)이 최근 8개 안에 남아 있는 2초 창 안에서 찍어 본다. 굳는 값이 아니라 지나가는 값 */
 await page.waitForTimeout(400);
-/* 튄 프레임(판정 1~2개)이 아직 최근 8개 안에 있을 때. 캔버스 스트림은 노이즈가 0 이라 이때만 폭이 보인다 */
+/* 캔버스 스트림은 노이즈가 0 이라 이때만 폭이 보인다 */
 check(/±\d+/.test((await page.textContent('.rw-slot[data-i="0"] .rw-sim b')) || ''), `흔들림 폭이 보인다 (${await page.textContent('.rw-slot[data-i="0"] .rw-sim b')})`);
+/* 재움-의도: 안 울렸음을 재는 자리. 기다릴 조건이 없고 튄 프레임이 창에서 빠질 때까지 흘려보낸다 */
 await page.waitForTimeout(1200);
 const afterJitter = await page.evaluate(() => window.__rw.fires.filter((f) => f.name === 'chg').length);
 check(afterJitter === beforeJitter, `한 프레임 튄 것은 안 울린다 (${beforeJitter} -> ${afterJitter})`);
