@@ -70,6 +70,25 @@ import { t, loadNamespace } from '../../lib/i18n';
      * 숫자 필드는 스키마에 없음). 재발굴 점수에서 이 배열 길이를 나눗수로 사용.
      */
     shared?: unknown[];
+    /**
+     * 원문 미리보기 (MVP 5). 생성기가 접어 넣는다. 트윗은 본문과 그림 주소, 페이지는 Open Graph.
+     * 없으면 못 받은 것. 그때는 지금처럼 라벨만
+     */
+    media?: Media | null;
+  };
+  type MediaPhoto = { url: string; w?: number; h?: number };
+  type Media = {
+    kind?: 'tweet' | 'page';
+    text?: string | null;
+    who?: { name?: string; handle?: string } | null;
+    photos?: MediaPhoto[] | null;
+    video?: { poster?: string } | null;
+    deleted?: boolean;
+    sensitive?: boolean;
+    title?: string | null;
+    description?: string | null;
+    image?: string | null;
+    site?: string | null;
   };
   type BundleDef = { key?: string; id?: string; items?: string[] };
   type Summary = {
@@ -198,6 +217,25 @@ import { t, loadNamespace } from '../../lib/i18n';
       'font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
       '.bm-row .bm-meta .tool-chip{pointer-events:none}',
       '.bm-kid .tool-list-key{padding-left:var(--space-md)}',
+      /* 원문 미리보기 (MVP 5). 줄 썸네일 96x72, 둘째 줄 두 줄 자름, 옆판 세 층 */
+      '.bm-thumb{width:96px;height:72px;object-fit:cover;border-radius:var(--radius-md);flex:none;',
+      'background:var(--bg-tertiary);margin-top:var(--space-xs)}',
+      '.bm-sub{color:var(--text-secondary);font-size:var(--font-size-2xs);overflow:hidden;display:-webkit-box;',
+      '-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+      '.bm-row .bm-title{min-height:0;padding-top:var(--space-xs);overflow:hidden;display:-webkit-box;',
+      '-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+      '.bm-layer{display:flex;flex-direction:column;gap:var(--space-xs)}',
+      '.bm-said{padding:var(--space-sm) var(--space-md);background:var(--bg-tertiary);',
+      'border-left:3px solid var(--accent);border-radius:0 var(--radius-md) var(--radius-md) 0;color:var(--text-primary)}',
+      '.bm-said-memo{color:var(--text-secondary)}',
+      '.bm-who{color:var(--text-secondary);font-size:var(--font-size-2xs)}',
+      '.bm-ptitle{color:var(--text-primary);font-weight:600}',
+      '.bm-tw{white-space:pre-wrap;word-break:break-word;color:var(--text-primary)}',
+      '.bm-pic{width:100%;max-width:100%;border-radius:var(--radius-md);border:1px solid var(--border);display:block}',
+      '.bm-link{font-size:var(--font-size-2xs)}',
+      '.bm-ai summary{cursor:pointer;list-style:none;display:flex;gap:var(--space-sm);align-items:baseline}',
+      '.bm-ai summary::-webkit-details-marker{display:none}',
+      '.bm-ai-peek{color:var(--text-tertiary);font-size:var(--font-size-3xs)}',
       /* 목록이 주인공 (MVP 3, 사용자 2026-09-17 "칩 벽"). 수 타일과 칩 34개는 접힌 필터 안 */
       '.bm-filters{display:flex;flex-direction:column;gap:var(--space-md)}',
       '.bm-filters[hidden]{display:none}',
@@ -295,6 +333,56 @@ import { t, loadNamespace } from '../../lib/i18n';
    * 메모는 사람이 note 이벤트로 덮을 수 있어 **덮은 뒤 값**을 받는다 (안 주면 원본 note).
    * 검색도 이 문자열 대상 (보이는 글자로 못 찾는 것 방지).
    */
+  /** 트위터 그림 주소에 크기 표식. 목록은 small, 옆판은 medium. 다른 곳 그림은 그대로 */
+  function picUrl(url: string, size: 'small' | 'medium'): string {
+    const clean = text(url).trim();
+    if (!clean) return '';
+    if (/^https:\/\/pbs\.twimg\.com\//.test(clean)) return clean + (clean.indexOf('?') >= 0 ? '&' : '?') + 'name=' + size;
+    return clean;
+  }
+
+  function mediaOf(it: Item): Media | null {
+    return it.media && typeof it.media === 'object' ? it.media : null;
+  }
+
+  /** 목록 줄 썸네일 주소. 트윗 첫 장, 영상 포스터, 페이지 대표 그림 순 */
+  function thumbOf(it: Item): string {
+    const m = mediaOf(it);
+    if (!m) return '';
+    const first = m.photos && m.photos.length ? m.photos[0] : null;
+    if (first && first.url) return picUrl(first.url, 'small');
+    if (m.video && m.video.poster) return picUrl(m.video.poster, 'small');
+    if (m.image) return safeLinkUrl(m.image) || '';
+    return '';
+  }
+
+  /**
+   * 원문 첫 줄. 사용자 2026-09-19: AI 해석보다 원문 그대로가 먼저.
+   * 카톡은 라벨이 곧 내가 쓴 말이라 라벨. 트윗은 본문 첫 줄, 페이지는 라벨 (Edge 는 페이지 제목).
+   * 트윗 본문이 없는 그림 트윗은 라벨 (없으면 기존 대체 문자열)
+   */
+  function headOf(it: Item, note?: string): string {
+    const m = mediaOf(it);
+    if (m && m.kind === 'tweet' && text(m.text).trim() && text(it.src) === 'x') {
+      return text(m.text).trim().split('\n')[0];
+    }
+    return displayLabel(it, note);
+  }
+
+  /** 목록 줄 둘째 줄. 트윗은 누가, 페이지는 설명 한두 문장 (없으면 없음) */
+  function subOf(it: Item): string {
+    const m = mediaOf(it);
+    if (!m) return '';
+    if (m.kind === 'tweet') {
+      const who = m.who ? [text(m.who.name), m.who.handle ? '@' + text(m.who.handle) : ''].filter(Boolean).join(' ') : '';
+      return who;
+    }
+    /* 페이지는 제목이 라벨과 다르면 제목 (카톡은 라벨이 내 말이라 제목이 새 정보), 같으면 설명 */
+    const title = text(m.title).trim();
+    if (title && title !== text(it.label).trim()) return title;
+    return text(m.description).trim();
+  }
+
   function displayLabel(it: Item, note?: string): string {
     const label = text(it.label).trim();
     if (label) return label;
@@ -1052,7 +1140,9 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (query) {
         /* 보이는 글자를 그대로 찾는다. label 이 빈 항목은 화면에 대체 문자열이 떠 있어
            원본 label 로만 재면 눈에 보이는 말로 못 찾는다. */
-        const hay = (displayLabel(it, s.note) + ' ' + text(it.author) + ' ' + s.note).toLowerCase();
+        const m = mediaOf(it);
+        const body = m ? [m.text, m.title, m.description, m.who && m.who.name].map(text).join(' ') : '';
+        const hay = (displayLabel(it, s.note) + ' ' + text(it.author) + ' ' + s.note + ' ' + body).toLowerCase();
         if (hay.indexOf(query) < 0) return false;
       }
       return true;
@@ -1090,7 +1180,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     /* ── 줄 그리기 ── */
     function titleHtml(it: Item): string {
       const s = stateOf(it);
-      const label = displayLabel(it, s.note) || text(it.id);
+      const label = headOf(it, s.note) || text(it.id);
       const url = safeLinkUrl(it.url);
       if (!url) {
         /* 주소가 있는데 거부된 것과, 애초에 주소가 없는 것을 가른다. 거부는 표식으로 말한다 */
@@ -1158,10 +1248,24 @@ import { t, loadNamespace } from '../../lib/i18n';
         '<div class="' + cls + '"' + rowAct + ' data-row="' + esc(text(it.id)) + '">' +
         checkHtml(it) +
         '<div class="tool-list-key">' + esc(srcLabel(text(it.src))) + '</div>' +
-        '<div class="tool-list-val bm-body">' + titleHtml(it) + metaHtml(it) +
+        thumbHtml(it) +
+        '<div class="tool-list-val bm-body">' + titleHtml(it) + subHtml(it) + metaHtml(it) +
         openBtnHtml(text(it.id)) + '</div>' +
         '</div>'
       );
+    }
+
+    /** 줄 왼쪽 썸네일. 없으면 자리도 없다 (글만 있는 줄이 밀리지 않게) */
+    function thumbHtml(it: Item): string {
+      const u = thumbOf(it);
+      if (!u) return '';
+      return '<img class="bm-thumb" src="' + esc(u) + '" alt="" loading="lazy" decoding="async">';
+    }
+
+    function subHtml(it: Item): string {
+      const sub = subOf(it);
+      if (!sub) return '';
+      return '<div class="bm-sub">' + esc(sub) + '</div>';
     }
 
     function unitHtml(u: Unit): string {
@@ -1177,8 +1281,10 @@ import { t, loadNamespace } from '../../lib/i18n';
         ' data-row="' + esc(text(head0.id)) + '">' +
         checkHtml(head0) +
         '<div class="tool-list-key">' + esc(srcLabel(text(head0.src))) + '</div>' +
+        thumbHtml(head0) +
         '<div class="tool-list-val bm-body">' +
         titleHtml(head0) +
+        subHtml(head0) +
         metaHtml(head0) +
         '<div class="tool-actions tight"><button type="button" class="btn btn-ghost" data-act="bundle" ' +
         'data-key="' + esc(u.key) + '" aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
@@ -1446,6 +1552,88 @@ import { t, loadNamespace } from '../../lib/i18n';
       );
     }
 
+    /**
+     * 옆판 세 층 (MVP 5, 사용자 2026-09-19 "원문 그대로가 먼저").
+     * 1 내가 쓴 말: 카톡 라벨 (내 설명) 과 메모. 2 실제 내용: 트윗 본문과 그림 전부, 페이지는
+     * 제목과 설명과 그림. 3 AI 분류: 접힘. 아래 편집 칩과 겹치는 의도와 영역은 제외
+     */
+    function layersHtml(it: Item, note: string, url: string): string {
+      const m = mediaOf(it);
+      const out: string[] = [];
+      const said = text(it.src) === 'kakao' ? text(it.label).trim() : '';
+      const memo = text(note).trim();
+      if (said || memo) {
+        out.push(
+          '<div class="bm-layer"><div class="tool-sublabel">' +
+          esc(t('mydash.bm.layer.mine', undefined, '내가 쓴 말')) + '</div>' +
+          (said ? '<div class="bm-said">' + esc(said) + '</div>' : '') +
+          (memo && memo !== said ? '<div class="bm-said bm-said-memo">' + esc(memo) + '</div>' : '') +
+          '</div>'
+        );
+      }
+      const body: string[] = [];
+      if (m && m.kind === 'tweet') {
+        if (m.deleted) {
+          body.push('<div class="tool-hint">' + esc(t('mydash.bm.media.deleted', undefined, 'X 에서 못 받음. 지워졌거나 로그인이 필요한 트윗')) + '</div>');
+        } else {
+          const who = m.who ? [text(m.who.name), m.who.handle ? '@' + text(m.who.handle) : ''].filter(Boolean).join(' ') : '';
+          if (who) body.push('<div class="bm-who">' + esc(who) + '</div>');
+          if (text(m.text).trim()) body.push('<div class="bm-tw">' + esc(text(m.text).trim()) + '</div>');
+          for (const ph of m.photos || []) {
+            const u = picUrl(text(ph.url), 'medium');
+            if (!u) continue;
+            const ratio = ph.w && ph.h ? ' style="aspect-ratio:' + Number(ph.w) + '/' + Number(ph.h) + '"' : '';
+            body.push('<img class="bm-pic" src="' + esc(u) + '" alt="" loading="lazy" decoding="async"' + ratio + '>');
+          }
+          if (m.video && m.video.poster) {
+            body.push(
+              '<img class="bm-pic" src="' + esc(picUrl(text(m.video.poster), 'medium')) + '" alt="" loading="lazy">' +
+              '<div class="tool-hint">' + esc(t('mydash.bm.media.video', undefined, '영상은 원문에서')) + '</div>'
+            );
+          }
+        }
+      } else if (m && m.kind === 'page') {
+        const title = text(m.title).trim();
+        if (title && title !== said && title !== text(it.label).trim()) body.push('<div class="bm-ptitle">' + esc(title) + '</div>');
+        if (m.site) body.push('<div class="bm-who">' + esc(text(m.site)) + '</div>');
+        if (text(m.description).trim()) body.push('<div class="bm-tw">' + esc(text(m.description).trim()) + '</div>');
+        const img = m.image ? safeLinkUrl(m.image) : '';
+        if (img) body.push('<img class="bm-pic" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">');
+      }
+      if (url) {
+        body.push(
+          '<a class="bm-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
+          esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a>'
+        );
+      }
+      if (body.length) {
+        out.push(
+          '<div class="bm-layer"><div class="tool-sublabel">' +
+          esc(m && m.kind === 'tweet'
+            ? t('mydash.bm.layer.tweet', undefined, '트윗 원문')
+            : t('mydash.bm.layer.page', undefined, '페이지')) +
+          '</div>' + body.join('') + '</div>'
+        );
+      }
+      const ai: string[] = [];
+      const sub = text(it.subhead).trim();
+      if (sub) ai.push(sub);
+      for (const key of ['topic', 'form', 'cost', 'decay']) {
+        for (const v of axisValues(it, key)) ai.push(valueLabel(key, v));
+      }
+      if (ai.length) {
+        out.push(
+          '<details class="bm-layer bm-ai"><summary><span class="tool-sublabel">' +
+          esc(t('mydash.bm.layer.ai', undefined, 'AI 분류')) + '</span> <span class="bm-ai-peek">' +
+          esc(ai.slice(0, 2).join(', ')) + '</span></summary>' +
+          '<div class="tool-chips">' + ai.map((a) => '<span class="tool-chip">' + esc(a) + '</span>').join('') + '</div>' +
+          '<div class="tool-hint">' + esc(t('mydash.bm.layer.aiHint', undefined, '추정입니다. 위의 원문이 정본')) + '</div>' +
+          '</details>'
+        );
+      }
+      return out.join('');
+    }
+
     function chipsHtml(axisKey: string, on: (v: string) => boolean, act: string): string {
       const picks = axisPicks(axisKey);
       if (!picks.length) return '';
@@ -1481,7 +1669,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       const url = safeLinkUrl(head.url);
       const title = sheet.bundle
         ? t('mydash.bm.sheet.bundle', { n: sheet.items.length }, '묶음 {n}건 전체에 적용')
-        : displayLabel(head, draft.note);
+        : headOf(head, draft.note);
 
       /* now 상한. 이 대상이 새로 차지할 자리 수만큼 미리 잰다 */
       const mine = new Set(sheet.items.map((it) => text(it.id)));
@@ -1532,7 +1720,8 @@ import { t, loadNamespace } from '../../lib/i18n';
         '<button type="button" class="btn btn-ghost" data-act="sheet-close">' +
         esc(t('mydash.bm.sheet.close', undefined, '닫기')) + '</button></div>' +
         keysHtml() +
-        (url
+        (sheet.bundle ? '' : layersHtml(head, draft.note, url || '')) +
+        (url && sheet.bundle
           ? '<div><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
             esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a></div>'
           : '') +

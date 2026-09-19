@@ -202,5 +202,12 @@
   "mydash.bm.filter.sum": "フィルター",
   "mydash.bm.filter.sumOn": "フィルター {n}",
   "mydash.bm.keys.move": "移動",
-  "mydash.bm.sheet.empty": "行を押すとここに出ます"
+  "mydash.bm.sheet.empty": "行を押すとここに出ます",
+  "mydash.bm.layer.mine": "自分の言葉",
+  "mydash.bm.layer.tweet": "ツイート原文",
+  "mydash.bm.layer.page": "ページ",
+  "mydash.bm.layer.ai": "AI 分類",
+  "mydash.bm.layer.aiHint": "推定です。上の原文が正",
+  "mydash.bm.media.deleted": "X から取得できず。削除済みかログインが必要",
+  "mydash.bm.media.video": "動画は元ページで"
 }

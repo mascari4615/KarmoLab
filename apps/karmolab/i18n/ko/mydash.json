@@ -202,5 +202,12 @@
   "mydash.bm.filter.sum": "필터",
   "mydash.bm.filter.sumOn": "필터 {n}",
   "mydash.bm.keys.move": "이동",
-  "mydash.bm.sheet.empty": "줄을 누르면 여기에 뜹니다"
+  "mydash.bm.sheet.empty": "줄을 누르면 여기에 뜹니다",
+  "mydash.bm.layer.mine": "내가 쓴 말",
+  "mydash.bm.layer.tweet": "트윗 원문",
+  "mydash.bm.layer.page": "페이지",
+  "mydash.bm.layer.ai": "AI 분류",
+  "mydash.bm.layer.aiHint": "추정입니다. 위의 원문이 정본",
+  "mydash.bm.media.deleted": "X 에서 못 받음. 지워졌거나 로그인이 필요한 트윗",
+  "mydash.bm.media.video": "영상은 원문에서"
 }
