@@ -92,11 +92,11 @@ interface CaptureSetting {
   hideCursor: boolean;
 }
 
-/** 판정 안정화 단계. 최근 몇 프레임의 중앙값으로 보고, 들어간 뒤 빠질 때는 문턱에 여유 */
-const STABILITY: Array<{ keep: number; margin: number }> = [
-  { keep: 1, margin: 0 },
-  { keep: 4, margin: 0.02 },
-  { keep: 8, margin: 0.04 }
+/** 판정 안정화 단계. 최근 `windowMs` 동안의 중앙값으로 보고, 들어간 뒤 빠질 때는 문턱에 여유. 프레임 수는 초당 프레임에 따라 */
+const STABILITY: Array<{ windowMs: number; margin: number }> = [
+  { windowMs: 0, margin: 0 },
+  { windowMs: 1000, margin: 0.02 },
+  { windowMs: 2000, margin: 0.04 }
 ];
 
 (function (): void {
@@ -104,7 +104,8 @@ const STABILITY: Array<{ keep: number; margin: number }> = [
   const SLOTS_MAX = 12;
   const SOUND_DB = 'regionwatch-sounds';
   const SOUND_MAX_BYTES = 2 * 1024 * 1024;
-  const CHECK_MS = 250;
+  /* 판정 주기는 초당 프레임을 따른다. 30 이면 33ms, 5 면 200ms. 기본 10 이 옛 250ms 와 비슷 */
+  const checkMsFor = (fps: number): number => Math.max(33, Math.round(1000 / Math.max(1, fps)));
   const READ_MS = 1000;
   const STORE = 'regionwatch.v1';
   const MAX_DELAY_MS = 3000;
@@ -393,6 +394,7 @@ const STABILITY: Array<{ keep: number; margin: number }> = [
     let vol = 0.7;
     let captureSetting: CaptureSetting = { height: 0, fps: 10, hideCursor: false };
     let stability = 1;
+    let checkMs = checkMsFor(10);
 
     /* 도는 동안의 상태 */
     let stream: MediaStream | null = null;
@@ -701,7 +703,8 @@ const STABILITY: Array<{ keep: number; margin: number }> = [
           return;
         }
         const stab = STABILITY[stability];
-        const sim = smoothSim(simHist[i], similarity(cropSmall(s.rect), s.ref), stab.keep);
+        const keep = stab.windowMs ? Math.max(2, Math.round(stab.windowMs / checkMs)) : 1;
+        const sim = smoothSim(simHist[i], similarity(cropSmall(s.rect), s.ref), keep);
         const r = decideEdge(edge[i], sim, { mode: s.mode, threshold: s.threshold, rearm: s.rearm, margin: stab.margin }, now);
         lastSim[i] = sim;
         /* 흔들림 폭도 같이. 압축 노이즈가 얼마나 되는지 사용자가 보고 문턱과 안정화를 고르게 */
@@ -969,7 +972,7 @@ const STABILITY: Array<{ keep: number; margin: number }> = [
       }
       paint();
       const now = performance.now();
-      if (now - lastCheck < CHECK_MS) return;
+      if (now - lastCheck < checkMs) return;
       lastCheck = now;
       check(now);
       bump('checks', now);
@@ -985,11 +988,12 @@ const STABILITY: Array<{ keep: number; margin: number }> = [
         say(t('regionwatch.err.unsupported'), 'error');
         return;
       }
+      checkMs = checkMsFor(captureSetting.fps);
       const c = await startDisplayCapture({
         frameRate: captureSetting.fps,
         height: captureSetting.height || undefined,
         cursor: captureSetting.hideCursor ? 'never' : undefined,
-        tickMs: CHECK_MS,
+        tickMs: checkMs,
         onFrame: (f) => onFrame(() => f.draw(sctx), f.width, f.height),
         onEnded: () => stop()
       });
@@ -1003,7 +1007,11 @@ const STABILITY: Array<{ keep: number; margin: number }> = [
       stopBtn.disabled = false;
       pipBtn.disabled = !pipSupported();
       hint.textContent = t('regionwatch.hint.running');
-      say(t('regionwatch.say.running'), 'ok');
+      /* 브라우저가 실제로 준 크기와 초당 프레임. 요청과 다를 수 있어 눈으로 확인하는 자리 */
+      const got = c.stream.getVideoTracks()[0]?.getSettings?.() || {};
+      const gotText = got.width && got.height ? `${got.width}x${got.height} @ ${Math.round(got.frameRate || 0)}fps` : '';
+      say(t('regionwatch.say.running') + (gotText ? ` (${gotText})` : ''), 'ok');
+      captureHint.textContent = gotText ? t('regionwatch.hint.captureGot').replace('{got}', gotText) : t('regionwatch.hint.capture');
       if (notifyBox.checked && typeof Notification !== 'undefined' && Notification.permission === 'default') {
         Notification.requestPermission().catch(() => undefined);
       }

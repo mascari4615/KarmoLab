@@ -12,7 +12,7 @@
   "regionwatch.label.volume": "音量",
   "regionwatch.label.ref": "基準の見た目",
   "regionwatch.label.threshold": "類似度のしきい値",
-  "regionwatch.label.rearm": "再武装(秒)",
+  "regionwatch.label.rearm": "通知後の待ち(秒)",
   "regionwatch.mode.match": "基準と同じになったら",
   "regionwatch.mode.change": "基準と変わったら",
   "regionwatch.sound.ping": "ピン",
@@ -78,5 +78,6 @@
   "regionwatch.stability.normal": "普通 (4フレームの中央値、余裕 2%)",
   "regionwatch.stability.strong": "強 (8フレームの中央値、余裕 4%)",
   "regionwatch.hint.capture": "画質とフレームは次の画面共有から。類似度の横の ±N は最近のぶれ幅。",
-  "regionwatch.hint.captureRestart": "変更した画質とフレームは共有を止めて再開すると反映されます。"
+  "regionwatch.hint.captureRestart": "変更した画質とフレームは共有を止めて再開すると反映されます。",
+  "regionwatch.hint.captureGot": "共有中: {got}. 画質やフレームを変えたら共有を再開してください。"
 }

@@ -12,7 +12,7 @@
   "regionwatch.label.volume": "Volume",
   "regionwatch.label.ref": "Reference look",
   "regionwatch.label.threshold": "Similarity threshold",
-  "regionwatch.label.rearm": "Re-arm (s)",
+  "regionwatch.label.rearm": "Wait after alert (s)",
   "regionwatch.mode.match": "When it matches the reference",
   "regionwatch.mode.change": "When it differs from the reference",
   "regionwatch.sound.ping": "Ping",
@@ -78,5 +78,6 @@
   "regionwatch.stability.normal": "Normal (median of 4 frames, 2% margin)",
   "regionwatch.stability.strong": "Strong (median of 8 frames, 4% margin)",
   "regionwatch.hint.capture": "Quality and frame rate apply from the next screen share. The ±N next to similarity is the recent jitter.",
-  "regionwatch.hint.captureRestart": "Stop and restart sharing to apply the new quality and frame rate."
+  "regionwatch.hint.captureRestart": "Stop and restart sharing to apply the new quality and frame rate.",
+  "regionwatch.hint.captureGot": "Sharing now: {got}. Restart sharing to apply a new quality or frame rate."
 }
