@@ -111,6 +111,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     /** 항목 id 또는 `bundle:<묶음 열쇠>` */
     target: string;
     intent?: string[];
+    /** 주제 (성인 등). tag 이벤트에 실린다. 사용자 2026-09-19: 화면에서 분류를 못 하잖아 */
+    topic?: string[];
     domain?: string | null;
     priority?: string | null;
     status?: string;
@@ -120,6 +122,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** 이벤트를 다 덮은 뒤의 한 항목. 화면과 필터가 보는 값은 전부 여기서 나옴 */
   type ItemState = {
     intent: string[];
+    topic: string[];
     domain: string | null;
     priority: string | null;
     status: string;
@@ -149,7 +152,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** note 로 제목을 대신할 때 잘라 쓰는 길이 */
   const NOTE_HEAD = 40;
   /** 항목 축으로 거르는 칸. 값 목록은 실제 데이터에서 나옴 */
-  const FILTER_AXES = ['intent', 'domain', 'form'];
+  const FILTER_AXES = ['intent', 'domain', 'form', 'topic'];
   /** 이벤트로 바뀌는 축. 값 목록은 axes.json 정의 전부 (0건이어도 칩을 세움) */
   const STATE_AXES = ['status', 'priority'];
   /** 시트에서 고를 수 있는 생애주기. unsorted 와 tagged 는 사람이 직접 고르는 값 아님 */
@@ -759,6 +762,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       const domain = axisValues(it, 'domain')[0];
       return {
         intent: axisValues(it, 'intent'),
+        topic: axisValues(it, 'topic'),
         domain: domain || null,
         priority: axisValues(it, 'priority')[0] || null,
         status: axisValues(it, 'status')[0] || 'unsorted',
@@ -770,6 +774,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     function applyEvent(s: ItemState, ev: DashEvent): void {
       if (ev.type === 'tag') {
         if (Array.isArray(ev.intent)) s.intent = ev.intent.filter((x) => typeof x === 'string');
+        if (Array.isArray(ev.topic)) s.topic = ev.topic.filter((x) => typeof x === 'string');
         if (ev.domain !== undefined) s.domain = typeof ev.domain === 'string' ? ev.domain : null;
         s.tagged = true;
         /* tag 가 오면 unsorted 를 tagged 로 올린다. 생성기 applyEvent 와 같은 규칙 */
@@ -938,6 +943,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (key === 'src') return text(it.src) ? [text(it.src)] : [];
       const s = stateOf(it);
       if (key === 'intent') return s.intent;
+      if (key === 'topic') return s.topic;
       if (key === 'domain') return s.domain ? [s.domain] : [];
       if (key === 'status') return [s.status];
       if (key === 'priority') return s.priority ? [s.priority] : [];
@@ -1151,6 +1157,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         target,
       };
       if (fields.intent) ev.intent = fields.intent;
+      if (fields.topic) ev.topic = fields.topic;
       if (fields.domain !== undefined) ev.domain = fields.domain;
       if (fields.priority !== undefined) ev.priority = fields.priority;
       if (fields.status !== undefined) ev.status = fields.status;
@@ -1760,8 +1767,8 @@ import { t, loadNamespace } from '../../lib/i18n';
       sheet = { target, items: list, bundle: target.indexOf('bundle:') === 0 };
       if (!sheet.bundle) setCur(target);
       const s = stateOf(list[0]);
-      draftBase = { intent: s.intent.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
-      draft = { intent: s.intent.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
+      draftBase = { intent: s.intent.slice(), topic: s.topic.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
+      draft = { intent: s.intent.slice(), topic: s.topic.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
       sheetMsg = '';
       sheetMsgBad = false;
       showNowList = false;
@@ -1888,7 +1895,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       const ai: string[] = [];
       const sub = text(it.subhead).trim();
       if (sub) ai.push(sub);
-      for (const key of ['topic', 'form', 'cost', 'decay']) {
+      for (const key of ['form', 'cost', 'decay']) {
         for (const v of axisValues(it, key)) ai.push(valueLabel(key, v));
       }
       if (ai.length) {
@@ -1998,6 +2005,7 @@ import { t, loadNamespace } from '../../lib/i18n';
             esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a></div>'
           : '') +
         chipsHtml('intent', (v) => (draft as ItemState).intent.indexOf(v) >= 0, 's-intent') +
+        chipsHtml('topic', (v) => (draft as ItemState).topic.indexOf(v) >= 0, 's-topic') +
         chipsHtml('domain', (v) => (draft as ItemState).domain === v, 's-domain') +
         '<div class="bm-sheet-sec"><div class="tool-sublabel">' + esc(axisLabel('priority')) +
         '</div><div class="tool-chips">' +
@@ -2061,9 +2069,9 @@ import { t, loadNamespace } from '../../lib/i18n';
     function sheetEvents(): Outgoing[] {
       if (!sheet || !draft || !draftBase) return [];
       const out: Outgoing[] = [];
-      const tagChanged = !sameSet(draft.intent, draftBase.intent) || draft.domain !== draftBase.domain;
+      const tagChanged = !sameSet(draft.intent, draftBase.intent) || draft.domain !== draftBase.domain || !sameSet(draft.topic, draftBase.topic);
       if (tagChanged) {
-        out.push(makeEvent('tag', sheet.target, { intent: draft.intent.slice(), domain: draft.domain }));
+        out.push(makeEvent('tag', sheet.target, { intent: draft.intent.slice(), topic: draft.topic.slice(), domain: draft.domain }));
       }
       if (draft.priority !== draftBase.priority) {
         out.push(makeEvent('priority', sheet.target, { priority: draft.priority }));
@@ -2501,6 +2509,14 @@ import { t, loadNamespace } from '../../lib/i18n';
         const at = draft.intent.indexOf(v);
         if (at >= 0) draft.intent.splice(at, 1);
         else draft.intent.push(v);
+        paintSheet();
+        return;
+      }
+      if (act === 's-topic' && draft) {
+        const v = el.getAttribute('data-value') || '';
+        const at = draft.topic.indexOf(v);
+        if (at >= 0) draft.topic.splice(at, 1);
+        else draft.topic.push(v);
         paintSheet();
         return;
       }
