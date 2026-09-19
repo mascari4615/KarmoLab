@@ -115,7 +115,8 @@ await page.addInitScript(
     const other = [slot('old1', 'match', { x: 0, y: 0, w: 50, h: 50 }), off('old2'), off('old3'), off('old4'), off('old5'), off('old6')];
     localStorage.setItem(
       'regionwatch.v1',
-      JSON.stringify({ sw: 1280, sh: 720, volume: 0, notify: false, slots: other, profiles: { '1280x720': other, [`${SW}x${SH}`]: mine } })
+      /* 안정화 끔. 아래 시나리오는 600ms 안에 뒤집히는 걸 잰다. 안정화는 ⑦ 에서 따로 */
+      JSON.stringify({ sw: 1280, sh: 720, volume: 0, notify: false, slots: other, profiles: { '1280x720': other, [`${SW}x${SH}`]: mine }, stability: 0 })
     );
   },
   { SW, SH, BOX, DIGIT, NUM }
@@ -281,6 +282,32 @@ check(!(await page.isDisabled('#rwStart')), '단축키로 멈춘다');
 await page.keyboard.press('Alt+Shift+KeyS');
 await page.waitForFunction(() => document.querySelector('#rwStart')?.disabled === true, null, { timeout: 5000 }).catch(() => undefined);
 check(await page.isDisabled('#rwStart'), '단축키로 다시 시작한다');
+
+/* ⑦ 판정 안정화 (강함, 8프레임 중앙값). 튄 판정 1~2개는 삼키고, 1초 넘게 유지된 변화만 울린다 */
+check((await page.inputValue('#rwStable')) === '0', '저장된 안정화 단계가 복구된다 (끔)');
+await page.selectOption('#rwStable', '2');
+check((await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')).stability)) === 2, '안정화 단계가 저장된다');
+await page.evaluate(() => window.__stage.set('box', '#20c040'));
+await page.waitForTimeout(3300);
+const beforeJitter = await page.evaluate(() => window.__rw.fires.filter((f) => f.name === 'chg').length);
+await page.evaluate(() => window.__stage.set('box', '#c02020'));
+await page.waitForTimeout(260);
+await page.evaluate(() => window.__stage.set('box', '#20c040'));
+await page.waitForTimeout(400);
+/* 튄 프레임(판정 1~2개)이 아직 최근 8개 안에 있을 때. 캔버스 스트림은 노이즈가 0 이라 이때만 폭이 보인다 */
+check(/±\d+/.test((await page.textContent('.rw-slot[data-i="0"] .rw-sim b')) || ''), `흔들림 폭이 보인다 (${await page.textContent('.rw-slot[data-i="0"] .rw-sim b')})`);
+await page.waitForTimeout(1200);
+const afterJitter = await page.evaluate(() => window.__rw.fires.filter((f) => f.name === 'chg').length);
+check(afterJitter === beforeJitter, `한 프레임 튄 것은 안 울린다 (${beforeJitter} -> ${afterJitter})`);
+await page.evaluate(() => window.__stage.set('box', '#c02020'));
+await page.waitForFunction((n) => window.__rw.fires.filter((f) => f.name === 'chg').length > n, beforeJitter, { timeout: 5000 }).catch(() => undefined);
+const afterHold = await page.evaluate(() => window.__rw.fires.filter((f) => f.name === 'chg').length);
+check(afterHold === beforeJitter + 1, `유지된 변화는 울린다 (${beforeJitter} -> ${afterHold})`);
+await page.selectOption('#rwHeight', '720');
+await page.selectOption('#rwFps', '5');
+const capSaved = await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')).capture);
+check(capSaved && capSaved.height === 720 && capSaved.fps === 5, `공유 화질과 프레임이 저장된다 (${JSON.stringify(capSaved)})`);
+check(/다시 시작|restart|再開/.test((await page.textContent('#rwCaptureHint')) || ''), `도는 중에 바꾸면 다시 시작 안내 (${await page.textContent('#rwCaptureHint')})`);
 
 /* ⑥ 멈춤 */
 await page.click('#rwStop');
