@@ -196,8 +196,8 @@ html[data-sidebar="rail"] .myd-strip {
 
 /* ── 홈 ────────────────────────────────────────────────── */
 .mydh-date {
-  margin: 0 0 var(--space-md);
-  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-lg);
+  font-size: var(--font-size-md);
   color: var(--text-secondary);
 }
 .mydh-grid {
@@ -211,31 +211,45 @@ html[data-sidebar="rail"] .myd-strip {
 @media (min-width: 1040px) {
   .mydh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* 카드 하나에 수치 하나 (2026-09-13 실측: Exist 카드 262px 에 지표 1 + 출처 1줄, 히어로는 본문의 3~4배).
+   제목은 작은 라벨, 수치가 주인공, 아래 한두 줄. 카드 전체가 누르는 자리 */
 .mydh-card {
+  --myd-hero: 40px;
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
   min-width: 0;
-  padding: var(--space-md);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--bg-secondary);
 }
-.mydh-card h3 {
-  margin: 0;
-  font-size: var(--font-size-md);
-  font-weight: 600;
+.mydh-card.is-open {
+  cursor: pointer;
 }
-.mydh-big {
-  margin: 0;
-  font-size: var(--font-size-display-sm);
+.mydh-card.is-open:hover {
+  border-color: var(--text-tertiary);
+}
+.mydh-card h3 {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--font-size-xs);
   font-weight: 500;
-  line-height: 1.25;
+  letter-spacing: .02em;
+  color: var(--text-secondary);
+}
+.mydh-card p.mydh-big {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--myd-hero);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -.01em;
   font-variant-numeric: tabular-nums;
   word-break: break-all;
+  color: var(--text-primary);
 }
-.mydh-big small {
-  margin-left: var(--space-sm);
+.mydh-card p.mydh-big small {
+  display: block;
+  margin: var(--space-xs) 0 0;
   font-size: var(--font-size-xs);
   font-weight: 400;
   letter-spacing: normal;
@@ -244,28 +258,35 @@ html[data-sidebar="rail"] .myd-strip {
 .mydh-card p {
   margin: 0;
   font-size: var(--font-size-sm);
-  line-height: 1.6;
-  color: var(--text-secondary);
+  line-height: 1.5;
+  color: var(--text-primary);
 }
 .mydh-card p.mydh-quiet {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
 }
 .mydh-open {
-  margin-top: auto;
-  padding-top: var(--space-sm);
-}
-.mydh-open button {
-  min-height: var(--myd-tap);
+  margin: 0;
   padding: 0;
+}
+.mydh-open .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.mydh-open button:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  clip: auto;
+  min-height: var(--myd-tap);
   border: 0;
   background: transparent;
   color: var(--accent-ink);
   font: inherit;
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-  text-decoration: underline;
 }
 .mydh-bad {
   color: var(--text-tertiary);
@@ -289,3 +310,94 @@ html[data-sidebar="rail"] .myd-strip {
 .mydh-card--empty { opacity: 0.6; }
 .mydh-card--empty .mydh-big { color: var(--text-tertiary); }
 .myd-card--login { margin-bottom: var(--space-md); }
+
+/* ── 공통 자 (2026-09-19 실측, memo notes/mydash/mvp5-design-2026-09-19.md) ─────
+   레퍼런스 (핀터레스트, 블루스카이, 텀블러, Exist, RescueTime): 본문 15~16, 메타 13,
+   히어로 수치는 본문의 3~4배, 모노스페이스는 코드에만. 우리 패널은 11~14 와 모노 목록이었다.
+   패널마다 있는 수치 타일 (.au-num, .pv-num, .bm-num) 과 목표 머리 (.cr-goal) 를 한 자로 */
+.myd-main {
+  --myd-body: 15px;
+  --myd-meta: 13px;
+  --myd-hero: 36px;
+}
+.myd-main .tool-list,
+.myd-main .tool-list-row,
+.myd-main .tool-list-key,
+.myd-main .tool-list-val {
+  font-family: var(--font-sans);
+}
+.myd-main .tool-list-val {
+  font-size: var(--myd-body);
+}
+.myd-main .tool-list-key {
+  font-size: var(--myd-meta);
+}
+.myd-main .tool-sublabel {
+  font-size: var(--myd-meta);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.myd-main .tool-status,
+.myd-main .tool-hint {
+  font-size: var(--myd-meta);
+}
+.myd-main .au-num,
+.myd-main .pv-num,
+.myd-main .bm-num {
+  padding: var(--space-md);
+  border-radius: var(--radius-xl);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+.myd-main .au-num b,
+.myd-main .pv-num b,
+.myd-main .bm-num b {
+  display: block;
+  font-size: var(--myd-hero);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.myd-main .au-num span,
+.myd-main .pv-num span,
+.myd-main .bm-num span {
+  display: block;
+  margin-top: var(--space-xs);
+  font-size: var(--myd-meta);
+  color: var(--text-secondary);
+}
+.myd-main .au-nums,
+.myd-main .pv-nums,
+.myd-main .bm-nums {
+  gap: var(--space-md);
+}
+.myd-main .cr-goal {
+  padding: var(--space-lg);
+  border-radius: var(--radius-xl);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+.myd-main .cr-goal b {
+  font-size: var(--myd-meta);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.myd-main .cr-goal i {
+  font-size: var(--myd-hero);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+.myd-main .cr-goal span,
+.myd-main .cr-val i,
+.myd-main .cr-foot,
+.myd-main .me-ref {
+  font-size: var(--myd-meta);
+}
+.myd-main .cr-note,
+.myd-main .me-cand .me-detail {
+  font-size: var(--myd-body);
+  line-height: 1.5;
+}
