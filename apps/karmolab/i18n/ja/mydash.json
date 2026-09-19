@@ -215,5 +215,6 @@
   "mydash.bm.view.grid": "グリッド",
   "mydash.bm.act.pendingOnly": "未判定のみ",
   "mydash.bm.card.keep": "残す",
-  "mydash.bm.card.more": "他"
+  "mydash.bm.card.more": "他",
+  "mydash.me.source": "原本"
 }

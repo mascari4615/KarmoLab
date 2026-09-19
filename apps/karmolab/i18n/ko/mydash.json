@@ -215,5 +215,6 @@
   "mydash.bm.view.grid": "격자",
   "mydash.bm.act.pendingOnly": "대기만",
   "mydash.bm.card.keep": "둔다",
-  "mydash.bm.card.more": "더"
+  "mydash.bm.card.more": "더",
+  "mydash.me.source": "원본"
 }

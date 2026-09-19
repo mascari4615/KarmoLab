@@ -215,5 +215,6 @@
   "mydash.bm.view.grid": "Grid",
   "mydash.bm.act.pendingOnly": "Pending only",
   "mydash.bm.card.keep": "Keep",
-  "mydash.bm.card.more": "More"
+  "mydash.bm.card.more": "More",
+  "mydash.me.source": "Source"
 }

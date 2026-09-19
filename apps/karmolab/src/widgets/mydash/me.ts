@@ -14,7 +14,7 @@
  * 같은 이유로 이 패널이 `widgets-lazy-meta.ts` 의 첫 패널이고, 셸이 처음 여는 탭.
  *
  * 설계 2.2 의 통제 셋은 저장소 쓰기 없이 화면에서만 함.
- * - 접힌 채로 열기. 흔적은 `details` 라 출처 칩과 시각만 먼저 보이고 본문은 사람이 폄
+ * - 펼친 채로 열기 (2026-09-19 변경). 흔적은 details 지만 본문이 바로 보이고, 접는 것은 사람 몫
  * - 숨기기. 흔적 하나와 시기 창 하나를 각각 감춤. 자리는 localStorage `karmolab.mydash.me.hide`
  *   (이 브라우저에만 남음, 저장 막힌 판에서는 이번 화면까지만)
  * - 되돌리기. 숨긴 수를 절 아래에 적고 한 번에 되돌림
@@ -95,7 +95,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       'padding:var(--space-sm);border-radius:var(--radius-lg);background:var(--bg-tertiary)}',
       '.me-card-head{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center}',
       '.me-card-head b{color:var(--text-primary)}',
-      '.me-card-head span{font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
+      '.me-card-head span{font-size:var(--font-size-2xs);color:var(--text-tertiary)}',
       /* 손가락 최소 44px. 버튼은 킷 것을 쓰고 높이만 벌림 */
       '.me .btn{min-height:var(--me-tap)}',
       /* 흔적은 접힌 채로 열림 (설계 2.2). 접힌 줄에 보이는 것은 출처 칩과 시각과 숨기기뿐 */
@@ -103,18 +103,19 @@ import { t, loadNamespace } from '../../lib/i18n';
       'padding-top:var(--space-xs);border-top:1px solid var(--border)}',
       '.me-trace>summary{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center;',
       'min-height:var(--me-tap);cursor:pointer;list-style:none;',
-      'font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
+      'font-size:var(--font-size-2xs);color:var(--text-tertiary)}',
+      '.me-trace>summary .btn{margin-left:auto;font-size:var(--font-size-2xs);min-height:32px}',
       '.me-trace>summary::-webkit-details-marker{display:none}',
       /* 줄 안의 출처 칩은 누르는 것이 아니라 표식. 킷 크기 그대로 */
       '.me .me-trace>summary .tool-chip,.me .me-cand-top .tool-chip{pointer-events:none}',
-      '.me-trace-text{color:var(--text-secondary);word-break:break-word}',
+      '.me-trace-text{color:var(--text-primary);word-break:break-word;white-space:pre-wrap;font-size:var(--font-size-sm);line-height:1.5}',
       /* 근거 자리. 원본으로 내려가는 실마리라 지우지 말 것 (설계 2.1 근거 없는 숫자 금지) */
       '.me-ref{font-size:var(--font-size-3xs);color:var(--text-tertiary);word-break:break-all}',
       '.me-ref a{color:var(--text-secondary)}',
       /* 영역 표. 세 칸 고정, 숫자는 자릿수 맞춤 */
       '.me-rows{display:flex;flex-direction:column;gap:var(--space-xs)}',
       '.me-row{display:grid;grid-template-columns:1fr auto auto;gap:var(--space-sm);',
-      'align-items:baseline;font-size:var(--font-size-2xs)}',
+      'align-items:baseline;font-size:var(--font-size-xs);min-height:28px}',
       '.me-row em{font-style:normal;color:var(--text-secondary);overflow:hidden;',
       'text-overflow:ellipsis;white-space:nowrap}',
       '.me-row i{font-style:normal;font-variant-numeric:tabular-nums;color:var(--text-primary);',
@@ -263,7 +264,9 @@ import { t, loadNamespace } from '../../lib/i18n';
     const url = refUrl(info, ref);
     if (!url) return esc(ref);
     return (
-      '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(ref) + '</a>'
+      /* 경로는 title 로. 화면에는 원본 한 낱말 (경로와 sha 는 기본 숨김, 가독성 기준선 2026-09-13) */
+      '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" title="' + esc(ref) + '">' +
+      esc(t('mydash.me.source', undefined, '원본')) + '</a>'
     );
   }
 
@@ -275,7 +278,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     const body = text(tr.text);
     const ref = text(tr.ref);
     return (
-      '<details class="me-trace">' +
+      /* 펼친 채로. 접힌 줄에 출처와 시각만 있으면 흔적이 아니라 빈 줄 (2026-09-19 실측, 사용자 "원문 그대로") */
+      '<details class="me-trace" open>' +
       '<summary><span class="tool-chip">' + esc(src) + '</span>' +
       (when ? '<span>' + esc(when) + '</span>' : '') +
       btnHtml('hide', traceKey(tr), t('mydash.me.hideCard', undefined, '이 카드 다시 안 보기')) +

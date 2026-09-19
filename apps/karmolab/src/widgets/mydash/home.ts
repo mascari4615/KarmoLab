@@ -317,7 +317,7 @@ import type { FcEvent } from '../planner/gcal';
 
   function cardHtml(c: Card): string {
     return (
-      '<div class="mydh-card">' +
+      '<div class="mydh-card' + (c.open ? ' is-open' : '') + '"' + (c.open ? ' data-open="' + esc(c.item) + '"' : '') + '>' +
       '<h3>' + esc(c.title) + '</h3>' +
       (c.big
         ? '<p class="mydh-big">' + esc(c.big.value) + '<small>' + esc(c.big.unit) + '</small></p>'
@@ -325,7 +325,7 @@ import type { FcEvent } from '../planner/gcal';
       c.lines.map((l) => '<p>' + esc(l) + '</p>').join('') +
       (c.quiet ? '<p class="mydh-quiet">' + esc(c.quiet) + '</p>' : '') +
       (c.open
-        ? '<div class="mydh-open"><button type="button" data-open="' + esc(c.item) + '">' +
+        ? '<div class="mydh-open"><button type="button" data-open="' + esc(c.item) + '" class="sr-only">' +
           esc(t('mydash.home.open', undefined, '열기')) + '</button></div>'
         : '') +
       '</div>'
