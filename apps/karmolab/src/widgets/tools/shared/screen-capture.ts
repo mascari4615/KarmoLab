@@ -30,6 +30,10 @@ export interface CaptureHandle {
 
 export interface CaptureOptions {
   frameRate?: number;
+  /** 바라는 화면 높이(px). 브라우저가 이 높이로 줄여서 준다. 생략이면 원본 */
+  height?: number;
+  /** 마우스 커서를 화면에 섞을지. 'never' 는 브라우저가 지원할 때만 (Firefox). 크로미움은 무시 */
+  cursor?: 'always' | 'never';
   /** 화면 소리(탭, 시스템)도 받을지. 녹화 도구용 */
   audio?: boolean;
   /** 워커 시계 간격(ms). 프로세서가 없는 브라우저에서만 */
@@ -50,7 +54,14 @@ export async function startDisplayCapture(o: CaptureOptions): Promise<CaptureHan
   if (!displayCaptureSupported()) return null;
   let stream: MediaStream;
   try {
-    stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: o.frameRate ?? 10 }, audio: !!o.audio });
+    const video: MediaTrackConstraints & { cursor?: string } = { frameRate: { ideal: o.frameRate ?? 10 } };
+    if (o.height) {
+      video.height = { ideal: o.height };
+      /* 폭도 같이. 크로미움은 둘 안에 들어가게 비율 유지로 줄인다. 16:9 기준, 더 넓은 화면은 폭에 맞춰 조금 더 작아짐 */
+      video.width = { ideal: Math.round((o.height * 16) / 9) };
+    }
+    if (o.cursor) video.cursor = o.cursor;
+    stream = await navigator.mediaDevices.getDisplayMedia({ video, audio: !!o.audio });
   } catch {
     return null;
   }

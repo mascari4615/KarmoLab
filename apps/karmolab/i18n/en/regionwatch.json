@@ -68,5 +68,15 @@
   "regionwatch.hint.hotkey": "Shortcuts: Alt+Shift+S start/stop, Alt+Shift+P floating window (while this tab is in front)",
   "regionwatch.say.soundsSaved": "Saved {n} custom sounds. Pick them in a slot's sound.",
   "regionwatch.err.soundTooBig": "{name} is over 2MB.",
-  "regionwatch.err.soundBad": "Could not read {name} as audio."
+  "regionwatch.err.soundBad": "Could not read {name} as audio.",
+  "regionwatch.label.quality": "Share quality",
+  "regionwatch.quality.native": "Native",
+  "regionwatch.label.fps": "Frames per second",
+  "regionwatch.opt.hideCursor": "Hide cursor (when the browser supports it)",
+  "regionwatch.label.stability": "Decision smoothing",
+  "regionwatch.stability.off": "Off",
+  "regionwatch.stability.normal": "Normal (median of 4 frames, 2% margin)",
+  "regionwatch.stability.strong": "Strong (median of 8 frames, 4% margin)",
+  "regionwatch.hint.capture": "Quality and frame rate apply from the next screen share. The ±N next to similarity is the recent jitter.",
+  "regionwatch.hint.captureRestart": "Stop and restart sharing to apply the new quality and frame rate."
 }

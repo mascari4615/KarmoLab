@@ -44,6 +44,11 @@ export interface EdgeCfg {
   threshold: number;
   /** 다시 무장까지 초 */
   rearm: number;
+  /**
+   * 판정 여유. 들어간 뒤 빠지려면 문턱에서 이만큼 더 벗어나야 함.
+   * 압축 노이즈로 닮은 정도가 문턱 근처에서 1~3% 흔들려도 판정이 안 뒤집히게. 0 이면 문턱 하나
+   */
+  margin?: number;
 }
 
 export interface EdgeResult {
@@ -57,11 +62,40 @@ export interface EdgeResult {
  * 조건에서 빠지면 다시 무장. `rearm` 초 안에는 다시 들어가도 침묵
  */
 export function decideEdge(st: EdgeState, sim: number, cfg: EdgeCfg, now: number): EdgeResult {
-  const hit = cfg.mode === 'match' ? sim >= cfg.threshold : sim < cfg.threshold;
+  const margin = Math.max(0, cfg.margin ?? 0);
+  const enter = cfg.mode === 'match' ? sim >= cfg.threshold : sim < cfg.threshold;
+  const stay = cfg.mode === 'match' ? sim >= cfg.threshold - margin : sim < cfg.threshold + margin;
+  const hit = st.wasHit ? stay : enter;
   if (!hit) return { hit, fire: false, state: { wasHit: false, firedAt: st.firedAt } };
   if (st.wasHit) return { hit, fire: false, state: st };
   const cool = now - st.firedAt < cfg.rearm * 1000;
   return { hit, fire: !cool, state: { wasHit: true, firedAt: cool ? st.firedAt : now } };
+}
+
+/**
+ * 최근 닮은 정도의 중앙값. 프레임 하나 튀어도 판정 유지
+ * `history` 는 제자리에서 `keep` 개까지만 남긴다. keep 1 이면 그대로
+ */
+export function smoothSim(history: number[], sim: number, keep: number): number {
+  const n = Math.max(1, Math.floor(keep));
+  history.push(sim);
+  while (history.length > n) history.shift();
+  if (history.length === 1) return sim;
+  const sorted = [...history].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** 최근 닮은 정도의 흔들림. 최대와 최소의 차. 표본 2개 미만이면 0 */
+export function simSpread(history: number[]): number {
+  if (history.length < 2) return 0;
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const v of history) {
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  return hi - lo;
 }
 
 /**

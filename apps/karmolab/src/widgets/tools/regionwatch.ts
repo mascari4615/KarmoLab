@@ -22,6 +22,8 @@ import {
   type CountState,
   similarity,
   smallSize,
+  smoothSim,
+  simSpread,
   decideEdge,
   decideCount,
   parseSeconds,
@@ -77,7 +79,25 @@ interface Saved {
   slots: SavedSlot[];
   /** 화면 크기("1920x1080")마다 슬롯 한 벌. 창 크기가 바뀌어도 영역을 다시 안 끌게 */
   profiles?: Record<string, SavedSlot[]>;
+  /** 화면 공유 요청 조건. 다음 시작부터 */
+  capture?: CaptureSetting;
+  /** 판정 안정화 단계. 0 끔, 1 보통, 2 강함 */
+  stability?: number;
 }
+
+interface CaptureSetting {
+  /** 바라는 높이(px). 0 이면 원본 */
+  height: number;
+  fps: number;
+  hideCursor: boolean;
+}
+
+/** 판정 안정화 단계. 최근 몇 프레임의 중앙값으로 보고, 들어간 뒤 빠질 때는 문턱에 여유 */
+const STABILITY: Array<{ keep: number; margin: number }> = [
+  { keep: 1, margin: 0 },
+  { keep: 4, margin: 0.02 },
+  { keep: 8, margin: 0.04 }
+];
 
 (function (): void {
   const SLOTS_MIN = 6;
@@ -281,6 +301,30 @@ interface Saved {
         <span class="tool-hint" id="rwSounds"></span>
         <span class="tool-hint">${esc(t('regionwatch.hint.hotkey'))}</span>
       </div>
+      <div class="tool-actions tight rw-capture">
+        <label class="tool-sublabel">${esc(t('regionwatch.label.quality'))}
+          <select id="rwHeight" aria-label="${esc(t('regionwatch.label.quality'))}">
+            <option value="0">${esc(t('regionwatch.quality.native'))}</option>
+            <option value="1440">1440p</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+          </select>
+        </label>
+        <label class="tool-sublabel">${esc(t('regionwatch.label.fps'))}
+          <select id="rwFps" aria-label="${esc(t('regionwatch.label.fps'))}">
+            <option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="30">30</option>
+          </select>
+        </label>
+        <label class="tool-chip"><input type="checkbox" id="rwCursor"> ${esc(t('regionwatch.opt.hideCursor'))}</label>
+        <label class="tool-sublabel">${esc(t('regionwatch.label.stability'))}
+          <select id="rwStable" aria-label="${esc(t('regionwatch.label.stability'))}">
+            <option value="0">${esc(t('regionwatch.stability.off'))}</option>
+            <option value="1">${esc(t('regionwatch.stability.normal'))}</option>
+            <option value="2">${esc(t('regionwatch.stability.strong'))}</option>
+          </select>
+        </label>
+        <span class="tool-hint" id="rwCaptureHint">${esc(t('regionwatch.hint.capture'))}</span>
+      </div>
       <div class="rw-grid">
         <div class="rw-left">
           <canvas id="rwPreview" class="rw-preview"></canvas>
@@ -313,6 +357,11 @@ interface Saved {
     const pipBtn = $<HTMLButtonElement>('#rwPip');
     const testBtn = $<HTMLButtonElement>('#rwTest');
     const notifyBox = $<HTMLInputElement>('#rwNotify');
+    const heightSel = $<HTMLSelectElement>('#rwHeight');
+    const fpsSel = $<HTMLSelectElement>('#rwFps');
+    const cursorBox = $<HTMLInputElement>('#rwCursor');
+    const stableSel = $<HTMLSelectElement>('#rwStable');
+    const captureHint = $<HTMLElement>('#rwCaptureHint');
     const volume = $<HTMLInputElement>('#rwVolume');
     const preview = $<HTMLCanvasElement>('#rwPreview');
     const hint = $<HTMLElement>('#rwHint');
@@ -342,6 +391,8 @@ interface Saved {
     const slots: Slot[] = Array.from({ length: SLOTS_MIN }, (_, i) => newSlot(i));
     let savedSize: [number, number] = [0, 0];
     let vol = 0.7;
+    let captureSetting: CaptureSetting = { height: 0, fps: 10, hideCursor: false };
+    let stability = 1;
 
     /* 도는 동안의 상태 */
     let stream: MediaStream | null = null;
@@ -353,6 +404,8 @@ interface Saved {
     const edge: EdgeState[] = Array.from({ length: SLOTS_MIN }, () => ({ wasHit: false, firedAt: -1e9 }));
     const count: CountState[] = Array.from({ length: SLOTS_MIN }, () => ({ last: null, streak: 0, firedAt: -1e9, done: false }));
     const lastSim: number[] = new Array(SLOTS_MIN).fill(-1);
+    /* 최근 닮은 정도. 안정화 단계만큼 남기고 중앙값으로 판정 */
+    const simHist: number[][] = Array.from({ length: SLOTS_MIN }, () => []);
     /* 기준을 찍은 직후나 시작 직후의 첫 판정은 상태만 맞추고 침묵. 기준은 지금 모습이라 늘 같음 */
     const primed: boolean[] = new Array(SLOTS_MIN).fill(false);
     const pending: Array<number | null> = new Array(SLOTS_MIN).fill(null);
@@ -395,7 +448,7 @@ interface Saved {
     function save(): void {
       const packed = pack();
       if (profileKey) profiles[profileKey] = packed;
-      const data: Saved = { sw: src.width, sh: src.height, volume: vol, notify: notifyBox.checked, slots: packed, profiles };
+      const data: Saved = { sw: src.width, sh: src.height, volume: vol, notify: notifyBox.checked, slots: packed, profiles, capture: captureSetting, stability };
       try {
         localStorage.setItem(STORE, JSON.stringify(data));
       } catch {
@@ -418,6 +471,8 @@ interface Saved {
         vol = typeof d.volume === 'number' ? d.volume : vol;
         notifyBox.checked = !!d.notify;
         profiles = d.profiles && typeof d.profiles === 'object' ? d.profiles : {};
+        if (d.capture && typeof d.capture === 'object') captureSetting = { ...captureSetting, ...d.capture };
+        if (typeof d.stability === 'number') stability = clamp(Math.round(d.stability), 0, STABILITY.length - 1);
         if (d.slots) unpack(d.slots);
       } catch {
         /* 옛 저장이 깨졌으면 새로 시작 */
@@ -527,6 +582,7 @@ interface Saved {
       edge[i] = { wasHit: false, firedAt: edge[i].firedAt };
       count[i] = { last: null, streak: 0, firedAt: count[i].firedAt, done: false };
       primed[i] = false;
+      simHist[i].length = 0;
     }
 
     /* ── 기준 그림 ────────────────────────────────────────── */
@@ -644,10 +700,13 @@ interface Saved {
           }
           return;
         }
-        const sim = similarity(cropSmall(s.rect), s.ref);
-        const r = decideEdge(edge[i], sim, { mode: s.mode, threshold: s.threshold, rearm: s.rearm }, now);
+        const stab = STABILITY[stability];
+        const sim = smoothSim(simHist[i], similarity(cropSmall(s.rect), s.ref), stab.keep);
+        const r = decideEdge(edge[i], sim, { mode: s.mode, threshold: s.threshold, rearm: s.rearm, margin: stab.margin }, now);
         lastSim[i] = sim;
-        paintSim(i, sim, r.hit);
+        /* 흔들림 폭도 같이. 압축 노이즈가 얼마나 되는지 사용자가 보고 문턱과 안정화를 고르게 */
+        const spread = Math.round((simSpread(simHist[i]) * 100) / 2);
+        paintSim(i, sim, r.hit, spread ? `${Math.round(sim * 100)}% ±${spread}` : undefined);
         if (!primed[i]) {
           primed[i] = true;
           edge[i] = { wasHit: r.hit, firedAt: edge[i].firedAt };
@@ -725,6 +784,7 @@ interface Saved {
       edge.push({ wasHit: false, firedAt: -1e9 });
       count.push({ last: null, streak: 0, firedAt: -1e9, done: false });
       lastSim.push(-1);
+      simHist.push([]);
       primed.push(false);
       pending.push(null);
       trend.push(newTrend());
@@ -926,7 +986,9 @@ interface Saved {
         return;
       }
       const c = await startDisplayCapture({
-        frameRate: 10,
+        frameRate: captureSetting.fps,
+        height: captureSetting.height || undefined,
+        cursor: captureSetting.hideCursor ? 'never' : undefined,
         tickMs: CHECK_MS,
         onFrame: (f) => onFrame(() => f.draw(sctx), f.width, f.height),
         onEnded: () => stop()
@@ -1070,6 +1132,27 @@ interface Saved {
       }
       save();
     };
+    const onCaptureChange = (): void => {
+      captureSetting = { height: Number(heightSel.value) || 0, fps: Number(fpsSel.value) || 10, hideCursor: cursorBox.checked };
+      captureHint.textContent = stream ? t('regionwatch.hint.captureRestart') : t('regionwatch.hint.capture');
+      save();
+    };
+    heightSel.onchange = onCaptureChange;
+    fpsSel.onchange = onCaptureChange;
+    cursorBox.onchange = onCaptureChange;
+    stableSel.onchange = (): void => {
+      stability = clamp(Number(stableSel.value) || 0, 0, STABILITY.length - 1);
+      for (let i = 0; i < slots.length; i++) simHist[i].length = 0;
+      save();
+    };
+    function paintCapture(): void {
+      heightSel.value = String(captureSetting.height);
+      if (heightSel.value !== String(captureSetting.height)) heightSel.value = '0';
+      fpsSel.value = String(captureSetting.fps);
+      if (fpsSel.value !== String(captureSetting.fps)) fpsSel.value = '10';
+      cursorBox.checked = captureSetting.hideCursor;
+      stableSel.value = String(stability);
+    }
 
     /* 묶음 안에서는 오른쪽 칸이 좁음. 칸 폭을 보고 미리보기 아래에 슬롯 두 줄 */
     const grid = $<HTMLElement>('.rw-grid');
@@ -1086,6 +1169,7 @@ interface Saved {
     void loadSounds().then(paintSounds);
     addSlotBtn.disabled = slots.length >= SLOTS_MAX;
     volume.value = String(Math.round(vol * 100));
+    paintCapture();
     for (let i = 0; i < slots.length; i++) paintSlot(i);
     relayout();
 

@@ -68,5 +68,15 @@
   "regionwatch.hint.hotkey": "ショートカット: Alt+Shift+S 開始と停止, Alt+Shift+P 浮かぶウィンドウ (このタブが前面のとき)",
   "regionwatch.say.soundsSaved": "通知音を {n} 個保存しました。スロットの音で選んでください。",
   "regionwatch.err.soundTooBig": "{name} は 2MB を超えています。",
-  "regionwatch.err.soundBad": "{name} を音として読めませんでした。"
+  "regionwatch.err.soundBad": "{name} を音として読めませんでした。",
+  "regionwatch.label.quality": "共有画質",
+  "regionwatch.quality.native": "元のまま",
+  "regionwatch.label.fps": "毎秒フレーム",
+  "regionwatch.opt.hideCursor": "カーソルを隠す (ブラウザが対応する場合)",
+  "regionwatch.label.stability": "判定の安定化",
+  "regionwatch.stability.off": "オフ",
+  "regionwatch.stability.normal": "普通 (4フレームの中央値、余裕 2%)",
+  "regionwatch.stability.strong": "強 (8フレームの中央値、余裕 4%)",
+  "regionwatch.hint.capture": "画質とフレームは次の画面共有から。類似度の横の ±N は最近のぶれ幅。",
+  "regionwatch.hint.captureRestart": "変更した画質とフレームは共有を止めて再開すると反映されます。"
 }

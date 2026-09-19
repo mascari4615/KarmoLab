@@ -86,6 +86,46 @@ check(core.smallSize({ x: 0, y: 0, w: 20, h: 20 }).join('x') === '40x40', '작�
   r = core.decideEdge(r.state, 0.99, chg, 200);
   r = core.decideEdge(r.state, 0.6, chg, 300);
   check(r.fire, 'change: rearm 0 이면 바로 다시 울린다');
+
+  /* 판정 여유. 문턱 근처에서 1~3% 흔들려도 들어간 상태가 안 풀린다 */
+  const hys = { mode: 'match', threshold: 0.92, rearm: 0, margin: 0.02 };
+  st = { wasHit: false, firedAt: -1e9 };
+  r = core.decideEdge(st, 0.91, hys, 0);
+  check(!r.hit, 'margin: 들어갈 때는 문턱 그대로');
+  r = core.decideEdge(r.state, 0.92, hys, 100);
+  check(r.fire && r.hit, 'margin: 문턱에 닿으면 울린다');
+  r = core.decideEdge(r.state, 0.905, hys, 200);
+  check(!r.fire && r.hit, 'margin: 여유 안으로 내려가도 아직 들어가 있음');
+  r = core.decideEdge(r.state, 0.92, hys, 300);
+  check(!r.fire, 'margin: 다시 올라와도 새로 안 울린다');
+  r = core.decideEdge(r.state, 0.89, hys, 400);
+  check(!r.hit, 'margin: 여유 밖으로 나가면 풀린다');
+  r = core.decideEdge(r.state, 0.92, hys, 500);
+  check(r.fire, 'margin: 풀린 뒤 다시 닿으면 울린다');
+  const hysC = { mode: 'change', threshold: 0.9, rearm: 0, margin: 0.02 };
+  r = core.decideEdge({ wasHit: false, firedAt: -1e9 }, 0.89, hysC, 0);
+  check(r.fire, 'change margin: 문턱 아래로 가면 울린다');
+  r = core.decideEdge(r.state, 0.91, hysC, 100);
+  check(r.hit, 'change margin: 여유 안으로 올라와도 아직 들어가 있음');
+  r = core.decideEdge(r.state, 0.93, hysC, 200);
+  check(!r.hit, 'change margin: 여유 밖이면 풀린다');
+}
+
+/* ── 중앙값 평활과 흔들림 폭 ── */
+{
+  const h = [];
+  eq(core.smoothSim(h, 0.5, 1), 0.5, 'smooth: keep 1 은 그대로');
+  eq(h.length, 1, 'smooth: keep 1 은 하나만 남긴다');
+  const h4 = [];
+  core.smoothSim(h4, 0.92, 4);
+  core.smoothSim(h4, 0.93, 4);
+  core.smoothSim(h4, 0.6, 4);
+  const m = core.smoothSim(h4, 0.91, 4);
+  check(Math.abs(m - 0.915) < 1e-9, `smooth: 튄 값 하나는 중앙값에 안 잡힌다 (${m})`);
+  core.smoothSim(h4, 0.94, 4);
+  eq(h4.length, 4, 'smooth: keep 개수만 남긴다');
+  eq(core.simSpread([]), 0, 'spread: 비면 0');
+  check(Math.abs(core.simSpread([0.9, 0.94, 0.92]) - 0.04) < 1e-9, 'spread: 최대 빼기 최소');
 }
 
 /* ── 글자 -> 초 ── */
