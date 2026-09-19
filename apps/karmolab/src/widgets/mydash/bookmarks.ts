@@ -324,10 +324,11 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-sheet[hidden]{display:none!important}',
       /* PC 는 두 열. 목록과 옆판 420px 이 나란히, 옆판은 늘 떠 있고 위에 붙어 따라온다 (MVP 3).
          전에는 fixed 서랍이라 목록 오른쪽을 덮었다 */
-      '@media(min-width:900px){.bm{display:grid;grid-template-columns:minmax(0,1fr) 420px;align-items:start}',
-      '.bm.no-panel{grid-template-columns:minmax(0,1fr)}',
-      '.bm-sheet{position:sticky;inset:auto;top:var(--header-h,0px);z-index:auto;display:block;',
-      'max-height:calc(100vh - var(--header-h,0px));overflow:auto;border-left:1px solid var(--border);padding-left:var(--space-md)}',
+      /* PC 옆판은 화면에 고정 (2026-09-19 사용자: 스크롤이 제대로 안 됨). sticky 는 내용 스크롤과 옆판 스크롤이
+         겹쳐 아래가 잘렸다. 화면 오른쪽에 고정하고 자기만 스크롤. 본문은 그만큼 오른쪽을 비운다 */
+      '@media(min-width:900px){.bm:not(.no-panel){padding-right:436px}',
+      '.bm-sheet{position:fixed;inset:auto;top:var(--header-h,0px);right:0;bottom:0;width:420px;z-index:200;display:block;',
+      'overflow:auto;overscroll-behavior:contain;border-left:1px solid var(--border);padding:var(--space-md);background:var(--bg-primary)}',
       '.bm-sheet .bm-scrim{display:none}',
       '.bm-sheet .bm-sheet-card{max-height:none;max-width:none;width:100%;border-radius:0;border-top:0;padding:0;background:transparent}',
       '.bm-row .bm-open{display:none}',
