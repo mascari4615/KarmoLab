@@ -192,7 +192,16 @@ import { t, loadNamespace } from '../../lib/i18n';
     /* 색, 둥글기, 글자 크기는 전부 스킨 토큰이다. 여기 직접 적는 것은 손가락 표적 하나뿐이고
        그 값도 이름을 붙여 한 곳에서만 쓴다. */
     el.textContent = [
-      '.bm{--bm-tap:44px;display:flex;flex-direction:column;gap:var(--space-md)}',
+      /* 크기는 레퍼런스 실측 (2026-09-19, notes/mydash/mvp5-design-2026-09-19.md). 본문 15, 메타 13, 캡션 14,
+         그림 모서리 16, 격자 열 236 간격 16. 스킨 토큰에 없는 값은 이 패널 변수로 한 곳에만 */
+      '.bm{--bm-tap:44px;--bm-body:15px;--bm-body-lh:22px;--bm-meta:13px;--bm-cap:14px;--bm-pic-radius:16px;',
+      '--bm-col:236px;--bm-gap:16px;display:flex;flex-direction:column;gap:var(--space-md)}',
+      '.bm-head-acts{flex-wrap:nowrap}',
+      '.bm-q{flex:1;min-width:0;min-height:var(--bm-tap);padding:0 var(--space-md);border:1px solid var(--border);',
+      'border-radius:var(--radius-pill);background:var(--bg-secondary);color:var(--text-primary);font:inherit;font-size:var(--bm-body)}',
+      '.bm-q:focus{outline:2px solid var(--accent);outline-offset:-1px}',
+      '.bm-filters-acts{display:flex;flex-wrap:wrap;gap:var(--space-sm)}',
+      '.bm-filters-acts .btn[aria-pressed="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
       /* 폰이 기본. 두 칸이면 숫자가 안 줄어든다. 넓어지면 다섯. */
       '.bm-nums{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-sm)}',
       '@media(min-width:560px){.bm-nums{grid-template-columns:repeat(5,1fr)}}',
@@ -224,20 +233,30 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-row .bm-meta .tool-chip{pointer-events:none}',
       '.bm-kid .tool-list-key{padding-left:var(--space-md)}',
       /* 원문 미리보기 (MVP 5). 줄 썸네일 96x72, 둘째 줄 두 줄 자름, 옆판 세 층 */
-      '.bm-thumb{width:96px;height:72px;object-fit:cover;border-radius:var(--radius-md);flex:none;',
+      '.bm-thumb{width:120px;height:90px;object-fit:cover;border-radius:calc(var(--bm-pic-radius) / 2);flex:none;',
       'background:var(--bg-tertiary);margin-top:var(--space-xs)}',
-      '.bm-sub{color:var(--text-secondary);font-size:var(--font-size-2xs);overflow:hidden;display:-webkit-box;',
+      '.bm-sub{color:var(--text-secondary);font-size:var(--bm-cap);line-height:1.45;overflow:hidden;display:-webkit-box;',
       '-webkit-line-clamp:2;-webkit-box-orient:vertical}',
-      '.bm-row .bm-title{min-height:0;padding-top:var(--space-xs);overflow:hidden;display:-webkit-box;',
-      '-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+      '.bm-row .bm-title{min-height:0;padding-top:var(--space-xs);font-size:var(--bm-body);line-height:var(--bm-body-lh);font-weight:600;',
+      'overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+      '.bm-view-list{border:0;background:transparent;font-family:var(--font-sans)}',
+      '.bm-view-list .tool-list-key{font-family:var(--font-sans);font-size:var(--bm-meta);color:var(--text-tertiary)}',
+      '.bm-view-list a.bm-title{text-decoration:none}',
+      '.bm-view-list a.bm-title:hover{text-decoration:underline}',
+      '.bm-view-list .tool-actions.tight .btn{min-height:32px;font-size:var(--bm-meta);padding:0 var(--space-sm)}',
+      '.bm-sheet,.bm-card,.bm-tile{font-family:var(--font-sans)}',
+      '.bm-view-list .tool-list-row{padding:var(--space-md) var(--space-sm);border-bottom:1px solid var(--border)}',
+      '.bm-row .bm-meta{font-size:var(--bm-meta)}',
       '.bm-layer{display:flex;flex-direction:column;gap:var(--space-xs)}',
       '.bm-said{padding:var(--space-sm) var(--space-md);background:var(--bg-tertiary);',
       'border-left:3px solid var(--accent);border-radius:0 var(--radius-md) var(--radius-md) 0;color:var(--text-primary)}',
       '.bm-said-memo{color:var(--text-secondary)}',
       '.bm-who{color:var(--text-secondary);font-size:var(--font-size-2xs)}',
       '.bm-ptitle{color:var(--text-primary);font-weight:600}',
-      '.bm-tw{white-space:pre-wrap;word-break:break-word;color:var(--text-primary)}',
-      '.bm-pic{width:100%;max-width:100%;border-radius:var(--radius-md);border:1px solid var(--border);display:block}',
+      '.bm-tw{white-space:pre-wrap;word-break:break-word;color:var(--text-primary);font-size:var(--bm-body);line-height:var(--bm-body-lh)}',
+      '.bm-pic{width:100%;max-width:100%;border-radius:var(--bm-pic-radius);display:block}',
+      '.bm-sheet-title{font-size:var(--font-size-title);font-weight:600;line-height:1.3}',
+      '.bm-who{font-size:var(--bm-meta)}',
       '.bm-link{font-size:var(--font-size-2xs)}',
       '.bm-ai summary{cursor:pointer;list-style:none;display:flex;gap:var(--space-sm);align-items:baseline}',
       '.bm-ai summary::-webkit-details-marker{display:none}',
@@ -245,42 +264,43 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* 보기 전환. 눌린 것만 채움 */
       '.bm-views{display:inline-flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}',
       '.bm-views .btn{border-radius:0;border:0}',
-      '.bm-views .btn[aria-pressed="true"],.bm-head-acts [data-act="pending"][aria-pressed="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
+      '.bm-views .btn[aria-pressed="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
+      '.bm-views{flex:none}',
       /* 피드 (트위터 식). 카드 한 줄, 폭 600 가운데 */
       '.bm-view-feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:var(--space-md);border:0;background:transparent;align-items:start}',
       '.bm-card{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-md);border:1px solid var(--border);',
-      'border-radius:var(--radius-lg);background:var(--bg-secondary);cursor:pointer}',
+      'border-radius:calc(var(--bm-pic-radius) - 4px);background:var(--bg-secondary);cursor:pointer}',
       '.bm-card.is-cur{border-color:var(--accent)}',
       '.bm-card.is-done,.bm-tile.is-done{opacity:.45}',
       '.bm-card-head{display:flex;justify-content:space-between;gap:var(--space-sm);align-items:baseline}',
       '.bm-card-who{font-weight:600;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.bm-card-src{color:var(--text-tertiary);font-size:var(--font-size-3xs);flex:none}',
+      '.bm-card-src{color:var(--text-tertiary);font-size:var(--bm-meta);flex:none}',
+      '.bm-card-who{font-size:var(--bm-body)}',
       '.bm-card-pic{position:relative}',
       '.bm-card-more{position:absolute;right:var(--space-sm);bottom:var(--space-sm);background:var(--modal-scrim);color:var(--text-primary);',
       'font-size:var(--font-size-3xs);padding:2px var(--space-sm);border-radius:var(--radius-pill)}',
       '.bm-card-acts{display:flex;gap:var(--space-sm)}',
-      '.bm-card-acts .bm-act{flex:1;min-height:48px;font-weight:600;border:1px solid var(--border)}',
+      '.bm-card-acts .bm-act{flex:1;min-height:var(--bm-tap);font-weight:600;border:1px solid var(--border);font-size:var(--bm-cap)}',
       '.bm-act-drop{color:var(--error)}.bm-act-keep{color:var(--success)}.bm-act-now{color:var(--warning)}',
       '.bm-card-tags{display:flex;gap:var(--space-xs);overflow-x:auto;scrollbar-width:none;padding-bottom:2px}',
       '.bm-card-tags .tool-chip{flex:none;min-height:36px}',
       /* 격자 (핀터레스트 식). 열 240, 폰은 2열 */
-      '.bm-view-grid{display:block;columns:240px;column-gap:var(--space-sm);border:0;background:transparent}',
+      '.bm-view-grid{display:block;columns:var(--bm-col);column-gap:var(--bm-gap);border:0;background:transparent}',
       '@media(max-width:559px){.bm-view-grid{columns:2}}',
-      '.bm-tile{break-inside:avoid;margin:0 0 var(--space-sm);position:relative;border-radius:var(--radius-lg);overflow:hidden;',
-      'background:var(--bg-secondary);border:1px solid var(--border);cursor:pointer}',
-      '.bm-tile.is-cur{border-color:var(--accent)}',
-      '.bm-tile img{width:100%;display:block}',
-      '.bm-tile-text{padding:var(--space-md) var(--space-md) var(--space-xs);font-weight:600;overflow:hidden;display:-webkit-box;',
-      '-webkit-line-clamp:5;-webkit-box-orient:vertical;color:var(--text-primary)}',
-      '.bm-tile figcaption{padding:var(--space-sm) var(--space-sm) var(--space-md);display:flex;flex-direction:column;gap:2px}',
-      '.bm-tile-cap{font-size:var(--font-size-2xs);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
-      '.bm-tile-meta{font-size:var(--font-size-3xs);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.bm-tile{break-inside:avoid;margin:0 0 var(--bm-gap);position:relative;cursor:pointer}',
+      '.bm-tile img{width:100%;display:block;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
+      '.bm-tile.is-cur img,.bm-tile.is-cur .bm-tile-text{outline:2px solid var(--accent);outline-offset:2px}',
+      '.bm-tile-text{padding:var(--space-md);border-radius:var(--bm-pic-radius);background:var(--bg-secondary);font-size:var(--bm-body);',
+      'line-height:var(--bm-body-lh);font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;color:var(--text-primary)}',
+      '.bm-tile figcaption{padding:var(--space-sm) var(--space-xs) 0;display:flex;flex-direction:column;gap:2px}',
+      '.bm-tile-cap{font-size:var(--bm-cap);line-height:1.45;font-weight:500;color:var(--text-primary);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+      '.bm-tile-meta{font-size:var(--bm-meta);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.bm-tile-meta b{color:var(--warning);font-weight:500}',
       '.bm-tile-acts{position:absolute;top:var(--space-sm);right:var(--space-sm);display:flex;gap:var(--space-xs);opacity:0;transition:opacity .15s}',
       '.bm-tile:hover .bm-tile-acts,.bm-tile:focus-within .bm-tile-acts,.bm-tile.is-cur .bm-tile-acts{opacity:1}',
       '@media(hover:none){.bm-tile-acts{opacity:1}}',
       '@media(prefers-reduced-motion:reduce){.bm-tile-acts{transition:none}}',
-      '.bm-tile-btn{min-height:36px;padding:0 var(--space-sm);border-radius:var(--radius-md);border:0;background:var(--modal-scrim);color:var(--text-primary);font:inherit;font-size:var(--font-size-3xs);cursor:pointer}',
+      '.bm-tile-btn{min-height:36px;padding:0 var(--space-md);border-radius:var(--radius-pill);border:0;background:var(--modal-scrim);color:var(--text-primary);font:inherit;font-size:var(--bm-meta);font-weight:600;cursor:pointer}',
       /* 목록이 주인공 (MVP 3, 사용자 2026-09-17 "칩 벽"). 수 타일과 칩 34개는 접힌 필터 안 */
       '.bm-filters{display:flex;flex-direction:column;gap:var(--space-md)}',
       '.bm-filters[hidden]{display:none}',
@@ -998,25 +1018,28 @@ import { t, loadNamespace } from '../../lib/i18n';
       '<div class="bm-main">' +
       notes.join('') +
       '<div class="tool-status" data-evline="1"></div>' +
+      /* 머리 줄 하나 (2026-09-19 실측: 핀터레스트 첫 화면 버튼 19, 블루스카이 23, 우리 34). 보기 셋, 검색, 필터.
+         대기만과 선택과 한 장 모드는 필터 안. 판정 대기 수는 사이드바가 이미 보인다 */
       '<div class="bm-head-acts">' +
       '<div class="bm-views" role="group">' +
       VIEWS.map((v) =>
         '<button type="button" class="btn btn-ghost" data-act="view" data-view="' + v + '" aria-pressed="false">' +
         esc(viewLabel(v)) + '</button>').join('') +
       '</div>' +
+      '<input id="bm-q" class="bm-q" type="search" autocomplete="off" aria-label="' +
+      esc(t('mydash.bm.search.label', undefined, '검색')) + '" placeholder="' +
+      esc(t('mydash.bm.search.ph', undefined, '제목, 작성자, 메모')) + '">' +
       '<button type="button" class="btn btn-ghost" data-act="filters" data-filters-sum="1" aria-expanded="false"></button>' +
+      '</div>' +
+      '<div class="bm-filters" data-filters="1" hidden>' +
+      '<div class="bm-filters-acts">' +
       '<button type="button" class="btn btn-ghost" data-act="pending" aria-pressed="false"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="select"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="judge"></button>' +
       '</div>' +
-      '<div class="bm-filters" data-filters="1" hidden>' +
       '<div class="bm-nums">' + numHtml.join('') + '</div>' +
       '<div class="bm-groups">' + groupHtml + '</div>' +
       '</div>' +
-      '<div class="field-group"><label class="field-label" for="bm-q">' +
-      esc(t('mydash.bm.search.label', undefined, '검색')) + '</label>' +
-      '<input id="bm-q" type="search" autocomplete="off" placeholder="' +
-      esc(t('mydash.bm.search.ph', undefined, '제목, 작성자, 메모')) + '"></div>' +
       '<div class="bm-revisit" data-revisit="1"></div>' +
       '<div class="tool-status" data-count="1"></div>' +
       '<div class="tool-list bm-list" data-list="1"></div>' +
@@ -1044,7 +1067,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     const judgeEl = wrap.querySelector('[data-judge]') as HTMLElement;
     const barEl = wrap.querySelector('[data-bar]') as HTMLElement;
     const sheetEl = wrap.querySelector('[data-sheet]') as HTMLElement;
-    const searchEl = qEl.parentElement as HTMLElement;
+    const searchEl = qEl as HTMLElement;
     const headActsEl = wrap.querySelector('.bm-head-acts') as HTMLElement;
 
     const picked: Record<string, Set<string>> = {};
@@ -1434,11 +1457,18 @@ import { t, loadNamespace } from '../../lib/i18n';
     }
 
     /** 격자 타일 (핀터레스트 식). 사진이 타일, 없으면 글 타일. 누르면 옆판, 위에 버림과 지금 */
+    /** 카드와 타일의 제목. 트윗은 본문이 없으면 비운다. AI 가 지은 라벨을 원문 자리에 안 놓는다 */
+    function capOf(it: Item, note: string): string {
+      const m = mediaOf(it);
+      if (m && m.kind === 'tweet' && !m.deleted) return text(m.text).trim().split('\n')[0];
+      return headOf(it, note);
+    }
+
     function tileHtml(it: Item): string {
       const id = text(it.id);
       const s = stateOf(it);
       const pic = firstPic(it, 'small');
-      const head = headOf(it, s.note);
+      const head = capOf(it, s.note) || (pic ? '' : headOf(it, s.note));
       const cls = 'bm-tile' + (pic ? '' : ' is-text') + (curId === id ? ' is-cur' : '') + (feedDone.has(id) ? ' is-done' : '');
       const ratio = pic && pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
       return (
