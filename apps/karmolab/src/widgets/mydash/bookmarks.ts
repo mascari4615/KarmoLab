@@ -652,8 +652,19 @@ import { t, loadNamespace } from '../../lib/i18n';
     return /\b422\b/.test(msg);
   }
 
+  /* video 태그는 referrerpolicy 속성을 안 받는다 (Chromium). video.twimg.com 은 referer 있으면 403 (2026-09-19 curl 실측).
+     문서 단위 meta 로 끈다. 이 페이지는 로그인한 사람만 보는 대시보드라 잃는 것 없음 */
+  function ensureNoReferrer(): void {
+    if (document.querySelector('meta[name="referrer"]')) return;
+    const m = document.createElement('meta');
+    m.name = 'referrer';
+    m.content = 'no-referrer';
+    document.head.appendChild(m);
+  }
+
   async function render(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
     ensureStyle();
+    ensureNoReferrer();
     /* 옮긴 말이 안 와도 그린다. 아래 모든 t 호출에 한국어 원본이 딸려 있다 */
     await loadNamespace('mydash').catch(() => undefined);
     const { root, repo, status } = ctx;
@@ -1383,7 +1394,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     function thumbHtml(it: Item): string {
       const u = thumbOf(it);
       if (!u) return '';
-      return '<img class="bm-thumb" src="' + esc(u) + '" alt="" loading="lazy" decoding="async">';
+      return '<img class="bm-thumb" referrerpolicy="no-referrer" src="' + esc(u) + '" alt="" loading="lazy" decoding="async">';
     }
 
     function subHtml(it: Item): string {
@@ -1443,7 +1454,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (pic) {
         const ratio = pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
         parts.push(
-          '<div class="bm-card-pic"><img class="bm-pic" src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '>' +
+          '<div class="bm-card-pic"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '>' +
           (pic.more > 0 ? '<span class="bm-card-more">+' + pic.more + '</span>' : '') + '</div>'
         );
       }
@@ -1869,10 +1880,10 @@ import { t, loadNamespace } from '../../lib/i18n';
             const u = picUrl(text(ph.url), 'medium');
             if (!u) continue;
             const ratio = ph.w && ph.h ? ' style="aspect-ratio:' + Number(ph.w) + '/' + Number(ph.h) + '"' : '';
-            body.push('<img class="bm-pic" src="' + esc(u) + '" alt="" loading="lazy" decoding="async"' + ratio + '>');
+            body.push('<img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(u) + '" alt="" loading="lazy" decoding="async"' + ratio + '>');
           }
           if (m.video && m.video.src) {
-            /* 영상 미리보기 (사용자 2026-09-19). mp4 를 그 자리에서 튼다. 소리는 눌러야 */
+            /* 영상 미리보기 (사용자 2026-09-19). mp4 를 그 자리에서 튼다. 소리는 눌러야. referer 있으면 video.twimg.com 이 403 (curl 실측) */
             const ratio = m.video.w && m.video.h ? ' style="aspect-ratio:' + Number(m.video.w) + '/' + Number(m.video.h) + '"' : '';
             body.push(
               '<video class="bm-pic bm-video" controls preload="metadata" playsinline poster="' +
@@ -1880,7 +1891,7 @@ import { t, loadNamespace } from '../../lib/i18n';
             );
           } else if (m.video && m.video.poster) {
             body.push(
-              '<img class="bm-pic" src="' + esc(picUrl(text(m.video.poster), 'medium')) + '" alt="" loading="lazy">' +
+              '<img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(picUrl(text(m.video.poster), 'medium')) + '" alt="" loading="lazy">' +
               '<div class="tool-hint">' + esc(t('mydash.bm.media.video', undefined, '영상은 원문에서')) + '</div>'
             );
           }
@@ -1901,7 +1912,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         if (m.site) body.push('<div class="bm-who">' + esc(text(m.site)) + '</div>');
         if (text(m.description).trim()) body.push('<div class="bm-tw">' + esc(text(m.description).trim()) + '</div>');
         const img = m.image ? safeLinkUrl(m.image) : '';
-        if (img) body.push('<img class="bm-pic" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">');
+        if (img) body.push('<img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">');
       }
       if (url) {
         body.push(
