@@ -249,9 +249,10 @@ void trendFiresBefore;
 /* ⑤ 슬롯 추가, 내 알림음, 단축키 */
 await page.click('#rwAddSlot');
 await page.waitForTimeout(300);
-check((await page.locator('.rw-slot').count()) === 7, `슬롯 추가로 일곱이 된다 (지금 ${await page.locator('.rw-slot').count()})`);
+/* 저장에 여섯 있었지만 영역 없는 뒤 둘은 떼어 내 넷. 추가하면 다섯 */
+check((await page.locator('.rw-slot').count()) === 5, `빈 알림은 떼어 내고 추가하면 다섯 (지금 ${await page.locator('.rw-slot').count()})`);
 const savedSlots = await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')).profiles['640x360'].length);
-check(savedSlots === 7, `추가한 슬롯이 프로필에 저장된다 (지금 ${savedSlots})`);
+check(savedSlots === 5, `추가한 알림이 프로필에 저장된다 (지금 ${savedSlots})`);
 
 /* 0.2초짜리 wav 를 만들어 올린다. 8kHz 8bit 단일 채널 */
 const wav = (() => {
@@ -324,10 +325,10 @@ check(!(await page.isDisabled('#rwStart')) && (await page.isDisabled('#rwStop'))
 check(/대기|Waiting|待ち/.test((await page.textContent('#rwState')) || ''), `멈추면 알약이 대기로 (${await page.textContent('#rwState')})`);
 check(!(await page.isHidden('#rwEmpty')), '멈추면 빈 화면 안내가 돌아온다');
 /* 알림 삭제. 일곱에서 여섯, 마지막 하나는 못 뺀다 */
-await page.click('.rw-slot[data-i="6"] [data-act="del"]');
-check((await page.locator('.rw-slot').count()) === 6, `삭제로 여섯이 된다 (지금 ${await page.locator('.rw-slot').count()})`);
-check((await page.getAttribute('.rw-slot:last-child', 'data-i')) === '5', '삭제 뒤 번호가 다시 매겨진다');
-check((await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')).profiles['640x360'].length)) === 6, '삭제가 프로필에 저장된다');
+await page.click('.rw-slot[data-i="4"] [data-act="del"]');
+check((await page.locator('.rw-slot').count()) === 4, `삭제로 넷이 된다 (지금 ${await page.locator('.rw-slot').count()})`);
+check((await page.getAttribute('.rw-slot:last-child', 'data-i')) === '3', '삭제 뒤 번호가 다시 매겨진다');
+check((await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')).profiles['640x360'].length)) === 4, '삭제가 프로필에 저장된다');
 check(await page.isDisabled('.rw-slot[data-i="0"] [data-act="del"]') === false, '둘 이상이면 삭제 가능');
 check((await page.textContent('.rw-slot[data-i="0"] .rw-sim b')) === '-', '멈추면 닮음 표시가 비워진다');
 check(errors.length === 0, `콘솔 오류 없음 (지금 ${errors.length}: ${errors.slice(0, 2).join(' | ')})`);

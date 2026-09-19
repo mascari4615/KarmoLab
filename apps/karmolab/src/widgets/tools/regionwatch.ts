@@ -472,7 +472,16 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
     let profileKey = '';
 
     const pack = (): SavedSlot[] => slots.map((s) => ({ ...s, ref: s.ref ? btoa(String.fromCharCode(...Array.from(s.ref))) : null }));
-    function unpack(list: SavedSlot[]): void {
+    /* 영역을 한 번도 안 고른 빈 알림은 뒤에서부터 떼어 낸다. 옛 저장(슬롯 6개 고정)이 그대로 여섯 장으로 복구되던 자리 (사용자 2026-09-19). 최소 1 */
+    function trimEmpty(list: SavedSlot[]): SavedSlot[] {
+      let n = list.length;
+      while (n > 1 && !list[n - 1].rect) n--;
+      return list.slice(0, n);
+    }
+
+    function unpack(raw: SavedSlot[]): void {
+      const list = trimEmpty(raw);
+      while (slots.length > Math.max(1, list.length)) removeSlot(slots.length - 1);
       while (slots.length < Math.min(list.length, SLOTS_MAX)) addSlot();
       list.slice(0, SLOTS_MAX).forEach((s, i) => {
         const ref = s.ref ? Uint8ClampedArray.from(atob(s.ref), (c) => c.charCodeAt(0)) : null;
