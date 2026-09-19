@@ -358,6 +358,8 @@ export function materialShell(container: HTMLElement, o: MaterialShellOpts): voi
   function openJobById(id: string): void {
     noteRecent(id);
     openJob = id;
+    /* 재료가 필요 없는 할 일(화면 녹화, 지켜보기)은 재료 칸이 죽은 자리. 한 칸으로 넓게 (2026-09-19 사용자 지적) */
+    container.classList.toggle('is-solo', !!o.noInputNeeded?.has(id));
     $('#pfJobs').hidden = true;
     $('#pfMount').hidden = false;
     $('#pfChain').hidden = true;
@@ -415,6 +417,7 @@ export function materialShell(container: HTMLElement, o: MaterialShellOpts): voi
 
   function backToJobs(): void {
     openJob = null;
+    container.classList.remove('is-solo');
     $('#pfMount').hidden = true;
     $('#pfJobs').hidden = false;
     $('#pfChain').hidden = true;
@@ -466,7 +469,9 @@ function injectStyles(): void {
   .pf-shell .pf-drop{padding:48px 16px;}
   .pf-shell .pf-body{grid-template-columns:1fr;}
   .pf-shell .pf-body:has(#pfPreview:empty){grid-template-columns:1fr;}
+  .pf-shell.pf-shell.is-solo{grid-template-columns:1fr;}
 }
+.pf-shell.is-solo .pf-head{display:none;}
 .pf-head{margin-bottom:var(--space-lg);}
 .pf-head.pf-over .pf-drop,.pf-head.pf-over .pf-file{outline:2px dashed var(--accent);outline-offset:3px;}
 .pf-drop{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;

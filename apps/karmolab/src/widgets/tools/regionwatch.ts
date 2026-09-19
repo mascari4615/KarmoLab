@@ -100,7 +100,8 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
 ];
 
 (function (): void {
-  const SLOTS_MIN = 6;
+  /* 처음엔 알림 하나. 여섯이 떠 있는 첫 화면이 이상하다는 사용자 지적 (2026-09-19) */
+  const SLOTS_MIN = 1;
   const SLOTS_MAX = 12;
   const SOUND_DB = 'regionwatch-sounds';
   const SOUND_MAX_BYTES = 2 * 1024 * 1024;
@@ -246,23 +247,23 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
 
   function draw(container: HTMLElement): void {
     injectStyles();
+    const modeChip = (m: Mode): string => `<button type="button" class="rw-chip" data-mode="${m}">${esc(t('regionwatch.chip.' + m))}</button>`;
+    /* 알림 카드 하나. 위: 켜고 끄기, 기준 그림, 이름과 조건 요약, 지금 상태 크게. 가운데: 조건 칩과 영역 버튼. 아래: 그 조건의 설정 한 줄 */
     const slotRowHtml = (i: number): string => `
       <div class="rw-slot" data-i="${i}">
-        <div class="rw-slot-head">
-          <label class="tool-chip rw-on"><input type="checkbox" data-k="enabled" checked> ${i + 1}</label>
-          <input type="text" class="mono-input rw-name" data-k="name" maxlength="16" aria-label="${esc(t('regionwatch.label.name'))}">
-          <button class="btn btn-sm btn-outline" data-act="pick">${esc(t('regionwatch.btn.pick'))}</button>
-          <button class="btn btn-sm btn-outline" data-act="ref">${esc(t('regionwatch.btn.ref'))}</button>
+        <div class="rw-card-top">
+          <label class="rw-toggle" title="${esc(t('regionwatch.label.enabled'))}"><input type="checkbox" data-k="enabled" checked aria-label="${esc(t('regionwatch.label.enabled'))}"><i></i></label>
           <span class="rw-thumb" title="${esc(t('regionwatch.label.ref'))}"></span>
+          <span class="rw-card-title">
+            <input type="text" class="rw-name" data-k="name" maxlength="16" aria-label="${esc(t('regionwatch.label.name'))}">
+            <span class="rw-cond" data-o="cond"></span>
+          </span>
           <span class="rw-sim"><i></i><b>-</b></span>
         </div>
-        <div class="rw-slot-body">
-          <select data-k="mode" aria-label="${esc(t('regionwatch.label.mode'))}">
-            <option value="match">${esc(t('regionwatch.mode.match'))}</option>
-            <option value="change">${esc(t('regionwatch.mode.change'))}</option>
-            <option value="count">${esc(t('regionwatch.mode.count'))}</option>
-            <option value="trend">${esc(t('regionwatch.mode.trend'))}</option>
-          </select>
+        <div class="rw-chips" role="group" aria-label="${esc(t('regionwatch.label.mode'))}">
+          ${(['match', 'change', 'count', 'trend'] as Mode[]).map(modeChip).join('')}
+        </div>
+        <div class="rw-card-set">
           <span class="rw-if-edge">
             <label class="tool-sublabel">${esc(t('regionwatch.label.threshold'))} <output data-o="threshold">92%</output></label>
             <input type="range" min="50" max="99" step="1" data-k="threshold" aria-label="${esc(t('regionwatch.label.threshold'))}">
@@ -277,6 +278,7 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
             <label class="tool-sublabel">${esc(t('regionwatch.label.idle'))}</label>
             <input type="number" class="mono-input rw-rearm" min="0" max="86400" step="1" data-k="idleSec" aria-label="${esc(t('regionwatch.label.idle'))}">
           </span>
+          <label class="tool-sublabel">${esc(t('regionwatch.label.sound'))}</label>
           <select data-k="sound" aria-label="${esc(t('regionwatch.label.sound'))}">
             <option value="ping">${esc(t('regionwatch.sound.ping'))}</option>
             <option value="double">${esc(t('regionwatch.sound.double'))}</option>
@@ -287,53 +289,86 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
           <input type="number" class="mono-input rw-rearm" min="0" max="3600" step="1" data-k="rearm" aria-label="${esc(t('regionwatch.label.rearm'))}">
           <label class="tool-chip"><input type="checkbox" data-k="randomDelay"> ${esc(t('regionwatch.opt.randomDelay'))}</label>
         </div>
+        <div class="rw-card-act">
+          <button type="button" class="btn btn-sm btn-outline" data-act="pick">${esc(t('regionwatch.btn.pick'))}</button>
+          <button type="button" class="btn btn-sm btn-ghost" data-act="ref">${esc(t('regionwatch.btn.ref'))}</button>
+          <span class="rw-chips-gap"></span>
+          <button type="button" class="btn btn-sm btn-ghost rw-del" data-act="del">${esc(t('regionwatch.btn.delete'))}</button>
+        </div>
       </div>`;
     const slotRows = Array.from({ length: SLOTS_MIN }, (_, i) => slotRowHtml(i)).join('');
 
     container.innerHTML = `
-      <div class="tool-actions tight">
+      <div class="rw-top">
         <button class="btn btn-primary" id="rwStart">${esc(t('regionwatch.btn.start'))}</button>
-        <button class="btn btn-ghost" id="rwStop" disabled>${esc(t('regionwatch.btn.stop'))}</button>
-        <button class="btn btn-ghost" id="rwPip" disabled>${esc(t('regionwatch.btn.pip'))}</button>
-        <button class="btn btn-ghost" id="rwTest">${esc(t('regionwatch.btn.test'))}</button>
-        <label class="tool-chip"><input type="checkbox" id="rwNotify"> ${esc(t('regionwatch.opt.notify'))}</label>
-        <label class="tool-sublabel rw-vol">${esc(t('regionwatch.label.volume'))} <input type="range" id="rwVolume" min="0" max="100" step="5" aria-label="${esc(t('regionwatch.label.volume'))}"></label>
-        <label class="btn btn-ghost rw-file">${esc(t('regionwatch.btn.sounds'))}<input type="file" id="rwSoundFile" accept="audio/*" multiple hidden aria-label="${esc(t('regionwatch.btn.sounds'))}"></label>
-        <span class="tool-hint" id="rwSounds"></span>
-        <span class="tool-hint">${esc(t('regionwatch.hint.hotkey'))}</span>
+        <button class="btn btn-outline" id="rwStop" disabled>${esc(t('regionwatch.btn.stop'))}</button>
+        <span class="rw-pill" id="rwState"><i></i><b>${esc(t('regionwatch.state.waiting'))}</b></span>
+        <span class="rw-pill rw-pill-rate" id="rwRate" hidden></span>
+        <span class="rw-top-gap"></span>
+        <button class="btn btn-ghost btn-sm" id="rwPip" disabled>${esc(t('regionwatch.btn.pip'))}</button>
+        <button class="btn btn-ghost btn-sm" id="rwTest">${esc(t('regionwatch.btn.test'))}</button>
+        <button class="btn btn-ghost btn-sm rw-gear" id="rwGear" aria-expanded="false" aria-controls="rwDrawer">${esc(t('regionwatch.btn.settings'))}</button>
       </div>
-      <div class="tool-actions tight rw-capture">
-        <label class="tool-sublabel">${esc(t('regionwatch.label.quality'))}
-          <select id="rwHeight" aria-label="${esc(t('regionwatch.label.quality'))}">
-            <option value="0">${esc(t('regionwatch.quality.native'))}</option>
-            <option value="1440">1440p</option>
-            <option value="1080">1080p</option>
-            <option value="720">720p</option>
-          </select>
-        </label>
-        <label class="tool-sublabel">${esc(t('regionwatch.label.fps'))}
-          <select id="rwFps" aria-label="${esc(t('regionwatch.label.fps'))}">
-            <option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="30">30</option>
-          </select>
-        </label>
-        <label class="tool-chip"><input type="checkbox" id="rwCursor"> ${esc(t('regionwatch.opt.hideCursor'))}</label>
-        <label class="tool-sublabel">${esc(t('regionwatch.label.stability'))}
-          <select id="rwStable" aria-label="${esc(t('regionwatch.label.stability'))}">
-            <option value="0">${esc(t('regionwatch.stability.off'))}</option>
-            <option value="1">${esc(t('regionwatch.stability.normal'))}</option>
-            <option value="2">${esc(t('regionwatch.stability.strong'))}</option>
-          </select>
-        </label>
-        <span class="tool-hint" id="rwCaptureHint">${esc(t('regionwatch.hint.capture'))}</span>
+      <div class="rw-drawer" id="rwDrawer" hidden>
+        <div class="rw-drawer-col">
+          <h4>${esc(t('regionwatch.group.capture'))}</h4>
+          <label class="tool-sublabel">${esc(t('regionwatch.label.quality'))}
+            <select id="rwHeight" aria-label="${esc(t('regionwatch.label.quality'))}">
+              <option value="0">${esc(t('regionwatch.quality.native'))}</option>
+              <option value="1440">1440p</option>
+              <option value="1080">1080p</option>
+              <option value="720">720p</option>
+            </select>
+          </label>
+          <label class="tool-sublabel">${esc(t('regionwatch.label.fps'))}
+            <select id="rwFps" aria-label="${esc(t('regionwatch.label.fps'))}">
+              <option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="30">30</option>
+            </select>
+          </label>
+          <label class="tool-chip"><input type="checkbox" id="rwCursor"> ${esc(t('regionwatch.opt.hideCursor'))}</label>
+          <span class="tool-hint" id="rwCaptureHint">${esc(t('regionwatch.hint.capture'))}</span>
+        </div>
+        <div class="rw-drawer-col">
+          <h4>${esc(t('regionwatch.group.decide'))}</h4>
+          <label class="tool-sublabel">${esc(t('regionwatch.label.stability'))}
+            <select id="rwStable" aria-label="${esc(t('regionwatch.label.stability'))}">
+              <option value="0">${esc(t('regionwatch.stability.off'))}</option>
+              <option value="1">${esc(t('regionwatch.stability.normal'))}</option>
+              <option value="2">${esc(t('regionwatch.stability.strong'))}</option>
+            </select>
+          </label>
+          <label class="tool-chip"><input type="checkbox" id="rwNotify"> ${esc(t('regionwatch.opt.notify'))}</label>
+          <span class="tool-hint" id="rwProfile"></span>
+        </div>
+        <div class="rw-drawer-col">
+          <h4>${esc(t('regionwatch.group.sound'))}</h4>
+          <label class="tool-sublabel rw-vol">${esc(t('regionwatch.label.volume'))} <input type="range" id="rwVolume" min="0" max="100" step="5" aria-label="${esc(t('regionwatch.label.volume'))}"></label>
+          <label class="btn btn-ghost btn-sm rw-file">${esc(t('regionwatch.btn.sounds'))}<input type="file" id="rwSoundFile" accept="audio/*" multiple hidden aria-label="${esc(t('regionwatch.btn.sounds'))}"></label>
+          <span class="tool-hint" id="rwSounds"></span>
+        </div>
+        <div class="rw-drawer-col">
+          <h4>${esc(t('regionwatch.group.hotkey'))}</h4>
+          <span class="tool-hint rw-hotkeys">${esc(t('regionwatch.hint.hotkey'))}</span>
+        </div>
       </div>
       <div class="rw-grid">
         <div class="rw-left">
-          <canvas id="rwPreview" class="rw-preview"></canvas>
+          <div class="rw-stage">
+            <canvas id="rwPreview" class="rw-preview"></canvas>
+            <div class="rw-empty" id="rwEmpty">
+              <ol class="rw-steps">
+                <li><b>1</b>${esc(t('regionwatch.step.share'))}</li>
+                <li><b>2</b>${esc(t('regionwatch.step.pick'))}</li>
+                <li><b>3</b>${esc(t('regionwatch.step.done'))}</li>
+              </ol>
+              <span>${esc(t('regionwatch.status.idle'))}</span>
+            </div>
+          </div>
           <div class="tool-hint" id="rwHint">${esc(t('regionwatch.hint.idle'))}</div>
         </div>
         <div class="rw-right">
-          <div class="rw-right" id="rwSlots">${slotRows}</div>
-          <div class="tool-actions tight"><button class="btn btn-ghost btn-sm" id="rwAddSlot">${esc(t('regionwatch.btn.addSlot'))}</button></div>
+          <div class="rw-cards" id="rwSlots">${slotRows}</div>
+          <button class="rw-add" id="rwAddSlot">${esc(t('regionwatch.btn.addSlot'))}</button>
         </div>
       </div>
       <div class="rw-trend" id="rwTrend" hidden>
@@ -347,9 +382,7 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
         <div class="rw-trend-rows" id="rwTrendRows"></div>
         <canvas id="rwChart" class="rw-chart" width="900" height="160"></canvas>
       </div>
-      <div class="tool-status" id="rwStatus">${esc(t('regionwatch.status.idle'))}</div>
-      <div class="tool-hint" id="rwRate"></div>
-      <div class="tool-hint" id="rwProfile"></div>
+      <div class="tool-status" id="rwStatus"></div>
     `;
 
     const $ = <T extends HTMLElement>(s: string): T => container.querySelector(s) as T;
@@ -372,6 +405,10 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
     const soundsEl = $<HTMLElement>('#rwSounds');
     const rateEl = $<HTMLElement>('#rwRate');
     const profileEl = $<HTMLElement>('#rwProfile');
+    const stateEl = $<HTMLElement>('#rwState');
+    const gearBtn = $<HTMLButtonElement>('#rwGear');
+    const drawer = $<HTMLElement>('#rwDrawer');
+    const emptyEl = $<HTMLElement>('#rwEmpty');
     const trendBox = $<HTMLElement>('#rwTrend');
     const trendRows = $<HTMLElement>('#rwTrendRows');
     const windowSel = $<HTMLSelectElement>('#rwWindow');
@@ -426,6 +463,7 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       rateAt = now;
       const text = t('regionwatch.label.rate').replace('{checks}', String(stamps.checks.length)).replace('{reads}', String(stamps.reads.length));
       rateEl.textContent = text;
+      rateEl.hidden = false;
       pip?.setFooter(text);
     }
 
@@ -501,12 +539,29 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       return slotsBox.children[i] as HTMLElement;
     }
 
+    /* 조건 요약 한 줄. 카드를 안 펼쳐도 무엇을 지키는지 읽히게 */
+    function condText(s: Slot): string {
+      const mode = t('regionwatch.chip.' + s.mode);
+      const detail =
+        s.mode === 'count'
+          ? t('regionwatch.cond.lead').replace('{n}', String(s.lead))
+          : s.mode === 'trend'
+            ? s.target === null ? '' : t('regionwatch.cond.target').replace('{v}', fmtNum(s.target))
+            : t('regionwatch.cond.threshold').replace('{p}', String(Math.round(s.threshold * 100)));
+      const sound = t('regionwatch.sound.' + (CUSTOM_SOUNDS.includes(s.sound) ? 'custom' : s.sound)).replace('{n}', String(CUSTOM_SOUNDS.indexOf(s.sound) + 1));
+      return [mode, detail, sound].filter(Boolean).join(', ');
+    }
+
     function paintSlot(i: number): void {
       const s = slots[i];
       const el = slotEl(i);
       (el.querySelector('[data-k="enabled"]') as HTMLInputElement).checked = s.enabled;
       (el.querySelector('[data-k="name"]') as HTMLInputElement).value = s.name;
-      (el.querySelector('[data-k="mode"]') as HTMLSelectElement).value = s.mode;
+      el.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach((b) => {
+        b.classList.toggle('is-on', b.dataset.mode === s.mode);
+        b.setAttribute('aria-pressed', b.dataset.mode === s.mode ? 'true' : 'false');
+      });
+      (el.querySelector('[data-o="cond"]') as HTMLElement).textContent = s.rect ? condText(s) : t('regionwatch.cond.noRect');
       (el.querySelector('[data-k="threshold"]') as HTMLInputElement).value = String(Math.round(s.threshold * 100));
       (el.querySelector('[data-o="threshold"]') as HTMLOutputElement).value = Math.round(s.threshold * 100) + '%';
       (el.querySelector('[data-k="lead"]') as HTMLInputElement).value = String(s.lead);
@@ -518,9 +573,12 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       const pick = el.querySelector('[data-act="pick"]') as HTMLButtonElement;
       pick.textContent = s.rect ? `${s.rect.w}x${s.rect.h}` : t('regionwatch.btn.pick');
       pick.classList.toggle('is-on', picking === i);
+      pick.disabled = !stream;
       const thumb = el.querySelector('.rw-thumb') as HTMLElement;
       thumb.innerHTML = s.thumb ? `<img src="${s.thumb}" alt="">` : '';
+      thumb.classList.toggle('is-empty', !s.thumb);
       (el.querySelector('[data-act="ref"]') as HTMLButtonElement).disabled = !s.rect || !stream || s.mode === 'count' || s.mode === 'trend';
+      (el.querySelector('[data-act="del"]') as HTMLButtonElement).disabled = slots.length <= 1;
       el.classList.toggle('is-off', !s.enabled);
       el.classList.toggle('is-count', s.mode === 'count');
       el.classList.toggle('is-trend', s.mode === 'trend');
@@ -546,13 +604,7 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       const k = target.dataset.k;
       if (k === 'enabled') s.enabled = (target as HTMLInputElement).checked;
       else if (k === 'name') s.name = target.value;
-      else if (k === 'mode') {
-        s.mode = target.value as Mode;
-        paintSlot(i);
-        if ((s.mode === 'count' || s.mode === 'trend') && stream) void ensureOcr();
-        trend[i] = newTrend();
-        paintTrend(performance.now() / 1000);
-      } else if (k === 'threshold') {
+      else if (k === 'threshold') {
         s.threshold = clamp(Number(target.value) / 100, 0.5, 0.99);
         (el.querySelector('[data-o="threshold"]') as HTMLOutputElement).value = target.value + '%';
       } else if (k === 'lead') s.lead = clamp(Number(target.value) || 0, 0, 3600);
@@ -563,15 +615,25 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       else if (k === 'randomDelay') s.randomDelay = (target as HTMLInputElement).checked;
       resetState(i);
       el.classList.toggle('is-off', !s.enabled);
+      if (k !== 'name') (el.querySelector('[data-o="cond"]') as HTMLElement).textContent = s.rect ? condText(s) : t('regionwatch.cond.noRect');
       save();
     });
 
     slotsBox.addEventListener('click', (ev) => {
+      const chip = (ev.target as HTMLElement).closest('[data-mode]') as HTMLButtonElement | null;
+      if (chip) {
+        const el = chip.closest('.rw-slot') as HTMLElement;
+        const i = Number(el.dataset.i);
+        setMode(i, chip.dataset.mode as Mode);
+        return;
+      }
       const btn = (ev.target as HTMLElement).closest('[data-act]') as HTMLButtonElement | null;
       if (!btn) return;
       const el = btn.closest('.rw-slot') as HTMLElement;
       const i = Number(el.dataset.i);
-      if (btn.dataset.act === 'pick') {
+      if (btn.dataset.act === 'del') {
+        removeSlot(i);
+      } else if (btn.dataset.act === 'pick') {
         picking = picking === i ? -1 : i;
         for (let j = 0; j < slots.length; j++) paintSlot(j);
         hint.textContent = picking >= 0 ? t('regionwatch.hint.pick') : stream ? t('regionwatch.hint.running') : t('regionwatch.hint.idle');
@@ -579,6 +641,18 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
         takeRef(i);
       }
     });
+
+    function setMode(i: number, mode: Mode): void {
+      const s = slots[i];
+      if (s.mode === mode) return;
+      s.mode = mode;
+      resetState(i);
+      paintSlot(i);
+      if ((mode === 'count' || mode === 'trend') && stream) void ensureOcr();
+      trend[i] = newTrend();
+      paintTrend(performance.now() / 1000);
+      save();
+    }
 
     function resetState(i: number): void {
       edge[i] = { wasHit: false, firedAt: edge[i].firedAt };
@@ -793,8 +867,34 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       trend.push(newTrend());
       slotsBox.insertAdjacentHTML('beforeend', slotRowHtml(i));
       paintSlot(i);
+      if (i > 0) paintSlot(0);
       addSlotBtn.disabled = slots.length >= SLOTS_MAX;
       return true;
+    }
+
+    /* 알림 하나 빼기. 상태 배열 전부 같이 줄고, 뒤 카드의 번호를 다시 매긴다. 마지막 하나는 못 뺀다 */
+    function removeSlot(i: number): void {
+      if (slots.length <= 1) return;
+      if (pending[i] !== null) window.clearTimeout(pending[i] as number);
+      slots.splice(i, 1);
+      edge.splice(i, 1);
+      count.splice(i, 1);
+      lastSim.splice(i, 1);
+      simHist.splice(i, 1);
+      primed.splice(i, 1);
+      pending.splice(i, 1);
+      trend.splice(i, 1);
+      if (picking === i) picking = -1;
+      else if (picking > i) picking--;
+      slotEl(i).remove();
+      Array.from(slotsBox.children).forEach((el, n) => ((el as HTMLElement).dataset.i = String(n)));
+      for (let n = 0; n < slots.length; n++) {
+        paintSlot(n);
+        paintSim(n, lastSim[n], false);
+      }
+      addSlotBtn.disabled = slots.length >= SLOTS_MAX;
+      paintTrend(performance.now() / 1000);
+      save();
     }
     let windowSec = 300;
     const trendSlots = (): number[] => slots.map((s, i) => (s.mode === 'trend' && s.enabled && s.rect ? i : -1)).filter((i) => i >= 0);
@@ -1010,8 +1110,11 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       /* 브라우저가 실제로 준 크기와 초당 프레임. 요청과 다를 수 있어 눈으로 확인하는 자리 */
       const got = c.stream.getVideoTracks()[0]?.getSettings?.() || {};
       const gotText = got.width && got.height ? `${got.width}x${got.height} @ ${Math.round(got.frameRate || 0)}fps` : '';
-      say(t('regionwatch.say.running') + (gotText ? ` (${gotText})` : ''), 'ok');
+      say(t('regionwatch.say.running'), 'ok');
       captureHint.textContent = gotText ? t('regionwatch.hint.captureGot').replace('{got}', gotText) : t('regionwatch.hint.capture');
+      paintState(gotText);
+      emptyEl.hidden = true;
+      for (let i = 0; i < slots.length; i++) paintSlot(i);
       if (notifyBox.checked && typeof Notification !== 'undefined' && Notification.permission === 'default') {
         Notification.requestPermission().catch(() => undefined);
       }
@@ -1041,13 +1144,22 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
         paintSlot(i);
       }
       hint.textContent = t('regionwatch.hint.idle');
-      say(t('regionwatch.status.idle'));
+      say('');
+      paintState('');
+      emptyEl.hidden = false;
       stamps.checks.length = 0;
       stamps.reads.length = 0;
       rateEl.textContent = '';
+      rateEl.hidden = true;
       for (let i = 0; i < slots.length; i++) trend[i] = newTrend();
       trendBox.hidden = true;
       closePip();
+    }
+
+    /* 위 알약. 대기 중이면 회색, 공유 중이면 초록에 실제 크기와 fps */
+    function paintState(got: string): void {
+      stateEl.classList.toggle('is-live', !!stream);
+      (stateEl.querySelector('b') as HTMLElement).textContent = stream ? t('regionwatch.state.sharing').replace('{got}', got || '') : t('regionwatch.state.waiting');
     }
 
     /* ── 떠 있는 창 ───────────────────────────────────────── */
@@ -1088,6 +1200,11 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       else void openPip().then(() => pipBtn.classList.toggle('is-on', !!pip));
     };
     testBtn.onclick = (): void => play('chime', vol);
+    gearBtn.onclick = (): void => {
+      drawer.hidden = !drawer.hidden;
+      gearBtn.setAttribute('aria-expanded', drawer.hidden ? 'false' : 'true');
+      gearBtn.classList.toggle('is-on', !drawer.hidden);
+    };
     addSlotBtn.onclick = (): void => {
       if (addSlot()) save();
     };
@@ -1167,7 +1284,6 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
     const relayout = (): void => {
       const w = container.clientWidth || 0;
       grid.classList.toggle('is-narrow', w > 0 && w < 900);
-      grid.classList.toggle('is-two', w >= 560 && w < 900);
       if (!document.hidden) paintPreview();
     };
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(relayout) : null;
@@ -1199,17 +1315,75 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
     styled = true;
     const st = document.createElement('style');
     st.textContent = `
-      .rw-grid{display:grid;grid-template-columns:minmax(240px,3fr) minmax(300px,2fr);gap:var(--space-md,12px);margin-top:var(--space-md,12px)}
+      .rw-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .rw-top .btn{width:auto;flex:0 0 auto}
+      .rw-top-gap{flex:1 1 auto}
+      .rw-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--bg-tertiary);font:12px var(--font-mono);color:var(--text-secondary)}
+      .rw-pill i{width:7px;height:7px;border-radius:50%;background:var(--text-tertiary)}
+      .rw-pill.is-live{color:var(--success,#3ddc97);border-color:color-mix(in srgb,var(--success,#3ddc97) 40%,var(--border))}
+      .rw-pill.is-live i{background:var(--success,#3ddc97);box-shadow:0 0 6px var(--success,#3ddc97)}
+      .rw-pill[hidden]{display:none}
+      .rw-gear.is-on{color:var(--accent)}
+      .rw-drawer{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary)}
+      .rw-drawer[hidden]{display:none}
+      .rw-drawer-col{display:grid;gap:8px;align-content:start}
+      .rw-drawer-col h4{margin:0;font-size:12px;color:var(--text-tertiary);font-weight:600}
+      .rw-drawer-col .tool-sublabel{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+      .rw-hotkeys{white-space:pre-line;font-family:var(--font-mono)}
+      .rw-grid{display:grid;grid-template-columns:minmax(260px,5fr) minmax(320px,4fr);gap:var(--space-md,12px);margin-top:var(--space-md,12px)}
       .rw-grid.is-narrow{grid-template-columns:1fr}
-      .rw-grid.is-two .rw-right{grid-template-columns:1fr 1fr}
+      .rw-stage{position:relative}
       .rw-preview{width:100%;height:auto;display:block;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-md);cursor:crosshair}
-      .rw-right{display:grid;gap:6px;align-content:start}
-      .rw-slot{border:1px solid var(--border);border-radius:var(--radius-md);padding:6px 8px;display:grid;gap:6px}
-      .rw-slot.is-off{opacity:.5}
-      .rw-slot-head,.rw-slot-body{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+      .rw-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;color:var(--text-secondary);font-size:13px;pointer-events:none}
+      .rw-empty[hidden]{display:none}
+      .rw-steps{list-style:none;margin:0;padding:0;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+      .rw-steps li{display:flex;align-items:center;gap:6px;color:var(--text-primary)}
+      .rw-steps b{width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:var(--bg-secondary);display:inline-flex;align-items:center;justify-content:center;font:600 11px var(--font-mono)}
+      .rw-right{display:grid;gap:8px;align-content:start}
+      .rw-cards{display:grid;gap:8px}
+      .rw-slot{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);padding:10px 12px;display:grid;gap:8px}
+      .rw-slot.is-off{opacity:.55}
+      .rw-card-top{display:flex;align-items:center;gap:10px}
+      .rw-toggle{position:relative;display:inline-flex;align-items:center;width:34px;height:20px;min-height:0;margin:0;padding:0;flex:0 0 auto;cursor:pointer;line-height:0}
+      .rw-toggle input{position:absolute;opacity:0;width:0;height:0;margin:0}
+      .rw-toggle i{position:relative;display:block;width:34px;height:20px;border-radius:999px;background:var(--border-strong,var(--border));transition:background .15s}
+      .rw-toggle i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+      .rw-toggle input:checked+i{background:var(--accent)}
+      .rw-toggle input:checked+i::after{transform:translateX(14px)}
+      .rw-toggle input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+      .rw-thumb{display:inline-block;width:48px;height:36px;flex:0 0 auto;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg-tertiary)}
+      .rw-thumb.is-empty{border-style:dashed}
+      .rw-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+      .rw-card-title{flex:1 1 auto;min-width:0;display:grid;gap:2px}
+      .rw-name{width:100%;max-width:14em;background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);padding:2px 4px;margin-left:-4px;font-weight:600;color:var(--text-primary)}
+      .rw-name:hover,.rw-name:focus{border-color:var(--border);background:var(--bg-tertiary);outline:none}
+      .rw-cond{font-size:12px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .rw-sim{position:relative;flex:0 0 auto;min-width:72px;padding:2px 8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);overflow:hidden;font:600 20px/1.3 var(--font-mono);text-align:right;color:var(--text-primary)}
+      .rw-sim i{position:absolute;left:0;right:0;bottom:0;height:3px;width:0;background:var(--accent);opacity:.5;transition:width .2s}
+      .rw-sim b{position:relative;font-weight:600}
+      .rw-sim.is-hit{color:var(--success,#3ddc97)}
+      .rw-sim.is-hit i{background:var(--success,#3ddc97);opacity:.9}
+      .rw-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+      .rw-chips-gap{flex:1 1 auto}
+      .rw-chip{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);cursor:pointer;line-height:1.3}
+      .rw-chip:hover{color:var(--text-primary)}
+      .rw-chip.is-on{border-color:var(--accent);color:var(--text-primary);background:color-mix(in srgb,var(--accent) 14%,var(--bg-tertiary))}
+      .rw-chip:disabled{opacity:.45;cursor:default}
+      .rw-card-set{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px}
+      .rw-card-set select{width:auto;flex:0 0 auto}
+      .rw-card-set .mono-input{width:5em;flex:0 0 auto}
+      .rw-card-set .tool-chip{flex:0 0 auto}
+      .rw-card-act{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+      .rw-card-act .btn{width:auto;flex:0 0 auto}
+      .rw-del{color:var(--danger,#f06a6a)}
       .rw-if-edge,.rw-if-count,.rw-if-trend{display:contents}
       .rw-slot.is-count .rw-if-edge,.rw-slot.is-trend .rw-if-edge,.rw-slot:not(.is-count) .rw-if-count,.rw-slot:not(.is-trend) .rw-if-trend{display:none}
+      .rw-card-set input[type=range]{flex:1 1 80px;min-width:80px}
       .rw-target{width:8em}
+      .rw-rearm{width:4.5em}
+      .rw-add{width:100%;padding:9px;border:1px dashed var(--border);border-radius:var(--radius-md);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px}
+      .rw-add:hover{color:var(--text-primary);border-color:var(--accent)}
+      .rw-add:disabled{opacity:.4;cursor:default}
       .rw-trend{margin-top:var(--space-md,12px);display:grid;gap:6px}
       .rw-trend[hidden]{display:none}
       .rw-trend-head{display:flex;gap:8px;align-items:center}
@@ -1219,16 +1393,7 @@ const STABILITY: Array<{ windowMs: number; margin: number }> = [
       .rw-trend-row .rw-idle{color:var(--accent-ink,var(--accent))}
       .rw-trend-row .rw-since{color:var(--text-tertiary);flex:1 1 auto}
       .rw-chart{width:100%;height:auto;display:block;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-md)}
-      .rw-name{width:7em}
-      .rw-rearm{width:4.5em}
-      .rw-thumb{display:inline-block;width:32px;height:24px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg-tertiary)}
-      .rw-thumb img{width:100%;height:100%;object-fit:contain;display:block}
-      .rw-sim{position:relative;flex:1 1 60px;min-width:60px;height:16px;border-radius:var(--radius-sm);background:var(--bg-tertiary);overflow:hidden;font:11px var(--font-mono);text-align:right}
-      .rw-sim i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--accent);opacity:.35;transition:width .2s}
-      .rw-sim b{position:relative;padding:0 6px;line-height:16px;color:var(--text-primary)}
-      .rw-sim.is-hit i{opacity:.8}
-      .rw-slot-body input[type=range]{flex:1 1 80px;min-width:80px}
-      .rw-vol input[type=range]{width:90px;vertical-align:middle}
+      .rw-vol input[type=range]{width:100%;vertical-align:middle}
       .rw-file{cursor:pointer}
     `;
     document.head.appendChild(st);

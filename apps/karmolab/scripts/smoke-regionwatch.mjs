@@ -132,9 +132,12 @@ check((await page.inputValue('.rw-slot[data-i="0"] [data-k="name"]')) === 'old1'
 await page.click('#rwStart');
 await page.waitForFunction(() => document.querySelector('.rw-slot[data-i="0"] [data-act="pick"]')?.textContent?.includes('160x100'), null, { timeout: WAIT });
 check(true, '캔버스 스트림으로 화면이 들어왔다 (640x360)');
+check(/640x360/.test((await page.textContent('#rwState')) || ''), `공유 중 알약에 실제 크기 (${await page.textContent('#rwState')})`);
+check(await page.isHidden('#rwEmpty'), '공유하면 빈 화면 안내가 사라진다');
 check((await page.inputValue('.rw-slot[data-i="0"] [data-k="name"]')) === 'chg', '640x360 프로필의 슬롯으로 바뀐다');
-check((await page.inputValue('.rw-slot[data-i="0"] [data-k="mode"]')) === 'change', '슬롯 1 은 달라지면 모드');
-check((await page.inputValue('.rw-slot[data-i="2"] [data-k="mode"]')) === 'count', '슬롯 3 은 남은 초 모드');
+const modeOf = (i) => page.getAttribute(`.rw-slot[data-i="${i}"] [data-mode].is-on`, 'data-mode');
+check((await modeOf(0)) === 'change', '슬롯 1 은 달라지면 모드');
+check((await modeOf(2)) === 'count', '슬롯 3 은 남은 초 모드');
 check(await page.locator('.rw-slot[data-i="2"].is-count').count() === 1, '남은 초 모드 슬롯은 N초 전 칸을 보여 준다');
 check(/640x360/.test((await page.textContent('#rwProfile')) || '') && /2/.test((await page.textContent('#rwProfile')) || ''), `프로필 표시: ${await page.textContent('#rwProfile')}`);
 const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')));
@@ -284,6 +287,9 @@ await page.waitForFunction(() => document.querySelector('#rwStart')?.disabled ==
 check(await page.isDisabled('#rwStart'), '단축키로 다시 시작한다');
 
 /* ⑦ 판정 안정화 (강함, 8프레임 중앙값). 튄 판정 1~2개는 삼키고, 1초 넘게 유지된 변화만 울린다 */
+check(await page.isHidden('#rwDrawer'), '설정 서랍은 처음에 닫혀 있다');
+await page.click('#rwGear');
+check(!(await page.isHidden('#rwDrawer')), '설정 버튼으로 서랍이 열린다');
 check((await page.inputValue('#rwStable')) === '0', '저장된 안정화 단계가 복구된다 (끔)');
 await page.selectOption('#rwStable', '2');
 check((await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')).stability)) === 2, '안정화 단계가 저장된다');
@@ -315,6 +321,14 @@ check(/다시 시작|restart|再開/.test((await page.textContent('#rwCaptureHin
 await page.click('#rwStop');
 await page.waitForTimeout(400);
 check(!(await page.isDisabled('#rwStart')) && (await page.isDisabled('#rwStop')), '멈추면 시작 버튼이 살아난다');
+check(/대기|Waiting|待ち/.test((await page.textContent('#rwState')) || ''), `멈추면 알약이 대기로 (${await page.textContent('#rwState')})`);
+check(!(await page.isHidden('#rwEmpty')), '멈추면 빈 화면 안내가 돌아온다');
+/* 알림 삭제. 일곱에서 여섯, 마지막 하나는 못 뺀다 */
+await page.click('.rw-slot[data-i="6"] [data-act="del"]');
+check((await page.locator('.rw-slot').count()) === 6, `삭제로 여섯이 된다 (지금 ${await page.locator('.rw-slot').count()})`);
+check((await page.getAttribute('.rw-slot:last-child', 'data-i')) === '5', '삭제 뒤 번호가 다시 매겨진다');
+check((await page.evaluate(() => JSON.parse(localStorage.getItem('regionwatch.v1')).profiles['640x360'].length)) === 6, '삭제가 프로필에 저장된다');
+check(await page.isDisabled('.rw-slot[data-i="0"] [data-act="del"]') === false, '둘 이상이면 삭제 가능');
 check((await page.textContent('.rw-slot[data-i="0"] .rw-sim b')) === '-', '멈추면 닮음 표시가 비워진다');
 check(errors.length === 0, `콘솔 오류 없음 (지금 ${errors.length}: ${errors.slice(0, 2).join(' | ')})`);
 
