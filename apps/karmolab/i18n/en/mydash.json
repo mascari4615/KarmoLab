@@ -202,5 +202,12 @@
   "mydash.bm.filter.sum": "Filters",
   "mydash.bm.filter.sumOn": "Filters {n}",
   "mydash.bm.keys.move": "move",
-  "mydash.bm.sheet.empty": "Click a row to see it here"
+  "mydash.bm.sheet.empty": "Click a row to see it here",
+  "mydash.bm.layer.mine": "My own words",
+  "mydash.bm.layer.tweet": "Tweet",
+  "mydash.bm.layer.page": "Page",
+  "mydash.bm.layer.ai": "AI labels",
+  "mydash.bm.layer.aiHint": "Guesses. The original above is the source of truth",
+  "mydash.bm.media.deleted": "Not available from X. Deleted or sign-in required",
+  "mydash.bm.media.video": "Video plays at the source"
 }
