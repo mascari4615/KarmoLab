@@ -65,6 +65,9 @@ interface LessonFile { id: string; parts: LessonPart[] }
 const SET_SIZE = 6;
 const SEEN_KEY = 'karmolab-recall-seen';
 const DROP_KEY = 'karmolab-recall-drop';
+/* 관심 갈래. 없으면 첫 실행이라 고르는 화면부터 (사용자 2026-09-19: 41갈래가 다 섞여 나오니
+   지금 원하지 않는 주제가 계속 나온다). 안 고른 갈래는 출제에서만 빠진다. 다시 켜면 그대로 돌아옴 */
+const TRACKS_KEY = 'karmolab-recall-tracks';
 
 const DROP_AFTER: Record<DropWhy, number> = { known: 3650, off: 3650, later: 30 };
 
@@ -119,10 +122,16 @@ const writeJson = (key: string, value: unknown): void => {
  *  2. 나머지는 안 본 것에서
  *  3. 같은 갈래가 잇달지 않게 폄. 섞는 것이 값의 일부
  */
-function buildSet(pool: Pool, seen: Record<string, SeenRow>, dropped: Record<string, number>): Slot[] {
+function buildSet(
+  pool: Pool,
+  seen: Record<string, SeenRow>,
+  dropped: Record<string, number>,
+  tracks: Set<string> | null,
+): Slot[] {
   const all: Slot[] = [];
   for (const [lesson, meta] of Object.entries(pool.lessons)) {
     if (dropped[lesson] && dropped[lesson] > today()) continue;
+    if (tracks && !tracks.has(meta.t)) continue;
     meta.q.forEach((slots, part) => {
       const where = { track: meta.t, lessonTitle: meta.n, partName: meta.p?.[part] || '' };
       if (meta.s[part] === '1') all.push({ kind: 'say', lesson, part, ...where });
@@ -273,6 +282,12 @@ function mount(container: HTMLElement): void {
 function run(container: HTMLElement, pool: Pool): void {
   const seen = readJson<Record<string, SeenRow>>(SEEN_KEY, {});
   const dropped = readJson<Record<string, number>>(DROP_KEY, {});
+  /* null 은 아직 안 골랐다는 뜻. 빈 배열은 저장하지 않는다 (하나는 켜야 시작이 된다) */
+  const savedTracks = readJson<string[] | null>(TRACKS_KEY, null);
+  let tracks: Set<string> | null = Array.isArray(savedTracks) && savedTracks.length
+    ? new Set(savedTracks.filter((id) => id in pool.tracks))
+    : null;
+  if (tracks && !tracks.size) tracks = null;
   let items: Item[] = [];
   let at = 0;
   /** 한 판의 기록. mine 과 tail 은 내보낼 때 쓰는 원문이라 지우지 않음 */
@@ -310,13 +325,84 @@ function run(container: HTMLElement, pool: Pool): void {
   }
 
   function paintStart(): void {
+    const on = tracks ? tracks.size : Object.keys(pool.tracks).length;
+    const all = Object.keys(pool.tracks).length;
     el().innerHTML = `
       <div class="rc-card rc-open">
         <span class="rc-tag">${esc(t('recall.tag', undefined, '되묻기'))}</span>
         <h2 class="rc-title">${esc(t('recall.start.head', { n: items.length }, '오늘 {n}개. 먼저 답하고 확인한다.'))}</h2>
-        <p class="rc-lede">${esc(t('recall.start.sub', undefined, '고를 것은 없다. 오늘 물어야 할 것은 이미 정해져 있다. 밀린 것부터, 서로 다른 분야를 섞어서.'))}</p>
-        <div class="rc-row"><button type="button" class="rc-go" data-rc="begin">${esc(t('recall.start.go', undefined, '시작'))}</button></div>
+        <p class="rc-lede">${esc(t('recall.start.sub2', undefined, '오늘 물어야 할 것은 이미 정해져 있다. 밀린 것부터, 고른 갈래 안에서 섞어서.'))}</p>
+        <div class="rc-row">
+          <button type="button" class="rc-go" data-rc="begin">${esc(t('recall.start.go', undefined, '시작'))}</button>
+          <button type="button" class="rc-skip" data-rc="tracks">${esc(t('recall.tracks.change', { on, all }, '갈래 바꾸기 ({on} / {all})'))}</button>
+        </div>
       </div>`;
+  }
+
+  /**
+   * 관심 갈래 고르기. 첫 실행에 한 번, 그 뒤는 시작 화면의 버튼으로.
+   * 안 고른 갈래는 출제에서만 제외. 기록은 그대로, 다시 켜면 밀린 것부터
+   */
+  function paintTracks(): void {
+    const draft = new Set(tracks ?? []);
+    const first = !tracks;
+    const chips = Object.entries(pool.tracks)
+      .map(([id, name]) => `<button type="button" class="rc-chip rc-track${draft.has(id) ? ' is-on' : ''}" data-track="${esc(id)}" aria-pressed="${draft.has(id)}">${esc(name)}</button>`)
+      .join('');
+    el().innerHTML = `
+      <div class="rc-card">
+        <span class="rc-tag">${esc(t('recall.tracks.tag', undefined, '갈래'))}</span>
+        <h2 class="rc-title">${esc(first
+          ? t('recall.tracks.head.first', undefined, '지금 붙잡을 갈래를 고른다.')
+          : t('recall.tracks.head', undefined, '갈래 바꾸기'))}</h2>
+        <p class="rc-lede">${esc(t('recall.tracks.sub', undefined, '고른 갈래에서만 낸다. 안 고른 것은 사라지지 않고, 켜면 밀린 것부터 그대로 나온다.'))}</p>
+        <div class="rc-tracks">${chips}</div>
+        <div class="rc-row">
+          <button type="button" class="rc-go" data-rc="tracks-save" ${draft.size ? '' : 'disabled'}>${esc(t('recall.tracks.save', undefined, '이걸로'))}</button>
+          <button type="button" class="rc-skip" data-rc="tracks-all">${esc(t('recall.tracks.all', undefined, '전부'))}</button>
+          <button type="button" class="rc-skip" data-rc="tracks-none">${esc(t('recall.tracks.none', undefined, '비우기'))}</button>
+          <span class="rc-note" data-rc="tracks-n">${esc(t('recall.tracks.count', { n: draft.size }, '{n}개 켜짐'))}</span>
+        </div>
+      </div>`;
+    const sync = (): void => {
+      const n = el().querySelectorAll('.rc-track.is-on').length;
+      const save = el().querySelector<HTMLButtonElement>('[data-rc="tracks-save"]');
+      if (save) save.disabled = n === 0;
+      const note = el().querySelector<HTMLElement>('[data-rc="tracks-n"]');
+      if (note) note.textContent = t('recall.tracks.count', { n }, '{n}개 켜짐');
+    };
+    el().querySelector<HTMLElement>('.rc-tracks')?.addEventListener('click', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('[data-track]');
+      if (!chip) return;
+      const on = !chip.classList.contains('is-on');
+      chip.classList.toggle('is-on', on);
+      chip.setAttribute('aria-pressed', String(on));
+      sync();
+    });
+    el().querySelector('[data-rc="tracks-all"]')?.addEventListener('click', () => {
+      el().querySelectorAll<HTMLElement>('.rc-track').forEach((c) => { c.classList.add('is-on'); c.setAttribute('aria-pressed', 'true'); });
+      sync();
+    });
+    el().querySelector('[data-rc="tracks-none"]')?.addEventListener('click', () => {
+      el().querySelectorAll<HTMLElement>('.rc-track').forEach((c) => { c.classList.remove('is-on'); c.setAttribute('aria-pressed', 'false'); });
+      sync();
+    });
+  }
+
+  function saveTracks(): void {
+    const ids = Array.from(el().querySelectorAll<HTMLElement>('.rc-track.is-on')).map((c) => c.dataset.track || '');
+    if (!ids.length) return;
+    tracks = new Set(ids);
+    writeJson(TRACKS_KEY, ids);
+    previewStart();
+  }
+
+  /** 시작 화면에 개수를 적으려면 세트를 먼저 골라야 함. 본문은 아직 안 받음 */
+  function previewStart(): void {
+    const preview = buildSet(pool, seen, dropped, tracks);
+    items = preview.map((s) => ({ ...s, q: '' }));
+    paintStart();
+    items = [];
   }
 
   function paintItem(): void {
@@ -563,6 +649,8 @@ function run(container: HTMLElement, pool: Pool): void {
       void start();
       return;
     }
+    if (kind === 'tracks') { paintTracks(); return; }
+    if (kind === 'tracks-save') { saveTracks(); return; }
     if (kind === 'drop') { paintDrop(); return; }
     if (kind === 'check' || kind === 'dunno') {
       const box = el().querySelector<HTMLTextAreaElement>('[data-rc="answer"]');
@@ -631,10 +719,11 @@ function run(container: HTMLElement, pool: Pool): void {
 
   async function start(): Promise<void> {
     el().innerHTML = `<p class="rc-loading">${esc(t('recall.loading', undefined, '오늘 것을 고르는 중'))}</p>`;
-    const slots = buildSet(pool, seen, dropped);
+    const slots = buildSet(pool, seen, dropped, tracks);
     items = await fill(slots, pool);
     if (!items.length) {
-      el().innerHTML = `<p class="rc-loading">${esc(t('recall.none', undefined, '오늘 물을 것이 없다. 내일 다시.'))}</p>`;
+      el().innerHTML = `<div class="rc-card"><p class="rc-loading">${esc(t('recall.none', undefined, '오늘 물을 것이 없다. 내일 다시.'))}</p>
+        <div class="rc-row"><button type="button" class="rc-skip" data-rc="tracks">${esc(t('recall.tracks.head', undefined, '갈래 바꾸기'))}</button></div></div>`;
       return;
     }
     at = 0;
@@ -683,12 +772,9 @@ function run(container: HTMLElement, pool: Pool): void {
   }
 
   items = [];
-  paintStart();
-  /* 시작 화면에 개수를 적으려면 세트를 먼저 골라야 함. 본문은 아직 안 받음 */
-  const preview = buildSet(pool, seen, dropped);
-  items = preview.map((s) => ({ ...s, q: '' }));
-  paintStart();
-  items = [];
+  /* 첫 실행은 갈래부터. 고른 뒤에야 시작 화면 */
+  if (!tracks) paintTracks();
+  else previewStart();
 }
 
 function injectStyles(): void {
@@ -755,6 +841,11 @@ function injectStyles(): void {
 .rc-tail { display: flex; flex-direction: column; gap: 8px; font-size: var(--font-size-xs); line-height: 1.8; color: var(--text-primary); padding: 14px 16px; border-radius: var(--radius-lg); background: var(--bg-tertiary); border-left: 2px solid var(--accent); white-space: pre-wrap; }
 .rc-note { font-size: var(--font-size-2xs); color: var(--text-tertiary); }
 .rc-chip { font-size: var(--font-size-2xs); padding: 6px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.rc-tracks { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-track { font: inherit; font-size: var(--font-size-2xs); cursor: pointer; background: var(--bg-primary); min-height: 32px; }
+.rc-track:hover { border-color: var(--accent); }
+.rc-track.is-on { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent-ink); font-weight: 600; }
+.rc-go:disabled { opacity: .45; cursor: default; }
 .rc-chip.is-hit { border-color: var(--accent); color: var(--accent-ink); }
 .rc-chip.is-half { border-color: var(--secondary); color: var(--secondary); }
 .rc-chip.is-miss { border-color: var(--text-tertiary); }
