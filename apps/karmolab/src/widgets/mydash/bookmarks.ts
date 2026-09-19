@@ -82,7 +82,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     text?: string | null;
     who?: { name?: string; handle?: string } | null;
     photos?: MediaPhoto[] | null;
-    video?: { poster?: string } | null;
+    video?: { poster?: string; src?: string; durationMs?: number; w?: number; h?: number } | null;
     deleted?: boolean;
     sensitive?: boolean;
     title?: string | null;
@@ -258,6 +258,8 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-ptitle{color:var(--text-primary);font-weight:600}',
       '.bm-tw{white-space:pre-wrap;word-break:break-word;color:var(--text-primary);font-size:var(--bm-body);line-height:var(--bm-body-lh)}',
       '.bm-pic{width:100%;max-width:100%;border-radius:var(--bm-pic-radius);display:block}',
+      '.bm-video{background:var(--bg-tertiary)}',
+      '.bm-yt{width:100%;aspect-ratio:16/9;border:0;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
       '.bm-sheet-title{font-size:var(--font-size-title);font-weight:600;line-height:1.3}',
       '.bm-who{font-size:var(--bm-meta)}',
       '.bm-link{font-size:var(--font-size-2xs)}',
@@ -410,6 +412,13 @@ import { t, loadNamespace } from '../../lib/i18n';
     if (!clean) return '';
     if (/^https:\/\/pbs\.twimg\.com\//.test(clean)) return clean + (clean.indexOf('?') >= 0 ? '&' : '?') + 'name=' + size;
     return clean;
+  }
+
+  /** 유튜브 주소면 영상 id. watch?v=, youtu.be/, shorts/, embed/ 네 꼴 */
+  function youtubeId(url: unknown): string {
+    const u = text(url).trim();
+    const m = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/.exec(u);
+    return m ? m[1] : '';
   }
 
   function mediaOf(it: Item): Media | null {
@@ -1862,13 +1871,30 @@ import { t, loadNamespace } from '../../lib/i18n';
             const ratio = ph.w && ph.h ? ' style="aspect-ratio:' + Number(ph.w) + '/' + Number(ph.h) + '"' : '';
             body.push('<img class="bm-pic" src="' + esc(u) + '" alt="" loading="lazy" decoding="async"' + ratio + '>');
           }
-          if (m.video && m.video.poster) {
+          if (m.video && m.video.src) {
+            /* 영상 미리보기 (사용자 2026-09-19). mp4 를 그 자리에서 튼다. 소리는 눌러야 */
+            const ratio = m.video.w && m.video.h ? ' style="aspect-ratio:' + Number(m.video.w) + '/' + Number(m.video.h) + '"' : '';
+            body.push(
+              '<video class="bm-pic bm-video" controls preload="metadata" playsinline poster="' +
+              esc(picUrl(text(m.video.poster), 'medium')) + '" src="' + esc(text(m.video.src)) + '"' + ratio + '></video>'
+            );
+          } else if (m.video && m.video.poster) {
             body.push(
               '<img class="bm-pic" src="' + esc(picUrl(text(m.video.poster), 'medium')) + '" alt="" loading="lazy">' +
               '<div class="tool-hint">' + esc(t('mydash.bm.media.video', undefined, '영상은 원문에서')) + '</div>'
             );
           }
         }
+      } else if (youtubeId(it.url)) {
+        /* 유튜브는 그 자리에서 (사용자 2026-09-19 "유튜브면 유튜브"). 제목과 채널은 미리보기 값 */
+        const yid = youtubeId(it.url);
+        const title = m ? text(m.title).trim() : '';
+        if (title && title !== said && title !== text(it.label).trim()) body.push('<div class="bm-ptitle">' + esc(title) + '</div>');
+        if (m && text(m.description).trim()) body.push('<div class="bm-who">' + esc(text(m.description).trim()) + '</div>');
+        body.push(
+          '<iframe class="bm-yt" src="https://www.youtube-nocookie.com/embed/' + esc(yid) + '" title="YouTube" ' +
+          'allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>'
+        );
       } else if (m && m.kind === 'page') {
         const title = text(m.title).trim();
         if (title && title !== said && title !== text(it.label).trim()) body.push('<div class="bm-ptitle">' + esc(title) + '</div>');
