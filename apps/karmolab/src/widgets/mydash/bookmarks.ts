@@ -129,6 +129,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     note: string;
     /** tag 이벤트가 한 번이라도 걸렸나. 판정 대기 해제 판정에 씀 */
     tagged: boolean;
+    /** 사람이 주제를 붙였나 (tag 이벤트에 topic 이 실림). 주제만 붙여도 판정 끝 (사용자 2026-09-19) */
+    topicByUser: boolean;
   };
 
   const DATA_DIR = 'data/bookmarks';
@@ -788,13 +790,17 @@ import { t, loadNamespace } from '../../lib/i18n';
         status: axisValues(it, 'status')[0] || 'unsorted',
         note: text(it.note),
         tagged: false,
+        topicByUser: false,
       };
     }
 
     function applyEvent(s: ItemState, ev: DashEvent): void {
       if (ev.type === 'tag') {
         if (Array.isArray(ev.intent)) s.intent = ev.intent.filter((x) => typeof x === 'string');
-        if (Array.isArray(ev.topic)) s.topic = ev.topic.filter((x) => typeof x === 'string');
+        if (Array.isArray(ev.topic)) {
+          s.topic = ev.topic.filter((x) => typeof x === 'string');
+          if (s.topic.length) s.topicByUser = true;
+        }
         if (ev.domain !== undefined) s.domain = typeof ev.domain === 'string' ? ev.domain : null;
         s.tagged = true;
         /* tag 가 오면 unsorted 를 tagged 로 올린다. 생성기 applyEvent 와 같은 규칙 */
@@ -911,7 +917,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     function isPending(it: Item): boolean {
       if (!text(it.pending)) return false;
       const s = stateOf(it);
-      if (s.intent.length) return false;
+      if (s.intent.length || s.topicByUser) return false;
       return s.status !== 'dropped' && s.status !== 'promoted';
     }
 
@@ -1787,8 +1793,8 @@ import { t, loadNamespace } from '../../lib/i18n';
       sheet = { target, items: list, bundle: target.indexOf('bundle:') === 0 };
       if (!sheet.bundle) setCur(target);
       const s = stateOf(list[0]);
-      draftBase = { intent: s.intent.slice(), topic: s.topic.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
-      draft = { intent: s.intent.slice(), topic: s.topic.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged };
+      draftBase = { intent: s.intent.slice(), topic: s.topic.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged, topicByUser: s.topicByUser };
+      draft = { intent: s.intent.slice(), topic: s.topic.slice(), domain: s.domain, priority: s.priority, status: s.status, note: s.note, tagged: s.tagged, topicByUser: s.topicByUser };
       sheetMsg = '';
       sheetMsgBad = false;
       showNowList = false;
