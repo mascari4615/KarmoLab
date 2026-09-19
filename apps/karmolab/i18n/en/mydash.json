@@ -209,5 +209,11 @@
   "mydash.bm.layer.ai": "AI labels",
   "mydash.bm.layer.aiHint": "Guesses. The original above is the source of truth",
   "mydash.bm.media.deleted": "Not available from X. Deleted or sign-in required",
-  "mydash.bm.media.video": "Video plays at the source"
+  "mydash.bm.media.video": "Video plays at the source",
+  "mydash.bm.view.list": "List",
+  "mydash.bm.view.feed": "Feed",
+  "mydash.bm.view.grid": "Grid",
+  "mydash.bm.act.pendingOnly": "Pending only",
+  "mydash.bm.card.keep": "Keep",
+  "mydash.bm.card.more": "More"
 }

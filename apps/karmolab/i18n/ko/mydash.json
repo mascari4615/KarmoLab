@@ -209,5 +209,11 @@
   "mydash.bm.layer.ai": "AI 분류",
   "mydash.bm.layer.aiHint": "추정입니다. 위의 원문이 정본",
   "mydash.bm.media.deleted": "X 에서 못 받음. 지워졌거나 로그인이 필요한 트윗",
-  "mydash.bm.media.video": "영상은 원문에서"
+  "mydash.bm.media.video": "영상은 원문에서",
+  "mydash.bm.view.list": "목록",
+  "mydash.bm.view.feed": "피드",
+  "mydash.bm.view.grid": "격자",
+  "mydash.bm.act.pendingOnly": "대기만",
+  "mydash.bm.card.keep": "둔다",
+  "mydash.bm.card.more": "더"
 }
