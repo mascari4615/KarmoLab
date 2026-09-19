@@ -75,6 +75,11 @@ export const PREPUSH = [
   'audit:memo-derived',
   'audit:generated-registry',
   'audit:shell-t',
+  /* 2.2초 (둘 합쳐). 위젯 CSS 의 없는 토큰, 직접 색, 직접 크기 신규 유입 차단.
+     2026-09-18 verify 다섯 판 연속 빨강의 원인 (regionwatch 의 `--danger`, `#3ddc97` 예비값).
+     CI 에만 있어 push 뒤 하루 방치. 소스만 읽음 */
+  'audit:css-tokens',
+  'audit:style-tokens',
   'test:i18n'
 ];
 
