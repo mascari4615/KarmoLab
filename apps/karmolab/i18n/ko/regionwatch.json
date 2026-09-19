@@ -12,7 +12,7 @@
   "regionwatch.label.volume": "소리 크기",
   "regionwatch.label.ref": "기준 모습",
   "regionwatch.label.threshold": "닮은 정도 문턱",
-  "regionwatch.label.rearm": "다시 무장(초)",
+  "regionwatch.label.rearm": "알림 뒤 대기(초)",
   "regionwatch.mode.match": "기준과 같아지면",
   "regionwatch.mode.change": "기준과 달라지면",
   "regionwatch.sound.ping": "띵",
@@ -78,5 +78,6 @@
   "regionwatch.stability.normal": "보통 (4프레임 중앙값, 여유 2%)",
   "regionwatch.stability.strong": "강함 (8프레임 중앙값, 여유 4%)",
   "regionwatch.hint.capture": "화질과 프레임은 다음 화면 공유부터. 닮은 정도 옆 ±N 은 최근 흔들림 폭.",
-  "regionwatch.hint.captureRestart": "바뀐 화질과 프레임은 공유를 멈췄다 다시 시작하면 적용됩니다."
+  "regionwatch.hint.captureRestart": "바뀐 화질과 프레임은 공유를 멈췄다 다시 시작하면 적용됩니다.",
+  "regionwatch.hint.captureGot": "지금 공유: {got}. 화질과 프레임을 바꾸면 공유를 다시 시작해야 합니다."
 }
