@@ -247,7 +247,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-views .btn{border-radius:0;border:0}',
       '.bm-views .btn[aria-pressed="true"],.bm-head-acts [data-act="pending"][aria-pressed="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
       /* 피드 (트위터 식). 카드 한 줄, 폭 600 가운데 */
-      '.bm-view-feed{display:flex;flex-direction:column;gap:var(--space-md);max-width:600px;border:0;background:transparent}',
+      '.bm-view-feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:var(--space-md);border:0;background:transparent;align-items:start}',
       '.bm-card{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-md);border:1px solid var(--border);',
       'border-radius:var(--radius-lg);background:var(--bg-secondary);cursor:pointer}',
       '.bm-card.is-cur{border-color:var(--accent)}',
@@ -305,6 +305,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* PC 는 두 열. 목록과 옆판 420px 이 나란히, 옆판은 늘 떠 있고 위에 붙어 따라온다 (MVP 3).
          전에는 fixed 서랍이라 목록 오른쪽을 덮었다 */
       '@media(min-width:900px){.bm{display:grid;grid-template-columns:minmax(0,1fr) 420px;align-items:start}',
+      '.bm.no-panel{grid-template-columns:minmax(0,1fr)}',
       '.bm-sheet{position:sticky;inset:auto;top:var(--header-h,0px);z-index:auto;display:block;',
       'max-height:calc(100vh - var(--header-h,0px));overflow:auto;border-left:1px solid var(--border);padding-left:var(--space-md)}',
       '.bm-sheet .bm-scrim{display:none}',
@@ -1075,6 +1076,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* 저장 막힌 브라우저 */ }
       shown = PAGE;
       paint();
+      paintSheet();
     }
 
     /* 선택 모드. 고른 것과 바에서 고른 의도 */
@@ -1890,8 +1892,10 @@ import { t, loadNamespace } from '../../lib/i18n';
     }
 
     function paintSheet(): void {
+      /* 목록 보기만 옆판이 늘 떠 있다. 피드와 격자는 화면 전체가 카드라 열었을 때만 옆판 (PC 격자 5열) */
+      wrap.classList.toggle('no-panel', view !== 'list' && !sheet);
       if (!sheet || !draft || !draftBase) {
-        if (isWide()) {
+        if (isWide() && view === 'list') {
           sheetEl.hidden = false;
           sheetEl.innerHTML =
             '<div class="bm-sheet-empty">' +
