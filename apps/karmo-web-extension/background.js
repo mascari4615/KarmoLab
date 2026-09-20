@@ -107,8 +107,23 @@ async function removeBookmarks(ids) {
   return { ok, fail };
 }
 
+/** 진행 한 줄. 막혔을 때 어디서인지 보려고 */
+async function note(where, detail) {
+  const now = new Date().toISOString();
+  const cur = (await chrome.storage.local.get("karmo.progress"))["karmo.progress"] || [];
+  cur.push({ at: now, where, detail });
+  await chrome.storage.local.set({ "karmo.progress": cur.slice(-80) });
+}
+
 /** 탭 로드 대기. 30초 넘으면 그냥 간다 */
-function waitLoaded(tabId) {
+async function waitLoaded(tabId) {
+  try {
+    const t = await chrome.tabs.get(tabId);
+    if (t && t.status === "complete") {
+      await new Promise((r) => setTimeout(r, 3000));
+      return;
+    }
+  } catch { /* 못 읽으면 아래 대기로 */ }
   return new Promise((resolve) => {
     const done = (id, info) => {
       if (id === tabId && info.status === "complete") {
@@ -143,6 +158,7 @@ async function stepInTab(url, file, fnName, maxSteps) {
         args: [fnName],
       });
       last = out && out.result;
+      await note("step", `${url} #${i} ${last ? last.count + " " + last.note : "no-result"}`);
       if (!last || last.done) return last;
     }
     return last;
@@ -239,8 +255,10 @@ async function collectXAccounts() {
     notes.push(kind + " " + ((r && r.rows) || []).length + " " + (r ? r.note : "no-response"));
   };
 
+  await chrome.storage.local.set({ "karmo.progress": [] });
   await pull("https://x.com/" + me + "/following", "\ud314\ub85c\uc789");
   const lists = await runInTab("https://x.com/" + me + "/lists", "x-accounts.js", "collectXOwnedLists", "MAIN");
+  await note("lists", `\ub0b4 \ub9ac\uc2a4\ud2b8 ${(lists || []).length}\uac1c`);
   for (const l of lists || []) {
     await pull("https://x.com/i/lists/" + l.id + "/members", l.name || l.id);
   }
@@ -281,6 +299,8 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         sendResponse({ ok: true, count: r.rows.length, notes: r.notes, rows: r.rows });
       } else if (msg?.type === "collect.all") {
         sendResponse({ ok: true, results: await collectAll() });
+      } else if (msg?.type === "collect.progress") {
+        sendResponse({ ok: true, lines: (await chrome.storage.local.get("karmo.progress"))["karmo.progress"] || [] });
       } else if (msg?.type === "collect.status") {
         sendResponse({ ok: true, last: (await chrome.storage.local.get(STATE_KEY))[STATE_KEY] || null });
       } else if (msg?.type === "ext.version") {
