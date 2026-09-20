@@ -299,6 +299,20 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "x.one") {
         const r = await stepInTab(msg.url, "x-accounts.js", "xStep", msg.steps || 3);
         sendResponse({ ok: true, result: r });
+      } else if (msg?.type === "x.dump") {
+        // \ubb34\uac70\uc6b4 \uc751\ub2f5\uc740 \uc720\uc2e4\ub41c\ub2e4. \ud30c\uc77c\ub85c \ub5a8\uad74\uace0 \ud30c\uc77c\ub85c \ud655\uc778
+        (async () => {
+          try {
+            const r = await collectXAccounts();
+            const out = await dumpTsv("x-accounts", r.rows);
+            await chrome.storage.local.set({ "karmo.lastX": { at: new Date().toISOString(), file: out.file, count: out.count, notes: r.notes } });
+          } catch (e) {
+            await chrome.storage.local.set({ "karmo.lastX": { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) } });
+          }
+        })();
+        sendResponse({ ok: true, started: true });
+      } else if (msg?.type === "x.last") {
+        sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.lastX"))["karmo.lastX"] || null });
       } else if (msg?.type === "collect.forget") {
         // 알람 발화 측정용. 가드 비우기
         await chrome.storage.local.remove(STATE_KEY);
