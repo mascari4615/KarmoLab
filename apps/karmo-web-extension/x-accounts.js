@@ -92,7 +92,7 @@ function grabCells(users) {
 
 function xSnap(S) {
   const done = S.phase !== "page";
-  return { count: S.users.size, rounds: S.rounds, note: S.note, done, rows: done ? [...S.users.values()] : null };
+  return { count: S.users.size, rounds: S.rounds, note: S.note, done, rows: [...S.users.values()] };
 }
 
 /**
@@ -104,8 +104,12 @@ async function xStep() {
 
   if (S.phase === "init") {
     grabCells(S.users);
-    installXCapture();
-    const ok = await forceRefetch();
+    // x-hook.js 가 document_start 에 심어 둔 것. 없을 때만 탭 누르기
+    if (!(globalThis.__karmoCap && globalThis.__karmoCap.last)) {
+      installXCapture();
+      await forceRefetch();
+    }
+    const ok = !!(globalThis.__karmoCap && globalThis.__karmoCap.last);
     S.phase = ok ? "page" : "stop";
     S.note = ok ? "ok" : "요청 본뜨기 실패. 화면 칸만";
     return xSnap(S);
