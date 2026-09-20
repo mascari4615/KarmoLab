@@ -299,6 +299,10 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "x.one") {
         const r = await stepInTab(msg.url, "x-accounts.js", "xStep", msg.steps || 3);
         sendResponse({ ok: true, result: r });
+      } else if (msg?.type === "collect.forget") {
+        // 알람 발화 측정용. 가드 비우기
+        await chrome.storage.local.remove(STATE_KEY);
+        sendResponse({ ok: true, forgot: true });
       } else if (msg?.type === "collect.progress") {
         sendResponse({ ok: true, lines: (await chrome.storage.local.get("karmo.progress"))["karmo.progress"] || [] });
       } else if (msg?.type === "collect.status") {
