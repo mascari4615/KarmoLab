@@ -2,13 +2,15 @@
   "manifest_version": 3,
   "name": "KarmoWebExtension",
   "short_name": "Karmo",
-  "version": "0.7.1",
-  "description": "방송, 시청 페이지와 로컬 앱 연결. 즐겨찾기 정리. 유튜브 시청 기록과 팔로우 목록 수집.",
+  "version": "0.8.0",
+  "description": "방송, 시청 페이지와 로컬 앱 연결. 즐겨찾기 정리. 유튜브, 치지직, SOOP, X 수집과 하루 한 번 내보내기.",
   "permissions": [
     "storage",
     "bookmarks",
     "scripting",
-    "tabs"
+    "tabs",
+    "alarms",
+    "downloads"
   ],
   "host_permissions": [
     "https://chzzk.naver.com/*",
@@ -21,7 +23,10 @@
     "https://*.sooplive.com/*",
     "https://www.sooplive.co.kr/*",
     "https://*.sooplive.co.kr/*",
-    "https://api.chzzk.naver.com/*"
+    "https://api.chzzk.naver.com/*",
+    "https://x.com/*",
+    "https://*.x.com/*",
+    "https://twitter.com/*"
   ],
   "background": {
     "service_worker": "background.js"
