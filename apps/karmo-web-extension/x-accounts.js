@@ -121,8 +121,12 @@ async function xStep() {
   const S = xState();
 
   if (S.phase === "init") {
-    grabCells(S.users);
+    // 화면이 아직 요청 전일 수 있음. 잠깐 대기 (실측: 리스트 2명에서 정지)
+    for (let i = 0; i < 8 && !pickTemplate(); i += 1) {
+      await new Promise((r) => setTimeout(r, 1500));
+    }
     if (!pickTemplate()) {
+      grabCells(S.users);
       installXCapture();
       await forceRefetch();
     }
