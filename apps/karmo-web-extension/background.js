@@ -215,37 +215,12 @@ async function runInTab(url, file, fnName, world) {
 /**
  * 유튜브 시청 기록 수집 (백그라운드 탭)
  * 자동화 브라우저의 구글 로그인은 차단됨. 이 확장은 사용자 세션 안이라 무관
- * @param {number} rounds 스크롤 시도 상한
+ * @param {number} rounds 미사용. 걸음 함수가 스스로 멈춤
  */
 async function collectYoutubeHistory(rounds) {
-  const tab = await chrome.tabs.create({ url: "https://www.youtube.com/feed/history", active: false });
-  try {
-    await new Promise((resolve) => {
-      const done = (id, info) => {
-        if (id === tab.id && info.status === "complete") {
-          chrome.tabs.onUpdated.removeListener(done);
-          resolve();
-        }
-      };
-      chrome.tabs.onUpdated.addListener(done);
-      setTimeout(() => { chrome.tabs.onUpdated.removeListener(done); resolve(); }, 30000);
-    });
-    await new Promise((r) => setTimeout(r, 3000));
-
-    const [out] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ["youtube-history.js"],
-    }).then(() => chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (n) => collectYoutubeHistory(n),
-      args: [rounds || 200],
-    }));
-    return out && out.result ? out.result : [];
-  } finally {
-    try { await chrome.tabs.remove(tab.id); } catch { /* 이미 닫혔으면 무시 */ }
-  }
+  const r = await stepInTab("https://www.youtube.com/feed/history", "youtube-history.js", "ytStep");
+  return (r && r.rows) || [];
 }
-
 /** X 핸들. 바꾸려면 storage 에 karmo.xHandle 로 넣는다 */
 async function xHandle() {
   const v = (await chrome.storage.local.get("karmo.xHandle"))["karmo.xHandle"];
@@ -318,7 +293,9 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         const r = await collectXAccounts();
         sendResponse({ ok: true, count: r.rows.length, notes: r.notes, rows: r.rows });
       } else if (msg?.type === "collect.all") {
-        sendResponse({ ok: true, results: await collectAll() });
+        // 무거운 일의 응답은 유실된다 (2026-09-21 실측). 결과는 collect.status 로
+        collectAll();
+        sendResponse({ ok: true, started: true });
       } else if (msg?.type === "x.one") {
         const r = await stepInTab(msg.url, "x-accounts.js", "xStep", msg.steps || 3);
         sendResponse({ ok: true, result: r });
