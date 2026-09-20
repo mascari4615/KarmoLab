@@ -838,6 +838,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       '<div class="myd">' +
       '<nav class="myd-strip" aria-label="' + esc(t('mydash.shell.title', undefined, '내 대시보드')) + '">' +
       '<div class="myd-groups"></div>' +
+      '<button type="button" class="myd-item myd-strip-out" data-logout="strip" hidden></button>' +
       '</nav>' +
       '<section class="myd-main">' +
       '<div class="myd-head"><h2 class="myd-title"></h2><span class="myd-stat"></span>' +
@@ -847,13 +848,16 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       '</section>' +
       '</div>';
     const acctEl = root.querySelector('.myd-acct') as HTMLElement;
-    const outBtn = root.querySelector('[data-logout]') as HTMLButtonElement;
+    const outBtn = root.querySelector('[data-logout="1"]') as HTMLButtonElement;
+    /* 좁은 화면과 레일의 가로 줄 끝. 머리 줄의 계정과 나가기는 거기서 숨긴다 (폰 390 에서 한 행을 통째로 먹었다) */
+    const stripOut = root.querySelector('[data-logout="strip"]') as HTMLButtonElement;
     const navEl = root.querySelector('.myd-groups') as HTMLElement;
     const titleEl = root.querySelector('.myd-title') as HTMLElement;
     const statEl = root.querySelector('.myd-stat') as HTMLElement;
     const bodyEl = root.querySelector('.myd-body') as HTMLElement;
 
     outBtn.textContent = t('mydash.shell.logout', undefined, '나가기');
+    stripOut.textContent = outBtn.textContent;
 
     /* 패널이 붙여 둔 뒷정리. 패널을 갈아 끼울 때마다 부른다. 안 부르면 타이머가 쌓인다. */
     let cleanups: Array<() => void> = [];
@@ -992,6 +996,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       reopen = null;
       acctEl.textContent = '';
       outBtn.hidden = true;
+      stripOut.hidden = true;
       statEl.textContent = '';
 
       function loginCardHtml(compact: boolean): string {
@@ -1218,6 +1223,9 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       acctEl.title = cfg.owner + '/' + cfg.repo;
       outBtn.hidden = false;
       outBtn.onclick = (): void => logout(cfg);
+      stripOut.hidden = false;
+      stripOut.title = cfg.owner + '/' + cfg.repo;
+      stripOut.onclick = (): void => logout(cfg);
 
       /** 아직 패널이 없는 자리. 자리는 두고 그 말만 한다 */
       function showSoon(it: NavItem): void {

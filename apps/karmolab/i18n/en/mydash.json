@@ -143,7 +143,7 @@
   "mydash.me.range": "{from} - {to}",
   "mydash.me.empty": "No traces in this window (KakaoTalk records start {from})",
   "mydash.me.none": "No data",
-  "mydash.me.hideCard": "Do not show this card again",
+  "mydash.me.hideCard": "Hide",
   "mydash.me.hideWindow": "Hide this window",
   "mydash.me.allHidden": "Every trace in this window is hidden",
   "mydash.me.hidden": "{n} hidden",

@@ -104,7 +104,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.me-trace>summary{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center;',
       'min-height:var(--me-tap);cursor:pointer;list-style:none;',
       'font-size:var(--font-size-2xs);color:var(--text-tertiary)}',
-      '.me-trace>summary .btn{margin-left:auto;font-size:var(--font-size-2xs);min-height:32px}',
+      '.me-trace>summary .btn{margin-left:auto;font-size:var(--myd-meta);min-height:32px;padding:0 var(--space-sm);color:var(--text-tertiary)}',
       '.me-trace>summary::-webkit-details-marker{display:none}',
       /* 줄 안의 출처 칩은 누르는 것이 아니라 표식. 킷 크기 그대로 */
       '.me .me-trace>summary .tool-chip,.me .me-cand-top .tool-chip{pointer-events:none}',
