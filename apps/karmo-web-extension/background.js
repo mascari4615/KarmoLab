@@ -147,6 +147,7 @@ async function waitLoaded(tabId) {
 async function stepInTab(url, file, fnName, maxSteps) {
   const tab = await chrome.tabs.create({ url, active: false });
   try {
+    try { await chrome.tabs.update(tab.id, { autoDiscardable: false }); } catch { /* 지원 안 하면 그대로 */ }
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id }, world: "MAIN" };
     await chrome.scripting.executeScript({ ...where, files: [file] });
@@ -299,6 +300,9 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         sendResponse({ ok: true, count: r.rows.length, notes: r.notes, rows: r.rows });
       } else if (msg?.type === "collect.all") {
         sendResponse({ ok: true, results: await collectAll() });
+      } else if (msg?.type === "x.one") {
+        const r = await stepInTab(msg.url, "x-accounts.js", "xStep", msg.steps || 3);
+        sendResponse({ ok: true, result: r });
       } else if (msg?.type === "collect.progress") {
         sendResponse({ ok: true, lines: (await chrome.storage.local.get("karmo.progress"))["karmo.progress"] || [] });
       } else if (msg?.type === "collect.status") {
