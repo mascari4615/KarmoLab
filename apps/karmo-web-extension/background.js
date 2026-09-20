@@ -107,6 +107,14 @@ async function removeBookmarks(ids) {
   return { ok, fail };
 }
 
+/** 목이 안 돌아오면 기다리지 말 것. 멈춤을 무한으로 두면 원인을 못 본다 */
+function within(ms, label, p) {
+  return Promise.race([
+    p,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(`\uc2dc\uac04 \ucd08\uacfc ${label} ${ms}ms`)), ms)),
+  ]);
+}
+
 /** 진행 한 줄. 막혔을 때 어디서인지 보려고 */
 async function note(where, detail) {
   const now = new Date().toISOString();
@@ -150,14 +158,25 @@ async function stepInTab(url, file, fnName, maxSteps) {
     try { await chrome.tabs.update(tab.id, { autoDiscardable: false }); } catch { /* 지원 안 하면 그대로 */ }
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id }, world: "MAIN" };
-    await chrome.scripting.executeScript({ ...where, files: [file] });
+    try {
+      await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: [file] }));
+    } catch (e) {
+      await note("inject-fail", `${url} ${e.message}`);
+      return { count: 0, done: true, note: "\uc8fc\uc785 \uc2e4\ud328 " + e.message, rows: [] };
+    }
     let last = null;
     for (let i = 0; i < (maxSteps || 90); i += 1) {
-      const [out] = await chrome.scripting.executeScript({
-        ...where,
-        func: (n) => globalThis[n](),
-        args: [fnName],
-      });
+      let out;
+      try {
+        [out] = await within(45000, `step${i}`, chrome.scripting.executeScript({
+          ...where,
+          func: (n) => globalThis[n](),
+          args: [fnName],
+        }));
+      } catch (e) {
+        await note("step-fail", `${url} #${i} ${e.message}`);
+        return last || { count: 0, done: true, note: "\uac78\uc74c \uc2e4\ud328 " + e.message, rows: [] };
+      }
       last = out && out.result;
       await note("step", `${url} #${i} ${last ? last.count + " " + last.note : "no-result"}`);
       if (!last || last.done) return last;
