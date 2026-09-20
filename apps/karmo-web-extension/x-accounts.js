@@ -3,31 +3,36 @@
  *
  * 확장인 이유: 자동화 프로필의 X 로그인은 탐지 차단. 사용자 세션 안이라 무관
  * MAIN world 인 이유: 격리 세계의 window.fetch 는 화면이 쓰는 것과 다른 객체
- * 스크롤 대신 되부르기인 이유: 2026-09-21 실측, 8회 스크롤에 21칸 고정
- * 한 걸음씩인 이유: MV3 워커는 30초 무활동이면 종료. 긴 await 는 응답 없음
+ * 스크롤이 아닌 이유: 수집 탭은 visibilityState 가 hidden. 무한 스크롤 로더 정지
+ * 요청 본뜨기는 x-hook.js 가 document_start 에서
+ * 한 걸음씩인 이유: MV3 워커 30초 무활동 종료
  * 정본: memo/systems/karmo-web-extension.md
  */
 
 /** 걸음 사이 기억. 탭이 살아 있는 동안 남는다 */
 function xState() {
   if (!globalThis.__karmoX) {
-    globalThis.__karmoX = {
-      users: new Map(),
-      seenCursor: new Set(),
-      cursor: null,
-      phase: "init",
-      rounds: 0,
-      note: "",
-    };
+    globalThis.__karmoX = { users: new Map(), seenCursor: new Set(), cursor: null, phase: "init", rounds: 0, note: "" };
   }
   return globalThis.__karmoX;
 }
 
-/** 화면이 보낸 GraphQL 요청을 본뜬다. 커서만 갈아 끼우면 나머지가 따라온다 */
+/** 화면이 보낸 요청 중 이 목록에 맞는 것 */
+function pickTemplate() {
+  const cap = globalThis.__karmoCap;
+  if (!cap) return null;
+  const want = ["ListMembers", "ListSubscribers", "Following", "Followers", "BlueVerifiedFollowers"];
+  for (const op of want) {
+    if (cap.byOp && cap.byOp[op]) return cap.byOp[op];
+  }
+  return cap.last || null;
+}
+
+/** x-hook.js 가 못 실린 경우의 뒷문 */
 function installXCapture() {
   if (globalThis.__karmoHooked) return;
   globalThis.__karmoHooked = 1;
-  globalThis.__karmoCap = { last: null };
+  globalThis.__karmoCap = { last: null, byOp: {} };
   const orig = globalThis.fetch;
   globalThis.fetch = function (input, init) {
     try {
@@ -38,47 +43,55 @@ function installXCapture() {
         const h = req ? req.headers : init && init.headers;
         if (h && typeof h.forEach === "function") h.forEach((v, k) => { headers[k] = v; });
         else if (h) Object.assign(headers, h);
-        globalThis.__karmoCap.last = { url, headers };
+        const op = url.split("?")[0].split("/").pop();
+        const rec = { url, headers, op };
+        globalThis.__karmoCap.last = rec;
+        globalThis.__karmoCap.byOp[op] = rec;
       }
     } catch { /* 원본 호출은 막지 않는다 */ }
     return orig.apply(this, arguments);
   };
 }
 
-/** 탭을 옆으로 눌렀다 되돌려 새 요청을 뽑는다. 새로고침은 후크가 날아간다 */
+/** 탭을 옆으로 눌렀다 되돌려 새 요청 뽑기. 새로고침은 후크가 날아감 */
 async function forceRefetch() {
   const here = location.pathname;
   const tabs = [...document.querySelectorAll('a[role="tab"]')];
   const other = tabs.find((a) => (a.getAttribute("href") || "") !== here);
   const back = tabs.find((a) => (a.getAttribute("href") || "") === here);
-  if (!other || !back) return false;
+  if (!other || !back) return;
   other.click();
   await new Promise((r) => setTimeout(r, 3000));
   back.click();
   await new Promise((r) => setTimeout(r, 3000));
-  return !!(globalThis.__karmoCap && globalThis.__karmoCap.last);
 }
 
-/** 응답 모양이 바뀌어도 버티게, 뽑을 것만 재귀로 줍는다 */
+/**
+ * 응답 모양이 바뀌어도 버티게, 뽑을 것만 재귀로
+ * 2026-09-21 기준 핸들은 core.screen_name. 예전 legacy.screen_name 도 허용
+ */
 function harvest(node, users, cursors, depth) {
-  if (!node || typeof node !== "object" || depth > 24) return;
+  if (!node || typeof node !== "object" || depth > 30) return;
   if (Array.isArray(node)) {
     for (const x of node) harvest(x, users, cursors, depth + 1);
     return;
   }
-  const lg = node.legacy;
-  if (node.__typename === "User" && lg && lg.screen_name) {
-    users.set(lg.screen_name, {
-      handle: lg.screen_name,
-      name: lg.name || "",
-      bio: String(lg.description || "").replace(/\s+/g, " "),
+  const core = node.core && typeof node.core.screen_name === "string" ? node.core : null;
+  const lg = node.legacy && typeof node.legacy.screen_name === "string" ? node.legacy : null;
+  const who = core || lg;
+  if (who) {
+    const bio = (node.legacy && node.legacy.description) || (node.profile_bio && node.profile_bio.description) || "";
+    users.set(who.screen_name, {
+      handle: who.screen_name,
+      name: who.name || "",
+      bio: String(bio).replace(/\s+/g, " "),
     });
   }
   if (node.cursorType === "Bottom" && node.value) cursors.push(node.value);
   for (const k of Object.keys(node)) harvest(node[k], users, cursors, depth + 1);
 }
 
-/** 화면에 이미 붙어 있는 칸. 되부르기 전 첫 묶음 */
+/** 화면에 이미 붙어 있는 칸. 되부르기가 막혔을 때의 최소 수확 */
 function grabCells(users) {
   const SKIP = new Set(["팔로우", "팔로잉", "차단됨", "Follow", "Following"]);
   for (const c of document.querySelectorAll('[data-testid="UserCell"]')) {
@@ -91,32 +104,36 @@ function grabCells(users) {
 }
 
 function xSnap(S) {
-  const done = S.phase !== "page";
-  return { count: S.users.size, rounds: S.rounds, note: S.note, done, rows: [...S.users.values()] };
+  return {
+    count: S.users.size,
+    rounds: S.rounds,
+    note: S.note,
+    done: S.phase !== "page",
+    rows: [...S.users.values()],
+  };
 }
 
 /**
  * 한 걸음. 워커가 done 까지 되부름
- * @returns {Promise<{count:number,rounds:number,note:string,done:boolean,rows:Array<object>|null}>}
+ * @returns {Promise<{count:number,rounds:number,note:string,done:boolean,rows:Array<object>}>}
  */
 async function xStep() {
   const S = xState();
 
   if (S.phase === "init") {
     grabCells(S.users);
-    // x-hook.js 가 document_start 에 심어 둔 것. 없을 때만 탭 누르기
-    if (!(globalThis.__karmoCap && globalThis.__karmoCap.last)) {
+    if (!pickTemplate()) {
       installXCapture();
       await forceRefetch();
     }
-    const ok = !!(globalThis.__karmoCap && globalThis.__karmoCap.last);
-    S.phase = ok ? "page" : "stop";
-    S.note = ok ? "ok" : "요청 본뜨기 실패. 화면 칸만";
+    const first = pickTemplate();
+    S.phase = first ? "page" : "stop";
+    S.note = first ? first.op : "요청 본뜨기 실패. 화면 칸만";
     return xSnap(S);
   }
   if (S.phase !== "page") return xSnap(S);
 
-  const tpl = globalThis.__karmoCap.last;
+  const tpl = pickTemplate();
   const u = new URL(tpl.url);
   const vars = JSON.parse(u.searchParams.get("variables") || "{}");
   if (S.cursor) vars.cursor = S.cursor; else delete vars.cursor;
@@ -133,9 +150,8 @@ async function xStep() {
   const before = S.users.size;
   harvest(await res.json(), S.users, cursors, 0);
   const next = cursors.find((c) => !S.seenCursor.has(c));
-  if (!next || S.users.size === before || S.rounds >= 80) {
+  if (!next || S.users.size === before || S.rounds >= 60) {
     S.phase = "stop";
-    if (!S.note) S.note = "ok";
     return xSnap(S);
   }
   S.seenCursor.add(next);
