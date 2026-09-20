@@ -86,6 +86,7 @@
         collectAll: () => call({ type: "collect.all" }),
         collectStatus: () => call({ type: "collect.status" }),
         collectProgress: () => call({ type: "collect.progress" }),
+        collectForget: () => call({ type: "collect.forget" }),
         xOne: (url, steps) => call({ type: "x.one", url, steps }),
         version: () => call({ type: "ext.version" }),
         reload: () => call({ type: "ext.reload" }),
