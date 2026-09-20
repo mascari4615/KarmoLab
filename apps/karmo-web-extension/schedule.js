@@ -64,7 +64,7 @@ async function collectAll() {
     ["youtube-history", () => collectYoutubeHistory(200)],
     ["chzzk-follows", async () => (await runInTab("https://chzzk.naver.com/", "follows.js", "collectChzzkFollows")).rows],
     ["soop-favorites", () => runInTab("https://www.sooplive.com/my/favorite", "follows.js", "collectSoopFavorites")],
-    ["x-accounts", () => collectXAccounts()],
+    ["x-accounts", async () => (await collectXAccounts()).rows],
   ];
   const out = [];
   for (const [kind, run] of jobs) {

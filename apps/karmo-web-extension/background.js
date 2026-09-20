@@ -112,8 +112,9 @@ async function removeBookmarks(ids) {
  * @param {string} url 열 주소
  * @param {string} file 주입할 파일
  * @param {string} fnName 그 파일이 전역에 깐 함수 이름
+ * @param {string} [world] "MAIN" 이면 페이지와 같은 세계. fetch 를 가로채야 할 때만
  */
-async function runInTab(url, file, fnName) {
+async function runInTab(url, file, fnName, world) {
   const tab = await chrome.tabs.create({ url, active: false });
   try {
     await new Promise((resolve) => {
@@ -127,9 +128,11 @@ async function runInTab(url, file, fnName) {
       setTimeout(() => { chrome.tabs.onUpdated.removeListener(done); resolve(); }, 30000);
     });
     await new Promise((r) => setTimeout(r, 3000));
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: [file] });
+    const where = { target: { tabId: tab.id } };
+    if (world) where.world = world;
+    await chrome.scripting.executeScript({ ...where, files: [file] });
     const [out] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
+      ...where,
       func: (n) => globalThis[n](),
       args: [fnName],
     });
@@ -182,7 +185,7 @@ async function xHandle() {
 /**
  * 팔로잉과 내가 만든 리스트 멤버를 한 표로
  * 남이 만든 리스트는 안 담는다 (사용자 2026-09-20)
- * @returns {Promise<Array<{handle:string,name:string,kind:string,bio:string}>>}
+ * @returns {Promise<{rows:Array<object>,notes:string[]}>}
  */
 async function collectXAccounts() {
   const me = await xHandle();
@@ -195,12 +198,19 @@ async function collectXAccounts() {
     }
   };
 
-  add(await runInTab("https://x.com/" + me + "/following", "x-accounts.js", "collectXUserCells"), "\ud314\ub85c\uc789");
-  const lists = await runInTab("https://x.com/" + me + "/lists", "x-accounts.js", "collectXOwnedLists");
+  const notes = [];
+  const pull = async (url, kind) => {
+    const r = await runInTab(url, "x-accounts.js", "collectXTimeline", "MAIN");
+    add(r && r.rows, kind);
+    notes.push(kind + " " + ((r && r.rows) || []).length + " " + (r ? r.note : "no-response"));
+  };
+
+  await pull("https://x.com/" + me + "/following", "\ud314\ub85c\uc789");
+  const lists = await runInTab("https://x.com/" + me + "/lists", "x-accounts.js", "collectXOwnedLists", "MAIN");
   for (const l of lists || []) {
-    add(await runInTab("https://x.com/i/lists/" + l.id + "/members", "x-accounts.js", "collectXUserCells"), l.name || l.id);
+    await pull("https://x.com/i/lists/" + l.id + "/members", l.name || l.id);
   }
-  return [...merged.values()];
+  return { rows: [...merged.values()], notes };
 }
 
 /** 웹페이지(허용 도메인) → 확장 */
@@ -233,8 +243,8 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         const rows = await runInTab("https://www.sooplive.com/my/favorite", "follows.js", "collectSoopFavorites");
         sendResponse({ ok: true, count: (rows || []).length, rows });
       } else if (msg?.type === "x.accounts") {
-        const rows = await collectXAccounts();
-        sendResponse({ ok: true, count: rows.length, rows });
+        const r = await collectXAccounts();
+        sendResponse({ ok: true, count: r.rows.length, notes: r.notes, rows: r.rows });
       } else if (msg?.type === "collect.all") {
         sendResponse({ ok: true, results: await collectAll() });
       } else if (msg?.type === "collect.status") {
