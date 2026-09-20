@@ -80,6 +80,8 @@
         removeTree: (ids) => call({ type: "bookmarks.removeTree", ids }),
         pruneEmptyFolders: () => call({ type: "bookmarks.pruneEmptyFolders" }),
         youtubeHistory: (rounds) => call({ type: "youtube.history", rounds }),
+        chzzkFollows: () => call({ type: "chzzk.follows" }),
+        soopFavorites: () => call({ type: "soop.favorites" }),
         version: () => call({ type: "ext.version" }),
         reload: () => call({ type: "ext.reload" }),
       };

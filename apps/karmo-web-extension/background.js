@@ -106,6 +106,38 @@ async function removeBookmarks(ids) {
 }
 
 /**
+ * 탭 개설 -> 주입 파일 실행 -> 탭 정리
+ * @param {string} url 열 주소
+ * @param {string} file 주입할 파일
+ * @param {string} fnName 그 파일이 전역에 깐 함수 이름
+ */
+async function runInTab(url, file, fnName) {
+  const tab = await chrome.tabs.create({ url, active: false });
+  try {
+    await new Promise((resolve) => {
+      const done = (id, info) => {
+        if (id === tab.id && info.status === "complete") {
+          chrome.tabs.onUpdated.removeListener(done);
+          resolve();
+        }
+      };
+      chrome.tabs.onUpdated.addListener(done);
+      setTimeout(() => { chrome.tabs.onUpdated.removeListener(done); resolve(); }, 30000);
+    });
+    await new Promise((r) => setTimeout(r, 3000));
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: [file] });
+    const [out] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (n) => globalThis[n](),
+      args: [fnName],
+    });
+    return out && out.result;
+  } finally {
+    try { await chrome.tabs.remove(tab.id); } catch { /* 이미 닫혔으면 무시 */ }
+  }
+}
+
+/**
  * 유튜브 시청 기록 수집 (백그라운드 탭)
  * 자동화 브라우저의 구글 로그인은 차단됨. 이 확장은 사용자 세션 안이라 무관
  * @param {number} rounds 스크롤 시도 상한
@@ -162,6 +194,12 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "youtube.history") {
         const rows = await collectYoutubeHistory(msg.rounds);
         sendResponse({ ok: true, count: rows.length, rows });
+      } else if (msg?.type === "chzzk.follows") {
+        const r = await runInTab("https://chzzk.naver.com/", "follows.js", "collectChzzkFollows");
+        sendResponse({ ok: true, count: (r && r.rows || []).length, total: r && r.total, rows: r && r.rows });
+      } else if (msg?.type === "soop.favorites") {
+        const rows = await runInTab("https://www.sooplive.com/my/favorite", "follows.js", "collectSoopFavorites");
+        sendResponse({ ok: true, count: (rows || []).length, rows });
       } else if (msg?.type === "ext.version") {
         const m = chrome.runtime.getManifest();
         sendResponse({ ok: true, version: m.version, name: m.name });
