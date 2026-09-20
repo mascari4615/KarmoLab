@@ -51,3 +51,6 @@ async function collectYoutubeHistory(maxRounds) {
   }
   return [...seen.values()];
 }
+
+// background 의 이름 호출용 전역 등록
+globalThis.collectYoutubeHistory = collectYoutubeHistory;

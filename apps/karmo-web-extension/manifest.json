@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "KarmoWebExtension",
   "short_name": "Karmo",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "방송, 시청 페이지와 로컬 앱 연결. 즐겨찾기 정리. 유튜브 시청 기록과 팔로우 목록 수집.",
   "permissions": [
     "storage",
