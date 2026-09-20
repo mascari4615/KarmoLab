@@ -51,7 +51,7 @@ async function ytStep() {
     if (S.seen.size === before) S.stall += 1; else S.stall = 0;
   }
   const done = S.stall >= 20 || S.rounds >= 300;
-  return { count: S.seen.size, done, note: done ? "ok" : "더", rows: done ? [...S.seen.values()] : null };
+  return { count: S.seen.size, done, note: done ? "ok" : "더", rows: [...S.seen.values()] };
 }
 
 // background 의 이름 호출용 전역 등록
