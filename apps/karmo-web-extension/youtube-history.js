@@ -17,6 +17,22 @@ function ytState() {
   return globalThis.__karmoYt;
 }
 
+/**
+ * 헤더만 빌리고 몸체는 ytcfg 로 직접
+ * 첫 로드에 browse 가 안 잡히는 이유: 기록이 HTML 에 박혀 옴
+ * guide 든 player 든 인증 헤더는 같음 (2026-09-21 실측, 새 항목 56편)
+ */
+function ytTemplate() {
+  const cap = globalThis.__karmoYtCap;
+  const cfg = globalThis.ytcfg && globalThis.ytcfg.data_;
+  if (!cap || !cfg || !cfg.INNERTUBE_API_KEY) return null;
+  for (const path of ["browse", "guide", "player", "next"]) {
+    if (cap.byPath[path]) return cap.byPath[path];
+  }
+  const any = Object.keys(cap.byPath)[0];
+  return any ? cap.byPath[any] : null;
+}
+
 function ytText(n) {
   if (!n) return "";
   if (typeof n === "string") return n;
@@ -88,29 +104,20 @@ async function ytStep() {
     const out = { token: null };
     ytHarvest(globalThis.ytInitialData, S.seen, "", out);
     S.token = out.token;
-    const tpl = globalThis.__karmoYtCap && globalThis.__karmoYtCap.byPath && globalThis.__karmoYtCap.byPath.browse;
+    const tpl = ytTemplate();
     S.phase = S.token && tpl ? "page" : "stop";
     S.note = S.phase === "page" ? "ok" : (tpl ? "이어받을 표식 없음" : "요청 본뜨기 실패. 첫 묶음만");
     return ytSnap(S);
   }
   if (S.phase !== "page") return ytSnap(S);
 
-  const tpl = globalThis.__karmoYtCap.byPath.browse;
-  let body;
-  try {
-    body = JSON.parse(tpl.body || "{}");
-  } catch {
-    body = {};
-  }
-  // 이어받기 몸체에 browseId 가 남으면 첫 장을 다시 준다 (2026-09-21 실측 97편에서 정지)
-  delete body.browseId;
-  delete body.params;
-  body.continuation = S.token;
-  const res = await fetch(tpl.url, {
+  const tpl = ytTemplate();
+  const cfg = globalThis.ytcfg && globalThis.ytcfg.data_;
+  const res = await fetch(`/youtubei/v1/browse?key=${cfg.INNERTUBE_API_KEY}&prettyPrint=false`, {
     method: "POST",
     credentials: "include",
     headers: tpl.headers,
-    body: JSON.stringify(body),
+    body: JSON.stringify({ context: cfg.INNERTUBE_CONTEXT, continuation: S.token }),
   });
   S.rounds += 1;
   if (!res.ok) {
