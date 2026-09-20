@@ -63,6 +63,8 @@ async function dumpTsv(kind, rows) {
  * X 는 여기 없다. 653 중 11 만 나오고 바퀴를 잡는다 (2026-09-21)
  */
 async function collectAll() {
+  // 시각은 시작할 때 박기. 끝에 박으면 워커 사망마다 재실행
+  await chrome.storage.local.set({ [STATE_KEY]: { at: new Date().toISOString(), results: [], running: true } });
   const jobs = [
     ["youtube-history", () => collectYoutubeHistory(200)],
     ["chzzk-follows", async () => (await runInTab("https://chzzk.naver.com/", "follows.js", "collectChzzkFollows")).rows],
