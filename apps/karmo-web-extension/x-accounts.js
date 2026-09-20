@@ -165,19 +165,28 @@ async function xStep() {
  */
 async function collectXOwnedLists() {
   const me = location.pathname.split("/")[1].toLowerCase();
+  const cap = globalThis.__karmoCap;
+  const tpl = cap && cap.byOp && cap.byOp.ListsManagementPageTimeline;
+  if (!tpl) return [];
+  const res = await fetch(tpl.url, { headers: tpl.headers, credentials: "include" });
+  if (!res.ok) return [];
+
   const out = new Map();
-  for (let i = 0; i < 8; i += 1) {
-    for (const a of document.querySelectorAll('a[href*="/i/lists/"]')) {
-      const m = (a.getAttribute("href") || "").match(/\/i\/lists\/(\d+)/);
-      if (!m || out.has(m[1])) continue;
-      const lines = a.innerText.split("\n").map((x) => x.trim()).filter(Boolean);
-      const owner = (lines.find((l) => l.startsWith("@")) || "").slice(1).toLowerCase();
-      if (owner && owner !== me) continue;
-      out.set(m[1], { id: m[1], name: lines[0] || m[1], owner: owner || me });
+  const walk = (n, d) => {
+    if (!n || typeof n !== "object" || d > 30) return;
+    if (Array.isArray(n)) {
+      for (const x of n) walk(x, d + 1);
+      return;
     }
-    if (out.size) break;
-    await new Promise((r) => setTimeout(r, 1500));
-  }
+    const id = n.id_str || n.rest_id;
+    if (id && n.name && n.member_count !== undefined) {
+      const ur = n.user_results && n.user_results.result;
+      const owner = ((ur && ur.core && ur.core.screen_name) || (ur && ur.legacy && ur.legacy.screen_name) || "").toLowerCase();
+      if (owner === me) out.set(String(id), { id: String(id), name: n.name, members: n.member_count });
+    }
+    for (const k of Object.keys(n)) walk(n[k], d + 1);
+  };
+  walk(await res.json(), 0);
   return [...out.values()];
 }
 
