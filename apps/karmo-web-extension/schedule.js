@@ -83,9 +83,11 @@ async function collectAll() {
   return out;
 }
 
-chrome.alarms.create(ALARM, { delayInMinutes: 1, periodInMinutes: 360 });
+if (chrome.alarms) {
+  chrome.alarms.create(ALARM, { delayInMinutes: 1, periodInMinutes: 360 });
+}
 
-chrome.alarms.onAlarm.addListener(async (a) => {
+if (chrome.alarms) chrome.alarms.onAlarm.addListener(async (a) => {
   if (a.name !== ALARM) return;
   const st = (await chrome.storage.local.get(STATE_KEY))[STATE_KEY];
   const last = st && st.at ? Date.parse(st.at) : 0;
