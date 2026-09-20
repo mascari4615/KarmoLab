@@ -102,6 +102,9 @@ async function ytStep() {
   } catch {
     body = {};
   }
+  // 이어받기 몸체에 browseId 가 남으면 첫 장을 다시 준다 (2026-09-21 실측 97편에서 정지)
+  delete body.browseId;
+  delete body.params;
   body.continuation = S.token;
   const res = await fetch(tpl.url, {
     method: "POST",
