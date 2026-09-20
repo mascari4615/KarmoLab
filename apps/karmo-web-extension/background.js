@@ -302,7 +302,12 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "collect.progress") {
         sendResponse({ ok: true, lines: (await chrome.storage.local.get("karmo.progress"))["karmo.progress"] || [] });
       } else if (msg?.type === "collect.status") {
-        sendResponse({ ok: true, last: (await chrome.storage.local.get(STATE_KEY))[STATE_KEY] || null });
+        const alarms = await chrome.alarms.getAll();
+        sendResponse({
+          ok: true,
+          last: (await chrome.storage.local.get(STATE_KEY))[STATE_KEY] || null,
+          alarms: alarms.map((a) => ({ name: a.name, every: a.periodInMinutes, next: new Date(a.scheduledTime).toISOString() })),
+        });
       } else if (msg?.type === "ext.version") {
         const m = chrome.runtime.getManifest();
         sendResponse({ ok: true, version: m.version, name: m.name });
