@@ -79,6 +79,7 @@
         remove: (ids) => call({ type: "bookmarks.remove", ids }),
         removeTree: (ids) => call({ type: "bookmarks.removeTree", ids }),
         pruneEmptyFolders: () => call({ type: "bookmarks.pruneEmptyFolders" }),
+        youtubeHistory: (rounds) => call({ type: "youtube.history", rounds }),
         version: () => call({ type: "ext.version" }),
         reload: () => call({ type: "ext.reload" }),
       };

@@ -2,17 +2,21 @@
   "manifest_version": 3,
   "name": "KarmoWebExtension",
   "short_name": "Karmo",
-  "version": "0.5.1",
-  "description": "방송, 시청 페이지와 로컬 앱(chat-overlay 등) 연결 + 즐겨찾기 일괄 정리.",
+  "version": "0.6.0",
+  "description": "방송, 시청 페이지와 로컬 앱 연결. 즐겨찾기 정리. 유튜브 시청 기록 수집.",
   "permissions": [
     "storage",
-    "bookmarks"
+    "bookmarks",
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
     "https://chzzk.naver.com/*",
     "https://*.chzzk.naver.com/*",
     "http://127.0.0.1/*",
-    "http://localhost/*"
+    "http://localhost/*",
+    "https://www.youtube.com/*",
+    "https://youtube.com/*"
   ],
   "background": {
     "service_worker": "background.js"

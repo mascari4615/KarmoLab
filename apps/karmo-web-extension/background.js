@@ -105,6 +105,40 @@ async function removeBookmarks(ids) {
   return { ok, fail };
 }
 
+/**
+ * 유튜브 시청 기록 수집 (백그라운드 탭)
+ * 자동화 브라우저의 구글 로그인은 차단됨. 이 확장은 사용자 세션 안이라 무관
+ * @param {number} rounds 스크롤 시도 상한
+ */
+async function collectYoutubeHistory(rounds) {
+  const tab = await chrome.tabs.create({ url: "https://www.youtube.com/feed/history", active: false });
+  try {
+    await new Promise((resolve) => {
+      const done = (id, info) => {
+        if (id === tab.id && info.status === "complete") {
+          chrome.tabs.onUpdated.removeListener(done);
+          resolve();
+        }
+      };
+      chrome.tabs.onUpdated.addListener(done);
+      setTimeout(() => { chrome.tabs.onUpdated.removeListener(done); resolve(); }, 30000);
+    });
+    await new Promise((r) => setTimeout(r, 3000));
+
+    const [out] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["youtube-history.js"],
+    }).then(() => chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (n) => collectYoutubeHistory(n),
+      args: [rounds || 200],
+    }));
+    return out && out.result ? out.result : [];
+  } finally {
+    try { await chrome.tabs.remove(tab.id); } catch { /* 이미 닫혔으면 무시 */ }
+  }
+}
+
 /** 웹페이지(허용 도메인) → 확장 */
 chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
   (async () => {
@@ -125,6 +159,9 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "bookmarks.pruneEmptyFolders") {
         const removed = await pruneEmptyFolders();
         sendResponse({ ok: true, removed, remaining: (await listAll()).length });
+      } else if (msg?.type === "youtube.history") {
+        const rows = await collectYoutubeHistory(msg.rounds);
+        sendResponse({ ok: true, count: rows.length, rows });
       } else if (msg?.type === "ext.version") {
         const m = chrome.runtime.getManifest();
         sendResponse({ ok: true, version: m.version, name: m.name });
