@@ -2,11 +2,60 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1858,
-    "days": 12,
+    "commits": 1862,
+    "days": 13,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-09-21",
+      "entries": [
+        {
+          "sha": "a4f7b096",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "idle",
+          "text": "인형 명단을 세계관으로. 네 번째, 링, 알리사, 저고리, 토끼, 섬 소녀 여섯"
+        },
+        {
+          "sha": "f0388fbf",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "idle",
+          "text": "카드는 편성 인형의 스킬. 덱은 인형 id 순서, 스킬은 임시로 축대로, 가속 카드 추가"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
+    {
+      "date": "2026-09-20",
+      "entries": [
+        {
+          "sha": "41612ac9",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "idle",
+          "text": "바닥에 풀 타일, 소품에 바위 트라이플레이너. 단색 폐기"
+        },
+        {
+          "sha": "2377bb4f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "인형 자리 탭은 강화 대상 고르기, 인형 바꾸기는 큰 초상화"
+        },
+        {
+          "sha": "64c21f68",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "idle",
+          "text": "던전 판이 끝나면 던전 안에 멈춰 결과, 나가기를 눌러야 본판"
+        }
+      ],
+      "quiet": 1,
+      "more": 0
+    },
     {
       "date": "2026-09-09",
       "entries": [
@@ -464,52 +513,10 @@
           "typeLabel": "고친 것",
           "scope": "tests",
           "text": "저장소 뿌리를 에디터 설치 폴더에서 찾고 있었다 — 실패 5건이 한 원인 (TASK-WM-416)"
-        },
-        {
-          "sha": "410fcf12",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "versus",
-          "text": "P2P 호스트를 TcpListener + 직접 악수로 다시 짓는다 — 처음으로 붙는다 (TASK-WM-415)"
-        },
-        {
-          "sha": "d6ca5fc3",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "versus",
-          "text": "수락 루프가 메인 스레드를 기다리다 에디터를 영구 정지시키던 것 (TASK-WM-414)"
         }
       ],
       "quiet": 1,
-      "more": 0
-    },
-    {
-      "date": "2026-08-20",
-      "entries": [
-        {
-          "sha": "e03db4ed",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ci",
-          "text": "asmdef 관문이 초록도 빨강도 아닌 <b>취소</b>로 죽었다 — 예산이 일보다 작다"
-        },
-        {
-          "sha": "380647a4",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ci",
-          "text": "배포가 없는 프로젝트를 굽고 있었다 — csproj 를 .gitignore 가 삼켰다"
-        },
-        {
-          "sha": "f3d563db",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "tooling",
-          "text": "CoplayDev Unity-MCP 제거 — 공식 Unity CLI 통로로 단일화 (TASK-WM-412)"
-        }
-      ],
-      "quiet": 1,
-      "more": 12
+      "more": 2
     }
   ]
 }
