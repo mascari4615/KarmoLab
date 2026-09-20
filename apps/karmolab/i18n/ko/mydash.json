@@ -143,7 +143,7 @@
   "mydash.me.range": "{from} ~ {to}",
   "mydash.me.empty": "이 시기 자료 없음 (카톡 기록은 {from} 부터)",
   "mydash.me.none": "자료 없음",
-  "mydash.me.hideCard": "이 카드 다시 안 보기",
+  "mydash.me.hideCard": "숨기기",
   "mydash.me.hideWindow": "이 시기 숨기기",
   "mydash.me.allHidden": "이 시기 흔적을 모두 숨겼습니다",
   "mydash.me.hidden": "숨긴 것 {n}개",

@@ -143,7 +143,7 @@
   "mydash.me.range": "{from} ~ {to}",
   "mydash.me.empty": "この時期の記録なし (カカオの記録は{from}から)",
   "mydash.me.none": "データなし",
-  "mydash.me.hideCard": "このカードを今後表示しない",
+  "mydash.me.hideCard": "隠す",
   "mydash.me.hideWindow": "この時期を隠す",
   "mydash.me.allHidden": "この時期の記録はすべて隠しました",
   "mydash.me.hidden": "非表示{n}件",
