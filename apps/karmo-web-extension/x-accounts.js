@@ -169,8 +169,15 @@ async function xStep() {
  */
 async function collectXOwnedLists() {
   const me = location.pathname.split("/")[1].toLowerCase();
-  const cap = globalThis.__karmoCap;
-  const tpl = cap && cap.byOp && cap.byOp.ListsManagementPageTimeline;
+  const pick = () => {
+    const cap = globalThis.__karmoCap;
+    return cap && cap.byOp && cap.byOp.ListsManagementPageTimeline;
+  };
+  // 화면이 아직 요청 전일 수 있음 (실측: 리스트 0개)
+  for (let i = 0; i < 8 && !pick(); i += 1) {
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  const tpl = pick();
   if (!tpl) return [];
   const res = await fetch(tpl.url, { headers: tpl.headers, credentials: "include" });
   if (!res.ok) return [];
