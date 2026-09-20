@@ -107,6 +107,50 @@ async function removeBookmarks(ids) {
   return { ok, fail };
 }
 
+/** 탭 로드 대기. 30초 넘으면 그냥 간다 */
+function waitLoaded(tabId) {
+  return new Promise((resolve) => {
+    const done = (id, info) => {
+      if (id === tabId && info.status === "complete") {
+        chrome.tabs.onUpdated.removeListener(done);
+        setTimeout(resolve, 3000);
+      }
+    };
+    chrome.tabs.onUpdated.addListener(done);
+    setTimeout(() => { chrome.tabs.onUpdated.removeListener(done); resolve(); }, 30000);
+  });
+}
+
+/**
+ * 한 걸음씩 되부르기. MV3 워커는 30초 무활동이면 종료
+ * 긴 await 하나면 응답이 영영 안 옴 (2026-09-21 15분 멈춤 실측)
+ * @param {string} url 열 주소
+ * @param {string} file 주입할 파일
+ * @param {string} fnName done 을 돌려주는 걸음 함수
+ * @param {number} [maxSteps] 걸음 상한
+ */
+async function stepInTab(url, file, fnName, maxSteps) {
+  const tab = await chrome.tabs.create({ url, active: false });
+  try {
+    await waitLoaded(tab.id);
+    const where = { target: { tabId: tab.id }, world: "MAIN" };
+    await chrome.scripting.executeScript({ ...where, files: [file] });
+    let last = null;
+    for (let i = 0; i < (maxSteps || 90); i += 1) {
+      const [out] = await chrome.scripting.executeScript({
+        ...where,
+        func: (n) => globalThis[n](),
+        args: [fnName],
+      });
+      last = out && out.result;
+      if (!last || last.done) return last;
+    }
+    return last;
+  } finally {
+    try { await chrome.tabs.remove(tab.id); } catch { /* 이미 닫혔으면 무시 */ }
+  }
+}
+
 /**
  * 탭 개설 -> 주입 파일 실행 -> 탭 정리
  * @param {string} url 열 주소
@@ -117,17 +161,7 @@ async function removeBookmarks(ids) {
 async function runInTab(url, file, fnName, world) {
   const tab = await chrome.tabs.create({ url, active: false });
   try {
-    await new Promise((resolve) => {
-      const done = (id, info) => {
-        if (id === tab.id && info.status === "complete") {
-          chrome.tabs.onUpdated.removeListener(done);
-          resolve();
-        }
-      };
-      chrome.tabs.onUpdated.addListener(done);
-      setTimeout(() => { chrome.tabs.onUpdated.removeListener(done); resolve(); }, 30000);
-    });
-    await new Promise((r) => setTimeout(r, 3000));
+    await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id } };
     if (world) where.world = world;
     await chrome.scripting.executeScript({ ...where, files: [file] });
@@ -200,7 +234,7 @@ async function collectXAccounts() {
 
   const notes = [];
   const pull = async (url, kind) => {
-    const r = await runInTab(url, "x-accounts.js", "collectXTimeline", "MAIN");
+    const r = await stepInTab(url, "x-accounts.js", "xStep");
     add(r && r.rows, kind);
     notes.push(kind + " " + ((r && r.rows) || []).length + " " + (r ? r.note : "no-response"));
   };
