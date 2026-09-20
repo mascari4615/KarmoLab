@@ -58,13 +58,15 @@ async function dumpTsv(kind, rows) {
   return { file, count: (rows || []).length };
 }
 
-/** 한 갈래가 실패해도 나머지는 받는다 */
+/**
+ * 한 갈래가 실패해도 나머지는 받음
+ * X 는 여기 없다. 653 중 11 만 나오고 바퀴를 잡는다 (2026-09-21)
+ */
 async function collectAll() {
   const jobs = [
     ["youtube-history", () => collectYoutubeHistory(200)],
     ["chzzk-follows", async () => (await runInTab("https://chzzk.naver.com/", "follows.js", "collectChzzkFollows")).rows],
     ["soop-favorites", () => runInTab("https://www.sooplive.com/my/favorite", "follows.js", "collectSoopFavorites")],
-    ["x-accounts", async () => (await collectXAccounts()).rows],
   ];
   const out = [];
   for (const [kind, run] of jobs) {

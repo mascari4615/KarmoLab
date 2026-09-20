@@ -200,12 +200,12 @@ async function runInTab(url, file, fnName, world) {
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id } };
     if (world) where.world = world;
-    await chrome.scripting.executeScript({ ...where, files: [file] });
-    const [out] = await chrome.scripting.executeScript({
+    await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: [file] }));
+    const [out] = await within(60000, "call", chrome.scripting.executeScript({
       ...where,
       func: (n) => globalThis[n](),
       args: [fnName],
-    });
+    }));
     return out && out.result;
   } finally {
     try { await chrome.tabs.remove(tab.id); } catch { /* 이미 닫혔으면 무시 */ }
