@@ -55,3 +55,7 @@ async function collectSoopFavorites() {
     };
   });
 }
+
+// background 의 이름 호출용 전역 등록
+globalThis.collectChzzkFollows = collectChzzkFollows;
+globalThis.collectSoopFavorites = collectSoopFavorites;
