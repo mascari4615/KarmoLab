@@ -4,7 +4,7 @@ import path from 'path';
 import { PKG_ROOT } from '../../paths';
 import type { StateStore } from './state-store';
 import { channelIdFor } from '../channel-provision';
-import { DEFAULT_RESET_AUTHOR, classifyResetPost, formatKst, type ResetPost, type ResetSignal } from '../sources/codex-reset';
+import { DEFAULT_RESET_AUTHOR, RESET_POST_MAX_AGE_MS, classifyResetPost, formatKst, type ResetPost, type ResetSignal } from '../sources/codex-reset';
 import { closeResetBrowsers, createBrowserResetSource } from '../sources/codex-reset-browser';
 
 export interface ResetState {
@@ -101,7 +101,7 @@ export class ResetMonitor {
   async deliver(send: (signal: ResetSignal) => Promise<void>): Promise<number> {
     const now = this.deps.now?.() ?? Date.now();
     const pending = this.state.signals.filter(s => !this.state.sent.includes(s.post.id) && s.status !== 'uncertain'
-      && Date.parse(s.post.postedAt) >= now - 24 * 3_600_000 && Date.parse(s.post.postedAt) <= now + 60_000);
+      && Date.parse(s.post.postedAt) >= now - RESET_POST_MAX_AGE_MS && Date.parse(s.post.postedAt) <= now + 60_000);
     // 처음 켰을 때 과거 공지 일괄 발송 방지, 최신 관련 공지 한 건부터
     const firstDelivery = this.state.sent.length === 0;
     const selected = firstDelivery ? pending.slice(-1) : pending.slice(0, 3);

@@ -24,6 +24,7 @@ let passed = 0;
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
+  page.setDefaultTimeout(3_000);
   let html = '';
   await context.route('**/*', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: html }));
   html = card('101', 'other') + card('102') + card('99', author, 'older', true);
@@ -34,6 +35,14 @@ try {
   html = card('103', author, 'We have reset Codex usage.').replace('</article>', quote + '</article>');
   const post = await readBrowserPost(page, { id: '103', url: url('103') }, author);
   assert.equal(post.text, 'We have reset Codex usage.'); passed++;
+  html = card('201', 'other', 'Parent question') + card('202', author, 'We have reset Codex usage.');
+  assert.equal((await readBrowserPost(page, { id: '202', url: url('202') }, author)).id, '202'); passed++;
+  html = card('203', author, 'My older parent post') + card('204', author, 'We will reset Codex usage tomorrow.');
+  assert.equal((await readBrowserPost(page, { id: '204', url: url('204') }, author)).text, 'We will reset Codex usage tomorrow.'); passed++;
+  html = card('205', 'other', 'Parent loaded first') + `<script>setTimeout(() => document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(card('206', author, 'We have reset Codex usage.'))}), 150)</script>`;
+  assert.equal((await readBrowserPost(page, { id: '206', url: url('206') }, author)).id, '206'); passed++;
+  html = card('207', author, 'Parent quoting target').replace('</article>', `<div role="link"><a href="/${author}/status/208"><time datetime="${at}">quoted time</time></a><div data-testid="tweetText">Quoted old text</div></div></article>`) + card('208', author, 'We have reset Codex usage.');
+  assert.equal((await readBrowserPost(page, { id: '208', url: url('208') }, author)).text, 'We have reset Codex usage.'); passed++;
   html = card('104', author, '').replace('</article>', quote + '</article>');
   assert.equal((await readBrowserPost(page, { id: '104', url: url('104') }, author)).text, ''); passed++;
 
@@ -48,6 +57,14 @@ try {
   html = card('999', author, 'pinned old announcement', true) + card('110') + card('109') + card('108') + card('107') + card('106') + card('105');
   const posts = await discoverBrowserPosts(page, author, '109');
   assert.deepEqual(posts.map(p => p.id).sort(), ['110', '999']); passed++;
+
+  const expired = new Date(Date.now() - 25 * 3_600_000).toISOString();
+  html = card('310', author, 'Recent announcement') + [309, 308, 307, 306, 305, 304].map(id => card(String(id)).replace(at, expired)).join('');
+  assert.deepEqual((await discoverBrowserPosts(page, author, '101')).map(p => p.id), ['310']); passed++;
+  html = [309, 308, 307, 306, 305, 304].map(id => card(String(id)).replace(at, expired)).join('');
+  assert.deepEqual(await discoverBrowserPosts(page, author, '101'), []); passed++;
+  html = card('310');
+  await assert.rejects(discoverBrowserPosts(page, author, '101'), /추가 로딩 실패/); passed++;
 
   let saved = { author, seen: [], sent: [], signals: [], checkedAt: null };
   const store = { load: () => structuredClone(saved), save: value => { saved = structuredClone(value); } };

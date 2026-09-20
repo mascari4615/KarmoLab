@@ -14,6 +14,7 @@ export interface ResetSignal {
 }
 
 export const DEFAULT_RESET_AUTHOR = 'thsottiaux';
+export const RESET_POST_MAX_AGE_MS = 24 * 3_600_000;
 
 function parsePostUrl(input: string): { author: string; id: string; url: string } {
   let url: URL;

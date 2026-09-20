@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
 import { PKG_ROOT } from '../../paths';
-import type { ResetPost } from './codex-reset';
+import { RESET_POST_MAX_AGE_MS, type ResetPost } from './codex-reset';
 
 export const browserSessionPath = () => path.join(PKG_ROOT, 'data', 'codex-reset-browser', 'session.json');
 type BrowserSession = Awaited<ReturnType<BrowserContext['storageState']>>;
@@ -71,6 +71,9 @@ export async function discoverBrowserPosts(page: Page, author: string, sinceId?:
   await page.goto(`https://x.com/${author}/with_replies`, { waitUntil: 'domcontentloaded' });
   await requireTimeline(page);
   const found = new Map<string, Card>();
+  // 장기 장애 후에도 발송 가능한 최근 24시간부터 복구. 과거 cursor 때문에 영구 정지 방지
+  const cutoff = Date.now() - RESET_POST_MAX_AGE_MS;
+  const isPending = (card: Card) => !sinceId || (BigInt(card.id) > BigInt(sinceId) && Date.parse(card.postedAt) >= cutoff);
   let crossed = false;
   let olderScreens = 0;
   let previous = '';
@@ -78,10 +81,10 @@ export async function discoverBrowserPosts(page: Page, author: string, sinceId?:
     const cards = await readTimelineCards(page, author);
     for (const card of cards) {
       if (!Number.isFinite(Date.parse(card.postedAt))) throw new ResetBrowserError('incomplete', 'X 게시 시각 확인 실패');
-      if (!sinceId || BigInt(card.id) > BigInt(sinceId)) found.set(card.id, card);
+      if (isPending(card)) found.set(card.id, card);
     }
-    const older = cards.some(c => !c.pinned && BigInt(c.id) <= BigInt(sinceId || '0'));
-    const newer = cards.some(c => !c.pinned && BigInt(c.id) > BigInt(sinceId || '0'));
+    const older = cards.some(c => !c.pinned && !isPending(c));
+    const newer = cards.some(c => !c.pinned && isPending(c));
     crossed ||= older;
     // 답글 묶음과 고정 글의 역순 배치 때문에 첫 과거 글에서 중단 금지
     olderScreens = crossed && older && !newer ? olderScreens + 1 : 0;
@@ -103,7 +106,12 @@ export async function discoverBrowserPosts(page: Page, author: string, sinceId?:
 export async function readBrowserPost(page: Page, card: Pick<Card, 'id' | 'url'>, author: string): Promise<ResetPost> {
   await page.goto(card.url, { waitUntil: 'domcontentloaded' });
   await requireTimeline(page);
-  const article = page.locator('article[data-testid="tweet"]').first();
+  // 답글 화면의 부모 글과 인용 대신 요청 ID의 본문 선택. 늦게 붙는 대상도 대기
+  const article = page.locator('article[data-testid="tweet"]').filter({
+    has: page.locator(`a[href="/${author}/status/${card.id}" i]:not([role="link"]:not(a) a) time`),
+  });
+  try { await article.waitFor({ state: 'attached' }); }
+  catch { throw new ResetBrowserError('incomplete', `X 대상 원문/작성자 확인 실패 (${card.id})`); }
   const original = article.locator('button:not([role="link"] button)').filter({ hasText: /^(Show original|View original|원본 보기)$/i }).first();
   if (await original.count()) {
     await original.click();
@@ -117,7 +125,7 @@ export async function readBrowserPost(page: Page, card: Pick<Card, 'id' | 'url'>
     return { authorOk, postedAt: time?.getAttribute('datetime'), text: text?.innerText || '', lang: text?.lang || '',
       truncated: [...element.querySelectorAll('[data-testid="tweet-text-show-more-link"]')].some(n => !n.closest('[role="link"]')) };
   }, { author, id: card.id });
-  if (!post.authorOk || !Number.isFinite(Date.parse(post.postedAt)) || post.truncated) throw new ResetBrowserError('incomplete', 'X 전체 원문/작성자/게시 시각 확인 실패');
+  if (!post.authorOk || !Number.isFinite(Date.parse(post.postedAt)) || post.truncated) throw new ResetBrowserError('incomplete', `X 전체 원문/작성자/게시 시각 확인 실패 (${card.id})`);
   if (await original.count()) throw new ResetBrowserError('incomplete', 'X 원본 전환 실패. 번역문으로 판정하지 않음');
   return { id: card.id, url: card.url, text: post.text, postedAt: new Date(post.postedAt).toISOString() };
 }
