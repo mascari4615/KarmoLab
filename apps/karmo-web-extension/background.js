@@ -1,3 +1,5 @@
+importScripts("schedule.js");
+
 /**
  * MV3 service worker. 배지, 알림, 메시지 중계 등은 여기에 추가.
  *
@@ -171,6 +173,36 @@ async function collectYoutubeHistory(rounds) {
   }
 }
 
+/** X 핸들. 바꾸려면 storage 에 karmo.xHandle 로 넣는다 */
+async function xHandle() {
+  const v = (await chrome.storage.local.get("karmo.xHandle"))["karmo.xHandle"];
+  return v || "Mascari4615";
+}
+
+/**
+ * 팔로잉과 내가 만든 리스트 멤버를 한 표로
+ * 남이 만든 리스트는 안 담는다 (사용자 2026-09-20)
+ * @returns {Promise<Array<{handle:string,name:string,kind:string,bio:string}>>}
+ */
+async function collectXAccounts() {
+  const me = await xHandle();
+  const merged = new Map();
+  const add = (rows, kind) => {
+    for (const r of rows || []) {
+      const cur = merged.get(r.handle);
+      if (cur) cur.kind = cur.kind.includes(kind) ? cur.kind : cur.kind + "," + kind;
+      else merged.set(r.handle, { handle: r.handle, name: r.name, bio: r.bio, kind });
+    }
+  };
+
+  add(await runInTab("https://x.com/" + me + "/following", "x-accounts.js", "collectXUserCells"), "\ud314\ub85c\uc789");
+  const lists = await runInTab("https://x.com/" + me + "/lists", "x-accounts.js", "collectXOwnedLists");
+  for (const l of lists || []) {
+    add(await runInTab("https://x.com/i/lists/" + l.id + "/members", "x-accounts.js", "collectXUserCells"), l.name || l.id);
+  }
+  return [...merged.values()];
+}
+
 /** 웹페이지(허용 도메인) → 확장 */
 chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
   (async () => {
@@ -200,6 +232,13 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "soop.favorites") {
         const rows = await runInTab("https://www.sooplive.com/my/favorite", "follows.js", "collectSoopFavorites");
         sendResponse({ ok: true, count: (rows || []).length, rows });
+      } else if (msg?.type === "x.accounts") {
+        const rows = await collectXAccounts();
+        sendResponse({ ok: true, count: rows.length, rows });
+      } else if (msg?.type === "collect.all") {
+        sendResponse({ ok: true, results: await collectAll() });
+      } else if (msg?.type === "collect.status") {
+        sendResponse({ ok: true, last: (await chrome.storage.local.get(STATE_KEY))[STATE_KEY] || null });
       } else if (msg?.type === "ext.version") {
         const m = chrome.runtime.getManifest();
         sendResponse({ ok: true, version: m.version, name: m.name });
