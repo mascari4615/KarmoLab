@@ -238,6 +238,7 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-veil: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15) 55%, rgba(255, 255, 255, 0));
   --mydh-shadow: 0 16px 40px -28px rgba(24, 34, 56, 0.55);
   --mydh-page: #cfe0f3;
+  --mydh-sky-pale: #a9c6e6;
   --mydh-white: #fff;
   --mydh-hero-bg: rgba(24, 34, 56, 0.82);
   --mydh-hero-line: rgba(255, 255, 255, 0.3);

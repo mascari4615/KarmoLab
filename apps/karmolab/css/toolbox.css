@@ -1055,8 +1055,11 @@ html[data-view="tool"] .main-content { background: var(--bg-primary); }
     --lq-acc: #e8862e;
     --lq-acc-ink: #ffffff;
     --lq-bg: #c9d6e4;
-    --lq-veil: rgba(255, 255, 255, 0.42);
-    --lq-photo: brightness(1.05) saturate(0.6);
+    --lq-bg2: #a9c6e6;
+    --lq-bg3: #eef3f8;
+    --lq-shape: rgba(255, 255, 255, 0.55);
+    --lq-shape2: rgba(255, 255, 255, 0.35);
+    --lq-veil: rgba(255, 255, 255, 0.12);
     --lq-shadow: 0 20px 50px -30px rgba(24, 34, 56, 0.5);
     --lq-fs-en: 10px;
     --lq-fs-date: 28px;
@@ -1085,8 +1088,11 @@ html[data-view="tool"] .main-content { background: var(--bg-primary); }
     --lq-acc: #f0a04b;
     --lq-acc-ink: #101418;
     --lq-bg: #0f141c;
-    --lq-veil: rgba(10, 14, 20, 0.55);
-    --lq-photo: brightness(0.55) saturate(0.4);
+    --lq-bg2: #1a2536;
+    --lq-bg3: #0a0d12;
+    --lq-shape: rgba(255, 255, 255, 0.06);
+    --lq-shape2: rgba(255, 255, 255, 0.04);
+    --lq-veil: rgba(10, 14, 20, 0.2);
     --lq-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.8);
 }
 .landing-q2::before {
@@ -1094,8 +1100,10 @@ html[data-view="tool"] .main-content { background: var(--bg-primary); }
     position: absolute;
     inset: 0;
     z-index: -2;
-    background: url('/apps/karmolab/img/widgets/mydash/bg-glasscity.webp') center / cover;
-    filter: var(--lq-photo);
+    background:
+        linear-gradient(115deg, var(--lq-shape) 0 22%, transparent 22% 23%, transparent 100%),
+        linear-gradient(295deg, var(--lq-shape2) 0 18%, transparent 18% 19%, transparent 100%),
+        linear-gradient(160deg, var(--lq-bg2) 0%, var(--lq-bg) 60%, var(--lq-bg3) 100%);
 }
 .landing-q2::after {
     content: "";
