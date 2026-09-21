@@ -298,6 +298,20 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "youtube.history") {
         const rows = await collectYoutubeHistory(msg.rounds);
         sendResponse({ ok: true, count: rows.length, rows });
+      } else if (msg?.type === "ytmusic.history") {
+        // \ubb34\uac70\uc6b4 \uc751\ub2f5\uc740 \uc720\uc2e4\ub41c\ub2e4. \ud30c\uc77c\ub85c
+        (async () => {
+          try {
+            const r = await stepInTab("https://music.youtube.com/history", "youtube-history.js", "ytStep");
+            const out = await dumpTsv("ytmusic-history", (r && r.rows) || []);
+            await chrome.storage.local.set({ "karmo.lastYtm": { at: new Date().toISOString(), file: out.file, count: out.count, note: r && r.note } });
+          } catch (e) {
+            await chrome.storage.local.set({ "karmo.lastYtm": { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) } });
+          }
+        })();
+        sendResponse({ ok: true, started: true });
+      } else if (msg?.type === "ytmusic.last") {
+        sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.lastYtm"))["karmo.lastYtm"] || null });
       } else if (msg?.type === "chzzk.follows") {
         const r = await runInTab("https://chzzk.naver.com/", "follows.js", "collectChzzkFollows");
         sendResponse({ ok: true, count: (r && r.rows || []).length, total: r && r.total, rows: r && r.rows });
