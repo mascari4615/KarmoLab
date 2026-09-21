@@ -21,6 +21,8 @@ import {
   type MemoSyncConfig,
   type GitRunner,
   type MemoSyncAlert,
+  parsePorcelain,
+  realEdits,
 } from './memo-sync';
 
 const CFG: MemoSyncConfig = {
@@ -171,6 +173,46 @@ describe('syncMemoOnce. skip 이면 reset X / 변경이면 reset --hard', () => 
     });
     await syncMemoOnce(CFG, git, silentLogger);
     expect(resets).toBe(1);
+  });
+});
+
+describe('realEdits. 잃을 내용이 있는 편집만 센다 (2026-09-21 오탐 회귀)', () => {
+  const H = (...blobs: string[]) => () => new Set(blobs);
+  const none = () => new Set<string>();
+
+  it('공유 checkout 실측: 유령 삭제 7 + 옛 커밋 그대로인 M 2 = 편집 0 (봇 되감기가 치워야 할 잔재)', () => {
+    const out = [
+      ' D notes/mydash/design/skill-bench/X4-calendar.html',
+      ' D notes/mydash/design/skill-bench/shots/X456.png',
+      ' M notes/mydash/design/skill-bench/index.html',
+      ' M notes/mydash/design/tools-2026-09-20.md',
+    ].join('\n');
+    const entries = parsePorcelain(out);
+    const disk = (p: string) => (p.endsWith('index.html') ? 'old111' : 'old222');
+    const history = (p: string) => (p.endsWith('index.html') ? new Set(['new111', 'old111']) : new Set(['new222', 'old222']));
+    expect(realEdits(entries, disk, history)).toEqual([]);
+  });
+
+  it('디스크 내용이 어느 이력과도 다르면 진짜 편집', () => {
+    const entries = parsePorcelain(' M rules/git.md\n M README.md');
+    const disk = (p: string) => (p === 'rules/git.md' ? 'mine999' : 'old222');
+    const history = (p: string) => (p === 'rules/git.md' ? new Set(['a', 'b']) : new Set(['old222']));
+    expect(realEdits(entries, disk, history)).toEqual(['rules/git.md']);
+  });
+
+  it('스테이지된 변경(인덱스 M/A)은 이력 대조 없이 편집으로 센다', () => {
+    const entries = parsePorcelain('M  a.md\nA  b.md\nMM c.md\n D d.md');
+    expect(realEdits(entries, () => 'x', H('x'))).toEqual(['a.md', 'b.md', 'c.md']);
+  });
+
+  it('디스크 blob 을 못 구한 경로는 안 센다 (읽기 실패로 되감기를 막지 않는다)', () => {
+    const entries = parsePorcelain(' M a.md');
+    expect(realEdits(entries, () => undefined, none)).toEqual([]);
+  });
+
+  it('parsePorcelain. 빈 출력과 꼬리 공백', () => {
+    expect(parsePorcelain('')).toEqual([]);
+    expect(parsePorcelain(' M a b.md \n')).toEqual([{ xy: ' M', path: 'a b.md' }]);
   });
 });
 

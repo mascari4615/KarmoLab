@@ -81,6 +81,55 @@ export interface GitRunner {
   trackedDirty(cfg: MemoSyncConfig): Promise<string[]>;
 }
 
+/** `git status --porcelain` 한 줄. XY 두 글자 + 공백 + 경로. */
+export interface StatusEntry {
+  xy: string;
+  path: string;
+}
+
+export function parsePorcelain(out: string): StatusEntry[] {
+  return out
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 3)
+    .map((line) => ({ xy: line.slice(0, 2), path: line.slice(3) }));
+}
+
+/**
+ * 순수 판정: status 항목 중 **잃을 내용이 있는 편집**만 고른다.
+ *
+ * 왜 status 그대로 안 쓰나 (2026-09-21 실측, 첫 가드 배포 직후):
+ *  - ` D` (디스크에 없음) 는 lane push 의 공유 트리 따라잡기(`reset --mixed`)가 origin 이 새로
+ *    추가한 파일을 디스크에 안 써서 생긴 유령이다. reset --hard 가 되살릴 뿐 잃는 것이 없다.
+ *  - ` M` 도 대부분 같은 잔재다. 디스크가 **옛 커밋의 그 파일 그대로**인 것. 진짜 편집은
+ *    디스크 내용이 그 경로의 최근 어느 커밋과도 다르다.
+ * 그래서 M 계열만 보고, 디스크 blob 이 그 경로의 최근 이력 blob 어디에도 없을 때만 센다.
+ * 이걸 안 가르면 봇의 10분 되감기(= 유령을 치우던 안전망)가 잔재 앞에서 영영 멈춘다.
+ *
+ * @param entries    parsePorcelain 결과
+ * @param diskBlob   path → 디스크 내용의 blob sha (없으면 undefined)
+ * @param historyBlobs path → 그 경로의 최근 이력 blob sha 집합
+ */
+export function realEdits(
+  entries: StatusEntry[],
+  diskBlob: (path: string) => string | undefined,
+  historyBlobs: (path: string) => Set<string>,
+): string[] {
+  const out: string[] = [];
+  for (const { xy, path } of entries) {
+    const worktree = xy[1];
+    const index = xy[0];
+    // 디스크에 없음 = 잃을 내용 없음. 인덱스에만 있는 변경(스테이지)은 편집으로 센다.
+    if (worktree === 'D' && index === ' ') continue;
+    if (index !== ' ' && index !== 'D') { out.push(path); continue; }
+    const blob = diskBlob(path);
+    if (blob === undefined) continue;
+    if (historyBlobs(path).has(blob)) continue;
+    out.push(path);
+  }
+  return out;
+}
+
 /** 미커밋 편집 때문에 reset 을 보류한 실패. 상태 전이 alert 로 올라간다. */
 export class MemoSyncDirtyError extends Error {
   constructor(readonly files: string[]) {
@@ -221,19 +270,23 @@ function maskToken(msg: string, token: string): string {
  * git 패턴과 동형이되 비차단 위해 execFile(async).
  */
 export function createGitRunner(): GitRunner {
-  const run = (
+  const runWithInput = (
     cfg: MemoSyncConfig,
     args: string[],
+    input: string | undefined,
     timeoutMs: number,
+    // status --porcelain 은 첫 글자가 공백일 수 있다(` M`). trim 하면 경로가 한 글자 밀린다 (실측).
+    keepRaw = false,
   ): Promise<string> =>
     new Promise<string>((resolve, reject) => {
-      execFile(
+      const child = execFile(
         'git',
         ['-C', cfg.memoRepoPath, ...args],
         {
           timeout: timeoutMs,
           encoding: 'utf-8',
           windowsHide: true,
+          maxBuffer: 64 * 1024 * 1024,
           env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
         },
         (err, stdout, stderr) => {
@@ -242,10 +295,14 @@ export function createGitRunner(): GitRunner {
             reject(new Error(maskToken(raw, cfg.token)));
             return;
           }
-          resolve(String(stdout).trim());
+          resolve(keepRaw ? String(stdout) : String(stdout).trim());
         },
       );
+      // 경로 목록은 stdin 으로. argv 에 펼치면 윈도우 명령줄 한도(32K)에 걸린다.
+      if (input !== undefined && child.stdin) child.stdin.end(input);
     });
+  const run = (cfg: MemoSyncConfig, args: string[], timeoutMs: number): Promise<string> =>
+    runWithInput(cfg, args, undefined, timeoutMs);
 
   return {
     async fetch(cfg) {
@@ -261,12 +318,31 @@ export function createGitRunner(): GitRunner {
       await run(cfg, ['reset', '--hard', 'FETCH_HEAD'], DEFAULT_TIMEOUT_MS);
     },
     async trackedDirty(cfg) {
-      const out = await run(cfg, ['status', '--porcelain', '--untracked-files=no'], 15_000);
-      return out
-        .split('\n')
-        .map((line) => line.trimEnd())
-        .filter((line) => line.length > 3)
-        .map((line) => line.slice(3));
+      const entries = parsePorcelain(
+        await runWithInput(cfg, ['status', '--porcelain', '--untracked-files=no'], undefined, 15_000, true),
+      );
+      if (entries.length === 0) return [];
+      // 디스크 blob 은 한 번에 (경로마다 git 을 띄우면 수천 개에서 몇십 분).
+      const present = entries.filter((e) => e.xy[1] !== 'D').map((e) => e.path);
+      const disk = new Map<string, string>();
+      if (present.length > 0) {
+        const hashes = (await runWithInput(
+          cfg, ['hash-object', '--stdin-paths'], present.join('\n') + '\n', DEFAULT_TIMEOUT_MS,
+        )).split('\n');
+        present.forEach((p, i) => { if (hashes[i]) disk.set(p, hashes[i].trim()); });
+      }
+      // 경로별 최근 이력 blob. `--raw --no-abbrev` 한 줄 = `:mode mode oldsha newsha status`.
+      const history = new Map<string, Set<string>>();
+      for (const p of present) {
+        const raw = await run(cfg, ['log', '-n', '50', '--format=', '--raw', '--no-abbrev', '--', p], 15_000);
+        const blobs = new Set<string>();
+        for (const line of raw.split('\n')) {
+          const m = /^:\d+ \d+ ([0-9a-f]{40}) ([0-9a-f]{40})/.exec(line);
+          if (m) { blobs.add(m[1]); blobs.add(m[2]); }
+        }
+        history.set(p, blobs);
+      }
+      return realEdits(entries, (p) => disk.get(p), (p) => history.get(p) ?? new Set());
     },
   };
 }
