@@ -212,11 +212,13 @@ function runGate(gate) {
        돌고(없으면 EINVAL), shell 에 인자 배열을 같이 주면 Node 가 매 판 DEP0190 경고를 찍는다.
        그 경고가 tail 열두 줄을 채우면 검사의 제 말이 또 밀려난다. 이름은 우리 목록에서만 온다. */
     const direct = directCommand(gate);
+    const gateEnvironment = { ...process.env, KL_WAIT: process.env.KL_WAIT || '30000' };
     const child = direct
-      ? spawn(direct.cmd, direct.args, { cwd: appRoot, stdio: ['inherit', 'pipe', 'pipe'] })
+      ? spawn(direct.cmd, direct.args, { cwd: appRoot, stdio: ['inherit', 'pipe', 'pipe'], env: gateEnvironment })
       : spawn(`${npm} run --silent ${gate}`, {
           stdio: ['inherit', 'pipe', 'pipe'],
-          shell: true
+          shell: true,
+          env: gateEnvironment
         });
     /* ★ **같이 도니까 흘려보내면 안 된다** (2026-08-19). 여덟 판이 한 화면에 섞여 찍히면
        어느 검사가 한 말인지 못 가린다. 사유 없는 빨강과 같아진다. 모았다가 끝날 때
@@ -256,14 +258,13 @@ const timesFile = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 
 let previousTimes = {};
 try { previousTimes = JSON.parse(readFileSync(timesFile, 'utf8')); } catch { /* 처음이면 없다 */ }
 
-/* ★ **폭이 8로 묶여 있었다.** 코어 스물넷인 자리에서 스물둘이 논다. 폭을 올리는 것을 막던
-   것은 RAM 이다. 검사 절반이 크로미움을 띄우고 한 개가 200~400MB 라, 폭 16을 그냥 주면
-   최악 6GB 다. 그래서 **세는 자리를 둘로 나눈다**: 전체 폭과 브라우저 폭.
-   브라우저 폭은 예전 그대로 8이므로 메모리 최고점은 안 오르고, 나머지 여덟 자리는 파일만
-   읽는 검사가 채운다. */
+/* Limit browser contention as well as memory. On 2026-09-21, 16 workers / 8 browsers
+   produced intermittent readiness and presence failures. With 4 / 2, arcade took
+   53s instead of 101s and accessibility 57s instead of 96s. Keep explicit overrides
+   for dedicated runners; give condition waits the same 30s budget used in CI. */
 const cpuCount = os.cpus().length || 4;
-const workerCount = Math.max(1, Number(process.env.KL_GATE_JOBS || Math.min(16, cpuCount - 2)));
-const browserLimit = Math.max(1, Number(process.env.KL_GATE_BROWSER_JOBS || Math.min(8, workerCount)));
+const workerCount = Math.max(1, Number(process.env.KL_GATE_JOBS || Math.min(4, cpuCount - 2)));
+const browserLimit = Math.max(1, Number(process.env.KL_GATE_BROWSER_JOBS || Math.min(2, workerCount)));
 /* 모르는 검사는 **중간쯤**으로 친다. 맨 앞에 세우면 새 검사 하나가 판을 늘어뜨리고,
    맨 뒤에 세우면 사실 긴 놈이 꼬리에 남는다. */
 const knownTimes = Object.values(previousTimes).filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
