@@ -113,6 +113,15 @@
         background:var(--bg-tertiary); overflow-x:auto; }
     .md pre code { padding:0; background:none; }
     .md hr { border:0; border-top:1px solid var(--border); margin:14px 0; }
+    /* 표. marked 가 맨 <table> 로 내보내는데 규칙이 하나도 없어 칸 여백 0, 줄 없음, 머리 가운데 정렬로
+       나왔다 (2026-09-21 실측, 표 쓰는 글 15편). 게시판 목록 .c-table 과 같은 결. 넓은 표는 제 안에서 가로 스크롤. */
+    .md table { display:block; max-width:100%; overflow-x:auto; margin:0 0 12px;
+        border-collapse:collapse; font-size:var(--font-size-sm); line-height:1.5; }
+    .md th, .md td { padding:6px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+    .md thead th { border-top:2px solid var(--text-tertiary); border-bottom:1px solid var(--text-tertiary);
+        font-weight:700; color:var(--text-primary); white-space:nowrap; }
+    .md td:first-child { white-space:nowrap; color:var(--text-primary); }
+    .md tbody tr:hover td { background:var(--bg-secondary); }
     .md a { color:var(--accent-ink); }
     .c-signin { display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:space-between;
         padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius-lg);
