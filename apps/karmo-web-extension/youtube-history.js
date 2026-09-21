@@ -73,17 +73,16 @@ function ytHarvest(node, seen, day, out) {
       });
     }
   }
-  if (node.videoRenderer) {
-    const v = node.videoRenderer;
-    if (v.videoId && !seen.has(v.videoId)) {
-      seen.set(v.videoId, {
-        id: v.videoId,
-        day: day || "",
-        duration: ytText(v.lengthText),
-        channel: ytText(v.ownerText),
-        title: ytText(v.title),
-      });
-    }
+  // 재생목록 화면은 playlistVideoRenderer (2026-09-21 실측, 0곡)
+  const v2 = node.videoRenderer || node.playlistVideoRenderer;
+  if (v2 && v2.videoId && !seen.has(v2.videoId)) {
+    seen.set(v2.videoId, {
+      id: v2.videoId,
+      day: day || "",
+      duration: ytText(v2.lengthText),
+      channel: ytText(v2.shortBylineText) || ytText(v2.ownerText),
+      title: ytText(v2.title),
+    });
   }
   if (node.continuationCommand && node.continuationCommand.token) out.token = node.continuationCommand.token;
   for (const k of Object.keys(node)) ytHarvest(node[k], seen, day, out);
