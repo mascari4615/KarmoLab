@@ -270,6 +270,7 @@
     "sync:tools": "npm run gen:og && npm run gen:tool-pages && npm run measure:heights && npm run gen:tool-pages && npm run gen:tool-pages-locale && npm run audit:heights && node scripts/after-sync-note.mjs",
     "test:3d": "node scripts/run-node-tests.mjs ../../packages/3d/test",
     "test:a11y": "node scripts/smoke-a11y.mjs",
+    "test:a11y:ready": "node scripts/test-a11y-ready.mjs",
     "test:a11y:all": "node scripts/run-a11y-all.mjs",
     "test:afade": "node scripts/test-audiofade.mjs",
     "test:ai": "node scripts/smoke-ai-import.mjs",

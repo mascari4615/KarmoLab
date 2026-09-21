@@ -21,6 +21,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { waitForA11yScreen } from './lib/a11y-ready.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -54,7 +55,7 @@ function allToolScreens() {
 const SCREENS = [
   ['첫 화면', '/apps/karmolab/'],
   ['도구 한 장', '/apps/karmolab/#passgen'],
-  ['도구 목록', '/apps/karmolab/#tools'],
+  ['도구 목록', '/apps/blog/t/'],
   /* ★ **검색으로 들어오는 정문을 안 재고 있었다** (2026-08-16). 위 셋은 전부 앱 껍데기다.
      사람 대부분이 처음 밟는 자리는 도구 상세 장(129장)인데 그 장은 껍데기에 SEO 글 뭉치가
      더 붙어 나간다. 그래서 껍데기에 없는 위반이 거기에만 있었다(실측: 129장 전부에
@@ -186,11 +187,24 @@ for (const skin of RUN_SKINS) for (const theme of RUN_THEMES) {
       console.error('  이건 문제 없음이 아니라 **아무것도 안 봤다**는 뜻이다. 통과로 안 센다.');
       process.exit(2);
     }
-    /* 재움-의도: 늦게 오는 조각(장식, 지연 위젯)이 다 붙기를 기다린다. 읽어서 판정할
-       상태가 없다. axe 는 그 순간의 화면 전체를 재는 것이라 기다릴 표식이 없다 */
+    /* 재움-의도: 위젯 내부의 비동기 조각 관찰 시간.
+       셸 등록과 등장 효과는 아래에서 실제 완료 상태 확인. */
     await page.waitForTimeout(1800);
     await page.addScriptTag({ content: axeSource });
+    try {
+      await waitForA11yScreen(page);
+    } catch (error) {
+      console.error(`[smoke-a11y] CANNOT-RUN: ${name} 로딩이나 화면 전환이 끝나지 않았다. ${error.message}`);
+      await browser.close();
+      server.close();
+      process.exit(2);
+    }
     const violations = await page.evaluate(async () => {
+      const animations = document.getAnimations().map((a) => ({
+        target: a.effect?.target?.id || a.effect?.target?.className,
+        state: a.playState, time: a.currentTime,
+        timing: a.effect?.getComputedTiming(),
+      }));
       /* 대비 견본은 **낮은 대비를 보여 주는 것이 일**. 색 도구 둘이 그런 경우
          "이 색 위 흰 글자가 3.8" 을 보여 주는 칸이라 규칙 준수 불가
          같은 값은 낭독기용 글로(`.kl-sr`), 그림 쪽은 검사에서 제외 */
@@ -207,8 +221,17 @@ for (const skin of RUN_SKINS) for (const theme of RUN_THEMES) {
         const measured = d && d.contrastRatio != null
           ? `${d.fgColor} on ${d.bgColor} = ${d.contrastRatio} (필요 ${d.expectedContrastRatio})`
           : '';
+        const presentation = [];
+        const selector = n0?.target?.[0];
+        let el = typeof selector === 'string' ? document.querySelector(selector) : null;
+        for (; el; el = el.parentElement) {
+          const css = getComputedStyle(el);
+          presentation.push({ tag: el.tagName, id: el.id, cls: el.className,
+            color: css.color, bg: css.backgroundColor, opacity: css.opacity,
+            animation: css.animation });
+        }
         return { id: v.id, impact: v.impact, n: v.nodes.length, help: v.help,
-          sample: (n0?.target || []).join(' '), measured };
+          sample: (n0?.target || []).join(' '), measured, presentation, animations };
       });
     });
     for (const v of violations) failures.push({ theme: `${skin}/${theme}`, name, ...v });
@@ -273,6 +296,7 @@ if (grown.length > 0) {
     console.error(`        ${f.help}`);
     console.error(`        예: ${f.sample.slice(0, 90)}`);
     if (f.measured) console.error(`        잰 값: ${f.measured}`);
+    console.error(`        화면 상태: ${JSON.stringify({ presentation: f.presentation, animations: f.animations })}`);
   }
   console.error('\n색, 이름표를 자리마다 박지 말고 토큰, 공용 뼈대(shared/markup.ts)를 쓴다.\n');
   process.exit(1);
