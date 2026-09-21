@@ -13,7 +13,7 @@ const STATE_KEY = "karmo.lastCollect";
 /** 갈래별 파일 이름과 열 순서. 기존 raw TSV 헤더와 같아야 한다 */
 const SPECS = {
   "youtube-history": ["id", "day", "duration", "channel", "title"],
-  "ytmusic-history": ["id", "day", "duration", "channel", "title"],
+  "ytmusic-history": ["id", "day", "duration", "channel", "title", "album"],
   "chzzk-follows": ["name", "id", "followers", "notify", "followedAt"],
   "soop-favorites": [
     ["name", "name"],
