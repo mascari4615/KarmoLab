@@ -169,9 +169,10 @@ async function xStep() {
  */
 async function collectXOwnedLists() {
   const me = location.pathname.split("/")[1].toLowerCase();
-  const pick = () => {
+  // 고정 리스트는 PinnedTimelines 로 따로 옴 (실측: 주목 15명 계속 누락)
+  const pick = (op) => {
     const cap = globalThis.__karmoCap;
-    return cap && cap.byOp && cap.byOp.ListsManagementPageTimeline;
+    return cap && cap.byOp && cap.byOp[op || "ListsManagementPageTimeline"];
   };
   // 화면이 아직 요청 전일 수 있음 (실측: 리스트 0개)
   for (let i = 0; i < 8 && !pick(); i += 1) {
@@ -196,6 +197,14 @@ async function collectXOwnedLists() {
     if (n.cursorType === "Bottom" && n.value) cursors.push(n.value);
     for (const k of Object.keys(n)) walk(n[k], d + 1, cursors);
   };
+
+  const pinned = pick("PinnedTimelines");
+  if (pinned) {
+    try {
+      const r = await fetch(pinned.url, { headers: pinned.headers, credentials: "include" });
+      if (r.ok) walk(await r.json(), 0, []);
+    } catch { /* 고정 목록은 없을 수도 */ }
+  }
 
   // 목록도 한 번에 다 안 옴. 커서로 이어받기 (실측: 판마다 내 리스트 하나)
   const base = new URL(tpl.url);
