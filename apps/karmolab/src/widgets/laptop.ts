@@ -111,7 +111,7 @@ import { t, loadNamespace } from '../lib/i18n';
             </div>
             <div class="lap-vitals" id="lapVitals" hidden></div>
             <div class="lap-key">
-              <input type="password" id="lapKey" autocomplete="off" placeholder="${esc(t('laptop.t16'))}">
+              <input type="password" id="lapKey" autocomplete="current-password" placeholder="${esc(t('laptop.t16'))}">
               <button type="button" id="lapShow">${esc(t('laptop.t17'))}</button>
               <button type="button" id="lapForget" hidden>${esc(t('laptop.t18'))}</button>
             </div>

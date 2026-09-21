@@ -1157,6 +1157,7 @@ import { t, loadNamespace } from '../lib/i18n';
             .sm-refresh-progress { display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-size-2xs); color: var(--text-tertiary); min-height: 16px; }
             .sm-spinner { width: 14px; height: 14px; flex-shrink: 0; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: sm-spin 0.7s linear infinite; }
             @keyframes sm-spin { to { transform: rotate(360deg); } }
+            @media (prefers-reduced-motion: reduce) { .sm-spinner { animation: none; border-top-color: var(--accent); } }
             .sm-desktop-section-title { font-weight: 700; margin-bottom: 10px; color: var(--accent-ink); }
             .sm-local-services { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
             .sm-card--merged { min-height: auto; position: relative; display: flex; flex-direction: column; padding: 0; gap: 0; }

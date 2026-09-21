@@ -1362,9 +1362,13 @@ body.tool-detail .tool-page.layout-full.active { height: 76vh; min-height: 420px
 .tool-crumb a {
   color: inherit;
   text-decoration: none;
-  /* 손가락으로 누를 만한 크기. 글씨는 작아도 누르는 자리는 작지 않게 */
-  padding: 0.25rem 0;
+  /* 손가락으로 누를 만한 크기. 글씨는 작아도 누르는 자리는 작지 않게
+     폭도 24 이상 (WCAG 2.5.8). 두 글자 링크 (도구, 창고) 가 21px 이라 좌우 여백으로 채움. 실측 2026-09-22 */
+  padding: 0.25rem 0.25rem;
+  margin: 0 -0.1rem;
   min-height: 28px;
+  min-width: 24px;
+  justify-content: center;
   display: inline-flex;
   align-items: center;
 }

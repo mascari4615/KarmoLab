@@ -244,6 +244,19 @@ const CRYPTO_TOOLS = (() => {
   return set;
 })();
 
+/* 로또 전용 스타일 (`css/lotto.css`) 을 쓰는 장. `shellCommon` 이 도구 장에서는 그 링크를 걷어냄
+ * (도구 145장이 7KB 를 더 기다리지 않게). 정작 로또와 그 묶음 (draw) 장에는 아무도 다시 안 담
+ * `/t/lotto/` 의 방식 버튼이 맨 버튼 (205x20) 으로 뜸 (WCAG 전수 실측 2026-09-22). 여기서 되돌림 */
+const LOTTO_CSS_TOOLS = (() => {
+  const users = ['lotto'];
+  const set = new Set(users);
+  for (const u of users) {
+    const b = widgetById[u] && widgetById[u].bundle;
+    if (b) set.add(b);
+  }
+  return set;
+})();
+
 /* 셸에 손으로 박아 둔 도구 링크가 아직 살아 있는가 (TASK-KL-089).
  * 첫 화면에는 스크립트를 안 돌리는 크롤러만 보는 자리가 있고, 거기에 대표 도구 일곱 개가
  * **손으로** 적혀 있다. 도구 하나가 이름을 바꾸면 그 링크는 죽는데. 사람 화면에는 안 보이는
@@ -739,6 +752,9 @@ function buildToolPage(id) {
   // 앱 첫 화면은 어느 도구로든 갈 수 있어 미리 받아 두지만, 상세 페이지는 갈 곳이 정해져 있다.
   if (SHELL_HAS_CRYPTO_TAG && !CRYPTO_TOOLS.has(id)) {
     html = html.replace(CRYPTO_TAG_RE, '');
+  }
+  if (LOTTO_CSS_TOOLS.has(id)) {
+    html = html.replace('</head>', `    <link rel="stylesheet" href="/apps/karmolab/css/lotto.css">${String.fromCharCode(10)}</head>`);
   }
 
 

@@ -511,7 +511,7 @@ function injectStyles(): void {
 .pf-recent-job:hover{background:var(--accent-subtle);}
 .pf-tip{font-size:var(--font-size-2xs);margin-bottom:10px;padding:8px 12px;border-radius:var(--radius-xl);
   border:1px solid var(--success);background:var(--success-subtle);}
-.pf-back{appearance:none;background:transparent;border:0;cursor:pointer;padding:4px 0;
+.pf-back{appearance:none;background:transparent;border:0;cursor:pointer;padding:4px 0;min-height:24px;
   font-size:var(--font-size-2xs);opacity:.7;margin-bottom:10px;}
 .pf-back:hover{opacity:1;}
 /* display:flex 는 hidden 속성을 이긴다. 이 한 줄이 없으면 이어서 줄이 결과도 없는데

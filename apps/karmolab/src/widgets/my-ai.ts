@@ -364,7 +364,7 @@ import { t, loadNamespace } from '../lib/i18n';
       .myai-actions { display: flex; align-items: center; gap: 8px; }
       /* 남음 ⟷ 사용 = 같은 수치의 다른 표현. 새로고침 옆에 붙여 보기 묶음으로 읽히게. */
       .myai-modes { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-pill); overflow: hidden; }
-      .myai-mode { appearance: none; background: transparent; border: 0; color: var(--text-secondary); font-size: var(--font-size-2xs); padding: 4px 11px; cursor: pointer; }
+      .myai-mode { appearance: none; background: transparent; border: 0; color: var(--text-secondary); font-size: var(--font-size-2xs); padding: 4px 11px; min-height: 24px; cursor: pointer; }
       .myai-mode + .myai-mode { border-left: 1px solid var(--border); }
       .myai-login { appearance: none; margin-top: 6px; border: 1px solid var(--myai-accent); border-radius: var(--radius-pill); background: transparent; color: var(--myai-accent); font-size: var(--font-size-xs); padding: 5px 14px; cursor: pointer; }
       .myai-login:disabled { opacity: .5; cursor: default; }

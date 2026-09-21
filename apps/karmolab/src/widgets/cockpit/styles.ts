@@ -66,6 +66,7 @@ const CSS = `
   align-items: center;
 }
 .ck-ctrl-btn {
+  min-height: 24px;
   background: var(--glass-strong);
   border: 1px solid var(--border-hover);
   color: var(--text-secondary);

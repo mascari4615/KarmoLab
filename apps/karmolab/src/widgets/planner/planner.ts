@@ -84,10 +84,10 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
 
         .pl-mini-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
         .pl-mini-title { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); }
-        .pl-mini-nav { border: none; background: none; color: var(--text-tertiary); cursor: pointer; padding: 2px 6px; }
+        .pl-mini-nav { border: none; background: none; color: var(--text-tertiary); cursor: pointer; padding: 2px 6px; min-width: 24px; min-height: 24px; }
         .pl-mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
         .pl-mini-dow { font-size: var(--font-size-4xs); color: var(--text-tertiary); text-align: center; padding: 2px 0; }
-        .pl-mini-day { font-size: var(--font-size-3xs); padding: 4px 0; border: none; background: none; color: var(--text-secondary); border-radius: var(--radius-sm); cursor: pointer; position: relative; }
+        .pl-mini-day { font-size: var(--font-size-3xs); padding: 4px 0; min-height: 24px; border: none; background: none; color: var(--text-secondary); border-radius: var(--radius-sm); cursor: pointer; position: relative; }
         .pl-mini-day:hover { background: var(--bg-tertiary); }
         .pl-mini-day--out { color: var(--text-tertiary); }
         .pl-mini-day--today, .pl-mini-day--today:hover { background: var(--accent); color: var(--accent-fg); font-weight: 700; }

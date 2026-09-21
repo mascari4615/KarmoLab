@@ -2210,8 +2210,17 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
     font-family: inherit;
     color: var(--text-primary);
     outline: none;
-    transition: all var(--transition);
+    /* `all` 이면 테두리 (outline) 까지 늦게 와 자판 초점 표시가 한 박자 뒤. 칠하는 것만 (WCAG 2.4.11, 2026-09-22) */
+    transition: border-color var(--transition), background var(--transition), box-shadow var(--transition), color var(--transition);
     resize: vertical;
+}
+/* 자판으로 온 초점은 바로 보이는 테두리. 마우스 초점은 아래 :focus 의 칠만 (WCAG 2.4.7, 2.4.11) */
+textarea:focus-visible,
+input[type="text"]:focus-visible, input[type="password"]:focus-visible, input[type="number"]:focus-visible, input[type="search"]:focus-visible,
+input[type="url"]:focus-visible, input[type="email"]:focus-visible, input[type="tel"]:focus-visible,
+input[type="date"]:focus-visible, input[type="time"]:focus-visible, input[type="datetime-local"]:focus-visible, input[type="month"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 textarea:focus,
 input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, input[type="search"]:focus,
