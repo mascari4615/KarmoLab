@@ -15102,7 +15102,10 @@
     "my-ai.login.failed": "b420519d59",
     "my-ai.note.why": "f2efa80652",
     "account.menu.about": "fa255f0ccc",
-    "shell.nav.about": "fa255f0ccc"
+    "shell.nav.about": "fa255f0ccc",
+    "site.cta.judgePending": "a018c1c0fa",
+    "site.cta.dashboard": "2859873b5b",
+    "site.nav.menu": "076925c571"
   },
   "ja": {
     "about.failed": "f11e2dbbfa",
@@ -30207,6 +30210,9 @@
     "my-ai.login.failed": "b420519d59",
     "my-ai.note.why": "f2efa80652",
     "account.menu.about": "fa255f0ccc",
-    "shell.nav.about": "fa255f0ccc"
+    "shell.nav.about": "fa255f0ccc",
+    "site.cta.judgePending": "a018c1c0fa",
+    "site.cta.dashboard": "2859873b5b",
+    "site.nav.menu": "076925c571"
   }
 }

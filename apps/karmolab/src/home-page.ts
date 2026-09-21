@@ -46,7 +46,7 @@ import { toolIndexPath } from './lib/site-base';
         const d = new Date();
         const dow = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
         top.innerHTML = `
-            <button type="button" class="lq-corner" data-home-chrome="1" title="${escapeHtml(t('shell.sidebar.expand', undefined, '메뉴'))}" aria-label="${escapeHtml(t('shell.sidebar.expand', undefined, '메뉴'))}"><i></i></button>
+            <button type="button" class="lq-corner" data-home-chrome="1" title="${escapeHtml(t('site.nav.menu'))}" aria-label="${escapeHtml(t('site.nav.menu'))}"><i></i></button>
             <span class="lq-en">KarmoLab</span>
             <div class="landing-palette lq-palette"></div>
             <div class="lq-date"><span class="lq-en">${dow} ${d.getFullYear()}</span><b>${d.getMonth() + 1} / ${d.getDate()}</b></div>
@@ -72,8 +72,8 @@ import { toolIndexPath } from './lib/site-base';
         cta.className = 'landing-cta lq-grid';
         const toolCount = (() => { try { return tools().length; } catch (e) { return 0; } })();
         const tiles = [
-            ['mydash', 'mydash.nav.judge', '판정 대기', 'JUDGE', '<path d="M6 12l4 4 8-9"/>', '', 'lq-acc'],
-            ['mydash', 'shell.mydash', '대시보드', 'DASHBOARD', '<rect x="3" y="4" width="8" height="7"/><rect x="13" y="4" width="8" height="4"/><rect x="13" y="10" width="8" height="10"/><rect x="3" y="13" width="8" height="7"/>', '', ''],
+            ['mydash', 'site.cta.judgePending', '판정 대기', 'JUDGE', '<path d="M6 12l4 4 8-9"/>', '', 'lq-acc'],
+            ['mydash', 'site.cta.dashboard', '대시보드', 'DASHBOARD', '<rect x="3" y="4" width="8" height="7"/><rect x="13" y="4" width="8" height="4"/><rect x="13" y="10" width="8" height="10"/><rect x="3" y="13" width="8" height="7"/>', '', ''],
             ['tools', 'site.cta.tools', '도구 목록', 'TOOLS', '<path d="M14 6l4 4-9 9H5v-4z"/><path d="M12 8l4 4"/>', toolCount ? String(toolCount) : '', ''],
             ['arcade', 'widgets.arcade.title', '오락실', 'ARCADE', '<rect x="3" y="7" width="18" height="11" rx="3"/><path d="M8 11v3M6.5 12.5h3"/><circle cx="16" cy="12" r="1"/><circle cx="18" cy="14" r="1"/>', '', ''],
             ['community', 'site.cta.community', '커뮤니티', 'COMMUNITY', '<path d="M4 5h16v11H9l-5 4z"/>', '', ''],
@@ -101,7 +101,7 @@ import { toolIndexPath } from './lib/site-base';
         const madeWith = document.createElement('p');
         madeWith.className = 'landing-madewith lq-foot';
         madeWith.innerHTML =
-            `<kbd>ESC</kbd>${escapeHtml(t('shell.sidebar.expand', undefined, '메뉴'))} <kbd>CTRL K</kbd>${escapeHtml(t('palette.find', undefined, '찾기'))} ` +
+            `<kbd>ESC</kbd>${escapeHtml(t('site.nav.menu'))} <kbd>CTRL K</kbd>${escapeHtml(t('site.nav.search'))} ` +
             `${escapeHtml(t('site.madewith', undefined, 'AI 와 함께 만듭니다.'))} ` +
             `<a href="https://github.com/Mascari4615/Mascari4615.github.io" rel="noopener">${escapeHtml(t('site.madewith.src', undefined, '소스 보기'))}</a>`;
         landing.appendChild(madeWith);
