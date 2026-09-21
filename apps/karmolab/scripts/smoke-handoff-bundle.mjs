@@ -124,7 +124,9 @@ check(soundGot, '넘긴 소리를 **묶음 안 도구가 실제로 받았다**')
 /* ⑦ **밝힌 대로 목적지가 뜨는가** (TASK-KL-299)
  * 받는다고 밝히지 않은 도구는 받을 수 있어도 목록에 안 뜬다 = 사람 눈엔 없는 기능이다.
  * 그림 하나를 내놨을 때, 이번에 채운 도구들이 실제로 갈 곳으로 잡히는지 본다. */
-const dests = await page.evaluate(() => (Toolbox.toolsAccepting('image/png', 'barcode') || []).map((t) => t.id));
+/* 여기는 도구 장 (`/t/audiocut/`) 이다. 도구 전환이 제 주소로 가므로 (change.tool-page-navigation)
+ * 목록은 셸이 필요할 때 데려온다. 이어서 줄이 그리기 전에 하는 일과 같다 */
+const dests = await page.evaluate(async () => { await Toolbox.ensureToolList(); return (Toolbox.toolsAccepting('image/png', 'barcode') || []).map((t) => t.id); });
 for (const id of ['imgbatch', 'redact', 'palette', 'qrread']) {
   check(dests.includes(id), `그림을 내놓으면 ${id} 가 갈 곳으로 뜬다 (지금 ${dests.length}곳)`);
 }

@@ -60,6 +60,11 @@ const Toolbox = (() => {
     const toolIndexPath = () => appPath('t/');
     const toolPage = (id) => appPath('t/' + encodeURIComponent(id) + '/');
     const appHash = (id) => APP_BASE + '#' + id;
+    /** 제 주소 (`/t/<id>/`) 가 구워져 있는 도구인가. 목록은 구운 장의 머리나 `widgets-index.js` 가 준다 */
+    const hasToolPage = (id) => {
+        const pages = (typeof window !== 'undefined' && window.KARMOLAB_TOOL_PAGES) || [];
+        return pages.indexOf(id) >= 0;
+    };
     const toolIdFromPath = (pathname) => {
         if (pathname !== APP_BASE.slice(0, -1) && !pathname.startsWith(APP_BASE)) return null;
         const m = /^t\/([a-z0-9][a-z0-9-]*)\/?$/.exec(pathname.slice(APP_BASE.length));
@@ -379,11 +384,24 @@ const Toolbox = (() => {
     /** 이 형식을 받을 수 있다고 밝힌 도구들 (자기 자신은 뺀다. 넘길 이유가 없다). */
     function toolsAccepting(type, exceptId) {
         const t = String(type || '');
-        return tools.filter(x =>
+        /* 도구 장 (`/t/<id>/`) 은 그 도구 하나만 등록. 갈 곳은 목록 (`KARMOLAB_LAZY_META`) 에서도 셈
+           안 세면 도구 장의 이어서 줄이 늘 빈 줄. 도구 전환이 전부 도구 장으로 가는 지금은
+           (change.tool-page-navigation) 첫 전환 뒤 모든 화면이 그 경우 */
+        const seen = new Set();
+        const pool = [];
+        for (const x of tools) { if (x && x.id && !seen.has(x.id)) { seen.add(x.id); pool.push(x); } }
+        for (const m of (window.KARMOLAB_LAZY_META || [])) { if (m && m.id && !seen.has(m.id)) { seen.add(m.id); pool.push(m); } }
+        return pool.filter(x =>
             x.id !== exceptId &&
             declaredAccepts(x.id).some(a => kindMatches(a, t)) &&
             (!isDesktopOnlyTool(x) || isDesktopApp())
         );
+    }
+
+    /** 목록이 아직 없는 도구 장이면 가벼운 목록 (`widgets-index.js`) 을 데려온다. 있으면 바로 */
+    function ensureToolList() {
+        if ((window.KARMOLAB_LAZY_META || []).length) return Promise.resolve(true);
+        return ensureScript('root/widgets-index').then(() => !!(window.KARMOLAB_LAZY_META || []).length, () => false);
     }
 
     /**
@@ -392,6 +410,12 @@ const Toolbox = (() => {
      */
     function offerNext(anchor, item) {
         if (!anchor || !anchor.parentElement) return;
+        /* 도구 장은 목록을 안 싣고 뜬다. 갈 곳을 세려면 먼저 데려와야 한다. 온 뒤 다시 그린다 */
+        if (!(window.KARMOLAB_LAZY_META || []).length && !anchor.dataset.nextRetry) {
+            anchor.dataset.nextRetry = '1';
+            void ensureToolList().then(() => { if (anchor.isConnected) offerNext(anchor, item); });
+            return;
+        }
         /* 줄은 기준 요소 **안**이 아니라 **바로 밑**에 놓는다 (TASK-KL-133).
          * 안에 넣었더니 도구가 상태 글을 갈아 끼우는 순간(textContent) 같이 지워졌다 . 
          * 만들어 놓고 곧바로 사라져서, 화면에는 한 번도 안 보였다. */
@@ -1826,13 +1850,21 @@ const Toolbox = (() => {
             ? entryTool
             : (hashPage && isValidPage(hashPage))
                 ? hashPage
-                : (lastPage && isValidPage(lastPage) ? lastPage : 'home');
+                : (lastPage && isValidPage(lastPage) && !hasToolPage(lastPage) ? lastPage : 'home');
+        /* 마지막 도구 복원은 제 주소가 없는 도구만. 제 주소가 있는 도구로 `/` 에서 자동 이동하면
+           뒤로 가기가 `/` 로 왔다가 또 튕겨 갇힌다. 그 도구는 제 주소가 곧 기억이다 */
 
         /* 도구 상세 페이지에는 제목이 **서버에서 미리 박혀** 있고 앱 히어로는 접혀 있다.
          * 별을 히어로에만 달면 그 127장에서는 꽂을 길이 없다. 거기에도 단다. */
         if (entryTool) mountPinStar(document.querySelector('.tool-head .tool-page-hero-actions') || document.querySelector('.tool-head'), entryTool);
 
-        switchPage(initialPage, { pushHistory: false });
+        /* 부팅의 첫 그림은 제자리 (`stay`). 해시로 들어온 도구를 제 주소로 옮기면 검사 30개가
+           미리 그린 장의 손 안 달린 버튼을 누른다. 떠날 때는 어차피 이동이라 새는 것이 없다 */
+        switchPage(initialPage, { pushHistory: false, stay: true });
+        /* 묶음 장에 `#탭` 을 달고 왔으면 (`/t/devtool/#configconv`) 그 탭을 편다 */
+        if (entryTool && hashPage && hashPage !== entryTool && findBundleFor(hashPage) === entryTool) {
+            switchPage(hashPage, { pushHistory: false, stay: true });
+        }
         if (!entryTool) {
             history.replaceState({ pageId: initialPage }, '', location.pathname + (location.search || '') + '#' + initialPage);
         }
@@ -2167,17 +2199,32 @@ const Toolbox = (() => {
         /* TASK-KL-129: 도구 목록처럼 본문이 박혀 있는 페이지도 마찬가지다. 여기엔 도구를 그릴
          * 자리가 없다(위젯을 하나도 안 실었다). 고른 도구의 제 주소로 실제로 옮겨 간다. */
         const entryStatic = (typeof window !== 'undefined' && window.KARMOLAB_ENTRY_STATIC) || null;
-        if ((entryTool && pageId !== entryTool) || entryStatic) {
-            const pages = (typeof window !== 'undefined' && window.KARMOLAB_TOOL_PAGES) || [];
+        /* 이 장이 묶음이고 그 안의 탭을 부른 것이면 제자리 (`/t/devtool/#configconv`) */
+        const ownTab = !!(entryTool && findBundleFor(pageId) === entryTool);
+        if ((entryTool && pageId !== entryTool && !ownTab) || entryStatic) {
             location.href = pageId === 'home'
                 ? APP_BASE
-                : (pages.indexOf(pageId) >= 0 ? toolPage(pageId) : appHash(pageId));
+                : (hasToolPage(pageId) ? toolPage(pageId) : appHash(pageId));
+            return;
+        }
+        /* 앱 뿌리 (`/`) 에서도 제 주소가 있는 도구는 **실제로 옮겨 간다** (change.tool-page-navigation).
+         * 제자리 교체는 이전 도구가 켠 타이머, 소리, 그리기 루프를 스스로 거둬야 끊김
+         * 빠뜨리면 다음 도구에서 배경음 지속 (사용자 2026-09-21). 문서를 갈아타면 브라우저가 전부 버림
+         * 목록은 `widgets-index.js` 가 `tools-seo.json` 에서 준다. 없는 도구 63개는 아직 제자리 */
+        if (!entryTool && !opts.stay && pageId !== 'home' && hasToolPage(pageId)) {
+            location.href = toolPage(pageId);
             return;
         }
         // 묶음의 탭으로 들어간 도구를 이름으로 부르면, 묶음을 열고 그 탭을 편다.
         // 단 도구 상세 페이지는 그 도구 하나를 보여주는 자리다 - 여기서 묶음으로 튕기면 빈 화면이 된다.
         const bundleId = findBundleFor(pageId);
-        if (bundleId && !entryTool) {
+        /* 제 주소 없는 탭 (configconv 등 8개): 묶음의 제 주소 + 탭 이름 해시
+           그 장의 부팅이 해시를 읽어 탭을 엶 */
+        if (bundleId && !entryTool && !opts.stay && hasToolPage(bundleId)) {
+            location.href = toolPage(bundleId) + '#' + pageId;
+            return;
+        }
+        if (bundleId && (!entryTool || ownTab)) {
             // TASK-KL-099. 최근 에는 *사람이 고른 이름* 이 남아야 한다.
             // 글자수 세기를 골랐는데 최근에 텍스트 도구가 뜨면, 다음에 그 이름을
             // 찾을 수 없다 (실제로 검사가 이걸 잡았다). 묶음으로 옮기기 **전에** 적고,
@@ -3224,7 +3271,7 @@ const Toolbox = (() => {
         // 안 보는 동안 멈춘다 (change.widget-idle-cost). 상태는 살리고 그리기만 멈춘다
         onHide, onShow, raf, keepAlive,
         // 결과를 옆 도구로 넘기기 (TASK-KL-133)
-        offerNext, result, offerResult, takeResult, peekResult, toolsAccepting, onHandoff,
+        offerNext, result, offerResult, takeResult, peekResult, toolsAccepting, ensureToolList, onHandoff,
         // 형식 규약은 **한 자로 잰다** (TASK-KL-191). 흐름 화면도 이 셋을 쓴다
         declaredAccepts, declaredProduces, kindMatches,
         getCategories,

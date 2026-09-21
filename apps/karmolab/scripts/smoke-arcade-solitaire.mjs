@@ -48,7 +48,7 @@ if (!cantRun) {
       /* 못 써도 검사는 돈다 */
     }
   });
-  await page.evaluate(() => Toolbox.switchPage('arcade'));
+  await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await page.waitForSelector('[data-obj="solitaire"]', { timeout: 15000 });
   await page.click('[data-obj="solitaire"]');
   await page.click('[data-solo="solitaire"]');
@@ -178,7 +178,7 @@ if (!cantRun) {
   });
   await page.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
-  await page.evaluate(() => Toolbox.switchPage('arcade'));
+  await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await page.waitForSelector('[data-obj="solitaire"]', { timeout: 20000 });
   await page.click('[data-obj="solitaire"]');
   await page.click('[data-solo="solitaire"]');

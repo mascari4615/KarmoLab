@@ -96,7 +96,7 @@ if (!cantRun) {
   await p.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
   await p.evaluate(() => {
     localStorage.setItem('karmolab.arcade.dim', '2d');
-    Toolbox.switchPage('arcade');
+    Toolbox.switchPage('arcade', { stay: true });
   });
   await p.waitForSelector('[data-obj="gomoku"]', { timeout: 30000 });
 

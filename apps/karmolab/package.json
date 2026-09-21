@@ -263,6 +263,7 @@
     "smoke:soundscape": "node scripts/smoke-soundscape.mjs",
     "smoke:timeshell": "node scripts/smoke-time-shell.mjs",
     "smoke:tool-boot": "node scripts/smoke-tool-boot.mjs",
+    "smoke:tool-page-nav": "node scripts/smoke-tool-page-nav.mjs",
     "smoke:txtshell": "node scripts/smoke-text-shell.mjs",
     "smoke:vidshell": "node scripts/smoke-video-shell.mjs",
     "soak:regionwatch": "node scripts/soak-regionwatch.mjs",

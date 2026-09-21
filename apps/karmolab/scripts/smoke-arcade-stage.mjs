@@ -39,7 +39,7 @@ try {
 
 if (!cantRun) {
   await p.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
-  await p.evaluate(() => Toolbox.switchPage('arcade'));
+  await p.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await p.waitForSelector('[data-obj]', { timeout: 30000 });
   const ids = await p.$$eval('[data-obj]', (bs) => bs.map((b) => b.dataset.obj));
 
@@ -125,7 +125,7 @@ if (!cantRun) {
     await q.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await q.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
     /* 새 맥락은 저장소가 비어 기본 표현(입체)이 뜬다. 칸 폭은 평면에서 잰다 */
-    await q.evaluate(() => { window.localStorage.setItem('karmolab.arcade.dim', '2d'); Toolbox.switchPage('arcade'); });
+    await q.evaluate(() => { window.localStorage.setItem('karmolab.arcade.dim', '2d'); Toolbox.switchPage('arcade', { stay: true }); });
     await q.waitForSelector('[data-obj="gomoku"]', { timeout: 20000 });
     await q.click('[data-obj="gomoku"]');
     await q.click('[data-solo="gomoku"]');

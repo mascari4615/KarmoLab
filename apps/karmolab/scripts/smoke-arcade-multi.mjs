@@ -71,7 +71,7 @@ async function openArcade(hash = '') {
   page.on('pageerror', (e) => failures.push(`창에서 터졌다. ${e.message}`));
   await page.goto(PAGE + hash, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
-  await page.evaluate(() => Toolbox.switchPage('arcade'));
+  await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   return page;
 }
 

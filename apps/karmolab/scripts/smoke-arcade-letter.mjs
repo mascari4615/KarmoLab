@@ -64,7 +64,7 @@ const open = async (url) => {
 let a;
 try {
   a = await open(PAGE);
-  await a.evaluate(() => Toolbox.switchPage('arcade'));
+  await a.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await a.waitForSelector('[data-obj="gomoku"]', { timeout: 30000 });
 } catch (e) {
   cantRun = `오락실이 안 떴다. ${e.message.slice(0, 60)}`;

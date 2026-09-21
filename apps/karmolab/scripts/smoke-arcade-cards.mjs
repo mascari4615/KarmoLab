@@ -49,7 +49,7 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
     const res = await page.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 20000 });
     if (!res || !res.ok()) { cantRun = `dev 서버가 안 뜬다 (${PAGE})`; await ctx.close(); break; }
     await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
-    await page.evaluate(() => Toolbox.switchPage('arcade'));
+    await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
     const inLobby = await page.waitForSelector(`[data-obj="${g}"]`, { timeout: 20000 }).then(() => true).catch(() => false);
     check(`${g}: 로비에 뜬다`, inLobby);
     if (!inLobby) { await ctx.close(); continue; }
@@ -144,7 +144,7 @@ if (!cantRun) {
       await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
       await page.evaluate(() => {
         localStorage.setItem('karmolab.arcade.dim', '2d');
-        Toolbox.switchPage('arcade');
+        Toolbox.switchPage('arcade', { stay: true });
       });
       await page.click('[data-obj="blackjack"]');
       await page.click('[data-solo="blackjack"]');
@@ -170,7 +170,7 @@ if (!cantRun) {
     await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
     await page.evaluate(() => {
       localStorage.setItem('karmolab.arcade.dim', '2d');
-      Toolbox.switchPage('arcade');
+      Toolbox.switchPage('arcade', { stay: true });
     });
     const overlaps = [];
     for (const game of TABLE_RUN) {

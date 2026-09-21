@@ -22,6 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { waitForA11yScreen } from './lib/a11y-ready.mjs';
+import { withoutRetired } from './lib/retired-operations.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -46,15 +47,35 @@ const AXE = path.join(root, 'node_modules', 'axe-core', 'axe.min.js');
    스킨 둘 판 둘이라 932판이 되고 사십 분이 넘는다. 넓게 한 번 훑는 것이 목적이지
    스킨마다 다시 재는 것이 목적이 아니다. 좁고 깊은 쪽은 기본 여섯 장이 맡는다 */
 const ALL = process.env.KL_A11Y_ALL === "1";
+/* 제 주소 (`/t/<id>/`) 가 있는 도구는 그 장을 잰다 (change.tool-page-navigation).
+   해시 `#id` 로 이어 가면 셸이 제 주소로 **실제 이동**해 evaluate 의 문서가 사라진다.
+   사람이 밟는 자리도 그 장이다. 목록은 `gen-tool-pages` 와 같은 출처 */
+const TOOL_PAGES = new Set(withoutRetired(Object.keys(JSON.parse(fs.readFileSync(path.join(root, 'data/tools-seo.json'), 'utf8')).tools)));
+/* 제 주소 없는 탭 (configconv 등 8개): 묶음의 장 + `#탭`. 셸이 보내는 주소와 같음
+   묶음 정보: 구운 목록 (`js/widgets-index.js`). 빌드가 게이트보다 앞이라 늘 있음 */
+const BUNDLE_OF = (() => {
+  try {
+    const src = fs.readFileSync(path.join(root, 'js/widgets-index.js'), 'utf8');
+    const list = JSON.parse(src.slice(src.indexOf('=[') + 1, src.indexOf('];') + 1));
+    return Object.fromEntries(list.filter((m) => m && m.bundle).map((m) => [m.id, m.bundle]));
+  } catch { return {}; }
+})();
+const screenUrl = (id) => {
+  if (TOOL_PAGES.has(id)) return `/apps/blog/t/${id}/`;
+  const bundle = BUNDLE_OF[id];
+  if (bundle && TOOL_PAGES.has(bundle)) return `/apps/blog/t/${bundle}/#${id}`;
+  return `/apps/karmolab/#${id}`;
+};
+
 function allToolScreens() {
   const src = fs.readFileSync(path.join(root, "src/widgets-lazy-meta.ts"), "utf8");
   const ids = [...new Set([...src.matchAll(/(?:^|[{,]\s*)id: '([a-z0-9-]+)'/gm)].map((m) => m[1]))];
-  return ids.map((id) => [id, `/apps/karmolab/#${id}`]);
+  return ids.map((id) => [id, screenUrl(id)]);
 }
 
 const SCREENS = [
   ['첫 화면', '/apps/karmolab/'],
-  ['도구 한 장', '/apps/karmolab/#passgen'],
+  ['도구 한 장', screenUrl('passgen')],
   ['도구 목록', '/apps/blog/t/'],
   /* ★ **검색으로 들어오는 정문을 안 재고 있었다** (2026-08-16). 위 셋은 전부 앱 껍데기다.
      사람 대부분이 처음 밟는 자리는 도구 상세 장(129장)인데 그 장은 껍데기에 SEO 글 뭉치가
@@ -63,8 +84,8 @@ const SCREENS = [
   ['도구 상세 한 장', '/apps/blog/t/loan/'],
   /* 부품 킷 장 (2026-09-01). 여기 위반 하나는 그 부품을 쓰는 도구 전부의 위반
      좁고 깊게 보는 이 검사에 값이 가장 큰 한 장 */
-  ['부품 킷', '/apps/karmolab/#uikit'],
-  ['설정', '/apps/karmolab/#settings'],
+  ['부품 킷', screenUrl('uikit')],
+  ['설정', screenUrl('settings')],
 ];
 
 const MIME = {

@@ -92,8 +92,20 @@ try {
 
   /* 첫 화면 큰 단추(favorites, arcade, docs)는 **자바스크립트가 그린 뒤** 생긴다 . 
      붙박이 표시와 같은 위임으로 먹는지 따로 본다(2026-08-17 에 그 넷을 옮겼다). */
+  /* 제 주소가 있는 도구는 눌렀을 때 **그 주소로 실제 이동**한다 (change.tool-page-navigation).
+     그건 새 문서라 같은 evaluate 안에서 못 읽는다. 주소가 바뀌었나로 재고 뿌리로 돌아온다 */
+  const toolPages = await page.evaluate(() => window.KARMOLAB_TOOL_PAGES || []);
   for (const place of ['community', 'plaza', 'arcade', 'favorites']) {
     if (!mark.includes(place)) continue;
+    if (toolPages.includes(place)) {
+      await page.evaluate(() => Toolbox.switchPage('home'));
+      await page.click(`[data-goto="${place}"]`);
+      const moved = await page.waitForURL(`**/t/${place}/**`, { timeout: 15000 }).then(() => true).catch(() => false);
+      if (!moved) problems.push(`${place} 로 안 옮겨진다. 제 주소로 이동해야 하는데 주소 ${page.url()}`);
+      await page.goto(`${BASE}/apps/karmolab/`, { waitUntil: 'networkidle', timeout: 60000 });
+      await page.waitForFunction(() => typeof Toolbox === 'object' && typeof Toolbox.switchPage === 'function', undefined, { timeout: 30000 });
+      continue;
+    }
     const result = await page.evaluate((g) => {
       Toolbox.switchPage('home');
       document.querySelector(`[data-goto="${g}"]`).click();

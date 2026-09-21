@@ -34,7 +34,9 @@ const errors = [];
 page.on('pageerror', (error) => errors.push(String(error)));
 
 // 재생을 켠 채로 홈을 연 뒤, 그 안에서 도구를 띄운다.
-await page.goto(`${base}/apps/karmolab/?badapple`);
+/* 도구는 해시로 **같이** 연다. `switchPage('asciiart')` 는 이제 `/t/asciiart/` 로 실제 이동해서
+   (change.tool-page-navigation) 재생 중이던 문서를 버린다. 해시 진입은 부팅이 제자리에 그린다 */
+await page.goto(`${base}/apps/karmolab/?badapple#asciiart`);
 await page.waitForFunction(() => Boolean(window.KarmoLabBadApple), undefined, { timeout: 15000 });
 // 도구를 여는 것은 `switchPage` 다 (`open` 은 없다. 한 번 헛짚었다).
 // 그리고 `window.Toolbox` 로는 안 잡힌다: 선언 방식 때문에 창(window)에 얹히지 않고
@@ -44,11 +46,11 @@ await page.waitForFunction(() => typeof Toolbox !== 'undefined' && typeof Toolbo
 });
 // 도구는 부를 때 비로소 받아진다. 처음 한 번은 아직 등록 전이라 화면이 안 바뀐다.
 // 받아진 뒤 다시 불러야 열린다 (여기서 세 번째로 헛짚었다).
-await page.evaluate(() => Toolbox.switchPage('asciiart'));
+await page.evaluate(() => Toolbox.switchPage('asciiart', { stay: true }));
 await page.waitForFunction(
   () => {
     if (document.getElementById('aaOut')) return true;
-    Toolbox.switchPage('asciiart');
+    Toolbox.switchPage('asciiart', { stay: true });
     return false;
   }, undefined,
   { timeout: 20000, polling: 500 }

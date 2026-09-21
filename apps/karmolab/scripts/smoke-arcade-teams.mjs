@@ -40,7 +40,7 @@ try {
 
 if (!cantRun) {
   await p.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 60000 });
-  await p.evaluate(() => Toolbox.switchPage('arcade'));
+  await p.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   /* 진열장에는 단추가 없다. 물건을 집어야 편 갈라가 선다. 넷 이상 앉는 놀이로 확인한다. */
   /* 이름을 하나 박지 않는다. 그 판을 감추는 날 검사가 빨개진다(반응 측정으로 박아 뒀다가
      실제로 그랬다. 2026-08-29). 로비에 선 것들을 차례로 집어 편 갈라가 있는 첫 판을 쓴다. */

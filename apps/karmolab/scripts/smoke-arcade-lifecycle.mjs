@@ -75,7 +75,10 @@ try {
   await page.evaluate(() => localStorage.setItem('karmolab.arcade.dim', '2d'));
   const baseline = await page.evaluate(() => window.__arcadeLifecycle.snapshot());
 
-  await page.evaluate(() => Toolbox.switchPage('arcade'));
+  /* 오락실은 제 주소가 있어 보통은 `/t/arcade/` 로 실제 이동한다 (change.tool-page-navigation).
+     여기서 재는 것은 **같은 문서 안에서** 열고 닫을 때 뒷정리가 되는가. 그래서 `stay` 로 제자리에 연다.
+     그 길은 부팅의 해시 진입과 제 주소 없는 도구 63개가 아직 쓴다 */
+  await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await page.waitForSelector('[data-obj="gomoku"]', { timeout: 60000 });
   const mounted = await page.evaluate(() => window.__arcadeLifecycle.snapshot());
   check('전역 리스너를 실제로 건다', mounted.listeners > baseline.listeners, JSON.stringify({ baseline, mounted }));
@@ -107,7 +110,7 @@ try {
   // 재움-의도: 화면 교체 뒤 cleanup 반영 대기
   await page.waitForTimeout(100);
   const warm = await page.evaluate(() => window.__arcadeLifecycle.snapshot());
-  await page.evaluate(() => Toolbox.switchPage('arcade'));
+  await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await page.waitForSelector('[data-obj="gomoku"]', { timeout: 30000 });
   await page.evaluate(() => Toolbox.switchPage('home'));
   // 재움-의도: 두 번째 화면 교체 뒤 cleanup 반영 대기

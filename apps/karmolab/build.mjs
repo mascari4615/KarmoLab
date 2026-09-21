@@ -11,6 +11,7 @@ import { runInNewContext } from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { discoverEntryPoints } from './scripts/entry-points.mjs';
 import { APP_BASE } from './scripts/lib/site-base.mjs';
+import { withoutRetired } from './scripts/lib/retired-operations.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = __dirname;
@@ -221,10 +222,15 @@ for (const rel of entryPoints) {
   /* 불러올 자리(`lazyScriptPaths`)도 제외. **도구를 열 때** 필요하지 첫 그림에는 아님
      252개 몫이 gzip 1.8KB (2026-09-05 실측). 열 때 없으면 셸이 나머지 목록을 먼저 데려옴 */
   const lite = full.map(({ icon, desc, lazyScriptPaths, ...rest }) => rest);
+  /* 제 주소 (`/t/<id>/`) 가 있는 도구 목록 (change.tool-page-navigation). 앱 뿌리에서 도구를 고르면
+     셸이 그 주소로 실제 이동한다. 구운 페이지는 같은 목록을 제 머리에 박는데, 뿌리 `index.html` 은
+     안 굽는 파일이라 여기서 준다. 출처는 `gen-tool-pages` 와 같다. 두 곳이면 갈라진다 */
+  const toolPages = withoutRetired(Object.keys(JSON.parse(readFileSync(join(root, 'data/tools-seo.json'), 'utf8')).tools));
   writeFileSync(
     join(root, 'js/widgets-index.js'),
     '/* `build.mjs` 가 `widgets-lazy-meta.js` 에서 아이콘, 설명만 빼서 만든다. 손으로 고치지 마라 (TASK-KL-128). */' + NL +
-      'window.KARMOLAB_LAZY_META=' + JSON.stringify(lite) + ';window.KARMOLAB_META_LITE=1;' + NL,
+      'window.KARMOLAB_LAZY_META=' + JSON.stringify(lite) + ';window.KARMOLAB_META_LITE=1;' + NL +
+      'window.KARMOLAB_TOOL_PAGES=window.KARMOLAB_TOOL_PAGES||' + JSON.stringify(toolPages) + ';' + NL,
     'utf8'
   );
   /* 가벼운 것을 먼저 받은 화면이 **나머지만** 이어 받게 한다. 전체를 한 벌 더 받으면

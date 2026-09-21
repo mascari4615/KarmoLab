@@ -80,7 +80,7 @@ try {
     await page.route('**/__dev', (route) => route.abort());
     await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
-    await page.evaluate(() => Toolbox.switchPage('arcade'));
+    await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
     await page.waitForSelector('[data-obj="yacht"]', { timeout: 20000 });
     await page.fill('#acName', `선수${seat + 1}`);
     await page.click('[data-obj="yacht"]');

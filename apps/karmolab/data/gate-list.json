@@ -390,6 +390,18 @@
     "smoke:newtools",
     "smoke:shell-layout",
     {
+      "name": "smoke:tool-page-nav",
+      "watch": [
+        "src/toolbox.ts",
+        "build.mjs",
+        "data/tools-seo.json",
+        "scripts/lib/retired-operations.mjs",
+        "scripts/smoke-tool-page-nav.mjs",
+        "package.json",
+        "data/gate-list.json"
+      ]
+    },
+    {
       "name": "smoke:tool-boot",
       "watch": [
         "src/**",

@@ -51,7 +51,7 @@ if (!cantRun) {
       /* 못 지워도 검사는 돈다 */
     }
   });
-  await page.evaluate(() => Toolbox.switchPage('arcade'));
+  await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await page.waitForSelector('[data-obj="yacht"]', { timeout: WAIT });
   await page.click('[data-obj="yacht"]');
   check('야추 상세에 등급전 문이 있다', await page.locator('[data-rank="yacht"]').isVisible());

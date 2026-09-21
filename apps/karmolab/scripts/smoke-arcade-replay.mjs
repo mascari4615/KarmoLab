@@ -37,7 +37,7 @@ try {
 
 if (!cantRun) {
   await p.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 60000 });
-  await p.evaluate(() => Toolbox.switchPage('arcade'));
+  await p.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   await p.waitForSelector('[data-obj]', { timeout: 60000 });
   if (!(await p.locator('[data-obj="reflex"]').count())) {
     await p.evaluate(() => {

@@ -88,7 +88,7 @@ try {
 if (!cantRun) {
   /* 셸이 살아난 뒤에 도구를 부른다. `Toolbox` 는 전역 이름이지 `window` 의 것이 아니다. */
   await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
-  await page.evaluate(() => Toolbox.switchPage('arcade'));
+  await page.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
 
   try {
     await waitHydrated(page, '[data-obj]', { timeout: 30000 });

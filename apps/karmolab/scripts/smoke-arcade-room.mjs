@@ -35,7 +35,7 @@ const open = async () => {
   await p.route('**/__dev', (r) => r.abort());
   await p.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await p.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: 30000 });
-  await p.evaluate(() => Toolbox.switchPage('arcade'));
+  await p.evaluate(() => Toolbox.switchPage('arcade', { stay: true }));
   return p;
 };
 
