@@ -83,3 +83,24 @@ async function ytmPlaylists() {
 
 // background 의 이름 호출용 전역 등록
 globalThis.ytmPlaylists = ytmPlaylists;
+
+/** 재생목록 한 개 펼치기. 걸음 함수라 워커가 되부른다 */
+async function ytmPlaylistStep() {
+  const S = ytmState();
+  ytmGrab(S.seen);
+  for (let i = 0; i < 5; i += 1) {
+    const before = S.seen.size;
+    const box = document.querySelector("ytmusic-app-layout #contentContainer, ytmusic-app-layout");
+    if (box) box.scrollTop = box.scrollHeight;
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    await new Promise((r) => setTimeout(r, 1100));
+    ytmGrab(S.seen);
+    S.rounds += 1;
+    if (S.seen.size === before) S.stall += 1; else S.stall = 0;
+  }
+  const done = S.stall >= 8 || S.rounds >= 400;
+  return { count: S.seen.size, done, note: done ? "ok" : "더", rows: [...S.seen.values()] };
+}
+
+// background 의 이름 호출용 전역 등록
+globalThis.ytmPlaylistStep = ytmPlaylistStep;

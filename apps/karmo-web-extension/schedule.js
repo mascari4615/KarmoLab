@@ -14,6 +14,7 @@ const STATE_KEY = "karmo.lastCollect";
 const SPECS = {
   "youtube-history": ["id", "day", "duration", "channel", "title"],
   "ytmusic-history": ["id", "day", "duration", "channel", "title", "album"],
+  "ytmusic-playlist": ["id", "day", "duration", "channel", "title", "album"],
   "chzzk-follows": ["name", "id", "followers", "notify", "followedAt"],
   "soop-favorites": [
     ["name", "name"],

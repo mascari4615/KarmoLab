@@ -313,6 +313,21 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
       } else if (msg?.type === "ytmusic.playlists") {
         const r = await runInTab("https://music.youtube.com/library/playlists", "ytmusic-history.js", "ytmPlaylists", "MAIN");
         sendResponse({ ok: true, count: (r || []).length, rows: r });
+      } else if (msg?.type === "ytmusic.playlist") {
+        // 무거운 응답은 유실된다. 파일로
+        (async () => {
+          try {
+            const url = "https://music.youtube.com/playlist?list=" + msg.list;
+            const r = await stepInTab(url, "ytmusic-history.js", "ytmPlaylistStep", 200);
+            const out = await dumpTsv("ytmusic-playlist", (r && r.rows) || []);
+            await chrome.storage.local.set({ "karmo.lastPl": { at: new Date().toISOString(), list: msg.list, file: out.file, count: out.count, note: r && r.note } });
+          } catch (e) {
+            await chrome.storage.local.set({ "karmo.lastPl": { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) } });
+          }
+        })();
+        sendResponse({ ok: true, started: true });
+      } else if (msg?.type === "ytmusic.playlistLast") {
+        sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.lastPl"))["karmo.lastPl"] || null });
       } else if (msg?.type === "ytmusic.last") {
         sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.lastYtm"))["karmo.lastYtm"] || null });
       } else if (msg?.type === "chzzk.follows") {

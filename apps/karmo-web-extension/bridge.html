@@ -92,6 +92,8 @@
         ytmusic: () => call({ type: "ytmusic.history" }),
         ytmusicLast: () => call({ type: "ytmusic.last" }),
         ytmPlaylists: () => call({ type: "ytmusic.playlists" }),
+        ytmPlaylist: (list) => call({ type: "ytmusic.playlist", list }),
+        ytmPlaylistLast: () => call({ type: "ytmusic.playlistLast" }),
         xOne: (url, steps) => call({ type: "x.one", url, steps }),
         version: () => call({ type: "ext.version" }),
         reload: () => call({ type: "ext.reload" }),
