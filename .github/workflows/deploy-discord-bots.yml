@@ -209,7 +209,10 @@ jobs:
           # tracked 미커밋 편집이 있으면 reset 보류 (2026-09-21, memo-sync.ts 와 같은 규칙).
           # 개발 노트북에선 이 경로가 에이전트, 사람과 같이 쓰는 공유 checkout 이라
           # reset --hard 가 남의 편집을 지웠다. untracked 는 안 본다(봇 런타임, reset 이 안 건드림).
-          $dirty = @(& git status --porcelain --untracked-files=no 2>$null | Where-Object { $_ })
+          # ` D`(디스크에 없음)도 안 본다. lane push 따라잡기가 남긴 유령이고 잃을 내용이 없다.
+          # 이 스텝은 보수적이다(옛 커밋 그대로인 M 도 셈). 정밀 판정(이력 blob 대조)은 봇의
+          # 10분 memo-sync 가 한다. 여기서 보류돼도 봇이 곧 치운다.
+          $dirty = @(& git status --porcelain --untracked-files=no 2>$null | Where-Object { $_ -and ($_ -notmatch '^ D ') })
           if ($dirty.Count -gt 0) {
             Skip-Loud "tracked 미커밋 편집 $($dirty.Count)개 있어 reset 보류: $(($dirty | Select-Object -First 5) -join ', ')"
           }
