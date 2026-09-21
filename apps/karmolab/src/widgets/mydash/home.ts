@@ -11,7 +11,7 @@
  * ★ **왼쪽 목록의 작은 수도 여기서 채운다** (`ctx.setCount`). 목록이 제 숫자를 따로 받아 오면
  * 같은 파일을 두 번 읽으면 두 값이 갈리는 순간 발생. 읽는 자리는 하나
  */
-import { dashRegistry, esc, short, usd } from './kit';
+import { dashRegistry, esc, safeLinkUrl, short, usd } from './kit';
 import type { DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
 import { storedToken } from '../planner/gauth';
@@ -32,6 +32,12 @@ import type { FcEvent } from '../planner/gcal';
     /** 목록 항목 id. 열기 가 여기로 간다 */
     item: string;
     title: string;
+    /** 제목 위 작은 영문. W3 시안의 두 언어 라벨 */
+    en: string;
+    /** 큰 카드 (판정 대기). 두 칸 차지, 어두운 바탕, 주황 수 */
+    hero?: boolean;
+    /** 큰 카드 오른쪽 아래 작은 그림 셋. 최근 판정 대기 것 */
+    pics?: string[];
     /** 큰 값과 그 옆의 작은 이름. 없으면 안 그린다 */
     big?: { value: string; unit: string };
     lines: string[];
@@ -86,6 +92,10 @@ import type { FcEvent } from '../planner/gcal';
   function n(v: unknown): string {
     return short(num(v));
   }
+  /** 큰 수는 줄이지 않고 쉼표. 표시 글꼴에 한글 단위 (천, 만) 가 없다 */
+  function full(v: unknown): string {
+    return num(v).toLocaleString('en-US');
+  }
 
   /* ── 카드 하나씩 ────────────────────────────────────────────────
      전부 은은 모양이다. 자기 파일을 읽고 Card 를 내놓는다. 던지면 부르는 쪽이 잡아
@@ -93,25 +103,68 @@ import type { FcEvent } from '../planner/gcal';
 
   type Counts = Record<string, unknown>;
 
-  async function bookmarksCard(repo: DashRepoRead): Promise<Card> {
-    const j = await repo.readJson<{ counts?: Counts; data?: { items?: Array<{ recordedAt?: string }> } }>(
-      BOOKMARKS_PATH
-    );
+  type BmItem = {
+    recordedAt?: string | null;
+    pending?: string | null;
+    media?: { photos?: Array<{ url?: string }> | null; video?: { poster?: string } | null; image?: string | null } | null;
+  };
+  type BmSummary = { counts?: Counts; data?: { items?: BmItem[] } };
+
+  /** 북마크 summary 는 두 카드가 같이 쓴다. 한 번만 읽고 나눠 준다 */
+  function bmSummary(repo: DashRepoRead): Promise<BmSummary> {
+    return repo.readJson<BmSummary>(BOOKMARKS_PATH);
+  }
+
+  /** 작은 그림 주소. 트윗 첫 장, 영상 포스터, 페이지 대표 그림 순. 북마크 패널의 thumbOf 와 같은 규칙 */
+  function thumbOf(it: BmItem): string {
+    const m = it.media;
+    if (!m) return '';
+    const first = m.photos && m.photos.length ? m.photos[0] : null;
+    const raw = (first && first.url) || (m.video && m.video.poster) || m.image || '';
+    const u = safeLinkUrl(raw);
+    if (!u) return '';
+    return /^https:\/\/pbs\.twimg\.com\//.test(u) ? u + (u.indexOf('?') >= 0 ? '&' : '?') + 'name=thumb' : u;
+  }
+
+  /** 판정 대기. 큰 카드. 최근 담긴 대기 것 셋의 그림을 같이 */
+  function judgeCard(j: BmSummary): Card {
     const c = j.counts || {};
     const month = thisMonth();
     const items = (j.data && j.data.items) || [];
     let fresh = 0;
+    const waiting: BmItem[] = [];
     for (const it of items) {
       if (typeof it.recordedAt === 'string' && it.recordedAt.slice(0, 7) === month) fresh++;
+      if (it.pending) waiting.push(it);
+    }
+    waiting.sort((a, b) => (String(b.recordedAt || '') > String(a.recordedAt || '') ? 1 : -1));
+    const pics: string[] = [];
+    for (const it of waiting) {
+      const u = thumbOf(it);
+      if (u) pics.push(u);
+      if (pics.length >= 3) break;
     }
     return {
+      item: 'judge',
+      en: 'JUDGE',
+      hero: true,
+      pics,
+      title: t('mydash.home.judge.title', undefined, '판정 기다리는 북마크'),
+      big: { value: full(c.pending), unit: t('mydash.home.judge.unit', undefined, '건') },
+      lines: [t('mydash.home.bm.fresh', { n: short(fresh) }, '이번 달 {n}건 들어옴')],
+      count: n(c.pending),
+      open: true,
+    };
+  }
+
+  function bookmarksCard(j: BmSummary): Card {
+    const c = j.counts || {};
+    return {
       item: 'bookmarks',
+      en: 'BOOKMARKS',
       title: t('mydash.nav.bookmarks', undefined, '북마크'),
-      big: { value: n(c.items), unit: t('mydash.home.bm.unit', undefined, '담아 둔 것') },
-      lines: [
-        t('mydash.home.bm.pending', { n: short(num(c.pending)) }, '판정 대기 {n}'),
-        t('mydash.home.bm.fresh', { n: short(fresh) }, '이번 달 {n}건 들어옴'),
-      ],
+      big: { value: full(c.items), unit: '' },
+      lines: [t('mydash.home.bm.unit', undefined, '담아 둔 것')],
       count: n(c.items),
       open: true,
     };
@@ -134,6 +187,7 @@ import type { FcEvent } from '../planner/gcal';
     }
     return {
       item: 'me',
+      en: '1Y AGO',
       title: t('mydash.nav.me', undefined, '나'),
       big: { value: n(c.eraCandidates), unit: t('mydash.home.me.unit', undefined, '시기 후보') },
       lines: [t('mydash.home.me.events', { n: short(num(c.eventCandidates)) }, '사건 후보 {n}')],
@@ -167,6 +221,7 @@ import type { FcEvent } from '../planner/gcal';
     const last = d.gauge && typeof d.gauge.lastMeasureAt === 'string' ? d.gauge.lastMeasureAt : '';
     return {
       item: 'career',
+      en: 'CAREER',
       title: t('mydash.nav.career', undefined, '커리어'),
       big: { value: dday, unit: target.name || t('mydash.home.career.unit', undefined, '목표') },
       lines: [next || t('mydash.home.career.noNext', undefined, '다음 마일스톤 없음')],
@@ -198,6 +253,7 @@ import type { FcEvent } from '../planner/gcal';
     }
     return {
       item: 'ai',
+      en: 'AI 30 DAYS',
       title: t('mydash.nav.ai', undefined, 'AI 사용'),
       big: { value: usd(cost), unit: t('mydash.home.ai.unit', undefined, '30일 환산가') },
       lines: [t('mydash.home.ai.sessions', { n: short(sessions) }, '세션 {n}')],
@@ -219,6 +275,7 @@ import type { FcEvent } from '../planner/gcal';
     const mins = minutesSince(latest.at);
     return {
       item: 'pc',
+      en: 'PC',
       title: t('mydash.nav.pc', undefined, 'PC 성능'),
       big: { value: mem + '%', unit: t('mydash.home.pc.unit', undefined, '메모리') },
       lines: [
@@ -244,8 +301,9 @@ import type { FcEvent } from '../planner/gcal';
     for (const v of bag) month += num(v);
     return {
       item: 'kakao',
+      en: 'MEMO',
       title: t('mydash.nav.kakao', undefined, '카톡 메모'),
-      big: { value: n(c.kakaoMemos), unit: t('mydash.home.kakao.unit', undefined, '메모') },
+      big: { value: full(c.kakaoMemos), unit: t('mydash.home.kakao.unit', undefined, '메모') },
       lines: [t('mydash.home.kakao.month', { n: short(month) }, '이번 달 {n}건')],
       quiet: t('mydash.shell.soon', undefined, '아직 준비 중입니다. 자리만 잡아 뒀습니다.'),
       count: n(c.kakaoMemos),
@@ -263,6 +321,7 @@ import type { FcEvent } from '../planner/gcal';
     const title = t('mydash.nav.calendar', undefined, '캘린더');
     const needAuth: Card = {
       item: 'calendar',
+      en: 'CALENDAR',
       title,
       lines: [t('mydash.cal.needAuth', undefined, '연결 필요')],
       quiet: t(
@@ -305,6 +364,7 @@ import type { FcEvent } from '../planner/gcal';
     }
     return {
       item: 'calendar',
+      en: 'CALENDAR',
       title,
       big: { value: String(sorted.length), unit: t('mydash.cal.homeUnit', undefined, '오늘 일정') },
       lines: [line],
@@ -317,13 +377,18 @@ import type { FcEvent } from '../planner/gcal';
 
   function cardHtml(c: Card): string {
     return (
-      '<div class="mydh-card' + (c.open ? ' is-open' : '') + '"' + (c.open ? ' data-open="' + esc(c.item) + '"' : '') + '>' +
+      '<div class="mydh-card' + (c.open ? ' is-open' : '') + (c.hero ? ' mydh-card--hero' : '') + '"' +
+      (c.open ? ' data-open="' + esc(c.item) + '"' : '') + '>' +
+      '<span class="mydh-en">' + esc(c.en) + '</span>' +
       '<h3>' + esc(c.title) + '</h3>' +
       (c.big
-        ? '<p class="mydh-big">' + esc(c.big.value) + '<small>' + esc(c.big.unit) + '</small></p>'
+        ? '<p class="mydh-big">' + esc(c.big.value) + (c.big.unit ? '<small>' + esc(c.big.unit) + '</small>' : '') + '</p>'
         : '') +
       c.lines.map((l) => '<p>' + esc(l) + '</p>').join('') +
       (c.quiet ? '<p class="mydh-quiet">' + esc(c.quiet) + '</p>' : '') +
+      (c.pics && c.pics.length
+        ? '<div class="mydh-pics">' + c.pics.map((u) => '<img src="' + esc(u) + '" alt="" loading="lazy">').join('') + '</div>'
+        : '') +
       (c.open
         ? '<div class="mydh-open"><button type="button" data-open="' + esc(c.item) + '" class="sr-only">' +
           esc(t('mydash.home.open', undefined, '열기')) + '</button></div>'
@@ -332,10 +397,38 @@ import type { FcEvent } from '../planner/gcal';
     );
   }
 
+  /** 나 카드는 격자가 아니라 아래 띠 한 줄. 1년 전 이맘때 흔적 하나 */
+  function agoHtml(c: Card): string {
+    return (
+      '<button type="button" class="mydh-ago" data-open="' + esc(c.item) + '">' +
+      '<span class="mydh-en">' + esc(c.en) + '</span>' +
+      '<b>' + esc(c.quiet || '') + '</b>' +
+      '<span>' + esc(c.lines[0] || '') + '</span>' +
+      '</button>'
+    );
+  }
+
+  /** 위 줄의 날짜. `SUN 9 / 20` 꼴. 요일은 영문 석 자 (표시 글꼴이 대문자와 숫자만 있다) */
+  function dateLine(): string {
+    const d = kstNow();
+    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    return days[d.getUTCDay()] + ' ' + (d.getUTCMonth() + 1) + ' / ' + d.getUTCDate();
+  }
+
+  function frameHtml(inner: string): string {
+    return (
+      '<div class="mydh-bg"></div>' +
+      '<img class="mydh-yawn" src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true">' +
+      '<p class="mydh-date">' + esc(dateLine()) + '</p>' +
+      inner
+    );
+  }
+
   /** 로그인 전. 같은 배치, 값은 하이픈. 열기 없음 (눌러도 읽을 것이 없다) */
   function emptyHtml(title: string): string {
     return (
       '<div class="mydh-card mydh-card--empty">' +
+      '<span class="mydh-en">&nbsp;</span>' +
       '<h3>' + esc(title) + '</h3>' +
       '<p class="mydh-big">-</p>' +
       '<p class="mydh-quiet">' + esc(t('mydash.home.needLogin', undefined, '로그인 뒤 채워진다')) + '</p>' +
@@ -344,29 +437,27 @@ import type { FcEvent } from '../planner/gcal';
   }
 
   function renderEmpty(root: HTMLElement): void {
-    const today = new Date().toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long',
-    });
     const titles = [
+      t('mydash.nav.judge', undefined, '판정 대기'),
       t('mydash.nav.bookmarks', undefined, '북마크'),
-      t('mydash.nav.me', undefined, '나'),
       t('mydash.nav.career', undefined, '커리어'),
+      t('mydash.nav.kakao', undefined, '카톡 메모'),
       t('mydash.nav.ai', undefined, 'AI 사용'),
       t('mydash.nav.pc', undefined, 'PC 성능'),
-      t('mydash.nav.kakao', undefined, '카톡 메모'),
       t('mydash.nav.calendar', undefined, '캘린더'),
     ];
-    root.innerHTML =
-      '<p class="mydh-date">' + esc(today) + '</p>' +
-      '<div class="mydh-grid">' + titles.map(emptyHtml).join('') + '</div>';
+    root.className += ' mydh';
+    root.innerHTML = frameHtml(
+      '<div class="mydh-grid">' + titles.map(emptyHtml).join('') + '</div>'
+    );
+    const first = root.querySelector('.mydh-card');
+    if (first) first.classList.add('mydh-card--hero');
   }
 
   function failHtml(item: string, title: string, why: string): string {
     return (
       '<div class="mydh-card" data-fail="' + esc(item) + '">' +
+      '<span class="mydh-en">&nbsp;</span>' +
       '<h3>' + esc(title) + '</h3>' +
       '<p class="mydh-bad">' + esc(t('mydash.home.bad', undefined, '못 읽음')) + '</p>' +
       '<p class="mydh-quiet">' + esc(why) + '</p>' +
@@ -378,33 +469,33 @@ import type { FcEvent } from '../planner/gcal';
     await loadNamespace('mydash').catch(() => undefined);
     const { root, repo } = ctx;
 
-    const today = new Date().toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long',
-    });
-    root.innerHTML =
-      '<p class="mydh-date">' + esc(today) + '</p>' +
-      '<div class="mydh-grid"></div>';
+    root.className += ' mydh';
+    root.innerHTML = frameHtml('<div class="mydh-grid"></div><div class="mydh-foot"></div>');
     const grid = root.querySelector('.mydh-grid') as HTMLElement;
+    const foot = root.querySelector('.mydh-foot') as HTMLElement;
 
-    /* 카드 일곱. **하나가 죽어도 나머지는 산다.** 순서는 고정이라 자리가 안 흔들린다 */
+    /* 북마크 summary 는 판정과 북마크 두 카드가 같이 읽는다. 실패도 같이 (둘 다 못 읽음) */
+    const bm = bmSummary(repo);
+    bm.catch(() => undefined);
+
+    /* 카드 여덟. **하나가 죽어도 나머지는 산다.** 순서 고정, 자리 안 흔들림.
+       판정 대기가 큰 카드로 먼저, 나 는 격자 아래 띠 */
     const makers: Array<{ item: string; title: string; make: () => Promise<Card> | Card }> = [
-      { item: 'bookmarks', title: t('mydash.nav.bookmarks', undefined, '북마크'), make: () => bookmarksCard(repo) },
-      { item: 'me', title: t('mydash.nav.me', undefined, '나'), make: () => meCard(repo) },
+      { item: 'judge', title: t('mydash.nav.judge', undefined, '판정 대기'), make: async () => judgeCard(await bm) },
+      { item: 'bookmarks', title: t('mydash.nav.bookmarks', undefined, '북마크'), make: async () => bookmarksCard(await bm) },
       { item: 'career', title: t('mydash.nav.career', undefined, '커리어'), make: () => careerCard(repo) },
+      { item: 'kakao', title: t('mydash.nav.kakao', undefined, '카톡 메모'), make: () => kakaoCard(repo) },
       { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), make: () => aiCard(repo) },
       { item: 'pc', title: t('mydash.nav.pc', undefined, 'PC 성능'), make: () => pcCard(repo) },
-      { item: 'kakao', title: t('mydash.nav.kakao', undefined, '카톡 메모'), make: () => kakaoCard(repo) },
       { item: 'calendar', title: t('mydash.nav.calendar', undefined, '캘린더'), make: () => calendarCard() },
+      { item: 'me', title: t('mydash.nav.me', undefined, '나'), make: () => meCard(repo) },
     ];
 
     const parts = await Promise.all(
       makers.map(async (m) => {
         try {
           const card = await m.make();
-          return { ok: true as const, card };
+          return { ok: true as const, item: m.item, card };
         } catch (e) {
           const msg = (e as Error).message || t('mydash.home.badUnknown', undefined, '알 수 없는 실패');
           return { ok: false as const, item: m.item, title: m.title, why: msg };
@@ -414,8 +505,11 @@ import type { FcEvent } from '../planner/gcal';
     if (!ctx.isCurrent()) return;
 
     grid.innerHTML = parts
+      .filter((p) => p.item !== 'me' && !(p.ok && p.card.item === 'me'))
       .map((p) => (p.ok ? cardHtml(p.card) : failHtml(p.item, p.title, p.why)))
       .join('');
+    const me = parts.find((p) => (p.ok ? p.card.item === 'me' : p.item === 'me'));
+    foot.innerHTML = me ? (me.ok ? agoHtml(me.card) : failHtml(me.item, me.title, me.why)) : '';
 
     /* 왼쪽 목록의 작은 수. 읽힌 카드 것만. 못 읽은 자리는 빈칸으로 둔다 (0 이 아니다) */
     for (const p of parts) {
@@ -425,7 +519,7 @@ import type { FcEvent } from '../planner/gcal';
     const alive = parts.filter((p) => p.ok).length;
     ctx.setCount('today', alive + '/' + parts.length);
 
-    grid.addEventListener('click', (ev) => {
+    root.addEventListener('click', (ev) => {
       const el = (ev.target as HTMLElement | null)?.closest('[data-open]') as HTMLElement | null;
       if (!el) return;
       ctx.openItem(el.getAttribute('data-open') || '');
