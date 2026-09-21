@@ -63,3 +63,23 @@ async function ytmStep() {
 
 // background 의 이름 호출용 전역 등록
 globalThis.ytmStep = ytmStep;
+
+/** 내가 만든 재생목록 목록. 라이브러리 화면에서 */
+async function ytmPlaylists() {
+  const out = new Map();
+  for (let i = 0; i < 8; i += 1) {
+    for (const el of document.querySelectorAll("ytmusic-two-row-item-renderer")) {
+      const a = el.querySelector('a[href*="playlist"]');
+      const m = (a ? a.getAttribute("href") : "").match(/list=([\w-]+)/);
+      if (!m || out.has(m[1])) continue;
+      const lines = el.innerText.split("\n").map((x) => x.trim()).filter(Boolean);
+      out.set(m[1], { id: m[1], title: lines[0] || "", sub: lines[1] || "" });
+    }
+    if (out.size) break;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return [...out.values()];
+}
+
+// background 의 이름 호출용 전역 등록
+globalThis.ytmPlaylists = ytmPlaylists;
