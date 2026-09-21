@@ -1041,6 +1041,201 @@ html[data-view="tool"] .main-content { background: var(--bg-primary); }
 .landing-page.active { display: flex; }
 [data-block][hidden] { display: none !important; }
 
+/* ── Q2 로비 (karmo-design 2026-09-21, 사용자 "2는 OK") ──
+   요소 넷: 구석 버튼, 날짜 (와 작은 찾는 칸), 큰 타일 여섯 3x2, 욘. 흐린 도시 사진 위 반투명 판, 포인트 색 하나.
+   밝은 판과 어두운 판은 토큰만 다르다. 스킨 토큰을 안 쓰는 화면이라 값을 여기 직접 둔다 (대시보드 홈과 같은 방식).
+   머리 줄과 옆줄은 첫 화면에서 숨긴다. 구석 버튼이 `data-home-chrome` 으로 되살린다 */
+.landing-q2 {
+    --lq-paper: rgba(255, 255, 255, 0.78);
+    --lq-edge: rgba(255, 255, 255, 0.95);
+    --lq-line: rgba(24, 34, 56, 0.14);
+    --lq-ink: #182238;
+    --lq-ink2: #56607a;
+    --lq-ink3: #96a0b8;
+    --lq-acc: #e8862e;
+    --lq-acc-ink: #ffffff;
+    --lq-bg: #c9d6e4;
+    --lq-veil: rgba(255, 255, 255, 0.42);
+    --lq-photo: brightness(1.05) saturate(0.6);
+    --lq-shadow: 0 20px 50px -30px rgba(24, 34, 56, 0.5);
+    --lq-fs-en: 10px;
+    --lq-fs-date: 28px;
+    --lq-fs-title: 19px;
+    --lq-fs-n: 30px;
+    --lq-fs-n-acc: 44px;
+    --lq-row: 190px;
+    --lq-pad: 56px;
+    --lq-font-en: var(--font-display);
+    position: relative;
+    isolation: isolate;
+    max-width: none;
+    padding: 0 var(--lq-pad);
+    overflow: hidden;
+    background: var(--lq-bg);
+    color: var(--lq-ink);
+    justify-content: flex-start;
+}
+[data-theme="dark"] .landing-q2 {
+    --lq-paper: rgba(20, 26, 36, 0.72);
+    --lq-edge: rgba(255, 255, 255, 0.18);
+    --lq-line: rgba(255, 255, 255, 0.14);
+    --lq-ink: #f2f4f7;
+    --lq-ink2: #aab2c0;
+    --lq-ink3: #6f7a8c;
+    --lq-acc: #f0a04b;
+    --lq-acc-ink: #101418;
+    --lq-bg: #0f141c;
+    --lq-veil: rgba(10, 14, 20, 0.55);
+    --lq-photo: brightness(0.55) saturate(0.4);
+    --lq-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.8);
+}
+.landing-q2::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background: url('/apps/karmolab/img/widgets/mydash/bg-glasscity.webp') center / cover;
+    filter: var(--lq-photo);
+}
+.landing-q2::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background: var(--lq-veil);
+}
+html[data-view="home"]:not([data-home-chrome="1"]) .header-bar,
+html[data-view="home"]:not([data-home-chrome="1"]) .sidebar { display: none; }
+html[data-view="home"]:not([data-home-chrome="1"]) .main-content { margin-left: 0; }
+html[data-view="home"]:not([data-home-chrome="1"]) .content-body:has(.landing-q2.active) { padding: 0; }
+html[data-view="home"] .content-body:has(.landing-q2.active) { overflow: hidden; }
+html[data-view="home"] .home-decor { display: none; }
+html .landing-q2 .lq-en {
+    font-family: var(--lq-font-en);
+    font-size: var(--lq-fs-en);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--lq-ink3);
+}
+html .landing-q2 .lq-top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-lg) 0 0;
+    min-height: 70px;
+}
+html .landing-q2 .lq-corner {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 0;
+    background: var(--lq-ink);
+    color: var(--lq-bg);
+    cursor: pointer;
+}
+html .landing-q2 .lq-corner i { display: block; width: 14px; height: 2px; background: currentColor; box-shadow: 0 -5px 0 currentColor, 0 5px 0 currentColor; }
+html .landing-q2 .lq-palette { flex: 0 1 320px; margin-left: var(--space-lg); }
+html .landing-q2 .lq-palette .kp-inline { margin: 0; }
+html .landing-q2 .lq-top .landing-hi { margin: 0 0 0 var(--space-md); font-size: var(--font-size-xs); color: var(--lq-ink2); }
+html .landing-q2 .lq-date { margin-left: auto; text-align: right; }
+html .landing-q2 .lq-date b {
+    display: block;
+    font-family: var(--lq-font-en);
+    font-size: var(--lq-fs-date);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--lq-ink);
+}
+html .landing-q2 .lq-yawn {
+    position: absolute;
+    left: -60px;
+    bottom: -42%;
+    height: 131%;
+    z-index: 1;
+    pointer-events: none;
+    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.35));
+}
+html .landing-q2 .lq-grid {
+    display: grid;
+    flex-direction: row;
+    align-items: stretch;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: var(--lq-row);
+    gap: 10px;
+    width: min(720px, 60%);
+    margin: var(--space-xl) 0 0 auto;
+    position: relative;
+    z-index: 2;
+}
+html .landing-q2 .lq-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 16px 18px;
+    border: 1px solid var(--lq-edge);
+    border-radius: 0;
+    background: var(--lq-paper);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--lq-shadow);
+    color: var(--lq-ink);
+    font: inherit;
+    text-decoration: none;
+    text-align: left;
+    cursor: pointer;
+    white-space: normal;
+    gap: 0;
+    transform: none;
+    transition: border-color var(--transition);
+    min-height: 0;
+    width: auto;
+}
+html .landing-q2 .lq-tile > * { transform: none; }
+html .landing-q2 .lq-tile:hover .landing-cta-card-title { color: inherit; }
+html .landing-q2 .lq-tile:hover { border-color: var(--lq-ink); }
+html .landing-q2 .lq-tile::after { content: ""; position: absolute; left: 0; bottom: 0; border-style: solid; border-width: 0 0 10px 10px; border-color: transparent transparent var(--lq-line) transparent; }
+html .landing-q2 .lq-tile svg { position: absolute; left: 18px; top: 16px; width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+html .landing-q2 .lq-tile .landing-cta-card-title { font-size: var(--lq-fs-title); font-weight: 900; }
+html .landing-q2 .lq-tile .lq-en { margin-top: 2px; }
+html .landing-q2 .lq-tile .lq-n { position: absolute; right: 18px; top: 14px; font-family: var(--lq-font-en); font-size: var(--lq-fs-n); font-weight: 400; letter-spacing: 0.02em; color: var(--lq-ink2); }
+html .landing-q2 .lq-tile.lq-acc { background: var(--lq-acc); border-color: var(--lq-acc); color: var(--lq-acc-ink); }
+html .landing-q2 .lq-tile.lq-acc .lq-en, .lq-tile.lq-acc .lq-n { color: var(--lq-acc-ink); opacity: 0.8; }
+html .landing-q2 .lq-tile.lq-acc .lq-n { font-size: var(--lq-fs-n-acc); }
+html .landing-q2 .lq-pulse { position: relative; z-index: 2; margin: var(--space-lg) 0 0 auto; width: min(720px, 60%); justify-content: flex-start; }
+html .landing-q2 .lq-pulse:empty { display: none; }
+html .landing-q2 .lq-foot {
+    position: absolute;
+    right: var(--lq-pad);
+    left: auto;
+    bottom: var(--space-lg);
+    z-index: 2;
+    margin: 0;
+    font-size: var(--font-size-3xs);
+    color: var(--lq-ink3);
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+html .landing-q2 .lq-foot kbd { font-family: var(--lq-font-en); font-size: var(--lq-fs-en); letter-spacing: 0.1em; padding: 1px 5px; border: 1px solid var(--lq-line); margin-right: 4px; color: var(--lq-ink2); }
+html .landing-q2 .lq-foot a { color: var(--lq-ink2); }
+@media (max-width: 1099px) {
+    .landing-q2 { --lq-pad: 24px; --lq-row: 150px; }
+    html .landing-q2 .lq-grid { width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    html .landing-q2 .lq-yawn { left: auto; right: -140px; bottom: -30%; height: 90%; opacity: 0.5; }
+}
+@media (max-width: 599px) {
+    .landing-q2 { --lq-pad: 14px; --lq-row: 110px; --lq-fs-title: 15px; --lq-fs-n: 22px; --lq-fs-n-acc: 30px; --lq-fs-date: 22px; }
+    html .landing-q2 .lq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-md); }
+    html .landing-q2 .lq-palette { flex-basis: 100%; order: 9; margin: var(--space-sm) 0 0; }
+    html .landing-q2 .lq-top { flex-wrap: wrap; }
+    html .landing-q2 .lq-yawn { right: -120px; bottom: auto; top: 60px; height: 70%; opacity: 0.6; }
+    html .landing-q2 .lq-foot { position: static; margin-top: var(--space-lg); }
+}
+
 /* ── Hero ── */
 
 /* 찾는 칸이 주인공이다 (TASK-KL-136). 머리 부분은 이름 한 줄 + 한 마디로 줄이고,

@@ -299,6 +299,10 @@ else {
   await page.keyboard.press('Escape');
   await page.evaluate(() => window.KarmoPalette?.close?.());
   await page.waitForSelector('.kp-scrim', { state: 'detached', timeout: 3000 }).catch(() => null);
+  /* 첫 화면은 머리 줄과 옆줄을 숨긴다 (Q2 로비, 2026-09-21 사용자 결정). 검색 버튼은 그 안에 있으므로
+     구석 버튼이 하는 일 (`data-home-chrome`) 을 그대로 해 되살린 뒤 누른다 */
+  await page.evaluate(() => document.documentElement.setAttribute('data-home-chrome', '1'));
+  await page.waitForTimeout(100);
   await searchBtn.click();
   await page.waitForSelector('.kp-overlay .kp-input', { timeout: 5000 }).catch(() => null);
   const kpOpen = await page.$('.kp-overlay .kp-input');
