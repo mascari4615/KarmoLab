@@ -244,8 +244,15 @@ async function collectXAccounts() {
   };
 
   const notes = [];
+  // 화면 하나에 4분 상한. 없으면 한 갈래가 바퀴를 통째로 잡는다 (2026-09-21 실측)
   const pull = async (url, kind) => {
-    const r = await stepInTab(url, "x-accounts.js", "xStep");
+    let r = null;
+    try {
+      r = await within(240000, `pull:${kind}`, stepInTab(url, "x-accounts.js", "xStep"));
+    } catch (e) {
+      notes.push(`${kind} 시간 초과 ${e.message}`);
+      return;
+    }
     add(r && r.rows, kind);
     notes.push(kind + " " + ((r && r.rows) || []).length + " " + (r ? r.note : "no-response"));
   };
