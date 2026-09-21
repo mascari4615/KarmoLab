@@ -209,76 +209,203 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   word-break: break-all;
 }
 
-/* ── 홈 ────────────────────────────────────────────────── */
+/* ── 홈. W3 유리 카드 로비 (memo notes/mydash/design/skill-bench/W3-lobby-glass.html, 2026-09-21 결정) ──
+   유리 도시 배경 위에 반투명 카드 여덟. 판정 대기가 어두운 큰 카드, 욘은 오른쪽에 크게 잘려서.
+   글꼴은 두 벌. 한글 제목은 본문 글꼴 900, 영문 라벨과 큰 수는 표시 글꼴 (대문자와 숫자만 있다).
+   색은 시안 그대로 셋 (잉크, 하늘, 주황). 스킨 토큰을 안 쓰는 유일한 화면이라 여기 직접 적는다 */
+.myd-main:has(.mydh) {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.myd-main:has(.mydh) .myd-head {
+  display: none;
+}
+.myd-main:has(.mydh) .myd-body {
+  flex: 1;
+  min-height: 0;
+}
+.mydh {
+  --mydh-ink: #182238;
+  --mydh-ink2: #56607a;
+  --mydh-ink3: #96a0b8;
+  --mydh-sky: #2f7fd9;
+  --mydh-orange: #e8862e;
+  --mydh-glass: rgba(255, 255, 255, 0.62);
+  --mydh-pad: 56px;
+  --mydh-hero: 40px;
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
+  height: 100%;
+  overflow: hidden auto;
+  padding: 110px var(--mydh-pad) 40px;
+  background: #cfe0f3;
+  color: var(--mydh-ink);
+}
+.mydh-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url('/apps/karmolab/img/widgets/mydash/bg-glasscity.webp') center / cover;
+  filter: brightness(1.08) saturate(0.85);
+}
+.mydh-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15) 55%, rgba(255, 255, 255, 0));
+}
+.mydh-yawn {
+  position: absolute;
+  right: -80px;
+  bottom: -420px;
+  z-index: -1;
+  height: 1220px;
+  pointer-events: none;
+  filter: drop-shadow(0 20px 30px rgba(24, 34, 56, 0.35));
+}
 .mydh-date {
-  margin: 0 0 var(--space-lg);
-  font-size: var(--font-size-md);
-  color: var(--text-secondary);
+  position: absolute;
+  left: var(--mydh-pad);
+  top: 30px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--mydh-ink);
+}
+.mydh-en {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--mydh-ink3);
 }
 .mydh-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-md);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 176px;
+  gap: 14px;
+  max-width: min(820px, 68%);
 }
-@media (min-width: 680px) {
-  .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (min-width: 1040px) {
-  .mydh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-/* 카드 하나에 수치 하나 (2026-09-13 실측: Exist 카드 262px 에 지표 1 + 출처 1줄, 히어로는 본문의 3~4배).
-   제목은 작은 라벨, 수치가 주인공, 아래 한두 줄. 카드 전체가 누르는 자리 */
 .mydh-card {
-  --myd-hero: 40px;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
   min-width: 0;
-  padding: var(--space-lg) var(--space-lg) var(--space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--bg-secondary);
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 0;
+  background: var(--mydh-glass);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 16px 40px -28px rgba(24, 34, 56, 0.55);
+}
+.mydh-card::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--mydh-sky), transparent);
 }
 .mydh-card.is-open {
   cursor: pointer;
 }
 .mydh-card.is-open:hover {
-  border-color: var(--text-tertiary);
+  border-color: var(--mydh-ink);
 }
 .mydh-card h3 {
-  margin: 0 0 var(--space-xs);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  letter-spacing: .02em;
-  color: var(--text-secondary);
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: inherit;
 }
 .mydh-card p.mydh-big {
-  margin: 0 0 var(--space-xs);
-  font-size: var(--myd-hero);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -.01em;
+  margin: auto 0 0;
+  font-family: var(--font-display);
+  font-size: var(--mydh-hero);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   word-break: break-all;
-  color: var(--text-primary);
+  color: inherit;
 }
 .mydh-card p.mydh-big small {
-  display: block;
-  margin: var(--space-xs) 0 0;
-  font-size: var(--font-size-xs);
-  font-weight: 400;
+  display: inline;
+  margin: 0 0 0 3px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: normal;
-  color: var(--text-secondary);
+  color: var(--mydh-ink3);
 }
 .mydh-card p {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  color: var(--text-primary);
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--mydh-ink2);
 }
 .mydh-card p.mydh-quiet {
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
+  color: var(--mydh-ink3);
+}
+.mydh-pics {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  display: flex;
+  gap: 6px;
+}
+.mydh-pics img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+}
+/* 큰 카드. 두 칸, 어두운 바탕, 주황 수 */
+.mydh-card--hero {
+  grid-column: span 2;
+  background: rgba(24, 34, 56, 0.82);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.mydh-card--hero::after {
+  background: linear-gradient(90deg, var(--mydh-orange), transparent);
+}
+.mydh-card--hero .mydh-en { color: rgba(255, 255, 255, 0.6); }
+.mydh-card--hero h3 { font-size: 26px; }
+.mydh-card--hero p.mydh-big { font-size: 72px; color: #f8b26a; }
+.mydh-card--hero p { color: rgba(255, 255, 255, 0.75); }
+.mydh-card--hero.is-open:hover { border-color: #fff; }
+/* 아래 띠. 1년 전 이맘때 */
+.mydh-foot {
+  margin-top: 40px;
+}
+.mydh-ago {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--myd-tap);
+  padding: 10px 16px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  font: inherit;
+  font-size: 12px;
+  color: var(--mydh-ink2);
+  text-align: left;
+  cursor: pointer;
+}
+.mydh-ago .mydh-en { color: var(--mydh-sky); }
+.mydh-ago b {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--mydh-ink);
+}
+.mydh-foot .mydh-card {
+  max-width: 400px;
 }
 .mydh-open {
   margin: 0;
@@ -300,11 +427,35 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   min-height: var(--myd-tap);
   border: 0;
   background: transparent;
-  color: var(--accent-ink);
+  color: inherit;
   font: inherit;
 }
 .mydh-bad {
-  color: var(--text-tertiary);
+  color: var(--mydh-ink3);
+}
+/* 좁아지면 두 열, 폰은 한 열에 큰 카드도 한 칸. 욘은 위로 올라가 날짜 옆 */
+@media (max-width: 1099px) {
+  .mydh { --mydh-pad: 24px; height: auto; padding-top: 90px; }
+  .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
+  .mydh-yawn { right: -140px; bottom: auto; top: -60px; height: 900px; }
+}
+@media (max-width: 599px) {
+  .mydh { --mydh-pad: 14px; --mydh-hero: 28px; padding: 72px 14px 24px; }
+  .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 8px; }
+  .mydh-card { min-height: 100px; }
+  .mydh-card { padding: 12px 14px; }
+  .mydh-card h3 { font-size: 15px; }
+  .mydh-card--hero { min-height: 136px; }
+  .mydh-card--hero .mydh-pics { max-width: 45%; overflow: hidden; }
+  .mydh-card--hero h3 { font-size: 18px; }
+  .mydh-card--hero p.mydh-big { font-size: 48px; }
+  .mydh-card p { display: none; }
+  .mydh-card p.mydh-big { display: block; }
+  .mydh-pics { right: 14px; bottom: 12px; }
+  .mydh-pics img { width: 40px; height: 40px; }
+  .mydh-date { left: 14px; top: 20px; font-size: 28px; }
+  .mydh-yawn { right: -130px; top: 30px; height: 560px; }
+  .mydh-foot { margin-top: 12px; }
 }
 
 /* ── 좁은 화면. 가로 줄이 뜨고 내용 여백이 줄어든다 ─────────── */
