@@ -179,14 +179,12 @@ async function collectXOwnedLists() {
   }
   const tpl = pick();
   if (!tpl) return [];
-  const res = await fetch(tpl.url, { headers: tpl.headers, credentials: "include" });
-  if (!res.ok) return [];
 
   const out = new Map();
-  const walk = (n, d) => {
+  const walk = (n, d, cursors) => {
     if (!n || typeof n !== "object" || d > 30) return;
     if (Array.isArray(n)) {
-      for (const x of n) walk(x, d + 1);
+      for (const x of n) walk(x, d + 1, cursors);
       return;
     }
     const id = n.id_str || n.rest_id;
@@ -195,9 +193,29 @@ async function collectXOwnedLists() {
       const owner = ((ur && ur.core && ur.core.screen_name) || (ur && ur.legacy && ur.legacy.screen_name) || "").toLowerCase();
       if (owner === me) out.set(String(id), { id: String(id), name: n.name, members: n.member_count });
     }
-    for (const k of Object.keys(n)) walk(n[k], d + 1);
+    if (n.cursorType === "Bottom" && n.value) cursors.push(n.value);
+    for (const k of Object.keys(n)) walk(n[k], d + 1, cursors);
   };
-  walk(await res.json(), 0);
+
+  // 목록도 한 번에 다 안 옴. 커서로 이어받기 (실측: 판마다 내 리스트 하나)
+  const base = new URL(tpl.url);
+  const vars = JSON.parse(base.searchParams.get("variables") || "{}");
+  const seen = new Set();
+  let cursor = null;
+  for (let round = 0; round < 12; round += 1) {
+    const u = new URL(base.toString());
+    if (cursor) vars.cursor = cursor; else delete vars.cursor;
+    u.searchParams.set("variables", JSON.stringify(vars));
+    const res = await fetch(u.toString(), { headers: tpl.headers, credentials: "include" });
+    if (!res.ok) break;
+    const cursors = [];
+    const before = out.size;
+    walk(await res.json(), 0, cursors);
+    const next = cursors.find((c) => !seen.has(c));
+    if (!next || (out.size === before && round > 0)) break;
+    seen.add(next);
+    cursor = next;
+  }
   return [...out.values()];
 }
 
