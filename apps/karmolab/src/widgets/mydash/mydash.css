@@ -233,15 +233,34 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-sky: #2f7fd9;
   --mydh-orange: #e8862e;
   --mydh-glass: rgba(255, 255, 255, 0.62);
+  --mydh-glass-line: rgba(255, 255, 255, 0.9);
+  --mydh-glass-strong: rgba(255, 255, 255, 0.7);
+  --mydh-veil: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15) 55%, rgba(255, 255, 255, 0));
+  --mydh-shadow: 0 16px 40px -28px rgba(24, 34, 56, 0.55);
+  --mydh-page: #cfe0f3;
+  --mydh-white: #fff;
+  --mydh-hero-bg: rgba(24, 34, 56, 0.82);
+  --mydh-hero-line: rgba(255, 255, 255, 0.3);
+  --mydh-hero-en: rgba(255, 255, 255, 0.6);
+  --mydh-hero-text: rgba(255, 255, 255, 0.75);
+  --mydh-hero-num: #f8b26a;
   --mydh-pad: 56px;
   --mydh-hero: 40px;
+  --mydh-fs-date: 22px;
+  --mydh-fs-en: 10px;
+  --mydh-fs-h3: 22px;
+  --mydh-fs-small: 11px;
+  --mydh-fs-ago: 12px;
+  --mydh-fs-ago-b: 14px;
+  --mydh-fs-hero-h3: 26px;
+  --mydh-fs-hero-num: 72px;
   position: relative;
   isolation: isolate;
   min-height: 100%;
   height: 100%;
   overflow: hidden auto;
   padding: 110px var(--mydh-pad) 40px;
-  background: #cfe0f3;
+  background: var(--mydh-page);
   color: var(--mydh-ink);
 }
 .mydh-bg {
@@ -255,7 +274,7 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15) 55%, rgba(255, 255, 255, 0));
+  background: var(--mydh-veil);
 }
 .mydh-yawn {
   position: absolute;
@@ -272,14 +291,14 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   top: 30px;
   margin: 0;
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: var(--mydh-fs-date);
   letter-spacing: 0.04em;
   color: var(--mydh-ink);
 }
 .mydh-en {
   display: block;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: var(--mydh-fs-en);
   letter-spacing: 0.28em;
   color: var(--mydh-ink3);
 }
@@ -296,11 +315,11 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   flex-direction: column;
   min-width: 0;
   padding: 18px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--mydh-glass-line);
   border-radius: 0;
   background: var(--mydh-glass);
   backdrop-filter: blur(14px);
-  box-shadow: 0 16px 40px -28px rgba(24, 34, 56, 0.55);
+  box-shadow: var(--mydh-shadow);
 }
 .mydh-card::after {
   content: "";
@@ -319,7 +338,7 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
 }
 .mydh-card h3 {
   margin: 2px 0 0;
-  font-size: 22px;
+  font-size: var(--mydh-fs-h3);
   font-weight: 900;
   color: inherit;
 }
@@ -338,14 +357,14 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   display: inline;
   margin: 0 0 0 3px;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--mydh-fs-small);
   font-weight: 700;
   letter-spacing: normal;
   color: var(--mydh-ink3);
 }
 .mydh-card p {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: var(--mydh-fs-small);
   line-height: 1.4;
   color: var(--mydh-ink2);
 }
@@ -367,18 +386,18 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
 /* 큰 카드. 두 칸, 어두운 바탕, 주황 수 */
 .mydh-card--hero {
   grid-column: span 2;
-  background: rgba(24, 34, 56, 0.82);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
+  background: var(--mydh-hero-bg);
+  border-color: var(--mydh-hero-line);
+  color: var(--mydh-white);
 }
 .mydh-card--hero::after {
   background: linear-gradient(90deg, var(--mydh-orange), transparent);
 }
-.mydh-card--hero .mydh-en { color: rgba(255, 255, 255, 0.6); }
-.mydh-card--hero h3 { font-size: 26px; }
-.mydh-card--hero p.mydh-big { font-size: 72px; color: #f8b26a; }
-.mydh-card--hero p { color: rgba(255, 255, 255, 0.75); }
-.mydh-card--hero.is-open:hover { border-color: #fff; }
+.mydh-card--hero .mydh-en { color: var(--mydh-hero-en); }
+.mydh-card--hero h3 { font-size: var(--mydh-fs-hero-h3); }
+.mydh-card--hero p.mydh-big { font-size: var(--mydh-fs-hero-num); color: var(--mydh-hero-num); }
+.mydh-card--hero p { color: var(--mydh-hero-text); }
+.mydh-card--hero.is-open:hover { border-color: var(--mydh-white); }
 /* 아래 띠. 1년 전 이맘때 */
 .mydh-foot {
   margin-top: 40px;
@@ -390,17 +409,17 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   min-height: var(--myd-tap);
   padding: 10px 16px;
   border: 0;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--mydh-glass-strong);
   backdrop-filter: blur(10px);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--mydh-fs-ago);
   color: var(--mydh-ink2);
   text-align: left;
   cursor: pointer;
 }
 .mydh-ago .mydh-en { color: var(--mydh-sky); }
 .mydh-ago b {
-  font-size: 14px;
+  font-size: var(--mydh-fs-ago-b);
   font-weight: 900;
   color: var(--mydh-ink);
 }
@@ -440,20 +459,17 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   .mydh-yawn { right: -140px; bottom: auto; top: -60px; height: 900px; }
 }
 @media (max-width: 599px) {
-  .mydh { --mydh-pad: 14px; --mydh-hero: 28px; padding: 72px 14px 24px; }
+  .mydh { --mydh-pad: 14px; --mydh-hero: 28px; --mydh-fs-h3: 15px; --mydh-fs-hero-h3: 18px; --mydh-fs-hero-num: 48px; --mydh-fs-date: 28px; padding: 72px 14px 24px; }
   .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 8px; }
   .mydh-card { min-height: 100px; }
   .mydh-card { padding: 12px 14px; }
-  .mydh-card h3 { font-size: 15px; }
   .mydh-card--hero { min-height: 136px; }
   .mydh-card--hero .mydh-pics { max-width: 45%; overflow: hidden; }
-  .mydh-card--hero h3 { font-size: 18px; }
-  .mydh-card--hero p.mydh-big { font-size: 48px; }
   .mydh-card p { display: none; }
   .mydh-card p.mydh-big { display: block; }
   .mydh-pics { right: 14px; bottom: 12px; }
   .mydh-pics img { width: 40px; height: 40px; }
-  .mydh-date { left: 14px; top: 20px; font-size: 28px; }
+  .mydh-date { left: 14px; top: 20px; }
   .mydh-yawn { right: -130px; top: 30px; height: 560px; }
   .mydh-foot { margin-top: 12px; }
 }
