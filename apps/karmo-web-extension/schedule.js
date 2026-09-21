@@ -15,6 +15,7 @@ const SPECS = {
   "youtube-history": ["id", "day", "duration", "channel", "title"],
   "ytmusic-history": ["id", "day", "duration", "channel", "title", "album"],
   "ytmusic-playlist": ["id", "day", "duration", "channel", "title", "album"],
+  "youtube-playlist": ["id", "day", "duration", "channel", "title"],
   "chzzk-follows": ["name", "id", "followers", "notify", "followedAt"],
   "soop-favorites": [
     ["name", "name"],

@@ -326,6 +326,19 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
           }
         })();
         sendResponse({ ok: true, started: true });
+      } else if (msg?.type === "youtube.playlist") {
+        // \uc77c\ubc18 \uc720\ud29c\ube0c \ucabd\uc740 ytInitialData \uc640 browse \uc774\uc5b4\ubc1b\uae30\uac00 \uba39\ub294\ub2e4
+        (async () => {
+          try {
+            const url = "https://www.youtube.com/playlist?list=" + msg.list;
+            const r = await stepInTab(url, "youtube-history.js", "ytStep", 200);
+            const out = await dumpTsv("youtube-playlist", (r && r.rows) || []);
+            await chrome.storage.local.set({ "karmo.lastPl": { at: new Date().toISOString(), list: msg.list, file: out.file, count: out.count, note: r && r.note } });
+          } catch (e) {
+            await chrome.storage.local.set({ "karmo.lastPl": { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) } });
+          }
+        })();
+        sendResponse({ ok: true, started: true });
       } else if (msg?.type === "ytmusic.playlistLast") {
         sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.lastPl"))["karmo.lastPl"] || null });
       } else if (msg?.type === "ytmusic.last") {
