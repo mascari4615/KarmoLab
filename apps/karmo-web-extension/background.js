@@ -259,8 +259,16 @@ async function collectXAccounts() {
 
   await chrome.storage.local.set({ "karmo.progress": [] });
   await pull("https://x.com/" + me + "/following", "\ud314\ub85c\uc789");
-  const lists = await runInTab("https://x.com/" + me + "/lists", "x-accounts.js", "collectXOwnedLists", "MAIN");
-  await note("lists", `\ub0b4 \ub9ac\uc2a4\ud2b8 ${(lists || []).length}\uac1c`);
+  // X \uac00 \ubc30\uacbd \ud0ed\uc744 \ud648\uc73c\ub85c \ub418\ub3cc\ub9ac\ub294 \ud310\uc774 \uc11e\uc784. \uc138 \ubc88\uae4c\uc9c0 \ub2e4\uc2dc \uc5f0\ub2e4 (2026-09-21 \uc2e4\uce21)
+  let lists = [];
+  for (let try_ = 0; try_ < 3 && !lists.length; try_ += 1) {
+    try {
+      lists = (await runInTab("https://x.com/" + me + "/lists", "x-accounts.js", "collectXOwnedLists", "MAIN")) || [];
+    } catch (e) {
+      await note("lists-fail", `#${try_} ${e.message}`);
+    }
+    await note("lists", `#${try_} \ub0b4 \ub9ac\uc2a4\ud2b8 ${lists.length}\uac1c`);
+  }
   for (const l of lists || []) {
     await pull("https://x.com/i/lists/" + l.id + "/members", l.name || l.id);
   }
