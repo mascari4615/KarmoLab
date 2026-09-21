@@ -2914,7 +2914,11 @@ const Toolbox = (() => {
         let z = 1;
         /* 양방향. 큰 화면은 키우고 작은 화면은 줄여 1440x900 짜임을 지킨다 (사용자: 게임처럼). 0.6~1.75
          * 폰(1024 미만)은 안 건드린다. 폰 짜임은 따로 있고 0.3배로 줄이면 못 읽는다 */
-        if (mode === 'fit' && window.innerWidth >= 1024) {
+        /* 글 장(/posts/<slug>/)은 배율 없음. 1440x900 맞춤은 앱 짜임용이고, 글은 브라우저 글자 크기 그대로
+         * 읽는 것. 1920x1080 에서 1.2배가 걸려 본문 16px 이 19px 로 보였다 (2026-09-21 사용자 지적,
+         * 레퍼런스 블로그와 같은 16px 인데 커 보인 원인) */
+        const isPost = /^\/posts\/[^/]+\/?$/.test(window.location.pathname);   /* index.html 부팅 스크립트와 같은 판정 */
+        if (mode === 'fit' && !isPost && window.innerWidth >= 1024) {
             z = Math.min(window.innerWidth / 1440, window.innerHeight / 900);
             z = Math.max(0.6, Math.min(1.75, Math.round(z * 100) / 100));
         }

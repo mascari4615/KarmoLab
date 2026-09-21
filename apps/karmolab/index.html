@@ -188,7 +188,10 @@ permalink: /
      짜여 화면이 밀린다 (CI 실측 CLS 0.103~0.202, 머리띠와 옆줄과 본문이 한 프레임에 함께
      움직였다. 2026-09-04). 계산은 toolbox 의 applyUiScale 과 같은 식이어야 두 번 안 밀린다 */
   var sm=localStorage.getItem('toolbox_ui_scale')||'fit', z=1;
-  if(sm==='fit'&&window.innerWidth>=1024){
+  /* 글 장(/posts/<slug>/)은 배율 없음. 읽는 글은 브라우저 글자 크기 그대로 (2026-09-21).
+     toolbox 의 applyUiScale 과 같은 판정 */
+  var isPost=/^\/posts\/[^/]+\/?$/.test(location.pathname);
+  if(sm==='fit'&&!isPost&&window.innerWidth>=1024){
     z=Math.min(window.innerWidth/1440,window.innerHeight/900);
     z=Math.max(0.6,Math.min(1.75,Math.round(z*100)/100));
   }
