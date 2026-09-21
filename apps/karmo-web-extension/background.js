@@ -302,7 +302,7 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         // \ubb34\uac70\uc6b4 \uc751\ub2f5\uc740 \uc720\uc2e4\ub41c\ub2e4. \ud30c\uc77c\ub85c
         (async () => {
           try {
-            const r = await stepInTab("https://music.youtube.com/history", "youtube-history.js", "ytStep");
+            const r = await stepInTab("https://music.youtube.com/history", "ytmusic-history.js", "ytmStep");
             const out = await dumpTsv("ytmusic-history", (r && r.rows) || []);
             await chrome.storage.local.set({ "karmo.lastYtm": { at: new Date().toISOString(), file: out.file, count: out.count, note: r && r.note } });
           } catch (e) {
