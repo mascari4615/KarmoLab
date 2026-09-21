@@ -8,13 +8,15 @@
    웹글꼴이 오기 전에는 컴퓨터에 있는 글꼴로 먼저 보여 준다. 그런데 그 글꼴이 10.6% 더
    넓어서, 웹글꼴이 도착하는 순간 줄바꿈이 달라지며 화면이 통째로 밀렸다 (목록 실측 0.23).
    대신 쓸 글꼴의 폭을 미리 줄여 웹글꼴과 같게 맞춘다. 바뀌어도 자리가 그대로다.
-   비율은 실제로 재서 넣었다(같은 글에서 Noto Sans KR 699px 대 대체 글꼴 773px). */
+   비율은 실제로 재서 넣었다. 2026-09-21 본문 글꼴을 Noto Sans KR 에서 Pretendard 로 바꾸며 다시 쟀다
+   (한글 영문 숫자 섞인 한 줄, 사용자 Edge: Pretendard 486.9px 대 Malgun Gothic 528.1px = 92.2%).
+   위아래 지표는 Pretendard 의 hhea 값 (ascent 0.952, descent 0.241, lineGap 0). */
 @font-face {
     font-family: 'KarmoSans 자리맞춤';
     src: local('Malgun Gothic'), local('Apple SD Gothic Neo'), local('Noto Sans CJK KR'), local('Arial');
-    size-adjust: 90.4%;
-    ascent-override: 92%;
-    descent-override: 24%;
+    size-adjust: 92.2%;
+    ascent-override: 95.2%;
+    descent-override: 24.1%;
     line-gap-override: 0%;
 }
 :root {

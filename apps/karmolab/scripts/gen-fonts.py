@@ -40,7 +40,10 @@ GH = 'https://github.com/google/fonts/raw/main/'
 #   'common' = 소스에 실제로 나온 글자 ∪ 상용 2350자 — 본문용. 어떤 글이 와도 거의 다 덮는다.
 #   'ours'   = 소스에 실제로 나온 글자만 — 우리가 쓴 제목에만 쓰는 글꼴이라 이걸로 충분하다.
 FAMILIES = {
-    'sans':  ('ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf',       'KarmoSans',  ('latin', 'ko'), 'common'),
+    # 본문 Pretendard (OFL). Noto Sans KR 은 한글이 em 을 꽉 채워 같은 16px 에서 10% 큼
+    # (2026-09-21 실측 한글 10자 폭: Noto 152px, Pretendard 138px). 전체 URL 이면 GH 접두 없이
+    'sans':  ('https://github.com/orioncactus/pretendard/raw/main/packages/pretendard/dist/public/variable/PretendardVariable.ttf',
+              'KarmoSans',  ('latin', 'ko'), 'common'),
     'serif': ('ofl/notoserifkr/NotoSerifKR%5Bwght%5D.ttf',     'KarmoSerif', ('latin', 'ko'), 'ours'),
     'mono':  ('ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf', 'KarmoMono',  ('latin',),      'ours'),
     # 표시용 압축 글꼴. 큰 숫자와 대문자 제목에만 (change.karmolab-shell-redesign, 2026-08-30). 굵기 하나
@@ -137,7 +140,7 @@ def ensure_src():
         dst = os.path.join(SRC, key + '.ttf')
         if os.path.exists(dst) and os.path.getsize(dst) > 100000:
             continue
-        url = GH + path
+        url = path if path.startswith('http') else GH + path
         print(f'[gen-fonts] 원본을 받는다 — {key}')
         with urllib.request.urlopen(url) as r, open(dst, 'wb') as f:
             f.write(r.read())
