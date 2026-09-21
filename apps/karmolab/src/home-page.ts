@@ -45,8 +45,10 @@ import { toolIndexPath } from './lib/site-base';
         top.className = 'lq-top';
         const d = new Date();
         const dow = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+        // 한국어 원본 셸: 번역 묶음 전 동기 초기화, 초기 문구 유지
+        // 언어별 페이지: 미리 로드한 site 번역 사용
         top.innerHTML = `
-            <button type="button" class="lq-corner" data-home-chrome="1" title="${escapeHtml(t('site.nav.menu'))}" aria-label="${escapeHtml(t('site.nav.menu'))}"><i></i></button>
+            <button type="button" class="lq-corner" data-home-chrome="1" title="${escapeHtml(t('site.nav.menu', undefined, '메뉴'))}" aria-label="${escapeHtml(t('site.nav.menu', undefined, '메뉴'))}"><i></i></button>
             <span class="lq-en">KarmoLab</span>
             <div class="landing-palette lq-palette"></div>
             <div class="lq-date"><span class="lq-en">${dow} ${d.getFullYear()}</span><b>${d.getMonth() + 1} / ${d.getDate()}</b></div>
@@ -101,7 +103,7 @@ import { toolIndexPath } from './lib/site-base';
         const madeWith = document.createElement('p');
         madeWith.className = 'landing-madewith lq-foot';
         madeWith.innerHTML =
-            `<kbd>ESC</kbd>${escapeHtml(t('site.nav.menu'))} <kbd>CTRL K</kbd>${escapeHtml(t('site.nav.search'))} ` +
+            `<kbd>ESC</kbd>${escapeHtml(t('site.nav.menu', undefined, '메뉴'))} <kbd>CTRL K</kbd>${escapeHtml(t('site.nav.search', undefined, '찾기'))} ` +
             `${escapeHtml(t('site.madewith', undefined, 'AI 와 함께 만듭니다.'))} ` +
             `<a href="https://github.com/Mascari4615/Mascari4615.github.io" rel="noopener">${escapeHtml(t('site.madewith.src', undefined, '소스 보기'))}</a>`;
         landing.appendChild(madeWith);
