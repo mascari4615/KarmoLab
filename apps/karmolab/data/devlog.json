@@ -2,8 +2,8 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1862,
-    "days": 13,
+    "commits": 1876,
+    "days": 12,
     "shown": 60
   },
   "days": [
@@ -11,22 +11,50 @@
       "date": "2026-09-21",
       "entries": [
         {
-          "sha": "a4f7b096",
+          "sha": "9bcb8158",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "idle",
-          "text": "인형 명단을 세계관으로. 네 번째, 링, 알리사, 저고리, 토끼, 섬 소녀 여섯"
+          "text": "시작 인형 셋 (욘, 링, 알리사). 편성 바뀐 칸은 다른 인형 뒤에서 시작"
         },
         {
-          "sha": "f0388fbf",
+          "sha": "e35090c1",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "반복 토글을 끄면 전멸로 걸린 Repeating 도 푼다. 보스 잡아도 구역이 안 넘어가고 토글이 안 꺼지던 것 (피드백 7, 8)"
+        },
+        {
+          "sha": "c7cc63ef",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "idle",
-          "text": "카드는 편성 인형의 스킬. 덱은 인형 id 순서, 스킬은 임시로 축대로, 가속 카드 추가"
+          "text": "UI 검사기에 겹침, 꽉 참, 안 보임, 빽빽함 추가. 팝업 4 상태, 칸 좌표 덤프"
+        },
+        {
+          "sha": "7ceb7730",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "도감, 연구소, 투자 문구 영문. 검사기 한글 예외에 인형 이름 자리 (도감 줄, 픽업)"
+        },
+        {
+          "sha": "244e512b",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "idle",
+          "text": "UI 문법 검사기 (IdleUiGrammarAudit). 글자 넘침, 화면 밖, 금색, 한글을 상태 8개에서 잰다. 잡힌 것 셋 고침 (칩 화면 밖, 반복 램프, 배지)"
+        },
+        {
+          "sha": "ff543adc",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "빈 자리 상태. 자리에 +, EMPTY, 장비 칸 영문 작게, MAX 글자 맞춤"
         }
       ],
-      "quiet": 0,
-      "more": 0
+      "quiet": 3,
+      "more": 9
     },
     {
       "date": "2026-09-20",
@@ -478,45 +506,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "idle",
           "text": "무대가 나아간다 — 웨이브 줄 + 보스 + 가챠 인형만 선다 (V2, TASK-WM-406)"
-        },
-        {
-          "sha": "d914288a",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "V2 작전 씬 — 쿼터뷰 무대 + 카드 HUD (concept-v2 2A, TASK-WM-406)"
-        },
-        {
-          "sha": "e4233b56",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "카드·코스트 코어 — V2 개입층 1단계 (concept-v2, TASK-WM-406)"
-        },
-        {
-          "sha": "4d512a4f",
-          "type": "perf",
-          "typeLabel": "빨라진 것",
-          "scope": "ci",
-          "text": "web-live 8샤드에 playwright 캐시 (change.dev-loop-speedup)"
         }
       ],
       "quiet": 0,
-      "more": 1
-    },
-    {
-      "date": "2026-08-21",
-      "entries": [
-        {
-          "sha": "ad58d6a7",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "tests",
-          "text": "저장소 뿌리를 에디터 설치 폴더에서 찾고 있었다 — 실패 5건이 한 원인 (TASK-WM-416)"
-        }
-      ],
-      "quiet": 1,
-      "more": 2
+      "more": 4
     }
   ]
 }
