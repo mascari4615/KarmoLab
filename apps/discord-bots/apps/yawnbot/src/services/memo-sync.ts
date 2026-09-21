@@ -18,6 +18,8 @@
  * **동일**(평행정의 X. 같은 로직을 봇 서비스로 미러):
  *   1. `git fetch <authUrl> main`  (MEMO_GITHUB_PAT 인증. memo=private)
  *   2. `local == FETCH_HEAD` 면 skip (이미 최신, deploy 스텝의 동일 판정)
+ *   2.5 tracked 미커밋 편집이 있으면 reset 보류 + 장애 alert (2026-09-21.
+ *      개발 노트북에선 이 경로가 공유 checkout 이라 남의 편집을 지우던 것)
  *   3. `git reset --hard FETCH_HEAD` (tracked=origin byte-identical,
  *      untracked 런타임은 reset 이 *안 건드림* = 생존)
  *
@@ -72,6 +74,21 @@ export interface GitRunner {
   fetchHeadSha(cfg: MemoSyncConfig): Promise<string>;
   /** `git reset --hard FETCH_HEAD`. 실패 throw. */
   resetHard(cfg: MemoSyncConfig): Promise<void>;
+  /**
+   * `git status --porcelain --untracked-files=no` → tracked 파일 중 미커밋 편집 경로 목록.
+   * untracked 는 안 센다 (봇 런타임 산출물, reset 이 안 건드리는 것).
+   */
+  trackedDirty(cfg: MemoSyncConfig): Promise<string[]>;
+}
+
+/** 미커밋 편집 때문에 reset 을 보류한 실패. 상태 전이 alert 로 올라간다. */
+export class MemoSyncDirtyError extends Error {
+  constructor(readonly files: string[]) {
+    const head = files.slice(0, 5).join(', ');
+    const more = files.length > 5 ? ` 외 ${files.length - 5}` : '';
+    super(`미커밋 편집 ${files.length}개 있어 reset 보류 (${head}${more}). 커밋하거나 되돌려야 동기 재개`);
+    this.name = 'MemoSyncDirtyError';
+  }
 }
 
 export interface MemoSyncPlan {
@@ -118,6 +135,13 @@ export async function syncMemoOnce(
     logger.log(`[MemoSync] 이미 최신 (${plan.localSha})`);
     return `최신 (${plan.localSha})`;
   }
+  // ★ tracked 미커밋 편집이 있으면 reset 안 한다 (2026-09-21 실측). 설계 전제 "봇은 tracked 를
+  //   안 만지니 reset --hard 무해" 는 prod 전용 클론 이야기다. 개발 노트북에선 MEMO_REPO_PATH 가
+  //   에이전트, 사람과 같이 쓰는 공유 checkout 이라, 10분마다 남의 편집을 소리 없이 지웠다
+  //   (memo `systems/lane-workspaces.md` 2026-09-17 절). 지우는 대신 멈추고 alert 로 올린다.
+  //   untracked 는 안 본다. 봇 런타임 산출물이고 reset 도 안 건드리는 것들이다.
+  const dirty = await git.trackedDirty(cfg);
+  if (dirty.length > 0) throw new MemoSyncDirtyError(dirty);
   await git.resetHard(cfg);
   logger.log(
     `[MemoSync] reset --hard ${plan.localSha} -> ${plan.remoteSha} (prod==origin, 런타임 untracked 보존)`,
@@ -235,6 +259,14 @@ export function createGitRunner(): GitRunner {
     },
     async resetHard(cfg) {
       await run(cfg, ['reset', '--hard', 'FETCH_HEAD'], DEFAULT_TIMEOUT_MS);
+    },
+    async trackedDirty(cfg) {
+      const out = await run(cfg, ['status', '--porcelain', '--untracked-files=no'], 15_000);
+      return out
+        .split('\n')
+        .map((line) => line.trimEnd())
+        .filter((line) => line.length > 3)
+        .map((line) => line.slice(3));
     },
   };
 }

@@ -206,6 +206,13 @@ jobs:
           $local  = (& git rev-parse HEAD 2>$null)
           $remote = (& git rev-parse FETCH_HEAD 2>$null)
           if ($local -eq $remote) { Write-Host "[memo-sync] 이미 최신 ($($local.Substring(0,7)))"; exit 0 }
+          # tracked 미커밋 편집이 있으면 reset 보류 (2026-09-21, memo-sync.ts 와 같은 규칙).
+          # 개발 노트북에선 이 경로가 에이전트, 사람과 같이 쓰는 공유 checkout 이라
+          # reset --hard 가 남의 편집을 지웠다. untracked 는 안 본다(봇 런타임, reset 이 안 건드림).
+          $dirty = @(& git status --porcelain --untracked-files=no 2>$null | Where-Object { $_ })
+          if ($dirty.Count -gt 0) {
+            Skip-Loud "tracked 미커밋 편집 $($dirty.Count)개 있어 reset 보류: $(($dirty | Select-Object -First 5) -join ', ')"
+          }
           # 결정화: tracked 는 origin 과 항상 일치, untracked 런타임은 생존.
           # 봇이 tracked 정본을 mutate 안 하므로(part2) 영영 안전, 결정적.
           & git reset --hard FETCH_HEAD 2>&1

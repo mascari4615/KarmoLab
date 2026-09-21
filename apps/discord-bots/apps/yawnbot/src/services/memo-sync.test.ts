@@ -20,6 +20,7 @@ import {
   getActiveMemoSyncHandle,
   type MemoSyncConfig,
   type GitRunner,
+  type MemoSyncAlert,
 } from './memo-sync';
 
 const CFG: MemoSyncConfig = {
@@ -36,6 +37,8 @@ function fakeGit(opts: {
   fetchHead: string;
   fetchErr?: Error;
   resetErr?: Error;
+  /** tracked 미커밋 편집 경로. 기본 [] (깨끗). */
+  dirty?: string[];
   spy?: { fetch?: () => void; reset?: () => void };
 }): GitRunner {
   return {
@@ -52,6 +55,9 @@ function fakeGit(opts: {
     async resetHard() {
       opts.spy?.reset?.();
       if (opts.resetErr) throw opts.resetErr;
+    },
+    async trackedDirty() {
+      return opts.dirty ?? [];
     },
   };
 }
@@ -126,6 +132,63 @@ describe('syncMemoOnce. skip 이면 reset X / 변경이면 reset --hard', () => 
     await expect(syncMemoOnce(CFG, git, silentLogger)).rejects.toThrow(
       /인덱스 잠금/,
     );
+  });
+
+  // 2026-09-21 회귀. 개발 노트북에선 MEMO_REPO_PATH 가 공유 checkout 이라 10분마다
+  // 남의 미커밋 편집을 소리 없이 지웠다 (memo lane-workspaces 2026-09-17 절).
+  it('tracked 미커밋 편집 있으면 reset 0, 파일 이름을 든 오류로 멈춘다', async () => {
+    let resets = 0;
+    const git = fakeGit({
+      head: 'old1111111',
+      fetchHead: 'new2222222',
+      dirty: ['scripts/realign-trunk.mjs', 'scripts/realign-trunk.test.mjs'],
+      spy: { reset: () => { resets += 1; } },
+    });
+    await expect(syncMemoOnce(CFG, git, silentLogger)).rejects.toThrow(
+      /미커밋 편집 2개 있어 reset 보류 \(scripts\/realign-trunk\.mjs, scripts\/realign-trunk\.test\.mjs\)/,
+    );
+    expect(resets).toBe(0);
+  });
+
+  it('dirty 목록은 5개까지만 이름, 나머지는 개수', async () => {
+    const git = fakeGit({
+      head: 'old1111111',
+      fetchHead: 'new2222222',
+      dirty: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+    });
+    await expect(syncMemoOnce(CFG, git, silentLogger)).rejects.toThrow(
+      /미커밋 편집 7개 있어 reset 보류 \(a, b, c, d, e 외 2\)/,
+    );
+  });
+
+  it('untracked 만 있으면(dirty []) 평소처럼 reset', async () => {
+    let resets = 0;
+    const git = fakeGit({
+      head: 'old1111111',
+      fetchHead: 'new2222222',
+      dirty: [],
+      spy: { reset: () => { resets += 1; } },
+    });
+    await syncMemoOnce(CFG, git, silentLogger);
+    expect(resets).toBe(1);
+  });
+});
+
+describe('runMemoSyncTick. dirty 는 장애 alert 로 올라가고, 치우면 복구 alert', () => {
+  it('healthy → dirty = 장애 alert 1회(파일 이름 포함), 치운 뒤 = 복구 alert', async () => {
+    const alerts: MemoSyncAlert[] = [];
+    const dirty = fakeGit({ head: 'a000000', fetchHead: 'b111111', dirty: ['rules/git.md'] });
+    const clean = fakeGit({ head: 'a000000', fetchHead: 'b111111' });
+    const deps = { alert: (e: MemoSyncAlert) => alerts.push(e), logger: silentLogger };
+    const r1 = await runMemoSyncTick(CFG, true, { ...deps, git: dirty });
+    expect(r1.healthy).toBe(false);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].healthy).toBe(false);
+    expect(alerts[0].reason).toMatch(/rules\/git\.md/);
+    const r2 = await runMemoSyncTick(CFG, false, { ...deps, git: clean });
+    expect(r2.healthy).toBe(true);
+    expect(alerts).toHaveLength(2);
+    expect(alerts[1].healthy).toBe(true);
   });
 });
 
@@ -331,6 +394,7 @@ describe('startMemoSync. 스케줄링 + ensureFresh', () => {
       resetHard: async () => {
         resetCalls++;
       },
+      trackedDirty: async () => [],
     };
     const handle = startMemoSync({
       token: 'tok',
