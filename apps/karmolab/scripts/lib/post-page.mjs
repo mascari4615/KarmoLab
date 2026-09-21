@@ -165,10 +165,36 @@ ${bodyHtml}
 /** 글 장에만 필요한 몇 줄. 목차, 앞뒤 글. 커뮤니티에 없는 조각이라 여기 둔다(겹치지 않는다). */
 export const POST_EXTRA_CSS = `<style>
 .post-adjacent{display:flex;justify-content:space-between;gap:16px;margin:32px 0 8px;padding-top:16px;border-top:1px solid var(--border);font-size:var(--font-size-xs)}
-.post-toc{position:fixed;top:110px;left:calc(50% + 500px);width:200px;font-size:13px;line-height:1.6}
-.post-toc a{display:block;color:var(--text-tertiary);padding:2px 0}.post-toc a.h3{padding-left:14px}
-@media(max-width:1400px){.post-toc{display:none}}
-</style>`;
+.post-toc{position:fixed;top:110px;left:0;width:200px;font-size:13px;line-height:1.7;visibility:hidden}
+.post-toc[data-placed="1"]{visibility:visible}
+.post-toc a{display:block;color:var(--text-tertiary);padding:3px 0;text-decoration:none}.post-toc a:hover{color:var(--text-primary)}.post-toc a.h3{padding-left:14px}
+</style>
+<script>
+/* 목차 자리. 화면 가운데 기준(50% + 500px)으로 잡았더니 왼쪽 도구 옆판 224px 만큼 글이 오른쪽으로
+   밀려 1440px 화면에서 목차가 글 위에 겹쳤다 (2026-09-21 실측 x 1220 vs 글 오른끝 1258).
+   글 상자의 실제 오른끝에서 24px 띄우고, 자리가 안 남으면 숨긴다. */
+(function(){
+  function init(){
+    var toc=document.querySelector('.post-toc'), wrap=document.querySelector('.c-wrap');
+    if(!toc||!wrap) return;
+    function place(){
+      wrap.style.transform='';
+      var r=wrap.getBoundingClientRect(), left=r.right+24, over=left+200-(window.innerWidth-8);
+      if(over>0){
+        /* 오른쪽이 모자라면 글 상자를 그만큼 왼쪽으로 민다. 왼쪽 여백(가운데 정렬분)이 그만큼 있을 때만.
+           margin 은 flex 부모가 되돌려서 transform 으로 민다. */
+        var room=r.left-wrap.parentElement.getBoundingClientRect().left-16;
+        if(room<over){ toc.removeAttribute('data-placed'); return; }
+        wrap.style.transform='translateX(-'+over+'px)'; left-=over;
+      }
+      toc.style.left=left+'px'; toc.setAttribute('data-placed','1');
+    }
+    place(); window.addEventListener('resize',place); window.addEventListener('load',place);
+  }
+  /* 이 블록은 head 에 실린다. 본문이 생긴 뒤에 잰다. */
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>`;
 
 /** 글 장 머리에 들어가는 것. 구조화 데이터, 게시판 시트. 셸이 나머지를 다 준다. */
 export function postHead(meta, { mathCss = false } = {}) {
