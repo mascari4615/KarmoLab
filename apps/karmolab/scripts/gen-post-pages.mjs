@@ -278,7 +278,7 @@ for (const post of posts) {
        한눈에 달라 보였다. 도구 상세 장이 이미 가는 길(shell-page.mjs, KL-129)로 합류한다.
        대가(장당 바깥 리소스 2→13)는 그 결정의 값이다. 아래 무게 게이트도 같이 옮겼다. */
     const permalink = `/posts/${post.slug}/`;
-       머리 줄 한 줄과 본문뿐. 겉모습은 community.css 정본 그대로 */
+    /* blog 전용 바탕 (change.site-split 2026-09-22). KarmoLab 셸 없음
        머리 줄 한 줄과 본문뿐, 겉모습은 community.css 정본 그대로 */
     let page = blogPage({
         title: `${post.title} | Blog`,

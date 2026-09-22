@@ -28,6 +28,7 @@
     --font-size-sm: 16px;
     --font-size-display-sm: 24px;
     --b-max: 760px;
+    --b-fs-name: 15px;
 }
 :root[data-theme="light"] {
     color-scheme: light;
@@ -63,11 +64,11 @@ html, body { margin: 0; }
     margin: 0 auto;
     padding: 22px 20px 10px;
 }
-.b-home { font-size: 15px; font-weight: 800; letter-spacing: 0.04em; color: var(--text-primary); text-decoration: none; }
+.b-home { font-size: var(--b-fs-name); font-weight: 800; letter-spacing: 0.04em; color: var(--text-primary); text-decoration: none; }
 .b-nav { display: flex; gap: 14px; margin-left: auto; }
 .b-nav a, .b-foot a { font-size: var(--font-size-xs); color: var(--text-secondary); text-decoration: none; }
 .b-nav a:hover, .b-foot a:hover, .b-home:hover { color: var(--accent); }
-.b-theme { border: 0; background: none; color: var(--text-secondary); font-size: 15px; cursor: pointer; padding: 2px 4px; }
+.b-theme { border: 0; background: none; color: var(--text-secondary); font-size: var(--b-fs-name); cursor: pointer; padding: 2px 4px; }
 .b-main { flex: 1; width: 100%; max-width: var(--b-max); margin: 0 auto; padding: 8px 20px 60px; }
 .b-foot { display: flex; gap: 16px; max-width: var(--b-max); width: 100%; margin: 0 auto; padding: 20px; border-top: 1px solid var(--border); }
 /* 글 장과 목록은 community.css 가 그린다. 그 판의 유리와 최대 폭만 여기서 푼다 */
