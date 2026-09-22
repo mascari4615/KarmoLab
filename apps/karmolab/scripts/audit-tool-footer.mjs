@@ -74,12 +74,32 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' }).end(body);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const BASE = `http://127.0.0.1:${server.address().port}`;
+let base = `http://127.0.0.1:${server.address().port}`;
+
+async function openTool(page, id) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await page.goto(`${base}/apps/karmolab/index.html#${id}`, { waitUntil: 'load', timeout: 30000 });
+      return page;
+    } catch (error) {
+      if (!String(error.message).includes('ERR_UNSAFE_PORT') || attempt === 4) throw error;
+      console.log(`[audit-tool-footer] 브라우저가 ${server.address().port}번을 차단. 빈 포트를 다시 배정`);
+      await new Promise((resolve) => server.close(resolve));
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      base = `http://127.0.0.1:${server.address().port}`;
+      const context = page.context();
+      const viewport = page.viewportSize();
+      await page.close();
+      page = await context.newPage();
+      if (viewport) await page.setViewportSize(viewport);
+    }
+  }
+}
 
 const browser = await launchOrSkip('audit-tool-footer');
 if (!browser) { server.close(); process.exit(2); }
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
-const page = await ctx.newPage();
+let page = await ctx.newPage();
 
 /* 두 창 높이로 본다. 넉넉한 창에서만 재면 ②(짧으면 사라짐)를 영영 못 잡는다. */
 const HEIGHTS = [900, 620];
@@ -93,6 +113,7 @@ let skipped = 0;
  * 재는 것은 전부 **자리**(CSS 가 창 높이를 보고 정하는 값)라, 창만 바꿔도 그대로 다시 잡힌다.
  * 새로 열어서 얻는 것은 없고 배포만 늦어진다. 이 검사 하나가 빌드 10분 중 3분이었다.
  * 대신 창을 바꾼 뒤 **자리가 멎을 때까지** 기다린다(고정 대기를 지우면서 정직은 지킨다). */
+try {
 for (const id of targets) {
   let opened = false;
   for (const H of HEIGHTS) {
@@ -102,7 +123,7 @@ for (const id of targets) {
     } else {
       // 해시만 바꾸면 popstate가 별도 도구 페이지로 이동. 각 도구를 새 문서로 시작
       await page.goto('about:blank');
-      await page.goto(`${BASE}/apps/karmolab/index.html#${id}`, { waitUntil: 'load', timeout: 30000 });
+      page = await openTool(page, id);
       opened = true;
     }
     /* **그 도구의 판**이 뜰 때까지 기다린다. 푸터로 기다리면 앞 도구의 잔상에 걸려
@@ -183,8 +204,10 @@ for (const id of targets) {
   }
 }
 
-await browser.close();
-server.close();
+} finally {
+  await browser.close();
+  server.close();
+}
 
 const head = ['도구', '창', '레이아웃', '글자여백', '보임', '판정'];
 const widths = head.map((h, i) => Math.max(h.length, ...rows.map((r) => String(r[i]).length)));
