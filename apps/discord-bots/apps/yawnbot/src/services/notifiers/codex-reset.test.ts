@@ -226,4 +226,15 @@ describe('문맥 재분석과 복구', () => {
     await monitor.refresh();
     expect(await monitor.deliver(vi.fn())).toBe(1);
   });
+  it('첫 복구 알림은 더 최근의 불확실한 언급보다 명확한 공지 우선', async () => {
+    const { store, fetchPosts } = setup();
+    const uncertain = post('101', 'Maybe soon', '2026-09-09T09:01:00Z');
+    fetchPosts.mockResolvedValue([timed, uncertain]);
+    const monitor = new ResetMonitor({ author: 'thsottiaux', store, fetchPosts, now: () => now,
+      analyze: async p => p.id === timed.id ? signal : { ...signal, post: p, status: 'uncertain', analysis: { ...signal.analysis, needsReview: true } } });
+    await monitor.refresh();
+    const send = vi.fn();
+    expect(await monitor.deliver(send)).toBe(1);
+    expect(send.mock.calls[0][0].post.id).toBe(timed.id);
+  });
 });

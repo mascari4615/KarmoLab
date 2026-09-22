@@ -138,9 +138,10 @@ export class ResetMonitor {
     const now = this.deps.now?.() ?? Date.now();
     const pending = this.state.signals.filter(s => !this.state.sent.includes(s.post.id) && (s.status !== 'uncertain' || s.analysis?.needsReview)
       && Date.parse(s.post.postedAt) >= now - RESET_POST_MAX_AGE_MS && Date.parse(s.post.postedAt) <= now + 60_000);
-    // 처음 켰을 때 과거 공지 일괄 발송 방지, 최신 관련 공지 한 건부터
+    // 처음 켰을 때 과거 공지 일괄 발송 방지, 불확실한 언급보다 명확한 공지 우선
     const firstDelivery = this.state.sent.length === 0;
-    const selected = firstDelivery ? pending.slice(-1) : pending.slice(0, 3);
+    const first = pending.filter(s => s.status !== 'uncertain').slice(-1)[0] || pending.slice(-1)[0];
+    const selected = firstDelivery ? first ? [first] : [] : pending.slice(0, 3);
     for (const signal of selected) {
       await send(signal);
       const updated = { ...this.state, sent: [...new Set([...this.state.sent, ...(firstDelivery ? pending.map(s => s.post.id) : [signal.post.id])])].slice(-500) };
