@@ -2,11 +2,53 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1876,
+    "commits": 1885,
     "days": 12,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-09-22",
+      "entries": [
+        {
+          "sha": "a2c028eb",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "idle",
+          "text": "카메라 수평 행군 (yaw 0) 과 인형을 화면 아래로, 카드 줄은 전투 창 우하단, 배속과 AUTO 는 위 띠로 (피드백 12, 19)"
+        },
+        {
+          "sha": "2dd98d7e",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "대상 지정 중 오른쪽 메뉴 판도 어둡게 (사용자 2026-09-22 \"어두워질거면 화면 전체가\")"
+        },
+        {
+          "sha": "49888b4d",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "idle",
+          "text": "스킬 대상 지정 표시를 참고 실측대로. 어둡게 + 커서 아래 바닥 타원, 카드 들림 + CANCEL, 한 줄 설명 (피드백 11)"
+        },
+        {
+          "sha": "5ebb6d66",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "사진 한 장의 쓰레기 0. EnsureDeck 의 힙 배열을 스택으로. 왕복 시험에 HasteSecondsLeft 와 덱 (피드백 18)"
+        },
+        {
+          "sha": "e53a52bc",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "반복 토글은 램프 (머무르기 또는 전멸 반복) 를 뒤집는다. 전멸로 켜진 램프가 첫 누름에 안 꺼지던 것 (피드백 8)"
+        }
+      ],
+      "quiet": 4,
+      "more": 0
+    },
     {
       "date": "2026-09-21",
       "entries": [
@@ -464,52 +506,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "idle",
           "text": "기하학 적에 루프 애니메이션 추가"
-        },
-        {
-          "sha": "a15b59a8",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "공방을 등급 기준 랜덤 합성으로 변경"
-        },
-        {
-          "sha": "00bcf8ad",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "전장 이동을 부드럽게 보간"
         }
       ],
       "quiet": 10,
-      "more": 19
-    },
-    {
-      "date": "2026-08-23",
-      "entries": [
-        {
-          "sha": "8721cfd1",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "실조사 P0 3건 — 머리 위 체력바·웨이브 무리·코스트 속도 (TASK-WM-406)"
-        },
-        {
-          "sha": "57fe3cae",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "부대 전투 — 적 반격·쓰러짐·부활·실패·반복 + 창 3종 (V2, TASK-WM-406)"
-        },
-        {
-          "sha": "75e9ea55",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "무대가 나아간다 — 웨이브 줄 + 보스 + 가챠 인형만 선다 (V2, TASK-WM-406)"
-        }
-      ],
-      "quiet": 0,
-      "more": 4
+      "more": 21
     }
   ]
 }
