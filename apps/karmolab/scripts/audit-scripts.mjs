@@ -69,8 +69,13 @@ const wfCalled = fs.existsSync(wfPath)
        첫 커밋**은 영원히 막힌다: 파일은 이 커밋에 들어 있는데 HEAD 에는 아직 없으니까.
        실제로 오늘 그 자물쇠에 걸려 push 가 두 번 튕겼다. 형제 감사들처럼 `KL_PUSH_SHA` 를 쓴다. */
     const baseline = process.env.KL_PUSH_SHA || 'HEAD';
-    const out = execFileSync('git', ['ls-tree', '-r', '--name-only', baseline, 'scripts', 'img', 'data'], { cwd: root, encoding: 'utf8' });
-    tracked = new Set(out.split('\n').map((s) => s.trim()).filter(Boolean));
+    // push 훅의 상대 GIT_WORK_TREE도 저장소 루트에서 해석. 하위 cwd에 물리면 다른 scripts를 읽음
+    const repoRoot = path.resolve(root, '../..');
+    const prefix = 'apps/karmolab/';
+    const out = execFileSync('git', ['ls-tree', '-r', '--name-only', baseline,
+      ...['scripts', 'img', 'data'].map((dir) => prefix + dir)], { cwd: repoRoot, encoding: 'utf8' });
+    tracked = new Set(out.split('\n').map((s) => s.trim()).filter((s) => s.startsWith(prefix))
+      .map((s) => s.slice(prefix.length)));
   } catch {
     /* ★ **못 물어본 것은 빨강이 아니다** (2026-08-13). 이 검사는 저장소 밖(밀 커밋을 풀어 놓은
        자리 등)에서도 불린다. 거기서 git 을 못 부른다고 없는 파일을 부른다로 세면,
