@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ResetMonitor, buildResetEmbed, type ResetState } from './codex-reset';
 import { classifyResetPost, type ResetPost } from '../sources/codex-reset';
 
@@ -161,5 +161,69 @@ describe('한국어 공지 내용', () => {
     const embed = buildResetEmbed(classifyResetPost(post('1', 'We will reset Codex usage at 6pm PST.'))!, now).toJSON();
     expect(embed.description).toContain('UTC-8');
     expect(embed.description).toContain('1시간');
+  });
+});
+
+describe('문맥 재분석과 복구', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  const timed = post('100', '3am on a tuesday');
+  const signal = { post: timed, kind: 'reset' as const, status: 'scheduled' as const, timing: null,
+    analysis: { summary: '주변 초기화 대화에 대한 일정 답변', timingText: timed.text, evidenceIds: [timed.id] } };
+  it('이미 본 글의 이전 누락 복구, 발송 중복 기록 유지', async () => {
+    const { store, fetchPosts } = setup();
+    store.save({ author: 'thsottiaux', seen: ['100'], sent: ['99'], signals: [], checkedAt: null });
+    fetchPosts.mockResolvedValue([timed]);
+    const analyze = vi.fn().mockResolvedValue(signal);
+    const monitor = new ResetMonitor({ author: 'thsottiaux', store, fetchPosts, analyze, now: () => now });
+    await monitor.refresh();
+    expect(analyze).toHaveBeenCalledWith(timed);
+    const send = vi.fn();
+    expect(await monitor.deliver(send)).toBe(1);
+    expect(monitor.snapshot().sent).toEqual(['99', '100']);
+    expect(buildResetEmbed(send.mock.calls[0][0]).toJSON().description).toContain('한국시간 미정');
+  });
+  it('재시작 후 같은 원문은 캐시, 답글 내용이 바뀌면 재분석', async () => {
+    const { store, fetchPosts } = setup();
+    fetchPosts.mockResolvedValue([timed]);
+    const analyze = vi.fn().mockResolvedValue(signal);
+    const create = () => new ResetMonitor({ author: 'thsottiaux', store, fetchPosts, analyze, now: () => now });
+    await create().refresh();
+    await create().refresh();
+    expect(analyze).toHaveBeenCalledTimes(1);
+    fetchPosts.mockResolvedValue([{ ...timed, context: [{ id: '101', author: 'other', relation: 'reply', text: 'Banked or reset?' }] }]);
+    await create().refresh();
+    expect(analyze).toHaveBeenCalledTimes(2);
+  });
+  it('AI 실패는 제외로 저장하지 않고 정상 수집 위치 보존', async () => {
+    const { store, fetchPosts } = setup();
+    fetchPosts.mockResolvedValue([timed]);
+    const before = store.load();
+    const monitor = new ResetMonitor({ author: 'thsottiaux', store, fetchPosts, analyze: async () => { throw new Error('AI offline'); }, now: () => now });
+    await expect(monitor.refresh()).rejects.toThrow('AI offline');
+    expect(store.load()).toEqual(before);
+    expect(monitor.snapshot()).toEqual(before);
+  });
+  it('활성 AI 변경은 캐시 재분석, 기존 발송 중복 방지', async () => {
+    const { store, fetchPosts } = setup();
+    fetchPosts.mockResolvedValue([timed]);
+    const analyze = vi.fn().mockResolvedValue(signal);
+    const create = () => new ResetMonitor({ author: 'thsottiaux', store, fetchPosts, analyze, now: () => now });
+    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude');
+    const first = create();
+    await first.refresh();
+    expect(await first.deliver(vi.fn())).toBe(1);
+    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude,codex,grok');
+    const second = create();
+    await second.refresh();
+    expect(analyze).toHaveBeenCalledTimes(2);
+    expect(await second.deliver(vi.fn())).toBe(0);
+  });
+  it('AI 의견 차이는 확인 필요 알림으로 전달', async () => {
+    const { store, fetchPosts } = setup();
+    fetchPosts.mockResolvedValue([timed]);
+    const monitor = new ResetMonitor({ author: 'thsottiaux', store, fetchPosts, now: () => now,
+      analyze: async () => ({ ...signal, status: 'uncertain', analysis: { ...signal.analysis, needsReview: true } }) });
+    await monitor.refresh();
+    expect(await monitor.deliver(vi.fn())).toBe(1);
   });
 });

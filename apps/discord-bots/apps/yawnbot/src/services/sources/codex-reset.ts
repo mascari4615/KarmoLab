@@ -4,6 +4,7 @@ export interface ResetPost {
   postedAt: string;
   url: string;
   truncated?: boolean;
+  context?: Array<{ id: string; author: string; text: string; relation: 'parent' | 'reply' }>;
 }
 
 export interface ResetSignal {
@@ -11,12 +12,14 @@ export interface ResetSignal {
   kind: 'reset' | 'banked' | 'both';
   status: 'completed' | 'scheduled' | 'uncertain';
   timing: { at: string; qualifier: 'around' | 'within' | 'by' | 'exact'; evidence: string } | null;
+  analysis?: { summary: string; evidenceIds: string[]; timingText: string | null;
+    reviews?: Array<{ provider: string; status: string; summary: string }>; needsReview?: boolean };
 }
 
 export const DEFAULT_RESET_AUTHOR = 'thsottiaux';
 export const RESET_POST_MAX_AGE_MS = 24 * 3_600_000;
 
-function parsePostUrl(input: string): { author: string; id: string; url: string } {
+export function parsePostUrl(input: string): { author: string; id: string; url: string } {
   let url: URL;
   try { url = new URL(input); } catch { throw new Error('X 트윗 링크를 입력해 주세요.'); }
   const match = url.pathname.match(/^\/([A-Za-z0-9_]{1,15})\/status\/(\d{16,19})\/?$/);

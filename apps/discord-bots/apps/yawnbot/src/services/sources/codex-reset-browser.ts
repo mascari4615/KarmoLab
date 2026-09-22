@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
 import { PKG_ROOT } from '../../paths';
-import { RESET_POST_MAX_AGE_MS, type ResetPost } from './codex-reset';
+import { parsePostUrl, RESET_POST_MAX_AGE_MS, type ResetPost } from './codex-reset';
 
 export const browserSessionPath = () => path.join(PKG_ROOT, 'data', 'codex-reset-browser', 'session.json');
 type BrowserSession = Awaited<ReturnType<BrowserContext['storageState']>>;
@@ -103,7 +103,36 @@ export async function discoverBrowserPosts(page: Page, author: string, sinceId?:
   throw new ResetBrowserError('incomplete', 'X 이전 수집 위치까지 읽지 못함. 마지막 수집 위치 유지');
 }
 
-export async function readBrowserPost(page: Page, card: Pick<Card, 'id' | 'url'>, author: string): Promise<ResetPost> {
+export async function readBrowserContext(page: Page, targetId: string): Promise<NonNullable<ResetPost['context']>> {
+  const read = () => page.locator('article[data-testid="tweet"]').evaluateAll((articles, id) => {
+    // 상세 화면의 대상 시각은 User-Name 헤더 밖에 있음. 대상 경계와 주변 글 헤더를 따로 선택
+    const targetIndex = articles.findIndex(article => [...article.querySelectorAll('a[href] time')].some(time =>
+      !time.closest('[role="link"]:not(a)') && time.closest('a')?.getAttribute('href')?.endsWith(`/status/${id}`)));
+    if (targetIndex < 0) return [];
+    const rows = articles.flatMap((article, index) => {
+      // 일반 영상에도 placementTracking이 있으므로 광고 판정에는 표시된 광고 문구만 사용
+      if (/Promoted|광고/.test(article.querySelector('[data-testid="socialContext"]')?.textContent || '')) return [];
+      const time = article.querySelector('[data-testid="User-Name"] a[href] time');
+      const match = time?.closest('a')?.getAttribute('href')?.match(/^\/([A-Za-z0-9_]+)\/status\/(\d+)$/);
+      const text = [...article.querySelectorAll<HTMLElement>('[data-testid="tweetText"]')].find(n => !n.closest('[role="link"]'));
+      if (!match || !text) return [];
+      const copy = text.cloneNode(true) as HTMLElement;
+      copy.querySelectorAll('img').forEach(img => img.replaceWith(img.alt));
+      return [{ id: match[2], author: match[1], text: (copy.textContent || '').slice(0, 1600), index }];
+    });
+    return [...rows.filter(r => r.index < targetIndex).slice(-2).map(r => ({ ...r, relation: 'parent' as const })),
+      ...rows.filter(r => r.index > targetIndex).slice(0, 8).map(r => ({ ...r, relation: 'reply' as const }))];
+  }, targetId);
+  // 부모 글과 주변 답글의 번역을 원본으로 전환. 작성자와 글 ID를 함께 고정
+  for (const row of await read()) {
+    const article = page.locator('article[data-testid="tweet"]').filter({ has: page.locator(`[data-testid="User-Name"] a[href="/${row.author}/status/${row.id}"] time`) });
+    const original = article.locator('button:not([role="link"] button)').filter({ hasText: /^(Show original|View original|원본 보기)$/i }).first();
+    if (await original.count()) { await original.click(); await original.waitFor({ state: 'hidden' }); }
+  }
+  return (await read()).map(({ index: _index, ...row }) => row);
+}
+
+export async function readBrowserPost(page: Page, card: Pick<Card, 'id' | 'url'>, author: string, includeContext = false): Promise<ResetPost> {
   await page.goto(card.url, { waitUntil: 'domcontentloaded' });
   await requireTimeline(page);
   // 답글 화면의 부모 글과 인용 대신 요청 ID의 본문 선택. 늦게 붙는 대상도 대기
@@ -122,15 +151,18 @@ export async function readBrowserPost(page: Page, card: Pick<Card, 'id' | 'url'>
     const authorOk = [...(header?.querySelectorAll('a[href]') || [])].some(a => a.getAttribute('href')?.toLowerCase() === `/${expected.author.toLowerCase()}`);
     const time = [...element.querySelectorAll('a[href] time')].find(t => t.closest('a')?.getAttribute('href') === `/${expected.author}/status/${expected.id}`);
     const text = [...element.querySelectorAll<HTMLElement>('[data-testid="tweetText"]')].find(n => !n.closest('[role="link"]'));
-    return { authorOk, postedAt: time?.getAttribute('datetime'), text: text?.innerText || '', lang: text?.lang || '',
+    const copy = text?.cloneNode(true) as HTMLElement | undefined;
+    copy?.querySelectorAll('img').forEach(img => img.replaceWith(img.alt));
+    return { authorOk, postedAt: time?.getAttribute('datetime'), text: copy?.textContent || '', lang: text?.lang || '',
       truncated: [...element.querySelectorAll('[data-testid="tweet-text-show-more-link"]')].some(n => !n.closest('[role="link"]')) };
   }, { author, id: card.id });
   if (!post.authorOk || !Number.isFinite(Date.parse(post.postedAt)) || post.truncated) throw new ResetBrowserError('incomplete', `X 전체 원문/작성자/게시 시각 확인 실패 (${card.id})`);
   if (await original.count()) throw new ResetBrowserError('incomplete', 'X 원본 전환 실패. 번역문으로 판정하지 않음');
-  return { id: card.id, url: card.url, text: post.text, postedAt: new Date(post.postedAt).toISOString() };
+  const context = includeContext ? await readBrowserContext(page, card.id) : undefined;
+  return { id: card.id, url: card.url, text: post.text, postedAt: new Date(post.postedAt).toISOString(), ...(context ? { context } : {}) };
 }
 
-export function createBrowserResetSource(author: string, sessionFile = browserSessionPath()): (sinceId?: string) => Promise<ResetPost[]> {
+export function createBrowserResetSource(author: string, sessionFile = browserSessionPath(), targetUrl?: string): (sinceId?: string) => Promise<ResetPost[]> {
   return async sinceId => {
     if (!/^[A-Za-z0-9_]{1,15}$/.test(author) || (sinceId && !/^\d{1,19}$/.test(sinceId))) throw new Error('X 작성자/수집 위치 형식 오류');
     const state = readBrowserSession(sessionFile);
@@ -147,9 +179,11 @@ export function createBrowserResetSource(author: string, sessionFile = browserSe
       const page = await context.newPage();
       page.setDefaultTimeout(20_000);
       page.setDefaultNavigationTimeout(25_000);
-      const cards = await discoverBrowserPosts(page, author, sinceId);
+      const target = targetUrl ? parsePostUrl(targetUrl) : null;
+      if (target && target.author.toLowerCase() !== author.toLowerCase()) throw new Error('X 작성자 불일치');
+      const cards = target ? [target] : await discoverBrowserPosts(page, author, sinceId);
       const posts: ResetPost[] = [];
-      for (const card of cards) posts.push(await readBrowserPost(page, card, author));
+      for (const card of cards) posts.push(await readBrowserPost(page, card, author, true));
       // 수집 중 재로그인한 새 인증을 옛 세션으로 덮어쓰지 않음
       if (fs.statSync(sessionFile).mtimeMs === modified) saveBrowserSession(await context.storageState(), sessionFile);
       return posts.sort((a, b) => BigInt(a.id) > BigInt(b.id) ? 1 : -1);
@@ -158,4 +192,10 @@ export function createBrowserResetSource(author: string, sessionFile = browserSe
       throw new ResetBrowserError('unavailable', 'X 브라우저 수집 실패. 연결/Edge 상태 확인 필요');
     } finally { clearTimeout(deadline); activeBrowsers.delete(browser); await browser.close(); }
   };
+}
+
+export async function fetchBrowserResetPostLink(input: string, author: string): Promise<ResetPost> {
+  const target = parsePostUrl(input);
+  if (target.author.toLowerCase() !== author.toLowerCase()) throw new Error(`@${author}의 트윗 링크를 입력해 주세요.`);
+  return (await createBrowserResetSource(author, browserSessionPath(), target.url)())[0];
 }

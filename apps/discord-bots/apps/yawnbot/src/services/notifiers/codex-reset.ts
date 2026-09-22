@@ -1,11 +1,13 @@
 import { EmbedBuilder, type Client } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
+import { createHash } from 'node:crypto';
 import { PKG_ROOT } from '../../paths';
 import type { StateStore } from './state-store';
 import { channelIdFor } from '../channel-provision';
 import { DEFAULT_RESET_AUTHOR, RESET_POST_MAX_AGE_MS, classifyResetPost, formatKst, type ResetPost, type ResetSignal } from '../sources/codex-reset';
 import { closeResetBrowsers, createBrowserResetSource } from '../sources/codex-reset-browser';
+import { analyzeResetPost, resetAnalysisVersion } from '../sources/codex-reset-context';
 
 export interface ResetState {
   author: string;
@@ -14,16 +16,31 @@ export interface ResetState {
   signals: ResetSignal[];
   checkedAt: string | null;
   failureNotifiedAt?: string;
+  analyzed?: Array<{ fingerprint: string; post: ResetPost; signal: ResetSignal | null }>;
+}
+
+function validPost(value: unknown): value is ResetPost {
+  const p = value as ResetPost;
+  return !!p && typeof p.id === 'string' && /^\d{1,19}$/.test(p.id) && typeof p.text === 'string'
+    && /^https:\/\/x\.com\/[A-Za-z0-9_]+\/status\/\d+$/.test(p.url) && Number.isFinite(Date.parse(p.postedAt))
+    && (p.context === undefined || (Array.isArray(p.context) && p.context.length <= 10 && p.context.every(c =>
+      c && typeof c.id === 'string' && /^\d{1,19}$/.test(c.id) && /^[A-Za-z0-9_]{1,15}$/.test(c.author)
+      && typeof c.text === 'string' && ['parent', 'reply'].includes(c.relation))));
 }
 
 function validSignal(value: unknown): value is ResetSignal {
   const s = value as ResetSignal;
-  return !!s?.post && typeof s.post.id === 'string' && typeof s.post.text === 'string'
+  return validPost(s?.post) && typeof s.post.id === 'string' && typeof s.post.text === 'string'
     && /^https:\/\/x\.com\/[A-Za-z0-9_]+\/status\/\d+$/.test(s.post.url)
     && Number.isFinite(Date.parse(s.post.postedAt)) && ['reset', 'banked', 'both'].includes(s.kind)
     && ['completed', 'scheduled', 'uncertain'].includes(s.status)
     && (s.timing === null || (!!s.timing && Number.isFinite(Date.parse(s.timing.at)) && typeof s.timing.evidence === 'string'
-      && ['around', 'within', 'by', 'exact'].includes(s.timing.qualifier)));
+      && ['around', 'within', 'by', 'exact'].includes(s.timing.qualifier)))
+    && (s.analysis === undefined || (typeof s.analysis.summary === 'string' && Array.isArray(s.analysis.evidenceIds)
+      && s.analysis.evidenceIds.every(id => typeof id === 'string')
+      && (s.analysis.timingText === null || typeof s.analysis.timingText === 'string')
+      && (s.analysis.reviews === undefined || (Array.isArray(s.analysis.reviews) && s.analysis.reviews.every(r =>
+        ['claude', 'codex', 'grok'].includes(r.provider) && ['scheduled', 'completed', 'uncertain', 'unrelated', 'error'].includes(r.status) && typeof r.summary === 'string')))));
 }
 
 function emptyState(author = ''): ResetState { return { author, seen: [], sent: [], signals: [], checkedAt: null }; }
@@ -36,7 +53,9 @@ export function createResetStateStore(filePath: string): StateStore<ResetState> 
       if (!p || typeof p.author !== 'string' || !Array.isArray(p.seen) || !Array.isArray(p.sent) || !Array.isArray(p.signals)
         || !p.seen.every(x => typeof x === 'string' && /^\d{1,19}$/.test(x))
         || !p.sent.every(x => typeof x === 'string' && /^\d{1,19}$/.test(x))
-        || !p.signals.every(validSignal) || (p.checkedAt !== null && !Number.isFinite(Date.parse(p.checkedAt)))) throw new Error('초기화 기록 파일 손상. 기존 파일 보존');
+        || !p.signals.every(validSignal) || (p.checkedAt !== null && !Number.isFinite(Date.parse(p.checkedAt)))
+        || (p.analyzed !== undefined && (!Array.isArray(p.analyzed) || p.analyzed.length > 100 || !p.analyzed.every(a =>
+          a && typeof a.fingerprint === 'string' && validPost(a.post) && (a.signal === null || validSignal(a.signal)))))) throw new Error('초기화 기록 파일 손상. 기존 파일 보존');
       return p;
     },
     save(state) {
@@ -64,6 +83,11 @@ export function buildResetEmbed(signal: ResetSignal, now = Date.now()): EmbedBui
     .setColor(signal.status === 'completed' ? 0x27ae60 : signal.status === 'scheduled' ? 0x3498db : 0x95a5a6)
     .setDescription(timing).addFields({ name: '원문', value: signal.post.text.slice(0, 1000) }, { name: '게시 시각', value: formatKst(signal.post.postedAt) })
     .setFooter({ text: '공개 트윗 기준. 내 계정 사용량과 초기화 시각은 Codex /status에서 확인' });
+  if (signal.analysis) {
+    embed.addFields({ name: '문맥 분석', value: signal.analysis.summary.slice(0, 500) });
+    if (signal.analysis.reviews) embed.addFields({ name: 'AI별 판정', value: signal.analysis.reviews.map(r => `${r.provider}: ${r.status}\n${r.summary.slice(0, 200)}`).join('\n\n').slice(0, 1024) });
+    if (signal.analysis.timingText && !signal.timing && signal.status !== 'completed') embed.setDescription(`원문 일정: ${signal.analysis.timingText}\n한국시간 미정. 원문 날짜/시간대 확인 필요`);
+  }
   if (signal.kind !== 'reset') embed.addFields({ name: '저장형 초기화권', value: '직접 사용하는 초기화권 지급 소식. 지급 시각이 사용량 자동 초기화 시각은 아니에요.' });
   if (signal.post.truncated) embed.setDescription('X 임베드가 긴 글의 일부만 반환했어요. 초기화 시각과 완료 여부를 판단할 수 없어요. 원문 링크에서 전체 글을 확인해 주세요.');
   return embed;
@@ -72,7 +96,8 @@ export function buildResetEmbed(signal: ResetSignal, now = Date.now()): EmbedBui
 export class ResetMonitor {
   private state: ResetState;
   private inFlight: Promise<ResetState> | null = null;
-  constructor(private deps: { author: string; store: StateStore<ResetState>; fetchPosts: (sinceId?: string) => Promise<ResetPost[]>; now?: () => number }) {
+  constructor(private deps: { author: string; store: StateStore<ResetState>; fetchPosts: (sinceId?: string) => Promise<ResetPost[]>;
+    analyze?: (post: ResetPost) => Promise<ResetSignal | null>; now?: () => number }) {
     this.state = deps.store.load();
     if (this.state.author !== deps.author) this.state = { author: deps.author, seen: [], sent: [], signals: [], checkedAt: null };
   }
@@ -84,23 +109,34 @@ export class ResetMonitor {
   }
   private async fetchAndRecord(): Promise<ResetState> {
     const latestId = this.state.seen.reduce((max, id) => BigInt(id) > BigInt(max) ? id : max, '0');
-    const posts = await this.deps.fetchPosts(latestId === '0' ? undefined : latestId);
+    const now = this.deps.now?.() ?? Date.now();
+    // 최근 글의 답글 맥락 변화와 옛 분류 누락도 재검사. 발송 중복 기록은 유지
+    const cutoffId = ((BigInt(now - RESET_POST_MAX_AGE_MS - 1288834974657) << 22n)).toString();
+    const posts = await this.deps.fetchPosts(this.deps.analyze ? cutoffId : latestId === '0' ? undefined : latestId);
     const seen = new Set(this.state.seen);
-    const signals = this.state.signals.map(signal => classifyResetPost(signal.post)).filter((signal): signal is ResetSignal => signal !== null);
+    const signals = new Map(this.state.signals.map(signal => [signal.post.id, this.deps.analyze ? signal : classifyResetPost(signal.post)]));
+    const analyzed = new Map((this.state.analyzed || []).filter(a => Date.parse(a.post.postedAt) >= now - RESET_POST_MAX_AGE_MS).map(a => [a.post.id, a]));
     for (const post of posts) {
-      if (seen.has(post.id)) continue;
-      const signal = classifyResetPost(post);
-      if (signal) signals.push(signal);
+      if (!this.deps.analyze && seen.has(post.id)) continue;
+      const fingerprint = createHash('sha256').update(JSON.stringify({ version: this.deps.analyze ? resetAnalysisVersion() : 'rules', text: post.text, truncated: post.truncated,
+        context: [...(post.context || [])].sort((a, b) => a.id.localeCompare(b.id)) })).digest('hex');
+      const cached = analyzed.get(post.id);
+      const reusable = cached?.fingerprint === fingerprint && !cached.signal?.analysis?.reviews?.some(r => r.status === 'error');
+      const signal = this.deps.analyze ? reusable ? cached!.signal : await this.deps.analyze(post) : classifyResetPost(post);
+      signals.set(post.id, signal);
+      if (this.deps.analyze) analyzed.set(post.id, { fingerprint, post, signal });
       seen.add(post.id);
     }
-    const updated = { ...this.state, seen: [...seen].slice(-500), signals: signals.sort((a, b) => Date.parse(a.post.postedAt) - Date.parse(b.post.postedAt)).slice(-20), checkedAt: new Date(this.deps.now?.() ?? Date.now()).toISOString() };
+    const updated = { ...this.state, seen: [...seen].slice(-500), signals: [...signals.values()].filter((s): s is ResetSignal => s !== null)
+      .sort((a, b) => Date.parse(a.post.postedAt) - Date.parse(b.post.postedAt)).slice(-20),
+      ...(this.deps.analyze ? { analyzed: [...analyzed.values()].slice(-100) } : {}), checkedAt: new Date(now).toISOString() };
     this.deps.store.save(updated);
     this.state = updated;
     return this.snapshot();
   }
   async deliver(send: (signal: ResetSignal) => Promise<void>): Promise<number> {
     const now = this.deps.now?.() ?? Date.now();
-    const pending = this.state.signals.filter(s => !this.state.sent.includes(s.post.id) && s.status !== 'uncertain'
+    const pending = this.state.signals.filter(s => !this.state.sent.includes(s.post.id) && (s.status !== 'uncertain' || s.analysis?.needsReview)
       && Date.parse(s.post.postedAt) >= now - RESET_POST_MAX_AGE_MS && Date.parse(s.post.postedAt) <= now + 60_000);
     // 처음 켰을 때 과거 공지 일괄 발송 방지, 최신 관련 공지 한 건부터
     const firstDelivery = this.state.sent.length === 0;
@@ -127,7 +163,7 @@ let monitor: ResetMonitor | null = null;
 function getMonitor(): ResetMonitor {
   if (!monitor) {
     const author = process.env.YAWNBOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR;
-    monitor = new ResetMonitor({ author, store, fetchPosts: createBrowserResetSource(author) });
+    monitor = new ResetMonitor({ author, store, fetchPosts: createBrowserResetSource(author), analyze: analyzeResetPost });
   }
   return monitor;
 }

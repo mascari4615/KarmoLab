@@ -40,6 +40,8 @@ YAWNBOT_NEWS_SOURCES=off
 # 초기화 공지 자동 수집. 노트북 전용 X 로그인 필요
 YAWNBOT_CODEX_RESET_ENABLED=1
 YAWNBOT_CODEX_RESET_BROWSER=chromium
+YAWNBOT_AI_USER_HOME=C:/Users/masca
+YAWNBOT_RESET_AI_PROVIDERS=claude
 PLAYWRIGHT_BROWSERS_PATH=C:/ProgramData/YawnBot/playwright
 
 # ── 웹 결산 페이지 (TASK-YB-042) ──

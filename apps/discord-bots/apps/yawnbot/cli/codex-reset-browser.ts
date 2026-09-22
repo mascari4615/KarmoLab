@@ -3,16 +3,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from 'playwright-core';
-import { browserSessionPath, createBrowserResetSource, ResetBrowserError, saveBrowserSession } from '../src/services/sources/codex-reset-browser';
-import { classifyResetPost, DEFAULT_RESET_AUTHOR } from '../src/services/sources/codex-reset';
+import { browserSessionPath, createBrowserResetSource, fetchBrowserResetPostLink, ResetBrowserError, saveBrowserSession } from '../src/services/sources/codex-reset-browser';
+import { DEFAULT_RESET_AUTHOR } from '../src/services/sources/codex-reset';
+import { analyzeResetPost, ResetAnalysisError } from '../src/services/sources/codex-reset-context';
 import { buildResetEmbed } from '../src/services/notifiers/codex-reset';
 import { readExistingEdgeSession } from '../src/services/sources/codex-reset-edge';
 
 async function main(): Promise<void> {
   const author = process.env.YAWNBOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR;
   if (process.argv.includes('--check')) {
-    const posts = await createBrowserResetSource(author)();
-    const signals = posts.map(classifyResetPost).filter(Boolean);
+    const url = process.argv.find(arg => arg.startsWith('https://'));
+    const posts = url ? [await fetchBrowserResetPostLink(url, author)] : await createBrowserResetSource(author)();
+    const signals = [];
+    for (const post of posts) { const signal = await analyzeResetPost(post); if (signal) signals.push(signal); }
     console.log(JSON.stringify({ ok: true, checkedAt: new Date().toISOString(), posts: posts.length,
       signals: signals.slice(-3).map(s => ({ url: s.post.url, ...buildResetEmbed(s).toJSON() })) }, null, 2));
     return;
@@ -46,4 +49,4 @@ async function main(): Promise<void> {
   } finally { await browser.close(); }
 }
 
-main().catch(error => { console.error(error instanceof ResetBrowserError ? error.message : 'X 로그인/확인 실패. 기존 인증 보존. Edge와 로그인 상태를 확인한 뒤 다시 실행하세요.'); process.exitCode = 2; });
+main().catch(error => { console.error(error instanceof ResetBrowserError || error instanceof ResetAnalysisError ? error.message : 'X 로그인/확인 실패. 기존 인증 보존. Edge와 로그인 상태를 확인한 뒤 다시 실행하세요.'); process.exitCode = 2; });

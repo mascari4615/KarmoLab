@@ -37,6 +37,18 @@ try {
   assert.equal(post.text, 'We have reset Codex usage.'); passed++;
   html = card('201', 'other', 'Parent question') + card('202', author, 'We have reset Codex usage.');
   assert.equal((await readBrowserPost(page, { id: '202', url: url('202') }, author)).id, '202'); passed++;
+  const targetTime = `<a href="/${author}/status/212"><time datetime="${at}">now</time></a>`;
+  const detailCard = card('212', author, '3am on a tuesday').replace(targetTime, '').replace('</article>', targetTime + '</article>');
+  const videoParent = card('211', 'parent', 'the community night was <img alt="🔥">').replace('</article>', '<div data-testid="placementTracking"><video></video></div></article>');
+  html = videoParent + detailCard
+    + card('213', 'audience', 'Banked or a reset?') + card('214', 'another', 'Dinner tonight?');
+  const contextual = await readBrowserPost(page, { id: '212', url: url('212') }, author, true);
+  assert.equal(contextual.text, '3am on a tuesday');
+  assert.deepEqual(contextual.context, [
+    { id: '211', author: 'parent', text: 'the community night was 🔥', relation: 'parent' },
+    { id: '213', author: 'audience', text: 'Banked or a reset?', relation: 'reply' },
+    { id: '214', author: 'another', text: 'Dinner tonight?', relation: 'reply' },
+  ]); passed++;
   html = card('203', author, 'My older parent post') + card('204', author, 'We will reset Codex usage tomorrow.');
   assert.equal((await readBrowserPost(page, { id: '204', url: url('204') }, author)).text, 'We will reset Codex usage tomorrow.'); passed++;
   html = card('205', 'other', 'Parent loaded first') + `<script>setTimeout(() => document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(card('206', author, 'We have reset Codex usage.'))}), 150)</script>`;

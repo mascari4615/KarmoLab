@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
 import { buildCodexResetCommand, handleCodexReset } from './codex-reset';
-import { fetchResetPostLink } from '../../services/sources/codex-reset';
+import { fetchBrowserResetPostLink } from '../../services/sources/codex-reset-browser';
+import { analyzeResetPost } from '../../services/sources/codex-reset-context';
+import { classifyResetPost } from '../../services/sources/codex-reset';
 import { getRecentResets } from '../../services/notifiers/codex-reset';
 
-vi.mock('../../services/sources/codex-reset', async importOriginal => ({ ...await importOriginal<object>(), fetchResetPostLink: vi.fn() }));
+vi.mock('../../services/sources/codex-reset-browser', async importOriginal => ({ ...await importOriginal<object>(), fetchBrowserResetPostLink: vi.fn() }));
+vi.mock('../../services/sources/codex-reset-context', () => ({ analyzeResetPost: vi.fn() }));
 vi.mock('../../services/notifiers/codex-reset', async importOriginal => ({ ...await importOriginal<object>(), getRecentResets: vi.fn() }));
 afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 function interaction(link: string | null) {
@@ -20,7 +23,8 @@ describe('/코덱스 사용자 경로', () => {
   });
   it('링크 조회는 토큰 없이 개인 응답으로 한국시간 표시', async () => {
     vi.stubEnv('YAWNBOT_X_BEARER_TOKEN', '');
-    vi.mocked(fetchResetPostLink).mockResolvedValue({ id: '2097174560412246215', text: 'We have reset Codex usage.', postedAt: '2026-09-08T04:05:53Z', url: 'https://x.com/thsottiaux/status/2097174560412246215' });
+    vi.mocked(fetchBrowserResetPostLink).mockResolvedValue({ id: '2097174560412246215', text: 'We have reset Codex usage.', postedAt: '2026-09-08T04:05:53Z', url: 'https://x.com/thsottiaux/status/2097174560412246215' });
+    vi.mocked(analyzeResetPost).mockImplementation(async post => classifyResetPost(post));
     const input = interaction('https://x.com/thsottiaux/status/2097174560412246215');
     await handleCodexReset(input as unknown as ChatInputCommandInteraction);
     expect(input.deferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
@@ -34,7 +38,7 @@ describe('/코덱스 사용자 경로', () => {
     await handleCodexReset(input as unknown as ChatInputCommandInteraction);
     expect(input.editReply.mock.calls[0][0].content).toContain('X 로그인 필요');
     expect(input.editReply.mock.calls[0][0].content).not.toContain('초기화 공지를 찾지 못했어요');
-    expect(fetchResetPostLink).not.toHaveBeenCalled();
+    expect(fetchBrowserResetPostLink).not.toHaveBeenCalled();
   });
   it('API 토큰 없이 브라우저 캐시 조회', async () => {
     vi.mocked(getRecentResets).mockResolvedValue({ state: { author: 'thsottiaux', seen: ['123'], sent: [], signals: [], checkedAt: '2026-09-09T10:00:00Z' }, stale: false });

@@ -1,6 +1,8 @@
 import { EmbedBuilder, MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import { buildResetEmbed, getRecentResets } from '../../services/notifiers/codex-reset';
-import { DEFAULT_RESET_AUTHOR, classifyResetPost, fetchResetPostLink, formatKst } from '../../services/sources/codex-reset';
+import { DEFAULT_RESET_AUTHOR, formatKst } from '../../services/sources/codex-reset';
+import { fetchBrowserResetPostLink } from '../../services/sources/codex-reset-browser';
+import { analyzeResetPost } from '../../services/sources/codex-reset-context';
 
 export function buildCodexResetCommand() {
   return new SlashCommandBuilder().setName('코덱스').setDescription('최근 Codex 초기화 소식과 한국시간 조회')
@@ -12,12 +14,12 @@ export async function handleCodexReset(interaction: ChatInputCommandInteraction)
   const link = interaction.options.getString('트윗');
   if (link) {
     try {
-      const post = await fetchResetPostLink(link, process.env.YAWNBOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR);
-      const signal = classifyResetPost(post);
+      const post = await fetchBrowserResetPostLink(link, process.env.YAWNBOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR);
+      const signal = await analyzeResetPost(post);
       const embed = signal ? buildResetEmbed(signal) : new EmbedBuilder().setTitle(post.truncated ? 'X 원문 일부만 조회됨' : '초기화 공지로 판단되지 않은 트윗').setURL(post.url)
         .setDescription(post.truncated ? '전체 글을 읽지 못해 초기화 여부를 판단할 수 없어요. 원문 링크를 확인해 주세요.' : '다음 초기화 시각은 이 글에서 확인할 수 없어요.')
         .addFields({ name: '원문', value: post.text.slice(0, 1000) });
-      await interaction.editReply({ content: 'X 원문 직접 조회', embeds: [embed], allowedMentions: { parse: [] } });
+      await interaction.editReply({ content: 'X 원문과 답글 맥락 조회', embeds: [embed], allowedMentions: { parse: [] } });
     } catch (error) {
       const message = error instanceof Error && /^(X |@)/.test(error.message) ? error.message : 'X 원문에 연결하지 못했어요. 잠시 후 다시 조회해 주세요.';
       await interaction.editReply({ content: message, allowedMentions: { parse: [] } });
