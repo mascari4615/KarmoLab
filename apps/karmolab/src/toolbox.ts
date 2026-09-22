@@ -3017,6 +3017,29 @@ const Toolbox = (() => {
 
     function getBgThemes() { return [...BG_THEMES]; }
 
+    /* ===== 첫 화면 배경 그림 (karmo-design Q2d, 2026-09-22) =====
+       Codex image_gen 으로 그린 하늘 넷 (img/home/sky-*.webp). 도시와 현대 건물 없음 (세계관).
+       auto 는 밝은 판 마을, 어두운 판 해질녘. 값은 html[data-home-bg] 로 CSS 가 받는다 */
+    const HOME_BG_KEY = 'toolbox_home_bg';
+    const HOME_BGS = [
+        { id: 'auto', label: '자동 (낮은 마을, 밤은 해질녘)' },
+        { id: 'village', label: '마을' },
+        { id: 'clouds', label: '구름' },
+        { id: 'twilight', label: '황혼' },
+        { id: 'dusk', label: '해질녘' },
+    ];
+    function getHomeBg() {
+        const saved = localStorage.getItem(HOME_BG_KEY);
+        return saved && HOME_BGS.some(t => t.id === saved) ? saved : 'auto';
+    }
+    function setHomeBg(id) {
+        if (!HOME_BGS.some(t => t.id === id)) id = 'auto';
+        localStorage.setItem(HOME_BG_KEY, id);
+        if (id === 'auto') document.documentElement.removeAttribute('data-home-bg');
+        else document.documentElement.setAttribute('data-home-bg', id);
+    }
+    function getHomeBgs() { return [...HOME_BGS]; }
+
     /* ===== Prism 코드 테마 ===== */
     const PRISM_THEME_KEY = 'toolbox_prism_theme';
     const PRISM_BASE = '/apps/karmolab/js/vendor/prism/themes-cdn';
@@ -3086,6 +3109,7 @@ const Toolbox = (() => {
         applyUiScale();
         setTheme(getTheme());
         setBgTheme(getBgTheme());
+        setHomeBg(getHomeBg());
         setSidebarCollapsed(getSidebarCollapsed());
         const btn = document.getElementById('themeToggle');
         if (btn) btn.onclick = toggleTheme;
@@ -3295,6 +3319,7 @@ const Toolbox = (() => {
         getSkin, setSkin, getSkins,
         getUiScale, setUiScale, getUiScales,
         getBgTheme, setBgTheme, getBgThemes,
+        getHomeBg, setHomeBg, getHomeBgs,
         getPrismTheme, setPrismTheme, getPrismThemes: () => [...PRISM_THEMES],
         getUserData, getStreaks, getProgress, setProgress, incrementProgress,
         completeAchievement, unlockBadge, hasAchievement, hasBadge,

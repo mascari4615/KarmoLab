@@ -1112,6 +1112,15 @@ html[data-view="tool"] .main-content { background: var(--bg-primary); }
     z-index: -2;
     background: var(--lq-veil);
 }
+/* 배경 그림 (karmo-design Q2d 2026-09-22). Codex 가 그린 하늘 넷, 설정에서 고름 (html[data-home-bg]).
+   기본은 밝은 판 마을, 어두운 판 해질녘. 그라데이션은 그림이 못 왔을 때의 바닥 */
+.landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-village.webp); }
+[data-theme="dark"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-dusk.webp); }
+html[data-home-bg="village"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-village.webp); }
+html[data-home-bg="clouds"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-clouds.webp); }
+html[data-home-bg="twilight"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-twilight.webp); }
+html[data-home-bg="dusk"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-dusk.webp); }
+.landing-q2::before { background-image: var(--lq-photo); background-size: cover; background-position: center; }
 html[data-view="home"]:not([data-home-chrome="1"]) .header-bar,
 html[data-view="home"]:not([data-home-chrome="1"]) .sidebar { display: none; }
 html[data-view="home"]:not([data-home-chrome="1"]) .main-content { margin-left: 0; }

@@ -7,6 +7,7 @@
   "settings.label.setSkin": "스킨",
   "settings.opt.skinClassic": "클래식",
   "settings.opt.skinField": "필드",
+  "settings.label.setHomeBg": "첫 화면 배경",
   "settings.label.setUiScale": "화면 크기",
   "settings.opt.scaleFit": "비율 유지 (1440x900 기준)",
   "settings.opt.scaleFixed": "그대로",

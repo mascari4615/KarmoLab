@@ -7,6 +7,7 @@
   "settings.label.setSkin": "Skin",
   "settings.opt.skinClassic": "Classic",
   "settings.opt.skinField": "Field",
+  "settings.label.setHomeBg": "Home background",
   "settings.label.setUiScale": "Screen size",
   "settings.opt.scaleFit": "Keep proportions",
   "settings.opt.scaleFixed": "As is",
