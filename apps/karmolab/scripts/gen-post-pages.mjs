@@ -22,6 +22,7 @@ import { postBody, postHead, notFoundBody, feedXml, applyCdn } from './lib/post-
 import { parseWorksYml, buildWorks } from './lib/works-list.mjs';
 import { parseMinorWorks } from './lib/works-minor.mjs';
 import { loadShell, shellCommon, replaceMeta, asStaticPage, scriptFile, esc as shellEsc } from './lib/shell-page.mjs';
+import { blogPage } from './lib/blog-shell.mjs';
 
 const APP_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const CONTENT = path.join(APP_ROOT, 'content', 'posts');
@@ -277,22 +278,14 @@ for (const post of posts) {
        한눈에 달라 보였다. 도구 상세 장이 이미 가는 길(shell-page.mjs, KL-129)로 합류한다.
        대가(장당 바깥 리소스 2→13)는 그 결정의 값이다. 아래 무게 게이트도 같이 옮겼다. */
     const permalink = `/posts/${post.slug}/`;
-    let page = shellCommon(SHELL, { permalink, lastModified: post.lastmod ?? post.date, bootPaths: [] });
-    page = page.replace(/<title>[\s\S]*?<\/title>/, `<title>${shellEsc(post.title)} | KarmoDDrine</title>`);
-    if (post.description) {
-        page = replaceMeta(page, 'name', 'description', post.description);
-        page = replaceMeta(page, 'property', 'og:description', post.description);
-    }
-    page = replaceMeta(page, 'property', 'og:title', post.title);
-    page = replaceMeta(page, 'property', 'og:url', `${SITE}${permalink}`);
-    /* 셸이 들고 온 뿌리 canonical 을 뺀다 (2026-08-29). `postHead` 가 제 주소로 하나를 더 박아서
-       글 장마다 canonical 이 두 개였다. 둘이면 검색엔진이 어느 쪽을 믿을지 우리가 못 정한다 */
-    const shellCanonical = `    <link rel="canonical" href="${SITE}/">
-`;
-    if (!page.includes(shellCanonical)) throw new Error('[gen-post-pages] 셸 canonical 자리를 못 찾았다. index.html 확인');
-    page = page.replace(shellCanonical, '');
-    page = asStaticPage(page, {
-        kind: 'post',
+       머리 줄 한 줄과 본문뿐. 겉모습은 community.css 정본 그대로 */
+       머리 줄 한 줄과 본문뿐, 겉모습은 community.css 정본 그대로 */
+    let page = blogPage({
+        title: `${post.title} | Blog`,
+        description: post.description || '',
+        permalink,
+        lastModified: post.lastmod ?? post.date,
+        bodyClass: 'b-post',
         bodyHtml: postBody(post, html, {
             toc,
             prev: prev && { slug: prev.slug, title: prev.title },
@@ -384,15 +377,6 @@ fs.writeFileSync(path.join(APP_ROOT, 'data', 'posts-index.json'), JSON.stringify
             .join('') +
         '</section>';
 
-    let page = shellCommon(SHELL, { permalink, lastModified: lastmod, bootPaths: [] });
-    page = page.replace(/<title>[\s\S]*?<\/title>/, '<title>글 | KarmoDDrine</title>');
-    page = replaceMeta(page, 'name', 'description', description);
-    page = replaceMeta(page, 'property', 'og:description', description);
-    page = replaceMeta(page, 'property', 'og:title', '글');
-    page = replaceMeta(page, 'property', 'og:url', `${SITE}${permalink}`);
-    const shellCanonical = `<link rel="canonical" href="${SITE}/">`;
-    if (!page.includes(shellCanonical)) throw new Error('[gen-post-pages] /posts/ 셸 canonical 자리를 못 찾았다. index.html 확인');
-    page = page.replace(shellCanonical, `<link rel="canonical" href="${SITE}${permalink}">`);
     const ld = {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
@@ -400,12 +384,16 @@ fs.writeFileSync(path.join(APP_ROOT, 'data', 'posts-index.json'), JSON.stringify
         description,
         url: `${SITE}${permalink}`,
         inLanguage: 'ko-KR',
-        isPartOf: { '@type': 'WebSite', name: 'KarmoLab', url: `${SITE}/` },
+        isPartOf: { '@type': 'WebSite', name: 'Blog', url: `${SITE}/` },
     };
-    page = asStaticPage(page, {
-        kind: 'hub',
+    let page = blogPage({
+        title: '글 | Blog',
+        description,
+        permalink,
+        lastModified: lastmod,
+        bodyClass: 'b-list',
         bodyHtml: body,
-        head: `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`,
+        head: `<link rel="canonical" href="${SITE}${permalink}">\n<link rel="stylesheet" href="/apps/karmolab/css/community.css">\n<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`,
     });
     // 링크가 이 장의 존재 이유. 글 수만큼 안 실렸으면 배포 전에 세움
     const linked = (page.match(/<a href="\/posts\/[^"/]+\/">/g) ?? []).length;

@@ -171,6 +171,10 @@ if (missing.length) {
  *   (내 기계에는 옛 산출물이 남아 있어 초록이었다. 전형적인 내 기계에선 된다).
  *   부르는 곳이 화면이 아니라 **빌드**인 파일은 이렇게 손으로 붙여 둔다. */
 if (!entryPoints.includes('src/widgets-lazy-meta.ts')) entryPoints.push('src/widgets-lazy-meta.ts');
+/* ★ `src/blog-app.ts` 도 화면에 안 적혀 있다. 부르는 곳이 **정적 생성기**
+ *   (`scripts/lib/blog-shell.mjs`) 라서 HTML 훑기에 안 잡힌다. 안 지으면 blog 장의
+ *   밝기 버튼과 답글이 404 로 죽는다 (change.site-split). */
+if (!entryPoints.includes('src/blog-app.ts')) entryPoints.push('src/blog-app.ts');
 console.log(`[build] 자동으로 찾은 묶음 대상 ${entryPoints.length}개`);
 
 for (const rel of entryPoints) {

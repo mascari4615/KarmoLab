@@ -1,0 +1,76 @@
+/*
+ * blog.mascari4615.com 전용 (memo change.site-split, 2026-09-22)
+ *
+ * KarmoLab 셸 CSS (`shell-critical.css`) 를 안 쓴다. 여기에는 둘뿐
+ *   ① 글 겉모습 정본 `community.css` 가 기대하는 토큰 (값은 KarmoLab 과 같게)
+ *   ② 블로그 머리 줄, 본문 폭, 바닥 줄
+ * 글 모양 규칙은 여기 베끼지 않는다. `community.css` 한 곳이 정본 (2026-08-23 사용자 확정).
+ */
+:root {
+    color-scheme: dark;
+    --bg-primary: #171821;
+    --bg-secondary: #1d1e28;
+    --bg-tertiary: #292a36;
+    --text-primary: #f2f2ee;
+    --text-secondary: #9a9a94;
+    --text-tertiary: #94948f;
+    --accent: #a79bef;
+    --accent-ink: var(--accent);
+    --accent-fg: #0f1016;
+    --accent-dim: rgba(167, 155, 239, 0.10);
+    --border: rgba(242, 242, 238, 0.06);
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-pill: 999px;
+    --font-mono: 'KarmoMono', ui-monospace, Consolas, monospace;
+    --font-size-3xs: 11px;
+    --font-size-xs: 14px;
+    --font-size-sm: 16px;
+    --font-size-display-sm: 24px;
+    --b-max: 760px;
+}
+:root[data-theme="light"] {
+    color-scheme: light;
+    --bg-primary: #ffffff;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e9e7f2;
+    --text-primary: #1a1a1f;
+    --text-secondary: #64626f;
+    --text-tertiary: #656374;
+    --accent: #5f4dc2;
+    --accent-fg: #ffffff;
+    --accent-dim: rgba(95, 77, 194, 0.10);
+    --border: rgba(26, 26, 31, 0.10);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+.b-body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: 16px/1.7 'KarmoSans', 'Gothic A1', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+/* 머리 줄 한 줄. 이름, 링크 셋, 밝기 */
+.b-top {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    max-width: var(--b-max);
+    width: 100%;
+    margin: 0 auto;
+    padding: 22px 20px 10px;
+}
+.b-home { font-size: 15px; font-weight: 800; letter-spacing: 0.04em; color: var(--text-primary); text-decoration: none; }
+.b-nav { display: flex; gap: 14px; margin-left: auto; }
+.b-nav a, .b-foot a { font-size: var(--font-size-xs); color: var(--text-secondary); text-decoration: none; }
+.b-nav a:hover, .b-foot a:hover, .b-home:hover { color: var(--accent); }
+.b-theme { border: 0; background: none; color: var(--text-secondary); font-size: 15px; cursor: pointer; padding: 2px 4px; }
+.b-main { flex: 1; width: 100%; max-width: var(--b-max); margin: 0 auto; padding: 8px 20px 60px; }
+.b-foot { display: flex; gap: 16px; max-width: var(--b-max); width: 100%; margin: 0 auto; padding: 20px; border-top: 1px solid var(--border); }
+/* 글 장과 목록은 community.css 가 그린다. 그 판의 유리와 최대 폭만 여기서 푼다 */
+.b-main .c-wrap { max-width: none; padding: 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.b-main .c-post { max-width: none; }
+@media (max-width: 599px) { .b-top, .b-main, .b-foot { padding-left: 16px; padding-right: 16px; } }
