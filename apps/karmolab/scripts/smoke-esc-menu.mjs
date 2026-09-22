@@ -20,7 +20,8 @@ try {
     await page.keyboard.press('Escape');
     const menu = page.locator('.esc-menu');
     await menu.waitFor({ state: 'visible' });
-    assert.equal(await menu.locator('.esc-cell').count(), 8);
+    // 칸 아홉 (홈, 대시보드, 도구, 오락실, 커뮤니티, 즐겨찾기, KarmoGraph, 소개, 글). 2026-09-22 글 칸 추가
+    assert.equal(await menu.locator('.esc-cell').count(), 9);
     await page.keyboard.press('Escape');
     await menu.waitFor({ state: 'hidden' });
     const input = page.locator(url.includes('loan') ? '#loR' : '#page-home .kp-input');
