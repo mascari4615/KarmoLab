@@ -16,7 +16,7 @@ import { stripFrontMatter } from './lib/serve-html.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { launchOrSkip } from './lib/browser.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -136,46 +136,68 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(PORT, r));
 const PORT_IN_USE = server.address().port;
 
-const browser = await chromium.launch();
+const browser = await launchOrSkip('smoke-contrast');
+if (!browser) { server.close(); process.exit(2); }
 const failures = [];
+let measured = 0;
+let cannotRun = '';
+let current = '';
+console.log(`[smoke-contrast] ${ids.length * THEMES.length}화면 검사 시작`);
+try {
 for (const theme of THEMES) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
   await page.addInitScript((t) => { localStorage.setItem('toolbox_theme', t); }, theme);
   for (const id of ids) {
-    const res = await page.goto(`http://localhost:${PORT_IN_USE}/apps/karmolab/#${id}`, { waitUntil: 'networkidle' });
+    current = `${theme} #${id}`;
+    // 해시 이동이 새 도구 문서를 여는 동안 이전 문서를 읽지 않도록 최초 진입을 분리
+    await page.goto('about:blank');
+    const res = await page.goto(`http://localhost:${PORT_IN_USE}/apps/karmolab/#${id}`, { waitUntil: 'load' });
     /* ★ **여기서 문제 0건은 안 봤다일 수 있다** (2026-08-21).
      * 이 검사의 합격 조건이 <b>문제 0건</b>이라, 장이 안 열려 화면이 비면 그대로 초록이 된다.
      * 실측으로 밟았다. 남이 같은 자리 번호를 잡고 있을 때 <b>남의 서버를 보고도 초록</b>이었다
      * (`listen(포트)` 는 IPv6 로 잡혀 IPv4 를 남이 쥐고 있어도 안 부딪힌다).
      * 그래서 잰 것이 있는지부터 본다. 없으면 초록, 빨강 어느 쪽으로도 적지 않는다. */
-    /* ⚠ `res` 가 <b>null 일 수 있다</b>. 해시(`#id`)만 바뀌는 이동은 새 응답이 없다.
-     *   처음엔 `!res` 를 실패로 셌다가 멀쩡한 판이 못 돌림이 됐다(실측 글 808자).
-     *   응답이 <b>있는데</b> 200 이 아닐 때만 실패로 센다.
-     * ⚠ 부팅했나는 글자 수로 재면 안 된다 (2026-08-23 실측): flow 처럼 서버(집 노트북)에
+    /* 부팅했나는 글자 수로 재면 안 된다 (2026-08-23 실측): flow 처럼 서버(집 노트북)에
      *   못 닿으면 대체 문구만 남아 128자다. 화면은 멀쩡히 떠 있다. 대신 **JS 가 채우는
      *   셸 표식**(#header-nav 의 카테고리 버튼)을 본다. js/ 산출물이 없어 셸이 통째로 안 뜨면
      *   저 nav 는 빈 채로 남는다. 그때가 진짜 아무것도 안 봤다다. */
     /* ⚠ 표식이 죽으면 검사도 죽는다 (2026-09-01). 여기는 `#header-nav` 의 자식 수를 봤는데,
      *   2026-08-19 에 머리띠에서 갈래를 걷어내면서 그 자리가 **늘 0개**. 그날부터
      *   이 검사는 도구 한 장도 못 재고 CANNOT-RUN 으로 끝남. 아무도 안 봄
-     *   지금 보는 것은 셸이 실제로 그리는 것 중 안 없어질 자리. 도구 판이 섰나. */
-    const navChildren = await page.evaluate(() =>
-      (document.querySelector('.tool-page.active') ? 1 : 0)
-      + (document.querySelector('#sidebar-nav')?.children.length || 0));
-    if ((res && res.status() !== 200) || navChildren === 0) {
-      console.error(`[smoke-contrast] CANNOT-RUN: #${id} 장을 못 열었다 (http ${res && res.status()}, 셸 표식 ${navChildren}개).`);
-      console.error('  이건 문제 없음이 아니라 **아무것도 안 봤다**는 뜻이다. 통과로 안 센다.');
-      process.exit(2);
+     *   지금은 현재 대상의 도구 판이 섰는지 본다. 옆줄만 떠 있는 것은 대상 측정이 아니다. */
+    const ready = await page.waitForFunction((target) => {
+      const owner = window.KARMOLAB_LAZY_META_BY_ID?.[target]?.bundle || target;
+      return document.getElementById('page-' + owner)?.classList.contains('active');
+    }, id, { timeout: 15000 }).then(() => true).catch(() => false);
+    if (!res || res.status() !== 200 || !ready) {
+      cannotRun = `${current} 장을 못 열었다 (http ${res?.status()}, 대상 판 ${ready}).`;
+      break;
     }
+    await page.evaluate(async (target) => {
+      const owner = window.KARMOLAB_LAZY_META_BY_ID?.[target]?.bundle || target;
+      await Toolbox.kickLazyLoad(owner);
+    }, id);
     await page.waitForTimeout(700);
     const bad = await page.evaluate(CHECK, MIN_RATIO);
     for (const b of bad) failures.push({ theme, id, ...b });
+    measured += 1;
+    if (measured % 20 === 0) console.log(`[smoke-contrast] ${measured}/${ids.length * THEMES.length}화면 측정 (${current})`);
   }
   await ctx.close();
+  if (cannotRun) break;
 }
-await browser.close();
-server.close();
+} catch (error) {
+  cannotRun = `${current}: ${String(error.message).split('\n')[0]}`;
+} finally {
+  await browser.close();
+  server.close();
+}
+
+if (!measured || measured !== ids.length * THEMES.length) {
+  cannotRun ||= '모든 대상 화면을 재지 못했다';
+}
+if (cannotRun) console.error(`[smoke-contrast] CANNOT-RUN. ${measured}/${ids.length * THEMES.length}화면: ${cannotRun}`);
 
 if (failures.length > 0) {
   console.error(`\n[smoke-contrast] 대비 미달 ${failures.length}건 (기준 ${MIN_RATIO}:1)\n`);
@@ -186,4 +208,5 @@ if (failures.length > 0) {
   console.error('\n색을 직접 박지 말고 테마 토큰(--text-*/--bg-*)을 쓴다. 늘 어두운 판 안이면 그 판 안에서만 밝은 색을 고정한다.\n');
   process.exit(1);
 }
-console.log(`[smoke-contrast] ${ids.length}개 화면 × ${THEMES.join('/')} 대비 OK`);
+if (cannotRun) process.exit(2);
+console.log(`[smoke-contrast] ${ids.length}개 화면 × ${THEMES.join('/')} 대비 OK (${measured}화면 측정)`);

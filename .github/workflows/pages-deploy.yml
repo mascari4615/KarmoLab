@@ -421,6 +421,14 @@ jobs:
       # ★ **배포 뒤에 서야 한다** (2026-09-05). 이 단계가 배포보다 위에 있어 `steps.deployment`
       #   가 아직 안 돈 상태로 읽혔고, 조건이 늘 거짓이라 **한 번도 안 돌았다**. 위 판정에서
       #   skipped 로 드러남. 위에 두면 조용히 안 돈다
+      - name: 검색엔진 알림 코드 준비
+        if: steps.deployment.outcome == 'success'
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: scripts/indexnow-submit.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
       - name: 바뀐 주소를 검색엔진에 알린다
         if: steps.deployment.outcome == 'success'
         continue-on-error: true
