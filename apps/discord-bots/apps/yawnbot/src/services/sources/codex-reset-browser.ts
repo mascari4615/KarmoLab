@@ -104,6 +104,23 @@ export async function discoverBrowserPosts(page: Page, author: string, sinceId?:
 }
 
 export async function readBrowserContext(page: Page, targetId: string): Promise<NonNullable<ResetPost['context']>> {
+  // 본문보다 늦게 도착하는 답글 대기. 부모만 먼저 뜬 상태를 완성된 문맥으로 저장하지 않음
+  try {
+    await page.waitForFunction(id => {
+      const articles = [...document.querySelectorAll('article[data-testid="tweet"]')];
+      const target = articles.findIndex(article => [...article.querySelectorAll('a[href] time')].some(time =>
+        !time.closest('[role="link"]:not(a)') && time.closest('a')?.getAttribute('href')?.endsWith(`/status/${id}`)));
+      return target >= 0 && articles.slice(target + 1).some(article => {
+        if (/Promoted|광고/.test(article.querySelector('[data-testid="socialContext"]')?.textContent || '')) return false;
+        const href = article.querySelector('[data-testid="User-Name"] a[href] time')?.closest('a')?.getAttribute('href') || '';
+        return /^\/[A-Za-z0-9_]+\/status\/\d+$/.test(href)
+          && [...article.querySelectorAll('[data-testid="tweetText"]')].some(text => !text.closest('[role="link"]'));
+      });
+    }, targetId, { timeout: 8_000 });
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'TimeoutError') throw error;
+    // 실제로 답글이 없는 글도 존재. 대기 종료 후 현재 부모/답글만 수집
+  }
   const read = () => page.locator('article[data-testid="tweet"]').evaluateAll((articles, id) => {
     // 상세 화면의 대상 시각은 User-Name 헤더 밖에 있음. 대상 경계와 주변 글 헤더를 따로 선택
     const targetIndex = articles.findIndex(article => [...article.querySelectorAll('a[href] time')].some(time =>
@@ -118,18 +135,32 @@ export async function readBrowserContext(page: Page, targetId: string): Promise<
       if (!match || !text) return [];
       const copy = text.cloneNode(true) as HTMLElement;
       copy.querySelectorAll('img').forEach(img => img.replaceWith(img.alt));
-      return [{ id: match[2], author: match[1], text: (copy.textContent || '').slice(0, 1600), index }];
+      const needsOriginal = [...article.querySelectorAll('button:not([role="link"] button)')]
+        .some(button => /^(Show original|View original|원본 보기)$/i.test(button.textContent?.trim() || ''));
+      return [{ id: match[2], author: match[1], text: (copy.textContent || '').slice(0, 1600), index, needsOriginal }];
     });
     return [...rows.filter(r => r.index < targetIndex).slice(-2).map(r => ({ ...r, relation: 'parent' as const })),
       ...rows.filter(r => r.index > targetIndex).slice(0, 8).map(r => ({ ...r, relation: 'reply' as const }))];
   }, targetId);
   // 부모 글과 주변 답글의 번역을 원본으로 전환. 작성자와 글 ID를 함께 고정
-  for (const row of await read()) {
+  const rows = await read();
+  for (const row of rows) {
     const article = page.locator('article[data-testid="tweet"]').filter({ has: page.locator(`[data-testid="User-Name"] a[href="/${row.author}/status/${row.id}"] time`) });
+    if (!(await article.count())) {
+      if (row.needsOriginal) throw new ResetBrowserError('incomplete', `X 문맥 원본 확인 실패 (${row.id})`);
+      continue;
+    }
     const original = article.locator('button:not([role="link"] button)').filter({ hasText: /^(Show original|View original|원본 보기)$/i }).first();
     if (await original.count()) { await original.click(); await original.waitFor({ state: 'hidden' }); }
+    row.text = await article.evaluate(element => {
+      const text = [...element.querySelectorAll('[data-testid="tweetText"]')].find(n => !n.closest('[role="link"]'));
+      const copy = text?.cloneNode(true) as HTMLElement | undefined;
+      copy?.querySelectorAll('img').forEach(img => img.replaceWith(img.alt));
+      return (copy?.textContent || '').slice(0, 1600);
+    });
   }
-  return (await read()).map(({ index: _index, ...row }) => row);
+  // 원본 전환 중 가상 스크롤로 대상 본문이 사라져도 최초에 확인한 관계 유지
+  return rows.map(({ index: _index, needsOriginal: _needsOriginal, ...row }) => row);
 }
 
 export async function readBrowserPost(page: Page, card: Pick<Card, 'id' | 'url'>, author: string, includeContext = false): Promise<ResetPost> {
@@ -173,6 +204,7 @@ export function createBrowserResetSource(author: string, sessionFile = browserSe
     activeBrowsers.add(browser);
     const deadline = setTimeout(() => { void browser.close(); }, 180_000);
     deadline.unref();
+    let stage = '타임라인';
     try {
       if (current !== generation) throw new ResetBrowserError('unavailable', 'X 수집 종료 중');
       const context = await browser.newContext({ storageState: state, locale: 'en-US', viewport: { width: 1280, height: 900 } });
@@ -183,13 +215,18 @@ export function createBrowserResetSource(author: string, sessionFile = browserSe
       if (target && target.author.toLowerCase() !== author.toLowerCase()) throw new Error('X 작성자 불일치');
       const cards = target ? [target] : await discoverBrowserPosts(page, author, sinceId);
       const posts: ResetPost[] = [];
-      for (const card of cards) posts.push(await readBrowserPost(page, card, author, true));
+      for (const card of cards) {
+        stage = card.id;
+        posts.push(await readBrowserPost(page, card, author, true));
+      }
+      stage = '인증 저장';
       // 수집 중 재로그인한 새 인증을 옛 세션으로 덮어쓰지 않음
       if (fs.statSync(sessionFile).mtimeMs === modified) saveBrowserSession(await context.storageState(), sessionFile);
       return posts.sort((a, b) => BigInt(a.id) > BigInt(b.id) ? 1 : -1);
     } catch (error) {
       if (error instanceof ResetBrowserError) throw error;
-      throw new ResetBrowserError('unavailable', 'X 브라우저 수집 실패. 연결/Edge 상태 확인 필요');
+      const reason = error instanceof Error && error.name === 'TimeoutError' ? '시간 초과' : '실패';
+      throw new ResetBrowserError('unavailable', `X 브라우저 수집 ${reason} (${stage}). 연결/브라우저 상태 확인 필요`);
     } finally { clearTimeout(deadline); activeBrowsers.delete(browser); await browser.close(); }
   };
 }

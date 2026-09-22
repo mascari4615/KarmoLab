@@ -49,6 +49,17 @@ try {
     { id: '213', author: 'audience', text: 'Banked or a reset?', relation: 'reply' },
     { id: '214', author: 'another', text: 'Dinner tonight?', relation: 'reply' },
   ]); passed++;
+  const quotedOnly = card('215', 'quoted', '').replace('</article>', quote + '</article>');
+  html = detailCard + quotedOnly + `<script>setTimeout(() => {
+    document.body.insertAdjacentHTML('afterbegin', ${JSON.stringify(videoParent)});
+    document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(card('213', 'audience', 'Banked or a reset?'))});
+  }, 500)</script>`;
+  const delayed = await readBrowserPost(page, { id: '212', url: url('212') }, author, true);
+  assert.deepEqual(delayed.context.map(c => c.id), ['211', '213']); passed++;
+  html = videoParent.replace('</article>', `<button onclick="document.querySelectorAll('article')[1].remove(); this.closest('article').querySelector('[data-testid=tweetText]').textContent='original parent'; this.remove()">원본 보기</button></article>`)
+    + detailCard + card('213', 'audience', 'Banked or a reset?');
+  const virtualized = await readBrowserPost(page, { id: '212', url: url('212') }, author, true);
+  assert.deepEqual(virtualized.context.map(c => [c.id, c.text]), [['211', 'original parent'], ['213', 'Banked or a reset?']]); passed++;
   html = card('203', author, 'My older parent post') + card('204', author, 'We will reset Codex usage tomorrow.');
   assert.equal((await readBrowserPost(page, { id: '204', url: url('204') }, author)).text, 'We will reset Codex usage tomorrow.'); passed++;
   html = card('205', 'other', 'Parent loaded first') + `<script>setTimeout(() => document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(card('206', author, 'We have reset Codex usage.'))}), 150)</script>`;
