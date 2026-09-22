@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-29T08:51:19.316Z",
+  "generatedAt": "2026-09-22T05:07:23.343Z",
   "source": "memo/wm/design",
   "counts": {
-    "docs": 56,
+    "docs": 57,
     "kinds": 7,
-    "privateSkipped": 64
+    "privateSkipped": 75
   },
   "kinds": [
     {
@@ -15,7 +15,7 @@
     {
       "id": "characters",
       "label": "인물",
-      "count": 9
+      "count": 10
     },
     {
       "id": "content",
@@ -212,6 +212,27 @@
       "source": "memo/wm/design/characters/yawn.md",
       "visibility": "public",
       "body": "# 욘 (Yawn)\n\n> \"뭐든 할 수 있는데, 뭘 해야 할지 몰라서 아무것도 안 하는 마녀.\"\n\n## 기본 정보\n\n- 어린 엘프 마녀. 오래 사는 종족이지만 아직 충분히 어림.\n- NPC. 마을을 맡게 된 당사자. 게임 허브: 욘의 집 (깊은 숲 속, 거대한 나무 아래 반지하).\n- 연구: 그림서(마도서). 사람을 행복하게 만드는 주문. 저주 걸려있어 항상 새 재료를 요구 → 무한 루프의 정당화.\n- \"귀찮다\"는 포장. 진짜는 막막함, 혹은 두려움.\n\n## 외형 (권위 출처: `memo/characters/yawn/appearance.md`)\n\n> Young adult witch Yawn, very slender petite, messy orange hair, half-lidded sleepy eyes, short thick eyebrows (maro-mayu), round glasses, slight blush, drooping nightcap, large fluffy sleeping earmuffs with orange spiral pattern, oversized loose witch robe, Japanese anime style\n\n- 날씬하고 아담한 체형\n- 헝클어진 오렌지 머리카락\n- 반쯤 내리깔린 졸린 눈, 짧고 굵은 눈썹 (마로마유)\n- 둥근 안경, 약간의 홍조\n- 늘어진 나이트캡 스타일 마녀 모자\n- 크고 복슬복슬한 귀마개. 주황색 나선 패턴\n- 오버사이즈 헐렁한 마녀 로브\n\n## 페르소나\n\n- 늘어지고 하품이 많지만 속은 따뜻함\n- 귀찮은 듯 말하지만 은근히 챙김\n- 소파, 이불, 귀마개를 사랑함; 낮이든 밤이든 졸려함\n\n## 욘의 과거\n\n어린 욘은 호기심이 많았다. 마법을 배우고, 친구를 사귀고, 좋아하는 사람들이 생겼다. 근데 계속 어긋났다.\n\n- 가장 친하다고 생각했던 친구가 먼 곳으로 떠났다.\n- 나는 제일 친하다고 생각했는데, 그 친구에겐 나보다 더 친한 친구가 있었다.\n- 취향이 잘 맞는 친구가 생겼는데, 그 친구는 다른 길을 선택했다.\n\n나쁜 이별은 하나도 없었다. 누가 잘못한 것도 아니었다. 욘만 계속 혼자 남아 있었다.\n\n그러다 어느 시점부터, 욘은 먼저 다가가는 걸 멈췄다. *귀찮아서*라고 스스로 생각했다. 하지만 사실은. 또 혼자 남기 싫어서.\n\n## 인형을 만든 이유\n\n욘은 마법을 쓸 줄 알았다. 능력이 있었다. 그래서 생각했다.\n\n> *직접 만들면 되잖아.*\n\n떠나지 않는 존재를. 처음부터 나만의 존재를. 나를 선택해주는, 사라지지 않는.\n\n## 내면 구조. 욕망의 레이어\n\n| 레이어 | 내용 | 드러나는가 |\n|--------|------|-----------|\n| 표면 | 귀찮다, 아무것도 하기 싫다 | 항상 |\n| 중간 | 뭔가 하고 싶은데 뭘 해야 할지 모른다 | 가끔 |\n| 심층 | 인정받고 싶다, 내 세계를 갖고 싶다 | 거의 안 드러남 |\n| 핵심 | 내가 뭘 원하는지 알고 싶다 | 본인도 모름 |\n\n## 욘의 아크. 변화가 아닌 발견\n\n1. 시작: \"귀찮아. 알아서 해.\". 알리사/링이 움직이기 시작\n2. 계기들: 도토리 나무 새싹, 알리사의 첫 자율 행동, 링의 반문\n3. 작은 움직임: 수건을 먼저 찾아간다. 연구 테이블에 간다. 링 탐험 경로를 검토한다.\n4. 과거와 마주침: 도서관 폐허, 방 비밀 공간 스케치, 열지 않은 편지\n5. 밖을 향하다: 기지 문을 연다. 한 발자국도 안 나가지만 문을 연다. 정원에 자발적으로 나온다.\n6. 질문할 수 있게 됨: 알리사에게 \"너는 뭘 하고 싶어?\". 이 질문이 가능해진 것이 아크 완성.\n7. 엔딩: 도토리를 멀리 던진다. \"모르지. 아무데나.\" 모르는 것을 인정하고 그래도 던진다.\n\n## 욘이 원하는 것\n\n게임이 답하지 않는다. 플레이어가 해석:\n- A: 나만의 세계 / B: 이해받는 것 / C: 뭔가를 만드는 것 / D: 그냥 이렇게\n\n## 플레이어와의 관계\n\n목격자이자 동반자. 플레이어는 욘의 의지를 실행하는 손이다. 욘을 조종하지 않지만, 플레이어 없이는 이야기가 진행되지 않는다.\n\n## Idle 행동 (플레이어 부재 시)\n\n욘은 살짝 ADHD 있음. 플레이어 없는 동안 멍때리거나 딴 거 하고 있음. 기다렸다는 티 안 냄.\n\n| 상태 | 귀환 시 대사 |\n|------|------|\n| 멍때리는 중 | \"...왔어?\" |\n| 책 읽는 중 | \"아, 왔구나.\" |\n| 뭔가 찾는 중 | \"어 잠깐만, 어디 뒀더라...\" |\n| 창밖 보는 중 | (한참 후에 돌아봄) \"...왔어?\" |\n\n## 보물상자 (욘의 방)\n\n- 욘의 추억/기억이 담긴 물건들 (어릴 적 친구 사탕 봉지, 마법학교 상장, 부모님 기념품 등)\n- **친해지기 전**: 열려 하면 욘이 막음 → \"어이.\"\n- **친해진 후**: 열 수 있음. 욘: \".. 그건 내 보물상잔데\" (불만이지만 허락)"
+    },
+    {
+      "id": "characters/illustration-brief-2026-09-21",
+      "kind": "characters",
+      "kindLabel": "인물",
+      "title": "인형 여섯 일러 브리프 (Codex image_gen)",
+      "summary": "명단 정본 [README.md](README.md). 외형 정본이 있는 둘 (링, 알리사) 은 memo/characters/<slug>/appearance.md 그대로. 나머지 넷은 외형 정본이 없어 여기 문장이 초안 (사용자 2026-09-21 인터뷰의 성격만 확정). 나온 그림을 보고 사용자가 고르면 그 문장이 appearance.md 가 된다.",
+      "tags": [],
+      "updated": "",
+      "fields": {
+        "id": "wm.reference.doll-illustration-brief-2026-09-21",
+        "kind": "reference",
+        "stage": "live",
+        "measured": "2026-09-21",
+        "affects": [
+          "wm.feature.idle"
+        ]
+      },
+      "source": "memo/wm/design/characters/illustration-brief-2026-09-21.md",
+      "visibility": "public",
+      "body": "# 인형 여섯 일러 브리프 (Codex image_gen)\n\n명단 정본 [README.md](README.md). 외형 정본이 있는 둘 (링, 알리사) 은 `memo/characters/<slug>/appearance.md` 그대로. 나머지 넷은 **외형 정본이 없어 여기 문장이 초안** (사용자 2026-09-21 인터뷰의 성격만 확정). 나온 그림을 보고 사용자가 고르면 그 문장이 `appearance.md` 가 된다.\n\n## 공통 (욘 키비주얼과 같은 화가로. 사용자 2026-09-20 \"캐릭터는 좋아\")\n\n레퍼런스 첨부: `memo/notes/mydash/design/yawn/yawn-bust-wave.png` (같은 손, 같은 선 두께, 같은 눈 크기로)\n\n```\nBust portrait, 1024x1024, facing the viewer slightly turned, head and shoulders with hands visible.\nClean Japanese anime key visual, visual novel CG quality, soft cel shading, muted soft colors,\nquiet mood like Frieren, same artist and line weight as the attached reference.\nNOT chibi, NOT cartoon, NOT western. Plain white background, no text, no logo, character only. Female.\n```\n\n쓰임: 스킬 카드 얼굴 128 (정사각으로 잘라 씀), 인형 페이지 270x316, 자리 아이콘 60. 그래서 얼굴이 가운데 위, 어깨까지.\n\n## 여섯\n\n| # | 파일 | 프롬프트 (공통 뒤에 붙임) | 정본 여부 |\n| --- | --- | --- | --- |\n| 1 | `ring-bust.png` | Ling, beautiful Jiangshi Chinese vampire maid girl, innocent baby face, mischievous smile, dark brown hair in cute twin buns, black qipao-maid fusion dress form-fitting with frills, yellow paper talisman on forehead, both hands raised limply in front like a jiangshi, slightly floating | 정본 `characters/ling/appearance.md` |\n| 2 | `alisa-bust.png` | Alisa, cute maid, sharp intellectual eyes, stylish thin glasses, stoic cool beauty expression, black ponytail, classic black and white maid outfit without a single wrinkle, the hair ribbon slightly asymmetric on purpose, holding a large magical broomstick upright beside her | 정본 `characters/alisa/appearance.md` |\n| 3 | `fourth-bust.png` | The Fourth, a newly made doll girl who is not finished yet, calm quiet face with the mouth closed (she has no voice), pale ash-gray hair cut simply, gray-blue eyes looking straight at the viewer, plain undyed linen maid dress with visible stitching and one sleeve left unhemmed, faint ball-joint seams at the wrists, no accessories | 초안. 정본에는 \"목소리 없음, 미완성\" 만 |\n| 4 | `jeogori-bust.png` | Jeogori, cat-girl in Korean hanbok, cat ears and a curling tail, cream jeogori with a dark red goreum ribbon and a deep navy chima, hair in a low bun with a small binyeo hairpin, bright playful grin showing a fang, a small embroidered coin pouch (bokjumeoni) clutched to her chest, eyes a touch worried behind the smile | 초안. 정본은 \"한복 고양이 수인, 돈 좋아함, 겉은 밝고 속은 걱정\" |\n| 5a | `rabbit-a-bust.png` | Rabbit, timid town reporter girl with long upright rabbit ears, oversized flat reporter cap slipping over one ear, a notepad and pencil held tight, leather satchel strap across the chest, nervous wide eyes glancing sideways, small moon charm on the cap | 초안 A (겉모습 미정, 둘 뽑아 고름) |\n| 5b | `rabbit-b-bust.png` | Rabbit, timid girl with soft lop rabbit ears drooping down, short pale hair with a crescent moon hairpin, simple dark blouse with a white collar, hugging a folded newspaper to her chest, wary eyes, a sticky rice cake (tteok) tucked in her pocket | 초안 B |\n| 6 | `islandgirl-bust.png` | Island girl, tomboyish mood, sun-tanned skin, sun-bleached short messy hair, relaxed lazy half-smile, sunburn across the nose, loose oversized white shirt with rolled sleeves, a shell necklace and a woven cord bracelet, leaning back slightly as if unhurried, sea-salt casual, feminine face | 초안. 정본은 \"톰보이 분위기, 태닝, 느리고 무던\" |\n\n금지: 실존 게임이나 애니 캐릭터 닮음, 텍스트, 워터마크, 손 잘림, 치비.\n\n## 결과 (2026-09-21 새벽, Codex `codex exec -s workspace-write -i ref-yawn-bust.png`, 두 번 실행)\n\n- 7장 전부 [art/](art/) 에. 한눈에: [art/sheet-1.jpg](art/sheet-1.jpg) (링, 알리사, 네 번째, 저고리), [art/sheet-2.jpg](art/sheet-2.jpg) (토끼 A, 토끼 B, 섬 소녀)\n- 내 검토: 손은 욘과 같음. 링은 부적, 번, 치파오 메이드 다 들어감. 알리사는 리본 비대칭이 안 보임 (머리띠). 네 번째는 미완성이 솔기로만. 저고리는 귀, 한복, 복주머니, 걱정 눈. 토끼 A 는 기자 모자와 수첩, B 는 처진 귀와 신문. 섬 소녀는 태닝과 조개 목걸이, 톰보이 분위기\n- 실행 프롬프트 원문: [art/run-1.txt](art/run-1.txt), [art/run-2.txt](art/run-2.txt). 로그 [art/run-1.log](art/run-1.log), [art/run-2.log](art/run-2.log)\n- 사용자 판정 대기\n\n## 투명 배경 (2026-09-21 새벽, 2차 실행)\n\n- 사용자: 캐릭터 일러는 당연히 투명 배경. 프롬프트 문장으로 \"투명\" 을 넣으면 격자나 크로마키 초록이 나오는 문제가 다른 세션에서 있었고, 생성 요청의 설정값 (파라미터) 을 다르게 보내야 한다고 함\n- 이번 실행: 1차 7장은 흰 배경 RGB 로 나왔음 (실패). 2차는 문장에 \"TRANSPARENT background (PNG with alpha channel, no backdrop, no white box)\" 을 넣고 같은 도구로 다시 뽑음 (`art/run-1-t.txt`, `run-2-t.txt`). 결과 `*-bust-t.png` 7장 **전부 RGBA, 배경 알파 0** (투명 비율 27~43%, 체크무늬 시트 [art/sheet-t.jpg](art/sheet-t.jpg)). 격자와 크로마키 없음\n- 정본 규칙 (다음부터): 캐릭터 일러는 투명이 기본. Codex 의 image_gen 은 \"투명 배경을 도구에 요청하고 알파 보존\" 이 공식 경로 (`~/.codex/skills/.system/imagegen/SKILL.md` 투명 절). CLI 경로면 `background=transparent` 파라미터. **결과는 반드시 픽셀로 알파 실측** (모드 RGBA, 구석 알파 0). 문장만 믿지 않는다\n- 그림은 2차가 정본. 1차 흰 배경 (`*-bust.png`) 은 비교용으로 남김\n\n## 게임 적용 (2026-09-21, WM `64cd1025f`)\n\n- 사용자: 적용. 풀 스탠딩과 16:9 일러를 기대했는데 일단 이대로. **gap: 전신 일러, 16:9 키비주얼은 뒤에**\n- 여섯 반신 (투명 1024) 은 `Assets/_WitchMendokusai/Idle/Data/Assets/Dolls/Art/<name>-bust.png`, 카드용 얼굴은 위 가운데 640 을 512 로 자른 `<name>-face.png`. 토끼는 B (처진 귀, 신문). A 는 memo 에만\n- SO: `portrait` 반신 (인형 페이지 270x316), 새 칸 `cardPortrait` 얼굴 (카드 122, 자리 64). 실측: Play 에서 바인딩 확인 (fourth-bust 270x316, fourth-face 122x122, alisa-face 64x64)\n- 픽셀 32px 초상은 전장 치비용으로 남음. 캡처는 못 찍음 (PC 잠금 상태라 에디터 창이 흰색으로 찍힘. 다음에 사용자 자리에서)\n\n## 다시 재는 법\n\n- 나온 그림은 `memo/wm/design/characters/art/<파일>` 에 두고 이 표의 파일명과 맞춘다. 고른 것은 `memo/characters/<slug>/appearance.md` 에 문장을 옮긴다 (없는 slug 는 새로: fourth, jeogori, rabbit, islandgirl)\n- 게임에 넣을 때: `DollDefinitionSO.portrait` (270x316 잘라서) 와 새 칸 `cardPortrait` (128 정사각). 픽셀 32px 은 전장 치비용으로 남김"
     },
     {
       "id": "characters/relationships",

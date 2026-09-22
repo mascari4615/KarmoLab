@@ -10,216 +10,216 @@ permalink: /changes.xml
     <atom:link href="https://blog.mascari4615.com/changes.xml" rel="self" type="application/rss+xml"/>
     <description>KarmoLab 에서 새로 생기고 고쳐지고 빨라진 것들</description>
     <language>ko</language>
-    <lastBuildDate>Sun, 13 Sep 2026 00:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Tue, 22 Sep 2026 00:00:00 GMT</lastBuildDate>
     <item>
-      <title>[고침] 화면 전이 관찰과 CI 검사 자료 및 번들 기준선 교정</title>
+      <title>[고침] 자식 브라우저 검사도 동시 실행 한도에 포함</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-102c20907</guid>
+      <guid isPermaLink="false">karmolab-change-5ec5f0e77</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>자식 브라우저 검사도 동시 실행 한도에 포함</description>
+    </item>
+    <item>
+      <title>[고침] 페이지 이동 뒤 검증 누락과 첫 화면 성능 복구</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-bf8a77433</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>페이지 이동 뒤 검증 누락과 첫 화면 성능 복구</description>
+    </item>
+    <item>
+      <title>[새로 생김] ESC 메뉴. ESC 키나 첫 화면 구석 버튼으로 왼쪽 판 (프로필, 칸 여덟, 닫기, 욘). 아이콘은 PNG mask 로 밝기 둘 한 그림</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-a31526dd9</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>ESC 메뉴. ESC 키나 첫 화면 구석 버튼으로 왼쪽 판 (프로필, 칸 여덟, 닫기, 욘). 아이콘은 PNG mask 로 밝기 둘 한 그림</description>
+    </item>
+    <item>
+      <title>[고침] 늦게 붙는 답글과 원본 전환 문맥 보존</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-da9cdb5a0</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>늦게 붙는 답글과 원본 전환 문맥 보존</description>
+    </item>
+    <item>
+      <title>[고침] 첫 복구 알림에서 명확한 공지 우선</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-5c64dcd16</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>첫 복구 알림에서 명확한 공지 우선</description>
+    </item>
+    <item>
+      <title>[고침] Claude 문맥 분석으로 초기화 알림 누락 복구</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-37473b7b5</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>Claude 문맥 분석으로 초기화 알림 누락 복구</description>
+    </item>
+    <item>
+      <title>[고침] 전수 검사 셋이 도구 장 주소로 연다. widgets-alive 12분 -&gt; 27초, 죽은 도구 하나 발견</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-49c354ea9</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>전수 검사 셋이 도구 장 주소로 연다. widgets-alive 12분 -&gt; 27초, 죽은 도구 하나 발견</description>
+    </item>
+    <item>
+      <title>[고침] WCAG 2.2 전수 35종 -&gt; 0. 도구 장 주소로 재니 해시 화면에서 안 보이던 위반이 나왔다</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-5611faf91</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>WCAG 2.2 전수 35종 -&gt; 0. 도구 장 주소로 재니 해시 화면에서 안 보이던 위반이 나왔다</description>
+    </item>
+    <item>
+      <title>[새로 생김] 도구를 바꾸면 제 주소로 실제 이동. 떠난 도구의 소리와 타이머는 브라우저가 없앤다</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-6abf4b0e1</guid>
+      <pubDate>Tue, 22 Sep 2026 00:00:00 GMT</pubDate>
+      <description>도구를 바꾸면 제 주소로 실제 이동. 떠난 도구의 소리와 타이머는 브라우저가 없앤다</description>
+    </item>
+    <item>
+      <title>[고침] 번역 로드 전 한국어 첫 화면 초기 문구 유지</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-030473244</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>번역 로드 전 한국어 첫 화면 초기 문구 유지</description>
+    </item>
+    <item>
+      <title>[고침] 첫 화면 메뉴 번역과 생성 스타일 동기화</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-24e35df95</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>첫 화면 메뉴 번역과 생성 스타일 동기화</description>
+    </item>
+    <item>
+      <title>[고침] 사이드바에 소개 바로가기 표시</title>
+      <link>https://blog.mascari4615.com/#status</link>
+      <guid isPermaLink="false">karmolab-change-7046fd422</guid>
       <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>화면 전이 관찰과 CI 검사 자료 및 번들 기준선 교정</description>
+      <description>사이드바에 소개 바로가기 표시</description>
     </item>
     <item>
-      <title>[고침] 개인 대시보드 검색 별칭 보완</title>
+      <title>[고침] 글 장 활자 크기를 .c-post 자 변수로. 직접 px 9곳 정리</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-4b4be0641</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>개인 대시보드 검색 별칭 보완</description>
+      <guid isPermaLink="false">karmolab-change-935f31402</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>글 장 활자 크기를 .c-post 자 변수로. 직접 px 9곳 정리</description>
     </item>
     <item>
-      <title>[고침] 현재 검사에 속한 브라우저만 정리</title>
+      <title>[고침] 한글 글꼴을 swap 으로. optional 이라 본문이 늘 대체 글꼴이었다</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-ce8bb36e9</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>현재 검사에 속한 브라우저만 정리</description>
+      <guid isPermaLink="false">karmolab-change-da58ba224</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>한글 글꼴을 swap 으로. optional 이라 본문이 늘 대체 글꼴이었다</description>
     </item>
     <item>
-      <title>[고침] 전체 본문 중복 판정과 지도 측정 및 표시 교정</title>
+      <title>[고침] 남의 사진 배경 (bg-glasscity) 제거. 첫 화면과 대시보드 홈은 CSS 그라데이션으로</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-b56e2bf80</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>전체 본문 중복 판정과 지도 측정 및 표시 교정</description>
+      <guid isPermaLink="false">karmolab-change-ab2ed9d81</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>남의 사진 배경 (bg-glasscity) 제거. 첫 화면과 대시보드 홈은 CSS 그라데이션으로</description>
     </item>
     <item>
-      <title>[새로 생김] 내 AI Claude 카드 마지막 라이브값 강등</title>
+      <title>[고침] 글 장은 화면 배율을 안 건다</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-b36d6d8ef</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>내 AI Claude 카드 마지막 라이브값 강등</description>
+      <guid isPermaLink="false">karmolab-change-0b67b8259</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>글 장은 화면 배율을 안 건다</description>
     </item>
     <item>
-      <title>[새로 생김] 내 AI Claude 카드에 로그인 버튼</title>
+      <title>[새로 생김] 첫 화면을 Q2 로비로. 큰 타일 여섯, 욘, 머리 줄과 옆줄 숨김, 밝기 둘</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-3d3d6cca3</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>내 AI Claude 카드에 로그인 버튼</description>
+      <guid isPermaLink="false">karmolab-change-022f00029</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>첫 화면을 Q2 로비로. 큰 타일 여섯, 욘, 머리 줄과 옆줄 숨김, 밝기 둘</description>
     </item>
     <item>
-      <title>[고침] 본문 감사와 지도 생성의 수집 경로 통합</title>
+      <title>[새로 생김] 본문 글꼴을 Noto Sans KR 에서 Pretendard 로</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-b99c49b5d</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>본문 감사와 지도 생성의 수집 경로 통합</description>
+      <guid isPermaLink="false">karmolab-change-8611bc0b5</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>본문 글꼴을 Noto Sans KR 에서 Pretendard 로</description>
     </item>
     <item>
-      <title>[고침] 이름 검사를 생성 때와 같은 자료로 대조</title>
+      <title>[고침] 글 장 활자와 목차 자리</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-5d590c057</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>이름 검사를 생성 때와 같은 자료로 대조</description>
+      <guid isPermaLink="false">karmolab-change-8228b9666</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>글 장 활자와 목차 자리</description>
     </item>
     <item>
-      <title>[고침] 선택된 화면이 없으면 검사 통과 방지</title>
+      <title>[고침] 글 본문 표 규칙. 칸 여백, 머리줄, 줄선, 넓으면 가로 스크롤</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-c42b29035</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>선택된 화면이 없으면 검사 통과 방지</description>
+      <guid isPermaLink="false">karmolab-change-735f42ac5</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>글 본문 표 규칙. 칸 여백, 머리줄, 줄선, 넓으면 가로 스크롤</description>
     </item>
     <item>
-      <title>[고침] 오늘 날짜 글자에 테마 대비색 적용</title>
+      <title>[고침] 검사 병렬도 제한과 폐기 검사 기준선 정리</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-1cccfe651</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>오늘 날짜 글자에 테마 대비색 적용</description>
+      <guid isPermaLink="false">karmolab-change-ceeb02d97</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>검사 병렬도 제한과 폐기 검사 기준선 정리</description>
     </item>
     <item>
-      <title>[고침] 삭제된 검사 참조와 외부 통신 안내 보완</title>
+      <title>[고침] 접근성 측정 대기와 오래된 검사 경로 교정</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-748118b8a</guid>
-      <pubDate>Sun, 13 Sep 2026 00:00:00 GMT</pubDate>
-      <description>삭제된 검사 참조와 외부 통신 안내 보완</description>
+      <guid isPermaLink="false">karmolab-change-ce2d9e9a8</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>접근성 측정 대기와 오래된 검사 경로 교정</description>
     </item>
     <item>
-      <title>[고침] mydash 쓰기 경로 반증 8건 수정. perm 판정, 큐 머지, 파일명 nonce, 페이지 순회, 승격 관문, 44px</title>
+      <title>[고침] 대시보드 홈이 낮은 창에서 스크롤 나던 것</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-2b376f2b7</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 쓰기 경로 반증 8건 수정. perm 판정, 큐 머지, 파일명 nonce, 페이지 순회, 승격 관문, 44px</description>
+      <guid isPermaLink="false">karmolab-change-dc646abe8</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>대시보드 홈이 낮은 창에서 스크롤 나던 것</description>
     </item>
     <item>
-      <title>[새로 생김] mydash 3단계 쓰기. 이벤트 브랜치 태깅, 시트, 선택 모드, 판정 대기 한 장</title>
+      <title>[고침] 대시보드 홈 색과 크기를 홈 토큰으로 (style-tokens 게이트)</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-6e7652467</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 3단계 쓰기. 이벤트 브랜치 태깅, 시트, 선택 모드, 판정 대기 한 장</description>
+      <guid isPermaLink="false">karmolab-change-ccbc138b0</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>대시보드 홈 색과 크기를 홈 토큰으로 (style-tokens 게이트)</description>
     </item>
     <item>
-      <title>[새로 생김] 승인한 그림과 사이드바 소개 화면 적용</title>
+      <title>[새로 생김] 대시보드 홈을 W3 유리 카드 로비로</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-c14831f8e</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>승인한 그림과 사이드바 소개 화면 적용</description>
+      <guid isPermaLink="false">karmolab-change-210b73094</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>대시보드 홈을 W3 유리 카드 로비로</description>
     </item>
     <item>
-      <title>[고침] mydash 3라운드 반증 17건 수정</title>
+      <title>[고침] memo-sync 가드는 잃을 내용이 있는 편집만 센다. 유령 삭제와 옛 커밋 그대로인 파일은 되감는다</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-5b89b312e</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 3라운드 반증 17건 수정</description>
+      <guid isPermaLink="false">karmolab-change-c57d48f8a</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>memo-sync 가드는 잃을 내용이 있는 편집만 센다. 유령 삭제와 옛 커밋 그대로인 파일은 되감는다</description>
     </item>
     <item>
-      <title>[새로 생김] mydash 북마크 패널 (읽기 전용), 지형도 북마크 소스, 발견성</title>
+      <title>[고침] memo-sync 는 tracked 미커밋 편집이 있으면 reset 보류하고 알린다</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-5d6f1557f</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 북마크 패널 (읽기 전용), 지형도 북마크 소스, 발견성</description>
+      <guid isPermaLink="false">karmolab-change-bf2fb57c2</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>memo-sync 는 tracked 미커밋 편집이 있으면 reset 보류하고 알린다</description>
     </item>
     <item>
-      <title>[고침] mydash 발견성, 세션 수, 오류 카드 버튼, CI smoke 재시도</title>
+      <title>[고침] 답글 대상 선택과 초기화 알림 수집 복구</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-9fb15a38d</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 발견성, 세션 수, 오류 카드 버튼, CI smoke 재시도</description>
+      <guid isPermaLink="false">karmolab-change-c6efa9893</guid>
+      <pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+      <description>답글 대상 선택과 초기화 알림 수집 복구</description>
     </item>
     <item>
-      <title>[고침] mydash 패널 칩 44px 와 릴레이 429 백오프</title>
+      <title>[고침] 대시보드 폰 화면 셋 (MVP 4). 머리 줄 계정 행, 타일 수치 갈라짐, 나 숨기기 버튼</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-04b225bc6</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 패널 칩 44px 와 릴레이 429 백오프</description>
+      <guid isPermaLink="false">karmolab-change-4bb9a0563</guid>
+      <pubDate>Sun, 20 Sep 2026 00:00:00 GMT</pubDate>
+      <description>대시보드 폰 화면 셋 (MVP 4). 머리 줄 계정 행, 타일 수치 갈라짐, 나 숨기기 버튼</description>
     </item>
     <item>
-      <title>[고침] mydash 셸 결함 8건과 릴레이 속도 제한</title>
+      <title>[고침] 북마크 영상과 그림이 referer 때문에 403 나던 것. 문서 meta no-referrer</title>
       <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-16d355ad2</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 셸 결함 8건과 릴레이 속도 제한</description>
-    </item>
-    <item>
-      <title>[고침] mydash 릴레이 compatibility_date 를 과거로</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-4d352e02b</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 릴레이 compatibility_date 를 과거로</description>
-    </item>
-    <item>
-      <title>[새로 생김] mydash 릴레이 CI 배포와 사이트 설정</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-a5846783f</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>mydash 릴레이 CI 배포와 사이트 설정</description>
-    </item>
-    <item>
-      <title>[새로 생김] 개인 대시보드 셸 1단계 (mydash) 코드 반입</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-e99639eb2</guid>
-      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
-      <description>개인 대시보드 셸 1단계 (mydash) 코드 반입</description>
-    </item>
-    <item>
-      <title>[고침] check reset announcements once an hour</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-40b1789eb</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>check reset announcements once an hour</description>
-    </item>
-    <item>
-      <title>[고침] exclude past reset recollections from new announcements</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-b30f87f3a</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>exclude past reset recollections from new announcements</description>
-    </item>
-    <item>
-      <title>[고침] wait for Edge approval without changing browser defaults</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-7f0fdd270</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>wait for Edge approval without changing browser defaults</description>
-    </item>
-    <item>
-      <title>[새로 생김] reuse laptop Edge sign-in for reset monitoring</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-7825bdd01</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>reuse laptop Edge sign-in for reset monitoring</description>
-    </item>
-    <item>
-      <title>[고침] 서버 계정용 수집 브라우저와 배포 검사</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-e0d5381dd</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>서버 계정용 수집 브라우저와 배포 검사</description>
-    </item>
-    <item>
-      <title>[새로 생김] 초기화 공지 브라우저 감시와 한국시간 알림</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-558c7b239</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>초기화 공지 브라우저 감시와 한국시간 알림</description>
-    </item>
-    <item>
-      <title>[새로 생김] 프로필과 작업물 통합, 연표 선택 보기</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-b858fcb98</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>프로필과 작업물 통합, 연표 선택 보기</description>
-    </item>
-    <item>
-      <title>[고침] 숨긴 게임 검증과 분류 명부 동기화</title>
-      <link>https://blog.mascari4615.com/#status</link>
-      <guid isPermaLink="false">karmolab-change-3b2832fdd</guid>
-      <pubDate>Wed, 09 Sep 2026 00:00:00 GMT</pubDate>
-      <description>숨긴 게임 검증과 분류 명부 동기화</description>
+      <guid isPermaLink="false">karmolab-change-c47ea396f</guid>
+      <pubDate>Sat, 19 Sep 2026 00:00:00 GMT</pubDate>
+      <description>북마크 영상과 그림이 referer 때문에 403 나던 것. 문서 meta no-referrer</description>
     </item>
   </channel>
 </rss>

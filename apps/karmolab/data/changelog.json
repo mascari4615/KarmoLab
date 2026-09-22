@@ -1,8 +1,448 @@
 {
-  "generatedAt": "2026-09-13",
+  "generatedAt": "2026-09-22",
   "entries": [
     {
-      "sha": "59cbc637a",
+      "sha": "5ec5f0e77",
+      "date": "2026-09-22",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "자식 브라우저 검사도 동시 실행 한도에 포함"
+    },
+    {
+      "sha": "bf8a77433",
+      "date": "2026-09-22",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "페이지 이동 뒤 검증 누락과 첫 화면 성능 복구"
+    },
+    {
+      "sha": "a31526dd9",
+      "date": "2026-09-22",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "ESC 메뉴. ESC 키나 첫 화면 구석 버튼으로 왼쪽 판 (프로필, 칸 여덟, 닫기, 욘). 아이콘은 PNG mask 로 밝기 둘 한 그림"
+    },
+    {
+      "sha": "da9cdb5a0",
+      "date": "2026-09-22",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "늦게 붙는 답글과 원본 전환 문맥 보존"
+    },
+    {
+      "sha": "5c64dcd16",
+      "date": "2026-09-22",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "첫 복구 알림에서 명확한 공지 우선"
+    },
+    {
+      "sha": "37473b7b5",
+      "date": "2026-09-22",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "Claude 문맥 분석으로 초기화 알림 누락 복구"
+    },
+    {
+      "sha": "49c354ea9",
+      "date": "2026-09-22",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "전수 검사 셋이 도구 장 주소로 연다. widgets-alive 12분 -> 27초, 죽은 도구 하나 발견"
+    },
+    {
+      "sha": "5611faf91",
+      "date": "2026-09-22",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "WCAG 2.2 전수 35종 -> 0. 도구 장 주소로 재니 해시 화면에서 안 보이던 위반이 나왔다"
+    },
+    {
+      "sha": "6abf4b0e1",
+      "date": "2026-09-22",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "도구를 바꾸면 제 주소로 실제 이동. 떠난 도구의 소리와 타이머는 브라우저가 없앤다"
+    },
+    {
+      "sha": "030473244",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "번역 로드 전 한국어 첫 화면 초기 문구 유지"
+    },
+    {
+      "sha": "24e35df95",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "첫 화면 메뉴 번역과 생성 스타일 동기화"
+    },
+    {
+      "sha": "7046fd422",
+      "date": "2026-09-13",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "사이드바에 소개 바로가기 표시"
+    },
+    {
+      "sha": "935f31402",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "글 장 활자 크기를 .c-post 자 변수로. 직접 px 9곳 정리"
+    },
+    {
+      "sha": "da58ba224",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "한글 글꼴을 swap 으로. optional 이라 본문이 늘 대체 글꼴이었다"
+    },
+    {
+      "sha": "ab2ed9d81",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "남의 사진 배경 (bg-glasscity) 제거. 첫 화면과 대시보드 홈은 CSS 그라데이션으로"
+    },
+    {
+      "sha": "0b67b8259",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "글 장은 화면 배율을 안 건다"
+    },
+    {
+      "sha": "022f00029",
+      "date": "2026-09-21",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "첫 화면을 Q2 로비로. 큰 타일 여섯, 욘, 머리 줄과 옆줄 숨김, 밝기 둘"
+    },
+    {
+      "sha": "8611bc0b5",
+      "date": "2026-09-21",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "본문 글꼴을 Noto Sans KR 에서 Pretendard 로"
+    },
+    {
+      "sha": "8228b9666",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "글 장 활자와 목차 자리"
+    },
+    {
+      "sha": "735f42ac5",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "글 본문 표 규칙. 칸 여백, 머리줄, 줄선, 넓으면 가로 스크롤"
+    },
+    {
+      "sha": "ceeb02d97",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "검사 병렬도 제한과 폐기 검사 기준선 정리"
+    },
+    {
+      "sha": "ce2d9e9a8",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "접근성 측정 대기와 오래된 검사 경로 교정"
+    },
+    {
+      "sha": "dc646abe8",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "대시보드 홈이 낮은 창에서 스크롤 나던 것"
+    },
+    {
+      "sha": "ccbc138b0",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "대시보드 홈 색과 크기를 홈 토큰으로 (style-tokens 게이트)"
+    },
+    {
+      "sha": "210b73094",
+      "date": "2026-09-21",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "대시보드 홈을 W3 유리 카드 로비로"
+    },
+    {
+      "sha": "c57d48f8a",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "memo-sync 가드는 잃을 내용이 있는 편집만 센다. 유령 삭제와 옛 커밋 그대로인 파일은 되감는다"
+    },
+    {
+      "sha": "bf2fb57c2",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "memo-sync 는 tracked 미커밋 편집이 있으면 reset 보류하고 알린다"
+    },
+    {
+      "sha": "c6efa9893",
+      "date": "2026-09-21",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "답글 대상 선택과 초기화 알림 수집 복구"
+    },
+    {
+      "sha": "4bb9a0563",
+      "date": "2026-09-20",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "대시보드 폰 화면 셋 (MVP 4). 머리 줄 계정 행, 타일 수치 갈라짐, 나 숨기기 버튼"
+    },
+    {
+      "sha": "c47ea396f",
+      "date": "2026-09-19",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "북마크 영상과 그림이 referer 때문에 403 나던 것. 문서 meta no-referrer"
+    },
+    {
+      "sha": "369a83c32",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "북마크 옆판에서 영상 재생. 트윗 mp4 는 video, 유튜브는 iframe"
+    },
+    {
+      "sha": "398f93e16",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "북마크 옆판에서 주제 (성인 등) 편집, 필터에 주제 축"
+    },
+    {
+      "sha": "0ec85da1a",
+      "date": "2026-09-19",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "북마크 PC 옆판을 화면 오른쪽에 고정, 자기만 스크롤"
+    },
+    {
+      "sha": "bbfea77b2",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "로컬 dev 서버에서 대시보드 로그인. 릴레이 대행 /__relay 와 셸의 로컬 판단"
+    },
+    {
+      "sha": "746eb7c2c",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "대시보드 여섯 화면을 같은 자로. 본문 15 메타 13 히어로 36~40, 목록 본문 글꼴"
+    },
+    {
+      "sha": "28f823c89",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "첫 실행에 관심 갈래를 고른다. 안 고른 갈래는 출제에서만 빠진다"
+    },
+    {
+      "sha": "c32ee26a7",
+      "date": "2026-09-19",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "지켜보기 CSS 의 없는 토큰과 직접 색 크기 17곳을 스킨 토큰으로. 토큰 검사 둘을 pre-push 로"
+    },
+    {
+      "sha": "ad003b478",
+      "date": "2026-09-19",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "지켜보기가 옛 저장의 빈 알림 여섯을 그대로 복구하던 것"
+    },
+    {
+      "sha": "539c04f3f",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "지켜보기를 알림 카드형으로. 처음 1개, 설정 서랍, 상태 알약"
+    },
+    {
+      "sha": "29806bdc2",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "북마크 화면을 레퍼런스 실측값으로. 머리 줄 하나, 글자 15, 격자 핀터레스트 값, 목록 본문 글꼴"
+    },
+    {
+      "sha": "7513a35de",
+      "date": "2026-09-19",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "지켜보기 판정 주기가 초당 프레임을 따르고 실제 공유 크기와 fps 표시"
+    },
+    {
+      "sha": "fdfd406fc",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "지켜보기에 공유 화질과 프레임 옵션, 판정 안정화"
+    },
+    {
+      "sha": "9e5974f84",
+      "date": "2026-09-19",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "북마크 피드와 격자는 PC 에서 화면 전체. 옆판은 열었을 때만"
+    },
+    {
+      "sha": "3e49967b2",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "대시보드 북마크 보기 셋. 목록, 피드 (트위터 식), 격자 (핀터레스트 식). MVP 5 화면 B"
+    },
+    {
+      "sha": "466d30705",
+      "date": "2026-09-19",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "대시보드 북마크에 원문과 그림 (MVP 5 화면 A). 줄 썸네일과 본문 줄, 옆판 세 층"
+    },
+    {
+      "sha": "913eb276b",
+      "date": "2026-09-18",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "로딩 필수 JS 상한을 깃허브 기준으로. 첫 화면 45 -> 100, 도구 26 -> 90"
+    },
+    {
+      "sha": "55f6ff7ea",
+      "date": "2026-09-17",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "대시보드 북마크 MVP 3. 목록이 주인공, PC 옆판 420px, 자판 훑기"
+    },
+    {
+      "sha": "dc7e5dd77",
+      "date": "2026-09-17",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "대시보드 게이트 둘 초록. 캘린더 픽스처를 실행 시간대로, 북마크 토큰 이름"
+    },
+    {
+      "sha": "89f9cb78b",
+      "date": "2026-09-16",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "내 AI 현황을 브라우저에서도, 대시보드 로그인 전 화면틀"
+    },
+    {
+      "sha": "cc10e77c8",
+      "date": "2026-09-13",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "사이드바 왼쪽 강조 하나만, 탭은 즐겨찾기 하나 (내 것 개명, 만든 것과 갈래 탭 숨김)"
+    },
+    {
+      "sha": "59f8fe010",
+      "date": "2026-09-13",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "셸 사이드바 하위 항목 통로 (setSubNav), mydash 목록 이식 (MVP 1.5)"
+    },
+    {
+      "sha": "b7e9eb823",
+      "date": "2026-09-13",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "mydash 캘린더 패널 (MVP 2). 플래너 Google 연동 재사용, 월 보기와 북마크 건수"
+    },
+    {
+      "sha": "43cda5e79",
+      "date": "2026-09-13",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "mydash 자체 화면틀과 홈 (MVP 1), 이벤트 404 소음과 닫힌 시트와 가로 넘침 수정"
+    },
+    {
+      "sha": "87baad666",
+      "date": "2026-09-13",
+      "kind": "fix",
+      "label": "고침",
+      "tone": "fix",
+      "text": "mydash 나 첫 탭, 접힌 재발굴 카드, 근거 링크, 후보 상한, i18n 제목, null 표시"
+    },
+    {
+      "sha": "cb5f4b852",
+      "date": "2026-09-13",
+      "kind": "feat",
+      "label": "새로 생김",
+      "tone": "new",
+      "text": "mydash 2단계 패널 PC 성능, 커리어, 나 1차"
+    },
+    {
+      "sha": "c18c015da",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -10,7 +450,7 @@
       "text": "본문 삭제 대조에서 문서 메타데이터 혼입 방지"
     },
     {
-      "sha": "102c20907",
+      "sha": "145d548ca",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -18,7 +458,7 @@
       "text": "화면 전이 관찰과 CI 검사 자료 및 번들 기준선 교정"
     },
     {
-      "sha": "4b4be0641",
+      "sha": "abfb5b6e2",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -26,7 +466,7 @@
       "text": "개인 대시보드 검색 별칭 보완"
     },
     {
-      "sha": "ce8bb36e9",
+      "sha": "e5c9e2bd4",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -34,7 +474,7 @@
       "text": "현재 검사에 속한 브라우저만 정리"
     },
     {
-      "sha": "b56e2bf80",
+      "sha": "6cc53a090",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -42,7 +482,7 @@
       "text": "전체 본문 중복 판정과 지도 측정 및 표시 교정"
     },
     {
-      "sha": "b36d6d8ef",
+      "sha": "85a04eb45",
       "date": "2026-09-13",
       "kind": "feat",
       "label": "새로 생김",
@@ -50,7 +490,7 @@
       "text": "내 AI Claude 카드 마지막 라이브값 강등"
     },
     {
-      "sha": "3d3d6cca3",
+      "sha": "2da99ce6e",
       "date": "2026-09-13",
       "kind": "feat",
       "label": "새로 생김",
@@ -58,7 +498,7 @@
       "text": "내 AI Claude 카드에 로그인 버튼"
     },
     {
-      "sha": "b99c49b5d",
+      "sha": "c46dfb224",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -66,7 +506,7 @@
       "text": "본문 감사와 지도 생성의 수집 경로 통합"
     },
     {
-      "sha": "5d590c057",
+      "sha": "294a091ca",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -74,7 +514,7 @@
       "text": "이름 검사를 생성 때와 같은 자료로 대조"
     },
     {
-      "sha": "c42b29035",
+      "sha": "90ae41a62",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -82,7 +522,7 @@
       "text": "선택된 화면이 없으면 검사 통과 방지"
     },
     {
-      "sha": "1cccfe651",
+      "sha": "01a7449bf",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -90,7 +530,7 @@
       "text": "오늘 날짜 글자에 테마 대비색 적용"
     },
     {
-      "sha": "748118b8a",
+      "sha": "6f5166809",
       "date": "2026-09-13",
       "kind": "fix",
       "label": "고침",
@@ -98,7 +538,7 @@
       "text": "삭제된 검사 참조와 외부 통신 안내 보완"
     },
     {
-      "sha": "2b376f2b7",
+      "sha": "d9aab35c1",
       "date": "2026-09-10",
       "kind": "fix",
       "label": "고침",
@@ -106,7 +546,7 @@
       "text": "mydash 쓰기 경로 반증 8건 수정. perm 판정, 큐 머지, 파일명 nonce, 페이지 순회, 승격 관문, 44px"
     },
     {
-      "sha": "6e7652467",
+      "sha": "8d831bc57",
       "date": "2026-09-10",
       "kind": "feat",
       "label": "새로 생김",
@@ -114,7 +554,7 @@
       "text": "mydash 3단계 쓰기. 이벤트 브랜치 태깅, 시트, 선택 모드, 판정 대기 한 장"
     },
     {
-      "sha": "c14831f8e",
+      "sha": "3fcbd8f14",
       "date": "2026-09-10",
       "kind": "feat",
       "label": "새로 생김",
@@ -122,7 +562,7 @@
       "text": "승인한 그림과 사이드바 소개 화면 적용"
     },
     {
-      "sha": "5b89b312e",
+      "sha": "35f52b519",
       "date": "2026-09-10",
       "kind": "fix",
       "label": "고침",
@@ -130,7 +570,7 @@
       "text": "mydash 3라운드 반증 17건 수정"
     },
     {
-      "sha": "5d6f1557f",
+      "sha": "0c3ecd6c0",
       "date": "2026-09-10",
       "kind": "feat",
       "label": "새로 생김",
@@ -138,7 +578,7 @@
       "text": "mydash 북마크 패널 (읽기 전용), 지형도 북마크 소스, 발견성"
     },
     {
-      "sha": "9fb15a38d",
+      "sha": "8f558055e",
       "date": "2026-09-10",
       "kind": "fix",
       "label": "고침",
@@ -146,7 +586,7 @@
       "text": "mydash 발견성, 세션 수, 오류 카드 버튼, CI smoke 재시도"
     },
     {
-      "sha": "04b225bc6",
+      "sha": "2e8a41ae7",
       "date": "2026-09-10",
       "kind": "fix",
       "label": "고침",
@@ -154,7 +594,7 @@
       "text": "mydash 패널 칩 44px 와 릴레이 429 백오프"
     },
     {
-      "sha": "16d355ad2",
+      "sha": "7930a6b10",
       "date": "2026-09-10",
       "kind": "fix",
       "label": "고침",
@@ -162,7 +602,7 @@
       "text": "mydash 셸 결함 8건과 릴레이 속도 제한"
     },
     {
-      "sha": "4d352e02b",
+      "sha": "0d5c0fef1",
       "date": "2026-09-10",
       "kind": "fix",
       "label": "고침",
@@ -170,7 +610,7 @@
       "text": "mydash 릴레이 compatibility_date 를 과거로"
     },
     {
-      "sha": "a5846783f",
+      "sha": "3660ed23d",
       "date": "2026-09-10",
       "kind": "feat",
       "label": "새로 생김",
@@ -178,7 +618,7 @@
       "text": "mydash 릴레이 CI 배포와 사이트 설정"
     },
     {
-      "sha": "e99639eb2",
+      "sha": "8dd854ebc",
       "date": "2026-09-10",
       "kind": "feat",
       "label": "새로 생김",
@@ -186,7 +626,7 @@
       "text": "개인 대시보드 셸 1단계 (mydash) 코드 반입"
     },
     {
-      "sha": "40b1789eb",
+      "sha": "4e1da0cd9",
       "date": "2026-09-09",
       "kind": "fix",
       "label": "고침",
@@ -194,452 +634,12 @@
       "text": "check reset announcements once an hour"
     },
     {
-      "sha": "b30f87f3a",
+      "sha": "e1ce1b5f7",
       "date": "2026-09-09",
       "kind": "fix",
       "label": "고침",
       "tone": "fix",
       "text": "exclude past reset recollections from new announcements"
-    },
-    {
-      "sha": "7f0fdd270",
-      "date": "2026-09-09",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "wait for Edge approval without changing browser defaults"
-    },
-    {
-      "sha": "7825bdd01",
-      "date": "2026-09-09",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "reuse laptop Edge sign-in for reset monitoring"
-    },
-    {
-      "sha": "e0d5381dd",
-      "date": "2026-09-09",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "서버 계정용 수집 브라우저와 배포 검사"
-    },
-    {
-      "sha": "558c7b239",
-      "date": "2026-09-09",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "초기화 공지 브라우저 감시와 한국시간 알림"
-    },
-    {
-      "sha": "b858fcb98",
-      "date": "2026-09-09",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "프로필과 작업물 통합, 연표 선택 보기"
-    },
-    {
-      "sha": "3b2832fdd",
-      "date": "2026-09-09",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "숨긴 게임 검증과 분류 명부 동기화"
-    },
-    {
-      "sha": "b77f059dc",
-      "date": "2026-09-08",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "오목 로비 구성과 추천 기능 제거"
-    },
-    {
-      "sha": "9807065ab",
-      "date": "2026-09-08",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "언어별 도구 장 생성기에 retiredTarget import 누락. 09-05 부터 배포 4번 실패"
-    },
-    {
-      "sha": "91faa4fd1",
-      "date": "2026-09-08",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "소개 한 장. 작업물 장과 링크 위젯을 /about/ 에 합치고 삭제, 리다이렉트 없음"
-    },
-    {
-      "sha": "afae257f5",
-      "date": "2026-09-08",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "옆줄 첫 탭을 만든 것 다섯으로"
-    },
-    {
-      "sha": "937eb5362",
-      "date": "2026-09-08",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "첫 화면과 도구 장을 만든 것 다섯으로 재편"
-    },
-    {
-      "sha": "7d6fc8d50",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "정원을 멍의 요소로 합침, 정원 위젯 폐기"
-    },
-    {
-      "sha": "4f4e5f7e8",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "정원 열면 시뮬 10개가 동시에 돌던 것"
-    },
-    {
-      "sha": "2d6274e28",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "로비에 열 판만 세우고 번개 대결을 오락실로 들인다"
-    },
-    {
-      "sha": "6e64b9a54",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "오락실 오늘의 문제 삭제"
-    },
-    {
-      "sha": "2fbc50fc7",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "라이브 필수 목록이 옛 놀이 주소를 보고 있었다"
-    },
-    {
-      "sha": "39ca581ee",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "노트북 계기 경고색을 스킨 토큰으로"
-    },
-    {
-      "sha": "494b22145",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "노트북 위젯에 이 PC 상태 문과 계기 넷"
-    },
-    {
-      "sha": "d48a23e1b",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "하나 맞히기 설명과 주석에서 주제 이름을 뺀다"
-    },
-    {
-      "sha": "a89af3bbd",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "하나 맞히기를 오락실 게임 하나로. 네 갈래 전부 (change.arcade-absorbs-play 4)"
-    },
-    {
-      "sha": "cdddb8f92",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "폰에서 네모 판이 위에 붙고 아래가 비던 것. 남을 때만 가운데로"
-    },
-    {
-      "sha": "508133a36",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "폰에서 판이 폭 0 으로 무너지던 것. 무대 검사 빨강 7 을 갚는다"
-    },
-    {
-      "sha": "67d5ed8bd",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "오늘의 초성과 오늘의 문제를 오락실 게임으로, 한글 타자는 유령 타자에 합침 (change.arcade-absorbs-play 4)"
-    },
-    {
-      "sha": "87fd7c270",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "블랙잭에서 걸고 나면 히트, 스탠드 버튼이 안 그려지던 것 (2D, 3D)"
-    },
-    {
-      "sha": "2332a780d",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "높은 쪽 고르기와 유령 타자를 오락실 게임으로 (change.arcade-absorbs-play 3)"
-    },
-    {
-      "sha": "bbf2f0273",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "스무고개를 오락실 판 하나로. 컴퓨터가 맞히는 갈래 (change.arcade-absorbs-play 2)"
-    },
-    {
-      "sha": "0231fe768",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "게이트 실행기에 검사별 상한 시간을 둔다 (12분, 넘기면 못 돌림)"
-    },
-    {
-      "sha": "87fa98496",
-      "date": "2026-09-05",
-      "kind": "perf",
-      "label": "빨라짐",
-      "tone": "perf",
-      "text": "도구 장이 받는 tools.css 에서 설명을 뺀 벌을 굽는다. gzip 21.8KB 에서 10.3KB"
-    },
-    {
-      "sha": "4f88938c8",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "반응속도를 오락실 커널 판으로, 속도측정은 지운다 (change.arcade-absorbs-play 2)"
-    },
-    {
-      "sha": "d2075611d",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "사이트맵 검사에서 허브 149장 대조를 떼고 사고 둘만 본다"
-    },
-    {
-      "sha": "ba2ba3bfc",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "블루마블 틀이 화면을 채우고, 라이브 점검 빨강 둘을 더 갚는다"
-    },
-    {
-      "sha": "e15521ad5",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "라이브 점검 빨강 셋 더 갚고, 셸 CSS 는 정본(toolbox.css)에 다시 넣는다"
-    },
-    {
-      "sha": "f639a0ea5",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "이상형 월드컵을 오락실 커널 판으로 (change.arcade-absorbs-play 1)"
-    },
-    {
-      "sha": "3707e37f3",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "라이브 점검 빨강 16 중 여섯을 갚는다"
-    },
-    {
-      "sha": "12f4559ed",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "월드컵 설명문에서 표 이름을 뺀다"
-    },
-    {
-      "sha": "948e40b31",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "월드컵 장 제목과 설명에 만들기 검색어, 놀이 장에 빵부스러기 구조화 데이터"
-    },
-    {
-      "sha": "8cf02b61c",
-      "date": "2026-09-05",
-      "kind": "feat",
-      "label": "새로 생김",
-      "tone": "new",
-      "text": "옆줄에 지금 열린 도구 한 줄"
-    },
-    {
-      "sha": "8076fa668",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "로비 묶음에 도로 붙은 P2P 를 뗀다. 80.2KB 에서 58.0KB"
-    },
-    {
-      "sha": "ec9c9465e",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "오래 못 돌던 드리프트 검사 둘을 다시 세운다"
-    },
-    {
-      "sha": "254411a2a",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "WCAG 전수가 잡은 여덟 자리를 갚는다"
-    },
-    {
-      "sha": "581951040",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "오타 검사가 해시를 낱말로 읽던 자리를 막는다"
-    },
-    {
-      "sha": "09a90dfc3",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "서버가 이름을 안 주면 못 돌림으로 가른다"
-    },
-    {
-      "sha": "9d50a4af7",
-      "date": "2026-09-05",
-      "kind": "perf",
-      "label": "빨라짐",
-      "tone": "perf",
-      "text": "불러올 자리 목록을 첫 그림에서 뺀다"
-    },
-    {
-      "sha": "5a5697a3e",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "입력칸 줄 높이를 못 박아 글꼴이 와도 안 밀리게 한다"
-    },
-    {
-      "sha": "7142c6554",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "기준선에 남아 있던 접근성 빚 스물넷을 갚는다"
-    },
-    {
-      "sha": "0be7ed639",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "맡아 둘 자리를 CSS 픽셀로 다시 재서 넓힌다"
-    },
-    {
-      "sha": "f1c6cf20b",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "초점을 거부하는 자리를 못 잼으로 세게 한다"
-    },
-    {
-      "sha": "6c8332e00",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "시험 서버가 자리를 못 잡으면 소리 내어 죽게 한다"
-    },
-    {
-      "sha": "1177963ea",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "먹의 작은 버튼를 24px 로 키우고 이름 없는 버튼도 찾을 수 있게 한다"
-    },
-    {
-      "sha": "4928bb0ee",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "검사가 죽으며 남긴 브라우저를 판 끝에 거둔다"
-    },
-    {
-      "sha": "7bf133cff",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "색 도구와 먹과 티어리스트와 생활의 접근성 빚을 갚는다"
-    },
-    {
-      "sha": "8be3ffeb2",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "꺼도 방에 남나의 통과 조건을 하나로 조인다"
-    },
-    {
-      "sha": "e586f02e3",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "나중에 끼어드는 저장 버튼 자리를 미리 잡는다"
-    },
-    {
-      "sha": "82b93adb0",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "방문 수 자리를 묻기 전에 잡는다"
-    },
-    {
-      "sha": "fc207298c",
-      "date": "2026-09-05",
-      "kind": "fix",
-      "label": "고침",
-      "tone": "fix",
-      "text": "한자 표를 글꼴 굽기에서 빼 한글 뭉치가 부풀던 것을 막는다"
     }
   ]
 }
