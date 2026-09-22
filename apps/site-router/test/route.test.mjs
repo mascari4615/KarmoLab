@@ -7,9 +7,9 @@ test('lab 은 뿌리 그대로', () => {
   assert.equal(originPath('lab.mascari4615.com', '/'), '/');
   assert.equal(originPath('lab.mascari4615.com', '/t/arcade/'), '/t/arcade/');
 });
-test('dash 는 뿌리 그대로 (셸이 대시보드를 고른다), 나머지도 그대로', () => {
-  assert.equal(originPath('dash.mascari4615.com', '/'), '/');
-  assert.equal(originPath('dash.mascari4615.com', '/index.html'), '/');
+test('dash 는 뿌리를 전용 front 로, 나머지는 그대로', () => {
+  assert.equal(originPath('dash.mascari4615.com', '/'), '/dash/');
+  assert.equal(originPath('dash.mascari4615.com', '/index.html'), '/dash/');
   assert.equal(originPath('dash.mascari4615.com', '/apps/karmolab/js/toolbox.js'), '/apps/karmolab/js/toolbox.js');
 });
 test('blog 는 뿌리를 글 목록으로', () => {

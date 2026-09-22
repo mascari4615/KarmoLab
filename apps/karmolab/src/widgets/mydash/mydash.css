@@ -605,3 +605,9 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
     --myd-hero: 30px;
   }
 }
+
+/* dash 전용 front 의 로그인 문 (change.site-split 2026-09-22). 목록과 머리 줄 없이 카드 하나 */
+.myd--gate .myd-strip,
+.myd--gate .myd-head { display: none; }
+.myd--gate .myd-main { display: grid; place-items: center; }
+.myd--gate .myd-body { max-width: 520px; padding: 24px; }

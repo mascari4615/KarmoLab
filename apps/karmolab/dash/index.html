@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko" data-theme="dark" data-site="dash">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Dash</title>
+<!-- dash.mascari4615.com 전용 front (memo change.site-split). KarmoLab 셸을 안 싣는다.
+     번들 하나 (`js/dash-app.js`) 가 대시보드 패널과 셸을 담는다. 로그인 전에는 로그인 화면만. -->
+<link rel="icon" href="/apps/karmolab/img/favicon.ico">
+<style>
+  :root{--d-bg:#0f141c;--d-bg2:#161d28;--d-ink:#f2f4f7;--d-ink2:#aab2c0;--d-ink3:#6f7a8c;--d-line:rgba(255,255,255,.14);--d-acc:#f0a04b;--d-acc-ink:#101418}
+  html[data-theme="light"]{--d-bg:#eef3f8;--d-bg2:#fff;--d-ink:#182238;--d-ink2:#56607a;--d-ink3:#96a0b8;--d-line:rgba(24,34,56,.14);--d-acc:#e8862e;--d-acc-ink:#fff}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--d-bg);color:var(--d-ink);font:15px/1.5 "Gothic A1","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  #dash{height:100%}
+  /* 로그인 문 (change.site-split). 로그인 전에는 이 화면 하나뿐 */
+  .gate{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
+  .gate h1{margin:0;font-size:13px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--d-ink3)}
+  .gate button{font:700 15px inherit;padding:12px 22px;border:0;background:var(--d-acc);color:var(--d-acc-ink);cursor:pointer}
+  .gate .msg{font-size:13px;color:var(--d-ink2);max-width:420px;white-space:pre-line}
+  .gate code{font:12px ui-monospace,monospace;color:var(--d-ink);background:var(--d-bg2);border:1px solid var(--d-line);padding:4px 8px;display:inline-block;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="dash"></div>
+<script defer src="/apps/karmolab/js/dash-app.js"></script>
+</body>
+</html>

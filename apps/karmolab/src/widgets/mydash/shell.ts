@@ -831,6 +831,11 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     }
   }
 
+  /** dash 전용 front (change.site-split). KarmoLab 셸 없이 이 화면만 */
+  function soloDash(): boolean {
+    return document.documentElement.getAttribute('data-site') === 'dash';
+  }
+
   /* ── 그리기 ────────────────────────────────────────────────────── */
   function render(root: HTMLElement): void {
     ensureStyle();
@@ -1039,6 +1044,16 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
         titleEl.textContent = it.label;
         const panel = panelFor(it);
         disposePanel();
+        /* dash 전용 front 는 로그인해야 들어간다 (사용자 2026-09-22). 빈 패널 뼈대도 안 그린다 */
+        if (soloDash()) {
+          bodyEl.innerHTML =
+            '<div class="myd-card myd-card--login">' +
+            (why ? '<div class="myd-warn">' + esc(why) + '</div>' : '') +
+            '<div class="myd-row"><button class="myd-btn" data-login="1">GitHub 로 로그인</button></div>' +
+            '</div>';
+          wireLogin();
+          return;
+        }
         if (panel && panel.renderEmpty) {
           bodyEl.innerHTML = loginCardHtml(true);
           const box = document.createElement('div');
@@ -1053,6 +1068,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       paintNav(true);
       const want = itemById(urlItem());
       openItem(want ? want.id : 'today');
+      /* 로그인 전 dash front 는 목록도 제목도 없다. 문 하나 */
+      if (soloDash()) { titleEl.textContent = ''; root.classList.add('myd--gate'); }
     }
 
     function showConfigHelp(msg: string): void {
@@ -1215,6 +1232,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
 
     /* ── 로그인 뒤 ── */
     async function showDashboard(cfg: Config): Promise<void> {
+      root.classList.remove('myd--gate');
       const repo = makeRepo(cfg);
       /* 로그인 뒤 한 번. 지난 화면에서 그물이 끊겨 못 보낸 것이 남아 있을 수 있음 */
       void flushAndSay(repo);
@@ -1421,6 +1439,9 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
   /* ── 등록.
      맨바깥 이름 `Toolbox` 를 먼저 본다 (셸은 `const Toolbox` 로 만든다. const 는 window 에 안 붙는다).
      memo-atlas 가 이걸로 크게 덴 자리라 같은 손을 쓴다. */
+  /* dash 전용 front (change.site-split) 가 부르는 자리. 셸 없이 통째로 그린다 */
+  (window as unknown as { KarmoDashShell?: { render: (el: HTMLElement) => void } }).KarmoDashShell = { render };
+
   const box = toolbox();
   if (box) {
     const meta = box.getLazyWidgetPublicMeta
