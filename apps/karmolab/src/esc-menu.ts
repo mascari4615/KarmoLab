@@ -99,6 +99,7 @@ const KarmoEscMenu = (() => {
     function isOpen(): boolean { return !!root && !root.hidden; }
 
     function open(): void {
+        if (soloSite()) return;
         if (!root) root = build();
         if (isOpen()) return;
         lastFocus = document.activeElement as HTMLElement | null;
@@ -131,8 +132,10 @@ const KarmoEscMenu = (() => {
         return !!document.querySelector('#settingsMenu, .kl-modal-overlay, .tb-lightbox-overlay, dialog[open]');
     }
 
+    /* dash 사이트는 KarmoLab 껍데기가 없다. ESC 메뉴도 안 뜬다 */
+    const soloSite = () => document.documentElement.getAttribute('data-site') === 'dash';
     document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape' || e.defaultPrevented) return;
+        if (e.key !== 'Escape' || e.defaultPrevented || soloSite()) return;
         if (isOpen()) { e.preventDefault(); close(); return; }
         if (typing(document.activeElement) || otherLayerOpen()) return;
         e.preventDefault();

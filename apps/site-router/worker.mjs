@@ -6,13 +6,19 @@
  * 캐시: 원본 응답의 cache-control 을 그대로 넘긴다. 여기서 더 잡아 두지 않는다 (배포 직후 옛 판이 남지 않게).
  * 호스트 헤더: 원본에는 origin 호스트로 간다. 응답의 절대 주소 (og:url, canonical) 는 손대지 않는다 (2단계).
  */
-import { originPath } from './src/route.mjs';
+import { originPath, kindOf } from './src/route.mjs';
+import { landingHtml } from './src/landing.mjs';
 
 const PASS_REQ = ['accept', 'accept-language', 'accept-encoding', 'if-none-match', 'if-modified-since', 'range', 'user-agent'];
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // apex 는 안내 한 장. www 는 apex 로
+    if (kindOf(url.host) === 'home') {
+      if (url.host.startsWith('www.')) return Response.redirect('https://mascari4615.com' + url.pathname + url.search, 301);
+      return new Response(landingHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'home' } });
+    }
     const origin = String(env.ORIGIN || 'https://blog.mascari4615.com').replace(/\/$/, '');
     const target = origin + originPath(url.host, url.pathname) + url.search;
     const headers = new Headers();

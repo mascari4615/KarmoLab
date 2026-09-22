@@ -63,6 +63,14 @@ const Toolbox = (() => {
     /* 주소 셋 (change.site-split). 이 파일은 import 를 못 쓰므로 src/lib/site-hosts.ts 의 hostDefaultPage 를 여기 한 줄로.
        dash.mascari4615.com 뿌리로 들어오면 대시보드가 첫 화면 */
     const hostDefaultPage = () => (String(location.host).toLowerCase() === 'dash.mascari4615.com' ? 'mydash' : null);
+    /* dash 호스트는 KarmoLab 껍데기 (머리 줄, 옆줄, 팔레트, ESC 메뉴) 없이 대시보드만 (사용자 2026-09-22 "완전히 분리").
+       CSS 가 html[data-site="dash"] 로 숨긴다. 로컬에서 보려면 `?site=dash` */
+    const siteKind = () => {
+        const host = String(location.host).toLowerCase();
+        if (host === 'dash.mascari4615.com') return 'dash';
+        try { return new URLSearchParams(location.search).get('site') === 'dash' ? 'dash' : 'lab'; } catch (_) { return 'lab'; }
+    };
+    if (siteKind() === 'dash') document.documentElement.setAttribute('data-site', 'dash');
     /** 제 주소 (`/t/<id>/`) 가 구워져 있는 도구인가. 목록은 구운 장의 머리나 `widgets-index.js` 가 준다 */
     const hasToolPage = (id) => {
         const pages = (typeof window !== 'undefined' && window.KARMOLAB_TOOL_PAGES) || [];
@@ -1850,7 +1858,7 @@ const Toolbox = (() => {
         }
 
         /* 호스트가 정하는 첫 화면 (change.site-split). dash.* 뿌리는 대시보드 */
-        const hostPage = hostDefaultPage();
+        const hostPage = hostDefaultPage() || (document.documentElement.getAttribute('data-site') === 'dash' ? 'mydash' : null);
         const initialPage = (entryTool && isValidPage(entryTool))
             ? entryTool
             : (hashPage && isValidPage(hashPage))

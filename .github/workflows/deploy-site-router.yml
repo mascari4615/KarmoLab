@@ -9,6 +9,7 @@ on:
     paths:
       - 'apps/site-router/worker.mjs'
       - 'apps/site-router/wrangler.toml'
+      - 'apps/site-router/src/**'
       - '.github/workflows/deploy-site-router.yml'
   workflow_dispatch: {}
 

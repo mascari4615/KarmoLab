@@ -20,3 +20,8 @@ test('모르는 호스트는 lab 취급', () => {
   assert.equal(kindOf('site-router.workers.dev'), 'lab');
   assert.equal(kindOf(''), 'lab');
 });
+test('apex 와 www 는 안내 한 장 (원본에 안 간다)', () => {
+  assert.equal(kindOf('mascari4615.com'), 'home');
+  assert.equal(kindOf('www.mascari4615.com'), 'home');
+  assert.equal(originPath('mascari4615.com', '/'), null);
+});

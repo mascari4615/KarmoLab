@@ -3212,6 +3212,15 @@ html.has-modal, html.has-modal body { overflow: hidden; }
     font-size: var(--font-size-sm); font-weight: 600;
 }
 
+html[data-site="dash"] .header-bar,
+html[data-site="dash"] .sidebar,
+html[data-site="dash"] .mobile-nav,
+html[data-site="dash"] .breadcrumb,
+html[data-site="dash"] .home-decor { display: none !important; }
+html[data-site="dash"] .main-content { margin-left: 0; }
+html[data-site="dash"] .content-body { padding-top: 0; }
+html[data-site="dash"] { --header-h: 0px; }
+
 html.is-layout-full .main-content {
     overflow: hidden;
 }
