@@ -73,19 +73,20 @@ import { toolIndexPath } from './lib/site-base';
         const cta = document.createElement('div');
         cta.className = 'landing-cta lq-grid';
         const toolCount = (() => { try { return tools().length; } catch (e) { return 0; } })();
+        /* 아이콘은 ESC 메뉴와 같은 그림 (img/shell/menu, 각진 두 톤). CSS mask 라 판 색을 따라간다 */
         const tiles = [
-            ['mydash', 'site.cta.judgePending', '판정 대기', 'JUDGE', '<path d="M6 12l4 4 8-9"/>', '', 'lq-acc'],
-            ['mydash', 'site.cta.dashboard', '대시보드', 'DASHBOARD', '<rect x="3" y="4" width="8" height="7"/><rect x="13" y="4" width="8" height="4"/><rect x="13" y="10" width="8" height="10"/><rect x="3" y="13" width="8" height="7"/>', '', ''],
-            ['tools', 'site.cta.tools', '도구 목록', 'TOOLS', '<path d="M14 6l4 4-9 9H5v-4z"/><path d="M12 8l4 4"/>', toolCount ? String(toolCount) : '', ''],
-            ['arcade', 'widgets.arcade.title', '오락실', 'ARCADE', '<rect x="3" y="7" width="18" height="11" rx="3"/><path d="M8 11v3M6.5 12.5h3"/><circle cx="16" cy="12" r="1"/><circle cx="18" cy="14" r="1"/>', '', ''],
-            ['community', 'site.cta.community', '커뮤니티', 'COMMUNITY', '<path d="M4 5h16v11H9l-5 4z"/>', '', ''],
-            ['favorites', 'site.cta.favorites', '즐겨찾기', 'FAVORITES', '<path d="M12 4l2.4 5 5.6.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.6-.8z"/>', '', '']
+            ['mydash', 'site.cta.judgePending', '판정 대기', 'JUDGE', 'judge', '', 'lq-acc'],
+            ['mydash', 'site.cta.dashboard', '대시보드', 'DASHBOARD', 'dash', '', ''],
+            ['tools', 'site.cta.tools', '도구 목록', 'TOOLS', 'tool', toolCount ? String(toolCount) : '', ''],
+            ['arcade', 'widgets.arcade.title', '오락실', 'ARCADE', 'play', '', ''],
+            ['community', 'site.cta.community', '커뮤니티', 'COMMUNITY', 'talk', '', ''],
+            ['favorites', 'site.cta.favorites', '즐겨찾기', 'FAVORITES', 'star', '', '']
         ];
         cta.innerHTML = tiles.map(([id, key, fallback, en, icon, n, cls]) => {
             const tag = id === 'tools' ? 'a' : 'button';
             const attr = id === 'tools' ? `href="${toolIndexPath()}"` : `type="button" data-goto="${id}"`;
             return `<${tag} class="landing-cta-card lq-tile ${cls}" ${attr}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>
+                <span class="lq-ic" style="--lq-m:url(/apps/karmolab/img/shell/menu/${icon}.png)" aria-hidden="true"></span>
                 <span class="landing-cta-card-title">${escapeHtml(t(key, undefined, fallback))}</span>
                 <span class="lq-en">${en}</span>
                 ${n ? `<span class="lq-n">${escapeHtml(n)}</span>` : ''}

@@ -1215,7 +1215,7 @@ html .landing-q2 .lq-tile > * { transform: none; }
 html .landing-q2 .lq-tile:hover .landing-cta-card-title { color: inherit; }
 html .landing-q2 .lq-tile:hover { border-color: var(--lq-ink); }
 html .landing-q2 .lq-tile::after { content: ""; position: absolute; left: 0; bottom: 0; border-style: solid; border-width: 0 0 10px 10px; border-color: transparent transparent var(--lq-line) transparent; }
-html .landing-q2 .lq-tile svg { position: absolute; left: 18px; top: 16px; width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+html .landing-q2 .lq-tile .lq-ic { position: absolute; left: 18px; top: 16px; width: 44px; height: 44px; background: currentColor; -webkit-mask: var(--lq-m) center / contain no-repeat; mask: var(--lq-m) center / contain no-repeat; }
 html .landing-q2 .lq-tile .landing-cta-card-title { font-size: var(--lq-fs-title); font-weight: 900; }
 html .landing-q2 .lq-tile .lq-en { margin-top: 2px; }
 html .landing-q2 .lq-tile .lq-n { position: absolute; right: 18px; top: 14px; font-family: var(--lq-font-en); font-size: var(--lq-fs-n); font-weight: 400; letter-spacing: 0.02em; color: var(--lq-ink2); }
