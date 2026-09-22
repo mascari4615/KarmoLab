@@ -40,7 +40,7 @@ import { toolIndexPath } from './lib/site-base';
 
         /* Q2 로비 (karmo-design 판정 2026-09-21 "2는 OK"). 요소는 넷뿐: 구석 버튼, 날짜, 큰 타일 여섯, 욘.
            찾는 칸은 검사 (smoke-palette, smoke-ask) 가 첫 화면에서 기대하므로 위 줄에 작게 둔다.
-           머리 줄과 옆줄은 첫 화면에서 숨긴다 (CSS `html[data-view="home"]`). 구석 버튼이 되살린다 */
+           머리 줄과 옆줄은 첫 화면에서도 그대로 (사용자 2026-09-22). 구석 버튼은 ESC 메뉴 */
         const top = document.createElement('div');
         top.className = 'lq-top';
         const d = new Date();

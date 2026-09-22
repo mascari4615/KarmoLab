@@ -1044,7 +1044,7 @@ html[data-view="tool"] .main-content { background: var(--bg-primary); }
 /* ── Q2 로비 (karmo-design 2026-09-21, 사용자 "2는 OK") ──
    요소 넷: 구석 버튼, 날짜 (와 작은 찾는 칸), 큰 타일 여섯 3x2, 욘. 흐린 도시 사진 위 반투명 판, 포인트 색 하나.
    밝은 판과 어두운 판은 토큰만 다르다. 스킨 토큰을 안 쓰는 화면이라 값을 여기 직접 둔다 (대시보드 홈과 같은 방식).
-   머리 줄과 옆줄은 첫 화면에서 숨긴다. 구석 버튼이 `data-home-chrome` 으로 되살린다 */
+   머리 줄과 옆줄은 첫 화면에서도 그대로. 구석 버튼은 ESC 메뉴 */
 .landing-q2 {
     --lq-paper: rgba(255, 255, 255, 0.78);
     --lq-edge: rgba(255, 255, 255, 0.95);
@@ -1121,10 +1121,8 @@ html[data-home-bg="clouds"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/hom
 html[data-home-bg="twilight"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-twilight.webp); }
 html[data-home-bg="dusk"] .landing-q2 { --lq-photo: url(/apps/karmolab/img/home/sky-dusk.webp); }
 .landing-q2::before { background-image: var(--lq-photo); background-size: cover; background-position: center; }
-html[data-view="home"]:not([data-home-chrome="1"]) .header-bar,
-html[data-view="home"]:not([data-home-chrome="1"]) .sidebar { display: none; }
-html[data-view="home"]:not([data-home-chrome="1"]) .main-content { margin-left: 0; }
-html[data-view="home"]:not([data-home-chrome="1"]) .content-body:has(.landing-q2.active) { padding: 0; }
+/* 머리 줄과 옆줄은 첫 화면에서도 그대로 (사용자 2026-09-22 "어디서든 기존처럼 보이게"). 숨기던 규칙은 뺌 */
+html[data-view="home"] .content-body:has(.landing-q2.active) { padding: 0; }
 html[data-view="home"] .content-body:has(.landing-q2.active) { overflow: hidden; }
 html[data-view="home"] .home-decor { display: none; }
 html .landing-q2 .lq-en {
