@@ -372,7 +372,7 @@ await home.waitForTimeout(1200);
    tools is not defined 같은 오류가 난다(2026-08-08 실제로 그렇게 빨갰다).
    그건 **제품 고장이 아니라 이 환경의 사본이 낡은 것**이므로, 그때는 첫 화면 판정을 건너뛴다. */
 const srcShell = path.join(root, 'index.html');
-const copyShell = path.join(path.dirname(root), 'blog/lab/index.html');
+const copyShell = path.join(path.dirname(root), 'blog/index.html');
 const homeStale = fs.existsSync(srcShell) && fs.existsSync(copyShell)
   && fs.statSync(copyShell).mtimeMs < fs.statSync(srcShell).mtimeMs;
 if (homeStale) console.log('  (첫 화면 판정 건너뜀. 배포 사본이 소스보다 낡았다. 배포가 다시 찍는다)');

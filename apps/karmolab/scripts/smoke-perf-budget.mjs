@@ -104,12 +104,12 @@ const server = http.createServer((req, res) => {
  *      빼고 찍는다. 그래서 첫 화면만 재면 사람 대부분이 실제로 밟는 길을 안 재는 것이 된다.
  * 도구 장 생성물도 필수 전제. 없으면 exit 2 */
 // verify와 배포가 준비한 첫 화면을 측정. 원본 셸에는 미리 그린 본문이 없음
-const homePage = path.join(repoRoot, 'apps/blog/lab/index.html');
+const homePage = path.join(repoRoot, 'apps/blog/index.html');
 if (!fs.existsSync(homePage) || !fs.readFileSync(homePage, 'utf8').includes('<!-- KARMOLAB_HOME_PRERENDERED -->')) {
   console.log('[perf-budget] 못 돌림. 미리 그린 첫 화면이 없다 (`npm run prerender:home` 먼저)');
   process.exit(2);
 }
-const TARGETS = [['앱 첫 화면', '/apps/blog/lab/index.html', {},
+const TARGETS = [['앱 첫 화면', '/apps/blog/index.html', {},
   { selector: '#page-home .kp-input', keys: ['l', 'o', 'a', 'n'] }]];
 const toolPage = path.join(repoRoot, 'apps/blog/t/loan/index.html');
 if (!fs.existsSync(toolPage)) {

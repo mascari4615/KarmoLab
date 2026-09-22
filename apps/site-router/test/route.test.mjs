@@ -3,8 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { originPath, kindOf } from '../src/route.mjs';
 
-test('lab 은 뿌리를 KarmoLab 셸로', () => {
-  assert.equal(originPath('lab.mascari4615.com', '/'), '/lab/');
+test('lab 은 뿌리 그대로', () => {
+  assert.equal(originPath('lab.mascari4615.com', '/'), '/');
   assert.equal(originPath('lab.mascari4615.com', '/t/arcade/'), '/t/arcade/');
 });
 test('dash 는 뿌리를 전용 front 로, 나머지는 그대로', () => {
