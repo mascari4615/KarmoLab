@@ -29,6 +29,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEntry, pick } from './lib/gate-scope.mjs';
 import { deriveWatch } from './lib/gate-derive.mjs';
+import { usesBrowserEntry } from './lib/gate-resources.mjs';
 
 /* ★ **이름 목록은 파일에 있다** (2026-08-14). 예전에는 `package.json` 의 `gates` 한 줄에
    백스물다섯 개가 늘어서 있었다. 세션 여럿이 같은 줄을 동시에 늘리니 충돌이 잦았고,
@@ -170,18 +171,13 @@ function directCommand(gate) {
   return { cmd: process.execPath, args: m[1].trim().split(/ +/) };
 }
 
-/* 브라우저를 띄우는 검사인가. 판단 근거는 그 검사의 첫 파일이 playwright 나 `lib/browser.mjs`
-   를 들이는가 하나다. 넘게 세도 손해가 없고(같이 도는 크로미움이 줄 뿐), 덜 세면 RAM 이
-   터진다. 그래서 의심스러우면 브라우저로 친다. */
+/* 직접 브라우저를 여는 검사와 자식 실행기를 브라우저 한도에 포함.
+   접근성 전수 검사는 자식이 브라우저를 열어 직접 import만 찾으면 누락된다. */
 function usesBrowser(gate) {
   const direct = directCommand(gate);
   const entry = direct?.args?.[0] ?? (gateScripts[gate] ?? '').match(/scripts\/[\w.-]+\.mjs/)?.[0];
   if (!entry) return true;
-  try {
-    return /playwright|lib\/browser/.test(readFileSync(path.join(appRoot, entry), 'utf8'));
-  } catch {
-    return true;
-  }
+  return usesBrowserEntry(path.join(appRoot, entry));
 }
 
 /**
