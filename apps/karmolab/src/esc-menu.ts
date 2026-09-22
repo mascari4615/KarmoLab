@@ -12,6 +12,7 @@
  */
 import { t } from './lib/i18n.js';
 import { toolIndexPath } from './lib/site-base';
+import { dashUrl, labUrl, blogUrl, hostKind, onSplitHost } from './lib/site-hosts';
 
 const ICON_BASE = '/apps/karmolab/img/shell/menu/';
 
@@ -26,7 +27,8 @@ const CELLS: Cell[] = [
     { id: 'community', icon: 'talk', key: 'shell.menu.community', fallback: '커뮤니티' },
     { id: 'favorites', icon: 'star', key: 'site.cta.favorites', fallback: '즐겨찾기' },
     { id: 'karmograph', icon: 'graph', key: 'shell.menu.graph', fallback: 'KarmoGraph' },
-    { id: 'about', icon: 'about', key: 'shell.nav.about', fallback: '소개' }
+    { id: 'about', icon: 'about', key: 'shell.nav.about', fallback: '소개' },
+    { id: 'blog', icon: 'book', key: 'shell.menu.blog', fallback: '글' }
 ];
 
 function esc(s: string): string {
@@ -48,8 +50,15 @@ const KarmoEscMenu = (() => {
         const cells = CELLS.map((c) => {
             const label = esc(t(c.key, undefined, c.fallback));
             const icon = `<span class="esc-ic" style="--esc-m:url(${ICON_BASE}${c.icon}.png)"></span>`;
-            /* 도구 목록은 본문이 박힌 장이라 링크. 나머지는 셸 화면 (`data-goto`) */
+            /* 도구 목록은 본문이 박힌 장이라 링크. 나머지는 셸 화면 (`data-goto`).
+               주소 셋 (site-hosts): 다른 호스트로 가야 하면 절대 주소 링크 */
             if (c.id === 'tools') return `<a class="esc-cell" href="${esc(toolIndexPath())}" data-esc-close="1">${icon}<b>${label}</b></a>`;
+            if (c.id === 'blog') return `<a class="esc-cell" href="${esc(blogUrl())}" data-esc-close="1">${icon}<b>${label}</b></a>`;
+            if (onSplitHost()) {
+                const kind = hostKind();
+                if (c.id === 'mydash' && kind !== 'dash') return `<a class="esc-cell" href="${esc(dashUrl())}" data-esc-close="1">${icon}<b>${label}</b></a>`;
+                if (c.id !== 'mydash' && kind !== 'lab') return `<a class="esc-cell" href="${esc(labUrl(c.id))}" data-esc-close="1">${icon}<b>${label}</b></a>`;
+            }
             return `<button type="button" class="esc-cell" data-goto="${c.id}" data-esc-close="1">${icon}<b>${label}</b></button>`;
         }).join('');
         el.innerHTML = `

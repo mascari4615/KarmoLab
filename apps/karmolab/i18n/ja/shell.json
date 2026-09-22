@@ -69,5 +69,6 @@
   "shell.menu.tools": "ツール",
   "shell.menu.community": "コミュニティ",
   "shell.menu.graph": "KarmoGraph",
+  "shell.menu.blog": "記事",
   "shell.menu.close": "閉じる"
 }

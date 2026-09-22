@@ -60,6 +60,9 @@ const Toolbox = (() => {
     const toolIndexPath = () => appPath('t/');
     const toolPage = (id) => appPath('t/' + encodeURIComponent(id) + '/');
     const appHash = (id) => APP_BASE + '#' + id;
+    /* 주소 셋 (change.site-split). 이 파일은 import 를 못 쓰므로 src/lib/site-hosts.ts 의 hostDefaultPage 를 여기 한 줄로.
+       dash.mascari4615.com 뿌리로 들어오면 대시보드가 첫 화면 */
+    const hostDefaultPage = () => (String(location.host).toLowerCase() === 'dash.mascari4615.com' ? 'mydash' : null);
     /** 제 주소 (`/t/<id>/`) 가 구워져 있는 도구인가. 목록은 구운 장의 머리나 `widgets-index.js` 가 준다 */
     const hasToolPage = (id) => {
         const pages = (typeof window !== 'undefined' && window.KARMOLAB_TOOL_PAGES) || [];
@@ -1846,11 +1849,15 @@ const Toolbox = (() => {
             return;
         }
 
+        /* 호스트가 정하는 첫 화면 (change.site-split). dash.* 뿌리는 대시보드 */
+        const hostPage = hostDefaultPage();
         const initialPage = (entryTool && isValidPage(entryTool))
             ? entryTool
             : (hashPage && isValidPage(hashPage))
                 ? hashPage
-                : (lastPage && isValidPage(lastPage) && !hasToolPage(lastPage) ? lastPage : 'home');
+                : (hostPage && isValidPage(hostPage))
+                    ? hostPage
+                    : (lastPage && isValidPage(lastPage) && !hasToolPage(lastPage) ? lastPage : 'home');
         /* 마지막 도구 복원은 제 주소가 없는 도구만. 제 주소가 있는 도구로 `/` 에서 자동 이동하면
            뒤로 가기가 `/` 로 왔다가 또 튕겨 갇힌다. 그 도구는 제 주소가 곧 기억이다 */
 

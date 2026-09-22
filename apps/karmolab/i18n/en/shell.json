@@ -69,5 +69,6 @@
   "shell.menu.tools": "Tools",
   "shell.menu.community": "Community",
   "shell.menu.graph": "KarmoGraph",
+  "shell.menu.blog": "Posts",
   "shell.menu.close": "Close"
 }

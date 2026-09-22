@@ -69,5 +69,6 @@
   "shell.menu.tools": "도구",
   "shell.menu.community": "커뮤니티",
   "shell.menu.graph": "KarmoGraph",
+  "shell.menu.blog": "글",
   "shell.menu.close": "닫기"
 }

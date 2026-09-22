@@ -1,0 +1,14 @@
+name = "site-router"
+main = "worker.mjs"
+compatibility_date = "2026-09-22"
+
+# 주소 셋 (memo change.site-split). 원본은 GitHub Pages 하나 (blog.mascari4615.com)
+# custom_domain 이면 wrangler 가 DNS 레코드까지 만든다 (mydash-relay 와 같은 손)
+# blog 는 GitHub Pages 가 직접 받고 있어 여기 안 넣는다 (Cloudflare 프록시 전환은 2단계)
+routes = [
+  { pattern = "lab.mascari4615.com", custom_domain = true },
+  { pattern = "dash.mascari4615.com", custom_domain = true },
+]
+
+[vars]
+ORIGIN = "https://blog.mascari4615.com"

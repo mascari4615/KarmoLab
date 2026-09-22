@@ -1,0 +1,9 @@
+{
+  "name": "site-router",
+  "private": true,
+  "type": "module",
+  "description": "lab, dash 주소를 GitHub Pages 원본에 붙이는 Worker. 규칙은 src/route.mjs",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
