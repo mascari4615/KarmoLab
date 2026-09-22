@@ -1,7 +1,7 @@
 # mascari4615.github.io. AI 에이전트 작업 지침
 
 블로그 + KarmoLab 앱 monorepo. 배포 = GitHub Pages, 도메인 `https://blog.mascari4615.com` (CNAME).
-구조: `apps/blog/` = 사이트 껍데기 (Jekyll = 얇은 조립기. permalink, sitemap, 정적 복사만, Chirpy 는 철거됨) / `apps/` 서브앱 (karmolab, discord-bots, karmolab-tauri 등) / `packages/ai/`(`@karmo/ai`) / `unity/` 유니티 프로젝트 (npm workspace 밖. 위 게이트와 무관).
+구조: `apps/blog/`는 사이트 조립 대상. Node의 `apps/karmolab/scripts/assemble-site.mjs`가 생성물과 정적 자산을 조립하며 Jekyll/Chirpy는 철거됨 / `apps/` 서브앱 (karmolab, discord-bots, karmolab-tauri 등) / `packages/ai/`(`@karmo/ai`) / `unity/` 유니티 프로젝트 (npm workspace 밖. 위 게이트와 무관).
 **뿌리 = KarmoLab 앱** (change.karmolab-at-root, memo): `/` 가 앱 셸이고 `/t/<id>/`, `/u/`, `/bot/`, `/wm/`, `/c/`, `/play/`, `/sw.js` 가 그 켜에 선다. 옛 `/karmolab/*` 는 지원 안 함(404).
 **블로그도 KarmoLab 파이프로 굽는다** (change.blog-cutover, memo): 글 정본은 `apps/karmolab/content/{posts,drafts}/`, 렌더는 `src/lib/markdown/`, 장 생성은 `scripts/gen-post-pages.mjs` (`/posts/<slug>/`, `/posts/` 정적 목록, `/about/`, `/works/`, `/feed.xml`). 사람 화면의 목록은 커뮤니티 게시판(`/?board=info#community`). `/posts/` 정적 목록은 크롤러용 링크 경로 (2026-09-03, 글 329편에 링크가 0 이었다).
 
@@ -25,7 +25,7 @@
 
 - 화면 작업은 `npm run dev` 로 보며 한다. 배포를 기다리거나 새로고침하지 않는다 (KL-100)
 - 작업 중 `npm run build` 반복 금지. `gates:changed` 와 `tsc --noEmit`, 통짜는 push 직전 한 번 (KAR-231)
-- 셸 (`index.html`) 을 고쳤으면 `npm run audit:pages`. 도구 상세 127장이 거기서 찍힌다
+- 셸 (`index.html`) 을 고쳤으면 `npm run audit:pages`. 도구 상세 페이지가 거기서 찍힌다
 - 새 봇, 로컬 서버, dev runner 는 코드와 `servermonitor-config.json` `devProfiles` 카드 한 묶음. `program/args` 손기재 금지 (Note 12)
 - 봇 재기동은 사용자에게 안내하지 않고 localdev HTTP 로
 
@@ -37,7 +37,7 @@ main 브랜치는 항상:
 - `apps/karmolab-tauri/src-tauri` cargo check 통과 + ACL audit (`acl.toml ⟷ #[command] ⟷ caps` cross-check)
 - typos check 통과
 
-verify fail 시 SLO: 1시간 내 revert. pre-push hook 이 자동 호출, CI post-push audit 도 발동.
+verify fail 시 SLO: 1시간 내 revert. 전체 검사는 root `npm run verify`와 CI가 실행한다. 실제 pre-push hook은 `memo/dotfiles/git-hooks/pre-push`이며 KarmoLab의 선별 검사를 실행한다.
 
 ## Tauri ACL (KL-063)
 

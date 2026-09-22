@@ -34,19 +34,21 @@ widgets are hot-swapped (open tabs and typed input survive); only shell changes
 Widgets that start timers or global listeners must hand cleanup to `Toolbox.onDispose(fn)`
 inside `build`. otherwise they pile up on every swap.
 
-If you change `index.html`, run `npm run audit:pages`: the 127 tool detail pages are
+If you change `index.html`, run `npm run audit:pages`: the tool detail pages are
 generated from that shell at deploy time, and a shape change there can stop deploys entirely.
 
 ## Important Working Boundaries
 
-- Do not edit compiled output under `assets/js/dist/`. Edit source files in `_javascript/` instead.
+- Edit TypeScript under `apps/karmolab/src/`; generated JavaScript under `apps/karmolab/js/` comes from `build.mjs`.
 - Treat each app under `apps/` as an independent project with its own install/build flow.
-- Avoid changing `_config.yml` unless the task explicitly requires global site behavior changes.
+- Site assembly lives in `apps/karmolab/scripts/assemble-site.mjs`; shell and page changes affect the generated site.
 - Keep changes focused. Do not mix unrelated refactors into feature/fix work.
 
 ## High-Signal Paths
 
-- Site source: `_posts/`, `_tabs/`, `_layouts/`, `_includes/`, `_sass/`, `_javascript/`
+- Blog content: `apps/karmolab/content/posts/`, `apps/karmolab/content/drafts/`
+- Blog rendering and generation: `apps/karmolab/src/lib/markdown/`, `apps/karmolab/scripts/gen-post-pages.mjs`
+- Site output: `apps/blog/` (assembled by Node; no Jekyll build)
 - KarmoLab source: `apps/karmolab/src/`
 - Shared AI utilities: `packages/ai/`
 - CI workflows: `.github/workflows/`
@@ -56,12 +58,7 @@ generated from that shell at deploy time, and a shape change there can stop depl
 ### Root (site)
 
 ```bash
-npm run build
-npm run build:css
-npm run build:js
-npm run test
-bundle exec jekyll serve
-bundle exec jekyll b
+npm run verify
 ```
 
 ### KarmoLab
@@ -69,9 +66,14 @@ bundle exec jekyll b
 ```bash
 cd apps/karmolab
 npm ci
+npm run dev
 npm run typecheck
 npm run build
 ```
+
+Use focused checks while editing. `npm run build` includes the full app gate set;
+run it for final validation rather than after each edit. The root `verify` command
+also prepares generated pages and runs the performance and lifecycle checks.
 
 ### Shared AI Package
 
