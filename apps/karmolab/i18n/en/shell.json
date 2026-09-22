@@ -62,5 +62,12 @@
   "shell.desktop_only_note": "This tool only runs in the desktop app. it has to read what is on this computer. The notes below are readable in the browser all the same.",
   "shell.nav.about": "About",
   "shell.nav.aboutTitle": "KarmoDDrine. career, works, links",
-  "shell.sidebar.collapse": "Collapse or expand sidebar (Ctrl+B)"
+  "shell.sidebar.collapse": "Collapse or expand sidebar (Ctrl+B)",
+  "shell.menu.title": "Menu",
+  "shell.menu.dashboard": "Dashboard",
+  "shell.menu.home": "Home",
+  "shell.menu.tools": "Tools",
+  "shell.menu.community": "Community",
+  "shell.menu.graph": "KarmoGraph",
+  "shell.menu.close": "Close"
 }

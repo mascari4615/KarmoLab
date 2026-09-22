@@ -108,8 +108,10 @@ import { toolIndexPath } from './lib/site-base';
             `<a href="https://github.com/Mascari4615/Mascari4615.github.io" rel="noopener">${escapeHtml(t('site.madewith.src', undefined, '소스 보기'))}</a>`;
         landing.appendChild(madeWith);
 
-        /* 구석 버튼: 첫 화면에서 숨긴 머리 줄과 옆줄을 되살린다. 한 번 더 누르면 다시 숨김 */
+        /* 구석 버튼: ESC 메뉴 (esc-menu.ts). 그 조각이 아직 없으면 예전대로 머리 줄과 옆줄을 되살린다 */
         top.querySelector('.lq-corner').addEventListener('click', () => {
+            const menu = typeof window !== 'undefined' && window.KarmoEscMenu;
+            if (menu && menu.toggle) { menu.toggle(); return; }
             const h = document.documentElement;
             if (h.getAttribute('data-home-chrome') === '1') h.removeAttribute('data-home-chrome');
             else h.setAttribute('data-home-chrome', '1');

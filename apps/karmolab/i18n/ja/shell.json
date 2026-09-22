@@ -62,5 +62,12 @@
   "shell.desktop_only_note": "このツールはデスクトップアプリでのみ動作します. このパソコンの中身を読む必要があるためです。以下の説明はブラウザでもそのまま読めます。",
   "shell.nav.about": "紹介",
   "shell.nav.aboutTitle": "カモッドリン. 経歴, 制作物, リンク",
-  "shell.sidebar.collapse": "サイドバーの折りたたみ (Ctrl+B)"
+  "shell.sidebar.collapse": "サイドバーの折りたたみ (Ctrl+B)",
+  "shell.menu.title": "メニュー",
+  "shell.menu.dashboard": "ダッシュボード",
+  "shell.menu.home": "ホーム",
+  "shell.menu.tools": "ツール",
+  "shell.menu.community": "コミュニティ",
+  "shell.menu.graph": "KarmoGraph",
+  "shell.menu.close": "閉じる"
 }
