@@ -329,6 +329,7 @@
     "test:dropwell": "node scripts/test-drop-well.mjs",
     "test:duel": "node scripts/smoke-duel.mjs",
     "test:exif": "node scripts/test-exifclean.mjs",
+    "test:ext-tabs": "node scripts/smoke-ext-tabs.mjs",
     "test:favicon": "node scripts/test-favicon.mjs",
     "test:favorites": "node scripts/smoke-favorites.mjs",
     "test:fhlookup": "node scripts/test-filehash-lookup.mjs",

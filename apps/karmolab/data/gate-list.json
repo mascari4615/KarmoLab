@@ -1380,6 +1380,15 @@
         "package.json",
         "data/gate-list.json"
       ]
+    },
+    {
+      "name": "test:ext-tabs",
+      "watch": [
+        "../karmo-web-extension/background.js",
+        "../karmo-web-extension/schedule.js",
+        "../karmo-web-extension/manifest.json",
+        "scripts/smoke-ext-tabs.mjs"
+      ]
     }
   ]
 }
