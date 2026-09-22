@@ -76,7 +76,8 @@ try {
 }
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const server = process.env.BASE ? null : await serveRepo();
-const base = process.env.BASE || `${server.base}/apps/blog`;
+/* 뿌리는 이제 글 목록. KarmoLab 셸은 /lab/ (change.site-split 2026-09-22) */
+const base = process.env.BASE || `${server.base}/apps/blog/lab`;
 
 let markup = '';
 try {
