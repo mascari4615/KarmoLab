@@ -100,12 +100,11 @@ import { toolIndexPath } from './lib/site-base';
         landing.appendChild(pulse);
         fillHomePulse(pulse);
 
+        /* 아래 줄은 단축키 둘만. "AI 와 함께 만듭니다, 소스 보기" 는 사용자 요청으로 뺌 (2026-09-22) */
         const madeWith = document.createElement('p');
         madeWith.className = 'landing-madewith lq-foot';
         madeWith.innerHTML =
-            `<kbd>ESC</kbd>${escapeHtml(t('site.nav.menu', undefined, '메뉴'))} <kbd>CTRL K</kbd>${escapeHtml(t('site.nav.search', undefined, '찾기'))} ` +
-            `${escapeHtml(t('site.madewith', undefined, 'AI 와 함께 만듭니다.'))} ` +
-            `<a href="https://github.com/Mascari4615/Mascari4615.github.io" rel="noopener">${escapeHtml(t('site.madewith.src', undefined, '소스 보기'))}</a>`;
+            `<kbd>ESC</kbd>${escapeHtml(t('site.nav.menu', undefined, '메뉴'))} <kbd>CTRL K</kbd>${escapeHtml(t('site.nav.search', undefined, '찾기'))}`;
         landing.appendChild(madeWith);
 
         /* 구석 버튼: ESC 메뉴 (esc-menu.ts). 그 조각이 아직 없으면 예전대로 머리 줄과 옆줄을 되살린다 */
