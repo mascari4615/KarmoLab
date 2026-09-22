@@ -2,14 +2,14 @@
  * 호스트별 경로 변환. Worker 와 시험이 같이 쓴다 (memo change.site-split).
  *
  * 원본은 GitHub Pages 하나. 호스트가 달라도 파일은 같고, 뿌리 (`/`) 만 호스트마다 다르게
- *   lab.*   뿌리 그대로 (KarmoLab 셸)
+ *   lab.*   뿌리를 KarmoLab 셸 (`/lab/`) 로. 원본 뿌리는 글 목록
  *   dash.*  뿌리를 전용 front (`/dash/`) 로. KarmoLab 셸을 안 싣는 제 장
  *   mascari4615.com (apex, www) 는 안내 한 장 (`landing.mjs`). 원본으로 안 감
- *   blog.*  뿌리를 글 목록 (`/posts/`) 으로 (2단계. 지금은 GitHub Pages 가 직접 받음)
+ *   blog.*  Worker 를 안 거침. GitHub Pages 가 직접 받고, 그 뿌리가 곧 글 목록
  * 그 외 경로는 그대로. 되돌리기는 DNS 삭제
  */
 export const ROOT_BY_HOST = {
-  lab: '/',
+  lab: '/lab/',
   dash: '/dash/',
   blog: '/posts/',
 };

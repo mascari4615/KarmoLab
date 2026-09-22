@@ -126,8 +126,13 @@ jobs:
 
       # 앱 셸이 **뿌리**에 앉는다 (change.karmolab-at-root ②).
       # 아래 Generate blog pages 는 글 장을 apps/blog/posts/ 에 쓴다. 여기를 덮지 않는다.
-      - name: Prepare KarmoLab root page
-        run: cp apps/karmolab/index.html apps/blog/index.html
+      # KarmoLab 셸은 /lab/ 에 앉는다 (memo change.site-split, 2026-09-22).
+      # 뿌리 (`/`) 는 글 목록이다. blog.mascari4615.com 이 그대로 받고,
+      # lab.mascari4615.com 은 Worker 가 뿌리를 /lab/ 로 바꿔 낸다.
+      - name: Prepare KarmoLab page
+        run: |
+          mkdir -p apps/blog/lab
+          cp apps/karmolab/index.html apps/blog/lab/index.html
 
       # dash.mascari4615.com 전용 front (memo change.site-split). 셸을 안 쓰는 제 장이라 그대로 복사
       - name: Prepare dash page
@@ -186,6 +191,8 @@ jobs:
           cp -r content/pages/about ../blog/about
           cp content/pages/feed.xml ../blog/feed.xml
           cp content/pages/404.html ../blog/404.html
+          # 뿌리는 글 목록 (change.site-split). 목록 장을 그대로 앉힌다
+          cp content/pages/posts/index.html ../blog/index.html
 
       # TASK-KL-135: 도구 화면을 미리 그려 HTML 에 박는다. 스크립트 없이도 도구가 보인다.
       # 화면을 실제로 열어 봐야 하므로 눌러 볼 서버를 잠깐 띄우고, 그 화면을 열 브라우저를 받는다.
