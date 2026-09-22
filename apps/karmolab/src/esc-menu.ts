@@ -7,7 +7,7 @@
  * 바깥에서 부르는 것: `window.KarmoEscMenu.open() / close() / toggle()`.
  * 부르는 곳: 첫 화면 구석 버튼 (home-page.ts) 과 ESC 키. 이동은 셸의 `data-goto` 대리인 몫
  *
- * 아이콘은 `img/shell/menu/*.png` (Codex image_gen 으로 생성한 자작, 남색 한 톤 실루엣).
+ * 아이콘은 `img/shell/menu/*.png` (Codex image_gen 으로 생성한 자작, 각진 덩어리 두 톤. 옅은 면은 알파 0.45).
  * CSS mask 로 그림. 한 그림으로 밝은 판과 어두운 판 둘
  */
 import { t } from './lib/i18n.js';
