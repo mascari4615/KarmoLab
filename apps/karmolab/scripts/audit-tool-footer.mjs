@@ -16,7 +16,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { launchOrSkip } from './lib/browser.mjs';
 import { stripJekyll } from './lib/serve-static.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -50,10 +50,14 @@ function fullLayoutIds() {
 
 const ids = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const targets = ids.length ? ids : fullLayoutIds();
+if (!targets.length) {
+  console.log('[audit-tool-footer] 못 돌림. 검사 대상이 없다');
+  process.exit(2);
+}
 
 if (!fs.existsSync(path.join(root, 'js/toolbox.js'))) {
   console.log('[audit-tool-footer] 못 돌림. js/toolbox.js 가 없다 (`node build.mjs` 먼저)');
-  process.exit(0);
+  process.exit(2);
 }
 
 const server = http.createServer((req, res) => {
@@ -72,7 +76,8 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const BASE = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await chromium.launch();
+const browser = await launchOrSkip('audit-tool-footer');
+if (!browser) { server.close(); process.exit(2); }
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
 const page = await ctx.newPage();
 
@@ -95,6 +100,8 @@ for (const id of targets) {
     if (opened) {
       /* 이미 열려 있다. 창만 바뀌었다. 다시 안 연다. */
     } else {
+      // 해시만 바꾸면 popstate가 별도 도구 페이지로 이동. 각 도구를 새 문서로 시작
+      await page.goto('about:blank');
       await page.goto(`${BASE}/apps/karmolab/index.html#${id}`, { waitUntil: 'load', timeout: 30000 });
       opened = true;
     }
@@ -159,7 +166,7 @@ for (const id of targets) {
 
     if (!m) {
       // 시스템 화면(계좌, 설정 등)에는 일부러 안 붙인다. 없는 게 맞다
-      rows.push([id, H, '. ', '. ', '. ', '푸터 없음(시스템 화면)']);
+      rows.push([id, H, '. ', '. ', '. ', '푸터 없음(nextLinks 기본 끔)']);
       continue;
     }
     const flush = m.footLeft < 8 || m.footRight < 8;
@@ -189,4 +196,8 @@ if (bad) {
   console.error(`\n[audit-tool-footer] ${bad}건. 여기도 있어요가 제자리에 없다`);
   process.exit(1);
 }
-console.log('\n[audit-tool-footer] OK');
+if (skipped) {
+  console.error(`\n[audit-tool-footer] CANNOT-RUN. ${skipped}/${targets.length * HEIGHTS.length}조건 미측정`);
+  process.exit(2);
+}
+console.log(`\n[audit-tool-footer] OK. ${rows.length}/${targets.length * HEIGHTS.length}조건 측정`);

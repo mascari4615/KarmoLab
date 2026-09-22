@@ -28,8 +28,10 @@ const repoRoot = path.dirname(path.dirname(root));
 
 if (!fs.existsSync(path.join(root, 'js/toolbox.js'))) {
   console.log('[leak] 못 돌림. js/toolbox.js 가 없다 (`node build.mjs` 먼저)');
-  process.exit(0);
+  process.exit(2);
 }
+
+if (!(await browserReady('leak'))) process.exit(2);
 
 /**
  * Jekyll 이 처리해 줄 것을 정적 서빙에서도 없앤다. 앞머리 + {%...%}.
@@ -82,11 +84,10 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const BASE = `http://127.0.0.1:${server.address().port}`;
 
-/* 브라우저가 없으면 통과가 아니라 **못 돌림**이다. CI 의 verify 잡에는 아직 설치 스텝이 없다.
-   여기서 조용히 통과시키면 계측이 죽은 날에도 초록이 뜨고, 반대로 그냥 죽이면 배포 길목이 막힌다. */
-if (!(await browserReady('leak'))) process.exit(0);
-
-const browser = await chromium.launch();
+let browser;
+const rounds = [];
+try {
+browser = await chromium.launch();
 const page = await browser.newPage();
 
 /* 카운터를 **첫 스크립트보다 먼저** 심는다. 앱이 걸어 둔 것부터 세야 하므로 나중에 심으면
@@ -127,7 +128,22 @@ await page.addInitScript(() => {
 
 await page.goto(BASE + '/apps/karmolab/index.html', { waitUntil: 'load' });
 await page.waitForFunction(() => typeof Toolbox !== 'undefined', null, { timeout: 30000 });
+await page.evaluate(() => { window.__leakDocument = true; });
 await page.waitForTimeout(3000);
+
+// 새 문서는 카운터까지 초기화하므로 같은 문서의 정리 경로만 검사
+async function switchWidget(widget) {
+  const activeId = await page.evaluate(async (id) => {
+    if (!window.__leakDocument) throw new Error('[leak] 검사 중 문서가 바뀌었다');
+    const owner = window.KARMOLAB_LAZY_META_BY_ID?.[id]?.bundle || id;
+    Toolbox.switchPage(id, { stay: true });
+    await Toolbox.kickLazyLoad(owner);
+    return owner;
+  }, widget);
+  await page.waitForFunction((id) =>
+    window.__leakDocument && document.getElementById('page-' + id)?.classList.contains('active'),
+  activeId, { timeout: 15000 });
+}
 
 /**
  * 도는 것을 가진 위젯들. `requestAnimationFrame` 을 쓰는 쪽에서 골랐다
@@ -141,7 +157,7 @@ const WIDGETS = [
 ];
 
 async function idleCounts() {
-  await page.evaluate(() => Toolbox.switchPage('home'));
+  await switchWidget('home');
   /* **가라앉을 때까지 기다렸다가** 잰다. 위젯을 막 닫은 직후에는 그 위젯의 마지막 프레임들이
      아직 흐르고 있어서, 바로 재면 가만히 둔 화면이 아니라 방금 닫은 직후를 재게 된다.
      실측으로 그 차이가 113 ↔ 177 이었다. 상한을 그 위에 잡으면 애먼 빨간불이 난다. */
@@ -153,20 +169,21 @@ async function idleCounts() {
 
 const SELFTEST = process.argv.includes('--selftest');
 
-const rounds = [];
 for (let round = 0; round < 3; round++) {
   /* 늘 초록인 검사는 없는 것과 같다. 일부러 안 거두는 타이머를 바퀴마다 하나 남겨 본다. */
   if (SELFTEST) await page.evaluate(() => window.setInterval(() => {}, 100000));
   for (const id of WIDGETS) {
-    await page.evaluate((widget) => Toolbox.switchPage(widget), id);
+    await switchWidget(id);
     await page.waitForTimeout(700);
   }
   rounds.push(await idleCounts());
   console.log(`[leak] ${round + 1}바퀴 뒤 홈. 남은 타이머 ${rounds[round].intervals}, 도는 프레임 루프 초당 ${rounds[round].rafLoops}`);
 }
 
-await browser.close();
-server.close();
+} finally {
+  await browser?.close();
+  server.close();
+}
 
 /* 가만히 둔 홈에서 초당 몇 번 그리기를 예약하나. **절대량 상한**.
    실측(2026-08-09): 60 = 마스코트 한 벌(`mdd.js` frame). 처음엔 120~305 였는데 그건 **떨어진

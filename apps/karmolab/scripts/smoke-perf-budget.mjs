@@ -36,6 +36,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { browserReady } from './lib/serve-static.mjs';
+import { medianBudgetRuns, budgetExitCode } from './lib/perf-budget-results.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -96,22 +97,29 @@ const server = http.createServer((req, res) => {
   }
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' }).end(body);
 });
-await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const BASE = `http://127.0.0.1:${server.address().port}`;
 
 /* 재는 화면 **둘**.
  *   ① 앱 첫 화면
  *   ② 도구 한 장. **검색으로 들어오는 정문**이다(131장). 셸이 다르다: 첫 화면 본문, 팔레트, 계정을
  *      빼고 찍는다. 그래서 첫 화면만 재면 사람 대부분이 실제로 밟는 길을 안 재는 것이 된다.
- * 도구 장은 배포 때 찍히는 생성물이라 새 체크아웃에는 없을 수 있다. 없으면 건너뛴다고 말한다. */
-const TARGETS = [['앱 첫 화면', '/apps/karmolab/index.html', {}]];
+ * 도구 장 생성물도 필수 전제. 없으면 exit 2 */
+// verify와 배포가 준비한 첫 화면을 측정. 원본 셸에는 미리 그린 본문이 없음
+const homePage = path.join(repoRoot, 'apps/blog/index.html');
+if (!fs.existsSync(homePage) || !fs.readFileSync(homePage, 'utf8').includes('<!-- KARMOLAB_HOME_PRERENDERED -->')) {
+  console.log('[perf-budget] 못 돌림. 미리 그린 첫 화면이 없다 (`npm run prerender:home` 먼저)');
+  process.exit(2);
+}
+const TARGETS = [['앱 첫 화면', '/apps/blog/index.html', {},
+  { selector: '#page-home .kp-input', keys: ['l', 'o', 'a', 'n'] }]];
 const toolPage = path.join(repoRoot, 'apps/blog/t/loan/index.html');
 if (!fs.existsSync(toolPage)) {
-  console.log('[perf-budget] 도구 장은 건너뜀. 찍힌 페이지가 없다 (`npm run gen:tool-pages` 뒤에 다시)');
+  console.log('[perf-budget] 못 돌림. 도구 장이 없다 (`npm run gen:tool-pages` 뒤에 다시)');
+  process.exit(2);
 } else if (!fs.readFileSync(toolPage, 'utf8').includes('js/perf.js')) {
   /* 브라우저로 확인하면 없는 것을 기다리느라 화면마다 60초를 버린다. 파일을 보면 즉시 안다 . 
      게이트가 제 발로 느려지면 사람이 안 돌린다. */
   console.log('[perf-budget] 도구 장은 못 돌림. 그 화면에 계측기(js/perf.js)가 안 실렸다 (다음 `gen:tool-pages` 때 들어간다). 통과로 세지 않는다.');
+  process.exit(2);
 } else {
   /* ★ **이 화면은 오늘 처음 재졌다** (2026-08-16). 여태 누를 때 머리말의 KarmoLab 단추를
      먼저 눌러 화면을 떠나 버렸고, 그래서 항상 계측기가 안 왔다로 끝났다. 검색으로 들어오는
@@ -126,14 +134,14 @@ if (!fs.existsSync(toolPage)) {
     /* 톱니를 조인다 (2026-08-16 저녁): 제 도구 코드를 낭비로 세던 것을 고쳐 36.8KB → 22KB.
        남은 22KB 는 일부러 실은 채팅이다. 예산도 그만큼 내린다. 22 + 한 위젯몫 16. */
     { bootwaste: 22 * 1024 + 16 * 1024 },
+    { selector: '#loR', keys: ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown'] },
   ]);
 }
 
-/* 브라우저가 없으면 통과가 아니라 **못 돌림**이다. CI 의 verify 잡에는 아직 설치 스텝이 없다.
-   여기서 조용히 통과시키면 계측이 죽은 날에도 초록이 뜨고, 반대로 그냥 죽이면 배포 길목이 막힌다. */
-if (!(await browserReady('perf-budget'))) process.exit(0);
-
-const browser = await chromium.launch();
+if (!(await browserReady('perf-budget'))) process.exit(2);
+await new Promise((r) => server.listen(0, '127.0.0.1', r));
+const BASE = `http://127.0.0.1:${server.address().port}`;
+let browser;
 
 /* 시나리오 둘. 느린 쪽은 Lighthouse 가 쓰는 것과 같은 종류의 설정(느린 폰 + 느린 회선)이다.
    `slack` = 시간 항목 예산에 곱하는 배수. 3102ms 를 봤으므로 4000ms 선(1200×3.4)을 잡는다 . 
@@ -154,8 +162,9 @@ const SCENARIOS = [
 ];
 
 /** 화면 하나를 열고 조작을 일으킨 뒤 판정을 받아 온다. 계측기가 없으면 `null`. */
-async function measure(url, scenario) {
+async function measure(url, scenario, interaction) {
   const page = await browser.newPage();
+  try {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   if (scenario.cpu > 1 || scenario.slowNet) {
@@ -193,59 +202,25 @@ async function measure(url, scenario) {
       deadRequests.length ? `못 받은 파일 ${deadRequests.length}개: ${deadRequests.slice(0, 3).join(', ')}` : '',
       errorText.length ? `스크립트가 터졌다: ${errorText.slice(0, 2).join(', ')}` : '',
     ].filter(Boolean).join(' | ');
-    await page.close();
     return null;
   }
   /* 첫 그림, 큰 그림이 정해질 틈. 너무 일찍 재면 아직 안 나온 것을 없다로 적는다.
      느린 판은 더 기다린다. 같은 시간을 주면 느린 쪽만 못 잼이 되어 비교가 안 된다. */
   await page.waitForTimeout(scenario.slowNet ? 5000 : 2500);
-  /* 조작 지연은 **일으켜야** 잡힌다. 기다리면 영영 못 잼이다.
-     진짜 단추를 누른다(빈 곳을 누르면 핸들러가 없어 우리 코드가 느린가를 못 본다). */
-  /* ★ **누르는 것이 화면을 떠나면 재는 화면이 사라진다** (2026-08-16, 실측).
-     도구 한 장에서 첫 번째로 잡히는 것은 머리말의 `KarmoLab` 단추다. 생김새는 단추지만
-     누르면 `/` 로 **간다**. 그 순간 재던 문서가 죽고 `KLPerf` 도 같이 사라져,
-     검사는 15초 기다렸는데 계측기가 안 왔다로 끝났다. 그래서 **도구 한 장(131장, 검색으로
-     들어오는 정문)은 한 번도 안 재졌다**. 첫 화면만 달려 사람 대부분이 밟는 길을 몰랐다.
-     둘을 고친다: ① 화면을 떠나는 것은 후보에서 뺀다 ② 그래도 떠나면 **그걸 그대로 말한다**
-     (설명 없는 15초 기다림으로 다시 둔갓하지 않게). 도구 자기 입력칸도 후보에 넣는다 . 
-     도구 장에서 사람이 실제로 만지는 것이 그것이다. */
+  // 홈 검색과 대출 입력만 조작. 이동용 컨테이너 클릭으로 인한 문서 교체 방지
   const measuredUrl = page.url();
-  const clickable = await page.$$(
-    '.landing-cta, .tool-card, header button, nav button, .tab-btn, main input, main select, .tool-card-btn'
-  );
-  /* 떠나는 것 = **틀(chrome)** 이다. 머리말, 메뉴, 생김새, 링크. 도구 장에서는 그게 전부
-     앱으로 들어가기라 하나라도 누르면 재던 화면이 사라진다(설정 단추 → `#settings`).
-     재려는 것은 **그 화면 안의 조작**이므로 틀은 통째로 뺀다. */
-  const leaving = (el) =>
-    el.evaluate((n) => !!n.closest('a[href], header, nav, .breadcrumb, [data-page], [data-goto]'));
-  let left = '';
-  let causedLeave = '';
-  let clicked = [];
-  let clickCount = 0;
-  /* 무엇을 눌렀는지 이름을 들고 다닌다. 떠났다만 말하면 다음 사람이 스무 번 눌러 보며 찾는다
-     (오늘 실제로 그랬다). 틀 거르개는 **누를 것**을 보고 거르는데, 화면을 떠나게 한 것이
-     그 그물을 어떻게 빠져나갔는지는 그 이름이 없으면 영영 모른다. */
-  const name2 = (el) =>
-    el
-      .evaluate((n) => `${n.tagName}${n.id ? '#' + n.id : ''}${n.className ? '.' + String(n.className).split(' ')[0] : ''}`)
-      .catch(() => '(사라진 것)');
-  for (const target of clickable) {
-    if (clickCount >= 4) break;                                    // 네 번이면 가장 굼뜬 조작이 드러난다
-    if (await leaving(target).catch(() => true)) continue;
-    const who = await name2(target);
-    await target.click({ timeout: 1500 }).catch(() => {});
-    clickCount += 1;
-    clicked.push(who);
+  await page.evaluate(() => { window.__budgetDocument = true; });
+  const input = page.locator(interaction.selector);
+  await input.click({ timeout: 15000 });
+  for (const key of interaction.keys) {
+    await input.press(key, { timeout: 1500 });
+    // 재움-의도: 입력 사이 250ms 관측 간격에서 Event Timing 수집, 뒤이어 문서 연속성 확인
     await page.waitForTimeout(250);
-    if (page.url() !== measuredUrl) { left = page.url(); causedLeave = who; break; }
-  }
-  if (left) {
-    cannotRunReason =
-      `누르는 순간 화면을 떠났다. 마지막에 누른 것 \`${causedLeave}\` (${measuredUrl} → ${left})` +
-      `, 여기까지 누른 것: ${clicked.join(' → ')}` +
-      '. 그 화면을 재려면 떠나지 않는 것만 눌러야 한다';
-    await page.close();
-    return null;
+    const sameDocument = await page.evaluate(() => window.__budgetDocument === true).catch(() => false);
+    if (!sameDocument || page.url() !== measuredUrl) {
+      cannotRunReason = `조작 중 문서가 바뀌었다: ${interaction.selector} (${measuredUrl} → ${page.url()})`;
+      return null;
+    }
   }
   await page.waitForTimeout(600);
   /* ★ **계측기는 늦게 온다. 없으면 못 잼이지 터질 일이 아니다** (2026-08-14).
@@ -264,7 +239,6 @@ async function measure(url, scenario) {
       deadRequests.length ? `못 받은 파일 ${deadRequests.length}개: ${deadRequests.slice(0, 3).join(', ')}` : '',
       errorText.length ? `스크립트가 터졌다: ${errorText.slice(0, 2).join(', ')}` : '',
     ].filter(Boolean).join(' | ');
-    await page.close();
     return null;
   }
   const snap = await page.evaluate(() => {
@@ -281,8 +255,13 @@ async function measure(url, scenario) {
       .map((x) => `${x.value.toFixed(4)} @${Math.round(x.at)}ms`);
     return { verdict: s.verdict, trust: s.trust, shifts: shifts.concat(when.length ? ['시각: ' + when.join(' , ')] : []), cls: s.cls };
   });
-  await page.close();
   return { ...snap, errors };
+  } catch (error) {
+    cannotRunReason = `측정 중단: ${String(error.message).split('\n').slice(0, 3).join(' ')}`;
+    return null;
+  } finally {
+    await page.close();
+  }
 }
 
 const fmt = (v) => {
@@ -298,6 +277,7 @@ const limitOf = (v) => (v.unit === 'B' ? `${(v.limit / 1024).toFixed(0)}KB` : v.
 
 let totalFails = 0;
 let measuredScreens = 0;
+let incomplete = 0;
 
 /* ★ **밀림만은 중앙값으로 보면 안 된다** (2026-08-17 실측).
    시간, 크기는 기계 잡음이 섞이니 중앙값이 맞다. 그런데 화면 밀림(CLS)은 **늦게 오는 것과의
@@ -305,48 +285,39 @@ let measuredScreens = 0;
    중앙값을 쓰면 0.126 이 되고 세 판 중 하나였던 0.218 은 사라진다. 그런데 사람에게는
    **그 한 판이 그 사람의 경험 전부**다(구글이 현장값 p75 로 보는 것도 같은 뜻).
    그래서 밀림은 **가장 나쁜 판**으로 판정한다. 잡음이 아니라 실제로 일어난 일이다. */
-const worst2 = new Set(['cls']);
-
-/** 항목별 중앙값(밀림은 최댓값). 못 잰 회차가 절반을 넘으면 그 항목은 못 잼이다. */
-function median(runs) {
-  const base = runs[0].verdict;
-  return base.map((sample, index) => {
-    const values = runs.map((run) => run.verdict[index].value).filter((v) => v != null);
-    if (values.length * 2 <= runs.length) return { ...sample, value: null, state: 'unknown' };
-    values.sort((a, b) => a - b);
-    const worst = worst2.has(String(sample.key ?? sample.id ?? '').toLowerCase())
-      || /밀림|CLS/i.test(String(sample.label ?? ''));
-    const value = worst ? values[values.length - 1] : values[Math.floor(values.length / 2)];
-    return { ...sample, value, state: value > sample.limit ? 'fail' : 'pass' };
-  });
-}
 
 /** 마지막으로 못 돌린 이유. `measure` 가 채우고 아래 보고가 그대로 쓴다. */
 let cannotRunReason = '';
 
 const RUNS = 3;
 
+try {
+browser = await chromium.launch();
 for (const scenario of SCENARIOS)
-for (const [screen, url, screenBudget = {}] of TARGETS) {
+for (const [screen, url, screenBudget = {}, interaction] of TARGETS) {
   const label = `${screen}, ${scenario.name}`;
   /* 느린 판은 한 회차가 10초를 넘는다. 세 번은 과하다. 흔들림이 큰 쪽이 빠른 판이므로
      반복은 거기에 준다. */
   const runCount = scenario.slack > 1 ? 1 : RUNS;
   const runs = [];
   for (let i = 0; i < runCount; i++) {
-    const one = await measure(url, scenario);
-    if (one) runs.push(one);
+    const one = await measure(url, scenario, interaction);
+    if (!one || !one.trust.ok) {
+      incomplete += 1;
+      console.log(`[perf-budget]   ${label} ${i + 1}/${runCount}회 못 돌림: ${one?.trust.why || cannotRunReason}`);
+      runs.push(null);
+    } else runs.push(one);
   }
-  const result = runs.length
+  const measured = runs.filter(Boolean);
+  const result = measured.length
     /* 밀림은 가장 나쁜 판으로 판정하므로, 무엇이 밀렸나도 **그 판** 것을 들고 온다 */
     ? {
-        verdict: median(runs),
-        trust: runs[runs.length - 1].trust,
-        errors: runs.flatMap((r) => r.errors),
-        shifts: runs.slice().sort((a, b) => (b.cls ?? 0) - (a.cls ?? 0))[0]?.shifts || []
+        verdict: medianBudgetRuns(runs),
+        errors: measured.flatMap((r) => r.errors),
+        shifts: measured.slice().sort((a, b) => (b.cls ?? 0) - (a.cls ?? 0))[0]?.shifts || []
       }
     : null;
-  console.log(`[perf-budget] ── ${label}${runs.length > 1 ? ` (${runs.length}회, 시간, 크기는 중앙값, 밀림은 가장 나쁜 판)` : ''}`);
+  console.log(`[perf-budget] ── ${label} (${measured.length}/${runCount}회, 시간·크기는 중앙값, 밀림은 최댓값)`);
   if (!result) {
     /* 계측기가 안 실린 화면은 통과가 아니라 **못 돌림**이다. 도구 장은 배포 때 셸을 복사해
        찍히므로, 셸에 계측기를 넣은 뒤 아직 안 찍힌 판에서는 여기로 온다. */
@@ -383,26 +354,28 @@ for (const [screen, url, screenBudget = {}] of TARGETS) {
       for (const line of result.shifts) console.log(`[perf-budget]         ${line}`);
     }
   }
-  if (!result.trust.ok) console.log(`[perf-budget]   ⚠ 이 판은 비교에 못 쓴다. ${result.trust.why}`);
   if (result.errors.length) console.log(`[perf-budget]   ⚠ 화면 오류 ${result.errors.length}건. ${result.errors[0].slice(0, 120)}`);
   console.log(`[perf-budget]   결과: 예산 안쪽 ${passes.length}, 넘김 ${fails.length}, 못 잼 ${unknowns.length}`);
   if (unknowns.length) {
     console.log(`[perf-budget]     못 잰 것은 통과로 세지 않는다: ${unknowns.map((v) => v.label).join(', ')}`);
   }
   totalFails += fails.length;
+  incomplete += unknowns.length + (rows.length === 0 ? 1 : 0);
 }
 
-await browser.close();
-server.close();
+} finally {
+  await browser?.close();
+  server.close();
+}
 
 if (!measuredScreens) {
   console.error('[perf-budget] 잰 화면이 하나도 없다. 이건 통과가 아니다.');
-  process.exit(1);
+  incomplete += 1;
 }
 
 if (REGRESS) {
-  // 조인 예산에 전부 걸려야 정상이다. 안 걸리면 이 게이트는 아무것도 못 잡는다.
+  // 완전한 측정과 예산 조임 감지를 모두 확인
   console.log(`[perf-budget] --regress: 예산을 반으로 조여 ${totalFails}건 잡음 (0 이면 게이트가 죽은 것)`);
-  process.exit(totalFails > 0 ? 0 : 1);
 }
-process.exit(totalFails > 0 ? 1 : 0);
+console.log(`[perf-budget] 측정 ${measuredScreens}/${TARGETS.length * SCENARIOS.length}화면, 예산 위반 ${totalFails}, 미측정 ${incomplete}`);
+process.exit(budgetExitCode({ failures: totalFails, incomplete, regress: REGRESS }));

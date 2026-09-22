@@ -19,8 +19,7 @@
  * 어서 와요, ○○ 한 줄인데, 그건 **이 빌드 기계의 로그인 상태**다. 박히면 모든 사람이
  * 남의 이름을 보게 된다. 그래서 떼고 박는다.
  *
- * 전제: `npm run serve:gzip` 가 떠 있어야 한다. 못 열면 **아무것도 안 바꾸고 넘어간다** . 
- * 미리 그리기는 있으면 좋은 것이지, 없다고 배포를 세울 일이 아니다.
+ * BASE 미지정 시 현재 체크아웃을 임시 포트에서 서빙. 전제 부재는 exit 2
  *
  * 사용: node scripts/prerender-home.mjs
  */
@@ -28,10 +27,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { serveRepo } from './lib/serve-static.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const FILE = path.join(root, '../blog/index.html');
-const BASE = process.env.BASE || 'http://127.0.0.1:8801/apps/blog';
 const EMPTY = '<div class="content-body" id="tool-pages"></div>';
 const MARK = '<!-- KARMOLAB_HOME_PRERENDERED -->';
 
@@ -56,7 +55,7 @@ if (!fs.existsSync(FILE)) {
 }
 if (!fs.existsSync(FILE)) {
   console.log('[prerender-home] 찍힌 첫 화면이 없다. 건너뜀 (배포가 만들고 나서 돈다)');
-  process.exit(0);
+  process.exit(2);
 }
 const html = fs.readFileSync(FILE, 'utf8');
 if (html.includes(MARK)) {
@@ -65,7 +64,7 @@ if (html.includes(MARK)) {
 }
 if (!html.includes(EMPTY)) {
   console.log('[prerender-home] 넣을 자리를 못 찾았다. 셸 모양이 바뀌었다. 건너뜀');
-  process.exit(0);
+  process.exit(2);
 }
 
 let browser;
@@ -73,13 +72,15 @@ try {
   browser = await chromium.launch();
 } catch (err) {
   console.log(`[prerender-home] 못 돌림. 브라우저를 못 띄운다 (${String(err).split('\n')[0].slice(0, 80)})`);
-  process.exit(0);
+  process.exit(2);
 }
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const server = process.env.BASE ? null : await serveRepo();
+const base = process.env.BASE || `${server.base}/apps/blog`;
 
 let markup = '';
 try {
-  await page.goto(`${BASE}/`, { waitUntil: 'load', timeout: 45000 });
+  await page.goto(`${base}/`, { waitUntil: 'load', timeout: 45000 });
   await page.waitForFunction(
     () => {
       const el = document.getElementById('page-home');
@@ -115,20 +116,24 @@ try {
 } catch (err) {
   console.log(`[prerender-home] 못 그림. ${String(err?.message || err).split('\n')[0].slice(0, 100)}`);
   await browser.close();
-  process.exit(0);
+  server?.close();
+  process.exit(2);
 }
 await browser.close();
+server?.close();
 
 if (!markup || markup.length < 400) {
   console.log(`[prerender-home] 그린 것이 너무 짧다 (${markup.length}자). 안 박는다`);
-  process.exit(0);
+  process.exit(2);
 }
 
 fs.writeFileSync(
   FILE,
   /* 넣을 글은 **함수로**. 그 안의 `$&`, `$1` 이 치환 패턴으로 읽히면 안 된다
      (자세한 사고 기록은 `prerender-tools.mjs` 의 같은 자리 주석). */
-  html.replace(EMPTY, () => MARK + '\n<div class="content-body" id="tool-pages">' + markup + '</div>'),
+  // 첫 그림부터 홈 배치 적용. 셸 준비 뒤 머리줄과 옆줄을 숨기며 생기던 밀림 방지
+  html.replace('<html ', '<html data-view="home" ')
+    .replace(EMPTY, () => MARK + '\n<div class="content-body" id="tool-pages">' + markup + '</div>'),
   'utf8'
 );
 console.log(`[prerender-home] 첫 화면을 미리 그려 넣었다 (${(markup.length / 1024).toFixed(1)}KB)`);

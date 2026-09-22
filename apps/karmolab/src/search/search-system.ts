@@ -1,4 +1,4 @@
-import { warmSearchable, scoreSearchableTool, type SearchMatchKind, type SearchableTool } from './tool-search';
+import { warmSearchable, createSearchScorer, type SearchMatchKind, type SearchableTool } from './tool-search';
 export { englishKeysToKorean, scoreSearchableTool } from './tool-search';
 
 export type SearchDocument<T> = SearchableTool & { value: T };
@@ -59,9 +59,10 @@ export function createSearchSystem<T>(initial: Iterable<SearchDocument<T>> = [])
     },
     search(query, limit) {
       const results: SearchResult<T>[] = [];
+      const score = createSearchScorer(query);
       for (const [providerId, documents] of snapshots) {
         for (const document of documents) {
-          const match = scoreSearchableTool(document, query);
+          const match = score(document);
           if (!match) continue;
           results.push({ value: document.value, providerId, score: match.score, reason: match.kind,
             titleNormStart: match.titleNormStart });

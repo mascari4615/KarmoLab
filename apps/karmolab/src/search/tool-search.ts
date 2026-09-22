@@ -38,12 +38,21 @@ function editDistance(a: string, b: string, limit: number): number {
   return previous[b.length];
 }
 
-function fuzzyToken(query: string, candidates: string[]): number | null {
+function fuzzyToken(query: string, candidates: string[], distances: Map<string, Map<string, number>>): number | null {
   if (query.length < 3) return null;
   const limit = query.length >= 6 ? 2 : 1;
+  let cache = distances.get(query);
+  if (!cache) { cache = new Map(); distances.set(query, cache); }
   let best = limit + 1;
   for (const candidate of candidates) {
-    if (candidate.length >= 3) best = Math.min(best, editDistance(query, candidate, limit));
+    if (candidate.length < 3 || Math.abs(query.length - candidate.length) > limit) continue;
+    let distance = cache.get(candidate);
+    if (distance === undefined) {
+      distance = editDistance(query, candidate, limit);
+      cache.set(candidate, distance);
+    }
+    best = Math.min(best, distance);
+    if (best === 0) return 0;
   }
   return best <= limit ? best : null;
 }
@@ -87,15 +96,22 @@ function prepare(tool: SearchableTool): PreparedTool {
     aliases: compactSearchText(tool.aliases || ''),
     description: compactSearchText(tool.description || ''),
     fields,
-    allTokens: fields.flatMap((field) => field.tokens),
+    allTokens: [...new Set(fields.flatMap((field) => field.tokens))],
   };
   prepared.set(tool, value);
   return value;
 }
 
-/** 문구 일치, 여러 단어의 교차 필드 일치, 제한적인 오타 순으로 점수를 계산한다. */
-function scoreQuery(tool: SearchableTool, query: string): SearchScore | null {
-  const compact = compactSearchText(query);
+type PreparedQuery = { compact: string; tokens: string[]; distances: Map<string, Map<string, number>> };
+
+function prepareQuery(query: string): PreparedQuery {
+  const normalized = normalizeSearchText(query);
+  return { compact: normalized.replace(/\s/g, ''), tokens: normalized.match(TOKEN_RE) || [], distances: new Map() };
+}
+
+// 질의 정규화와 단어별 거리를 한 검색 안에서 재사용. 문서 수만큼 반복하던 계산 제거
+function scoreQuery(tool: SearchableTool, query: PreparedQuery): SearchScore | null {
+  const { compact, tokens: queryTokens, distances } = query;
   if (!compact) return null;
   const { id, title, initials, aliases, description, fields, allTokens } = prepare(tool);
 
@@ -115,7 +131,6 @@ function scoreQuery(tool: SearchableTool, query: string): SearchScore | null {
     if (at >= 0) return { score: weight - Math.min(at, 100), kind, titleNormStart: null };
   }
 
-  const queryTokens = searchTokens(query);
   let score = 0;
   let strongest: SearchMatchKind = 'description';
   let strongestWeight = 0;
@@ -129,7 +144,7 @@ function scoreQuery(tool: SearchableTool, query: string): SearchScore | null {
       }
     }
     if (!tokenScore) {
-      const distance = fuzzyToken(token, allTokens);
+      const distance = fuzzyToken(token, allTokens, distances);
       if (distance == null) return null;
       tokenScore = 42 - distance * 10;
       tokenKind = 'fuzzy';
@@ -143,10 +158,17 @@ function scoreQuery(tool: SearchableTool, query: string): SearchScore | null {
 }
 
 export function scoreSearchableTool(tool: SearchableTool, query: string): SearchScore | null {
-  const direct = scoreQuery(tool, query);
-  if (!looksLikeMistypedKorean(query)) return direct;
-  const restored = englishKeysToKorean(query);
-  const keyboard = restored === query ? null : scoreQuery(tool, restored);
-  if (!keyboard || (direct && direct.score >= keyboard.score - 5)) return direct;
-  return { ...keyboard, score: keyboard.score - 5, kind: 'keyboard', titleNormStart: null };
+  return createSearchScorer(query)(tool);
+}
+
+export function createSearchScorer(query: string): (tool: SearchableTool) => SearchScore | null {
+  const directQuery = prepareQuery(query);
+  const restored = looksLikeMistypedKorean(query) ? englishKeysToKorean(query) : query;
+  const keyboardQuery = restored === query ? null : prepareQuery(restored);
+  return (tool) => {
+    const direct = scoreQuery(tool, directQuery);
+    const keyboard = keyboardQuery ? scoreQuery(tool, keyboardQuery) : null;
+    if (!keyboard || (direct && direct.score >= keyboard.score - 5)) return direct;
+    return { ...keyboard, score: keyboard.score - 5, kind: 'keyboard', titleNormStart: null };
+  };
 }

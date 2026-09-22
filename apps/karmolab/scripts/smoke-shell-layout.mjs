@@ -9,7 +9,7 @@
  *
  * 재는 것 둘
  *  ① 문서 가로 스크롤 (scrollWidth > innerWidth). 언제나 빨강
- *  ② 도구 판 조각이 본문 칸 밖으로. 일부러 좌우 여백만큼 넘기는 것은 예외 목록
+ *  ② 도구 판 조각이 본문 칸 밖으로
  *
  * 예쁨은 안 봄. 그건 사람 몫. 여기는 넘침만
  *
@@ -41,18 +41,12 @@ try {
 const DEFAULT_IDS = [
   'devtool', 'text', 'image', 'pdf', 'sound', 'videotool', 'qr',
   'calc', 'time', 'color', 'unitconv', 'passgen',
-  'studymap', 'reference', 'emoji',
+  'recall', 'reference', 'emoji',
   'randomgen', 'tierlist', 'arcade', 'memo', 'checklist',
 ];
 const argv = process.argv.slice(2);
 const given = argv.filter((x) => !x.startsWith('--'));
 const ids = given.length ? given : DEFAULT_IDS;
-
-/* 좌우 여백만큼 일부러 넘기는 도구. 본문 칸 밖이지만 화면 안
-   여기 적을 때는 왜 넘기는지도 같이 */
-const BLEED_OK = new Set([
-  'studymap', // 지도 화면이 본문 여백을 지우고 칸을 꽉 채움
-]);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript',
@@ -81,6 +75,8 @@ try {
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
   for (const id of ids) {
     try {
+      // 해시 전환의 popstate 대신 각 도구의 최초 진입 경로 측정
+      await page.goto('about:blank');
       await page.goto(`${BASE}/apps/karmolab/#${id}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     } catch {
       skipped.push(`${id}: 화면을 못 열었다`);
@@ -88,7 +84,10 @@ try {
     }
     /* 그리기가 끝날 때까지 대기. 재우고 한 번만 보면 느린 기계에서 안 그린 것을 잼 */
     const drew = await page
-      .waitForFunction(() => !!document.querySelector('.tool-page.active'), undefined, { timeout: 25000 })
+      .waitForFunction((target) => {
+        const owner = window.KARMOLAB_LAZY_META_BY_ID?.[target]?.bundle || target;
+        return document.getElementById('page-' + owner)?.classList.contains('active');
+      }, id, { timeout: 25000 })
       .then(() => true)
       .catch(() => false);
     if (!drew) { skipped.push(`${id}: 도구 판이 안 그려졌다`); continue; }
@@ -127,7 +126,7 @@ try {
     if (!seen) { skipped.push(`${id}: 셸을 못 찾았다`); continue; }
 
     if (seen.hscroll) failures.push(`${id}: 가로 스크롤이 났다. 무엇인가 화면보다 넓다`);
-    if (seen.outside > 0 && !BLEED_OK.has(id)) {
+    if (seen.outside > 0) {
       failures.push(`${id}: 조각 ${seen.outside}개가 본문 칸 밖으로 나갔다 (${seen.sample.join(' ')})`);
     }
   }
@@ -145,4 +144,8 @@ if (failures.length) {
   failures.forEach((x) => console.error('  - ' + x));
   process.exit(1);
 }
-console.log(`[shell-layout] OK. 도구 ${ids.length - skipped.length}개, 화면 밖으로 나간 조각 0`);
+if (skipped.length || !ids.length) {
+  console.error(`[shell-layout] CANNOT-RUN. ${ids.length - skipped.length}/${ids.length}개 측정`);
+  process.exit(2);
+}
+console.log(`[shell-layout] OK. 도구 ${ids.length}개, 화면 밖으로 나간 조각 0`);
