@@ -144,6 +144,37 @@ async function waitLoaded(tabId) {
   });
 }
 
+/** 이 확장이 연 수집 탭 id. 워커가 죽으면 finally 가 안 돌아 탭이 남는다 (2026-09-22 치지직, X 탭 실측) */
+const OPEN_TABS_KEY = "karmo.openTabs";
+
+async function openWorkTab(url) {
+  const tab = await chrome.tabs.create({ url, active: false });
+  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
+  await chrome.storage.local.set({ [OPEN_TABS_KEY]: [...cur, tab.id] });
+  return tab;
+}
+
+async function closeWorkTab(tabId) {
+  try { await chrome.tabs.remove(tabId); } catch { /* 이미 닫혔으면 무시 */ }
+  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
+  await chrome.storage.local.set({ [OPEN_TABS_KEY]: cur.filter((id) => id !== tabId) });
+}
+
+/** 워커가 다시 뜰 때 지난 실행이 남긴 탭을 닫는다. 사용자가 직접 연 탭은 목록에 없어 안 건드린다 */
+async function reapOrphanTabs() {
+  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
+  if (!cur.length) return 0;
+  let closed = 0;
+  for (const id of cur) {
+    try { await chrome.tabs.remove(id); closed += 1; } catch { /* 이미 없음 */ }
+  }
+  await chrome.storage.local.set({ [OPEN_TABS_KEY]: [] });
+  if (closed) await note("reap", `고아 탭 ${closed}개 닫음`);
+  return closed;
+}
+
+reapOrphanTabs();
+
 /**
  * 한 걸음씩 되부르기. MV3 워커는 30초 무활동이면 종료
  * 긴 await 하나면 응답이 영영 안 옴 (2026-09-21 15분 멈춤 실측)
@@ -153,7 +184,7 @@ async function waitLoaded(tabId) {
  * @param {number} [maxSteps] 걸음 상한
  */
 async function stepInTab(url, file, fnName, maxSteps) {
-  const tab = await chrome.tabs.create({ url, active: false });
+  const tab = await openWorkTab(url);
   try {
     try { await chrome.tabs.update(tab.id, { autoDiscardable: false }); } catch { /* 지원 안 하면 그대로 */ }
     await waitLoaded(tab.id);
@@ -183,7 +214,7 @@ async function stepInTab(url, file, fnName, maxSteps) {
     }
     return last;
   } finally {
-    try { await chrome.tabs.remove(tab.id); } catch { /* 이미 닫혔으면 무시 */ }
+    await closeWorkTab(tab.id);
   }
 }
 
@@ -195,7 +226,7 @@ async function stepInTab(url, file, fnName, maxSteps) {
  * @param {string} [world] "MAIN" 이면 페이지와 같은 세계. fetch 를 가로채야 할 때만
  */
 async function runInTab(url, file, fnName, world) {
-  const tab = await chrome.tabs.create({ url, active: false });
+  const tab = await openWorkTab(url);
   try {
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id } };
@@ -208,7 +239,7 @@ async function runInTab(url, file, fnName, world) {
     }));
     return out && out.result;
   } finally {
-    try { await chrome.tabs.remove(tab.id); } catch { /* 이미 닫혔으면 무시 */ }
+    await closeWorkTab(tab.id);
   }
 }
 
