@@ -22,7 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { waitForA11yScreen } from './lib/a11y-ready.mjs';
-import { withoutRetired } from './lib/retired-operations.mjs';
+import { toolScreenUrl } from './lib/tool-screen-url.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -47,25 +47,8 @@ const AXE = path.join(root, 'node_modules', 'axe-core', 'axe.min.js');
    스킨 둘 판 둘이라 932판이 되고 사십 분이 넘는다. 넓게 한 번 훑는 것이 목적이지
    스킨마다 다시 재는 것이 목적이 아니다. 좁고 깊은 쪽은 기본 여섯 장이 맡는다 */
 const ALL = process.env.KL_A11Y_ALL === "1";
-/* 제 주소 (`/t/<id>/`) 가 있는 도구는 그 장을 잰다 (change.tool-page-navigation).
-   해시 `#id` 로 이어 가면 셸이 제 주소로 **실제 이동**해 evaluate 의 문서가 사라진다.
-   사람이 밟는 자리도 그 장이다. 목록은 `gen-tool-pages` 와 같은 출처 */
-const TOOL_PAGES = new Set(withoutRetired(Object.keys(JSON.parse(fs.readFileSync(path.join(root, 'data/tools-seo.json'), 'utf8')).tools)));
-/* 제 주소 없는 탭 (configconv 등 8개): 묶음의 장 + `#탭`. 셸이 보내는 주소와 같음
-   묶음 정보: 구운 목록 (`js/widgets-index.js`). 빌드가 게이트보다 앞이라 늘 있음 */
-const BUNDLE_OF = (() => {
-  try {
-    const src = fs.readFileSync(path.join(root, 'js/widgets-index.js'), 'utf8');
-    const list = JSON.parse(src.slice(src.indexOf('=[') + 1, src.indexOf('];') + 1));
-    return Object.fromEntries(list.filter((m) => m && m.bundle).map((m) => [m.id, m.bundle]));
-  } catch { return {}; }
-})();
-const screenUrl = (id) => {
-  if (TOOL_PAGES.has(id)) return `/apps/blog/t/${id}/`;
-  const bundle = BUNDLE_OF[id];
-  if (bundle && TOOL_PAGES.has(bundle)) return `/apps/blog/t/${bundle}/#${id}`;
-  return `/apps/karmolab/#${id}`;
-};
+/* 도구 하나를 여는 주소. 제 주소가 있는 도구는 그 장 (`lib/tool-screen-url.mjs`) */
+const screenUrl = (id) => toolScreenUrl(id);
 
 function allToolScreens() {
   const src = fs.readFileSync(path.join(root, "src/widgets-lazy-meta.ts"), "utf8");
@@ -182,6 +165,9 @@ const RUN_SKINS = ALL ? [SKINS[0]] : SKINS;
 const RUN_THEMES = ALL ? [THEMES[THEMES.length - 1]] : THEMES;
 
 const failures = [];
+/* 30초 안에 안 뜬 장. 무거운 장 (territory 의 지구) 이 옆 검사 넷과 같이 돌 때 그랬다 (2026-09-22, 655초 판).
+   한 장 때문에 판 전체를 터뜨리지 않고, 못 잼으로 적어 끝에 못 돌림 (2) 으로 낸다. 초록으로 안 센다 */
+const unopened = [];
 for (const skin of RUN_SKINS) for (const theme of RUN_THEMES) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
@@ -193,7 +179,13 @@ for (const skin of RUN_SKINS) for (const theme of RUN_THEMES) {
   }, { theme, skin });
   for (const [name, url] of RUN_SCREENS) {
     const screenStarted = Date.now();
-    const res = await page.goto(`http://localhost:${PORT_IN_USE}${url}`, { waitUntil: 'load' });
+    let res;
+    try {
+      res = await page.goto(`http://localhost:${PORT_IN_USE}${url}`, { waitUntil: 'load' });
+    } catch (e) {
+      unopened.push(`${name} (${url}): ${String(e && e.message).split(String.fromCharCode(10))[0].slice(0, 80)}`);
+      continue;
+    }
     /* ★ **여기서 문제 0건은 안 봤다일 수 있다** (2026-08-21).
      * 이 검사의 합격 조건이 <b>문제 0건</b>이라, 장이 안 열려 화면이 비면 그대로 초록이 된다.
      * 실측으로 밟았다. 남이 같은 자리 번호를 잡고 있을 때 <b>남의 서버를 보고도 초록</b>이었다
@@ -344,3 +336,8 @@ if (shrunk.length > 0) {
   process.exit(0);
 }
 console.log(`[smoke-a11y] ${RUN_SCREENS.length}장 x ${RUN_SKINS.join('/')} x ${RUN_THEMES.join('/')} = ${RUN_SCREENS.length*RUN_SKINS.length*RUN_THEMES.length}판. 늘지 않았다 (남은 빚 ${total}곳)`);
+if (unopened.length) {
+  console.error(`[smoke-a11y] CANNOT-RUN: 못 연 장 ${unopened.length}. 이 장들은 안 봤다. 통과로 안 센다`);
+  for (const u of unopened) console.error('  ? ' + u);
+  process.exit(2);
+}

@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { stripFrontMatter } from './lib/serve-html.mjs';
 import { toolsToOpen } from './lib/alive-scope.mjs';
+import { toolScreenUrl } from './lib/tool-screen-url.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -109,7 +110,9 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   for (const id of ids) {
     try {
-      await page.goto(`${BASE}/apps/karmolab/#${id}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      /* 제 주소가 있는 도구는 그 장으로. 해시로 이어 가면 셸이 제 주소로 이동해 문서가 사라지고,
+         241개가 그 길로 못 잼이 되며 12분 걸렸다 (2026-09-22 실측) */
+      await page.goto(`${BASE}${toolScreenUrl(id)}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     } catch {
       couldNotMeasure.push(`${id}: 화면을 못 열었다`);
       continue;

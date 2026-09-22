@@ -26,7 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stripFrontMatter } from './lib/serve-html.mjs';
-import { withoutRetired } from './lib/retired-operations.mjs';
+import { toolScreenUrl } from './lib/tool-screen-url.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -48,22 +48,8 @@ try {
    `KL_WCAG_ALL=1` 이면 등록된 도구 전부를 본다. 도구마다 제 버튼과 입력이 있어
    누를 크기와 초점 표시는 거기서 어긋난다 */
 const ALL = process.env.KL_WCAG_ALL === "1";
-/* 제 주소 (`/t/<id>/`) 가 있는 도구는 그 장, 제 주소 없는 탭은 묶음 장 + `#탭` (change.tool-page-navigation).
-   해시 `#id` 로 이어 가면 셸이 제 주소로 실제 이동해 evaluate 의 문서가 사라짐. `smoke-a11y.mjs` 와 같은 식 */
-const TOOL_PAGES = new Set(withoutRetired(Object.keys(JSON.parse(fs.readFileSync(path.join(root, 'data/tools-seo.json'), 'utf8')).tools)));
-const BUNDLE_OF = (() => {
-  try {
-    const src = fs.readFileSync(path.join(root, 'js/widgets-index.js'), 'utf8');
-    const list = JSON.parse(src.slice(src.indexOf('=[') + 1, src.indexOf('];') + 1));
-    return Object.fromEntries(list.filter((m) => m && m.bundle).map((m) => [m.id, m.bundle]));
-  } catch { return {}; }
-})();
-const screenUrl = (id) => {
-  if (TOOL_PAGES.has(id)) return `/apps/blog/t/${id}/`;
-  const bundle = BUNDLE_OF[id];
-  if (bundle && TOOL_PAGES.has(bundle)) return `/apps/blog/t/${bundle}/#${id}`;
-  return `/apps/karmolab/#${id}`;
-};
+/* 도구 하나를 여는 주소. 제 주소가 있는 도구는 그 장 (`lib/tool-screen-url.mjs`) */
+const screenUrl = (id) => toolScreenUrl(id);
 
 function allToolScreens() {
   const src = fs.readFileSync(path.join(root, "src/widgets-lazy-meta.ts"), "utf8");

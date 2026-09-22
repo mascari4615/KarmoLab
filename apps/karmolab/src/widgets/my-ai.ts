@@ -658,7 +658,11 @@ import { t, loadNamespace } from '../lib/i18n';
     if (!isDesktop()) {
       const note = document.createElement('p');
       note.className = 'myai-note';
-      note.textContent = t('my-ai.env.desktop_only');
+      /* 이 탭이 먼저 열리면 (도구 장 `/t/my-ai/`) 번역 파일이 아직 없다. 기본 글로 먼저 그리고 오면 갈아 끼움.
+         없는 열쇠로 터지면 셸이 도구를 통째로 죽은 것으로 그린다 (2026-09-22 `test:widgets-alive` 실측) */
+      const fallback = '환경 검사는 이 컴퓨터의 파일을 읽는 일이라 데스크톱 앱에서만 된다.';
+      note.textContent = t('my-ai.env.desktop_only', undefined, fallback);
+      void loadNamespace('my-ai').then(() => { note.textContent = t('my-ai.env.desktop_only', undefined, fallback); });
       container.appendChild(note);
       return;
     }
