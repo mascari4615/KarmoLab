@@ -812,8 +812,13 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
      `replaceState` 다. 목록을 훑는 동안 뒤로 가기가 대시보드 안에서만 스무 번 쌓이면
      사람이 이 도구를 못 빠져나간다. */
   const URL_KEY = 'dash';
+  /** dash 전용 front 는 이 주소가 곧 대시보드. 방은 해시로, 기본 방 (오늘) 은 주소를 비운다 */
+  function soloUrl(): boolean {
+    return document.documentElement.getAttribute('data-site') === 'dash';
+  }
   function urlItem(): string {
     try {
+      if (soloUrl()) return decodeURIComponent(location.hash.replace(/^#/, ''));
       return new URLSearchParams(location.search).get(URL_KEY) || '';
     } catch {
       return '';
@@ -821,6 +826,11 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
   }
   function setUrlItem(id: string): void {
     try {
+      if (soloUrl()) {
+        const want = !id || id === 'today' ? location.pathname : location.pathname + '#' + encodeURIComponent(id);
+        history.replaceState({}, '', want);
+        return;
+      }
       const q = new URLSearchParams(location.search);
       if (id) q.set(URL_KEY, id);
       else q.delete(URL_KEY);
