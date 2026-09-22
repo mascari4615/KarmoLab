@@ -53,6 +53,12 @@ export const generated = [
     why: '첫 그림에 필요한 스타일과 나중에 오는 스타일. 손으로 고치면 다음 빌드에 지워지고, 낡으면 화면이 옛 모양으로 나간다'
   },
   {
+    npm: 'build:css',
+    outputs: ['css/tools.min.css'],
+    why: '도구 장의 압축 스타일. 정본은 css/tools.css이며 저장소에서 추적하지 않는다',
+    weight: '배포가 build:css로 매번 다시 굽는다'
+  },
+  {
     npm: 'build:devlog',
     outputs: ['data/devlog.json'],
     why: '지금 뭘 만들고 있나 자리. 낡으면 며칠 전 소식이 걸린다',
