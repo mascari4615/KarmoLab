@@ -500,7 +500,10 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpAddSecretStep") });
       } else if (msg?.type === "gcp.read") {
         /* 읽기 전용. Google 인증 플랫폼의 정해진 화면만 */
-        const page = ["branding", "audience", "overview", "scopes"].includes(msg.page) ? msg.page : "overview";
+        let page = "";
+        if (["branding", "audience", "overview", "scopes"].includes(msg.page)) page = msg.page;
+        else if (msg.page === "client" && GCP_CLIENT_RE.test(String(msg.clientId || ""))) page = "clients/" + msg.clientId;
+        if (!page) throw new Error("모르는 화면: " + msg.page);
         const url = "https://console.cloud.google.com/auth/" + page + gcpProject(msg);
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpReadStep") });
       } else if (msg?.type === "gcp.audience") {

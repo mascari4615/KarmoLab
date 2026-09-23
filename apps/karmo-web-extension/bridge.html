@@ -115,6 +115,22 @@
           return true;
         }
         const out = document.getElementById("out");
+        /* 상태를 바꾸는 호출은 로컬 수신기가 발급한 키가 맞아야 실행. 남의 사이트가 이 주소를 열어도
+           127.0.0.1 수신기의 키를 모르니 못 부른다 (보안 검토 2026-09-23) */
+        const MUTATING = ["gcp.client", "gcp.secret", "gcp.audience"];
+        const reportUrl = q.get("report") || "";
+        if (MUTATING.includes(type)) {
+          const m = reportUrl.match(/^(http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)\//);
+          let okKey = false;
+          try {
+            okKey = !!m && (await (await fetch(m[1] + "/confirm?key=" + encodeURIComponent(q.get("key") || ""))).text()) === "yes";
+          } catch { okKey = false; }
+          if (!okKey) {
+            out.className = "err";
+            out.textContent = "키 확인 실패. 실행 안 함: " + type;
+            return true;
+          }
+        }
         let extra = {};
         try { extra = JSON.parse(q.get("msg") || "{}"); } catch { extra = {}; }
         out.textContent = "실행 중: " + type;
