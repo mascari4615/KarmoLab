@@ -2,11 +2,74 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1885,
-    "days": 12,
+    "commits": 1893,
+    "days": 13,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-09-24",
+      "entries": [
+        {
+          "sha": "25160ee4",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "test",
+          "text": "서버와 연결 종료 뒤 재접속 측정 시작"
+        },
+        {
+          "sha": "16ac12dc",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "test",
+          "text": "배치 무대 구성과 건설 렌더 검증 전제 분리"
+        },
+        {
+          "sha": "129d9740",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ci",
+          "text": "예약 검사와 수동 WM 검증의 취소 경합 분리"
+        },
+        {
+          "sha": "37cc2e08",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "test",
+          "text": "WM 검증 전제와 옮겨진 Idle 카탈로그 경로 복구"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
+    {
+      "date": "2026-09-23",
+      "entries": [
+        {
+          "sha": "b04bbb70",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "build",
+          "text": "Idle 설정 검사 확대와 빌드 전 차단"
+        },
+        {
+          "sha": "dd1dc791",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "build",
+          "text": "Idle 플레이어에서 본편 조립 코드 제외"
+        },
+        {
+          "sha": "8db08a93",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "build",
+          "text": "Idle 빌드 호출을 현재 클래스 이름으로 수정"
+        }
+      ],
+      "quiet": 1,
+      "more": 0
+    },
     {
       "date": "2026-09-22",
       "entries": [
@@ -450,66 +513,10 @@
           "typeLabel": "고친 것",
           "scope": "idle",
           "text": "타격 이펙트가 안 보이던 것. 원인 셋 (알갱이 지름 0.02m 로 인형의 1/20, 적과 같은 색이라 몸에 묻힘, ParticleSystem 은 에디트 모드에서 자동 재생 안 됨). 볼트처럼 직접 날리는 조각 7개로 바꾸고 크기 0.36 흰색 55% 섞음. 맞은 적은 몸이 0.12s 하얗게 번쩍인다. 실측: 조각 7개 크기 0.355"
-        },
-        {
-          "sha": "478adacb",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "보스 껍질이 깎일수록 떨어져 나간다 (visual.md 4). 남은 조각 수는 체력 비율, 마지막 하나는 남아 코어가 완전히 벗겨지지 않는다. 실측: 체력 35%에서 조각 6 -> 3, 22구역 별모양 코어"
-        },
-        {
-          "sha": "671fdb58",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "보스가 화면을 덮던 것을 줄임 (크기 1.9 -> 1.35, 껍질 1.35 -> 1.15, 벌어짐 0.9 -> 0.6). 실패 배너를 위로 올려 보스와 안 겹치게. Play 실측 2장"
-        },
-        {
-          "sha": "fd6d6856",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "남은 탭 다섯도 UXML (도감, 상점, 연구소, 던전, 투자 + 생산자 줄 템플릿). 화면 코드는 이름으로 찾아 값과 클릭만. 씬 빌더가 꽂고 검사. 에셋이 없을 때 컴포넌트를 끄면 그 상태가 씬에 저장돼 복구가 안 되므로 플래그로 바꿈 (실측)"
         }
       ],
       "quiet": 2,
-      "more": 4
-    },
-    {
-      "date": "2026-08-30",
-      "entries": [
-        {
-          "sha": "5423cbe6",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "",
-          "text": "align volley animation with actual hits"
-        },
-        {
-          "sha": "53dd1778",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "",
-          "text": "target hit feedback at actual victim"
-        },
-        {
-          "sha": "65fc497e",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "",
-          "text": "add juicy battle impact feedback"
-        },
-        {
-          "sha": "7ef07bd7",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "기하학 적에 루프 애니메이션 추가"
-        }
-      ],
-      "quiet": 10,
-      "more": 21
+      "more": 7
     }
   ]
 }
