@@ -17,12 +17,12 @@ async function gcpClientStep(args) {
   const SAVE = ["저장", "SAVE", "Save"];
 
   /* 원본 칸 머리글. 화면이 늦게 그려지므로 20초까지 기다린다 */
+  /* 글자 노드만 훑는다. 요소마다 textContent 를 읽으면 Console 처럼 큰 화면에서 60초를 넘긴다 (2026-09-23 실측) */
   function findHead() {
-    const all = document.querySelectorAll("h1,h2,h3,h4,div,span,label,legend,p");
-    for (const el of all) {
-      if (el.children.length > 3) continue;
-      const tx = norm(el.textContent);
-      if (LABELS.some((l) => tx === l || tx.startsWith(l))) return el;
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      const tx = norm(n.nodeValue);
+      if (tx && LABELS.some((l) => tx === l || tx.startsWith(l))) return n.parentElement;
     }
     return null;
   }

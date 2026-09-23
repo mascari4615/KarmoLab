@@ -247,9 +247,17 @@ async function runInTab(url, file, fnName, world) {
  * Google Cloud Console OAuth 클라이언트 화면 (gcp.js). **보이는 탭** 필수 (숨은 탭은 화면을 안 그림).
  * dryRun 이면 원본 칸만 읽기, 아니면 없는 원본만 더하고 저장. 탭은 끝나면 닫음 (keep 이면 남김)
  */
+const GCP_CLIENT_RE = /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/;
+/* 더할 수 있는 원본은 내 도메인뿐. 남의 사이트가 bridge 를 불러 제 출처를 끼우는 길 차단 */
+const GCP_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)?mascari4615\.com$/;
+
 async function gcpClient(msg) {
-  const project = msg.project ? "?project=" + encodeURIComponent(msg.project) : "";
-  const url = msg.url || "https://console.cloud.google.com/auth/clients/" + encodeURIComponent(msg.clientId) + project;
+  if (!GCP_CLIENT_RE.test(String(msg.clientId || ""))) throw new Error("clientId 형식 아님");
+  const origins = Array.isArray(msg.origins) ? msg.origins.map(String) : [];
+  const bad = origins.filter((o) => !GCP_ORIGIN_RE.test(o));
+  if (bad.length) throw new Error("허용 안 된 원본: " + bad.join(", "));
+  const project = /^[a-z0-9-]+$/.test(String(msg.project || "")) ? "?project=" + msg.project : "";
+  const url = "https://console.cloud.google.com/auth/clients/" + msg.clientId + project;
   const tab = await chrome.tabs.create({ url, active: true });
   const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
   await chrome.storage.local.set({ [OPEN_TABS_KEY]: [...cur, tab.id] });
@@ -260,7 +268,7 @@ async function gcpClient(msg) {
     const [out] = await within(60000, "call", chrome.scripting.executeScript({
       ...where,
       func: (a) => globalThis.gcpClientStep(a),
-      args: [{ origins: msg.origins || [], dryRun: !!msg.dryRun }],
+      args: [{ origins, dryRun: !!msg.dryRun }],
     }));
     return out && out.result;
   } finally {
