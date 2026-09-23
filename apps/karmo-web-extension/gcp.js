@@ -117,6 +117,16 @@ async function gcpAddSecretStep() {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
   const RE = /GOCSPX-[A-Za-z0-9_-]{10,}/;
+  /* 비밀값 구역. "Add secret" 버튼을 품은, ****xxxx 줄이 든 가장 작은 조상 */
+  function secretZone() {
+    const add = Array.from(document.querySelectorAll("button")).find((b) => /^(Add secret|보안 비밀번호 추가)$/.test(norm(b.textContent)));
+    let z = add;
+    for (let i = 0; i < 10 && z; i++) {
+      if (/\*{4}[A-Za-z0-9]{4}/.test(z.innerText || "")) return z;
+      z = z.parentElement;
+    }
+    return null;
+  }
   let btn = null;
   for (let i = 0; i < 40 && !btn; i++) {
     btn = Array.from(document.querySelectorAll("button")).find((b) => /^(Add secret|보안 비밀번호 추가)$/.test(norm(b.textContent)));
@@ -130,19 +140,20 @@ async function gcpAddSecretStep() {
     await sleep(500);
     /* 입력칸 값이나 글자에 새로 나타난 GOCSPX- 값 */
     const vals = Array.from(document.querySelectorAll("input,textarea")).map((x) => x.value);
-    /* 복사 버튼 같은 요소의 속성에 값이 있는 경우. 겹친 창 (overlay) 만 훑는다 */
+    /* 목록에 바로 추가되는 방식 (2026-09-23 실측, 창 없음). 비밀값 구역과 겹친 창의 글자와 속성을 훑는다 */
+    const zones = [secretZone(), document.querySelector(".cdk-overlay-container"), document.querySelector("[role=dialog]")].filter(Boolean);
     const attrs = [];
-    for (const el of document.querySelectorAll(".cdk-overlay-container *, [role=dialog] *")) {
-      for (const a of el.attributes) if (a.value.includes("GOCSPX-")) attrs.push(a.value);
+    let zoneText = "";
+    for (const z of zones) {
+      zoneText += " " + (z.innerText || "");
+      for (const el of z.querySelectorAll("*")) for (const a of el.attributes) if (a.value.includes("GOCSPX-")) attrs.push(a.value);
     }
-    const over = document.querySelector(".cdk-overlay-container, [role=dialog]");
-    const overText = over ? over.innerText : "";
-    const pool = vals.concat(attrs, overText.match(new RegExp(RE.source, "g")) || []);
+    const pool = vals.concat(attrs, zoneText.match(new RegExp(RE.source, "g")) || []);
     secret = pool.map((v) => (String(v).match(RE) || [""])[0]).find((v) => v && !before.has(v)) || "";
   }
   if (!secret) {
-    /* 값을 못 찾음. 뜬 창의 구조를 돌려준다 (값은 가림). 다음 시도에서 자리를 고치려고 */
-    const dlg = document.querySelector('[role="dialog"], mat-dialog-container, .cdk-overlay-pane');
+    /* 값을 못 찾음. 비밀값 구역 (없으면 뜬 창) 의 구조를 돌려준다 (값은 가림). 다음 시도에서 자리를 고치려고 */
+    const dlg = secretZone() || document.querySelector('[role="dialog"], mat-dialog-container, .cdk-overlay-pane');
     const dump = (el) => el ? {
       text: norm(el.innerText).replace(/GOCSPX-[A-Za-z0-9_-]+/g, "GOCSPX-***").slice(0, 600),
       inputs: Array.from(el.querySelectorAll("input,textarea")).map((x) => ({ type: x.type, len: String(x.value || "").length, aria: x.getAttribute("aria-label") || "" })),
