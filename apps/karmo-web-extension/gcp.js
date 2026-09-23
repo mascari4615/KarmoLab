@@ -130,10 +130,27 @@ async function gcpAddSecretStep() {
     await sleep(500);
     /* 입력칸 값이나 글자에 새로 나타난 GOCSPX- 값 */
     const vals = Array.from(document.querySelectorAll("input,textarea")).map((x) => x.value);
-    const pool = vals.concat(document.body.innerText.match(new RegExp(RE.source, "g")) || []);
+    /* 복사 버튼 같은 요소의 속성에 값이 있는 경우. 겹친 창 (overlay) 만 훑는다 */
+    const attrs = [];
+    for (const el of document.querySelectorAll(".cdk-overlay-container *, [role=dialog] *")) {
+      for (const a of el.attributes) if (a.value.includes("GOCSPX-")) attrs.push(a.value);
+    }
+    const over = document.querySelector(".cdk-overlay-container, [role=dialog]");
+    const overText = over ? over.innerText : "";
+    const pool = vals.concat(attrs, overText.match(new RegExp(RE.source, "g")) || []);
     secret = pool.map((v) => (String(v).match(RE) || [""])[0]).find((v) => v && !before.has(v)) || "";
   }
-  if (!secret) return { ok: false, step: "secret", url: location.href, text: norm(document.body.innerText).slice(-600) };
+  if (!secret) {
+    /* 값을 못 찾음. 뜬 창의 구조를 돌려준다 (값은 가림). 다음 시도에서 자리를 고치려고 */
+    const dlg = document.querySelector('[role="dialog"], mat-dialog-container, .cdk-overlay-pane');
+    const dump = (el) => el ? {
+      text: norm(el.innerText).replace(/GOCSPX-[A-Za-z0-9_-]+/g, "GOCSPX-***").slice(0, 600),
+      inputs: Array.from(el.querySelectorAll("input,textarea")).map((x) => ({ type: x.type, len: String(x.value || "").length, aria: x.getAttribute("aria-label") || "" })),
+      buttons: Array.from(el.querySelectorAll("button")).map((b) => norm(b.textContent) || b.getAttribute("aria-label") || "").filter(Boolean),
+      attrs: Array.from(el.querySelectorAll("[value],[data-value],[cdkcopytoclipboard],[ng-reflect-text]")).map((x) => x.tagName + ":" + Array.from(x.attributes).map((a) => a.name).join(",")).slice(0, 20),
+    } : null;
+    return { ok: false, step: "secret", url: location.href, dialog: dump(dlg) };
+  }
   /* 창 닫기. 확인이나 닫기 버튼 */
   const close = Array.from(document.querySelectorAll("button")).find((b) => /^(확인|닫기|OK|Close|완료|Done)$/.test(norm(b.textContent)));
   if (close) close.click();
@@ -163,6 +180,53 @@ async function gcpAudienceStep(args) {
   return { ok: true, published: true, before: before ? before[0] : "", after: after ? after[0] : "" };
 }
 
+/*
+ * 비밀값 줄 하나를 끝자리 (****O9IB 의 O9IB) 로 골라 사용 중지 또는 삭제.
+ * 그 줄 조상 중 다른 비밀값 끝자리가 안 섞인 가장 큰 칸 안의 버튼만 누른다. 옆 줄 오조작 방지
+ */
+async function gcpSecretRowStep(args) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  const suffix = String((args && args.suffix) || "");
+  const action = args && args.action === "delete" ? "delete" : "disable";
+  if (!/^[A-Za-z0-9]{4}$/.test(suffix)) return { ok: false, step: "suffix" };
+  const mark = "****" + suffix;
+  let node = null;
+  for (let i = 0; i < 40 && !node; i++) {
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes(mark)) { node = n.parentElement; break; }
+    if (!node) await sleep(500);
+  }
+  if (!node) return { ok: false, step: "row", mark };
+  /* 조상으로 오르며, 다른 ****xxxx 가 섞이기 직전까지 */
+  let row = node;
+  while (row.parentElement) {
+    const t = row.parentElement.innerText || "";
+    const others = (t.match(/\*{4}[A-Za-z0-9]{4}/g) || []).filter((m) => m !== mark);
+    if (others.length) break;
+    row = row.parentElement;
+  }
+  const want = action === "delete" ? /^(삭제|Delete)$/ : /^(사용 중지|Disable)$/;
+  const btn = Array.from(row.querySelectorAll("button")).find((b) => want.test(norm(b.textContent) || b.getAttribute("aria-label") || ""));
+  if (!btn) return { ok: false, step: "button", mark, row: norm(row.innerText).slice(0, 300), buttons: Array.from(row.querySelectorAll("button")).map((b) => norm(b.textContent) || b.getAttribute("aria-label") || "") };
+  btn.click();
+  await sleep(1500);
+  /* 확인 창. 같은 동사 버튼이 창 안에 한 번 더 */
+  const dlg = document.querySelector('[role="dialog"], mat-dialog-container');
+  if (dlg) {
+    const c = Array.from(dlg.querySelectorAll("button")).find((b) => want.test(norm(b.textContent)) || /^(확인|Confirm)$/.test(norm(b.textContent)));
+    if (c) c.click();
+    await sleep(3000);
+  }
+  const still = document.body.innerText.includes(mark);
+  let state = "";
+  if (still) {
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes(mark)) { state = norm(n.parentElement.closest("div") ? n.parentElement.closest("div").innerText : "").slice(0, 200); break; }
+  }
+  return { ok: true, action, mark, stillThere: still, state, dialog: dlg ? norm(dlg.innerText).slice(0, 300) : "" };
+}
+
 /* 화면 읽기만. 글자, 입력칸 (이름표와 값), 버튼. 무엇이 비었는지 보려고 */
 async function gcpReadStep() {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -183,6 +247,7 @@ async function gcpReadStep() {
 }
 
 globalThis.gcpReadStep = gcpReadStep;
+globalThis.gcpSecretRowStep = gcpSecretRowStep;
 globalThis.gcpClientStep = gcpClientStep;
 globalThis.gcpAddSecretStep = gcpAddSecretStep;
 globalThis.gcpAudienceStep = gcpAudienceStep;

@@ -506,6 +506,10 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         if (!page) throw new Error("모르는 화면: " + msg.page);
         const url = "https://console.cloud.google.com/auth/" + page + gcpProject(msg);
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpReadStep") });
+      } else if (msg?.type === "gcp.secretRow") {
+        if (!GCP_CLIENT_RE.test(String(msg.clientId || ""))) throw new Error("clientId 형식 아님");
+        const url = "https://console.cloud.google.com/auth/clients/" + msg.clientId + gcpProject(msg);
+        sendResponse({ ok: true, result: await gcpOnce(url, "gcpSecretRowStep", { suffix: msg.suffix, action: msg.action }) });
       } else if (msg?.type === "gcp.audience") {
         const url = "https://console.cloud.google.com/auth/audience" + gcpProject(msg);
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpAudienceStep", { publish: !!msg.publish }) });
