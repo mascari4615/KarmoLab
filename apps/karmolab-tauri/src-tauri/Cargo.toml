@@ -45,7 +45,7 @@ karmolab-shared = { path = "../src-tauri-shared" }
 # Win32 데스크톱 only — wasmbind / oldtime / iana-time-zone 불필요 (KL-051).
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock", "std"] }
 # serde_yaml 은 deprecated → 활성 fork serde_yml 사용 (memory feedback_no_legacy.md).
-serde_yml = "0.0.12"
+serde_yml = "0.0.13"
 # sub-F-3: 의식적 trigger (PrintScreen) + sub-B-2 hold-to-talk (Ctrl+Alt+Space) — Pressed/Released 분기.
 tauri-plugin-global-shortcut = "2"
 
