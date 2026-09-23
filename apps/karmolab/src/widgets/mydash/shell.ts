@@ -786,8 +786,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
      ★ **목록이 탭이다.** PC 에서는 셸 사이드바의 하위 항목(`Toolbox.setSubNav`)으로 뜨고,
      좁은 화면과 접힌 사이드바에서는 내용 위 가로 줄(`.myd-strip`)로 뜬다. 자체 왼쪽 열은
      없앴다 (사이드바가 둘이면 KarmoLab 모양이 깨짐. 사용자 2026-09-13).
-     패널 명부(`dashRegistry`)는 그대로 쓰되, 사람이 보는 자리는 이 표가 정한다. 항목과 패널이 1:1 이 아니라서다. 북마크는 두 자리(북마크, 판정 대기)
-     에서 열리고 뒤쪽은 `mode: 'judge'` 로 들어간다. 카톡 메모는 아직 패널이 없어
+     패널 명부(`dashRegistry`)는 그대로 쓰되, 사람이 보는 자리는 이 표가 정한다. 북마크 방은 `mode: 'judge'` (판정 대기만, 격자) 로 열린다.
+     판정 대기 자리는 2026-09-23 에 북마크로 합침. 카톡 메모는 아직 패널이 없어
      자리만 있다(누르면 준비 중 한 줄).
 
      여기 없는 패널은 화면에 안 뜬다. 패널을 새로 붙이면 이 표에도 한 줄 넣는다. */
@@ -815,8 +815,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       {
         label: t('mydash.nav.kept', undefined, '모은 것'),
         items: [
-          { id: 'bookmarks', label: t('mydash.nav.bookmarks', undefined, '북마크'), panel: 'bookmarks' },
-          { id: 'judge', label: t('mydash.nav.judge', undefined, '판정 대기'), panel: 'bookmarks', mode: 'judge' },
+          /* 판정 대기는 따로 방이 아니라 북마크 방의 기본 필터 (사용자 2026-09-23 합침). 안의 "대기만" 으로 전체 */
+          { id: 'bookmarks', label: t('mydash.nav.bookmarks', undefined, '북마크'), panel: 'bookmarks', mode: 'judge' },
           { id: 'kakao', label: t('mydash.nav.kakao', undefined, '카톡 메모') },
         ],
       },
@@ -883,7 +883,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     today: 'home',
     me: 'about',
     bookmarks: 'book',
-    judge: 'judge',
     kakao: 'memo',
     ai: 'stat',
     pc: 'dash',
@@ -1002,7 +1001,9 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
 
     /** 목록에 있는 그 항목. 없으면 null */
     function itemById(id: string): NavItem | null {
-      return navItems().filter((x) => x.id === id)[0] || null;
+      /* 옛 판정 대기 주소 (#judge) 와 홈의 판정 대기 카드는 북마크 방으로 */
+      const want = id === 'judge' ? 'bookmarks' : id;
+      return navItems().filter((x) => x.id === want)[0] || null;
     }
     /** 그 항목이 열 패널. 코드가 아직 안 실렸으면 null */
     function panelFor(it: NavItem): DashPanel | null {
