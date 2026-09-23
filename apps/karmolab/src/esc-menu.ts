@@ -9,11 +9,12 @@
  * dash 사이트는 `use()` 로 칸을 대시보드 방으로 바꿔 끼운다 (mydash shell.ts). 같은 판, 다른 칸
  *
  * 아이콘은 `img/shell/menu/*.png` (Codex image_gen 으로 생성한 자작, 각진 덩어리 두 톤. 옅은 면은 알파 0.45).
- * CSS mask 로 그림. 한 그림으로 밝은 판과 어두운 판 둘
+ * CSS mask 로 그림. 한 그림으로 밝은 판과 어두운 판 둘. 모양은 옆의 `esc-menu.css`
  */
 import { t } from './lib/i18n.js';
 import { toolIndexPath } from './lib/site-base';
 import { dashUrl, labUrl, blogUrl, hostKind, onSplitHost } from './lib/site-hosts';
+import escMenuCss from './esc-menu.css';
 
 const ICON_BASE = '/apps/karmolab/img/shell/menu/';
 
@@ -60,7 +61,17 @@ const KarmoEscMenu = (() => {
         return defaultCellsHtml();
     }
 
+    /* 모양은 판을 처음 지을 때 한 번. lab 셸 CSS 가 없는 dash 에서도 같은 판 */
+    function ensureStyle(): void {
+        if (document.getElementById('esc-menu-style')) return;
+        const st = document.createElement('style');
+        st.id = 'esc-menu-style';
+        st.textContent = escMenuCss;
+        document.head.appendChild(st);
+    }
+
     function build(): HTMLElement {
+        ensureStyle();
         const el = document.createElement('div');
         el.id = 'escMenu';
         el.className = 'esc-menu';

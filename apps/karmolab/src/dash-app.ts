@@ -13,6 +13,8 @@ import './widgets/mydash/pc-vitals';
 import './widgets/mydash/career';
 import './widgets/mydash/calendar';
 import './widgets/mydash/shell';
+/* 메뉴 버튼이 여는 판. lab 과 같은 ESC 메뉴에 칸만 대시보드 방으로 (shell.ts setMenuCells) */
+import './esc-menu';
 
 const mount = document.getElementById('dash');
 const api = (window as unknown as { KarmoDashShell?: { render: (el: HTMLElement) => void } }).KarmoDashShell;

@@ -242,6 +242,12 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-top: clamp(84px, 12vh, 110px);
   --mydh-row: 120px;
   --mydh-icon: none;
+  --mydh-font-ko: 'KarmoSans', 'Noto Sans KR', system-ui, sans-serif;
+  --mydh-font-en: 'KarmoDisplay', 'Arial Narrow', 'Noto Sans KR', system-ui, sans-serif;
+  --mydh-fs-en: 10px;
+  --mydh-fs-date: 28px;
+  --mydh-fs-name: 18px;
+  --mydh-fs-bad: 12px;
   position: relative;
   isolation: isolate;
   min-height: 100%;
@@ -250,6 +256,7 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   padding: var(--mydh-top) var(--mydh-pad) 24px;
   background: var(--mydh-page);
   color: var(--mydh-ink);
+  font-family: var(--mydh-font-ko);
 }
 [data-theme="dark"] .mydh {
   --mydh-ink: #f2f4f7;
@@ -298,15 +305,15 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 }
 .mydh-date span {
   display: block;
-  font-family: var(--font-display);
-  font-size: var(--font-size-4xs);
+  font-family: var(--mydh-font-en);
+  font-size: var(--mydh-fs-en);
   letter-spacing: 0.24em;
   color: var(--mydh-ink3);
 }
 .mydh-date b {
   display: block;
-  font-family: var(--font-display);
-  font-size: var(--font-size-display-md);
+  font-family: var(--mydh-font-en);
+  font-size: var(--mydh-fs-date);
   font-weight: 300;
   line-height: 1;
   letter-spacing: 0.04em;
@@ -364,14 +371,14 @@ button.mydh-card:focus-visible {
   mask: var(--mydh-icon) center / contain no-repeat;
 }
 .mydh-card b {
-  font-size: var(--font-size-md);
+  font-size: var(--mydh-fs-name);
   font-weight: 900;
 }
 .mydh-bad {
   position: absolute;
   right: 18px;
   top: 14px;
-  font-size: var(--font-size-2xs);
+  font-size: var(--mydh-fs-bad);
   color: var(--mydh-ink3);
 }
 /* 판정 대기. 두 칸, 주황 */
@@ -407,7 +414,7 @@ button.mydh-card--hero:focus-visible {
   .mydh-grid { gap: 8px; }
   .mydh-card { padding: 12px 14px; }
   .mydh-ic { left: 14px; top: 12px; width: 36px; height: 36px; }
-  .mydh-card b { font-size: var(--font-size-sm); }
+  .mydh { --mydh-fs-name: 16px; }
   .mydh-date { top: 20px; }
   .mydh-yawn { right: -130px; top: 30px; height: 560px; }
 }
@@ -539,23 +546,27 @@ button.mydh-card--hero:focus-visible {
 .myd--gate .myd-body { max-width: 520px; padding: 24px; }
 
 /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에만. 좁은 화면과 레일은 가로 줄이 이미 있음.
-   누르면 ESC 메뉴 판 (shell-critical.css .esc-menu) 이 대시보드 방 칸으로 */
+   누르면 ESC 메뉴 판 (src/esc-menu.css) 이 대시보드 방 칸으로.
+   dash 장은 스킨 토큰이 없어 홈과 이 버튼의 값은 --mydh-*, --myd-menu-* 로 자체 정의 */
 .myd { position: relative; }
 .myd-menu { display: none; }
 @media (min-width: 900px) {
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd-menu {
+    --myd-menu-bg: #182238;
+    --myd-menu-ink: #fff;
+    --myd-menu-fs: 17px;
     position: absolute;
-    left: var(--space-lg);
-    top: var(--space-md);
+    left: 24px;
+    top: 16px;
     z-index: 6;
     display: grid;
     place-items: center;
     width: 38px;
     height: 38px;
     border: 0;
-    background: var(--text-primary);
-    color: var(--bg-primary);
-    font-size: var(--font-size-md);
+    background: var(--myd-menu-bg);
+    color: var(--myd-menu-ink);
+    font-size: var(--myd-menu-fs);
     cursor: pointer;
   }
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd:has(.mydh) .myd-menu {
@@ -563,6 +574,7 @@ button.mydh-card--hero:focus-visible {
     top: 36px;
   }
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd-head { padding-left: 52px; }
+  html[data-theme="dark"][data-site="dash"]:not([data-sidebar="rail"]) .myd-menu { --myd-menu-bg: #f2f4f7; --myd-menu-ink: #101418; }
   html[data-site="dash"] .myd--gate .myd-menu { display: none; }
 }
 /* ESC 메뉴가 뜨면 판의 욘이 있어 홈의 욘은 숨긴다 (첫 화면과 같은 규칙) */
