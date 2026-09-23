@@ -346,6 +346,21 @@ jobs:
         #      \-\-disable-external \
         #      \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
 
+      # 배포 셋 (memo change.site-split). 지어 놓은 한 채를 뿌리만 바꿔 셋으로 가르고
+      # Cloudflare Pages 프로젝트 셋에 올린다. GitHub Pages 배포는 그대로 (되돌릴 자리)
+      - name: Split outputs (lab, blog, dash)
+        working-directory: apps/karmolab
+        run: node scripts/split-outputs.mjs --site "../blog/_site${{ steps.pages.outputs.base_path }}" --out ../blog/dist
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ce18bd3c1df233b3cd533ef0623cbafe
+        run: |
+          for app in lab blog dash; do
+            npx --yes wrangler@4 pages deploy "apps/blog/dist/$app" --project-name "karmolab-$app" --branch main --commit-dirty=true
+          done
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4
         with:
