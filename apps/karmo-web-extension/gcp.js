@@ -110,6 +110,41 @@ async function gcpClientStep(args) {
 }
 
 /*
+ * MAIN world 에 주입. 페이지의 fetch, XHR 응답에서 새 비밀값 (GOCSPX-) 을 찾아 html 의 data 속성에 보관.
+ * 새 비밀값은 화면 글자에 안 나오고 (2026-09-23 두 번 실측) Console 내부 API 응답에만 한 번 등장
+ */
+function gcpHookSecret() {
+  if (window.__karmoSecretHook) return true;
+  window.__karmoSecretHook = true;
+  const RE = /GOCSPX-[A-Za-z0-9_-]{10,}/g;
+  const seen = new Set((document.body.innerText.match(RE) || []));
+  const put = (text) => {
+    const all = String(text || "").match(RE) || [];
+    const fresh = all.filter((v) => !seen.has(v));
+    if (fresh.length) document.documentElement.setAttribute("data-karmo-s", fresh[fresh.length - 1]);
+  };
+  const of = window.fetch;
+  window.fetch = async function (...a) {
+    const res = await of.apply(this, a);
+    try { res.clone().text().then(put).catch(() => {}); } catch { /* 무시 */ }
+    return res;
+  };
+  const oo = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (...a) {
+    this.addEventListener("load", () => {
+      try {
+        const r = this.response;
+        if (r instanceof ArrayBuffer) put(new TextDecoder("latin1").decode(r));
+        else if (typeof r === "string") put(r);
+        else put(JSON.stringify(r));
+      } catch { /* 못 읽는 응답 */ }
+    });
+    return oo.apply(this, a);
+  };
+  return true;
+}
+
+/*
  * 같은 클라이언트 화면에서 비밀값 하나 더 만들기 ("Add secret"). 새 값은 만든 직후 한 번만 노출.
  * 옛 값은 유지 (다운타임 없는 순환). 새 값을 돌려주고 창은 닫음
  */
@@ -148,7 +183,8 @@ async function gcpAddSecretStep() {
       zoneText += " " + (z.innerText || "");
       for (const el of z.querySelectorAll("*")) for (const a of el.attributes) if (a.value.includes("GOCSPX-")) attrs.push(a.value);
     }
-    const pool = vals.concat(attrs, zoneText.match(new RegExp(RE.source, "g")) || []);
+    const hooked = document.documentElement.getAttribute("data-karmo-s") || "";
+    const pool = [hooked].concat(vals, attrs, zoneText.match(new RegExp(RE.source, "g")) || []);
     secret = pool.map((v) => (String(v).match(RE) || [""])[0]).find((v) => v && !before.has(v)) || "";
   }
   if (!secret) {
@@ -165,6 +201,7 @@ async function gcpAddSecretStep() {
   /* 창 닫기. 확인이나 닫기 버튼 */
   const close = Array.from(document.querySelectorAll("button")).find((b) => /^(확인|닫기|OK|Close|완료|Done)$/.test(norm(b.textContent)));
   if (close) close.click();
+  document.documentElement.removeAttribute("data-karmo-s");
   return { ok: true, secret };
 }
 
@@ -264,6 +301,7 @@ async function gcpReadStep() {
   };
 }
 
+globalThis.gcpHookSecret = gcpHookSecret;
 globalThis.gcpReadStep = gcpReadStep;
 globalThis.gcpSecretRowStep = gcpSecretRowStep;
 globalThis.gcpClientStep = gcpClientStep;

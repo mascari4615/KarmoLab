@@ -287,13 +287,19 @@ async function gcpClient(msg) {
  * Console 화면 하나를 보이는 탭으로 열어 gcp.js 의 함수 하나를 부르고 닫음.
  * 비밀값이 오갈 수 있어 결과를 저장소에 안 남김 (gcp.client 와 다름)
  */
-async function gcpOnce(url, fnName, arg) {
+async function gcpOnce(url, fnName, arg, mainHook) {
   const tab = await chrome.tabs.create({ url, active: true });
   const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
   await chrome.storage.local.set({ [OPEN_TABS_KEY]: [...cur, tab.id] });
   try {
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id } };
+    /* 페이지 세계 (MAIN) 에 응답 가로채기부터. 비밀값은 내부 API 응답에만 온다 */
+    if (mainHook) {
+      const main = { target: { tabId: tab.id }, world: "MAIN" };
+      await within(20000, "inject-main", chrome.scripting.executeScript({ ...main, files: ["gcp.js"] }));
+      await within(10000, "hook", chrome.scripting.executeScript({ ...main, func: (n) => globalThis[n](), args: [mainHook] }));
+    }
     await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["gcp.js"] }));
     const [out] = await within(60000, "call", chrome.scripting.executeScript({
       ...where,
@@ -518,7 +524,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       } else if (msg?.type === "gcp.secret") {
         if (!GCP_CLIENT_RE.test(String(msg.clientId || ""))) throw new Error("clientId 형식 아님");
         const url = "https://console.cloud.google.com/auth/clients/" + msg.clientId + gcpProject(msg);
-        sendResponse({ ok: true, result: await gcpOnce(url, "gcpAddSecretStep") });
+        sendResponse({ ok: true, result: await gcpOnce(url, "gcpAddSecretStep", {}, "gcpHookSecret") });
       } else if (msg?.type === "gcp.read") {
         /* 읽기 전용. Google 인증 플랫폼의 정해진 화면만 */
         let page = "";
