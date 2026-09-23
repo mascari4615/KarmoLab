@@ -1,0 +1,18 @@
+name: Probe Cloudflare Pages token
+# 한 번 쓰고 지우는 임시 워크플로 (memo change.site-split). 저장소 Secret 토큰이 Pages 도 만질 수 있나만 본다.
+# 토큰 값은 찍지 않는다. 응답의 성공 여부와 프로젝트 이름만.
+on: { workflow_dispatch: {} }
+permissions: { contents: read }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pages 권한 확인
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=ce18bd3c1df233b3cd533ef0623cbafe
+          code=$(curl -s -o /tmp/out.json -w "%{http_code}" -H "Authorization: Bearer $TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects")
+          echo "http $code"
+          node -e 'const j=require("/tmp/out.json");console.log("success",j.success);console.log("errors",JSON.stringify(j.errors||[]).slice(0,200));console.log("projects",(j.result||[]).map(p=>p.name).join(","))'
