@@ -109,7 +109,7 @@
         if (!type) return false;
         /* 주소만으로 부를 수 있는 것은 이 목록뿐 (읽기와 gcp). 즐겨찾기 삭제 같은 것은 주소로 불가
            (남의 사이트가 이 주소로 보내 확장을 부리는 길 차단) */
-        const RUNNABLE = ["ext.version", "ext.reload", "gcp.client", "gcp.last", "gcp.secret", "gcp.secretRow", "gcp.audience", "gcp.read", "collect.progress"];
+        const RUNNABLE = ["ext.version", "ext.reload", "bridge.cleanup", "gcp.client", "gcp.last", "gcp.secret", "gcp.secretRow", "gcp.audience", "gcp.read", "collect.progress"];
         if (!RUNNABLE.includes(type)) {
           document.getElementById("out").textContent = "주소로 못 부르는 종류: " + type;
           return true;
@@ -134,7 +134,8 @@
         let extra = {};
         try { extra = JSON.parse(q.get("msg") || "{}"); } catch { extra = {}; }
         out.textContent = "실행 중: " + type;
-        const res = await call({ type, ...extra });
+        /* closeAfter: 확장이 응답 4초 뒤 이 탭을 닫는다. report 보낼 틈 */
+        const res = await call({ type, ...extra, closeAfter: true });
         out.className = res && res.ok ? "ok" : "err";
         /* 비밀값은 화면에 안 그림. report 로만 */
         const shown = res && res.result && res.result.secret ? { ...res, result: { ...res.result, secret: "(받음, " + res.result.secret.length + "자)" } } : res;

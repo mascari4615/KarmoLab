@@ -373,10 +373,31 @@ async function collectXAccounts() {
   return { rows: [...merged.values()], notes };
 }
 
+/** bridge 탭 정리. 에이전트가 주소로 부를 때마다 사람 창에 탭이 하나씩 쌓였다 (2026-09-23, 7개에서 dev 서버 연결이 막힘) */
+async function closeBridgeTabs(exceptId) {
+  const tabs = await chrome.tabs.query({ url: ["http://127.0.0.1/*", "http://localhost/*"] });
+  let n = 0;
+  for (const t of tabs) {
+    if (t.id === exceptId || !/\/apps\/karmo-web-extension\/bridge\.html\?run=/.test(t.url || "")) continue;
+    try { await chrome.tabs.remove(t.id); n += 1; } catch { /* 이미 닫힘 */ }
+  }
+  return n;
+}
+
 /** 웹페이지(허용 도메인) → 확장 */
-chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+  /* 주소로 부른 bridge 는 결과를 보낸 뒤 탭을 닫는다. bridge 가 closeAfter 를 붙인다 */
+  if (msg && msg.closeAfter && sender && sender.tab) {
+    const id = sender.tab.id;
+    const orig = sendResponse;
+    sendResponse = (x) => { orig(x); setTimeout(() => { chrome.tabs.remove(id).catch(() => {}); }, 4000); };
+  }
   (async () => {
     try {
+      if (msg?.type === "bridge.cleanup") {
+        sendResponse({ ok: true, closed: await closeBridgeTabs(sender && sender.tab && sender.tab.id) });
+        return;
+      }
       if (msg?.type === "bookmarks.list") {
         sendResponse({ ok: true, items: await listBookmarks() });
       } else if (msg?.type === "bookmarks.remove") {
