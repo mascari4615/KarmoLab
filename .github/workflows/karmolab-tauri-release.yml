@@ -136,11 +136,27 @@ jobs:
             "
             git add "$T/package.json" "$T/src-tauri/Cargo.toml" "$T/Cargo.lock" "$T/src-tauri/tauri.conf.json"
             git commit -m "chore(karmolab-tauri): bump version $CURRENT → $NEW [skip ci]"
-            if git push origin HEAD:main; then PUSHED=1; break; fi
+            if git push --atomic origin HEAD:main "HEAD:refs/tags/karmolab-v$NEW"; then PUSHED=1; break; fi
             echo "push 거부(non-fast-forward). 최신 reset 후 재시도"
             sleep $((attempt * 3))
           done
           if [ -z "$PUSHED" ]; then echo "bump push 6회 실패" >&2; exit 1; fi
+
+      - name: Record the actual build source and release tag
+        id: release_source
+        if: steps.contract.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          TAG="karmolab-v$VERSION"
+          SOURCE=$(git rev-parse HEAD)
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            git push origin "HEAD:refs/tags/$TAG"
+          fi
+          echo "sha=$SOURCE" >> "$GITHUB_OUTPUT"
+          echo "contract=$(node scripts/contract-hash.mjs)" >> "$GITHUB_OUTPUT"
+          echo "Build source: $SOURCE; release tag: $TAG"
 
       - name: Setup Node
         if: steps.contract.outputs.changed == 'true'
@@ -187,11 +203,10 @@ jobs:
 
       - name: Build and publish release
         id: publish
-        # ★ **한 번은 봐준다** (2026-08-19). 릴리스 *생성* 자리에서 GitHub 가 가끔
-        #   `Resource not accessible by integration`(403) 을 낸다. 오늘 8판 중 2판.
-        #   사이 판들은 같은 설정으로 초록이라 우리 쪽 권한 문제가 아니다(원인 미확정).
-        #   빌드는 이미 다 끝난 뒤라 다시 부르면 몇 십 초다. 사람이 다시 누르는 대신
-        #   여기서 한 번 더 시도한다. 못 고친 원인을 **회복**으로 덮는 자리임을 적어 둔다.
+        # 빌드 전 실제 소스에 태그 고정. 기본 github.sha는 버전 갱신 전의 오래된 소스.
+        # 이후 workflow 변경이 main에 들어오면 옛 소스의 새 태그 생성은 403 가능.
+        # 태그가 이미 있으므로 releaseCommitish는 새 태그의 대상 변경에 사용되지 않음.
+        # 재시도는 일시적 업로드 오류 복구용이며 권한 불일치 해결 수단이 아님.
         continue-on-error: true
         if: steps.contract.outputs.changed == 'true'
         uses: tauri-apps/tauri-action@action-v1.0.0
@@ -204,6 +219,7 @@ jobs:
           tauriScript: npm run tauri
           args: --config src-tauri/tauri.release.conf.json
           tagName: karmolab-v__VERSION__
+          releaseCommitish: main
           releaseName: KarmoLab v__VERSION__
           generateReleaseNotes: true
           releaseDraft: false
@@ -211,7 +227,7 @@ jobs:
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
 
-      - name: Build and publish release (한 번 더. 위가 403 으로 튕겼을 때만)
+      - name: Retry build or upload after a transient failure
         if: steps.contract.outputs.changed == 'true' && steps.publish.outcome == 'failure'
         uses: tauri-apps/tauri-action@action-v1.0.0
         env:
@@ -223,6 +239,7 @@ jobs:
           tauriScript: npm run tauri
           args: --config src-tauri/tauri.release.conf.json
           tagName: karmolab-v__VERSION__
+          releaseCommitish: main
           releaseName: KarmoLab v__VERSION__
           generateReleaseNotes: true
           releaseDraft: false
@@ -320,7 +337,7 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
-            echo "${{ steps.contract.outputs.now }}" > "$T/.release-contract"
+            echo "${{ steps.release_source.outputs.contract }}" > "$T/.release-contract"
             git add "$T/.release-contract"
             if git diff --cached --quiet; then echo "이미 같은 값. 적을 것 없음"; PUSHED=1; break; fi
             git commit -m "chore(karmolab-tauri): 이번 판 계약 해시 기록 [skip ci]"
