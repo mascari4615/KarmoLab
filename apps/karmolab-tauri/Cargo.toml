@@ -22,6 +22,9 @@
 members = ["src-tauri", "src-tauri-ml", "src-tauri-shared", "src-tauri-companion"]
 resolver = "2"
 
+[patch.crates-io]
+glib = { path = "../../vendor/glib-0.18.5" }
+
 # 워크스페이스에서 [profile.*] 는 *워크스페이스 루트에만* 유효하다.
 # 멤버 Cargo.toml 의 [profile.*] 는 cargo 가 warn + 무시 → KL-051 의
 # release 최적화(fat LTO / strip / panic=abort)가 조용히 사라지는 회귀가

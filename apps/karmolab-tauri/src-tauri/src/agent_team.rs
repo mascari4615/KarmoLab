@@ -147,20 +147,20 @@ fn memo_root(repo_root: &str) -> PathBuf {
     p.join("memo")
 }
 
-fn parse_yaml_frontmatter(content: &str) -> serde_yml::Value {
+fn parse_yaml_frontmatter(content: &str) -> serde_norway::Value {
     let trimmed = content.trim_start();
     if !trimmed.starts_with("---") {
-        return serde_yml::Value::Null;
+        return serde_norway::Value::Null;
     }
     let after = &trimmed[3..];
     let Some(end) = after.find("\n---") else {
-        return serde_yml::Value::Null;
+        return serde_norway::Value::Null;
     };
     let yaml_block = &after[..end];
-    serde_yml::from_str(yaml_block).unwrap_or(serde_yml::Value::Null)
+    serde_norway::from_str(yaml_block).unwrap_or(serde_norway::Value::Null)
 }
 
-fn yaml_str(v: &serde_yml::Value, key: &str) -> Option<String> {
+fn yaml_str(v: &serde_norway::Value, key: &str) -> Option<String> {
     v.get(key)
         .and_then(|x| x.as_str().map(|s| s.to_string()))
 }

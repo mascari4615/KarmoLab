@@ -43,7 +43,7 @@ pub fn load_all(companion_root: &Path) -> Result<Vec<Persona>, String> {
 
 fn parse(id: &str, body: &str) -> Persona {
     let (fm_str, content) = split_frontmatter(body);
-    let fm: serde_yml::Value = serde_yml::from_str(fm_str).unwrap_or(serde_yml::Value::Null);
+    let fm: serde_norway::Value = serde_norway::from_str(fm_str).unwrap_or(serde_norway::Value::Null);
 
     let get_str = |k: &str| -> String {
         fm.get(k)

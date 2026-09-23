@@ -68,7 +68,7 @@ pub fn write_md(
     frontmatter: &VoiceFrontmatter,
     transcript: &str,
 ) -> Result<(), String> {
-    let yaml = serde_yml::to_string(frontmatter)
+    let yaml = serde_norway::to_string(frontmatter)
         .map_err(|e| format!("frontmatter yaml 직렬화 실패: {e}"))?;
 
     let summary_block = if frontmatter.summary.is_empty() {

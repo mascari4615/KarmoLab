@@ -29,7 +29,7 @@ open = "5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # devtools = dev-only (KL-051: Cargo features 분기). production release 에 박지 X.
-tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri = { version = "2.11.6", features = ["tray-icon", "image-png"] }
 uuid = { version = "1", features = ["v4"] }
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
@@ -44,8 +44,8 @@ karmolab-shared = { path = "../src-tauri-shared" }
 
 # Win32 데스크톱 only — wasmbind / oldtime / iana-time-zone 불필요 (KL-051).
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock", "std"] }
-# serde_yaml 은 deprecated → 활성 fork serde_yml 사용 (memory feedback_no_legacy.md).
-serde_yml = "0.0.12"
+# 보안 수정이 중단된 serde_yml/libyml 대신 유지보수 중인 YAML 구현 사용
+serde_norway = "0.9.42"
 # sub-F-3: 의식적 trigger (PrintScreen) + sub-B-2 hold-to-talk (Ctrl+Alt+Space) — Pressed/Released 분기.
 tauri-plugin-global-shortcut = "2"
 
@@ -100,4 +100,3 @@ windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_
 # 루트* (`apps/karmolab-tauri/Cargo.toml` 의 [profile.release]) 로 이관됐다.
 # cargo 는 워크스페이스 멤버의 [profile.*] 를 무시(warn)하므로 여기 두면
 # KL-051 최적화가 조용히 사라진다. 루트에서 정의 — 동작 동일, 회귀 방지.
-

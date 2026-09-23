@@ -83,7 +83,7 @@ pub fn write_md(
     frontmatter: &ScreenFrontmatter,
     ocr_text: &str,
 ) -> Result<(), String> {
-    let yaml = serde_yml::to_string(frontmatter)
+    let yaml = serde_norway::to_string(frontmatter)
         .map_err(|e| format!("frontmatter yaml 직렬화 실패: {e}"))?;
 
     let body = format!(
@@ -181,6 +181,9 @@ mod tests {
         assert!(read.contains("trigger: hotkey"));
         assert!(read.contains("app: Chrome"));
         assert!(read.contains("임시 ocr 텍스트"));
+        let yaml = read.strip_prefix("---\n").unwrap().split("\n---\n").next().unwrap();
+        let parsed: serde_norway::Value = serde_norway::from_str(yaml).unwrap();
+        assert_eq!(parsed["summary"].as_str(), Some(cls.summary.as_str()));
         let _ = std::fs::remove_file(&tmp);
     }
 
