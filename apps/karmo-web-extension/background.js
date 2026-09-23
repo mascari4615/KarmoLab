@@ -244,6 +244,31 @@ async function runInTab(url, file, fnName, world) {
 }
 
 /**
+ * Google Cloud Console OAuth 클라이언트 화면 (gcp.js). **보이는 탭** 필수 (숨은 탭은 화면을 안 그림).
+ * dryRun 이면 원본 칸만 읽기, 아니면 없는 원본만 더하고 저장. 탭은 끝나면 닫음 (keep 이면 남김)
+ */
+async function gcpClient(msg) {
+  const project = msg.project ? "?project=" + encodeURIComponent(msg.project) : "";
+  const url = msg.url || "https://console.cloud.google.com/auth/clients/" + encodeURIComponent(msg.clientId) + project;
+  const tab = await chrome.tabs.create({ url, active: true });
+  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
+  await chrome.storage.local.set({ [OPEN_TABS_KEY]: [...cur, tab.id] });
+  try {
+    await waitLoaded(tab.id);
+    const where = { target: { tabId: tab.id } };
+    await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["gcp.js"] }));
+    const [out] = await within(60000, "call", chrome.scripting.executeScript({
+      ...where,
+      func: (a) => globalThis.gcpClientStep(a),
+      args: [{ origins: msg.origins || [], dryRun: !!msg.dryRun }],
+    }));
+    return out && out.result;
+  } finally {
+    if (!msg.keep) await closeWorkTab(tab.id);
+  }
+}
+
+/**
  * 유튜브 시청 기록 수집 (백그라운드 탭)
  * 자동화 브라우저의 구글 로그인은 차단됨. 이 확장은 사용자 세션 안이라 무관
  * @param {number} rounds 미사용. 걸음 함수가 스스로 멈춤
@@ -425,6 +450,8 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
           last: (await chrome.storage.local.get(STATE_KEY))[STATE_KEY] || null,
           alarms,
         });
+      } else if (msg?.type === "gcp.client") {
+        sendResponse({ ok: true, result: await gcpClient(msg) });
       } else if (msg?.type === "ext.version") {
         const m = chrome.runtime.getManifest();
         sendResponse({ ok: true, version: m.version, name: m.name });

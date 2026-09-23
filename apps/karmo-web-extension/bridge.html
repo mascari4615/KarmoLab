@@ -96,11 +96,37 @@
         ytPlaylist: (list) => call({ type: "youtube.playlist", list }),
         ytmPlaylistLast: () => call({ type: "ytmusic.playlistLast" }),
         xOne: (url, steps) => call({ type: "x.one", url, steps }),
+        gcpClient: (opts) => call({ type: "gcp.client", ...opts }),
         version: () => call({ type: "ext.version" }),
         reload: () => call({ type: "ext.reload" }),
       };
 
+      /* 밖에서 한 번 부르기. 쿼리는 run (메시지 종류), msg (JSON), report (127.0.0.1 주소).
+         에이전트가 사람 Edge 에서 이 주소를 열면 확장을 부르고 결과를 report 로 POST */
+      async function runFromQuery() {
+        const q = new URLSearchParams(location.search);
+        const type = q.get("run");
+        if (!type) return false;
+        const out = document.getElementById("out");
+        let extra = {};
+        try { extra = JSON.parse(q.get("msg") || "{}"); } catch { extra = {}; }
+        out.textContent = "실행 중: " + type;
+        const res = await call({ type, ...extra });
+        out.className = res && res.ok ? "ok" : "err";
+        out.textContent = JSON.stringify(res, null, 2);
+        const report = q.get("report") || "";
+        if (/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(report)) {
+          try {
+            await fetch(report, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(res) });
+          } catch (e) {
+            out.textContent += "\n\nreport 실패: " + String(e);
+          }
+        }
+        return true;
+      }
+
       (async () => {
+        if (await runFromQuery()) return;
         const out = document.getElementById("out");
         const v = await bm.version();
         if (!v.ok) {

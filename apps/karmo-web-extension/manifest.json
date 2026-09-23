@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "KarmoWebExtension",
   "short_name": "Karmo",
-  "version": "0.12.3",
+  "version": "0.13.0",
   "description": "방송, 시청 페이지와 로컬 앱 연결. 즐겨찾기 정리. 유튜브, 치지직, SOOP, X 수집과 하루 한 번 내보내기.",
   "permissions": [
     "storage",
@@ -27,7 +27,8 @@
     "https://x.com/*",
     "https://*.x.com/*",
     "https://twitter.com/*",
-    "https://music.youtube.com/*"
+    "https://music.youtube.com/*",
+    "https://console.cloud.google.com/*"
   ],
   "background": {
     "service_worker": "background.js"
