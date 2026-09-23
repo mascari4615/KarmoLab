@@ -49,7 +49,7 @@ function isUtf8(bytes) {
   return !bytes.toString('utf8').includes('�');
 }
 
-test('창 이름이 UTF-8 로 나온다. 한글이 물음표가 되면 안 된다', async () => {
+test('창 이름이 UTF-8 로 나온다. 한글이 물음표가 되면 안 된다', { skip: process.platform === 'win32' ? false : 'Windows UI Automation required' }, async () => {
   const lines = await rawLines();
   const title = lines.find((one) => one.toString('latin1').startsWith('TITLE='));
   assert.ok(title !== undefined, 'TITLE= 이 없다');
@@ -63,7 +63,7 @@ test('창 이름이 UTF-8 로 나온다. 한글이 물음표가 되면 안 된�
   );
 });
 
-test('창 안에서 읽은 것도 UTF-8 로 나온다', async () => {
+test('창 안에서 읽은 것도 UTF-8 로 나온다', { skip: process.platform === 'win32' ? false : 'Windows UI Automation required' }, async () => {
   const lines = await rawLines();
   const tree = lines.find((one) => one.toString('latin1').startsWith('TREE='));
   assert.ok(tree !== undefined, 'TREE= 가 없다');

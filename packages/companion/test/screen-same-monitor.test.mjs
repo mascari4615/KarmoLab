@@ -26,6 +26,7 @@ import { promisify } from 'node:util';
 const run = promisify(execFile);
 const assets = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 const script = join(assets, 'capture-screen.ps1');
+const windowsOnly = { skip: process.platform === 'win32' ? false : 'Windows UI Automation required' };
 
 async function shoot() {
   const out = join(mkdtempSync(join(tmpdir(), 'companion-shot-')), 'shot.png');
@@ -46,14 +47,14 @@ async function shoot() {
   };
 }
 
-test('찍은 자리가 어디였는지 말한다. 원점을 모르면 글의 좌표를 그림에 못 얹는다', async () => {
+test('찍은 자리가 어디였는지 말한다. 원점을 모르면 글의 좌표를 그림에 못 얹는다', windowsOnly, async () => {
   const taken = await shoot();
   assert.equal(taken.origin.length, 2, 'ORIGIN= 이 없다');
   assert.equal(taken.shotArea.length, 2, 'AREA= 가 없다');
   assert.ok(taken.shotArea[0] > 0 && taken.shotArea[1] > 0);
 });
 
-test('찍은 자리가 앞창을 담고 있다. 그림과 글이 같은 화면이어야 한다', async () => {
+test('찍은 영역에 앞창 포함. 그림과 글의 모니터 일치', windowsOnly, async () => {
   const taken = await shoot();
   const window = taken.elements[0];
   if (!window || !Array.isArray(window.r) || window.r[2] <= 0) {
@@ -72,7 +73,7 @@ test('찍은 자리가 앞창을 담고 있다. 그림과 글이 같은 화면�
   );
 });
 
-test('줄인 그림의 비율이 찍은 자리와 같다. 좌표를 되돌릴 수 있어야 한다', async () => {
+test('줄인 그림의 비율이 찍은 자리와 같다. 좌표를 되돌릴 수 있어야 한다', windowsOnly, async () => {
   const taken = await shoot();
   const [aw, ah] = taken.shotArea;
   const shrunk = taken.width / aw;
