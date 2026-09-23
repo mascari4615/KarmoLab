@@ -207,7 +207,14 @@ async function gcpSecretRowStep(args) {
     row = row.parentElement;
   }
   const want = action === "delete" ? /^(삭제|Delete)$/ : /^(사용 중지|Disable)$/;
-  const btn = Array.from(row.querySelectorAll("button")).find((b) => want.test(norm(b.textContent) || b.getAttribute("aria-label") || ""));
+  const label = (b) => norm(b.textContent) || b.getAttribute("aria-label") || b.getAttribute("mattooltip") || b.getAttribute("title") || b.getAttribute("data-tooltip") || "";
+  const rowBtns = Array.from(row.querySelectorAll("button"));
+  let btn = rowBtns.find((b) => want.test(label(b)));
+  /* 삭제는 글자 없는 휴지통 아이콘. 이 줄에 이름 없는 버튼이 딱 하나일 때만 그것 */
+  if (!btn && action === "delete") {
+    const bare = rowBtns.filter((b) => !label(b));
+    if (bare.length === 1) btn = bare[0];
+  }
   if (!btn) return { ok: false, step: "button", mark, row: norm(row.innerText).slice(0, 300), buttons: Array.from(row.querySelectorAll("button")).map((b) => norm(b.textContent) || b.getAttribute("aria-label") || "") };
   btn.click();
   await sleep(1500);
