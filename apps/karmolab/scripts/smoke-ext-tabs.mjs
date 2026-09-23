@@ -9,41 +9,39 @@
  *   A. 수집 한 바퀴 뒤 탭 수가 제자리, 기록도 비어 있다 (정상 경로)
  *   B. 기록에 남은 id 를 회수 함수가 닫는다 (워커 사망 뒤 경로)
  *
- * 사용자 Edge 와 무관. 전용 프로필에 확장 별도 적재
- * playwright 나 Edge 가 없으면 CANNOT-RUN 으로 끝낸다 (통과 아님).
+ * 사용자 Edge 와 무관. 임시 프로필의 headless Chromium에 확장 별도 적재
+ * 프로젝트 Playwright나 Chromium 부재 시 CANNOT-RUN (exit 2)
  */
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EXT = path.resolve(HERE, '..', '..', 'karmo-web-extension');
-const PW = path.join(os.homedir(), '.wm-playwright', 'node_modules', 'playwright', 'index.mjs');
-const PROFILE = path.join(os.homedir(), '.karmoddrine', 'ext-test-profile');
 
 if (!fs.existsSync(path.join(EXT, 'manifest.json'))) {
   console.error('[ext-tabs] FAIL 확장 폴더 없음:', EXT);
   process.exit(1);
 }
-if (!fs.existsSync(PW)) {
-  console.log('[ext-tabs] CANNOT-RUN playwright 없음:', PW);
-  process.exit(0);
+let chromium;
+try {
+  ({ chromium } = await import('playwright'));
+} catch (e) {
+  console.log('[ext-tabs] CANNOT-RUN 프로젝트 Playwright 없음:', e.message);
+  process.exit(2);
 }
-
-const { chromium } = await import(pathToFileURL(PW).href);
 
 let ctx;
 try {
-  ctx = await chromium.launchPersistentContext(PROFILE, {
-    channel: 'msedge',
-    headless: false,
+  ctx = await chromium.launchPersistentContext('', {
+    channel: 'chromium',
+    headless: true,
     viewport: { width: 1000, height: 700 },
     args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`],
   });
 } catch (e) {
-  console.log('[ext-tabs] CANNOT-RUN Edge 를 못 띄움:', e.message);
-  process.exit(0);
+  console.log('[ext-tabs] CANNOT-RUN Chromium 을 못 띄움:', e.message);
+  process.exit(2);
 }
 
 const fails = [];

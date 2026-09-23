@@ -1,0 +1,6 @@
+{
+  "name": "@karmo/socketio2-uri",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.cjs"
+}

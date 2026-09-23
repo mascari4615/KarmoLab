@@ -1,0 +1,30 @@
+name: Chat overlay checks
+
+on:
+  push:
+    branches: [main]
+    paths: ['apps/chat-overlay/**', '.github/workflows/chat-overlay.yml']
+  pull_request:
+    paths: ['apps/chat-overlay/**', '.github/workflows/chat-overlay.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/chat-overlay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/chat-overlay/package-lock.json
+      - run: npm ci --ignore-scripts --no-fund
+      - run: npm audit --audit-level=moderate
+      - run: npm test
+      - run: npm run build

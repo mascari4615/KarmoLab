@@ -8,7 +8,8 @@ export type SearchScore = { score: number; kind: SearchMatchKind; titleNormStart
 const TOKEN_RE = /[a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ]+/g;
 
 export function normalizeSearchText(value: unknown): string {
-  return String(value == null ? '' : value).normalize('NFC').toLocaleLowerCase('ko-KR')
+  // 한국어에는 별도 대소문자 규칙이 없음. 문서마다 반복하던 로캘 해석 비용 제거
+  return String(value == null ? '' : value).normalize('NFC').toLowerCase()
     .replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ]+/g, ' ').trim().replace(/\s+/g, ' ');
 }
 

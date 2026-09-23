@@ -29,6 +29,7 @@
  *
  * 사용: node scripts/smoke-perf-budget.mjs        (npm run test:perf:budget)
  *       node scripts/smoke-perf-budget.mjs --regress   ← 예산을 일부러 조여 **빨간불이 나는지** 확인
+ * KL_PERF_DIAGNOSTICS 환경변수의 JSONL 경로에 긴 프레임과 조작별 원인 기록.
  */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -241,7 +242,7 @@ async function measure(url, scenario, interaction) {
     ].filter(Boolean).join(' | ');
     return null;
   }
-  const snap = await page.evaluate(() => {
+  const snap = await page.evaluate((diagnostics) => {
     const s = window.KLPerf.snapshot();
     /* 밀림이 넘으면 **무엇이 밀렸나**까지 들고 온다. 수만 보면 다음 사람이 또 처음부터 찾는다 */
     const shifts = (s.shiftCulprits || [])
@@ -253,8 +254,15 @@ async function measure(url, scenario, interaction) {
       .sort((a, b) => b.value - a.value)
       .slice(0, 4)
       .map((x) => `${x.value.toFixed(4)} @${Math.round(x.at)}ms`);
-    return { verdict: s.verdict, trust: s.trust, shifts: shifts.concat(when.length ? ['시각: ' + when.join(' , ')] : []), cls: s.cls };
-  });
+    return {
+      verdict: s.verdict, trust: s.trust,
+      shifts: shifts.concat(when.length ? ['시각: ' + when.join(' , ')] : []), cls: s.cls,
+      details: diagnostics ? { culprits: s.culprits, slowFrames: s.slowFrames, interactions: s.interactions, longTasks: s.longTasks } : undefined,
+    };
+  }, Boolean(process.env.KL_PERF_DIAGNOSTICS));
+  if (process.env.KL_PERF_DIAGNOSTICS) {
+    fs.appendFileSync(process.env.KL_PERF_DIAGNOSTICS, JSON.stringify({ url, scenario: scenario.name, ...snap }) + '\n');
+  }
   return { ...snap, errors };
   } catch (error) {
     cannotRunReason = `측정 중단: ${String(error.message).split('\n').slice(0, 3).join(' ')}`;

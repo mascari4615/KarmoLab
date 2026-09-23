@@ -35,7 +35,9 @@ import { usesBrowserEntry } from './lib/gate-resources.mjs';
    백스물다섯 개가 늘어서 있었다. 세션 여럿이 같은 줄을 동시에 늘리니 충돌이 잦았고,
    손으로 합치다 **승격 하나가 조용히 사라진** 적이 있다(`smoke:arcadeopen`).
    한 줄에 하나면 서로 다른 줄을 고치므로 git 이 알아서 합친다. */
-const args = process.argv.slice(2);
+// 성능 측정 중 다른 검사의 CPU/브라우저 부하가 겹치지 않도록 단독 실행 지원
+const serial = process.argv.includes('--serial');
+const args = process.argv.slice(2).filter((arg) => arg !== '--serial');
 const fromIdx = args.indexOf('--from');
 let gates = args;
 if (fromIdx !== -1) {
@@ -259,7 +261,7 @@ try { previousTimes = JSON.parse(readFileSync(timesFile, 'utf8')); } catch { /* 
    53s instead of 101s and accessibility 57s instead of 96s. Keep explicit overrides
    for dedicated runners; give condition waits the same 30s budget used in CI. */
 const cpuCount = os.cpus().length || 4;
-const workerCount = Math.max(1, Number(process.env.KL_GATE_JOBS || Math.min(4, cpuCount - 2)));
+const workerCount = serial ? 1 : Math.max(1, Number(process.env.KL_GATE_JOBS || Math.min(4, cpuCount - 2)));
 const browserLimit = Math.max(1, Number(process.env.KL_GATE_BROWSER_JOBS || Math.min(2, workerCount)));
 /* 모르는 검사는 **중간쯤**으로 친다. 맨 앞에 세우면 새 검사 하나가 판을 늘어뜨리고,
    맨 뒤에 세우면 사실 긴 놈이 꼬리에 남는다. */

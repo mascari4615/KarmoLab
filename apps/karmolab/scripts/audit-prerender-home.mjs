@@ -27,12 +27,12 @@ const LATE_CLASSES = ['landing-hi'];
 
 if (!fs.existsSync(FILE)) {
   console.log('[prerender-home 검사] 못 돌림. 찍힌 첫 화면이 없다 (배포가 만든다). 통과로 안 센다.');
-  process.exit(0);
+  process.exit(2);
 }
 const html = fs.readFileSync(FILE, 'utf8');
 if (!html.includes(MARK)) {
   console.log('[prerender-home 검사] 못 돌림. 아직 미리 그리기 전이다. 통과로 안 센다.');
-  process.exit(0);
+  process.exit(2);
 }
 
 const bad = [];
