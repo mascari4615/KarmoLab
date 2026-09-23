@@ -22,11 +22,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { browserReady } from './lib/serve-static.mjs';
+import { criticalSectionRanges } from './lib/shell-css.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
 const BASELINE = path.join(root, 'data/coverage-baseline.json');
 const UPDATE = process.argv.includes('--update');
+const REGRESS = process.argv.includes('--regress');
+const MISSING_CSS = process.argv.includes('--regress-missing');
+if (UPDATE && (REGRESS || MISSING_CSS)) throw new Error('결함 주입과 기준선 갱신 동시 실행 금지');
 
 /* 기준선 이력. **옮길 때는 왜 옮겼는지 여기 한 줄. 조용히 옮기지 마라.**
  *, 2026-09-04 cssUnused 143.6 → 194.5KB (+50.9). 앞 단계가 빨개서 이 검사가 오래 못 돌았고,
@@ -39,7 +43,7 @@ const GROW_BYTES = 24 * 1024;
 
 if (!fs.existsSync(path.join(root, 'js/toolbox.js'))) {
   console.log('[coverage] 못 돌림. js/toolbox.js 가 없다 (`node build.mjs` 먼저)');
-  process.exit(0);
+  process.exit(2);
 }
 
 /**
@@ -103,15 +107,24 @@ const VIEWPORTS = [
 
 /* 브라우저가 없으면 통과가 아니라 **못 돌림**이다. CI 의 verify 잡에는 아직 설치 스텝이 없다.
    여기서 조용히 통과시키면 계측이 죽은 날에도 초록이 뜨고, 반대로 그냥 죽이면 배포 길목이 막힌다. */
-if (!(await browserReady('coverage'))) process.exit(0);
+if (!(await browserReady('coverage'))) process.exit(2);
 
 const browser = await chromium.launch();
 
 async function collect(viewport) {
   const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+  if (MISSING_CSS) await page.route('**/css/shell-critical.css', (route) => route.abort());
   await Promise.all([page.coverage.startJSCoverage(), page.coverage.startCSSCoverage()]);
   await page.goto(BASE + '/apps/karmolab/index.html', { waitUntil: 'load' });
-  await page.waitForFunction(() => typeof Toolbox !== 'undefined', null, { timeout: 30000 }).catch(() => {});
+  await page.waitForFunction(() => typeof Toolbox !== 'undefined', null, { timeout: 30000 });
+  if (REGRESS) {
+    // Load unused CSS into coverage; no production asset or baseline edits.
+    const url = BASE + '/apps/karmolab/css/coverage-regression.css';
+    await page.route(url, (route) => route.fulfill({
+      contentType: 'text/css', body: '.coverage-regression-unused { --probe: ' + 'x'.repeat(256 * 1024) + '; }'
+    }));
+    await page.addStyleTag({ url });
+  }
   /* 첫 화면이 **자리를 잡을 때까지**. 여기서 일찍 끊으면 늦게 도는 코드가 통째로 안 쓰임이 된다
      (마스코트, 글꼴, 계정은 한가해진 뒤에 온다). */
   await page.waitForTimeout(4000);
@@ -121,7 +134,14 @@ async function collect(viewport) {
 }
 
 const perView = [];
-for (const viewport of VIEWPORTS) perView.push({ viewport, ...(await collect(viewport)) });
+try {
+  for (const viewport of VIEWPORTS) perView.push({ viewport, ...(await collect(viewport)) });
+} catch (error) {
+  console.error('[coverage] CANNOT-RUN. ' + String(error).split('\n')[0]);
+  await browser.close();
+  server.close();
+  process.exit(2);
+}
 const { js, css } = perView[0]; // 기준선, 판정은 데스크톱 판으로 (한 벌만 잠근다)
 
 /** 우리 파일만 본다. 남의 CDN 이나 인라인 조각을 섞으면 무엇을 고쳐야 할지 흐려진다. */
@@ -129,9 +149,20 @@ function summarize(entries, kind) {
   const rows = [];
   for (const entry of entries) {
     if (!entry.url.includes('/apps/karmolab/')) continue;
-    const total = entry.text ? entry.text.length : 0;
+    const text = kind === 'js' ? entry.source : entry.text;
+    const total = text?.length ?? 0;
     if (!total) continue;
-    const used = (entry.ranges || []).reduce((sum, r) => sum + (r.end - r.start), 0);
+    let used;
+    if (kind === 'js') {
+      // V8 blocks override enclosing ranges; summing nested blocks double-counts.
+      const flags = new Uint8Array(total);
+      const ranges = entry.functions.flatMap((fn) => fn.ranges)
+        .sort((a, b) => (b.endOffset - b.startOffset) - (a.endOffset - a.startOffset));
+      for (const range of ranges) flags.fill(range.count > 0 ? 1 : 0, range.startOffset, range.endOffset);
+      used = flags.reduce((sum, flag) => sum + flag, 0);
+    } else {
+      used = (entry.ranges || []).reduce((sum, r) => sum + (r.end - r.start), 0);
+    }
     rows.push({
       file: entry.url.split('/apps/karmolab/')[1].split('?')[0],
       kind,
@@ -157,28 +188,14 @@ function sectionUsage(entries) {
   const entry = entries.find((e) => e.url.includes('/css/shell-critical.css'));
   if (!entry || !entry.text) return null; // 못 받았으면 0이 아니라 없음
   const text = entry.text;
-  const lines = text.split(String.fromCharCode(10));
-  const marks = [];
-  let offset = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/^\/\*\s*═+/.test(line)) {
-      /* 제목은 배너 줄에 있기도 하고 **다음 줄**에 있기도 하다. `split-css.mjs` 와 같은 규칙을
-         쓴다. 여기서 규칙이 갈라지면 구역 이름이 서로 어긋나 지도가 쓸모없어진다. */
-      const inline = line.replace(/^\/\*\s*═+\s*/, '').replace(/\s*═+.*$/, '').trim();
-      marks.push({ at: offset, title: inline || (lines[i + 1] || '').trim() || '(제목 없음)' });
-    }
-    offset += line.length + 1;
-  }
-  if (!marks.length) return null;
+  const marks = criticalSectionRanges(fs.readFileSync(path.join(root, 'css/toolbox.css'), 'utf8'), text);
   const used = new Array(text.length).fill(false);
   for (const range of entry.ranges || []) for (let i = range.start; i < range.end && i < used.length; i++) used[i] = true;
   return marks
-    .map((mark, i) => {
-      const end = i + 1 < marks.length ? marks[i + 1].at : text.length;
+    .map((mark) => {
       let unused = 0;
-      for (let j = mark.at; j < end; j++) if (!used[j]) unused += 1;
-      return { title: mark.title, total: end - mark.at, unused };
+      for (let j = mark.start; j < mark.end; j++) if (!used[j]) unused += 1;
+      return { title: mark.title, total: mark.end - mark.start, unused };
     })
     .sort((a, b) => b.unused - a.unused);
 }
@@ -212,7 +229,14 @@ for (const row of rows.slice(0, 8)) {
 }
 /* 지도는 **폭을 나란히** 놓는다. 양쪽 다 안 쓰임인 구역만이 진짜 후보다 . 
    한쪽에서만 안 쓰이는 것은 그 폭에서 쓰는 것이지 낭비가 아니다. */
-const maps = perView.map((v) => ({ name: v.viewport.name, rows: sectionUsage(v.css) }));
+const maps = perView.map((v) => {
+  try {
+    return { name: v.viewport.name, rows: sectionUsage(v.css) };
+  } catch (error) {
+    console.error('[coverage] 구역 대응 실패: ' + error.message);
+    return { name: v.viewport.name, rows: null };
+  }
+});
 /* 지도는 이 블록 밖에서도 쓴다(기준선 파일에 실어 계기판이 읽는다). 못 쟀으면 `null` 이다. */
 let merged = null;
 if (maps.every((m) => m.rows)) {
@@ -236,8 +260,14 @@ if (maps.every((m) => m.rows)) {
   console.log('[coverage]   양쪽 폭에서 다 안 쓰이는 것만 후보다. 한쪽만이면 그 폭에서 쓰는 것이다.');
   console.log('[coverage]   ⚠ 이 숫자만 보고 빼지 마라. 쓰임 0% 인데 자리를 잡는 구역이 있다(split-css.mjs 머리말).');
 } else {
-  console.log('[coverage] 구역별 쓰임은 못 쟀다. shell-critical.css 를 못 받았거나 구역 배너가 없다.');
+  console.log('[coverage] 구역별 쓰임은 못 쟀다. shell-critical.css 수신 또는 원본과 생성물 대응 확인.');
 }
+
+if (!merged || perView.some((view) => !summarize(view.js, 'js').length || !summarize(view.css, 'css').length)) {
+  console.error('[coverage] CANNOT-RUN. CSS, JS 또는 화면 폭별 구역 측정 누락');
+  process.exit(2);
+}
+console.log('[coverage] 측정 ' + VIEWPORTS.length + '/' + VIEWPORTS.length + '화면, 구역 ' + merged.length + '개, JS 파일 ' + jsRows.length + '개');
 
 if (UPDATE) {
   fs.mkdirSync(path.dirname(BASELINE), { recursive: true });
@@ -265,13 +295,16 @@ if (UPDATE) {
 
 if (!fs.existsSync(BASELINE)) {
   console.log('[coverage] 기준선 없음. 이건 통과가 아니라 **못 돌림**이다 (`--update` 로 한 번 박아라)');
-  process.exit(0);
+  process.exit(2);
 }
 const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8')).totals || {};
 const fails = [];
 for (const key of ['cssUnused', 'jsUnused']) {
   const was = base[key];
-  if (was == null || totals[key] == null) continue; // 못 잰 회차는 판정하지 않는다
+  if (was == null) {
+    console.log(`[coverage] ${key} 이전 기준선 없음. 현재 측정 ${kb(totals[key])}, 증감 판정 제외`);
+    continue;
+  }
   if (totals[key] - was >= GROW_BYTES) fails.push(`${key} ${kb(was)} → ${kb(totals[key])} (+${kb(totals[key] - was)})`);
 }
 if (fails.length) {

@@ -20,6 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEFERRED, isDeferred, sections, stripComments } from './lib/shell-css.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SRC = path.join(root, 'css/toolbox.css');
@@ -34,25 +35,7 @@ const SRC = path.join(root, 'css/toolbox.css');
  *  , 명령 팔레트만 빼면 밀림 그대로(0.011/0.061/0.03/0.022). 이건 화면 위에 덮이는 것이라
  *     아래 글의 자리에 관여하지 않는다.
  * 새로 넣을 때는 **반드시 `npm run measure:speed` 로 밀림을 전후 비교**해라. */
-const DEFERRED = ['명령 팔레트'];
-
 const NAMES = { critical: 'css/shell-critical.css', deferred: 'css/shell-deferred.css' };
-
-function sections(text) {
-  const lines = text.split('\n');
-  const marks = [];
-  for (let i = 0; i < lines.length; i++) {
-    if (/^\/\*\s*═+/.test(lines[i])) {
-      const inline = lines[i].replace(/^\/\*\s*═+\s*/, '').replace(/\s*═+.*$/, '').trim();
-      marks.push({ line: i, title: inline || (lines[i + 1] || '').trim() });
-    }
-  }
-  if (!marks.length) throw new Error('[split-css] 구역 배너를 못 찾았다. toolbox.css 머리 모양 확인');
-  return marks.map((m, i) => ({
-    title: m.title,
-    text: lines.slice(i === 0 ? 0 : m.line, i + 1 < marks.length ? marks[i + 1].line : lines.length).join('\n')
-  }));
-}
 
 const src = fs.readFileSync(SRC, 'utf8');
 const secs = sections(src);
@@ -62,7 +45,6 @@ if (secs.map((s) => s.text).join('\n') !== src) {
   process.exit(1);
 }
 
-const isDeferred = (title) => DEFERRED.some((d) => title.startsWith(d));
 const found = DEFERRED.filter((d) => secs.some((s) => s.title.startsWith(d)));
 if (found.length !== DEFERRED.length) {
   // 구역 이름이 바뀌면 조용히 아무것도 안 빼는 상태가 된다. 그건 느려졌는데 아무도 모름이다.
@@ -89,30 +71,6 @@ const head = (what) =>
  * 문자열 안의 `/*` 는 CSS 에서 사실상 안 쓰이지만(`url()` 도 따옴표 밖), 그래도 따옴표 안은
  * 건드리지 않게 훑는다. 조용히 규칙 하나가 깨지면 화면이 어긋난 채로 나간다.
  */
-function stripComments(css) {
-  let out = '';
-  let quote = null;
-  for (let i = 0; i < css.length; i++) {
-    const c = css[i];
-    if (quote) {
-      out += c;
-      if (c === '\\') { out += css[++i] ?? ''; continue; }
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (c === '"' || c === "'") { quote = c; out += c; continue; }
-    if (c === '/' && css[i + 1] === '*') {
-      const end = css.indexOf('*/', i + 2);
-      if (end < 0) break; // 안 닫힌 주석. 나머지는 통째 설명이다
-      i = end + 1;
-      continue;
-    }
-    out += c;
-  }
-  /* 설명이 있던 자리에 남는 빈 줄을 접는다. 안 하면 뺀 만큼 줄바꿈이 남는다. */
-  const NL = String.fromCharCode(10);
-  return out.split(NL).map((l) => l.replace(/[ 	]+$/, '')).filter((l, k, arr) => l.trim() !== '' || (arr[k - 1] || '').trim() !== '').join(NL);
-}
 
 /* 도구 장의 `tools.css` 도 같은 처지다. 정본은 설명이 두껍고(86KB, gzip 21.8KB) 그 설명을 도구 장 149장이
    첫 그림 전에 받는다. 설명만 빼면 gzip 9.9KB (2026-09-05 실측). 정본은 그대로 두고 내보내는 벌을 따로 굽는다.

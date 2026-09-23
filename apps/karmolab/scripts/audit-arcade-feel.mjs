@@ -5,7 +5,8 @@
  * - 스타일시트가 끝까지 살아 있나 (괄호 하나가 뒤 217줄을 죽인 사고, 2026-09-02)
  * - 평면 카드에 CSS 전환이 걸려 있나 (전환이 0s 면 카드가 순간이동)
  * - 자리 카드가 같은 요소로 남나 (매 프레임 새로 만들면 전환이 죽음)
- * 리포트 전용. `--strict` 면 스타일시트 손상이나 전환 0s 인 카드 판이 있을 때 exit 1
+ * Report mode by default; --strict rejects broken CSS, static cards and replaced seats.
+ * Missing measurements always exit 2. --regress replaces a seat to test rejection.
  *
  *   node scripts/audit-arcade-feel.mjs [--strict] [--only <game>]
  */
@@ -16,6 +17,7 @@ import { WAIT } from './lib/waits.mjs';
 
 const args = process.argv.slice(2);
 const strict = args.includes('--strict');
+const regress = args.includes('--regress');
 const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : '';
 /* 기본은 로비에 뜨는 판. --all 이면 감춘 판까지 (판마다 새 창이라 52판이면 오래 걸린다) */
 const all = args.includes('--all');
@@ -67,6 +69,7 @@ if (!cantRun) {
 
   const ids = (await page.$$eval('[data-obj]', (bs) => bs.map((b) => b.dataset.obj))).filter((id) => !only || id === only);
   await ctx.close();
+  if (!ids.length) cantRun = `검사 대상 없음: ${only || '로비'}`;
   for (const id of ids) {
     const row = { game: id, cards: null, transition: null, seatKept: null };
     let c2 = null;
@@ -80,8 +83,10 @@ if (!cantRun) {
         const v = document.querySelector('#acView');
         return !!v && v.children.length > 0;
       }, null, { timeout: WAIT });
-      await page.waitForSelector('#acSeats .ac-seat', { timeout: WAIT });
+      // Bare views retain seat DOM while hiding it; this audit measures identity.
+      await page.waitForSelector('#acSeats .ac-seat', { state: 'attached', timeout: WAIT });
       const seatA = await page.evaluateHandle(() => document.querySelector('#acSeats .ac-seat'));
+      if (regress) await page.evaluate((seat) => seat.replaceWith(seat.cloneNode(true)), seatA);
       /* 재움-의도: 자리 카드를 한 프레임이 아니라 여러 렌더 틱에 걸쳐 같은 DOM으로
          유지하는지 재는 시간 표본이다. 상태 도착을 기다리는 자리가 아니다. */
       await page.waitForTimeout(700);
@@ -93,7 +98,8 @@ if (!cantRun) {
         return {
           cards: cards.length,
           transition: cards.length ? `${moving}/${durations.length}` : null,
-          seatKept: a ? a === document.querySelector('#acSeats .ac-seat') : null
+          seatKept: a ? a === document.querySelector('#acSeats .ac-seat') : null,
+          seatVisible: !!document.querySelector('#acSeats .ac-seat')?.getClientRects().length
         };
       }, seatA);
       Object.assign(row, got);
@@ -113,10 +119,13 @@ if (cantRun) {
 }
 console.log(`[arcade-feel] 스타일시트 ${sheetOk.ok ? '끝까지 살아 있다' : '중간에 끊겼다'} (규칙 ${sheetOk.n}, 마지막 ${sheetOk.last})`);
 const bad = rows.filter((r) => r.cards && r.transition && r.transition.startsWith('0/'));
-console.log(`[arcade-feel] 판 ${rows.length}개. 카드 전환 0s 인 판 ${bad.length}개, 자리 카드가 바뀐 판 ${rows.filter((r) => r.seatKept === false).length}개`);
+const replaced = rows.filter((r) => r.seatKept === false);
+const incomplete = rows.filter((r) => r.error || r.cards === null || r.seatKept === null);
+console.log(`[arcade-feel] 판 ${rows.length}개. 카드 전환 0s 인 판 ${bad.length}개, 자리 카드가 바뀐 판 ${replaced.length}개, 미측정 ${incomplete.length}개`);
 console.log('  판           카드   전환    자리유지   (카드는 평면 .ac-pc 수. 0 이면 그 판은 카드 종이를 안 씀)');
 for (const r of rows) {
   const pad = (s, n) => String(s ?? '-').padEnd(n);
-  console.log(`  ${pad(r.game, 12)} ${pad(r.cards, 6)} ${pad(r.transition, 7)} ${pad(r.seatKept === null ? '-' : r.seatKept ? 'O' : 'X', 9)}${r.error ? '  ' + r.error : ''}`);
+  console.log(`  ${pad(r.game, 12)} ${pad(r.cards, 6)} ${pad(r.transition, 7)} ${pad(r.seatKept === null ? '-' : r.seatKept ? 'O' : 'X', 9)}${r.seatVisible === false ? ' (숨김 DOM)' : ''}${r.error ? '  ' + r.error : ''}`);
 }
-if (strict && (!sheetOk.ok || bad.length)) process.exit(1);
+if (strict && (!sheetOk.ok || bad.length || replaced.length)) process.exit(1);
+if (incomplete.length) process.exit(2);

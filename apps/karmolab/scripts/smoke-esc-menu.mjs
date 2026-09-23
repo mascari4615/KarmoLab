@@ -13,8 +13,17 @@ let server;
 try {
   server = await serveRepo();
   const page = await browser.newPage();
+  if (process.argv.includes('--slow-resource')) {
+    // A nonessential image never finishes; menu readiness must remain testable.
+    await page.route('**/__esc_slow_resource.png', () => new Promise(() => {}));
+    await page.route((url) => ['/apps/karmolab/index.html', '/t/loan/'].includes(url.pathname), async (route) => {
+      const response = await route.fetch();
+      const html = (await response.text()).replace('</body>', '<img hidden src="/__esc_slow_resource.png"></body>');
+      await route.fulfill({ response, body: html });
+    });
+  }
   for (const url of ['/apps/karmolab/index.html', '/t/loan/']) {
-    await page.goto(server.base + url);
+    await page.goto(server.base + url, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!window.KarmoEscMenu, null, { timeout: 15000 });
     await page.locator('body').click({ position: { x: 5, y: 5 } });
     await page.keyboard.press('Escape');
