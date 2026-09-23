@@ -63,7 +63,6 @@
   "widgets-desc.conch.desc": "소라고동에게 질문합니다",
   "widgets-desc.pulse.desc": "아무 의미 없는 것을 아주 규칙적으로 내보내는 방송국 7개. 세 글자, 종, 눈금, 낱말, 한 줄, 무늬, 점 (TASK-KL-207)",
   "widgets-desc.adventure.desc": "티메토 GM 의 무한 텍스트 어드벤처 (KL-032). 무대 = KarmoWorld, history → wiki entity 누적",
-  "widgets-desc.planner.desc": "나만의 일정 동기화 및 스트릭 칸반 보드 (개발 중)",
   "widgets-desc.cockpit.desc": "프로젝트 구조, 상황 단일 표면. Unity Shader Graph 식 노드 그래프 + TASK 탭 (TASK-KL-082, 통합 위젯)",
   "widgets-desc.terminal.desc": "카드 stdin 무관 단일 셸 (line-IO). pwsh→powershell.exe fallback, cd/Set-Location 자동 추적, 5000줄 cap",
   "widgets-desc.my-ai.desc": "내가 쓰는 AI의 구독, 환경, 운영, 연결을 한곳에서",
