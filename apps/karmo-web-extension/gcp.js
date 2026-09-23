@@ -12,7 +12,7 @@ async function gcpClientStep(args) {
   const dryRun = !!(args && args.dryRun);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
-  const LABELS = ["승인된 자바스크립트 원본", "Authorized JavaScript origins"];
+  const LABELS = ["승인된 JavaScript 원본", "승인된 자바스크립트 원본", "Authorized JavaScript origins"];
   const ADD = ["URI 추가", "ADD URI", "Add URI"];
   const SAVE = ["저장", "SAVE", "Save"];
 
