@@ -107,9 +107,9 @@
         const q = new URLSearchParams(location.search);
         const type = q.get("run");
         if (!type) return false;
-        /* 주소만으로 부를 수 있는 것은 이 셋뿐. 즐겨찾기 삭제 같은 것은 주소로 못 부른다
+        /* 주소만으로 부를 수 있는 것은 이 목록뿐 (읽기와 gcp). 즐겨찾기 삭제 같은 것은 주소로 불가
            (남의 사이트가 이 주소로 보내 확장을 부리는 길 차단) */
-        const RUNNABLE = ["ext.version", "ext.reload", "gcp.client"];
+        const RUNNABLE = ["ext.version", "ext.reload", "gcp.client", "gcp.last", "collect.progress"];
         if (!RUNNABLE.includes(type)) {
           document.getElementById("out").textContent = "주소로 못 부르는 종류: " + type;
           return true;

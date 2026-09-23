@@ -265,12 +265,19 @@ async function gcpClient(msg) {
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id } };
     await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["gcp.js"] }));
+    await note("gcp", "injected " + url);
     const [out] = await within(60000, "call", chrome.scripting.executeScript({
       ...where,
       func: (a) => globalThis.gcpClientStep(a),
       args: [{ origins, dryRun: !!msg.dryRun }],
     }));
-    return out && out.result;
+    const result = out && out.result;
+    /* 응답이 불러간 쪽에 못 닿는 경우가 있어 (2026-09-23 두 번) 결과를 남기고 gcp.last 로 읽게 */
+    await chrome.storage.local.set({ "karmo.gcpLast": { at: new Date().toISOString(), result } });
+    return result;
+  } catch (e) {
+    await chrome.storage.local.set({ "karmo.gcpLast": { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) } });
+    throw e;
   } finally {
     if (!msg.keep) await closeWorkTab(tab.id);
   }
@@ -458,6 +465,8 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
           last: (await chrome.storage.local.get(STATE_KEY))[STATE_KEY] || null,
           alarms,
         });
+      } else if (msg?.type === "gcp.last") {
+        sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.gcpLast"))["karmo.gcpLast"] || null });
       } else if (msg?.type === "gcp.client") {
         sendResponse({ ok: true, result: await gcpClient(msg) });
       } else if (msg?.type === "ext.version") {
