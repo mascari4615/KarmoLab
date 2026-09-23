@@ -8,12 +8,12 @@ test('lab 은 뿌리 그대로', () => {
   assert.equal(originPath('lab.mascari4615.com', '/t/arcade/'), '/t/arcade/');
 });
 test('dash 는 뿌리를 전용 front 로, 나머지는 그대로', () => {
-  assert.equal(originPath('dash.mascari4615.com', '/'), '/dash/');
-  assert.equal(originPath('dash.mascari4615.com', '/index.html'), '/dash/');
+  assert.equal(originPath('dash.mascari4615.com', '/'), '/');
+  assert.equal(originPath('dash.mascari4615.com', '/index.html'), '/');
   assert.equal(originPath('dash.mascari4615.com', '/apps/karmolab/js/toolbox.js'), '/apps/karmolab/js/toolbox.js');
 });
 test('blog 는 뿌리를 글 목록으로', () => {
-  assert.equal(originPath('blog.mascari4615.com', '/'), '/posts/');
+  assert.equal(originPath('blog.mascari4615.com', '/'), '/');
   assert.equal(originPath('blog.mascari4615.com', '/posts/x/'), '/posts/x/');
 });
 test('모르는 호스트는 lab 취급', () => {
@@ -24,4 +24,12 @@ test('apex 와 www 는 안내 한 장 (원본에 안 간다)', () => {
   assert.equal(kindOf('mascari4615.com'), 'home');
   assert.equal(kindOf('www.mascari4615.com'), 'home');
   assert.equal(originPath('mascari4615.com', '/'), null);
+});
+
+test('호스트마다 제 배포에서 가져온다', async () => {
+  const { originFor } = await import('../src/route.mjs');
+  assert.equal(originFor('lab.mascari4615.com', 'x'), 'https://karmolab-lab.pages.dev');
+  assert.equal(originFor('blog.mascari4615.com', 'x'), 'https://karmolab-blog.pages.dev');
+  assert.equal(originFor('dash.mascari4615.com', 'x'), 'https://karmolab-dash.pages.dev');
+  assert.equal(originFor('mascari4615.com', 'x'), 'x');
 });

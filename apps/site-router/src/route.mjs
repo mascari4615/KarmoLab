@@ -10,9 +10,23 @@
  */
 export const ROOT_BY_HOST = {
   lab: '/',
-  dash: '/dash/',
-  blog: '/posts/',
+  dash: '/',
+  blog: '/',
 };
+
+/* 호스트마다 **제 배포**로 (Cloudflare Pages 프로젝트 셋, 2026-09-23).
+   Pages 사용자 도메인은 DNS 편집 권한이 없어 못 붙임. 이름은 Worker 가 받고 내용은 각 배포에서 가져옴.
+   배포는 이미 갈라져 있으므로 분리는 그대로 */
+export const ORIGIN_BY_HOST = {
+  lab: 'https://karmolab-lab.pages.dev',
+  blog: 'https://karmolab-blog.pages.dev',
+  dash: 'https://karmolab-dash.pages.dev',
+};
+
+export function originFor(host, fallback) {
+  const kind = kindOf(host);
+  return ORIGIN_BY_HOST[kind] || fallback;
+}
 
 /** 호스트의 첫 조각 (`lab.mascari4615.com` -> `lab`). 모르는 호스트는 lab 취급 */
 export function kindOf(host) {

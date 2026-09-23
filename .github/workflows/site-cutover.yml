@@ -75,6 +75,19 @@ jobs:
 
       # Pages 도메인은 **DNS 레코드가 있어야** 살아난다 (붙인 직후에는 pending).
       # Worker 사용자 도메인을 떼면서 레코드도 같이 사라졌으므로 여기서 다시 만든다.
+      # Pages 사용자 도메인은 DNS 편집 권한이 없어 pending 에서 안 넘어간다. 이름은 Worker 가 받으므로 뗀다
+      - name: Pages 도메인 떼기
+        if: ${{ inputs.apply }}
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=ce18bd3c1df233b3cd533ef0623cbafe
+          for app in lab blog dash; do
+            curl -s -o /dev/null -w "pages-domain $app %{http_code}\n" -X DELETE \
+              -H "Authorization: Bearer $TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/karmolab-$app/domains/$app.mascari4615.com"
+          done
+
       - name: DNS 레코드 맞추기
         if: ${{ inputs.apply }}
         env:
