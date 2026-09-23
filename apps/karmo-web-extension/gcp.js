@@ -220,12 +220,16 @@ async function gcpAudienceStep(args) {
   const pub = find(/^(앱 게시|Publish app)$/);
   if (!pub) return { ok: false, step: "publish-button", status: before ? before[0] : "" };
   pub.click();
-  await sleep(1500);
-  const confirm = find(/^(확인|Confirm)$/);
+  await sleep(2000);
+  /* 확인 창. 버튼 이름이 판마다 달라 창 안에서 넓게 찾는다. 창 글자는 결과로 */
+  const dlg = document.querySelector('[role="dialog"], mat-dialog-container, .cdk-overlay-pane');
+  const dlgText = dlg ? norm(dlg.innerText).slice(0, 500) : "";
+  const dlgBtns = dlg ? Array.from(dlg.querySelectorAll("button")).map((b) => norm(b.textContent)).filter(Boolean) : [];
+  const confirm = dlg && Array.from(dlg.querySelectorAll("button")).find((b) => /^(확인|Confirm|게시|Publish|프로덕션으로 푸시|Push to production)$/.test(norm(b.textContent)) && !b.disabled);
   if (confirm) confirm.click();
-  await sleep(4000);
+  await sleep(5000);
   const after = text().match(/(게시 상태|Publishing status).{0,40}/);
-  return { ok: true, published: true, before: before ? before[0] : "", after: after ? after[0] : "" };
+  return { ok: true, clicked: confirm ? norm(confirm.textContent) : "", dialog: dlgText, dialogButtons: dlgBtns, before: before ? before[0] : "", after: after ? after[0] : "" };
 }
 
 /*
