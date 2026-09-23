@@ -12,7 +12,9 @@ param(
   # was "first 120 in tree order" and tree order puts the window frame first).
   # This has to match press-element.ps1's -MaxElements: the numbers come from
   # walking the window, and pressing walks it again to find the same one.
-  [int]$MaxElements = 600
+  [int]$MaxElements = 600,
+  # Explicit read target for controlled probes; zero keeps the foreground default.
+  [long]$WindowHandle = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,6 +63,12 @@ try {
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
+# Resolve once so the picture, title and tree refer to the same window.
+$targetWindow = [IntPtr]$WindowHandle
+if ($targetWindow -eq [IntPtr]::Zero) {
+  $targetWindow = [CompanionDpi]::GetForegroundWindow()
+}
+
 # Shoot the monitor the FOREGROUND WINDOW is on, not the primary one.
 #
 # The text below is read from the foreground window. If the picture is always
@@ -74,7 +82,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 # That is the other half of "there is only a small F up there" (98th round).
 $bounds = $null
 try {
-  $bounds = [System.Windows.Forms.Screen]::FromHandle([CompanionDpi]::GetForegroundWindow()).Bounds
+  $bounds = [System.Windows.Forms.Screen]::FromHandle($targetWindow).Bounds
 } catch {
   $bounds = $null
 }
@@ -132,7 +140,7 @@ try {
 [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
 '@
   $sb = New-Object System.Text.StringBuilder 512
-  [void][Win32.Native]::GetWindowText([Win32.Native]::GetForegroundWindow(), $sb, 512)
+  [void][Win32.Native]::GetWindowText($targetWindow, $sb, 512)
   $title = $sb.ToString()
 } catch {
   $title = ''
@@ -165,7 +173,7 @@ $readNamed = 0
 $readOnscreen = 0
 try {
   Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-  $root = [System.Windows.Automation.AutomationElement]::FromHandle([Win32.Native]::GetForegroundWindow())
+  $root = [System.Windows.Automation.AutomationElement]::FromHandle($targetWindow)
   if ($null -ne $root) {
     $readRoot = 'yes'
     $found = $root.FindAll(

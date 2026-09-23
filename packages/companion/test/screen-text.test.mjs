@@ -7,39 +7,22 @@
 // 여기서 재는 것은 트리가 나오나와 그 글자가 두뇌 앞까지 가나 둘이다.
 
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import test from 'node:test';
 
 import { screenSense } from '../dist/index.js';
+import { captureFixture } from '../test-support/screen-fixture.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const script = join(here, '..', 'assets', 'capture-screen.ps1');
 const windows = process.platform === 'win32';
 
-test('찍을 때 창 안의 글자도 같이 온다 (창 제목 하나가 아니다)', { skip: windows ? false : '윈도우에서만 잰다' }, () => {
-  const folder = mkdtempSync(join(tmpdir(), 'companion-tree-'));
-  try {
-    const stdout = execFileSync(
-      'powershell',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-OutPath', join(folder, 'screen.png')],
-      { timeout: 60_000, windowsHide: true, encoding: 'utf8' },
-    );
-    const line = /^TREE=(.*)$/m.exec(stdout);
-    assert.ok(line, 'TREE 줄이 없다. 글자로 읽는 길이 아예 없는 것이다');
-    const parsed = JSON.parse(line[1]);
-    assert.ok(Array.isArray(parsed), 'TREE 는 목록이어야 한다');
-    assert.ok(parsed.length > 0, '요소가 하나도 안 나왔다');
-    const first = parsed[0];
-    assert.equal(typeof first.k, 'string', '무슨 갈래인지');
-    assert.equal(typeof first.n, 'string', '뭐라고 적혀 있는지');
-    assert.ok(Array.isArray(first.r) && first.r.length === 4, '어디 있는지. 조작의 재료가 된다');
-    for (const n of first.r) assert.equal(Number.isFinite(n), true, '좌표에 무한대가 섞이면 안 된다');
-  } finally {
-    rmSync(folder, { recursive: true, force: true });
+test('찍을 때 창 안의 글자도 같이 온다 (창 제목 하나가 아니다)', { skip: windows ? false : '윈도우에서만 잰다' }, async () => {
+  const { elements: parsed } = await captureFixture();
+  assert.ok(Array.isArray(parsed), 'TREE 는 목록이어야 한다');
+  assert.ok(parsed.some((row) => row.n === 'Fixture text'), '시험 창의 글자가 누락');
+  for (const row of parsed) {
+    assert.equal(typeof row.k, 'string', '무슨 갈래인지');
+    assert.equal(typeof row.n, 'string', '뭐라고 적혀 있는지');
+    assert.ok(Array.isArray(row.r) && row.r.length === 4, '어디 있는지. 조작의 재료가 된다');
+    for (const n of row.r) assert.equal(Number.isFinite(n), true, '좌표에 무한대가 섞이면 안 된다');
   }
 });
 

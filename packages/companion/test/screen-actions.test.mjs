@@ -8,37 +8,27 @@
 // 이미 274ms 걸리는 트리 뽑기 옆에서 싸다.
 
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import { screenSense } from '../dist/index.js';
+import { captureFixture } from '../test-support/screen-fixture.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const script = join(here, '..', 'assets', 'capture-screen.ps1');
 const windows = process.platform === 'win32';
 
-test('트리에 무슨 동작이 되나가 실린다', { skip: windows ? false : '윈도우에서만 잰다' }, () => {
-  const folder = mkdtempSync(join(tmpdir(), 'companion-act-'));
-  try {
-    const stdout = execFileSync(
-      'powershell',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-OutPath', join(folder, 'screen.png')],
-      { timeout: 60_000, windowsHide: true, encoding: 'utf8' },
-    );
-    const parsed = JSON.parse(/^TREE=(.*)$/m.exec(stdout)[1]);
-    assert.ok(parsed.length > 0);
-    for (const row of parsed) {
-      assert.ok(Array.isArray(row.p), `동작 칸이 없다: ${JSON.stringify(row)}`);
-    }
-    // 창이 있으면 누를 수 있는 것이 하나쯤은 있다 (단추, 탭 닫기 같은 것).
-    assert.ok(parsed.some((row) => row.p.length > 0), '아무 것도 못 누른다고 나오면 조작으로 못 넘어간다');
-  } finally {
-    rmSync(folder, { recursive: true, force: true });
+test('트리에 무슨 동작이 되나가 실린다', { skip: windows ? false : '윈도우에서만 잰다' }, async () => {
+  const { elements } = await captureFixture();
+  for (const row of elements) {
+    assert.ok(Array.isArray(row.p), `동작 칸이 없다: ${JSON.stringify(row)}`);
   }
+  assert.ok(elements.find((row) => row.n === 'Fixture button')?.p.includes('Invoke'));
+  assert.ok(elements.find((row) => row.n === 'Fixture toggle')?.p.includes('Toggle'));
+  assert.deepEqual(elements.find((row) => row.n === 'Fixture text')?.p, []);
+});
+
+test('읽을 글만 있는 창은 누를 동작이 없어도 정상', { skip: windows ? false : '윈도우에서만 잰다' }, async () => {
+  const { elements } = await captureFixture({ readOnly: true });
+  assert.ok(elements.some((row) => row.n === 'Fixture text'));
+  assert.ok(elements.every((row) => Array.isArray(row.p) && row.p.length === 0));
 });
 
 test('두뇌가 보는 글에 누를 수 있음이 드러난다', async () => {

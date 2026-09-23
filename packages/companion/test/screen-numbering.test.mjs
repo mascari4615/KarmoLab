@@ -8,35 +8,18 @@
 // 얹고 모델은 좌표가 아니라 번호를 고른다. 우리는 글 목록이니 목록에 번호를 붙인다.
 
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import { screenSense } from '../dist/index.js';
+import { captureFixture } from '../test-support/screen-fixture.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const script = join(here, '..', 'assets', 'capture-screen.ps1');
 const windows = process.platform === 'win32';
 
-test('트리의 요소마다 번호가 붙는다', { skip: windows ? false : '윈도우에서만 잰다' }, () => {
-  const folder = mkdtempSync(join(tmpdir(), 'companion-num-'));
-  try {
-    const stdout = execFileSync(
-      'powershell',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-OutPath', join(folder, 'screen.png')],
-      { timeout: 60_000, windowsHide: true, encoding: 'utf8' },
-    );
-    const parsed = JSON.parse(/^TREE=(.*)$/m.exec(stdout)[1]);
-    assert.ok(parsed.length > 0);
-    const numbers = parsed.map((row) => row.i);
-    for (const n of numbers) assert.equal(Number.isInteger(n), true, `번호가 없다: ${JSON.stringify(numbers)}`);
-    assert.equal(new Set(numbers).size, numbers.length, '번호가 겹치면 집을 수가 없다');
-  } finally {
-    rmSync(folder, { recursive: true, force: true });
-  }
+test('트리의 요소마다 번호가 붙는다', { skip: windows ? false : '윈도우에서만 잰다' }, async () => {
+  const { elements } = await captureFixture();
+  assert.ok(elements.some((row) => row.n === 'Fixture button'));
+  const numbers = elements.map((row) => row.i);
+  assert.deepEqual(numbers, elements.map((_, index) => index + 1), '번호는 1부터 순서대로');
 });
 
 test('두뇌가 보는 글에 번호가 앞에 온다. 같은 이름이 여럿이어도 집을 수 있게', async () => {
