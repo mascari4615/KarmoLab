@@ -4,17 +4,30 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { smokeBase } from './lib/smoke-base.mjs';
 import { WAIT } from './lib/waits.mjs';
+import { traceRtc } from './lib/rtc-diagnostics.mjs';
+import { nostrTestRelay } from './lib/nostr-test-relay.mjs';
 
 const requestedPlayers = Number(process.argv[2] ?? 0);
 if (requestedPlayers === 0) {
   for (const players of [2, 3, 4]) {
-    const run = spawnSync(process.execPath, [fileURLToPath(import.meta.url), String(players)], { stdio: 'inherit', env: process.env });
+    const run = spawnSync(process.execPath, [fileURLToPath(import.meta.url), String(players)], {
+      stdio: 'inherit',
+      env: { ...process.env, KL_RANKED_PARTIAL: players === 4 && process.env.KL_RANKED_PUBLIC_RELAY !== '1' ? '1' : '0' }
+    });
     if (run.status !== 0) process.exit(run.status ?? 1);
   }
   console.log('[arcade-yacht-ranked] 2인, 3인, 4인 시나리오 모두 통과');
   process.exit(0);
 }
 if (![2, 3, 4].includes(requestedPlayers)) throw new Error('참가자는 2명, 3명 또는 4명이어야 한다');
+
+const relay = process.env.KL_RANKED_PUBLIC_RELAY === '1' ? null : nostrTestRelay();
+const partial = process.env.KL_RANKED_PARTIAL === '1';
+if (partial && (!relay || requestedPlayers !== 4)) throw new Error('Partial connection scenario requires four players and the test relay');
+if (partial) relay.holdPair(0, 1);
+const dimension = process.env.KL_RANKED_DIM === '3d' ? '3d' : '2d';
+const boardSelector = dimension === '3d' ? '.ac-yctable' : '.ac-ycsheet';
+console.log(`[arcade-yacht-ranked] relay=${relay ? 'local signaling, real WebRTC' : 'public nostr'}, view=${dimension}`);
 
 const server = await smokeBase();
 const pageUrl = `${server.base}/apps/karmolab/index.html?all=1`;
@@ -33,6 +46,10 @@ try {
   pages = await Promise.all(ids.map(async (id, seat) => {
     const context = await browser.newContext({ serviceWorkers: 'block' });
     contexts.push(context);
+    await traceRtc(context);
+    await relay?.attach(context, seat);
+    /* 네 소프트웨어 3D 렌더러의 경쟁과 연결 검사를 분리. 3D 화면은 test:arcade:yacht에서 실측 */
+    await context.addInitScript((dim) => localStorage.setItem('karmolab.arcade.dim', dim), dimension);
     /* 로비가 여는 열린 방 목록과 내 지난 판. 막지 않으면 라이브 yawnbot 으로 나가고, CI 의
        임의 포트 origin 은 CORS 허용 목록에 없어 콘솔 오류 158건으로 판이 빨갛다 (2026-09-19 실측) */
     await context.route('**/kl/arcade/rooms*', (route) => route.fulfill({
@@ -88,7 +105,21 @@ try {
     return page;
   }));
 
-  await Promise.all(pages.map((page) => page.waitForSelector('.ac-yctable', { timeout: 90000 })));
+  if (partial) {
+    await Promise.all(pages.map((page, seat) => page.waitForFunction(
+      (count) => document.querySelectorAll('#acWaitSeats .ac-seat').length === count,
+      seat < 2 ? 3 : 4,
+      { timeout: 20000 }
+    )));
+    await Promise.all(pages.map((page) => page.waitForFunction(
+      () => /연결|connect/i.test(document.querySelector('#acWaitStatus')?.textContent ?? ''), null, { timeout: 30000 }
+    )));
+    if (await pages[0].locator('#acPlay').isVisible()) throw new Error('Missing ranked player was replaced or ignored');
+    console.log('  [O] 창별 명단 3/3/4/4에서도 판을 시작하지 않고 연결 지연을 알린다');
+    relay.release();
+  }
+
+  await Promise.all(pages.map((page) => page.waitForSelector(boardSelector, { timeout: 90000 })));
   const states = await Promise.all(pages.map((page) => page.evaluate(() => ({
     seats: window.__arcade?.state?.sheet?.length ?? 0,
     mySeat: window.__arcade?.mySeat ?? -1
@@ -127,6 +158,7 @@ try {
     Array.isArray([...reports.values()][0]?.placements) && [...reports.values()][0].placements.flat().length === ids.length;
   if (!completed) failures.push(`전원 결과 보고가 다르다: ${JSON.stringify([...reports.entries()])}`);
   else console.log(`  [O] ${requestedPlayers}개 창이 판을 완주하고 같은 순위를 보고한다`);
+  if (relay && relay.forwarded === 0) failures.push('Test relay did not forward any signaling');
 } catch (error) {
   failures.push(error instanceof Error ? error.message : String(error));
   const diagnostics = await Promise.all(pages.map(async (page, seat) => page.evaluate(() => ({
@@ -134,8 +166,10 @@ try {
     waitSeats: document.querySelectorAll('#acWaitSeats .ac-seat').length,
     waitVisible: getComputedStyle(document.querySelector('#acWait')).display !== 'none',
     playVisible: getComputedStyle(document.querySelector('#acPlay')).display !== 'none',
-    game: window.__arcade?.gameId ?? '',
-    mySeat: window.__arcade?.mySeat ?? -1
+    game: window.__arcade?.game ?? '',
+    mySeat: window.__arcade?.mySeat ?? -1,
+    state: window.__arcade?.state,
+    rtc: window.__rtcTrace
   })).then((state) => ({ seat, ...state })).catch((failure) => ({ seat, error: String(failure) }))));
   failures.push(`창 상태: ${JSON.stringify(diagnostics)}`);
   if (consoleErrors.length) failures.push(`콘솔 오류 ${consoleErrors.length}건, 처음 8건: ${consoleErrors.slice(0, 8).join(' | ')}`);

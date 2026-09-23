@@ -40,6 +40,11 @@ assert.equal(queueDrops, 1);
 assert.equal(waitDrops, 1);
 assert.equal(run.paired, null);
 assert.equal(run.limit, null);
+assert.equal(run.linkTimedOut, false);
+await new Promise((resolve) => run.watchLink(resolve, 0));
+assert.equal(run.linkTimedOut, true, '연결 대기 만료 상태를 다음 명단 갱신에도 보존');
+run.stopLinkWatch();
+assert.equal(run.linkTimedOut, false, '실제 판 시작 뒤 연결 대기 상태 해제');
 
 const yachtBuilt = await build({
   entryPoints: ['src/widgets/arcade/games/yacht.ts'],

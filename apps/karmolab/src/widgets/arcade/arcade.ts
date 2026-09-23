@@ -1655,9 +1655,10 @@ interface Session {
       ].join('');
       /* 자리가 몇이고 지금 몇이 넘치는지를 **기다리는 동안** 말해 준다. 시작하고 나서
          나는 왜 못 두지를 겪게 하면 그건 관전이 아니라 고장으로 느껴진다. */
-      const cap = cardById(gameId)?.seats[1] ?? 0;
+      const cap = rankedRun.roster?.seats ?? cardById(gameId)?.seats[1] ?? 0;
       const over = Math.max(0, online.peers.length + 1 - cap);
       $<HTMLElement>('#acWaitStatus').textContent =
+        rankedRun.linkTimedOut ? t('arcade.rank.nolink') :
         (host ? t('arcade.wait.host', { n: String(online.peers.length + 1) }) : t('arcade.wait.guest')) +
         (over > 0 ? ', ' + t('arcade.watch.over', { n: String(over) }) : '');
       /* 등급전 방은 시작 버튼도 링크도 없음. 상대는 서버가 정함, 오면 바로 판 */
@@ -1825,11 +1826,11 @@ interface Session {
       rankedRun.stopLinkWatch();
     }
 
-    /** 짝이 난 뒤부터 센다. 상대가 방에 들어오면 멈춘다 */
+    /** 매칭부터 실제 판 시작까지 감시. 다인전의 일부 연결도 대기 상태 */
     function watchLink(): void {
       stopLinkWatch();
       rankedRun.watchLink(() => {
-        if (!rankedRun.paired || match || online.peers.length) return;
+        if (!rankedRun.paired || match) return;
         const word = t('arcade.rank.nolink');
         /* 아직 판이 안 떴으면 대기 화면에 적는다. 판 위의 띠는 그때 안 보인다 */
         const waiting = $<HTMLElement>('#acWait').style.display !== 'none';
@@ -1896,6 +1897,7 @@ interface Session {
     function maybeAutoStart(): void {
       if (!rankedRun.autoStart || match || !rankedRun.roster || online.peers.length < rankedRun.roster.seats - 1 || !rankedRun.roster.ready) return;
       rankedRun.autoStart = false;
+      stopLinkWatch();
       startTogether();
     }
 
@@ -1935,7 +1937,6 @@ interface Session {
           paintWait(code, true);
           paintRoom();
           if (was > 0 && !list.length) rivalGone();
-          if (list.length) stopLinkWatch();
           /* 사람이 드나든 그 순간에 알린다. 주기를 기다리면 초대 카드가 한동안 거짓말을 함 */
           if (was !== list.length) online.listing?.poke();
           /* 등급전: 서버가 붙여 준 상대 도착 시 즉시 시작. 둘째 사람 대기 없음 */
@@ -2065,7 +2066,6 @@ interface Session {
           const was = online.peers.length;
           online.peers = list;
           paintWait(code, false);
-          if (list.length) stopLinkWatch();
           /* act 는 연결 전 메시지를 보관하지 않는다. 처음 joinRoomAs 에서 보낸 등급전 자리표가
              유실될 수 있으므로 peer 발견 뒤 다시 보내 주인이 명단을 확정하게 한다. */
           if (rankedRun.roster && list.length) online.connection?.act({ meta: rankedRun.roster.joinMeta() });
@@ -2106,6 +2106,7 @@ interface Session {
         onSync: (data) => {
           const p = data as unknown as { game: string; now: number; seatOf: Record<string, number>; rankRoster?: string[]; v: MatchView<unknown> };
           if (!p?.v) return;
+          stopLinkWatch();
           if (gameId !== p.game) {
             gameId = p.game;
             mountView(p.game);

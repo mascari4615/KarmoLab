@@ -297,6 +297,7 @@ export class RankedRun {
   roster: RankedRoster | null = null;
   queue: Ranked | null = null;
   autoStart = false;
+  linkTimedOut = false;
   since = 0;
   room: RankRoom = 'beginner';
   others = 0;
@@ -320,6 +321,7 @@ export class RankedRun {
     this.stopLinkWatch();
     this.linkTimer = setTimeout(() => {
       this.linkTimer = null;
+      this.linkTimedOut = true;
       onTimeout();
     }, delayMs);
   }
@@ -327,6 +329,7 @@ export class RankedRun {
   stopLinkWatch(): void {
     if (this.linkTimer !== null) clearTimeout(this.linkTimer);
     this.linkTimer = null;
+    this.linkTimedOut = false;
   }
 
   reset(): void {
