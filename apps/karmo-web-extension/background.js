@@ -537,6 +537,12 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
         if (!GCP_CLIENT_RE.test(String(msg.clientId || ""))) throw new Error("clientId 형식 아님");
         const url = "https://console.cloud.google.com/auth/clients/" + msg.clientId + gcpProject(msg);
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpSecretRowStep", { suffix: msg.suffix, action: msg.action }) });
+      } else if (msg?.type === "gcp.branding") {
+        /* 링크는 내 도메인만 */
+        const okUrl = (u) => /^https:\/\/([a-z0-9-]+\.)?mascari4615\.com(\/[A-Za-z0-9\/_-]*)?$/.test(String(u || ""));
+        if (!okUrl(msg.homepage) || !okUrl(msg.privacy)) throw new Error("허용 안 된 링크");
+        const url = "https://console.cloud.google.com/auth/branding" + gcpProject(msg);
+        sendResponse({ ok: true, result: await gcpOnce(url, "gcpBrandingStep", { homepage: msg.homepage, privacy: msg.privacy }) });
       } else if (msg?.type === "gcp.audience") {
         const url = "https://console.cloud.google.com/auth/audience" + gcpProject(msg);
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpAudienceStep", { publish: !!msg.publish }) });

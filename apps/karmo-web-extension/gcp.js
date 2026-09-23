@@ -282,6 +282,43 @@ async function gcpSecretRowStep(args) {
   return { ok: true, action, mark, stillThere: still, state, dialog: dlg ? norm(dlg.innerText).slice(0, 300) : "" };
 }
 
+/*
+ * 브랜딩 화면의 홈페이지, 개인정보처리방침 링크 두 칸을 채우고 저장. 앱 게시의 조건 (2026-09-23)
+ */
+async function gcpBrandingStep(args) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  const want = { "애플리케이션 홈페이지": args && args.homepage, "애플리케이션 개인정보처리방침 링크": args && args.privacy };
+  let inputs = [];
+  for (let i = 0; i < 40; i++) {
+    inputs = Array.from(document.querySelectorAll("input")).filter((x) => want[norm(x.getAttribute("aria-label") || (x.labels && x.labels[0] && x.labels[0].textContent) || "")] !== undefined);
+    if (inputs.length >= 2) break;
+    await sleep(500);
+  }
+  if (inputs.length < 2) return { ok: false, step: "fields", found: inputs.length };
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+  const done = [];
+  for (const x of inputs) {
+    const label = norm(x.getAttribute("aria-label") || (x.labels && x.labels[0] && x.labels[0].textContent) || "");
+    const v = want[label];
+    if (!v || x.value === v) continue;
+    x.focus();
+    setter.call(x, v);
+    x.dispatchEvent(new Event("input", { bubbles: true }));
+    x.dispatchEvent(new Event("change", { bubbles: true }));
+    x.dispatchEvent(new Event("blur", { bubbles: true }));
+    done.push(label);
+    await sleep(300);
+  }
+  if (!done.length) return { ok: true, changed: [] };
+  const save = Array.from(document.querySelectorAll("button")).find((b) => /^(저장|Save|SAVE)$/.test(norm(b.textContent)) && !b.disabled);
+  if (!save) return { ok: false, step: "save", changed: done };
+  save.click();
+  await sleep(5000);
+  const err = norm(document.body.innerText).match(/(오류|유효하지|error)[^.]{0,120}/i);
+  return { ok: true, changed: done, error: err ? err[0] : "" };
+}
+
 /* 화면 읽기만. 글자, 입력칸 (이름표와 값), 버튼. 무엇이 비었는지 보려고 */
 async function gcpReadStep() {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -302,6 +339,7 @@ async function gcpReadStep() {
 }
 
 globalThis.gcpHookSecret = gcpHookSecret;
+globalThis.gcpBrandingStep = gcpBrandingStep;
 globalThis.gcpReadStep = gcpReadStep;
 globalThis.gcpSecretRowStep = gcpSecretRowStep;
 globalThis.gcpClientStep = gcpClientStep;

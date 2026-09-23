@@ -109,7 +109,7 @@
         if (!type) return false;
         /* 주소만으로 부를 수 있는 것은 이 목록뿐 (읽기와 gcp). 즐겨찾기 삭제 같은 것은 주소로 불가
            (남의 사이트가 이 주소로 보내 확장을 부리는 길 차단) */
-        const RUNNABLE = ["ext.version", "ext.reload", "bridge.cleanup", "gcp.client", "gcp.last", "gcp.secret", "gcp.secretRow", "gcp.audience", "gcp.read", "collect.progress"];
+        const RUNNABLE = ["ext.version", "ext.reload", "bridge.cleanup", "gcp.branding", "gcp.client", "gcp.last", "gcp.secret", "gcp.secretRow", "gcp.audience", "gcp.read", "collect.progress"];
         if (!RUNNABLE.includes(type)) {
           document.getElementById("out").textContent = "주소로 못 부르는 종류: " + type;
           return true;
@@ -117,7 +117,7 @@
         const out = document.getElementById("out");
         /* 상태를 바꾸는 호출은 로컬 수신기가 발급한 키가 맞아야 실행. 남의 사이트가 이 주소를 열어도
            127.0.0.1 수신기의 키를 모르니 못 부른다 (보안 검토 2026-09-23) */
-        const MUTATING = ["gcp.client", "gcp.secret", "gcp.secretRow", "gcp.audience"];
+        const MUTATING = ["gcp.branding", "gcp.client", "gcp.secret", "gcp.secretRow", "gcp.audience"];
         const reportUrl = q.get("report") || "";
         if (MUTATING.includes(type)) {
           const m = reportUrl.match(/^(http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)\//);
