@@ -13,7 +13,7 @@
  *   streaks-view    연속일, 레벨
  */
 import { t, loadNamespace } from '../../lib/i18n';
-import { GOOGLE_CLIENT_ID, forgetToken, requestToken, storedToken } from './gauth';
+import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken, storedToken } from './gauth';
 import { buildCalendarView, type CalendarViewHandle } from './calendar-view';
 import { buildKanbanView, type KanbanViewHandle } from './kanban-view';
 import { buildStreaksView } from './streaks-view';
@@ -273,8 +273,9 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
             });
         }
 
-        /* 말 묶음이 오기 전에 그리면 열쇠가 그대로 화면에 뜬다. 받은 뒤에 그린다 */
-        void loadNamespace('planner').then(render);
+        /* i18n 묶음이 오기 전에 그리면 키가 그대로 화면에 노출. 받은 뒤 그림.
+           한 시간 토큰이 끝났으면 갱신 토큰으로 창 없이 한 번 갱신 */
+        void Promise.all([loadNamespace('planner'), token ? null : ensureToken().then((x) => { token = x; })]).then(render);
     }
 
     Toolbox.register({

@@ -19,7 +19,7 @@
 import { dashRegistry, esc } from './kit';
 import type { DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
-import { GOOGLE_CLIENT_ID, forgetToken, requestToken, storedToken } from '../planner/gauth';
+import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents, ymd } from '../planner/gcal';
 import type { FcEvent, GoogleCalendar } from '../planner/gcal';
 
@@ -353,8 +353,8 @@ import type { FcEvent, GoogleCalendar } from '../planner/gcal';
     }
 
     async function loadMonth(): Promise<void> {
-      /* 시간으로 만료된 토큰은 `storedToken` 이 스스로 버림. 그 자리도 다시 연결 */
-      const token = storedToken();
+      /* 한 시간이 지난 토큰은 갱신 토큰으로 창 없이 새로. 갱신도 안 되면 다시 연결 */
+      const token = await ensureToken();
       if (!token) {
         authLost();
         return;
@@ -528,7 +528,7 @@ import type { FcEvent, GoogleCalendar } from '../planner/gcal';
       void loadMonth();
     });
 
-    const token = storedToken();
+    const token = await ensureToken();
     if (!token) {
       paintAuth();
       return;

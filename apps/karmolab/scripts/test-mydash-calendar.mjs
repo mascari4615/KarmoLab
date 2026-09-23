@@ -257,5 +257,48 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
   check('북마크 실패 사유 한 줄', ctx.root.textContent.includes('북마크 수를 못 읽었습니다'));
 }
 
+/* ── 한 시간 토큰이 끝나도 갱신 토큰이 있으면 창 없이 이어진다 (2026-09-23) ── */
+{
+  const inner = googleFetch();
+  const relayCalls = [];
+  const { window, panel } = boot({
+    token: null,
+    fetchImpl: async (url, init) => {
+      const u = String(url);
+      if (u.startsWith('https://mydash-relay.mascari4615.com/google/refresh')) {
+        relayCalls.push(JSON.parse(init.body));
+        return { ok: true, status: 200, json: async () => ({ access_token: 'fresh', expires_in: 3599 }) };
+      }
+      return inner(url, init);
+    },
+  });
+  window.localStorage.setItem('karmolab_google_refresh', 'rt-1');
+  const { ctx } = makeCtx(window, bookmarks);
+  await panel.render(ctx);
+  await tick();
+  check('갱신 토큰으로 릴레이를 한 번 부른다', relayCalls.length === 1 && relayCalls[0].refresh_token === 'rt-1', JSON.stringify(relayCalls));
+  check('갱신 뒤 달력이 뜬다 (연결 카드 없음)', !ctx.root.querySelector('[data-conn]') && ctx.root.querySelector('.mdc-shell').hidden === false);
+  const saved = JSON.parse(window.localStorage.getItem('karmolab_google_token') || '{}');
+  check('새 접근 토큰을 저장', saved.access_token === 'fresh');
+  check('갱신 토큰은 그대로 남는다', window.localStorage.getItem('karmolab_google_refresh') === 'rt-1');
+}
+
+/* ── 갱신이 invalid_grant 면 갱신 토큰을 버리고 연결 카드 ── */
+{
+  const { window, panel } = boot({
+    token: null,
+    fetchImpl: async (url) => {
+      if (String(url).includes('/google/refresh')) return { ok: false, status: 400, json: async () => ({ error: 'invalid_grant' }) };
+      throw new Error('fetch 금지');
+    },
+  });
+  window.localStorage.setItem('karmolab_google_refresh', 'rt-dead');
+  const { ctx } = makeCtx(window, bookmarks);
+  await panel.render(ctx);
+  await tick();
+  check('invalid_grant 면 연결 카드', !!ctx.root.querySelector('[data-conn]'));
+  check('죽은 갱신 토큰은 지운다', window.localStorage.getItem('karmolab_google_refresh') === null);
+}
+
 console.log(failed ? '[mydash-cal] ' + failed + '개 어긋남' : '[mydash-cal] 통과');
 process.exit(failed ? 1 : 0);

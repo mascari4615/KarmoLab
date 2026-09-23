@@ -1,14 +1,13 @@
 /**
- * 구글 연동. 토큰 한 장 받아 오기 (TASK-KL-321)
+ * 구글 연동. 토큰 받아 오기 (TASK-KL-321, 갱신 2026-09-23)
  *
- * React 판은 `@react-oauth/google` 이 하던 일이다. 그 꾸러미가 실제로 하는 것은
- * 구글이 주는 `gsi/client` 스크립트를 불러 `initTokenClient` 를 부르는 것뿐이라,
- * React 를 걷어 내면서 여기로 옮겼다. 받아 오는 코드가 오히려 줄었다.
+ * 두 장을 든다. 한 시간짜리 접근 토큰과, 그것을 다시 받는 갱신 토큰.
+ * 갱신 토큰은 브라우저만으로는 못 받는다 (교환에 클라이언트 비밀값이 든다). 그래서
+ * GIS **코드** 흐름으로 code 를 받고, 교환과 갱신은 mydash 릴레이 (`relay/github-device-relay.mjs`
+ * 의 `/google/token`, `/google/refresh`) 몫. 릴레이는 저장 없이 응답만.
  *
- * 알아 둘 것: 브라우저만으로는 **갱신 토큰을 받을 수 없다**. 구글이 주는 것은 한 시간짜리
- * 접근 토큰 한 장이고, 그래서 한 시간 뒤에는 다시 눌러야 한다. 새로고침만으로 안 풀리는
- * 문제가 아니라 규약이 그렇다. 진짜로 계속 유지하려면 서버가 갱신 토큰을 들고 있어야 한다
- * (`kl/auth/*` 에 얹는 별도 작업). 지금은 **한 시간 안에는 새로고침해도 유지**된다.
+ * 결과: 한 번 연결하면 로그아웃하거나 구글 쪽 허가를 거둘 때까지 유지 (사용자 2026-09-23
+ * "기간 좀 늘릴 수 없나 무한이라던지"). 단 Console 의 앱 게시 상태가 테스트면 갱신 토큰이 7일
  */
 
 declare const __KARMOLAB_GOOGLE_CLIENT_ID__: string;
@@ -18,7 +17,10 @@ export const GOOGLE_CLIENT_ID: string =
     typeof __KARMOLAB_GOOGLE_CLIENT_ID__ === 'string' ? __KARMOLAB_GOOGLE_CLIENT_ID__ : '';
 
 const TOKEN_KEY = 'karmolab_google_token';
+const REFRESH_KEY = 'karmolab_google_refresh';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
+/** `data/mydash-config.json` 의 relay 와 같은 주소. 이 모듈은 설정을 안 읽는 자리에서도 쓰여 여기 한 줄 */
+const RELAY = 'https://mydash-relay.mascari4615.com';
 
 const SCOPES = [
     'https://www.googleapis.com/auth/calendar.events',
@@ -31,22 +33,26 @@ interface StoredToken {
     expires_at: number;
 }
 
-interface TokenClient {
-    requestAccessToken: (opts?: { prompt?: string }) => void;
+interface CodeClient {
+    requestCode: () => void;
 }
 
 interface GisNamespace {
     accounts: {
         oauth2: {
-            initTokenClient: (cfg: {
+            initCodeClient: (cfg: {
                 client_id: string;
                 scope: string;
-                callback: (res: { access_token?: string; expires_in?: number; error?: string }) => void;
-            }) => TokenClient;
+                ux_mode: 'popup';
+                callback: (res: { code?: string; error?: string }) => void;
+                error_callback?: (err: { type?: string }) => void;
+            }) => CodeClient;
             revoke?: (token: string, done?: () => void) => void;
         };
     };
 }
+
+type TokenReply = { access_token?: string; expires_in?: number; refresh_token?: string; error?: string };
 
 function gis(): GisNamespace | undefined {
     return (window as unknown as { google?: GisNamespace }).google;
@@ -66,6 +72,14 @@ export function storedToken(): string | null {
     return null;
 }
 
+function storedRefresh(): string | null {
+    try {
+        return localStorage.getItem(REFRESH_KEY);
+    } catch {
+        return null;
+    }
+}
+
 function storeToken(token: string, expiresInSec: number): void {
     try {
         const data: StoredToken = { access_token: token, expires_at: Date.now() + expiresInSec * 1000 };
@@ -75,15 +89,77 @@ function storeToken(token: string, expiresInSec: number): void {
     }
 }
 
+/** 릴레이에 한 번. 실패는 null (그물, 설정, 거절 전부). 부르는 쪽은 다시 연결 로 간다 */
+async function relay(path: string, body: Record<string, string>): Promise<TokenReply | null> {
+    try {
+        const res = await fetch(RELAY + path, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', accept: 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const j = (await res.json()) as TokenReply;
+        return res.ok ? j : { error: j.error || String(res.status) };
+    } catch {
+        return null;
+    }
+}
+
+/** 받은 답을 저장. 갱신 토큰은 처음 교환 때만 온다. 갱신 답에는 없으니 있던 것을 그대로 둔다 */
+function keep(reply: TokenReply | null): string | null {
+    if (!reply || !reply.access_token) return null;
+    storeToken(reply.access_token, reply.expires_in ?? 3600);
+    if (reply.refresh_token) {
+        try {
+            localStorage.setItem(REFRESH_KEY, reply.refresh_token);
+        } catch {
+            /* 못 적으면 한 시간짜리로만 산다 */
+        }
+    }
+    return reply.access_token;
+}
+
+let refreshing: Promise<string | null> | null = null;
+
+/**
+ * 창 없이 쓸 수 있는 토큰. 살아 있는 접근 토큰, 없으면 갱신 토큰으로 새로. 둘 다 없으면 null.
+ * 갱신이 invalid_grant (허가 철회 또는 7일 테스트 만료) 면 갱신 토큰 삭제
+ */
+export async function ensureToken(): Promise<string | null> {
+    const live = storedToken();
+    if (live) return live;
+    const rt = storedRefresh();
+    if (!rt) return null;
+    if (!refreshing) {
+        refreshing = (async () => {
+            const reply = await relay('/google/refresh', { refresh_token: rt });
+            if (reply && reply.error === 'invalid_grant') {
+                try {
+                    localStorage.removeItem(REFRESH_KEY);
+                } catch {
+                    /* 무시 */
+                }
+            }
+            return keep(reply);
+        })().finally(() => {
+            refreshing = null;
+        });
+    }
+    return refreshing;
+}
+
 export function forgetToken(): void {
     const token = storedToken();
+    const rt = storedRefresh();
     try {
         localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
     } catch {
         /* 무시 */
     }
-    /* 구글 쪽 허가도 같이 거둔다. 안 그러면 로그아웃이 이 브라우저에서만 참이다 */
-    if (token) gis()?.accounts.oauth2.revoke?.(token);
+    /* 구글 쪽 허가도 같이 철회. 안 하면 이 브라우저에서만 로그아웃.
+       갱신 토큰 철회 시 접근 토큰도 같이 무효 */
+    const target = rt || token;
+    if (target) gis()?.accounts.oauth2.revoke?.(target);
 }
 
 let gisLoading: Promise<void> | null = null;
@@ -110,31 +186,32 @@ function loadGis(): Promise<void> {
 }
 
 /**
- * 연동 창을 띄우고 토큰을 받는다. 이미 유효한 토큰이 있으면 그걸 그대로 준다.
- * 사용자가 창을 닫으면 `null`. 그건 오류가 아니라 안 하겠다다.
+ * 연결. 쓸 수 있는 토큰이 있으면 (갱신 포함) 그걸 그대로 준다. 없으면 연동 창을 띄워 code 를 받고
+ * 릴레이에서 두 장으로 교환. 사용자가 창을 닫으면 `null` (오류가 아니라 취소).
+ * 코드 흐름의 교환은 늘 오프라인 허가라 갱신 토큰이 온다. 구글은 그것을 첫 동의 때만 주므로,
+ * 답에 갱신 토큰이 없으면 한 시간짜리로만 산다 (그때는 myaccount 에서 허가를 거두고 다시 연결)
  */
 export async function requestToken(): Promise<string | null> {
     if (!GOOGLE_CLIENT_ID) throw new Error('no-client-id');
-    const existing = storedToken();
+    const existing = await ensureToken();
     if (existing) return existing;
 
     await loadGis();
     const oauth2 = gis()?.accounts.oauth2;
     if (!oauth2) throw new Error('gsi-unavailable');
 
-    return new Promise<string | null>((resolve) => {
-        const client = oauth2.initTokenClient({
+    const code = await new Promise<string | null>((resolve) => {
+        const client = oauth2.initCodeClient({
             client_id: GOOGLE_CLIENT_ID,
             scope: SCOPES,
-            callback: (res) => {
-                if (res.error || !res.access_token) {
-                    resolve(null);
-                    return;
-                }
-                storeToken(res.access_token, res.expires_in ?? 3600);
-                resolve(res.access_token);
-            }
+            ux_mode: 'popup',
+            callback: (res) => resolve(res.error || !res.code ? null : res.code),
+            error_callback: () => resolve(null),
         });
-        client.requestAccessToken();
+        client.requestCode();
     });
+    if (!code) return null;
+    const reply = await relay('/google/token', { code });
+    if (!reply || !reply.access_token) throw new Error('google-token ' + ((reply && reply.error) || 'relay'));
+    return keep(reply);
 }

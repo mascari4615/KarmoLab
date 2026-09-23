@@ -16,6 +16,13 @@
  *                          OAuth App 으로 할 때만 필요. 그때는 반드시 secret 으로.
  *   ALLOWED_ORIGIN         필수. 예: https://mascari4615.github.io
  *                          쉼표로 여럿. 여기 없는 출처에는 CORS 안 줌.
+ *   GOOGLE_CLIENT_ID       Google 캘린더 연결용 OAuth 웹 클라이언트 id (공개값)
+ *   GOOGLE_CLIENT_SECRET   그 클라이언트의 비밀값. **반드시 secret** (배포 워크플로가 저장소 Secret 에서 넣음)
+ *
+ * Google 두 경로 (2026-09-23, 사용자 "기간 좀 늘릴 수 없나 무한이라던지"):
+ *   /google/token    브라우저가 GIS 코드 흐름으로 받은 code 를 갱신 토큰까지 교환
+ *   /google/refresh  브라우저에 저장된 갱신 토큰으로 새 1시간 토큰
+ *   비밀값이 있어야 되는 교환이라 여기. 토큰은 저장 없이 브라우저로 (GitHub 흐름과 같은 원칙)
  *
  * 배포:
  *   npx wrangler deploy apps/karmolab/relay/github-device-relay.mjs --name mydash-relay
@@ -26,6 +33,7 @@
 const DEVICE_CODE_URL = 'https://github.com/login/device/code';
 const TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const GRANT_DEVICE = 'urn:ietf:params:oauth:grant-type:device_code';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 /* 속도 제한. IP 당 분당 60회, isolate 메모리 Map. 정확한 전역 제한이 목적이 아니라
    폭주 완화가 목적이라 이 정도로 충분함. isolate 재시작되면 카운트도 같이 비워짐.
@@ -117,9 +125,6 @@ export default {
       );
     }
 
-    const clientId = env.GITHUB_CLIENT_ID;
-    if (!clientId) return json({ error: 'relay_misconfigured' }, 500, cors);
-
     let payload = {};
     try {
       payload = await request.json();
@@ -128,6 +133,24 @@ export default {
     }
 
     const path = new URL(request.url).pathname.replace(/\/+$/, '');
+
+    /* Google. code 교환의 redirect_uri 는 GIS 팝업 흐름의 규약값 'postmessage' */
+    if (path.endsWith('/google/token') || path.endsWith('/google/refresh')) {
+      if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return json({ error: 'relay_misconfigured' }, 500, cors);
+      const params = { client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET };
+      if (path.endsWith('/google/token')) {
+        if (!payload.code) return json({ error: 'missing_code' }, 400, cors);
+        Object.assign(params, { code: payload.code, grant_type: 'authorization_code', redirect_uri: 'postmessage' });
+      } else {
+        if (!payload.refresh_token) return json({ error: 'missing_refresh_token' }, 400, cors);
+        Object.assign(params, { refresh_token: payload.refresh_token, grant_type: 'refresh_token' });
+      }
+      const out = await toGithub(GOOGLE_TOKEN_URL, params);
+      return json(out.body, out.status, cors);
+    }
+
+    const clientId = env.GITHUB_CLIENT_ID;
+    if (!clientId) return json({ error: 'relay_misconfigured' }, 500, cors);
 
     if (path.endsWith('/device/code')) {
       /* scope 를 여기서 안 준다. **GitHub App 은 권한이 App 설정에 있다** (Contents: Read).

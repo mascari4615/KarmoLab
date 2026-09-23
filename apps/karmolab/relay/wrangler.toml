@@ -6,8 +6,10 @@ compatibility_date = "2026-09-01"
 # custom_domain 이면 wrangler 가 DNS 레코드까지 생성 (files 워커와 같은 zone)
 routes = [{ pattern = "mydash-relay.mascari4615.com", custom_domain = true }]
 
-# 비밀값 없음. GitHub App 기기 흐름은 client secret 미사용
+# GitHub App 기기 흐름은 client secret 미사용
+# Google 은 GOOGLE_CLIENT_SECRET 하나가 secret (배포 워크플로가 저장소 Secret 에서 넣음)
 # Client ID 는 공개 값. 사이트 origin 은 쉼표로 여럿 가능
 [vars]
 GITHUB_CLIENT_ID = "Iv23liwmOWcREeN7qrlw"
+GOOGLE_CLIENT_ID = "1020582454802-8luqvaro71f0fdg3fcv72viakohnirs8.apps.googleusercontent.com"
 ALLOWED_ORIGIN = "https://blog.mascari4615.com,https://mascari4615.github.io,https://dash.mascari4615.com,https://lab.mascari4615.com"

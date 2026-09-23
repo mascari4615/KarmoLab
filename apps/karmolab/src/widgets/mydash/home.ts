@@ -14,7 +14,7 @@
 import { dashRegistry, esc, short, usd } from './kit';
 import type { DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
-import { storedToken } from '../planner/gauth';
+import { ensureToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents } from '../planner/gcal';
 
 (function (): void {
@@ -105,7 +105,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
    * 수 없음. 홈에서 로그인 창은 안 띄운다 (카드 일곱이 한 번에 뜨는 자리)
    */
   async function calendarCount(): Promise<string | null> {
-    const token = storedToken();
+    const token = await ensureToken();
     if (!token) return null;
     const from = new Date();
     from.setHours(0, 0, 0, 0);
