@@ -4,8 +4,9 @@
  * 메뉴는 진입점 (사용자 2026-09-21). 안에는 어디로 가는 칸 여덟과 프로필, 닫기만.
  * 세부 UI 와 칸마다 붙는 수는 없음. 첫 화면에서 숨긴 머리 줄과 옆줄의 자리
  *
- * 바깥에서 부르는 것: `window.KarmoEscMenu.open() / close() / toggle()`.
+ * 바깥에서 부르는 것: `window.KarmoEscMenu.open() / close() / toggle() / use()`.
  * 부르는 곳: 첫 화면 구석 버튼 (home-page.ts) 과 ESC 키. 이동은 셸의 `data-goto` 대리인 몫
+ * dash 사이트는 `use()` 로 칸을 대시보드 방으로 바꿔 끼운다 (mydash shell.ts). 같은 판, 다른 칸
  *
  * 아이콘은 `img/shell/menu/*.png` (Codex image_gen 으로 생성한 자작, 각진 덩어리 두 톤. 옅은 면은 알파 0.45).
  * CSS mask 로 그림. 한 그림으로 밝은 판과 어두운 판 둘
@@ -35,9 +36,28 @@ function esc(s: string): string {
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 }
 
+/** 바꿔 끼우는 칸 한 벌. 제목, 칸, 고르면 부를 손. `foot` 은 아래 줄의 버튼 하나 (나가기) */
+type Custom = {
+    title: string;
+    cells: Array<{ id: string; icon: string; label: string }>;
+    pick: (id: string) => void;
+    foot?: { label: string; pick: () => void };
+};
+
 const KarmoEscMenu = (() => {
     let root: HTMLElement | null = null;
     let lastFocus: HTMLElement | null = null;
+    let custom: Custom | null = null;
+
+    function cellsHtml(): string {
+        if (custom) {
+            return custom.cells.map((c) =>
+                `<button type="button" class="esc-cell" data-esc-pick="${esc(c.id)}" data-esc-close="1">` +
+                `<span class="esc-ic" style="--esc-m:url(${ICON_BASE}${esc(c.icon)}.png)"></span><b>${esc(c.label)}</b></button>`
+            ).join('');
+        }
+        return defaultCellsHtml();
+    }
 
     function build(): HTMLElement {
         const el = document.createElement('div');
@@ -47,7 +67,39 @@ const KarmoEscMenu = (() => {
         el.setAttribute('role', 'dialog');
         el.setAttribute('aria-modal', 'true');
         el.setAttribute('aria-label', t('shell.menu.title', undefined, '메뉴'));
-        const cells = CELLS.map((c) => {
+        const title = custom ? custom.title : 'KarmoLab';
+        const foot = custom && custom.foot
+            ? `<button type="button" class="esc-out" data-esc-foot="1" data-esc-close="1">${esc(custom.foot.label)}</button>`
+            : '';
+        el.innerHTML = `
+            <div class="esc-dim" data-esc-close="1"></div>
+            <img class="esc-yawn" src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true" data-esc-close="1">
+            <div class="esc-panel">
+                <div class="esc-top">
+                    <span class="esc-en">${esc(title)}, ${esc(t('shell.menu.title', undefined, '메뉴').toLowerCase())}</span>
+                    <button type="button" class="esc-close" data-esc-close="1" aria-label="${esc(t('shell.menu.close', undefined, '닫기'))}">&times;</button>
+                </div>
+                <div class="esc-prof">
+                    <span class="esc-av"><img src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true"></span>
+                    <span class="esc-who"><b class="esc-name">Mascari4615</b><span class="esc-en">Indie, witch and dolls</span></span>
+                </div>
+                <div class="esc-cells">${cellsHtml()}</div>
+                <div class="esc-foot"><kbd>ESC</kbd>${esc(t('shell.menu.close', undefined, '닫기'))}${foot}</div>
+            </div>`;
+        el.addEventListener('click', (e) => {
+            const hit = e.target as HTMLElement | null;
+            const pick = hit?.closest?.('[data-esc-pick]');
+            if (pick && custom) custom.pick(pick.getAttribute('data-esc-pick') || '');
+            if (hit?.closest?.('[data-esc-foot]') && custom && custom.foot) custom.foot.pick();
+            if (hit?.closest?.('[data-esc-close]')) close();
+        });
+        document.body.appendChild(el);
+        fillName(el);
+        return el;
+    }
+
+    function defaultCellsHtml(): string {
+        return CELLS.map((c) => {
             const label = esc(t(c.key, undefined, c.fallback));
             const icon = `<span class="esc-ic" style="--esc-m:url(${ICON_BASE}${c.icon}.png)"></span>`;
             /* 도구 목록은 본문이 박힌 장이라 링크. 나머지는 셸 화면 (`data-goto`).
@@ -61,28 +113,6 @@ const KarmoEscMenu = (() => {
             }
             return `<button type="button" class="esc-cell" data-goto="${c.id}" data-esc-close="1">${icon}<b>${label}</b></button>`;
         }).join('');
-        el.innerHTML = `
-            <div class="esc-dim" data-esc-close="1"></div>
-            <img class="esc-yawn" src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true" data-esc-close="1">
-            <div class="esc-panel">
-                <div class="esc-top">
-                    <span class="esc-en">KarmoLab, ${esc(t('shell.menu.title', undefined, '메뉴').toLowerCase())}</span>
-                    <button type="button" class="esc-close" data-esc-close="1" aria-label="${esc(t('shell.menu.close', undefined, '닫기'))}">&times;</button>
-                </div>
-                <div class="esc-prof">
-                    <span class="esc-av"><img src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true"></span>
-                    <span class="esc-who"><b class="esc-name">Mascari4615</b><span class="esc-en">Indie, witch and dolls</span></span>
-                </div>
-                <div class="esc-cells">${cells}</div>
-                <div class="esc-foot"><kbd>ESC</kbd>${esc(t('shell.menu.close', undefined, '닫기'))}</div>
-            </div>`;
-        el.addEventListener('click', (e) => {
-            const target = (e.target as HTMLElement | null)?.closest?.('[data-esc-close]');
-            if (target) close();
-        });
-        document.body.appendChild(el);
-        fillName(el);
-        return el;
     }
 
     /* 이름은 계정 닉네임. 계정 조각은 나중에 오므로 구독으로 받는다. 없으면 기본 이름 그대로 */
@@ -99,7 +129,7 @@ const KarmoEscMenu = (() => {
     function isOpen(): boolean { return !!root && !root.hidden; }
 
     function open(): void {
-        if (soloSite()) return;
+        if (soloSite() && !custom) return;
         if (!root) root = build();
         if (isOpen()) return;
         lastFocus = document.activeElement as HTMLElement | null;
@@ -132,10 +162,10 @@ const KarmoEscMenu = (() => {
         return !!document.querySelector('#settingsMenu, .kl-modal-overlay, .tb-lightbox-overlay, dialog[open]');
     }
 
-    /* dash 사이트는 KarmoLab 껍데기가 없다. ESC 메뉴도 안 뜬다 */
+    /* dash 사이트는 KarmoLab 껍데기가 없다. 대시보드가 칸을 끼워 줄 때만 뜬다 */
     const soloSite = () => document.documentElement.getAttribute('data-site') === 'dash';
     document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape' || e.defaultPrevented || soloSite()) return;
+        if (e.key !== 'Escape' || e.defaultPrevented || (soloSite() && !custom)) return;
         if (isOpen()) { e.preventDefault(); close(); return; }
         if (typing(document.activeElement) || otherLayerOpen()) return;
         e.preventDefault();
@@ -145,7 +175,14 @@ const KarmoEscMenu = (() => {
         if ((e as CustomEvent).detail !== 'esc-menu') close();
     });
 
-    return { open, close, toggle, isOpen };
+    /** 칸을 바꿔 끼운다. 판은 다음에 열 때 새로 짓는다 */
+    function use(next: Custom | null): void {
+        custom = next;
+        close();
+        if (root) { root.remove(); root = null; }
+    }
+
+    return { open, close, toggle, isOpen, use };
 })();
 
 (window as unknown as { KarmoEscMenu: typeof KarmoEscMenu }).KarmoEscMenu = KarmoEscMenu;

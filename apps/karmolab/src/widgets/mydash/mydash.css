@@ -539,16 +539,14 @@ button.mydh-card--hero:focus-visible {
 .myd--gate .myd-body { max-width: 520px; padding: 24px; }
 
 /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에만. 좁은 화면과 레일은 가로 줄이 이미 있음.
-   누르면 가로 줄이 버튼 아래 세로 팝업으로 */
+   누르면 ESC 메뉴 판 (shell-critical.css .esc-menu) 이 대시보드 방 칸으로 */
 .myd { position: relative; }
 .myd-menu { display: none; }
 @media (min-width: 900px) {
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd-menu {
-    --myd-menu-x: var(--space-lg);
-    --myd-menu-y: var(--space-md);
     position: absolute;
-    left: var(--myd-menu-x);
-    top: var(--myd-menu-y);
+    left: var(--space-lg);
+    top: var(--space-md);
     z-index: 6;
     display: grid;
     place-items: center;
@@ -561,29 +559,11 @@ button.mydh-card--hero:focus-visible {
     cursor: pointer;
   }
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd:has(.mydh) .myd-menu {
-    --myd-menu-x: 56px;
-    --myd-menu-y: 36px;
+    left: 56px;
+    top: 36px;
   }
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd-head { padding-left: 52px; }
-  html[data-site="dash"]:not([data-sidebar="rail"]) .myd--menu .myd-strip {
-    position: absolute;
-    left: var(--space-lg);
-    top: calc(var(--space-md) + 44px);
-    z-index: 6;
-    display: flex;
-    min-width: 200px;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-float);
-  }
-  html[data-site="dash"]:not([data-sidebar="rail"]) .myd--menu:has(.mydh) .myd-strip {
-    left: 56px;
-    top: 80px;
-  }
-  html[data-site="dash"] .myd--menu .myd-strip,
-  html[data-site="dash"] .myd--menu .myd-groups,
-  html[data-site="dash"] .myd--menu .myd-group {
-    flex-direction: column;
-    align-items: stretch;
-  }
   html[data-site="dash"] .myd--gate .myd-menu { display: none; }
 }
+/* ESC 메뉴가 뜨면 판의 욘이 있어 홈의 욘은 숨긴다 (첫 화면과 같은 규칙) */
+html[data-esc-menu="1"] .mydh-yawn { visibility: hidden; }

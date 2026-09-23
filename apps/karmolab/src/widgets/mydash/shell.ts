@@ -846,12 +846,37 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     return document.documentElement.getAttribute('data-site') === 'dash';
   }
 
+  /** ESC 메뉴 칸의 아이콘 (`img/shell/menu/*.png`). 홈 카드와 같은 매핑, 나 는 소개 그림 */
+  const MENU_ICONS: Record<string, string> = {
+    today: 'home',
+    me: 'about',
+    bookmarks: 'book',
+    judge: 'judge',
+    kakao: 'memo',
+    ai: 'stat',
+    pc: 'dash',
+    career: 'me',
+    calendar: 'cal',
+  };
+  type EscMenu = {
+    open: () => void;
+    use: (next: {
+      title: string;
+      cells: Array<{ id: string; icon: string; label: string }>;
+      pick: (id: string) => void;
+      foot?: { label: string; pick: () => void };
+    } | null) => void;
+  };
+  function escMenu(): EscMenu | undefined {
+    return (window as unknown as { KarmoEscMenu?: EscMenu }).KarmoEscMenu;
+  }
+
   /* ── 그리기 ────────────────────────────────────────────────────── */
   function render(root: HTMLElement): void {
     ensureStyle();
     root.innerHTML =
       '<div class="myd">' +
-      '<button type="button" class="myd-menu" aria-expanded="false" aria-label="' +
+      '<button type="button" class="myd-menu" aria-haspopup="dialog" aria-label="' +
       esc(t('mydash.shell.menu', undefined, '메뉴')) + '">&#9776;</button>' +
       '<nav class="myd-strip" aria-label="' + esc(t('mydash.shell.title', undefined, '내 대시보드')) + '">' +
       '<div class="myd-groups"></div>' +
@@ -876,25 +901,10 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     outBtn.textContent = t('mydash.shell.logout', undefined, '나가기');
     stripOut.textContent = outBtn.textContent;
 
-    /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에는 셸 사이드바가 없어 방을 옮길 곳이
-       없다. 버튼이 가로 줄을 팝업으로 연다. 방을 고르거나, 밖을 누르거나, ESC 면 닫힌다 */
-    const mydEl = root.querySelector('.myd') as HTMLElement;
+    /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에는 셸 사이드바가 없어 방을 옮길 곳이 없음.
+       ESC 메뉴 판 (esc-menu.ts) 에 칸을 대시보드 방으로 바꿔 끼워 연다. 로그인 뒤에만 */
     const menuBtn = root.querySelector('.myd-menu') as HTMLButtonElement;
-    function setMenu(on: boolean): void {
-      mydEl.classList.toggle('myd--menu', on);
-      menuBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
-    }
-    menuBtn.addEventListener('click', () => setMenu(!mydEl.classList.contains('myd--menu')));
-    mydEl.addEventListener('click', (ev) => {
-      const el = ev.target as HTMLElement;
-      if (!el.closest('.myd-menu, .myd-strip')) setMenu(false);
-    });
-    mydEl.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape' && mydEl.classList.contains('myd--menu')) {
-        setMenu(false);
-        menuBtn.focus();
-      }
-    });
+    menuBtn.addEventListener('click', () => escMenu()?.open());
 
     /* 패널이 붙여 둔 뒷정리. 패널을 갈아 끼울 때마다 부른다. 안 부르면 타이머가 쌓인다. */
     let cleanups: Array<() => void> = [];
@@ -935,6 +945,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
        셸은 `const Toolbox` 로 생성하고 const 는 window 에 안 붙음. window 만 보면 실서비스에서
        등록이 통째로 헛돌아 기기 흐름 폴링이 위젯 이탈 뒤에도 안 멈추는 문제 (memo-atlas 와 동일 패턴). */
     toolbox()?.onDispose?.(() => {
+      escMenu()?.use(null);
       disposePanel();
       stopOnline?.();
       toolbox()?.clearSubNav?.(TOOL_ID);
@@ -1002,7 +1013,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     }
 
     function markNav(): void {
-      setMenu(false);
       for (const b of Array.from(navEl.querySelectorAll('.myd-item'))) {
         b.classList.toggle('on', b.getAttribute('data-item') === currentItem);
       }
@@ -1256,6 +1266,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
 
     function logout(cfg: Config): void {
       saveToken(null);
+      escMenu()?.use(null);
       /* 토큰이 없으면 보낼 수도 없음. 남은 outbox 는 안 지움. 다시 로그인하면 그때 감 */
       stopOnline?.();
       for (const k of Object.keys(counts)) delete counts[k];
@@ -1277,6 +1288,14 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       stripOut.hidden = false;
       stripOut.title = cfg.owner + '/' + cfg.repo;
       stripOut.onclick = (): void => logout(cfg);
+      if (soloDash()) {
+        escMenu()?.use({
+          title: t('shell.menu.dashboard', undefined, '대시보드'),
+          cells: navItems().map((it) => ({ id: it.id, icon: MENU_ICONS[it.id] || 'dash', label: it.label })),
+          pick: (id) => openItem(id),
+          foot: { label: outBtn.textContent || '', pick: () => logout(cfg) },
+        });
+      }
 
       /** 아직 패널이 없는 자리. 자리는 두고 그 말만 한다 */
       function showSoon(it: NavItem): void {

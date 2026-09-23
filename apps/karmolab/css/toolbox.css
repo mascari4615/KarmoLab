@@ -1382,7 +1382,20 @@ html .landing-q2 .lq-foot a { color: var(--lq-ink2); }
     -webkit-mask: var(--esc-m) center / contain no-repeat;
     mask: var(--esc-m) center / contain no-repeat;
 }
-.esc-menu .esc-foot { margin-top: auto; font-size: var(--font-size-xs); color: var(--esc-ink3); }
+.esc-menu .esc-foot { margin-top: auto; display: flex; align-items: center; font-size: var(--font-size-xs); color: var(--esc-ink3); }
+/* 아래 줄 오른쪽 버튼 하나. dash 의 나가기 (esc-menu.ts use) */
+.esc-menu .esc-out {
+    margin-left: auto;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--esc-line);
+    border-radius: 0;
+    background: transparent;
+    color: var(--esc-ink2);
+    font: inherit;
+    cursor: pointer;
+}
+.esc-menu .esc-out:hover, .esc-menu .esc-out:focus-visible { background: var(--esc-ink); color: var(--esc-bg); outline: none; }
 .esc-menu .esc-foot kbd {
     font-family: var(--esc-font-en);
     font-size: var(--esc-fs-en);
