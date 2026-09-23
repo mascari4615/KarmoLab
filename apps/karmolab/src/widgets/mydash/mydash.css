@@ -209,10 +209,10 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   word-break: break-all;
 }
 
-/* ── 홈. W3 유리 카드 로비 (memo notes/mydash/design/skill-bench/W3-lobby-glass.html, 2026-09-21 결정) ──
-   유리 도시 배경 위에 반투명 카드 여덟. 판정 대기가 어두운 큰 카드, 욘은 오른쪽에 크게 잘려서.
-   글꼴은 두 벌. 한글 제목은 본문 글꼴 900, 영문 라벨과 큰 수는 표시 글꼴 (대문자와 숫자만 있다).
-   색은 시안 그대로 셋 (잉크, 하늘, 주황). 스킨 토큰을 안 쓰는 유일한 화면이라 여기 직접 적는다 */
+/* ── 홈. D2b 하늘 로비 (memo notes/mydash/design/skill-bench/D2b-mydash-tight-{light,dark}.html, 2026-09-23 통과) ──
+   하늘 그림 위에 흰 유리 카드 일곱. 카드는 아이콘과 이름만, 칸 높이 120. 주황은 판정 대기 하나.
+   욘은 오른쪽에 크게 잘려서. 배경 그림은 첫 화면과 같은 넷 (img/home/sky-*.webp), 설정의 첫 화면 배경을 따른다.
+   색은 시안 토큰 그대로. 스킨 토큰을 안 쓰는 화면이라 여기 직접 적고, 어두운 판은 토큰만 바꾼다 */
 .myd-main:has(.mydh) {
   display: flex;
   flex-direction: column;
@@ -228,35 +228,20 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
 }
 .mydh {
   --mydh-ink: #182238;
-  --mydh-ink2: #56607a;
   --mydh-ink3: #96a0b8;
-  --mydh-sky: #2f7fd9;
-  --mydh-orange: #e8862e;
-  --mydh-glass: rgba(255, 255, 255, 0.62);
-  --mydh-glass-line: rgba(255, 255, 255, 0.9);
-  --mydh-glass-strong: rgba(255, 255, 255, 0.7);
-  --mydh-veil: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15) 55%, rgba(255, 255, 255, 0));
-  --mydh-shadow: 0 16px 40px -28px rgba(24, 34, 56, 0.55);
-  --mydh-page: #cfe0f3;
-  --mydh-sky-pale: #a9c6e6;
-  --mydh-white: #fff;
-  --mydh-hero-bg: rgba(24, 34, 56, 0.82);
-  --mydh-hero-line: rgba(255, 255, 255, 0.3);
-  --mydh-hero-en: rgba(255, 255, 255, 0.6);
-  --mydh-hero-text: rgba(255, 255, 255, 0.75);
-  --mydh-hero-num: #f8b26a;
+  --mydh-line: rgba(24, 34, 56, 0.14);
+  --mydh-glass: rgba(255, 255, 255, 0.78);
+  --mydh-edge: rgba(255, 255, 255, 0.95);
+  --mydh-acc: #e8862e;
+  --mydh-acc-ink: #fff;
+  --mydh-veil: rgba(255, 255, 255, 0.42);
+  --mydh-shadow: 0 20px 50px -30px rgba(24, 34, 56, 0.5);
+  --mydh-page: #c9d6e4;
+  --mydh-photo: url('/apps/karmolab/img/home/sky-village.webp');
   --mydh-pad: 56px;
-  --mydh-row: clamp(120px, 19vh, 176px);
-  --mydh-top: clamp(64px, 11vh, 110px);
-  --mydh-hero: 40px;
-  --mydh-fs-date: 22px;
-  --mydh-fs-en: 10px;
-  --mydh-fs-h3: 22px;
-  --mydh-fs-small: 11px;
-  --mydh-fs-ago: 12px;
-  --mydh-fs-ago-b: 14px;
-  --mydh-fs-hero-h3: 26px;
-  --mydh-fs-hero-num: 72px;
+  --mydh-top: clamp(84px, 12vh, 110px);
+  --mydh-row: 120px;
+  --mydh-icon: none;
   position: relative;
   isolation: isolate;
   min-height: 100%;
@@ -266,12 +251,28 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   background: var(--mydh-page);
   color: var(--mydh-ink);
 }
+[data-theme="dark"] .mydh {
+  --mydh-ink: #f2f4f7;
+  --mydh-ink3: #6f7a8c;
+  --mydh-line: rgba(255, 255, 255, 0.14);
+  --mydh-glass: rgba(20, 26, 36, 0.72);
+  --mydh-edge: rgba(255, 255, 255, 0.18);
+  --mydh-acc: #f0a04b;
+  --mydh-acc-ink: #101418;
+  --mydh-veil: rgba(10, 14, 20, 0.55);
+  --mydh-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.8);
+  --mydh-page: #0f141c;
+  --mydh-photo: url('/apps/karmolab/img/home/sky-dusk.webp');
+}
+html[data-home-bg="village"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-village.webp'); }
+html[data-home-bg="clouds"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-clouds.webp'); }
+html[data-home-bg="twilight"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-twilight.webp'); }
+html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-dusk.webp'); }
 .mydh-bg {
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: url('/apps/karmolab/img/widgets/mydash/bg-glasscity.webp') center / cover;
-  filter: brightness(1.08) saturate(0.85);
+  background: var(--mydh-photo) center / cover;
 }
 .mydh-bg::after {
   content: "";
@@ -282,206 +283,133 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
 .mydh-yawn {
   position: absolute;
   right: -80px;
-  bottom: -35%;
+  bottom: -42%;
   z-index: -1;
-  height: 140%;
+  height: 131%;
   pointer-events: none;
-  filter: drop-shadow(0 20px 30px rgba(24, 34, 56, 0.35));
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.35));
 }
 .mydh-date {
   position: absolute;
-  left: var(--mydh-pad);
-  top: 30px;
+  right: var(--mydh-pad);
+  top: 36px;
   margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--mydh-fs-date);
-  letter-spacing: 0.04em;
-  color: var(--mydh-ink);
+  text-align: right;
 }
-.mydh-en {
+.mydh-date span {
   display: block;
   font-family: var(--font-display);
-  font-size: var(--mydh-fs-en);
-  letter-spacing: 0.28em;
+  font-size: var(--font-size-4xs);
+  letter-spacing: 0.24em;
   color: var(--mydh-ink3);
+}
+.mydh-date b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--font-size-display-md);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: 0.04em;
 }
 .mydh-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-auto-rows: var(--mydh-row);
-  gap: 14px;
-  max-width: min(820px, 68%);
+  gap: 10px;
+  max-width: min(760px, 60%);
 }
 .mydh-card {
   position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
   min-width: 0;
-  padding: 18px 20px;
-  border: 1px solid var(--mydh-glass-line);
+  padding: 14px 18px;
+  border: 1px solid var(--mydh-edge);
   border-radius: 0;
   background: var(--mydh-glass);
   backdrop-filter: blur(14px);
   box-shadow: var(--mydh-shadow);
+  color: var(--mydh-ink);
+  font: inherit;
+  text-align: left;
 }
+/* 왼쪽 아래 작은 삼각 */
 .mydh-card::after {
   content: "";
   position: absolute;
-  left: 20px;
-  right: 20px;
+  left: 0;
   bottom: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--mydh-sky), transparent);
+  border-style: solid;
+  border-width: 0 0 10px 10px;
+  border-color: transparent transparent var(--mydh-line) transparent;
 }
-.mydh-card.is-open {
+button.mydh-card {
   cursor: pointer;
 }
-.mydh-card.is-open:hover {
+button.mydh-card:hover,
+button.mydh-card:focus-visible {
   border-color: var(--mydh-ink);
 }
-.mydh-card h3 {
-  margin: 2px 0 0;
-  font-size: var(--mydh-fs-h3);
-  font-weight: 900;
-  color: inherit;
-}
-.mydh-card p.mydh-big {
-  margin: auto 0 0;
-  font-family: var(--font-display);
-  font-size: var(--mydh-hero);
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
-  word-break: break-all;
-  color: inherit;
-}
-.mydh-card p.mydh-big small {
-  display: inline;
-  margin: 0 0 0 3px;
-  font-family: inherit;
-  font-size: var(--mydh-fs-small);
-  font-weight: 700;
-  letter-spacing: normal;
-  color: var(--mydh-ink3);
-}
-.mydh-card p {
-  margin: 4px 0 0;
-  font-size: var(--mydh-fs-small);
-  line-height: 1.4;
-  color: var(--mydh-ink2);
-}
-.mydh-card p.mydh-quiet {
-  color: var(--mydh-ink3);
-}
-.mydh-pics {
+/* 아이콘. 칸 짧은 변의 1/3 이상 (공통 요청). 그림의 밝기가 알파라 글자색을 입는다 */
+.mydh-ic {
   position: absolute;
-  right: 20px;
-  bottom: 18px;
-  display: flex;
-  gap: 6px;
+  left: 18px;
+  top: 14px;
+  width: 40px;
+  height: 40px;
+  background: currentColor;
+  -webkit-mask: var(--mydh-icon) center / contain no-repeat;
+  mask: var(--mydh-icon) center / contain no-repeat;
 }
-.mydh-pics img {
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-}
-/* 큰 카드. 두 칸, 어두운 바탕, 주황 수 */
-.mydh-card--hero {
-  grid-column: span 2;
-  background: var(--mydh-hero-bg);
-  border-color: var(--mydh-hero-line);
-  color: var(--mydh-white);
-}
-.mydh-card--hero::after {
-  background: linear-gradient(90deg, var(--mydh-orange), transparent);
-}
-.mydh-card--hero .mydh-en { color: var(--mydh-hero-en); }
-.mydh-card--hero h3 { font-size: var(--mydh-fs-hero-h3); }
-.mydh-card--hero p.mydh-big { font-size: var(--mydh-fs-hero-num); color: var(--mydh-hero-num); }
-.mydh-card--hero p { color: var(--mydh-hero-text); }
-.mydh-card--hero.is-open:hover { border-color: var(--mydh-white); }
-/* 아래 띠. 1년 전 이맘때 */
-.mydh-foot {
-  margin-top: clamp(14px, 3vh, 40px);
-}
-.mydh-ago {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-height: var(--myd-tap);
-  padding: 10px 16px;
-  border: 0;
-  background: var(--mydh-glass-strong);
-  backdrop-filter: blur(10px);
-  font: inherit;
-  font-size: var(--mydh-fs-ago);
-  color: var(--mydh-ink2);
-  text-align: left;
-  cursor: pointer;
-}
-.mydh-ago .mydh-en { color: var(--mydh-sky); }
-.mydh-ago b {
-  font-size: var(--mydh-fs-ago-b);
+.mydh-card b {
+  font-size: var(--font-size-md);
   font-weight: 900;
-  color: var(--mydh-ink);
-}
-.mydh-foot .mydh-card {
-  max-width: 400px;
-}
-.mydh-open {
-  margin: 0;
-  padding: 0;
-}
-.mydh-open .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-.mydh-open button:focus-visible {
-  position: static;
-  width: auto;
-  height: auto;
-  clip: auto;
-  min-height: var(--myd-tap);
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
 }
 .mydh-bad {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  font-size: var(--font-size-2xs);
   color: var(--mydh-ink3);
 }
-/* 낮은 창 (노트북 1366x700 급). 카드 행이 줄어드니 작은 줄은 빼고 수만 남긴다 */
-@media (min-width: 600px) and (max-height: 780px) {
-  .mydh { --mydh-fs-hero-num: 56px; --mydh-fs-h3: 18px; --mydh-fs-hero-h3: 20px; --mydh-hero: 32px; }
-  .mydh-card p:not(.mydh-big) { display: none; }
-  .mydh-card--hero p:not(.mydh-big):first-of-type { display: block; }
-  .mydh-pics img { width: 48px; height: 48px; }
+/* 판정 대기. 두 칸, 주황 */
+.mydh-card--hero {
+  grid-column: span 2;
+  border-color: transparent;
+  background: var(--mydh-acc);
+  color: var(--mydh-acc-ink);
 }
-/* 좁아지면 두 열, 폰은 한 열에 큰 카드도 한 칸. 욘은 위로 올라가 날짜 옆 */
+.mydh-card--hero::after {
+  display: none;
+}
+button.mydh-card--hero:hover,
+button.mydh-card--hero:focus-visible {
+  border-color: var(--mydh-acc-ink);
+}
+.mydh-card--hero .mydh-bad {
+  color: var(--mydh-acc-ink);
+}
+/* 로그인 전. 같은 배치, 흐리게 */
+.mydh--empty .mydh-card {
+  opacity: 0.6;
+}
+/* 좁아지면 두 열, 폰은 두 열에 칸을 줄인다. 욘은 위로 */
 @media (max-width: 1099px) {
-  .mydh { --mydh-pad: 24px; height: auto; overflow: visible; padding-top: 90px; }
+  .mydh { --mydh-pad: 24px; height: auto; overflow: visible; padding-top: 96px; }
   .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
   .mydh-yawn { right: -140px; bottom: auto; top: -60px; height: 900px; }
+  .mydh-date { top: 28px; }
 }
 @media (max-width: 599px) {
-  .mydh { --mydh-pad: 14px; --mydh-hero: 28px; --mydh-fs-h3: 15px; --mydh-fs-hero-h3: 18px; --mydh-fs-hero-num: 48px; --mydh-fs-date: 28px; padding: 72px 14px 24px; }
-  .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 8px; }
-  .mydh-card { min-height: 100px; }
+  .mydh { --mydh-pad: 14px; --mydh-row: 104px; padding: 76px 14px 24px; }
+  .mydh-grid { gap: 8px; }
   .mydh-card { padding: 12px 14px; }
-  .mydh-card--hero { min-height: 136px; }
-  .mydh-card--hero .mydh-pics { max-width: 45%; overflow: hidden; }
-  .mydh-card p { display: none; }
-  .mydh-card p.mydh-big { display: block; }
-  .mydh-pics { right: 14px; bottom: 12px; }
-  .mydh-pics img { width: 40px; height: 40px; }
-  .mydh-date { left: 14px; top: 20px; }
+  .mydh-ic { left: 14px; top: 12px; width: 36px; height: 36px; }
+  .mydh-card b { font-size: var(--font-size-sm); }
+  .mydh-date { top: 20px; }
   .mydh-yawn { right: -130px; top: 30px; height: 560px; }
-  .mydh-foot { margin-top: 12px; }
 }
 
 /* ── 좁은 화면. 가로 줄이 뜨고 내용 여백이 줄어든다 ─────────── */
@@ -502,9 +430,7 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
 .myd-btn { white-space: nowrap; }
 
 
-/* 로그인 전 화면틀. 값 자리는 하이픈, 카드는 흐리게. 로그인 카드는 위쪽 한 장 */
-.mydh-card--empty { opacity: 0.6; }
-.mydh-card--empty .mydh-big { color: var(--text-tertiary); }
+/* 로그인 카드는 위쪽 한 장 */
 .myd-card--login { margin-bottom: var(--space-md); }
 
 /* ── 공통 자 (2026-09-19 실측, memo notes/mydash/mvp5-design-2026-09-19.md) ─────
@@ -611,3 +537,53 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
 .myd--gate .myd-head { display: none; }
 .myd--gate .myd-main { display: grid; place-items: center; }
 .myd--gate .myd-body { max-width: 520px; padding: 24px; }
+
+/* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에만. 좁은 화면과 레일은 가로 줄이 이미 있음.
+   누르면 가로 줄이 버튼 아래 세로 팝업으로 */
+.myd { position: relative; }
+.myd-menu { display: none; }
+@media (min-width: 900px) {
+  html[data-site="dash"]:not([data-sidebar="rail"]) .myd-menu {
+    --myd-menu-x: var(--space-lg);
+    --myd-menu-y: var(--space-md);
+    position: absolute;
+    left: var(--myd-menu-x);
+    top: var(--myd-menu-y);
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+  }
+  html[data-site="dash"]:not([data-sidebar="rail"]) .myd:has(.mydh) .myd-menu {
+    --myd-menu-x: 56px;
+    --myd-menu-y: 36px;
+  }
+  html[data-site="dash"]:not([data-sidebar="rail"]) .myd-head { padding-left: 52px; }
+  html[data-site="dash"]:not([data-sidebar="rail"]) .myd--menu .myd-strip {
+    position: absolute;
+    left: var(--space-lg);
+    top: calc(var(--space-md) + 44px);
+    z-index: 6;
+    display: flex;
+    min-width: 200px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-float);
+  }
+  html[data-site="dash"]:not([data-sidebar="rail"]) .myd--menu:has(.mydh) .myd-strip {
+    left: 56px;
+    top: 80px;
+  }
+  html[data-site="dash"] .myd--menu .myd-strip,
+  html[data-site="dash"] .myd--menu .myd-groups,
+  html[data-site="dash"] .myd--menu .myd-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  html[data-site="dash"] .myd--gate .myd-menu { display: none; }
+}

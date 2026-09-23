@@ -851,6 +851,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     ensureStyle();
     root.innerHTML =
       '<div class="myd">' +
+      '<button type="button" class="myd-menu" aria-expanded="false" aria-label="' +
+      esc(t('mydash.shell.menu', undefined, '메뉴')) + '">&#9776;</button>' +
       '<nav class="myd-strip" aria-label="' + esc(t('mydash.shell.title', undefined, '내 대시보드')) + '">' +
       '<div class="myd-groups"></div>' +
       '<button type="button" class="myd-item myd-strip-out" data-logout="strip" hidden></button>' +
@@ -873,6 +875,26 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
 
     outBtn.textContent = t('mydash.shell.logout', undefined, '나가기');
     stripOut.textContent = outBtn.textContent;
+
+    /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에는 셸 사이드바가 없어 방을 옮길 곳이
+       없다. 버튼이 가로 줄을 팝업으로 연다. 방을 고르거나, 밖을 누르거나, ESC 면 닫힌다 */
+    const mydEl = root.querySelector('.myd') as HTMLElement;
+    const menuBtn = root.querySelector('.myd-menu') as HTMLButtonElement;
+    function setMenu(on: boolean): void {
+      mydEl.classList.toggle('myd--menu', on);
+      menuBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+    }
+    menuBtn.addEventListener('click', () => setMenu(!mydEl.classList.contains('myd--menu')));
+    mydEl.addEventListener('click', (ev) => {
+      const el = ev.target as HTMLElement;
+      if (!el.closest('.myd-menu, .myd-strip')) setMenu(false);
+    });
+    mydEl.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && mydEl.classList.contains('myd--menu')) {
+        setMenu(false);
+        menuBtn.focus();
+      }
+    });
 
     /* 패널이 붙여 둔 뒷정리. 패널을 갈아 끼울 때마다 부른다. 안 부르면 타이머가 쌓인다. */
     let cleanups: Array<() => void> = [];
@@ -980,6 +1002,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     }
 
     function markNav(): void {
+      setMenu(false);
       for (const b of Array.from(navEl.querySelectorAll('.myd-item'))) {
         b.classList.toggle('on', b.getAttribute('data-item') === currentItem);
       }
