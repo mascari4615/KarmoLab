@@ -73,6 +73,26 @@ jobs:
         run: |
           node apps/karmolab/scripts/attach-pages-domains.mjs ${{ inputs.apply && '--apply' || '' }}
 
+      # Pages 도메인은 **DNS 레코드가 있어야** 살아난다 (붙인 직후에는 pending).
+      # Worker 사용자 도메인을 떼면서 레코드도 같이 사라졌으므로 여기서 다시 만든다.
+      - name: DNS 레코드 맞추기
+        if: ${{ inputs.apply }}
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ZONE=$(curl -s -H "Authorization: Bearer $TOKEN" \
+            'https://api.cloudflare.com/client/v4/zones?name=mascari4615.com' \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log((j.result&&j.result[0]&&j.result[0].id)||"")})')
+          echo "zone ${ZONE:0:6}..."
+          if [ -z "$ZONE" ]; then echo '::error::zone 을 못 찾았다 (토큰 권한)'; exit 1; fi
+          for app in lab blog dash; do
+            host="$app.mascari4615.com"
+            curl -s -o /dev/null -w "dns $host %{http_code}\n" -X POST \
+              -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+              "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records" \
+              --data "{\"type\":\"CNAME\",\"name\":\"$host\",\"content\":\"karmolab-$app.pages.dev\",\"proxied\":true}"
+          done
+
       - name: 주소 셋 실측
         if: ${{ inputs.apply }}
         run: |
