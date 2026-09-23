@@ -357,7 +357,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ce18bd3c1df233b3cd533ef0623cbafe
         run: |
+          ACC=ce18bd3c1df233b3cd533ef0623cbafe
           for app in lab blog dash; do
+            # 없으면 만든다. 있으면 409 가 나고 그대로 지나간다 (배포가 그 다음 줄)
+            curl -s -o /dev/null -w "create $app %{http_code}\n" -X POST \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'content-type: application/json' \
+              "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects" \
+              --data "{\"name\":\"karmolab-$app\",\"production_branch\":\"main\"}"
             npx --yes wrangler@4 pages deploy "apps/blog/dist/$app" --project-name "karmolab-$app" --branch main --commit-dirty=true
           done
 
