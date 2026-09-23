@@ -1,7 +1,7 @@
 /**
  * 개인 대시보드 홈. 목록의 **오늘** 자리.
  *
- * 무엇인가: 다른 방으로 가는 카드 일곱. 카드는 아이콘과 이름만 (D2b 시안, 사용자 통과 2026-09-23.
+ * 무엇인가: 다른 방으로 가는 카드 여섯. 카드는 아이콘과 이름만 (D2b 시안, 사용자 통과 2026-09-23.
  * memo notes/mydash/design/skill-bench/D2b-mydash-tight-{light,dark}.html). 수는 방 안에서
  *
  * ★ **카드는 데이터를 기다리지 않는다.** 이름과 아이콘은 바로 그리고, 출처마다 따로 읽어
@@ -33,7 +33,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     item: string;
     title: string;
     icon: string;
-    /** 판정 대기. 두 칸, 주황. 화면에서 주황은 이것 하나 */
+    /** 큰 카드. 두 칸, 주황. 화면에서 주황은 이것 하나 (북마크) */
     hero?: boolean;
     /** 목록 오른쪽 작은 수를 읽어 온다. 캘린더는 저장소가 아니라 구글 */
     count: (repo: DashRepoRead) => Promise<string | null>;
@@ -120,18 +120,13 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
 
   function tiles(): Tile[] {
     return [
-      {
-        item: 'judge',
-        title: t('mydash.nav.judge', undefined, '판정 대기'),
-        icon: 'judge',
-        hero: true,
-        count: async (r) => short(num((await bmCounts(r)).pending)),
-      },
+      /* 판정 대기와 북마크는 한 방 (사용자 2026-09-23). 방이 판정 대기부터 열려 목록 수도 대기 수 */
       {
         item: 'bookmarks',
         title: t('mydash.nav.bookmarks', undefined, '북마크'),
         icon: 'book',
-        count: async (r) => short(num((await bmCounts(r)).items)),
+        hero: true,
+        count: async (r) => short(num((await bmCounts(r)).pending)),
       },
       { item: 'career', title: t('mydash.nav.career', undefined, '커리어'), icon: 'me', count: careerCount },
       {
