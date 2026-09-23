@@ -1,0 +1,80 @@
+name: Site cutover (도메인 셋을 Pages 로)
+
+# 주소 셋 (lab, blog, dash) 을 Worker 에서 떼어 Cloudflare Pages 프로젝트에 붙인다.
+# 설계와 되돌리기는 memo `changes/site-split.md` 의 이전 설계 절.
+# 손으로 돌린다 (workflow_dispatch). 기본은 찍어만 보기, apply 가 true 여야 실제로 옮긴다.
+# apex (mascari4615.com) 와 www 는 Worker 에 그대로 둔다 (안내 장).
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "실제로 옮긴다 (false 면 무엇을 할지 찍기만)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-cutover
+  cancel-in-progress: false
+
+jobs:
+  cutover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pages 배포 셋이 살아 있나
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=ce18bd3c1df233b3cd533ef0623cbafe
+          for app in lab blog dash; do
+            code=$(curl -s -o /tmp/p.json -w "%{http_code}" -H "Authorization: Bearer $TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/karmolab-$app")
+            url=$(node -e 'const j=require("/tmp/p.json");console.log(j.result&&j.result.subdomain?("https://"+j.result.subdomain):"(없음)")')
+            live=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo 000)
+            echo "karmolab-$app 조회 $code, 주소 $url, 응답 $live"
+            if [ "$code" != "200" ]; then echo "::error::karmolab-$app 프로젝트가 없다. 먼저 배포"; exit 1; fi
+          done
+
+      - name: Worker 에서 lab, blog, dash 떼기
+        if: ${{ inputs.apply }}
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=ce18bd3c1df233b3cd533ef0623cbafe
+          curl -s -H "Authorization: Bearer $TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACC/workers/domains" > /tmp/d.json
+          node -e '
+            const j = require("/tmp/d.json");
+            const want = new Set(["lab.mascari4615.com","blog.mascari4615.com","dash.mascari4615.com"]);
+            const hit = (j.result||[]).filter(d => want.has(d.hostname));
+            console.log(hit.map(d => d.id + " " + d.hostname).join("\n") || "(뗄 것 없음)");
+            require("fs").writeFileSync("/tmp/ids.txt", hit.map(d => d.id).join("\n"));
+          '
+          while read -r id; do
+            [ -z "$id" ] && continue
+            curl -s -o /dev/null -w "detach $id %{http_code}\n" -X DELETE \
+              -H "Authorization: Bearer $TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$ACC/workers/domains/$id"
+          done < /tmp/ids.txt
+
+      - name: Pages 에 도메인 붙이기
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          node apps/karmolab/scripts/attach-pages-domains.mjs ${{ inputs.apply && '--apply' || '' }}
+
+      - name: 주소 셋 실측
+        if: ${{ inputs.apply }}
+        run: |
+          for h in lab blog dash; do
+            echo "$h $(curl -s -o /dev/null -w '%{http_code}' --max-time 15 https://$h.mascari4615.com/ || echo 000)"
+          done
