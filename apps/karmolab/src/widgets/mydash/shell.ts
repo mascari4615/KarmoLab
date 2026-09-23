@@ -28,6 +28,7 @@
 import { dashRegistry, esc, httpsUrl } from './kit';
 import type { DashEntry, DashPanel, DashPanelCtx, DashReadOpts, DashRepoWrite } from './kit';
 import mydashCss from './mydash.css';
+import dashCss from './dash.css';
 import { t, loadNamespace } from '../../lib/i18n';
 
 declare const Toolbox:
@@ -746,7 +747,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     el.id = STYLE_ID;
     /* 오락실(`arcade.css`)과 같은 방식. 위젯 옆의 `.css` 를 글자로 묶어 여기서 삽입
        위젯이 지연 로드라 셸의 캐시 목록을 안 건드리고 같이 실려 온다. */
-    el.textContent = mydashCss;
+    /* dash 장은 셸 CSS 가 없어 토큰과 공용 부품을 dash.css 가 채운다 */
+    el.textContent = soloDash() ? mydashCss + dashCss : mydashCss;
     document.head.appendChild(el);
   }
 
