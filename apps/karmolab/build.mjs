@@ -12,6 +12,7 @@ import { execFileSync } from 'node:child_process';
 import { discoverEntryPoints } from './scripts/entry-points.mjs';
 import { APP_BASE } from './scripts/lib/site-base.mjs';
 import { withoutRetired } from './scripts/lib/retired-operations.mjs';
+import { trysteroReadyRetry } from './scripts/lib/trystero-ready-retry.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = __dirname;
@@ -27,8 +28,8 @@ const root = __dirname;
  * 전역 이름이다. 이걸 짧게 바꾸면 다른 파일이 그 이름을 못 찾는다. 그 셋은 **빈칸과 문법만**
  * 줄이고 이름은 그대로 둔다. 나머지는 IIFE 로 감싸 나가므로 바깥에서 이름을 볼 일이 없다.
  */
-const SAFE_MINIFY = { minifyWhitespace: true, minifySyntax: true, minifyIdentifiers: false };
-const FULL_MINIFY = { minify: true };
+const SAFE_MINIFY = { minifyWhitespace: true, minifySyntax: true, minifyIdentifiers: false, plugins: [trysteroReadyRetry] };
+const FULL_MINIFY = { minify: true, plugins: [trysteroReadyRetry] };
 
 /* 구글 연동(플래너)용 클라이언트 id. **비밀이 아니다.** OAuth 클라이언트 id 는 브라우저가
  * 구글에 보내는 값이라 어차피 화면에서 보인다(비밀은 secret 쪽이고 우리는 그걸 안 쓴다).

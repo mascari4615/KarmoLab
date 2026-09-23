@@ -17,7 +17,10 @@ export async function traceRtc(context) {
           channel.addEventListener('open', () => record({ id, event: 'open' }));
           channel.addEventListener('close', () => record({ id, event: 'close' }));
           const read = (data, direction) => {
-            if (!(data instanceof ArrayBuffer) && !ArrayBuffer.isView(data)) return;
+            if (!(data instanceof ArrayBuffer) && !ArrayBuffer.isView(data)) {
+              record({ id, event: direction, dataType: Object.prototype.toString.call(data), size: data?.size });
+              return;
+            }
             const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             const text = new TextDecoder().decode(bytes).replaceAll('\0', '');
             if (text.includes('hello') || text.includes('ranked-roster:') || text.includes('@_hs')) {

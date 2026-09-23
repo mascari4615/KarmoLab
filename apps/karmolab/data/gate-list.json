@@ -491,6 +491,7 @@
     "test:arcade:ui:all",
     "test:arcade:yacht",
     "test:arcade:yacht-ranked",
+    "test:room-handshake",
     "test:arcade:multi",
     "test:garden",
     "test:gate-reaper",
