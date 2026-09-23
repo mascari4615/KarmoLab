@@ -43,6 +43,10 @@ const INCLUDE = [
   'src-tauri/tauri.release.conf.json',
   'src-tauri-shared',
   'src-tauri-ml',
+  '../../vendor/glib-0.18.5/Cargo.toml',
+  '../../vendor/glib-0.18.5/src',
+  '../../vendor/rand-0.7.3/Cargo.toml',
+  '../../vendor/rand-0.7.3/src',
 ];
 
 /** 안 보는 것. 만들어지는 것(파생물)과 무거운 잡동사니. */
@@ -78,7 +82,7 @@ function normalize(rel, raw) {
   if (rel.endsWith('package.json') || rel.endsWith('.conf.json')) {
     return text.replace(/("version"\s*:\s*)"[^"]*"/, '$1"<판>"');
   }
-  if (rel.endsWith('Cargo.toml')) {
+  if (rel.endsWith('Cargo.toml') && !rel.startsWith('../../vendor/')) {
     return text.replace(/^(version\s*=\s*)"[^"]*"/m, '$1"<판>"');
   }
   return text;

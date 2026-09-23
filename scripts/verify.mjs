@@ -286,7 +286,7 @@ const tauriTouched = (() => {
   }
   const range = process.env.VERIFY_DIFF_RANGE;
   if (!range) return true; // 모르면 잰다. 모름을 안 건드림으로 읽지 않는다
-  const r = spawnSync('git', ['diff', '--name-only', range, '--', 'apps/karmolab-tauri'], { encoding: 'utf8' });
+  const r = spawnSync('git', ['diff', '--name-only', range, '--', 'apps/karmolab-tauri', 'vendor/glib-0.18.5', 'vendor/rand-0.7.3'], { encoding: 'utf8' });
   if (r.status !== 0) return true;
   const touched = r.stdout.trim().length > 0;
   if (!touched) console.log('[verify] ! apps/karmolab-tauri 는 이번 판이 안 건드렸다. cargo check 건너뜀 (시계 판이 늘 잰다)');

@@ -7,12 +7,14 @@ on:
       - 'apps/chat-overlay/src-tauri/**'
       - 'apps/karmolab-tauri/**'
       - 'vendor/glib-0.18.5/**'
+      - 'vendor/rand-0.7.3/**'
       - '.github/workflows/rust-security.yml'
   pull_request:
     paths:
       - 'apps/chat-overlay/src-tauri/**'
       - 'apps/karmolab-tauri/**'
       - 'vendor/glib-0.18.5/**'
+      - 'vendor/rand-0.7.3/**'
       - '.github/workflows/rust-security.yml'
   workflow_dispatch:
 
@@ -28,6 +30,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
       - run: cargo test --release --manifest-path vendor/glib-0.18.5/Cargo.toml --lib variant_iter::tests
+      - run: cargo test --release --manifest-path vendor/rand-0.7.3/Cargo.toml --features log --test log-reentrancy
 
   windows:
     runs-on: windows-latest

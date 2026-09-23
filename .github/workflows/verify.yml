@@ -114,7 +114,7 @@ jobs:
           case "$before" in ''|0000000*) echo "run=always" >> "$GITHUB_OUTPUT"; exit 0;; esac
           files=$(gh api "repos/${{ github.repository }}/compare/$before...${{ github.sha }}" --jq '.files[].filename' 2>/dev/null) || {
             echo "물어보지 못했다. 그냥 잰다"; echo "run=always" >> "$GITHUB_OUTPUT"; exit 0; }
-          if echo "$files" | grep -q '^apps/karmolab-tauri/'; then echo "run=always" >> "$GITHUB_OUTPUT";
+          if echo "$files" | grep -Eq '^(apps/karmolab-tauri|vendor/glib-0\.18\.5|vendor/rand-0\.7\.3)/'; then echo "run=always" >> "$GITHUB_OUTPUT";
           else echo "이번 판은 Rust 쪽을 안 건드렸다"; echo "run=skip" >> "$GITHUB_OUTPUT"; fi
 
       - name: Setup Rust toolchain

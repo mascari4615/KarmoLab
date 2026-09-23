@@ -28,3 +28,4 @@ tauri-plugin-global-shortcut = "2"
 
 [patch.crates-io]
 glib = { path = "../../../vendor/glib-0.18.5" }
+rand = { path = "../../../vendor/rand-0.7.3" }
