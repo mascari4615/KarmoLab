@@ -109,4 +109,60 @@ async function gcpClientStep(args) {
   };
 }
 
+/*
+ * 같은 클라이언트 화면에서 비밀값 하나 더 만들기 ("Add secret"). 새 값은 만든 직후 한 번만 노출.
+ * 옛 값은 유지 (다운타임 없는 순환). 새 값을 돌려주고 창은 닫음
+ */
+async function gcpAddSecretStep() {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  const RE = /GOCSPX-[A-Za-z0-9_-]{10,}/;
+  let btn = null;
+  for (let i = 0; i < 40 && !btn; i++) {
+    btn = Array.from(document.querySelectorAll("button")).find((b) => /^(Add secret|보안 비밀번호 추가)$/.test(norm(b.textContent)));
+    if (!btn) await sleep(500);
+  }
+  if (!btn) return { ok: false, step: "button", url: location.href };
+  const before = new Set((document.body.innerText.match(new RegExp(RE.source, "g")) || []));
+  btn.click();
+  let secret = "";
+  for (let i = 0; i < 40 && !secret; i++) {
+    await sleep(500);
+    /* 입력칸 값이나 글자에 새로 나타난 GOCSPX- 값 */
+    const vals = Array.from(document.querySelectorAll("input,textarea")).map((x) => x.value);
+    const pool = vals.concat(document.body.innerText.match(new RegExp(RE.source, "g")) || []);
+    secret = pool.map((v) => (String(v).match(RE) || [""])[0]).find((v) => v && !before.has(v)) || "";
+  }
+  if (!secret) return { ok: false, step: "secret", url: location.href, text: norm(document.body.innerText).slice(-600) };
+  /* 창 닫기. 확인이나 닫기 버튼 */
+  const close = Array.from(document.querySelectorAll("button")).find((b) => /^(확인|닫기|OK|Close|완료|Done)$/.test(norm(b.textContent)));
+  if (close) close.click();
+  return { ok: true, secret };
+}
+
+/*
+ * 대상 (Audience) 화면. 게시 상태를 읽고, publish 면 "앱 게시" 를 누르고 확인까지.
+ * 테스트 상태면 갱신 토큰 수명 7일
+ */
+async function gcpAudienceStep(args) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  const find = (re) => Array.from(document.querySelectorAll("button")).find((b) => re.test(norm(b.textContent)) && !b.disabled);
+  const text = () => norm(document.body && document.body.innerText);
+  for (let i = 0; i < 40 && !/게시 상태|Publishing status/.test(text()); i++) await sleep(500);
+  const before = text().match(/(게시 상태|Publishing status).{0,40}/);
+  if (!(args && args.publish)) return { ok: true, status: before ? before[0] : "", buttons: Array.from(document.querySelectorAll("button")).map((b) => norm(b.textContent)).filter(Boolean).slice(0, 40) };
+  const pub = find(/^(앱 게시|Publish app)$/);
+  if (!pub) return { ok: false, step: "publish-button", status: before ? before[0] : "" };
+  pub.click();
+  await sleep(1500);
+  const confirm = find(/^(확인|Confirm)$/);
+  if (confirm) confirm.click();
+  await sleep(4000);
+  const after = text().match(/(게시 상태|Publishing status).{0,40}/);
+  return { ok: true, published: true, before: before ? before[0] : "", after: after ? after[0] : "" };
+}
+
 globalThis.gcpClientStep = gcpClientStep;
+globalThis.gcpAddSecretStep = gcpAddSecretStep;
+globalThis.gcpAudienceStep = gcpAudienceStep;

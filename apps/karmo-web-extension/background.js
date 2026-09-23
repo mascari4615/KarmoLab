@@ -284,6 +284,33 @@ async function gcpClient(msg) {
 }
 
 /**
+ * Console 화면 하나를 보이는 탭으로 열어 gcp.js 의 함수 하나를 부르고 닫음.
+ * 비밀값이 오갈 수 있어 결과를 저장소에 안 남김 (gcp.client 와 다름)
+ */
+async function gcpOnce(url, fnName, arg) {
+  const tab = await chrome.tabs.create({ url, active: true });
+  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
+  await chrome.storage.local.set({ [OPEN_TABS_KEY]: [...cur, tab.id] });
+  try {
+    await waitLoaded(tab.id);
+    const where = { target: { tabId: tab.id } };
+    await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["gcp.js"] }));
+    const [out] = await within(60000, "call", chrome.scripting.executeScript({
+      ...where,
+      func: (n, a) => globalThis[n](a),
+      args: [fnName, arg || {}],
+    }));
+    return out && out.result;
+  } finally {
+    await closeWorkTab(tab.id);
+  }
+}
+
+function gcpProject(msg) {
+  return /^[a-z0-9-]+$/.test(String(msg.project || "")) ? "?project=" + msg.project : "";
+}
+
+/**
  * 유튜브 시청 기록 수집 (백그라운드 탭)
  * 자동화 브라우저의 구글 로그인은 차단됨. 이 확장은 사용자 세션 안이라 무관
  * @param {number} rounds 미사용. 걸음 함수가 스스로 멈춤
@@ -467,6 +494,13 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         });
       } else if (msg?.type === "gcp.last") {
         sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.gcpLast"))["karmo.gcpLast"] || null });
+      } else if (msg?.type === "gcp.secret") {
+        if (!GCP_CLIENT_RE.test(String(msg.clientId || ""))) throw new Error("clientId 형식 아님");
+        const url = "https://console.cloud.google.com/auth/clients/" + msg.clientId + gcpProject(msg);
+        sendResponse({ ok: true, result: await gcpOnce(url, "gcpAddSecretStep") });
+      } else if (msg?.type === "gcp.audience") {
+        const url = "https://console.cloud.google.com/auth/audience" + gcpProject(msg);
+        sendResponse({ ok: true, result: await gcpOnce(url, "gcpAudienceStep", { publish: !!msg.publish }) });
       } else if (msg?.type === "gcp.client") {
         sendResponse({ ok: true, result: await gcpClient(msg) });
       } else if (msg?.type === "ext.version") {
