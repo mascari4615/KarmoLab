@@ -1415,7 +1415,9 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (!m) return null;
       const ph = m.photos && m.photos.length ? m.photos[0] : null;
       if (ph && ph.url) return { url: picUrl(ph.url, size), more: (m.photos as MediaPhoto[]).length - 1, w: ph.w, h: ph.h };
-      if (m.video && m.video.poster) return { url: picUrl(m.video.poster, size), more: 0 };
+      /* 영상도 크기 전달. 빠지면 그림 도착 뒤에야 높이가 정해져 격자 칸이 열 사이로 다시 흐름
+         (판정 대기 452 중 213 이 영상, 2026-09-23 사용자 "순서나 모양이 계속 바뀐다") */
+      if (m.video && m.video.poster) return { url: picUrl(m.video.poster, size), more: 0, w: m.video.w, h: m.video.h };
       const img = m.image ? safeLinkUrl(m.image) : '';
       return img ? { url: img, more: 0 } : null;
     }
