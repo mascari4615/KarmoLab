@@ -8,6 +8,7 @@
  */
 import { originPath, kindOf, originFor } from './src/route.mjs';
 import { landingHtml } from './src/landing.mjs';
+import { privacyHtml } from './src/privacy.mjs';
 
 const PASS_REQ = ['accept', 'accept-language', 'accept-encoding', 'if-none-match', 'if-modified-since', 'range', 'user-agent'];
 
@@ -17,6 +18,10 @@ export default {
     // apex 는 안내 한 장. www 는 apex 로
     if (kindOf(url.host) === 'home') {
       if (url.host.startsWith('www.')) return Response.redirect('https://mascari4615.com' + url.pathname + url.search, 301);
+      /* Google OAuth 게시용 개인정보처리방침. 링크 없는 경로 */
+      if (url.pathname === '/privacy' || url.pathname === '/privacy/') {
+        return new Response(privacyHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'privacy' } });
+      }
       return new Response(landingHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'home' } });
     }
     const fallback = String(env.ORIGIN || 'https://mascari4615.github.io').replace(/\/$/, '');
