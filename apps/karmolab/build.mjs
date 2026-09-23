@@ -178,6 +178,8 @@ if (!entryPoints.includes('src/widgets-lazy-meta.ts')) entryPoints.push('src/wid
  *   (`scripts/lib/blog-shell.mjs`) 라서 HTML 훑기에 안 잡힌다. 안 지으면 blog 장의
  *   밝기 버튼과 답글이 404 로 죽는다 (change.site-split). */
 if (!entryPoints.includes('src/blog-app.ts')) entryPoints.push('src/blog-app.ts');
+/* `src/about-page.ts` 도 같은 이유. blog `/about/` 을 그리는 번들 (2026-09-23) */
+if (!entryPoints.includes('src/about-page.ts')) entryPoints.push('src/about-page.ts');
 console.log(`[build] 자동으로 찾은 묶음 대상 ${entryPoints.length}개`);
 
 for (const rel of entryPoints) {

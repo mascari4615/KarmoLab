@@ -15,6 +15,7 @@ import { stampToday } from './stamps';
 import { isDesktop, invoke } from './tauri-bridge';
 import { t, loadNamespace } from './lib/i18n';
 import { toolIdFromPath } from './lib/site-base';
+import { aboutUrl } from './lib/site-hosts';
 
 const esc = (v: unknown): string =>
   String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -736,7 +737,7 @@ function mountHeaderAccount(): void {
                            ${document.querySelector('#headerBell .kl-bell-btn') ? `<button type="button" role="menuitem" data-bell>${ICON.bell}<span>${esc(t('account.menu.bell'))}</span>${bellCountText()}</button>` : ''}
                            ${document.getElementById('klChatDock') ? `<button type="button" role="menuitem" data-chat>${ICON.chat}<span>${esc(t('account.menu.chat'))}</span></button>` : ''}
                            ${filesMenuItem()}
-                           <a role="menuitem" href="/about/">${ICON.card}<span>${esc(t('account.menu.about'))}</span></a>
+                           <a role="menuitem" href="${esc(aboutUrl())}">${ICON.card}<span>${esc(t('account.menu.about'))}</span></a>
                        </div>
                        ${me || canAccount ? `<div class="kam-group kam-foot">
                            ${me ? t('account.t08') : ''}

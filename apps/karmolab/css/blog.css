@@ -74,4 +74,7 @@ html, body { margin: 0; }
 /* 글 장과 목록은 community.css 가 그린다. 그 판의 유리와 최대 폭만 여기서 푼다 */
 .b-main .c-wrap { max-width: none; padding: 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .b-main .c-post { max-width: none; }
+/* 소개 장. 그림이 가로 끝까지 가는 제 화면이라 본문 폭을 푼다. 이름과 KarmoLab 링크는 머리 줄에 이미 있어 소개 쪽 윗줄은 숨김 */
+.b-about .b-main { max-width: none; padding: 0; }
+.b-about .ab-top { display: none; }
 @media (max-width: 599px) { .b-top, .b-main, .b-foot { padding-left: 16px; padding-right: 16px; } }

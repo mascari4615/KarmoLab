@@ -44,6 +44,11 @@ export function blogUrl(): string {
     return onSplitHost() ? HOSTS.blog + '/posts/' : '/posts/';
 }
 
+/** 소개 주소. 소개는 blog 소속 (2026-09-23 사용자 결정 "About 페이지 블로그로") */
+export function aboutUrl(): string {
+    return onSplitHost() && hostKind() !== 'blog' ? HOSTS.blog + '/about/' : '/about/';
+}
+
 /** 이 호스트에서 뿌리 (`/`) 로 들어왔을 때 먼저 보일 화면. dash 는 대시보드 */
 export function hostDefaultPage(): string | null {
     return onSplitHost() && hostKind() === 'dash' ? 'mydash' : null;

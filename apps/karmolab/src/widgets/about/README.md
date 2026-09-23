@@ -1,6 +1,8 @@
 # About
 
-- `/about/`와 앱의 소개 위젯에서 같은 화면 사용
+- 소개는 blog 소속. `blog.mascari4615.com/about/` 은 blog 바탕 (`blog-shell.mjs`) 위에 `src/about-page.ts` 가 그린다. lab, dash 의 `/about/` 은 blog 로 301 (`split-outputs.mjs`)
+- 화면 한 벌은 `render.ts`. 셸 위젯 (`about.ts`) 과 blog 장이 같이 씀
+- KarmoLab 입구 (ESC 메뉴 칸, 계정 메뉴) 는 `aboutUrl()` (`src/lib/site-hosts.ts`)
 - 본문은 `content/about.md`, 생성 데이터는 `data/about.json`. 생성 데이터를 직접 수정하지 않음
 - 프로젝트는 각 글의 `work:` frontmatter와 `apps/blog/_data/works.yml`. 생성 데이터는 `data/works.json`
 - 대표작과 그림, 아이콘, 프로필 링크는 `data/about-presentation.json`

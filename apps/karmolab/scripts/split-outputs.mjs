@@ -32,6 +32,9 @@ const APPS = [
   { id: 'dash', root: path.join('dash', 'index.html') },
 ];
 
+/** 한 앱에만 속한 장. 다른 앱에서 열면 제 주인에게 넘긴다 (Cloudflare Pages `_redirects`). 소개는 blog 소속 (2026-09-23) */
+const OWNED = [{ path: '/about/', owner: 'blog', to: 'https://blog.mascari4615.com/about/' }];
+
 if (!fs.existsSync(SITE)) {
   console.error(`[split-outputs] 지어 놓은 사이트가 없다: ${SITE}. 먼저 assemble-site.mjs`);
   process.exit(2);
@@ -48,6 +51,14 @@ for (const app of APPS) {
   const dest = path.join(OUT, app.id);
   fs.cpSync(SITE, dest, { recursive: true });
   fs.copyFileSync(rootFile, path.join(dest, 'index.html'));
+  /* 남의 장은 파일도 뺀다. 정적 파일이 있으면 넘김보다 먼저 나갈 수 있어 한쪽만 믿지 않는다 */
+  const foreign = OWNED.filter((o) => o.owner !== app.id);
+  for (const o of foreign) fs.rmSync(path.join(dest, o.path), { recursive: true, force: true });
+  const moves = foreign.flatMap((o) => [
+    `${o.path} ${o.to} 301`,
+    `${o.path.replace(/\/$/, '')} ${o.to} 301`,
+  ]);
+  if (moves.length) fs.appendFileSync(path.join(dest, '_redirects'), moves.join('\n') + '\n');
   const files = fs.readdirSync(dest).length;
   made.push(`${app.id} (뿌리 ${app.root}, 첫 단 ${files}개)`);
 }

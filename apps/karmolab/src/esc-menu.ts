@@ -13,7 +13,7 @@
  */
 import { t } from './lib/i18n.js';
 import { toolIndexPath } from './lib/site-base';
-import { dashUrl, labUrl, blogUrl, hostKind, onSplitHost } from './lib/site-hosts';
+import { dashUrl, labUrl, blogUrl, aboutUrl, hostKind, onSplitHost } from './lib/site-hosts';
 import escMenuCss from './esc-menu.css';
 
 const ICON_BASE = '/apps/karmolab/img/shell/menu/';
@@ -118,6 +118,7 @@ const KarmoEscMenu = (() => {
                주소 셋 (site-hosts): 다른 호스트로 가야 하면 절대 주소 링크 */
             if (c.id === 'tools') return `<a class="esc-cell" href="${esc(toolIndexPath())}" data-esc-close="1">${icon}<b>${label}</b></a>`;
             if (c.id === 'blog') return `<a class="esc-cell" href="${esc(blogUrl())}" data-esc-close="1">${icon}<b>${label}</b></a>`;
+            if (c.id === 'about') return `<a class="esc-cell" href="${esc(aboutUrl())}" data-esc-close="1">${icon}<b>${label}</b></a>`;
             if (onSplitHost()) {
                 const kind = hostKind();
                 if (c.id === 'mydash' && kind !== 'dash') return `<a class="esc-cell" href="${esc(dashUrl())}" data-esc-close="1">${icon}<b>${label}</b></a>`;
