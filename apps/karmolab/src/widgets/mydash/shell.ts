@@ -27,6 +27,7 @@
  */
 import { dashRegistry, esc, httpsUrl } from './kit';
 import type { DashEntry, DashPanel, DashPanelCtx, DashReadOpts, DashRepoWrite } from './kit';
+import { cachedRead, clearReads, saveRead } from './read-cache';
 import mydashCss from './mydash.css';
 import dashCss from './dash.css';
 import { t, loadNamespace } from '../../lib/i18n';
@@ -462,7 +463,9 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
   /* 한 번에 하나만. 로그인 직후와 online 이 겹치면 같은 줄을 두 번 보냄 */
   let flushing: Promise<{ sent: number; left: number }> | null = null;
 
-  function makeRepo(cfg: Config): DashRepoWrite {
+  function makeRepo(cfg: Config, onFresh?: () => void): DashRepoWrite {
+    /** 이 화면 수명에 뒤에서 새 판을 받은 파일. 한 파일은 한 번만 */
+    const revalidated = new Set<string>();
     const eventsBranch = cfg.eventsBranch || DEFAULT_EVENTS_BRANCH;
 
     /** contents 주소 하나. `extra` 는 `&per_page=100` 처럼 이미 encode 된 덧붙임 */
@@ -535,9 +538,36 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       return null;
     }
 
-    async function readText(path: string, opts?: DashReadOpts): Promise<string> {
-      const res = await call(path, 'application/vnd.github.raw', opts?.ref);
+    async function fetchText(path: string, ref?: string): Promise<string> {
+      const res = await call(path, 'application/vnd.github.raw', ref);
       return res.text();
+    }
+
+    /**
+     * 마지막 판이 있으면 그것을 바로 돌려주고, 이 화면 수명에 한 번 뒤에서 새 판을 받음.
+     * 새 판이 다르면 저장하고 `onFresh` 로 알린다 (셸이 보던 방을 다시 그림). 다시 그릴 때는
+     * 이미 받은 새 판이 저장돼 있어 같은 파일은 재수신 없음
+     */
+    async function readText(path: string, opts?: DashReadOpts): Promise<string> {
+      const key = cfg.owner + '/' + cfg.repo + '@' + (opts?.ref || cfg.branch || 'main') + ':' + path;
+      const old = await cachedRead(key);
+      if (old === null) {
+        const text = await fetchText(path, opts?.ref);
+        void saveRead(key, text);
+        revalidated.add(key);
+        return text;
+      }
+      if (!revalidated.has(key)) {
+        revalidated.add(key);
+        void fetchText(path, opts?.ref)
+          .then(async (text) => {
+            if (text === old) return;
+            await saveRead(key, text);
+            onFresh?.();
+          })
+          .catch(() => undefined);
+      }
+      return old;
     }
 
     /**
@@ -1280,6 +1310,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
 
     function logout(cfg: Config): void {
       saveToken(null);
+      void clearReads();
       setMenuCells(null);
       /* 토큰이 없으면 보낼 수도 없음. 남은 outbox 는 안 지움. 다시 로그인하면 그때 감 */
       stopOnline?.();
@@ -1291,7 +1322,14 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     /* ── 로그인 뒤 ── */
     async function showDashboard(cfg: Config): Promise<void> {
       root.classList.remove('myd--gate');
-      const repo = makeRepo(cfg);
+      /* 뒤에서 받은 새 판이 다르면 보던 방을 다시 그림. 여러 파일이 연달아 와도 한 번만 */
+      let freshTimer = 0;
+      const repo = makeRepo(cfg, () => {
+        window.clearTimeout(freshTimer);
+        freshTimer = window.setTimeout(() => {
+          if (reopen) reopen();
+        }, 400);
+      });
       /* 로그인 뒤 한 번. 지난 화면에서 그물이 끊겨 못 보낸 것이 남아 있을 수 있음 */
       void flushAndSay(repo);
       watchOnline(repo);
