@@ -2,14 +2,10 @@ name = "site-router"
 main = "worker.mjs"
 compatibility_date = "2026-09-22"
 
-# 공개 주소 넷 (memo change.site-split). 원본은 GitHub Pages 원주소 (mascari4615.github.io)
+# apex 와 www 만 (memo change.site-split). lab, blog, dash 는 Cloudflare Pages 프로젝트 셋으로 옮겼다
 # custom_domain 이면 wrangler 가 DNS 레코드까지 만든다 (mydash-relay 와 같은 손)
-# blog 도 여기로. 원본은 GitHub Pages 원주소 (apps/blog/CNAME 삭제로 되돌림 없음)
 # apex 와 www 는 안내 한 장 (src/landing.mjs)
 routes = [
-  { pattern = "lab.mascari4615.com", custom_domain = true },
-  { pattern = "dash.mascari4615.com", custom_domain = true },
-  { pattern = "blog.mascari4615.com", custom_domain = true },
   { pattern = "mascari4615.com", custom_domain = true },
   { pattern = "www.mascari4615.com", custom_domain = true },
 ]
