@@ -163,6 +163,26 @@ async function gcpAudienceStep(args) {
   return { ok: true, published: true, before: before ? before[0] : "", after: after ? after[0] : "" };
 }
 
+/* 화면 읽기만. 글자, 입력칸 (이름표와 값), 버튼. 무엇이 비었는지 보려고 */
+async function gcpReadStep() {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  await sleep(3000);
+  const fields = Array.from(document.querySelectorAll("input,textarea,select")).filter((x) => x.type !== "hidden").map((x) => ({
+    label: norm(x.getAttribute("aria-label") || (x.labels && x.labels[0] && x.labels[0].textContent) || x.name || ""),
+    value: x.type === "password" ? "(가림)" : String(x.value || "").slice(0, 120),
+    required: !!x.required,
+  }));
+  return {
+    ok: true,
+    url: location.href,
+    text: norm(document.body && document.body.innerText).slice(0, 2500),
+    fields,
+    buttons: Array.from(document.querySelectorAll("button")).map((b) => norm(b.textContent)).filter(Boolean).slice(0, 40),
+  };
+}
+
+globalThis.gcpReadStep = gcpReadStep;
 globalThis.gcpClientStep = gcpClientStep;
 globalThis.gcpAddSecretStep = gcpAddSecretStep;
 globalThis.gcpAudienceStep = gcpAudienceStep;

@@ -498,6 +498,11 @@ chrome.runtime.onMessageExternal.addListener((msg, _sender, sendResponse) => {
         if (!GCP_CLIENT_RE.test(String(msg.clientId || ""))) throw new Error("clientId 형식 아님");
         const url = "https://console.cloud.google.com/auth/clients/" + msg.clientId + gcpProject(msg);
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpAddSecretStep") });
+      } else if (msg?.type === "gcp.read") {
+        /* 읽기 전용. Google 인증 플랫폼의 정해진 화면만 */
+        const page = ["branding", "audience", "overview", "scopes"].includes(msg.page) ? msg.page : "overview";
+        const url = "https://console.cloud.google.com/auth/" + page + gcpProject(msg);
+        sendResponse({ ok: true, result: await gcpOnce(url, "gcpReadStep") });
       } else if (msg?.type === "gcp.audience") {
         const url = "https://console.cloud.google.com/auth/audience" + gcpProject(msg);
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpAudienceStep", { publish: !!msg.publish }) });
