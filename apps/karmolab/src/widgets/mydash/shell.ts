@@ -858,15 +858,13 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     career: 'me',
     calendar: 'cal',
   };
-  type EscMenu = {
-    open: () => void;
-    use: (next: {
-      title: string;
-      cells: Array<{ id: string; icon: string; label: string }>;
-      pick: (id: string) => void;
-      foot?: { label: string; pick: () => void };
-    } | null) => void;
+  type EscMenuCells = {
+    title: string;
+    cells: Array<{ id: string; icon: string; label: string }>;
+    pick: (id: string) => void;
+    foot?: { label: string; pick: () => void };
   };
+  type EscMenu = { open: () => void; use: (next: EscMenuCells | null) => void };
   function escMenu(): EscMenu | undefined {
     return (window as unknown as { KarmoEscMenu?: EscMenu }).KarmoEscMenu;
   }
@@ -904,7 +902,21 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에는 셸 사이드바가 없어 방을 옮길 곳이 없음.
        ESC 메뉴 판 (esc-menu.ts) 에 칸을 대시보드 방으로 바꿔 끼워 연다. 로그인 뒤에만 */
     const menuBtn = root.querySelector('.myd-menu') as HTMLButtonElement;
-    menuBtn.addEventListener('click', () => escMenu()?.open());
+    /* 칸 한 벌은 여기 보관, 누를 때 끼움.
+       로그인이 ESC 메뉴 조각 (boot-late.js, defer) 보다 먼저 끝나면 그때의 use() 는 헛돎.
+       그래서 전역 KarmoEscMenuPending 에도 남김. 조각이 뒤에 떠도 주움 */
+    let menuCells: EscMenuCells | null = null;
+    function setMenuCells(next: EscMenuCells | null): void {
+      menuCells = next;
+      (window as unknown as { KarmoEscMenuPending?: EscMenuCells | null }).KarmoEscMenuPending = next;
+      escMenu()?.use(next);
+    }
+    menuBtn.addEventListener('click', () => {
+      const m = escMenu();
+      if (!m || !menuCells) return;
+      m.use(menuCells);
+      m.open();
+    });
 
     /* 패널이 붙여 둔 뒷정리. 패널을 갈아 끼울 때마다 부른다. 안 부르면 타이머가 쌓인다. */
     let cleanups: Array<() => void> = [];
@@ -945,7 +957,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
        셸은 `const Toolbox` 로 생성하고 const 는 window 에 안 붙음. window 만 보면 실서비스에서
        등록이 통째로 헛돌아 기기 흐름 폴링이 위젯 이탈 뒤에도 안 멈추는 문제 (memo-atlas 와 동일 패턴). */
     toolbox()?.onDispose?.(() => {
-      escMenu()?.use(null);
+      setMenuCells(null);
       disposePanel();
       stopOnline?.();
       toolbox()?.clearSubNav?.(TOOL_ID);
@@ -1266,7 +1278,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
 
     function logout(cfg: Config): void {
       saveToken(null);
-      escMenu()?.use(null);
+      setMenuCells(null);
       /* 토큰이 없으면 보낼 수도 없음. 남은 outbox 는 안 지움. 다시 로그인하면 그때 감 */
       stopOnline?.();
       for (const k of Object.keys(counts)) delete counts[k];
@@ -1289,7 +1301,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       stripOut.title = cfg.owner + '/' + cfg.repo;
       stripOut.onclick = (): void => logout(cfg);
       if (soloDash()) {
-        escMenu()?.use({
+        setMenuCells({
           title: t('shell.menu.dashboard', undefined, '대시보드'),
           cells: navItems().map((it) => ({ id: it.id, icon: MENU_ICONS[it.id] || 'dash', label: it.label })),
           pick: (id) => openItem(id),

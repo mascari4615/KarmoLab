@@ -47,7 +47,8 @@ type Custom = {
 const KarmoEscMenu = (() => {
     let root: HTMLElement | null = null;
     let lastFocus: HTMLElement | null = null;
-    let custom: Custom | null = null;
+    /* 칸을 먼저 정한 쪽 (대시보드 셸) 이 이 조각보다 먼저 떴으면 전역에 남겨 둔 것을 줍는다 */
+    let custom: Custom | null = (window as unknown as { KarmoEscMenuPending?: Custom | null }).KarmoEscMenuPending || null;
 
     function cellsHtml(): string {
         if (custom) {
