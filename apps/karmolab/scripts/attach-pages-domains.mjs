@@ -42,10 +42,11 @@ const taken = new Set((workerDomains.body.result || []).map((d) => d.hostname));
 let failed = 0;
 for (const { host, project } of PAIRS) {
   const now = await api(`/accounts/${ACC}/pages/projects/${project}/domains`);
-  const already = (now.body.result || []).some((d) => d.name === host);
+  const mine = (now.body.result || []).find((d) => d.name === host);
+  const already = !!mine;
   const note = [
     `${host} → ${project}`,
-    already ? '이미 붙어 있음' : '붙일 것',
+    already ? `이미 붙어 있음 (상태 ${mine.status || '?'}${mine.validation_data ? ' ' + (mine.validation_data.status || '') : ''})` : '붙일 것',
     taken.has(host) ? 'Worker 가 이 이름을 쥠 (먼저 뗀다)' : '',
   ].filter(Boolean).join(' | ');
   console.log(`  ${note}`);
