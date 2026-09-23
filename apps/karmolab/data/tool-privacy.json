@@ -253,13 +253,6 @@
         "yawnbot.mascari4615.com"
       ]
     },
-    "planner": {
-      "where": "third-party",
-      "sends": "로그인하면 Google 캘린더, 할 일과 직접 주고받습니다. 우리 서버를 거치지 않습니다.",
-      "to": [
-        "googleapis.com (Google)"
-      ]
-    },
     "plaza": {
       "where": "ours",
       "sends": "광장에 남기는 것이 KarmoLab 서버에 저장되어 남에게 보입니다.",

@@ -137,7 +137,7 @@ function bootWidget({ key, fetchImpl }) {
     window.document.body.appendChild(box);
     panel.renderEmpty(box);
     const cards = box.querySelectorAll('.mydh-card');
-    check('④ 빈 카드 일곱', cards.length === 7, String(cards.length));
+    check('④ 빈 카드 여섯 (판정 대기는 북마크로 합침, 2026-09-23)', cards.length === 6, String(cards.length));
     check('④ 값은 하이픈', Array.from(box.querySelectorAll('.mydh-big')).every((b) => b.textContent === '-'));
     check('④ 열기 없음', box.querySelectorAll('[data-open]').length === 0);
     check('④ 날짜 줄', !!box.querySelector('.mydh-date'));

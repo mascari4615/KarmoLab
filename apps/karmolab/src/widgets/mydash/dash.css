@@ -155,6 +155,25 @@ html[data-site="dash"] .myd-strip {
     backdrop-filter: blur(14px);
   }
 }
+/* 플래너 방. 화면 높이를 다 쓰고, 달력과 옆줄은 유리 판 (하늘 위에서 읽히게) */
+@media (min-width: 900px) {
+  html[data-site="dash"] .myd-main:has(.pl-root) { display: flex; flex-direction: column; overflow: hidden; }
+  html[data-site="dash"] .myd-main:has(.pl-root) .myd-body { flex: 1; min-height: 0; }
+}
+html[data-site="dash"] .pl-cal-main,
+html[data-site="dash"] .pl-cal-side,
+html[data-site="dash"] .pl-diary-side,
+html[data-site="dash"] .pl-diary-main,
+html[data-site="dash"] .pl-kanban-board,
+html[data-site="dash"] .pl-streaks {
+  padding: 14px;
+  border: 1px solid var(--dash-edge);
+  background: var(--dash-glass);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--dash-shadow);
+}
+html[data-site="dash"] .pl-cal-main { --fc-today-bg-color: color-mix(in srgb, var(--accent) 16%, transparent); }
+
 /* 패널 변수 중 둥글기. 그림 모서리도 0 */
 html[data-site="dash"] .bm { --bm-pic-radius: 0; }
 html[data-site="dash"] .myd-card {

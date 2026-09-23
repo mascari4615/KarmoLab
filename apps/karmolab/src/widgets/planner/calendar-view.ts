@@ -8,6 +8,7 @@
  * 왼쪽 작은 달력과 캘린더 목록은 손으로 그린다(60줄쯤). 라이브러리로 하면 같은 달력 엔진을
  * 두 번 띄우게 되는데, 그 값에 비해 하는 일이 달을 넘기고 날을 고른다뿐이다.
  */
+import { toast } from './toast';
 import { t } from '../../lib/i18n';
 import {
     createEvent,
@@ -34,6 +35,7 @@ import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/cor
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
 import koLocale from '@fullcalendar/core/locales/ko';
 
 const esc = (v: string): string =>
@@ -84,6 +86,32 @@ export interface CalendarViewHandle {
  * 달력을 그린다. `token` 이 없으면 **이 브라우저 캘린더만** 쓴다 . 
  * 구글은 얹는 것이지 있어야 하는 것이 아니다.
  */
+/** Google 공개 캘린더 "대한민국의 휴일". 달력 칸을 빨갛게 칠하는 데 쓴다 */
+const HOLIDAY_CALENDAR: GoogleCalendar = {
+    id: 'ko.south_korea#holiday@group.v.calendar.google.com',
+    summary: '대한민국의 휴일',
+    backgroundColor: '#d9553f'
+};
+const isHolidayCalendar = (id: string | undefined): boolean => String(id || '').endsWith('#holiday@group.v.calendar.google.com');
+
+const VIEW_KEY = 'karmolab.planner.view';
+const VIEWS = ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listMonth'];
+function savedView(): string {
+    try {
+        const v = localStorage.getItem(VIEW_KEY) || '';
+        return VIEWS.includes(v) ? v : 'dayGridMonth';
+    } catch {
+        return 'dayGridMonth';
+    }
+}
+function saveView(v: string): void {
+    try {
+        if (VIEWS.includes(v)) localStorage.setItem(VIEW_KEY, v);
+    } catch {
+        /* 못 적으면 다음에 월 보기로 */
+    }
+}
+
 export function buildCalendarView(
     container: HTMLElement,
     token: string | null,
@@ -128,13 +156,14 @@ export function buildCalendarView(
     let lastRange: { start: Date; end: Date } | null = null;
 
     const options: CalendarOptions = {
-        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
         locale: koLocale,
-        initialView: 'timeGridWeek',
+        /* 보기 넷 (월, 주, 일, 일정 목록). 마지막에 본 보기로 연다 (Google 캘린더처럼) */
+        initialView: savedView(),
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
         },
         height: '100%',
         nowIndicator: true,
@@ -187,6 +216,7 @@ export function buildCalendarView(
             info.el.appendChild(btn);
         },
         datesSet: (info) => {
+            saveView(info.view.type);
             miniMonth = new Date(info.view.currentStart);
             renderMini();
             void reload(info.start, info.end);
@@ -228,6 +258,21 @@ export function buildCalendarView(
         calendar.removeAllEvents();
         for (const ev of visible()) {
             calendar.addEvent({ ...ev, title: ev.title || t('planner.t12') });
+        }
+        markHolidays();
+    }
+
+    /* 공휴일 칸과 머리 칸을 빨갛게. 공휴일 캘린더의 일정이 있는 날. 끈 캘린더여도 날 색은 남긴다 */
+    function markHolidays(): void {
+        const days = new Set<string>();
+        for (const ev of allEvents) {
+            if (!isHolidayCalendar(ev.extendedProps.calendarId)) continue;
+            const from = new Date(ev.start.slice(0, 10) + 'T00:00:00');
+            const to = ev.end ? new Date(ev.end.slice(0, 10) + 'T00:00:00') : new Date(+from + 86400000);
+            for (let d = from; d < to; d = new Date(+d + 86400000)) days.add(ymd(d));
+        }
+        for (const el of mount.querySelectorAll<HTMLElement>('[data-date]')) {
+            el.classList.toggle('pl-holiday', days.has(el.dataset.date || ''));
         }
     }
 
@@ -435,7 +480,7 @@ export function buildCalendarView(
             }
             if (lastRange) await reload(lastRange.start, lastRange.end);
         } catch {
-            Toolbox?.showToast?.(t('planner.t32'), 'error');
+            toast(t('planner.t32'), 'error');
         }
     }
 
@@ -454,7 +499,7 @@ export function buildCalendarView(
             });
         } catch {
             revert();
-            Toolbox?.showToast?.(t('planner.t32'), 'error');
+            toast(t('planner.t32'), 'error');
         }
     }
 
@@ -533,7 +578,7 @@ export function buildCalendarView(
             allEvents = allEvents.filter((e) => e.extendedProps.googleId !== ev.extendedProps.googleId);
             renderMini();
         } catch {
-            Toolbox?.showToast?.(t('planner.t35'), 'error');
+            toast(t('planner.t35'), 'error');
         }
     }
 
@@ -547,10 +592,13 @@ export function buildCalendarView(
     void (async () => {
         if (token) {
             try {
-                calendars = [localCalendar(), ...(await fetchCalendars(token))];
+                const mine = await fetchCalendars(token);
+                /* 공휴일은 구독 안 했어도 늘 (Google 공개 대한민국 공휴일). 구독했으면 그것 */
+                const holiday = mine.some((c) => isHolidayCalendar(c.id)) ? [] : [HOLIDAY_CALENDAR];
+                calendars = [localCalendar(), ...mine, ...holiday];
             } catch {
                 /* 구글이 안 되면 이 브라우저 것만으로 계속 쓴다. 화면이 통째로 죽지 않는다 */
-                Toolbox?.showToast?.(t('planner.t36'), 'error');
+                toast(t('planner.t36'), 'error');
             }
         }
         if (destroyed) return;

@@ -826,7 +826,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
           { id: 'ai', label: t('mydash.nav.ai', undefined, 'AI 사용'), panel: 'ai-usage' },
           { id: 'pc', label: t('mydash.nav.pc', undefined, 'PC 성능'), panel: 'pc-vitals' },
           { id: 'career', label: t('mydash.nav.career', undefined, '커리어'), panel: 'career' },
-          { id: 'calendar', label: t('mydash.nav.calendar', undefined, '캘린더'), panel: 'calendar' },
+          /* 플래너 (캘린더, 일기, 칸반, 연속일). 옛 캘린더 방 자리 (사용자 2026-09-23) */
+          { id: 'planner', label: t('widgets.planner.title', undefined, '플래너'), panel: 'planner' },
         ],
       },
     ];
@@ -887,7 +888,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     ai: 'stat',
     pc: 'dash',
     career: 'me',
-    calendar: 'cal',
+    planner: 'cal',
   };
   type EscMenuCells = {
     title: string;
@@ -1001,8 +1002,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
 
     /** 목록에 있는 그 항목. 없으면 null */
     function itemById(id: string): NavItem | null {
-      /* 옛 판정 대기 주소 (#judge) 와 홈의 판정 대기 카드는 북마크 방으로 */
-      const want = id === 'judge' ? 'bookmarks' : id;
+      /* 옛 주소 둘. 판정 대기 (#judge) 는 북마크 방으로, 캘린더 (#calendar) 는 플래너로 */
+      const want = id === 'judge' ? 'bookmarks' : id === 'calendar' ? 'planner' : id;
       return navItems().filter((x) => x.id === want)[0] || null;
     }
     /** 그 항목이 열 패널. 코드가 아직 안 실렸으면 null */

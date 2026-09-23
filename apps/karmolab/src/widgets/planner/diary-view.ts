@@ -7,6 +7,7 @@
  *
  * 셈은 여기 없다. 전부 `diary-store.ts` 다. 여기는 그린다.
  */
+import { toast } from './toast';
 import { t } from '../../lib/i18n';
 import { ymd } from './gcal';
 import {
@@ -119,7 +120,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
             /* 일기를 쓴 날 = 그 날의 연속일. 오늘 어제 것을 채워 넣어도 어제 썼다가 맞다. */
             const result = recordStreakActivity('diary', current);
             if (result.changed && result.leveledUp) {
-                Toolbox?.showToast?.(t('planner.t71', { level: result.newLevel }), 'success');
+                toast(t('planner.t71', { level: result.newLevel }), 'success');
             }
         }
         savedEl.textContent = kept ? t('planner.t86') : t('planner.t87');

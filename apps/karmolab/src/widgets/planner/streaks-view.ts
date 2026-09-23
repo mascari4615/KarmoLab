@@ -6,6 +6,7 @@
  *
  * 셈은 여기 없다. 전부 `lib/gamification.ts` 다. 여기는 그린다.
  */
+import { toast } from './toast';
 import { t } from '../../lib/i18n';
 import {
     DEFAULT_TRACKS,
@@ -88,10 +89,10 @@ export function buildStreaksView(container: HTMLElement, onOpenDiary?: () => voi
         const result = recordStreakActivity(btn.dataset.track);
         if (!result.changed) return;
         for (const id of result.unlocked) {
-            Toolbox?.showToast?.(t('planner.t70', { title: t(`planner.ach.${id}`) }), 'success');
+            toast(t('planner.t70', { title: t(`planner.ach.${id}`) }), 'success');
         }
         if (result.leveledUp) {
-            Toolbox?.showToast?.(t('planner.t71', { level: result.newLevel }), 'success');
+            toast(t('planner.t71', { level: result.newLevel }), 'success');
         }
         render();
     });

@@ -11,7 +11,8 @@ import './widgets/mydash/ai-usage';
 import './widgets/mydash/bookmarks';
 import './widgets/mydash/pc-vitals';
 import './widgets/mydash/career';
-import './widgets/mydash/calendar';
+/* 플래너 (캘린더, 일기, 칸반, 연속일). 2026-09-23 lab 도구에서 옮겨 옴 */
+import './widgets/planner/planner';
 import './widgets/mydash/shell';
 /* 메뉴 버튼이 여는 판. lab 과 같은 ESC 메뉴에 칸만 대시보드 방으로 (shell.ts setMenuCells) */
 import './esc-menu';

@@ -137,7 +137,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
       },
       { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), icon: 'stat', count: aiCount },
       { item: 'pc', title: t('mydash.nav.pc', undefined, 'PC 성능'), icon: 'dash', count: pcCount },
-      { item: 'calendar', title: t('mydash.nav.calendar', undefined, '캘린더'), icon: 'cal', count: calendarCount },
+      { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), icon: 'cal', count: calendarCount },
     ];
   }
 

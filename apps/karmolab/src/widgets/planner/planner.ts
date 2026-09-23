@@ -1,6 +1,9 @@
 /**
  * 플래너. 구글 캘린더, 할 일, 연속일 (TASK-KL-321)
  *
+ * 자리: dash 대시보드의 방 하나 (`dashRegistry` 의 `planner`). 2026-09-23 lab 도구에서 옮김
+ * (사용자 "플래너로 합쳐줘. lab 에서 제거. dash 에 이관". 2026-09-13 "캘린더도 대시보드에 합친다" 의 마무리)
+ *
  * 여기 있던 것은 원래 **React 앱을 불러다 붙이는 12줄**이었다. 화면 하나 때문에 React 19 +
  * Tailwind + 달력 라이브러리 두 벌이 따로 지어져 나갔고, 사용자 기록(`toolbox_user_data`)을
  * 본체와 섬이 **각자 다른 규칙으로** 만졌다. 섬을 걷어 내고 본체와 같은 자리로 가져왔다.
@@ -12,7 +15,10 @@
  *   kanban-view     할 일 세 칸
  *   streaks-view    연속일, 레벨
  */
+import { toast } from './toast';
 import { t, loadNamespace } from '../../lib/i18n';
+import { dashRegistry } from '../mydash/kit';
+import type { DashPanelCtx } from '../mydash/kit';
 import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken, storedToken } from './gauth';
 import { buildCalendarView, type CalendarViewHandle } from './calendar-view';
 import { buildKanbanView, type KanbanViewHandle } from './kanban-view';
@@ -73,6 +79,19 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-cal-main .fc .fc-col-header-cell-cushion,
         .pl-cal-main .fc .fc-daygrid-day-number { color: var(--text-secondary); text-decoration: none; }
         .pl-cal-main .fc .fc-event { cursor: pointer; }
+        /* 주말과 공휴일 (사용자 2026-09-23 "주말, 공휴일 등이 구분이 안 됨"). 토 파랑, 일과 공휴일 빨강 */
+        .pl-cal-main { --pl-sat: #2f6fd6; --pl-sun: #d9553f; }
+        [data-theme="dark"] .pl-cal-main { --pl-sat: #6fa3f0; --pl-sun: #f07a66; }
+        .pl-cal-main .fc .fc-day-sat .fc-daygrid-day-number,
+        .pl-cal-main .fc .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion { color: var(--pl-sat); }
+        .pl-cal-main .fc .fc-day-sun .fc-daygrid-day-number,
+        .pl-cal-main .fc .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion,
+        .pl-cal-main .fc .pl-holiday .fc-daygrid-day-number,
+        .pl-cal-main .fc .fc-col-header-cell.pl-holiday .fc-col-header-cell-cushion { color: var(--pl-sun); }
+        .pl-cal-main .fc .fc-daygrid-day.pl-holiday { background: color-mix(in srgb, var(--pl-sun) 6%, transparent); }
+        /* 알림 한 줄 (toast.ts). lab 셸의 알림이 없는 dash 장용 */
+        .pl-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 3000; padding: 10px 16px; background: var(--text-primary); color: var(--bg-secondary); font-size: var(--font-size-sm); }
+        .pl-toast--error { background: var(--error); color: var(--accent-fg); }
         .pl-cal-main .fc .fc-event:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
         .pl-cal-layout { display: flex; gap: 16px; height: 100%; min-height: 0; }
@@ -195,8 +214,17 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
 
     type PaneId = 'calendar' | 'diary' | 'kanban' | 'streaks';
 
-    function build(container: HTMLElement): void {
-        Mdd.injectCSS('planner', CSS);
+    const STYLE_ID = 'planner-style';
+    function ensureStyle(): void {
+        if (document.getElementById(STYLE_ID)) return;
+        const el = document.createElement('style');
+        el.id = STYLE_ID;
+        el.textContent = CSS;
+        document.head.appendChild(el);
+    }
+
+    function build(container: HTMLElement, onDispose: (fn: () => void) => void): void {
+        ensureStyle();
         Object.assign(container.style, { height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0', padding: '0' });
         container.innerHTML = `<div class="pl-root"></div>`;
         const root = container.querySelector<HTMLElement>('.pl-root')!;
@@ -211,7 +239,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
             live?.destroy();
             live = null;
         };
-        Toolbox?.onDispose?.(dispose);
+        onDispose(dispose);
 
         function render(): void {
             dispose();
@@ -260,7 +288,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                     try {
                         token = await requestToken();
                     } catch {
-                        Toolbox?.showToast?.(t('planner.t06'), 'error');
+                        toast(t('planner.t06'), 'error');
                         return;
                     }
                     if (token) render();
@@ -278,14 +306,16 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         void Promise.all([loadNamespace('planner'), token ? null : ensureToken().then((x) => { token = x; })]).then(render);
     }
 
-    Toolbox.register({
+    dashRegistry().register({
         id: 'planner',
-        title: t('widgets.planner.title', undefined, '플래너'),
-        category: 'app',
-        desc: t('widgets-desc.planner.desc', undefined, '구글 캘린더, 할 일, 연속일을 한 자리에서'),
-        icon: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>',
-        layout: 'full',
-        noHero: true,
-        tabs: [{ id: 'planner-main', label: t('planner.t74', undefined, '대시보드'), build }]
+        get title(): string {
+            return t('widgets.planner.title', undefined, '플래너');
+        },
+        /* 저장소를 안 읽는다. 구글과 이 브라우저 저장소만 */
+        access: 'read',
+        paths: [],
+        render: async (ctx: DashPanelCtx): Promise<void> => {
+            build(ctx.root, (fn) => ctx.onDispose(fn));
+        },
     });
 })();

@@ -8,6 +8,7 @@
  * 손가락(터치)으로는 HTML5 끌어 놓기가 안 먹는 브라우저가 있어, 카드마다 **옮길 칸 단추**를
  * 같이 둔다. 끌기는 편의고, 단추가 정본이다. 이러면 키보드로도 옮길 수 있다.
  */
+import { toast } from './toast';
 import { t } from '../../lib/i18n';
 import {
     createTask,
@@ -95,7 +96,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
                 remote = await fetchTasks(token);
             } catch {
                 /* 구글이 안 되면 이 브라우저 것만 보여 준다. 화면이 비어 버리지 않는다 */
-                Toolbox?.showToast?.(t('planner.t46'), 'error');
+                toast(t('planner.t46'), 'error');
             }
         }
         if (destroyed) return;
@@ -138,7 +139,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
             if (to === 'done') addExp(EXP_REWARDS.TASK_COMPLETE);
             else if (to === 'inProgress' && from === 'todo') addExp(EXP_REWARDS.TASK_IN_PROGRESS);
         } catch {
-            Toolbox?.showToast?.(t('planner.t47'), 'error');
+            toast(t('planner.t47'), 'error');
             await reload();
         }
     }
@@ -221,7 +222,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
                 else createLocalTask(title);
                 await reload();
             } catch {
-                Toolbox?.showToast?.(t('planner.t48'), 'error');
+                toast(t('planner.t48'), 'error');
                 input.value = title;
             }
         })();

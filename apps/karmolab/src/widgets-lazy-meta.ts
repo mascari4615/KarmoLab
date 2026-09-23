@@ -226,7 +226,7 @@ window.KARMOLAB_LAZY_META = [
     icon: '<rect x="3" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/>',
     /* ★ **순서가 규약이다.** 패널이 먼저 명부(`window.KarmoDash`)에 붙고, 셸이 마지막에
        그 명부를 읽어 목록을 만든다. 패널을 더 붙일 때는 이 배열의 **셸 앞에** 넣는다. */
-    lazyScriptPaths: ['mydash/home', 'mydash/me', 'mydash/ai-usage', 'mydash/bookmarks', 'mydash/pc-vitals', 'mydash/career', 'mydash/calendar', 'mydash/shell']
+    lazyScriptPaths: ['mydash/home', 'mydash/me', 'mydash/ai-usage', 'mydash/bookmarks', 'mydash/pc-vitals', 'mydash/career', 'planner/planner', 'mydash/shell']
   },
   {
     id: 'activity',
@@ -757,15 +757,6 @@ window.KARMOLAB_LAZY_META = [
       'world/load-adventures-from-wiki',
       'adventure/adventure'
     ]
-  },
-  {
-    id: 'planner',
-    get title() { return t('widgets.planner.title', undefined, "플래너"); },
-    category: 'app',
-    get desc() { return t('widgets-desc.planner.desc', undefined, "나만의 일정 동기화 및 스트릭 칸반 보드 (개발 중)"); },
-    layout: 'full',
-    icon: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>',
-    lazyScriptPaths: ['planner/planner']
   },
   {
     id: 'cockpit',
