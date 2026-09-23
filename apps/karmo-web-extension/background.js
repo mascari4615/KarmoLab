@@ -400,6 +400,28 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   }
   (async () => {
     try {
+      if (msg?.type === "dash.inspect") {
+        /* 사람 창의 dash 탭이 어떤 판을 싣고 있나. 읽기만. 탭을 바꾸거나 누르지 않는다 */
+        const tabs = await chrome.tabs.query({ url: ["https://dash.mascari4615.com/*"] });
+        const out = [];
+        for (const t of tabs) {
+          let page = null;
+          try {
+            [page] = await chrome.scripting.executeScript({
+              target: { tabId: t.id },
+              func: () => ({
+                href: location.href,
+                scripts: Array.from(document.scripts).map((s) => s.src).filter(Boolean),
+                strip: Array.from(document.querySelectorAll(".myd-strip .myd-item .myd-label")).map((x) => x.textContent),
+                title: (document.querySelector(".myd-title") || {}).textContent || "",
+              }),
+            });
+          } catch (e) { page = { result: { error: String(e && e.message ? e.message : e) } }; }
+          out.push({ id: t.id, url: t.url, active: t.active, discarded: t.discarded, page: page && page.result });
+        }
+        sendResponse({ ok: true, tabs: out });
+        return;
+      }
       if (msg?.type === "bridge.cleanup") {
         sendResponse({ ok: true, closed: await closeBridgeTabs(sender && sender.tab && sender.tab.id) });
         return;

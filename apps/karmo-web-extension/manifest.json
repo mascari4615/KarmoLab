@@ -28,7 +28,8 @@
     "https://*.x.com/*",
     "https://twitter.com/*",
     "https://music.youtube.com/*",
-    "https://console.cloud.google.com/*"
+    "https://console.cloud.google.com/*",
+    "https://dash.mascari4615.com/*"
   ],
   "background": {
     "service_worker": "background.js"
