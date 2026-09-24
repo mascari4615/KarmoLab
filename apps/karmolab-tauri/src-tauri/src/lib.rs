@@ -641,7 +641,29 @@ enum UpdateCheckMode {
 
 /// 업데이트 체크 통합 진입점. 새 버전이 있으면 항상 webview에 이벤트를 emit하고, manual 모드에선
 /// 창을 띄워 배너가 보이게 한다. 결과 없음·에러는 manual 모드에서만 OS 알림으로 통지한다.
+/// 런처 (Karmo Launcher) 가 이 PC 에 깔렸나. NSIS 가 남기는 HKCU Uninstall 키로 봄.
+/// 맨 위는 런처라, 깔려 있으면 앱 업데이트는 런처가 목록을 보고 맡음 (memo changes/launcher.md 2026-09-25)
+fn launcher_installed() -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        return std::process::Command::new("reg")
+            .args(["query", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Karmo Launcher"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+    }
+    #[allow(unreachable_code)]
+    false
+}
+
 fn spawn_update_check(handle: tauri::AppHandle, mode: UpdateCheckMode) {
+    /* 자동 확인 (시작, 주기, 창 복귀) 은 런처가 있으면 건너뜀. 트레이의 수동 확인은 그대로 */
+    if matches!(mode, UpdateCheckMode::Background) && launcher_installed() {
+        return;
+    }
     tauri::async_runtime::spawn(async move {
         let current = env!("CARGO_PKG_VERSION");
         let result = match handle.updater() {
