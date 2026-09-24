@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { stripJekyll } from './lib/serve-static.mjs';
 import { WAIT } from './lib/waits.mjs';
+import { untilSettled, untilTrue } from './lib/settle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const repoRoot = path.dirname(path.dirname(root));
@@ -498,22 +499,26 @@ if (overflow > 2) problems.push('가로로 ' + overflow + 'px 넘친다');
    배율 무시 시 캔버스가 칸보다 커져 아래가 시간줄 밑, 붓은 커서에서 어긋남
    (2026-09-25 실측 배율 0.8: 칸 735 캔버스 588, 커서 아래 픽셀 그대로) */
 await page.evaluate(() => { document.documentElement.style.zoom = '0.8'; });
-await page.waitForTimeout(600);
-const zoomed = await page.evaluate(() => {
+/* 배율 바꾼 뒤 ResizeObserver 가 캔버스를 다시 맞출 때까지, 잰 값이 멎기를 기다림 */
+const zoomed = await untilSettled(page, () => page.evaluate(() => {
   const wrap = window.__meokQ('[data-canvas]').parentElement.getBoundingClientRect();
   const c = window.__meokQ('[data-canvas]').getBoundingClientRect();
   return { wrapH: wrap.height, canvasH: c.height, x: c.left + c.width * 0.5, y: c.top + c.height * 0.5 };
-});
+}));
 if (Math.abs(zoomed.wrapH - zoomed.canvasH) > 2) problems.push(`배율 0.8 에서 캔버스(${Math.round(zoomed.canvasH)})가 칸(${Math.round(zoomed.wrapH)})에 안 맞는다`);
-const pixelAt = () => page.evaluate(([x, y]) => {
+const pixelAt = ([x, y]) => {
   const c = window.__meokQ('[data-canvas]'); const r = c.getBoundingClientRect();
   return [...c.getContext('2d').getImageData(Math.floor((x - r.left) * c.width / r.width), Math.floor((y - r.top) * c.height / r.height), 1, 1).data].join(',');
-}, [zoomed.x, zoomed.y]);
+};
 await page.click('.meok:visible [data-tool="brush"]');
-const shellZoomPixel = await pixelAt();
+const shellZoomPixel = await page.evaluate(pixelAt, [zoomed.x, zoomed.y]);
 await page.mouse.move(zoomed.x, zoomed.y); await page.mouse.down(); await page.mouse.move(zoomed.x + 1, zoomed.y + 1); await page.mouse.up();
-await page.waitForTimeout(300);
-if (await pixelAt() === shellZoomPixel) problems.push('배율 0.8 에서 붓이 커서 자리에 안 찍힌다');
+/* 커서 아래 픽셀이 바뀔 때까지. 페이지 CSP 가 eval 을 막아 읽기 함수를 여기 한 번 더 적음 */
+const drawn = await untilTrue(page, ([x, y, before]) => {
+  const c = window.__meokQ('[data-canvas]'); const r = c.getBoundingClientRect();
+  return [...c.getContext('2d').getImageData(Math.floor((x - r.left) * c.width / r.width), Math.floor((y - r.top) * c.height / r.height), 1, 1).data].join(',') !== before;
+}, { max: 3000, args: [zoomed.x, zoomed.y, shellZoomPixel] });
+if (!drawn) problems.push('배율 0.8 에서 붓이 커서 자리에 안 찍힌다');
 await page.evaluate(() => { document.documentElement.style.zoom = ''; });
 
 if (process.argv.includes('--shot')) {
