@@ -1,7 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "런처 창 하나. 이벤트 듣기만 (명령은 앱 자체 command)",
-  "windows": ["main"],
-  "permissions": ["core:default"]
+  "description": "런처 창 하나. 이벤트 듣기, 틀 없는 창의 끌기와 최소화와 닫기",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-close"
+  ]
 }

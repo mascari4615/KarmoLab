@@ -1,62 +1,104 @@
-/* 런처 화면. MVP 틀 (디자인 라운드 전). 값은 토큰, 어두운 판 기본, 밝은 판은 시스템 설정 */
+/* 런처 화면. 시안 L3 (memo notes/launcher/mock/build.mjs l3, 사용자 판정 2026-09-25 OK).
+   창 자체가 투명 (tauri.conf transparent). 판 네 변은 mask 로 흐려져 바탕화면이 비침, 욘은 판 오른쪽.
+   어두운 판 기본, 밝은 판은 시스템 설정 */
 :root {
-  --bg: #0f141c;
-  --panel: #161d28;
-  --card: #1c2533;
-  --line: rgba(255, 255, 255, 0.12);
+  --bg: #0d1118;
   --ink: #f2f4f7;
-  --ink2: #aab2c0;
-  --ink3: #6f7a8c;
+  --ink2: #c3cad6;
+  --ink3: #8993a6;
+  --line: rgba(255, 255, 255, 0.16);
+  --panel: rgba(13, 17, 24, 0.62);
+  --panel2: rgba(13, 17, 24, 0.82);
   --acc: #f0a04b;
   --acc-ink: #101418;
-  --ok: #4cc794;
   --err: #f07a66;
-  --font: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  --veil: linear-gradient(90deg, rgba(13, 17, 24, 0.86) 0%, rgba(13, 17, 24, 0.35) 45%, rgba(13, 17, 24, 0) 70%);
+  --ko: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  --en: "Bahnschrift", "Arial Narrow", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #eef1f5;
-    --panel: #ffffff;
-    --card: #ffffff;
-    --line: rgba(24, 34, 56, 0.14);
-    --ink: #182238;
-    --ink2: #56607a;
-    --ink3: #96a0b8;
+    --bg: #eef2f7;
+    --ink: #172033;
+    --ink2: #3d4760;
+    --ink3: #6f7890;
+    --line: rgba(23, 32, 51, 0.16);
+    --panel: rgba(255, 255, 255, 0.72);
+    --panel2: rgba(255, 255, 255, 0.9);
     --acc: #e8862e;
     --acc-ink: #ffffff;
-    --ok: #2a9d6f;
     --err: #d9553f;
+    --veil: linear-gradient(90deg, rgba(238, 242, 247, 0.92) 0%, rgba(238, 242, 247, 0.45) 45%, rgba(238, 242, 247, 0) 70%);
   }
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--font); display: flex; flex-direction: column; }
-.top { display: flex; align-items: center; gap: 14px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.brand { font-size: 16px; font-weight: 800; }
-.top-sub { color: var(--ink2); font-weight: 700; }
-.top-msg { margin-left: auto; color: var(--ink3); font-size: 12px; }
-.main { flex: 1; min-height: 0; display: flex; }
-.grid { flex: 1; overflow: auto; padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; align-content: start; }
-/* 카드는 세로 2:3 (Steam 라이브러리 600x900 비율). 그림 자리는 이름으로 (그림은 디자인 라운드 뒤) */
-.card { aspect-ratio: 2 / 3; border: 1px solid var(--line); background: var(--card); color: var(--ink); display: flex; flex-direction: column; justify-content: flex-end; padding: 16px; text-align: left; cursor: pointer; position: relative; font: inherit; }
-.card:hover, .card.on { border-color: var(--acc); }
-.card b { font-size: 18px; font-weight: 800; line-height: 1.25; }
-.card .kind { color: var(--ink3); font-size: 12px; margin-top: 4px; }
-.card .badge { position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700; padding: 2px 8px; border: 1px solid var(--line); color: var(--ink2); }
-.card .badge.up { background: var(--acc); color: var(--acc-ink); border-color: var(--acc); }
-.card .badge.ok { color: var(--ok); border-color: var(--ok); }
-.detail { width: 360px; flex: none; border-left: 1px solid var(--line); background: var(--panel); padding: 24px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
-.detail h2 { margin: 0; font-size: 24px; font-weight: 800; }
-.detail .sum { color: var(--ink2); margin: 0; }
-.rows { display: grid; grid-template-columns: 90px 1fr; gap: 6px 10px; font-size: 13px; }
-.rows dt { color: var(--ink3); }
-.rows dd { margin: 0; }
-.acts { display: flex; flex-wrap: wrap; gap: 8px; }
-.btn { min-height: 38px; padding: 0 18px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
-.btn.primary { background: var(--acc); color: var(--acc-ink); border-color: var(--acc); }
-.btn.ghost { min-height: 32px; padding: 0 12px; }
-.btn:disabled { opacity: 0.5; cursor: default; }
-.bar { height: 6px; background: var(--line); }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+/* 창 바탕은 투명. 판 밖은 바탕화면 */
+body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -webkit-font-smoothing: antialiased; user-select: none; }
+.en { font-family: var(--en); letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; color: var(--ink3); }
+
+.win { position: absolute; inset: 24px 24px 24px 24px; }
+/* 판 네 변을 흐리게 (가로 띠와 세로 띠의 교집합) */
+.panel {
+  position: absolute; inset: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%), linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%), linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+  mask-composite: intersect;
+}
+.hero { position: absolute; inset: 0; background: var(--bg) center / cover; transition: background-image 0.3s; }
+.veil { position: absolute; inset: 0; background: var(--veil); }
+.glow { position: absolute; inset: 0; box-shadow: inset 0 0 120px 30px var(--bg); opacity: 0.55; }
+
+/* 판 위쪽 흐림 (높이의 8%) 아래에 두어야 글자가 읽힘 */
+.titlebar { position: absolute; left: 40px; right: 40px; top: 30px; height: 40px; display: flex; align-items: center; gap: 6px; z-index: 6; }
+.titlebar .en { color: var(--ink2); }
+.titlebar .msg { flex: 1; text-align: right; padding-right: 10px; font-size: 11px; color: var(--ink3); }
+.wb { width: 34px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: var(--ink2); font: 400 15px var(--en); cursor: pointer; }
+.wb:hover { color: var(--ink); background: var(--panel); }
+
+.side { position: absolute; left: 40px; top: 84px; bottom: 56px; width: 260px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(16px); padding: 14px 0; z-index: 2; overflow: auto; }
+.side .en { display: block; padding: 0 18px 10px; }
+.li { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 18px; border: 0; background: transparent; color: var(--ink2); font: 700 14px var(--ko); cursor: pointer; text-align: left; }
+.li:hover { color: var(--ink); }
+.li .ic { width: 20px; height: 20px; flex: none; }
+.li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.li.on { background: var(--acc); color: var(--acc-ink); }
+.li em { margin-left: auto; font-style: normal; font-size: 11px; padding: 1px 7px; border: 1px solid currentColor; white-space: nowrap; }
+.li em.soon { opacity: 0.6; }
+/* 아이콘은 ESC 메뉴 세트 (어두운 두 톤). 어두운 판에서 반전, 켜진 줄은 판에 맞춰 */
+.ic { display: block; object-fit: contain; filter: invert(1); }
+.li.on .ic { filter: none; }
+@media (prefers-color-scheme: light) {
+  .ic { filter: none; }
+  .li.on .ic { filter: invert(1); }
+}
+
+.head { position: absolute; left: 340px; top: 90px; width: 520px; z-index: 2; }
+.head h1 { margin: 4px 0 10px; font-size: 56px; font-weight: 900; line-height: 1.05; }
+.head p { margin: 0; color: var(--ink2); font-size: 16px; max-width: 440px; }
+.info { margin: 22px 0 0; display: grid; grid-template-columns: 90px 1fr; gap: 6px 14px; font-size: 13px; color: var(--ink2); }
+.info dd { margin: 0; }
+.info b { font: 400 18px var(--en); letter-spacing: 0.04em; color: var(--ink); }
+.err { margin-top: 12px; color: var(--err); font-size: 13px; }
+
+.rel { position: absolute; left: 340px; top: 320px; width: 380px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(14px); z-index: 2; }
+.rel .t { padding: 10px 14px; border-bottom: 1px solid var(--line); font-weight: 700; }
+.rel .row { padding: 9px 14px; display: flex; justify-content: space-between; font-size: 13px; color: var(--ink2); }
+.rel .row span:last-child { font-family: var(--en); color: var(--ink3); }
+
+/* 버튼은 욘 왼쪽 아래 */
+.acts { position: absolute; right: 520px; bottom: 60px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 5; }
+.sub { display: flex; gap: 8px; }
+.sub button { height: 34px; padding: 0 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); font: 700 13px var(--ko); cursor: pointer; backdrop-filter: blur(10px); }
+.sub button:hover { color: var(--ink); }
+.start { display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 34px; border: 0; background: var(--acc); color: var(--acc-ink); font: 900 20px var(--ko); cursor: pointer; }
+.start small { font: 400 12px var(--en); letter-spacing: 0.12em; opacity: 0.8; }
+.start:disabled, .sub button:disabled { opacity: 0.5; cursor: default; }
+.bar { width: 300px; height: 6px; background: var(--line); }
 .bar i { display: block; height: 100%; background: var(--acc); width: 0; }
-.note { color: var(--ink3); font-size: 12px; margin: 0; }
-.err { color: var(--err); font-size: 13px; margin: 0; }
+.note { color: var(--ink2); font-size: 12px; margin: 0; }
+
+/* 욘은 판 오른쪽 안에 거의 들고, 그림 끝 (허벅지) 은 판 아래 흐림과 같이 흐림 (사용자 "창에서 너무 튀어 나갔잖아") */
+.yawn { position: absolute; right: 120px; bottom: 40px; height: min(660px, 86vh); z-index: 4; pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, #000 82%, transparent 100%); }

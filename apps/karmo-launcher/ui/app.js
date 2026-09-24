@@ -1,12 +1,18 @@
-// 런처 화면. 목록 받기, 카드 격자, 옆판 (설치, 업데이트, 실행, 제거). 백엔드는 src-tauri/src/lib.rs
+// 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
+// 백엔드는 src-tauri/src/lib.rs. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
+const appWindow = window.__TAURI__.window.getCurrentWindow();
 
-const gridEl = document.getElementById('grid');
-const detailEl = document.getElementById('detail');
-const msgEl = document.getElementById('msg');
+const $ = (id) => document.getElementById(id);
+const listEl = $('list');
+const headEl = $('head');
+const relEl = $('rel');
+const actsEl = $('acts');
+const heroEl = $('hero');
+const msgEl = $('msg');
 
-const KIND = { tauri: '데스크톱 앱', web: '웹', unity: '게임', tool: '도구', bot: '봇' };
+const ICON = { tauri: 'tool', web: 'dash', unity: 'play', tool: 'tool', bot: 'tool' };
 let apps = [];
 const status = new Map();
 let current = null;
@@ -27,50 +33,61 @@ function newer(a, b) {
   return false;
 }
 
-function badge(app) {
-  if (app.soon) return '<span class="badge">준비 중</span>';
-  const st = status.get(app.id);
-  if (!st) return '';
-  if (st.installed && st.latest && newer(st.latest, st.version)) return '<span class="badge up">업데이트</span>';
-  if (st.installed) return '<span class="badge ok">설치됨</span>';
-  return '';
-}
+const hasUpdate = (st) => !!(st && st.installed && st.latest && newer(st.latest, st.version));
 
-function paintGrid() {
-  gridEl.innerHTML = apps
-    .map(
-      (a) =>
-        '<button type="button" class="card' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
-        badge(a) + '<b>' + esc(a.name) + '</b><span class="kind">' + esc(KIND[a.kind] || a.kind) + '</span></button>'
-    )
+function paintList() {
+  listEl.innerHTML = apps
+    .map((a) => {
+      const st = status.get(a.id);
+      const tag = a.soon ? '<em class="soon">준비 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : '';
+      const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
+      return (
+        '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
+        '<img class="ic" src="img/' + esc(icon) + '.png" alt=""><span>' + esc(a.name) + '</span>' + tag + '</button>'
+      );
+    })
     .join('');
 }
 
-function paintDetail() {
+function paintMain() {
   const app = apps.find((a) => a.id === current);
   if (!app) {
-    detailEl.hidden = true;
+    headEl.innerHTML = '';
+    actsEl.innerHTML = '';
+    relEl.hidden = true;
     return;
   }
-  detailEl.hidden = false;
+  const bg = (app.art && app.art.bg) || 'sky-village';
+  heroEl.style.backgroundImage = 'url(img/' + encodeURIComponent(bg) + '.webp)';
   const st = status.get(app.id) || {};
-  const rows = [];
+  const info = [];
   if (app.kind !== 'web' && !app.soon) {
-    rows.push(['설치', st.installed ? '설치됨' : '안 됨']);
-    rows.push(['내 버전', st.version || '-']);
-    rows.push(['최신', st.latest || (st.error ? '못 읽음' : '-')]);
-    if (st.location) rows.push(['자리', st.location]);
+    info.push(['내 버전', st.installed ? st.version || '-' : '설치 안 됨']);
+    info.push(['최신', st.latest || (st.error ? '못 읽음' : '-')]);
   }
-  const acts = [];
-  const key = app.install && app.install.registry;
-  if (app.soon) acts.push('<p class="note">아직 받을 수 있는 판이 없습니다.</p>');
-  else if (app.kind === 'web') acts.push('<button type="button" class="btn primary" data-act="open">브라우저로 열기</button>');
+  headEl.innerHTML =
+    '<h1>' + esc(app.name) + '</h1><p>' + esc(app.summary) + '</p>' +
+    (info.length ? '<dl class="info">' + info.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd><b>' + esc(v) + '</b></dd>').join('') + '</dl>' : '') +
+    (st.error ? '<p class="err">' + esc(st.error) + '</p>' : '');
+
+  if (st.latest) {
+    relEl.hidden = false;
+    const day = st.pub_date ? String(st.pub_date).slice(5, 10).replace('-', '.') : '';
+    relEl.innerHTML = '<div class="t">릴리스</div><div class="row"><span>' + esc(app.name + ' v' + st.latest) + '</span><span>' + esc(day) + '</span></div>';
+  } else relEl.hidden = true;
+
+  const sub = [];
+  let start = '';
+  if (app.soon) start = '<p class="note">아직 받을 수 있는 판이 없습니다.</p>';
+  else if (app.kind === 'web') start = '<button type="button" class="start" data-act="open">브라우저로 열기</button>';
   else {
-    if (st.installed) acts.push('<button type="button" class="btn primary" data-act="launch">실행</button>');
-    if (st.download && (!st.installed || newer(st.latest, st.version))) {
-      acts.push('<button type="button" class="btn' + (st.installed ? '' : ' primary') + '" data-act="install">' + (st.installed ? '업데이트' : '설치') + '</button>');
-    }
-    if (st.installed && key) acts.push('<button type="button" class="btn" data-act="uninstall">제거</button>');
+    const key = app.install && app.install.registry;
+    if (!st.installed && st.download) start = '<button type="button" class="start" data-act="install">설치</button>';
+    else if (hasUpdate(st) && st.download)
+      start = '<button type="button" class="start" data-act="install">업데이트<small>' + esc(st.version) + ' → ' + esc(st.latest) + '</small></button>';
+    else if (st.installed) start = '<button type="button" class="start" data-act="launch">실행</button>';
+    if (st.installed && hasUpdate(st)) sub.push('<button type="button" data-act="launch">실행</button>');
+    if (st.installed && key) sub.push('<button type="button" data-act="uninstall">제거</button>');
   }
   const pct = progress.total ? Math.round((progress.got / progress.total) * 100) : 0;
   const bar =
@@ -78,12 +95,13 @@ function paintDetail() {
       ? '<div class="bar"><i style="width:' + pct + '%"></i></div><p class="note">' +
         esc(progress.phase === 'install' ? '설치 중' : progress.phase === 'uninstall' ? '제거 중' : '받는 중 ' + pct + '%') + '</p>'
       : '';
-  detailEl.innerHTML =
-    '<h2>' + esc(app.name) + '</h2><p class="sum">' + esc(app.summary) + '</p>' +
-    (rows.length ? '<dl class="rows">' + rows.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('') + '</dl>' : '') +
-    '<div class="acts">' + acts.join('') + '</div>' + bar +
-    (st.error ? '<p class="err">' + esc(st.error) + '</p>' : '');
-  detailEl.querySelectorAll('button').forEach((b) => (b.disabled = !!busy));
+  actsEl.innerHTML = bar + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
+  actsEl.querySelectorAll('button').forEach((b) => (b.disabled = !!busy));
+}
+
+function paint() {
+  paintList();
+  paintMain();
 }
 
 async function refreshStatus(app) {
@@ -100,17 +118,15 @@ async function load() {
   try {
     const m = await invoke('fetch_manifest');
     apps = Array.isArray(m.apps) ? m.apps : [];
-    msgEl.textContent = '목록 ' + (m.updated || '');
+    msgEl.textContent = '';
   } catch (e) {
     msgEl.textContent = '목록을 못 받음: ' + e;
     apps = [];
   }
   if (!current && apps[0]) current = apps[0].id;
-  paintGrid();
-  paintDetail();
+  paint();
   await Promise.all(apps.map(refreshStatus));
-  paintGrid();
-  paintDetail();
+  paint();
 }
 
 async function act(kind) {
@@ -123,11 +139,11 @@ async function act(kind) {
     busy = app.id;
     if (kind === 'install') {
       progress = { got: 0, total: 0, phase: 'download' };
-      paintDetail();
+      paintMain();
       await invoke('install_app', { id: app.id, url: st.download, args: (app.install && app.install.args) || [] });
     } else if (kind === 'uninstall') {
       progress = { got: 0, total: 0, phase: 'uninstall' };
-      paintDetail();
+      paintMain();
       await invoke('uninstall_app', { registryKey: app.install.registry });
     }
   } catch (e) {
@@ -135,25 +151,25 @@ async function act(kind) {
   } finally {
     busy = null;
     await refreshStatus(app);
-    paintGrid();
-    paintDetail();
+    paint();
   }
 }
 
-gridEl.addEventListener('click', (e) => {
-  const card = e.target.closest('[data-id]');
-  if (!card) return;
-  current = card.dataset.id;
-  paintGrid();
-  paintDetail();
+listEl.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-id]');
+  if (!b) return;
+  current = b.dataset.id;
+  paint();
 });
-detailEl.addEventListener('click', (e) => {
+actsEl.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (b) void act(b.dataset.act);
 });
-document.getElementById('reload').addEventListener('click', () => void load());
+$('reload').addEventListener('click', () => void load());
+$('min').addEventListener('click', () => void appWindow.minimize());
+$('close').addEventListener('click', () => void appWindow.close());
 void listen('install-progress', (ev) => {
   progress = ev.payload;
-  paintDetail();
+  paintMain();
 });
 void load();

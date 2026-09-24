@@ -7,16 +7,22 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="top">
-  <b class="brand">Karmo Launcher</b>
-  <span class="top-sub">라이브러리</span>
-  <span class="top-msg" id="msg"></span>
-  <button type="button" class="btn ghost" id="reload">새로고침</button>
-</header>
-<main class="main">
-  <section class="grid" id="grid" aria-label="라이브러리"></section>
-  <aside class="detail" id="detail" hidden></aside>
-</main>
+<!-- 시안 L3 (memo notes/launcher/mock). 투명 창 안에 가장자리가 흐린 판 하나, 욘은 판 오른쪽 -->
+<div class="win">
+  <div class="panel"><div class="hero" id="hero"></div><div class="veil"></div><div class="glow"></div></div>
+  <header class="titlebar" data-tauri-drag-region>
+    <span class="en" data-tauri-drag-region>Karmo Launcher</span>
+    <span class="msg" id="msg" data-tauri-drag-region></span>
+    <button type="button" class="wb" id="reload" title="새로고침" aria-label="새로고침">&#8635;</button>
+    <button type="button" class="wb" id="min" title="최소화" aria-label="최소화">_</button>
+    <button type="button" class="wb" id="close" title="닫기" aria-label="닫기">&#10005;</button>
+  </header>
+  <nav class="side" aria-label="라이브러리"><span class="en">Library</span><div id="list"></div></nav>
+  <section class="head" id="head"></section>
+  <section class="rel" id="rel" hidden></section>
+  <div class="acts" id="acts"></div>
+</div>
+<img class="yawn" src="img/yawn-launcher.webp" alt="">
 <script type="module" src="app.js"></script>
 </body>
 </html>

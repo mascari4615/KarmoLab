@@ -53,6 +53,7 @@ struct Status {
     installed: bool,
     version: Option<String>,
     latest: Option<String>,
+    pub_date: Option<String>,
     download: Option<String>,
     location: Option<String>,
     error: Option<String>,
@@ -108,6 +109,7 @@ async fn app_status(app: Value) -> Result<Status, String> {
             match get_text(url).and_then(|t| serde_json::from_str::<Value>(&t).map_err(|e| e.to_string())) {
                 Ok(latest) => {
                     st.latest = latest.get("version").and_then(|v| v.as_str()).map(String::from);
+                    st.pub_date = latest.get("pub_date").and_then(|v| v.as_str()).map(String::from);
                     st.download = str_at(&latest, &["platforms", platform, "url"]).map(String::from);
                 }
                 Err(e) => st.error = Some(e),

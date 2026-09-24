@@ -18,6 +18,10 @@
           "/S"
         ],
         "registry": "KarmoLab"
+      },
+      "art": {
+        "bg": "sky-twilight",
+        "icon": "tool"
       }
     },
     {
@@ -25,14 +29,22 @@
       "name": "Dash",
       "kind": "web",
       "summary": "개인 대시보드. 데스크톱 앱은 준비 중이라 지금은 브라우저로 연다",
-      "open": "https://dash.mascari4615.com/"
+      "open": "https://dash.mascari4615.com/",
+      "art": {
+        "bg": "sky-village",
+        "icon": "dash"
+      }
     },
     {
       "id": "wm",
       "name": "Witch-Mendokusai",
       "kind": "unity",
       "summary": "마녀와 인형의 게임. 배포판 준비 중",
-      "soon": true
+      "soon": true,
+      "art": {
+        "bg": "sky-dusk",
+        "icon": "play"
+      }
     }
   ]
 }
