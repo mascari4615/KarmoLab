@@ -37,11 +37,14 @@ function esc(s: string): string {
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 }
 
-/** 바꿔 끼우는 칸 한 벌. 제목, 칸, 고르면 부를 손. `foot` 은 아래 줄의 버튼 하나 (나가기) */
+/** 바꿔 끼우는 칸 한 벌. 제목, 칸, 고르면 부를 손. `foot` 은 아래 줄의 버튼 하나 (나가기).
+ *  `tools` 는 그 앞의 작은 버튼 (dash 의 테마, 배경). 눌러도 판은 안 닫히고 글자만 새로 */
+type Tool = { label: () => string; pick: () => void };
 type Custom = {
     title: string;
     cells: Array<{ id: string; icon: string; label: string }>;
     pick: (id: string) => void;
+    tools?: Tool[];
     foot?: { label: string; pick: () => void };
 };
 
@@ -80,9 +83,11 @@ const KarmoEscMenu = (() => {
         el.setAttribute('aria-modal', 'true');
         el.setAttribute('aria-label', t('shell.menu.title', undefined, '메뉴'));
         const title = custom ? custom.title : 'KarmoLab';
-        const foot = custom && custom.foot
-            ? `<button type="button" class="esc-out" data-esc-foot="1" data-esc-close="1">${esc(custom.foot.label)}</button>`
-            : '';
+        const tools = (custom && custom.tools) || [];
+        const foot = tools.map((x, i) => `<button type="button" class="esc-out" data-esc-tool="${i}">${esc(x.label())}</button>`).join('') +
+            (custom && custom.foot
+                ? `<button type="button" class="esc-out" data-esc-foot="1" data-esc-close="1">${esc(custom.foot.label)}</button>`
+                : '');
         el.innerHTML = `
             <div class="esc-dim" data-esc-close="1"></div>
             <img class="esc-yawn" src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true" data-esc-close="1">
@@ -96,13 +101,19 @@ const KarmoEscMenu = (() => {
                     <span class="esc-who"><b class="esc-name">Mascari4615</b><span class="esc-en">Indie, witch and dolls</span></span>
                 </div>
                 <div class="esc-cells">${cellsHtml()}</div>
-                <div class="esc-foot"><kbd>ESC</kbd>${esc(t('shell.menu.close', undefined, '닫기'))}${foot}</div>
+                <div class="esc-foot"><kbd>ESC</kbd>${esc(t('shell.menu.close', undefined, '닫기'))}${foot ? `<span class="esc-tools">${foot}</span>` : ''}</div>
             </div>`;
         el.addEventListener('click', (e) => {
             const hit = e.target as HTMLElement | null;
             const pick = hit?.closest?.('[data-esc-pick]');
             if (pick && custom) custom.pick(pick.getAttribute('data-esc-pick') || '');
             if (hit?.closest?.('[data-esc-foot]') && custom && custom.foot) custom.foot.pick();
+            const toolEl = hit?.closest?.('[data-esc-tool]') as HTMLElement | null;
+            const tool = toolEl && custom && custom.tools ? custom.tools[Number(toolEl.dataset.escTool)] : null;
+            if (toolEl && tool) {
+                tool.pick();
+                toolEl.textContent = tool.label();
+            }
             if (hit?.closest?.('[data-esc-close]')) close();
         });
         document.body.appendChild(el);

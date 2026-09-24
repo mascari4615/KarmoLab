@@ -230,7 +230,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
   dashRegistry().register({
     id: 'home',
     get title(): string {
-      return t('mydash.nav.today', undefined, '오늘');
+      return t('mydash.nav.home', undefined, '홈');
     },
     access: 'read',
     paths: [BOOKMARKS_PATH, ME_PATH, CAREER_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],

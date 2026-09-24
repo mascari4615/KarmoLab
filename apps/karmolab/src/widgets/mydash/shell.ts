@@ -750,7 +750,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       {
         label: t('mydash.nav.now', undefined, '지금'),
         items: [
-          { id: 'today', label: t('mydash.nav.today', undefined, '오늘'), panel: 'home' },
+          { id: 'today', label: t('mydash.nav.home', undefined, '홈'), panel: 'home' },
           { id: 'me', label: t('mydash.nav.me', undefined, '나'), panel: 'me' },
         ],
       },
@@ -815,8 +815,64 @@ import { t, loadNamespace } from '../../lib/i18n';
     title: string;
     cells: Array<{ id: string; icon: string; label: string }>;
     pick: (id: string) => void;
+    tools?: Array<{ label: () => string; pick: () => void }>;
     foot?: { label: string; pick: () => void };
   };
+
+  /* dash 의 밝기와 배경 (사용자 2026-09-24 "테마 어디서 바꿈?"). lab 과 도메인이 달라 lab 설정이 안 넘어옴.
+     열쇠 이름은 lab 과 같게 (`toolbox_theme`, `toolbox_home_bg`). 첫 칠은 dash/index.html 머리의 짧은 스크립트 */
+  const THEME_KEY = 'toolbox_theme';
+  const BG_KEY = 'toolbox_home_bg';
+  /* 이름은 lab 설정의 첫 화면 배경 목록과 같게 (toolbox.ts HOME_BGS) */
+  const BGS: Array<{ id: string; label: string }> = [
+    { id: 'auto', label: '자동' },
+    { id: 'village', label: '마을' },
+    { id: 'clouds', label: '구름' },
+    { id: 'twilight', label: '황혼' },
+    { id: 'dusk', label: '해질녘' },
+  ];
+  function readKey(k: string): string {
+    try {
+      return localStorage.getItem(k) || '';
+    } catch {
+      return '';
+    }
+  }
+  function writeKey(k: string, v: string): void {
+    try {
+      localStorage.setItem(k, v);
+    } catch {
+      /* 못 적으면 이번 화면만 */
+    }
+  }
+  const lookTheme = (): string => (readKey(THEME_KEY) === 'light' ? 'light' : 'dark');
+  const lookBg = (): string => (BGS.some((b) => b.id === readKey(BG_KEY)) ? readKey(BG_KEY) : 'auto');
+  function applyLook(): void {
+    const html = document.documentElement;
+    html.setAttribute('data-theme', lookTheme());
+    const bg = lookBg();
+    if (bg === 'auto') html.removeAttribute('data-home-bg');
+    else html.setAttribute('data-home-bg', bg);
+  }
+  const lookTools = (): Array<{ label: () => string; pick: () => void }> => [
+    {
+      label: () =>
+        t('mydash.menu.theme', undefined, '테마') + ' ' +
+        (lookTheme() === 'light' ? t('settings.opt.light', undefined, '라이트') : t('settings.opt.dark', undefined, '다크')),
+      pick: () => {
+        writeKey(THEME_KEY, lookTheme() === 'light' ? 'dark' : 'light');
+        applyLook();
+      },
+    },
+    {
+      label: () => t('mydash.menu.bg', undefined, '배경') + ' ' + (BGS.find((b) => b.id === lookBg()) || BGS[0]).label,
+      pick: () => {
+        const i = BGS.findIndex((b) => b.id === lookBg());
+        writeKey(BG_KEY, BGS[(i + 1) % BGS.length].id);
+        applyLook();
+      },
+    },
+  ];
   type EscMenu = { open: () => void; use: (next: EscMenuCells | null) => void };
   function escMenu(): EscMenu | undefined {
     return (window as unknown as { KarmoEscMenu?: EscMenu }).KarmoEscMenu;
@@ -825,6 +881,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   /* ── 그리기 ────────────────────────────────────────────────────── */
   function render(root: HTMLElement): void {
     ensureStyle();
+    if (soloDash()) applyLook();
     root.innerHTML =
       '<div class="myd">' +
       '<button type="button" class="myd-menu" aria-haspopup="dialog" aria-label="' +
@@ -1204,6 +1261,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           title: t('shell.menu.dashboard', undefined, '대시보드'),
           cells: navItems().map((it) => ({ id: it.id, icon: MENU_ICONS[it.id] || 'dash', label: it.label })),
           pick: (id) => openItem(id),
+          tools: lookTools(),
           foot: { label: outBtn.textContent || '', pick: () => logout(cfg) },
         });
       }

@@ -9,6 +9,8 @@
 <!-- dash.mascari4615.com 전용 front (memo change.site-split). KarmoLab 셸을 안 싣는다.
      번들 하나 (`js/dash-app.js`) 가 대시보드 패널과 셸을 담는다. 로그인 전에는 로그인 화면만. -->
 <link rel="icon" href="/apps/karmolab/img/favicon.ico">
+<!-- 밝기와 배경을 그리기 전에 (ESC 메뉴 아래 줄에서 바꿈, shell.ts applyLook). 없으면 어두운 판 -->
+<script>try{var d=document.documentElement,t=localStorage.getItem('toolbox_theme'),b=localStorage.getItem('toolbox_home_bg');d.setAttribute('data-theme',t==='light'?'light':'dark');if(b&&b!=='auto')d.setAttribute('data-home-bg',b)}catch(e){}</script>
 <!-- 글꼴 (KarmoSans, KarmoDisplay). 홈 날짜와 ESC 메뉴 영문 라벨이 쓴다 -->
 <link rel="stylesheet" href="/apps/karmolab/css/fonts.css">
 <style>

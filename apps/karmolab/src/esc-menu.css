@@ -136,9 +136,9 @@
     mask: var(--esc-m) center / contain no-repeat;
 }
 .esc-menu .esc-foot { margin-top: auto; display: flex; align-items: center; font-size: var(--esc-fs-foot); color: var(--esc-ink3); }
-/* 아래 줄 오른쪽 버튼 하나. dash 의 나가기 (esc-menu.ts use) */
+/* 아래 줄 오른쪽 버튼 묶음. dash 의 테마, 배경, 나가기 (esc-menu.ts use) */
+.esc-menu .esc-tools { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .esc-menu .esc-out {
-    margin-left: auto;
     min-height: 32px;
     padding: 0 12px;
     border: 1px solid var(--esc-line);
