@@ -80,5 +80,11 @@
   "planner.ach.streak_7": "7-day streak",
   "planner.ach.streak_30": "30-day streak",
   "planner.ach.streak_100": "100-day streak",
-  "planner.track.diary": "Diary"
+  "planner.track.diary": "Diary",
+  "planner.t94": "View",
+  "planner.t95": "All",
+  "planner.t96": "Mine",
+  "planner.t97": "AI",
+  "planner.t98": "AI follow-up. Edit followups.json in memo to change it",
+  "planner.t99": "Create a Google calendar named 'AI' to get AI follow-ups on your phone too"
 }

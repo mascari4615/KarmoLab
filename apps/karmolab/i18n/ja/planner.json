@@ -80,5 +80,11 @@
   "planner.ach.streak_7": "7日連続",
   "planner.ach.streak_30": "30日連続",
   "planner.ach.streak_100": "100日連続",
-  "planner.track.diary": "日記"
+  "planner.track.diary": "日記",
+  "planner.t94": "表示",
+  "planner.t95": "すべて",
+  "planner.t96": "自分の予定",
+  "planner.t97": "AI",
+  "planner.t98": "AI のフォローアップ。変更は memo の followups.json で",
+  "planner.t99": "Google カレンダーに 'AI' という名前のカレンダーを作ると、スマホにも表示されます"
 }

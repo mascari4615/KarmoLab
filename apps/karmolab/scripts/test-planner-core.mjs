@@ -254,6 +254,45 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
   localStorage.clear();
 }
 
+/* ── AI 후속 일정 (memo followups.json 이 원본) ── */
+{
+  const F = await load('src/widgets/planner/followups.ts', 'planner-followups');
+  const items = [
+    { id: 'a', date: '2026-09-28', title: '색인 재측정', project: 'seo', doc: 'projects/karmolab/systems/seo-ops.md' },
+    { id: 'b', date: '2026-09-26', title: '끝난 것', status: 'done' },
+    { id: 'c', date: '9월 말', title: '날짜가 깨진 것' },
+    { id: '', date: '2026-09-27', title: 'id 없는 것' },
+  ];
+  const evs = F.toAiEvents(items);
+  eq(evs.length, 1, '열린 것만, 날짜와 id 가 멀쩡한 것만');
+  eq(evs[0].start, '2026-09-28', '하루 일정 시작');
+  eq(evs[0].end, '2026-09-29', '끝은 다음 날 (종일 규칙)');
+  eq(evs[0].allDay, true, '종일');
+  eq(evs[0].editable, false, '달력에서 끌어 못 옮김 (원본은 memo)');
+  eq(evs[0].extendedProps.calendarId, F.AI_CALENDAR_ID, 'AI 캘린더 소속');
+  eq(evs[0].title, '[seo] 색인 재측정', '프로젝트 머리');
+  eq(evs[0].extendedProps.doc, 'projects/karmolab/systems/seo-ops.md', '근거 문서');
+
+  /* 구글 복사본 맞추기: 없는 것 만들기, 바뀐 것 고치기, 원본에서 빠진 것 지우기 */
+  const calls = [];
+  const remote = [
+    { id: 'g1', summary: '[seo] 옛 제목', start: { date: '2026-09-28' }, description: 'memo: projects/karmolab/systems/seo-ops.md', extendedProperties: { private: { karmoFollowup: 'a' } } },
+    { id: 'g2', summary: '지난 것', start: { date: '2026-09-20' }, extendedProperties: { private: { karmoFollowup: 'old' } } },
+    { id: 'g3', summary: '사람이 넣은 것', start: { date: '2026-09-21' } },
+  ];
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push(`${init.method || 'GET'} ${String(url).split('/events')[1] || ''}`);
+    if (!init.method) return { ok: true, json: async () => ({ items: remote }) };
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+  const more = [...items, { id: 'd', date: '2026-10-01', title: '새 것' }];
+  const r = await F.syncToGoogle('tok', 'ai-cal', more);
+  eq(r.made, 1, '없는 d 를 만든다');
+  eq(r.fixed, 1, '제목이 바뀐 a 를 고친다');
+  eq(r.gone, 1, '원본에 없는 old 를 지운다');
+  check(!calls.some((c) => c.includes('g3')), '표식 없는 사람 일정은 안 건드린다');
+}
+
 process.stdout.write('\n');
 if (failures.length) {
   console.error(`\n[test-planner-core] ${failures.length}건 실패:`);

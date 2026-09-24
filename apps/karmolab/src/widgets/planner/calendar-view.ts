@@ -30,6 +30,7 @@ import {
     updateEvent as updateLocalEvent
 } from './local-store';
 import { diaryDates } from './diary-store';
+import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 
 import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -115,14 +116,21 @@ function saveView(v: string): void {
 export function buildCalendarView(
     container: HTMLElement,
     token: string | null,
-    onOpenDiary?: (date: string) => void
+    onOpenDiary?: (date: string) => void,
+    loadFollowups?: () => Promise<Followup[]>
 ): CalendarViewHandle {
     container.innerHTML = `
         <div class="pl-cal-layout">
             <div class="pl-cal-side">
                 <button type="button" class="btn btn-accent pl-cal-create">${esc(t('planner.t10'))}</button>
                 <div class="pl-mini"></div>
+                <div class="pl-cal-modes" role="group" aria-label="${esc(t('planner.t94'))}">
+                    <button type="button" class="pl-cal-mode" data-mode="all">${esc(t('planner.t95'))}</button>
+                    <button type="button" class="pl-cal-mode" data-mode="mine">${esc(t('planner.t96'))}</button>
+                    <button type="button" class="pl-cal-mode" data-mode="ai">${esc(t('planner.t97'))}</button>
+                </div>
                 <div class="pl-cal-list"></div>
+                <div class="pl-cal-hint" hidden></div>
             </div>
             <div class="pl-cal-main">
                 <div class="pl-cal-loading" hidden>${esc(t('planner.t11'))}</div>
@@ -141,7 +149,9 @@ export function buildCalendarView(
         summary: t('planner.t50'),
         backgroundColor: LOCAL_COLOR
     });
-    let calendars: GoogleCalendar[] = [localCalendar()];
+    /* AI 후속 일정 (memo 원본). 달력 목록 둘째 줄 */
+    let calendars: GoogleCalendar[] = [localCalendar(), aiCalendar()];
+    let followups: Followup[] = [];
     let allEvents: FcEvent[] = [];
     const hidden = loadHidden();
     let miniMonth = new Date();
@@ -256,11 +266,11 @@ export function buildCalendarView(
             if (token) {
                 /* 보이는 구간의 앞뒤로 조금 더 받아 둔다. 달을 넘길 때마다 빈 화면이 깜빡이지 않게 */
                 const pad = 7 * 86400000;
-                const googleCals = calendars.filter((c) => c.id !== LOCAL_CALENDAR_ID);
+                const googleCals = calendars.filter((c) => c.id !== LOCAL_CALENDAR_ID && c.id !== AI_CALENDAR_ID);
                 remote = await fetchEvents(token, googleCals, new Date(+start - pad), new Date(+end + pad));
             }
             if (destroyed) return;
-            allEvents = [...local, ...remote];
+            allEvents = [...local, ...toAiEvents(followups), ...remote];
             applyEvents();
             renderMini();
         } finally {
@@ -357,7 +367,33 @@ export function buildCalendarView(
                     </label>`;
                 })
                 .join('')}`;
+        markModes();
     }
+
+    /* 보기 모드. 전체, 내 일정 (AI 끔), AI 만. 캘린더 켜고 끄기를 한 번에 바꾸는 것 */
+    const modesEl = container.querySelector<HTMLElement>('.pl-cal-modes')!;
+    function currentMode(): string {
+        if (hidden.size === 0) return 'all';
+        const others = calendars.filter((c) => c.id !== AI_CALENDAR_ID);
+        if (hidden.size === 1 && hidden.has(AI_CALENDAR_ID)) return 'mine';
+        if (!hidden.has(AI_CALENDAR_ID) && others.every((c) => hidden.has(c.id))) return 'ai';
+        return '';
+    }
+    function markModes(): void {
+        const m = currentMode();
+        modesEl.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    }
+    modesEl.addEventListener('click', (e) => {
+        const mode = (e.target as HTMLElement).closest<HTMLElement>('[data-mode]')?.dataset.mode;
+        if (!mode) return;
+        hidden.clear();
+        if (mode === 'mine') hidden.add(AI_CALENDAR_ID);
+        if (mode === 'ai') for (const c of calendars) if (c.id !== AI_CALENDAR_ID) hidden.add(c.id);
+        saveHidden(hidden);
+        renderList();
+        applyEvents();
+        renderMini();
+    });
 
     sideList.addEventListener('change', (e) => {
         const box = e.target as HTMLInputElement;
@@ -366,6 +402,7 @@ export function buildCalendarView(
         if (box.checked) hidden.delete(id);
         else hidden.add(id);
         saveHidden(hidden);
+        markModes();
         applyEvents();
         renderMini();
     });
@@ -536,6 +573,8 @@ export function buildCalendarView(
         closeModal();
         const link = (ev.extendedProps.htmlLink as string) || '';
         const calName = (ev.extendedProps.calendarName as string) || '';
+        const isAi = ev.extendedProps.calendarId === AI_CALENDAR_ID;
+        const doc = (ev.extendedProps.doc as string) || '';
         const box = document.createElement('div');
         box.className = 'pl-pop';
         box.innerHTML = `
@@ -546,11 +585,12 @@ export function buildCalendarView(
             <div class="pl-pop-title">${esc(ev.title)}</div>
             <div class="pl-pop-time">${esc(describeWhen(ev))}</div>
             ${calName ? `<div class="pl-pop-cal">${esc(calName)}</div>` : ''}
+            ${isAi ? `<div class="pl-pop-cal">${esc(t('planner.t98'))}${doc ? ` <code>${esc(doc)}</code>` : ''}</div>` : `
             <div class="pl-pop-actions">
                 <button type="button" class="btn btn-ghost pl-pop-edit">${esc(t('planner.t16'))}</button>
                 ${link ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Google ↗</a>` : ''}
                 <button type="button" class="btn btn-ghost pl-pop-del">${esc(t('planner.t33'))}</button>
-            </div>`;
+            </div>`}`;
         container.appendChild(box);
         popoverEl = box;
 
@@ -562,12 +602,12 @@ export function buildCalendarView(
         box.querySelector<HTMLElement>('.pl-pop-edit')?.focus();
 
         box.querySelector('.pl-modal-x')!.addEventListener('click', closePopover);
-        box.querySelector('.pl-pop-edit')!.addEventListener('click', () => {
+        box.querySelector('.pl-pop-edit')?.addEventListener('click', () => {
             const start = ev.start ?? new Date();
             closePopover();
             openModal({ start, end: ev.end ?? addHours(start, 1), allDay: ev.allDay, event: ev });
         });
-        box.querySelector('.pl-pop-del')!.addEventListener('click', () => {
+        box.querySelector('.pl-pop-del')?.addEventListener('click', () => {
             closePopover();
             void remove(ev);
         });
@@ -603,13 +643,19 @@ export function buildCalendarView(
 
     /* ===== 시작 ===== */
 
+    let aiGoogleId: string | null = null;
+    const hint = container.querySelector<HTMLElement>('.pl-cal-hint')!;
     void (async () => {
+        if (loadFollowups) followups = await loadFollowups();
         if (token) {
             try {
                 const mine = await fetchCalendars(token);
                 /* 공휴일은 구독 안 했어도 늘 (Google 공개 대한민국 공휴일). 구독했으면 그것 */
                 const holiday = mine.some((c) => isHolidayCalendar(c.id)) ? [] : [HOLIDAY_CALENDAR];
-                calendars = [localCalendar(), ...mine, ...holiday];
+                /* 구글 'AI' 캘린더는 복사본이라 목록에 안 올린다 (원본 memo 를 그린다, 두 번 안 보이게) */
+                const googleAi = mine.find((c) => c.summary === AI_GOOGLE_NAME);
+                calendars = [localCalendar(), aiCalendar(), ...mine.filter((c) => c !== googleAi), ...holiday];
+                aiGoogleId = googleAi ? googleAi.id : '';
             } catch {
                 /* 구글이 안 되면 이 브라우저 것만으로 계속 쓴다. 화면이 통째로 죽지 않는다 */
                 toast(t('planner.t36'), 'error');
@@ -619,6 +665,17 @@ export function buildCalendarView(
         renderList();
         const view = calendar.view;
         await reload(view.activeStart, view.activeEnd);
+        /* 구글 복사본 맞추기. 'AI' 캘린더가 없으면 만드는 법 한 줄 (앱은 일정 쓰기 권한뿐이라 못 만든다) */
+        if (token && aiGoogleId === '') {
+            hint.textContent = t('planner.t99');
+            hint.hidden = false;
+        } else if (token && aiGoogleId && followups.length) {
+            try {
+                await syncToGoogle(token, aiGoogleId, followups);
+            } catch {
+                /* 복사본이 늦을 뿐 원본은 그려져 있다. 다음에 열 때 다시 */
+            }
+        }
     })();
 
     return {

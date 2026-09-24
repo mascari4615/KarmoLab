@@ -21,6 +21,7 @@ import { dashRegistry } from '../mydash/kit';
 import type { DashPanelCtx } from '../mydash/kit';
 import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken, storedToken } from './gauth';
 import { buildCalendarView, type CalendarViewHandle } from './calendar-view';
+import { FOLLOWUPS_PATH, type Followup } from './followups';
 import { buildKanbanView, type KanbanViewHandle } from './kanban-view';
 import { buildStreaksView } from './streaks-view';
 import { buildDiaryView, type DiaryViewHandle } from './diary-view';
@@ -122,6 +123,10 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-mini-day--today, .pl-mini-day--today:hover { background: var(--accent); color: var(--accent-fg); font-weight: 700; }
         .pl-mini-day--busy::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 3px; height: 3px; border-radius: 50%; background: currentColor; transform: translateX(-50%); }
 
+        .pl-cal-modes { display: flex; gap: 4px; margin: 10px 0 8px; }
+        .pl-cal-mode { flex: 1; padding: 4px 0; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: var(--font-size-xs); border-radius: var(--radius-sm); cursor: pointer; }
+        .pl-cal-mode[aria-pressed="true"] { background: var(--text-primary); color: var(--bg-secondary); border-color: var(--text-primary); }
+        .pl-cal-hint { margin-top: 8px; font-size: var(--font-size-2xs); color: var(--text-tertiary); line-height: 1.5; }
         .pl-cal-list-title { font-size: var(--font-size-xs); color: var(--text-tertiary); font-weight: 600; margin-bottom: 6px; }
         .pl-cal-item { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-xs); color: var(--text-secondary); padding: 3px 0; cursor: pointer; }
         .pl-cal-dot { width: 10px; height: 10px; border-radius: var(--radius-sm); flex: 0 0 auto; }
@@ -260,7 +265,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         document.head.appendChild(el);
     }
 
-    function build(container: HTMLElement, onDispose: (fn: () => void) => void): void {
+    function build(container: HTMLElement, onDispose: (fn: () => void) => void, loadFollowups?: () => Promise<Followup[]>): void {
         ensureStyle();
         Object.assign(container.style, { height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0', padding: '0' });
         container.innerHTML = `<div class="pl-root"></div>`;
@@ -331,7 +336,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                 </div>`;
 
             const paneEl = root.querySelector<HTMLElement>('.pl-pane')!;
-            cal = buildCalendarView(paneEl, token, (date) => openSide('diary', date));
+            cal = buildCalendarView(paneEl, token, (date) => openSide('diary', date), loadFollowups);
             openSide(side);
 
             root.querySelectorAll<HTMLElement>('[data-side]').forEach((btn) => {
@@ -369,11 +374,19 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         get title(): string {
             return t('widgets.planner.title', undefined, '플래너');
         },
-        /* 저장소를 안 읽는다. 구글과 이 브라우저 저장소만 */
+        /* 저장소에서는 AI 후속 일정 한 파일만 읽는다. 나머지는 구글과 이 브라우저 저장소 */
         access: 'read',
-        paths: [],
+        paths: [FOLLOWUPS_PATH],
         render: async (ctx: DashPanelCtx): Promise<void> => {
-            build(ctx.root, (fn) => ctx.onDispose(fn));
+            build(ctx.root, (fn) => ctx.onDispose(fn), async () => {
+                /* 파일이 없거나 못 읽어도 달력은 뜬다. AI 칸만 빈다 */
+                try {
+                    const data = await ctx.repo.readJson<{ items?: Followup[] }>(FOLLOWUPS_PATH);
+                    return Array.isArray(data.items) ? data.items : [];
+                } catch {
+                    return [];
+                }
+            });
         },
     });
 })();

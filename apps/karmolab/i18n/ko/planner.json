@@ -80,5 +80,11 @@
   "planner.ach.streak_7": "7일 연속",
   "planner.ach.streak_30": "30일 연속",
   "planner.ach.streak_100": "100일 연속",
-  "planner.track.diary": "일기"
+  "planner.track.diary": "일기",
+  "planner.t94": "보기",
+  "planner.t95": "전체",
+  "planner.t96": "내 일정",
+  "planner.t97": "AI",
+  "planner.t98": "AI 후속 일정. 고치려면 memo 의 followups.json",
+  "planner.t99": "구글 캘린더에 이름이 'AI' 인 캘린더를 하나 만들면 AI 일정이 폰 캘린더에도 뜬다"
 }
