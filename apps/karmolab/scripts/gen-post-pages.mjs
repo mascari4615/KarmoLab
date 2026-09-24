@@ -272,11 +272,11 @@ fs.writeFileSync(path.join(APP_ROOT, 'data', 'posts-index.json'), JSON.stringify
     const lastmod = index.map((p) => p.lastmod ?? p.date).sort().at(-1) ?? new Date().toISOString();
     const description = `카모뜨린의 글 ${index.length}편. 게임 개발, 유니티, VRChat, 도구, 기록`;
     const body =
-        `<nav class="tool-crumb" aria-label="위치"><a href="/">KarmoLab</a>` +
+        `<nav class="tool-crumb" aria-label="위치"><a href="https://lab.mascari4615.com/">KarmoLab</a>` +
         `<i aria-hidden="true">›</i><span aria-current="page">글</span></nav>` +
         `<header class="tool-head"><h1>글</h1></header>` +
         `<section class="tool-seo tool-hub">` +
-        `<p>${shellEsc(description)}. <a href="/?board=info#community">커뮤니티 글 판에서 보기</a>, <a href="/feed.xml">RSS</a></p>` +
+        `<p>${shellEsc(description)}. <a href="https://lab.mascari4615.com/?board=info#community">커뮤니티 글 판에서 보기</a>, <a href="/feed.xml">RSS</a></p>` +
         [...byYear.entries()]
             .map(
                 ([year, list]) =>

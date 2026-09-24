@@ -346,11 +346,18 @@ jobs:
         #      \-\-disable-external \
         #      \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
 
-      # 배포 셋 (memo change.site-split). 지어 놓은 한 채를 뿌리만 바꿔 셋으로 가르고
-      # Cloudflare Pages 프로젝트 셋에 올린다. GitHub Pages 배포는 그대로 (되돌릴 자리)
+      # 배포 셋 (memo change.site-split). lab 은 사이트에서 글과 dash 를 뺀 것, blog 와 dash 는
+      # 제 장이 부르는 자산만. Cloudflare Pages 프로젝트 셋에 올린다. GitHub Pages 배포는 그대로 (되돌릴 자리)
       - name: Split outputs (lab, blog, dash)
         working-directory: apps/karmolab
         run: node scripts/split-outputs.mjs --site "../blog/_site${{ steps.pages.outputs.base_path }}" --out ../blog/dist
+
+      # 자산을 글자로 따라 담았으니 빠진 것은 화면을 열어야 보인다. 404 하나라도 나면 배포 안 함
+      - name: Test split outputs (blog, dash)
+        working-directory: apps/karmolab
+        env:
+          CI: 'true'
+        run: node scripts/test-split-outputs.mjs --out ../blog/dist
 
       - name: Deploy to Cloudflare Pages
         env:

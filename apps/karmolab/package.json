@@ -444,6 +444,7 @@
     "test:search:studymap": "node scripts/test-studymap-search-provider.mjs",
     "test:secrets": "node scripts/smoke-secrets.mjs",
     "test:shard": "node scripts/shard-split.test.mjs",
+    "test:split": "node scripts/test-split-outputs.mjs",
     "test:shell": "node scripts/test-shell-explain.mjs",
     "test:shell-i18n": "node scripts/smoke-shell-i18n.mjs",
     "test:shell-nav": "node scripts/smoke-shell-nav.mjs",
