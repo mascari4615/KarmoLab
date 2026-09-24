@@ -155,24 +155,78 @@ html[data-site="dash"] .myd-strip {
     backdrop-filter: blur(14px);
   }
 }
-/* 플래너 방. 화면 높이를 다 쓰고, 달력과 옆줄은 유리 판 (하늘 위에서 읽히게) */
+/* 플래너 방. 화면 높이를 다 쓰고, 하늘 위에 흰 종이 한 장 (P1 시안, 2026-09-24).
+   고르기 판에서 유리와 그라데이션이 싫다 쪽이었다 (색 49% 대 좋다 14%). 틀은 Google 캘린더:
+   왼쪽 판 | 달력 | 오른쪽 판 | 세로줄. 칸 사이는 선 하나 */
 @media (min-width: 900px) {
   html[data-site="dash"] .myd-main:has(.pl-root) { display: flex; flex-direction: column; overflow: hidden; }
   html[data-site="dash"] .myd-main:has(.pl-root) .myd-body { flex: 1; min-height: 0; }
 }
-html[data-site="dash"] .pl-cal-main,
-html[data-site="dash"] .pl-cal-side,
-html[data-site="dash"] .pl-diary-side,
-html[data-site="dash"] .pl-diary-main,
-html[data-site="dash"] .pl-kanban-board,
-html[data-site="dash"] .pl-streaks {
-  padding: 14px;
-  border: 1px solid var(--dash-edge);
-  background: var(--dash-glass);
-  backdrop-filter: blur(14px);
+html[data-site="dash"] { --dash-paper: #fff; --pl-line2: #eef1f5; }
+html[data-site="dash"][data-theme="dark"] { --dash-paper: #161b24; --pl-line2: #1f2631; }
+html[data-site="dash"] .pl-body {
+  background: var(--dash-paper);
+  border: 1px solid var(--border);
   box-shadow: var(--dash-shadow);
 }
-html[data-site="dash"] .pl-cal-main { --fc-today-bg-color: color-mix(in srgb, var(--accent) 16%, transparent); }
+html[data-site="dash"] .pl-bar-right { color: var(--text-primary); }
+html[data-site="dash"] .pl-cal-layout { gap: 0; }
+html[data-site="dash"] .pl-cal-side { width: 248px; padding: 20px; gap: 22px; border-right: 1px solid var(--border); }
+html[data-site="dash"] .pl-cal-create { align-self: stretch; justify-content: center; min-height: 40px; }
+html[data-site="dash"] .pl-cal-main { padding: 14px 16px 0; }
+html[data-site="dash"] .pl-mini-day--today,
+html[data-site="dash"] .pl-mini-day--today:hover { background: var(--text-primary); color: var(--dash-paper); }
+html[data-site="dash"] .pl-cal-dot { width: 12px; height: 12px; }
+html[data-site="dash"] .pl-cal-item { font-size: var(--font-size-2xs); color: var(--text-primary); }
+
+/* FullCalendar. 선은 옅게, 숫자는 압축 글꼴, 켜진 보기 단추는 먹색 */
+html[data-site="dash"] .pl-cal-main {
+  --fc-border-color: var(--pl-line2);
+  --fc-today-bg-color: transparent;
+  --fc-now-indicator-color: var(--accent);
+  --fc-button-bg-color: var(--dash-paper);
+  --fc-button-border-color: var(--border);
+  --fc-button-text-color: var(--text-primary);
+  --fc-button-hover-bg-color: var(--bg-tertiary);
+  --fc-button-active-bg-color: var(--text-primary);
+  --fc-button-active-border-color: var(--text-primary);
+}
+html[data-site="dash"] .pl-cal-main .fc .fc-button-primary:not(:disabled).fc-button-active,
+html[data-site="dash"] .pl-cal-main .fc .fc-button-primary:not(:disabled):active { color: var(--dash-paper); }
+html[data-site="dash"] .pl-cal-main .fc .fc-button { font-weight: 700; }
+html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-title { font: 400 22px var(--font-display); letter-spacing: .02em; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day-number { font: 17px var(--font-display); padding: 6px 8px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-day:not(.fc-day-sat):not(.fc-day-sun):not(.pl-holiday) .fc-daygrid-day-number,
+html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell:not(.fc-day-sat):not(.fc-day-sun):not(.pl-holiday) .pl-dh-num { color: var(--text-primary); }
+html[data-site="dash"] .pl-cal-main .fc .pl-dh-num { font: 20px var(--font-display); }
+html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell.fc-day-today .pl-dh-num { background: var(--text-primary); color: var(--dash-paper) !important; padding: 0 6px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell.fc-day-today.pl-holiday .pl-dh-num { background: var(--pl-sun); }
+html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell-cushion { font-weight: 700; padding: 10px 8px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-slot-label-cushion { font: 11px var(--font-display); color: var(--text-tertiary); }
+html[data-site="dash"] .pl-cal-main .fc .fc-scrollgrid { border-left: 0; border-right: 0; }
+/* 월 칸의 날짜는 왼쪽 위 (시안 P3). 일기 단추는 오른쪽으로 비킴 */
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day-top { flex-direction: row; }
+html[data-site="dash"] .pl-daycell-diary { left: auto; right: 4px; }
+/* 오늘은 날짜 숫자만 먹색 칸. 공휴일이 겹치면 빨강 칸 */
+html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: var(--text-primary); color: var(--dash-paper) !important; margin: 4px; padding: 2px 7px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-day-today.pl-holiday .fc-daygrid-day-number { background: var(--pl-sun); }
+/* 주말 칸은 아주 옅게 (시안 P1 P3) */
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day.fc-day-sat,
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day.fc-day-sun,
+html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-col.fc-day-sat,
+html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-col.fc-day-sun { background: color-mix(in srgb, var(--text-primary) 2.5%, transparent); }
+/* 일정. 캘린더 색을 옅게 깔고 왼쪽 줄만 진하게, 글씨는 먹색 */
+html[data-site="dash"] .pl-cal-main .fc .fc-h-event,
+html[data-site="dash"] .pl-cal-main .fc .fc-v-event {
+  background: color-mix(in srgb, var(--pl-ev, var(--accent)) 16%, var(--dash-paper)) !important;
+  border: 0 !important;
+  box-shadow: inset 3px 0 0 var(--pl-ev, var(--accent));
+}
+html[data-site="dash"] .pl-cal-main .fc .fc-event-main,
+html[data-site="dash"] .pl-cal-main .fc .fc-event-title { color: var(--text-primary); font-weight: 700; }
+html[data-site="dash"] .pl-cal-main .fc .fc-event-time { font-family: var(--font-display); font-weight: 400; color: color-mix(in srgb, var(--pl-ev, var(--accent)) 70%, var(--text-primary)); }
+html[data-site="dash"] .pl-cal-main .fc .fc-h-event .fc-event-main { padding: 1px 6px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-main { padding: 4px 7px; }
 
 /* 패널 변수 중 둥글기. 그림 모서리도 0 */
 html[data-site="dash"] .bm { --bm-pic-radius: 0; }

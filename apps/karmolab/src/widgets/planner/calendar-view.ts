@@ -166,6 +166,14 @@ export function buildCalendarView(
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
         },
         height: '100%',
+        /* 숫자는 숫자만 (Google 캘린더처럼). ko 기본은 "24일", "오전 10:00", "9. 24. (목)" 이라 칸이 좁으면 줄이 넘침 */
+        dayCellContent: (arg) => (arg.view.type.startsWith('dayGrid') ? String(arg.date.getDate()) : { html: '' }),
+        dayHeaderContent: (arg) =>
+            arg.view.type.startsWith('timeGrid')
+                ? { html: `<span class="pl-dh-dow">${esc(arg.date.toLocaleDateString('ko-KR', { weekday: 'short' }))}</span> <span class="pl-dh-num">${arg.date.getDate()}</span>` }
+                : arg.date.toLocaleDateString('ko-KR', { weekday: 'short' }),
+        eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+        slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
         nowIndicator: true,
         scrollTime: '08:00:00',
         dayMaxEvents: true,
@@ -182,6 +190,9 @@ export function buildCalendarView(
         /* 자판만 쓰는 사람도 일정을 열 수 있어야 한다. 끌어 옮기기는 마우스만 되므로,
            초점을 받을 수 있게 하고 Enter/Space 로 같은 풍선을 연다(거기서 시각을 고친다). */
         eventDidMount: (info) => {
+            /* 캘린더 색을 변수로. dash 는 이 색을 옅게 깔고 왼쪽 줄로만 진하게 (P1 시안, 2026-09-24) */
+            const color = info.event.backgroundColor || info.backgroundColor;
+            if (color) info.el.style.setProperty('--pl-ev', color);
             info.el.tabIndex = 0;
             info.el.setAttribute('role', 'button');
             info.el.addEventListener('keydown', (e) => {
@@ -228,6 +239,9 @@ export function buildCalendarView(
     /* FullCalendar 의 화살표는 `role="img"` 인데 이름이 없다. 이름은 감싼 버튼이 이미 들고
        있으므로 아이콘은 숨긴다 (axe role-img-alt 2곳, 2026-09-04) */
     for (const icon of mount.querySelectorAll('.fc-icon')) icon.setAttribute('aria-hidden', 'true');
+    /* 오른쪽 판을 열고 닫으면 창 크기는 그대로인데 달력 폭만 바뀐다. FullCalendar 는 창 크기만 봄 */
+    const resize = new ResizeObserver(() => calendar.updateSize());
+    resize.observe(mount);
 
     /* ===== 받아 오기 ===== */
 
@@ -610,6 +624,7 @@ export function buildCalendarView(
     return {
         destroy: () => {
             destroyed = true;
+            resize.disconnect();
             closePopover();
             closeModal();
             calendar.destroy();
