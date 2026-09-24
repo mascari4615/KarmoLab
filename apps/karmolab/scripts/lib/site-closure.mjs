@@ -21,6 +21,8 @@ const BROAD = new Set(['', 'apps', 'apps/karmolab', 'apps/karmolab/js', 'apps/ka
 
 /** 글자로 드러난 주소. 따옴표, 괄호, 등호, 공백, 쉼표 뒤의 `/` 로 시작하는 것 */
 const ABS_RE = /(?:["'`(=\s,])(\/(?!\/)[A-Za-z0-9_\-./%~@+]+)/g;
+/** 제 호스트를 붙여 쓴 주소 (`https://blog.mascari4615.com/assets/x.png`, og:image 등) */
+const OWN_ORIGIN_RE = /https:\/\/(?:blog|lab|dash)\.mascari4615\.com(\/[A-Za-z0-9_\-./%~@+]*)/g;
 const CSS_URL_RE = /url\(\s*['"]?([^'")\s]+)['"]?\s*\)/g;
 const REL_RE = /["'`](\.{1,2}\/[A-Za-z0-9_\-./%~@+]+)["'`]/g;
 
@@ -87,6 +89,7 @@ export function collectClosure(site, seeds, opts = {}) {
     try { text = fs.readFileSync(path.join(site, rel), 'utf8'); } catch { continue; }
     const here = path.posix.dirname(rel);
     for (const m of text.matchAll(ABS_RE)) resolve(m[1], m[1].endsWith('/'));
+    for (const m of text.matchAll(OWN_ORIGIN_RE)) resolve(m[1], false);
     for (const m of text.matchAll(CSS_URL_RE)) {
       const u = m[1];
       if (/^(data:|https?:|#)/.test(u)) continue;

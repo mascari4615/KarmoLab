@@ -14,7 +14,8 @@
  *
  * 사용: BASE=https://blog.mascari4615.com node scripts/audit-live-essentials.mjs
  */
-const BASE = process.env.BASE || 'https://blog.mascari4615.com';
+/* 재는 것이 전부 lab 장 (도구, 오락실, 광장). 2026-09-24 부터 lab 호스트 (change.site-split) */
+const BASE = process.env.BASE || 'https://lab.mascari4615.com';
 
 if (!BASE.startsWith('https://')) {
   /* ★ **건너뛴 것은 초록이 아니다** (2026-08-14). 0 으로 끝내면 게이트 화면에 ✓ 로 찍혀

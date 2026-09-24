@@ -14,33 +14,37 @@
  *   - 그것이 제 주소인가
  *   - 두 개 이상 달려 있지 않은가. 둘이면 어느 쪽이 믿길지 우리가 못 정함
  *
- * 사용: `BASE=https://blog.mascari4615.com node scripts/audit-canonical.mjs`
+ * 사용: `node scripts/audit-canonical.mjs` (blog, lab 둘 다) 또는 `BASE=https://lab.mascari4615.com ...`
  *   - `LIMIT=30` 으로 앞쪽 몇 장만 (손으로 빨리 볼 때)
  */
-const BASE = process.env.BASE || 'https://blog.mascari4615.com';
+/* 호스트마다 제 사이트맵 (change.site-split, 2026-09-24). BASE 를 주면 그 하나만 */
+const BASES = process.env.BASE ? [process.env.BASE] : ['https://blog.mascari4615.com', 'https://lab.mascari4615.com'];
 const LIMIT = Number(process.env.LIMIT || 0);
 const CONCURRENCY = 8;
+let BASE = BASES[0];
 
 const done = (code, line) => {
   if (code === 0) console.log(line);
   else console.error(line);
-  process.exitCode = code;
+  if (code > (process.exitCode || 0)) process.exitCode = code;
 };
 
-if (!BASE.startsWith('https://')) {
-  console.log(`[audit-canonical] CANNOT-RUN. 실제 사이트가 아니다 (BASE=${BASE}).`);
-  process.exit(2);
-}
-
-const smRes = await fetch(`${BASE}/sitemap.xml`);
-if (!smRes.ok) {
-  done(1, `[audit-canonical] X 사이트맵을 못 읽었다 (http ${smRes.status})`);
-} else {
+for (const base of BASES) {
+  BASE = base;
+  if (!BASE.startsWith('https://')) {
+    console.log(`[audit-canonical] CANNOT-RUN. 실제 사이트가 아니다 (BASE=${BASE}).`);
+    process.exit(2);
+  }
+  const smRes = await fetch(`${BASE}/sitemap.xml`);
+  if (!smRes.ok) {
+    done(1, `[audit-canonical] X ${BASE} 사이트맵을 못 읽었다 (http ${smRes.status})`);
+    continue;
+  }
   const xml = await smRes.text();
   let urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
   if (LIMIT > 0) urls = urls.slice(0, LIMIT);
   if (urls.length < 10) {
-    done(1, `[audit-canonical] X 사이트맵에서 주소를 ${urls.length}개밖에 못 찾았다. 사이트맵이 깨졌다`);
+    done(1, `[audit-canonical] X ${BASE} 사이트맵에서 주소를 ${urls.length}개밖에 못 찾았다. 사이트맵이 깨졌다`);
   } else {
     await sweep(urls);
   }
@@ -84,12 +88,12 @@ async function sweep(urls) {
     problems.sort();
     done(
       1,
-      `[audit-canonical] X ${checked}장 중 ${problems.length}건.\n  ` +
+      `[audit-canonical] X ${BASE} ${checked}장 중 ${problems.length}건.\n  ` +
         problems.slice(0, 25).join('\n  ') +
         (problems.length > 25 ? `\n  ... 그리고 ${problems.length - 25}건 더` : '')
     );
   } else {
-    done(0, `[audit-canonical] ${checked}장 모두 제 대표 주소를 단다`);
+    done(0, `[audit-canonical] ${BASE} ${checked}장 모두 제 대표 주소를 단다`);
   }
 }
 

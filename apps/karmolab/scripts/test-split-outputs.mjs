@@ -44,14 +44,33 @@ function serve(root) {
   return new Promise((ok) => server.listen(0, '127.0.0.1', () => ok({ base: `http://127.0.0.1:${server.address().port}`, close: () => server.close() })));
 }
 
-const firstPost = fs.readdirSync(path.join(OUT, 'blog', 'posts'), { withFileTypes: true }).find((e) => e.isDirectory());
+/* 대표 주소와 사이트맵이 제 호스트를 가리키나 (lab 장이 blog 주소를 대표로 달면 그 주소가 다시 lab 으로 301) */
+let hostBad = 0;
+const HOSTS = { lab: 'https://lab.mascari4615.com/', blog: 'https://blog.mascari4615.com/' };
+for (const [app, host] of Object.entries(HOSTS)) {
+  const sm = path.join(OUT, app, 'sitemap.xml');
+  if (!fs.existsSync(sm)) { console.log(`  FAIL ${app} 사이트맵 없음`); hostBad += 1; continue; }
+  const locs = [...fs.readFileSync(sm, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const strangers = locs.filter((l) => !l.startsWith(host));
+  console.log(`  ${strangers.length ? 'FAIL' : 'ok  '} ${app} 사이트맵 ${locs.length}줄` + (strangers.length ? `, 남의 호스트 ${strangers.length}: ${strangers.slice(0, 3).join(', ')}` : ''));
+  hostBad += strangers.length;
+}
+const labProbe = ['index.html', 't/index.html'].map((f) => path.join(OUT, 'lab', f)).filter((f) => fs.existsSync(f));
+for (const f of labProbe) {
+  const canon = (fs.readFileSync(f, 'utf8').match(/<link rel="canonical" href="([^"]+)"/) || [])[1] || '';
+  const ok = canon.startsWith(HOSTS.lab);
+  console.log(`  ${ok ? 'ok  ' : 'FAIL'} lab/${path.relative(path.join(OUT, 'lab'), f).split(path.sep).join('/')} 대표 주소 ${canon || '(없음)'}`);
+  if (!ok) hostBad += 1;
+}
+
+const firstPost =fs.readdirSync(path.join(OUT, 'blog', 'posts'), { withFileTypes: true }).find((e) => e.isDirectory());
 const PLAN = {
   blog: ['/', '/posts/', firstPost ? `/posts/${firstPost.name}/` : null, '/about/'].filter(Boolean),
   dash: ['/'],
 };
 
 const browser = await chromium.launch(process.env.CI ? { headless: true } : { channel: 'msedge', headless: true });
-let missing = 0;
+let missing = hostBad;
 for (const [app, pages] of Object.entries(PLAN)) {
   const srv = await serve(path.join(OUT, app));
   for (const pg of pages) {

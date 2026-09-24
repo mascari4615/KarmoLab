@@ -21,7 +21,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const BASE = process.env.BASE || 'https://blog.mascari4615.com';
+/* 도구 장은 lab 호스트 (change.site-split). 로컬 빌드는 배포 가르기 전이라 대표 주소가 아직 blog 호스트 */
+const BASE = process.env.BASE || 'https://lab.mascari4615.com';
+const CANON = process.env.CANON_ORIGIN || (BASE.startsWith('https://') ? 'https://lab.mascari4615.com' : 'https://blog.mascari4615.com');
 const HUB = `${BASE}/t/`;
 
 const aliasPath = path.join(root, 'data/tool-aliases.json');
@@ -208,7 +210,7 @@ for (let i = 0; i < ids.length; i += 8) {
         else problems.push(`${id}: http ${r.status}`);
         return;
       }
-      const found = inspect(id, await r.text(), `https://blog.mascari4615.com/t/${id}/`);
+      const found = inspect(id, await r.text(), `${CANON}/t/${id}/`);
       const missing = want.filter((t) => !found.has(t));
       if (missing.length) problems.push(`${id}: 구조화 데이터에 ${missing.join(', ')} 가 없다`);
     })
@@ -241,7 +243,7 @@ if (BASE.startsWith('https://')) {
   }
 }
 
-const hubFound = inspect('목록', hubHtml, 'https://blog.mascari4615.com/t/');
+const hubFound = inspect('목록', hubHtml, `${CANON}/t/`);
 if (!hubFound.has('CollectionPage')) problems.push('목록: 모음 페이지라는 표시가 없다');
 
 /* 설명 글이 서로 너무 닮으면 검색엔진이 둘 중 하나만 남기고 묻는다. 도구가 늘수록

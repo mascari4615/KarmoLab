@@ -48,8 +48,8 @@ const SHARED = new Set(['apps', 'assets']);
  */
 const APPS = [
   { id: 'lab', root: 'index.html', drop: [...BLOG_OWN, 'dash'] },
-  { id: 'blog', root: path.join('posts', 'index.html'), seeds: [...BLOG_OWN, ...BLOG_MISC, ...ABOUT_DATA] },
-  { id: 'dash', root: path.join('dash', 'index.html'), seeds: ['dash', 'favicon.ico'] },
+  { id: 'blog', root: path.join('posts', 'index.html'), seeds: [...BLOG_OWN, ...BLOG_MISC, ...ABOUT_DATA, 'build.json'] },
+  { id: 'dash', root: path.join('dash', 'index.html'), seeds: ['dash', 'favicon.ico', 'build.json'] },
 ];
 
 /** 주인이 다른 자리로 가는 넘김 줄. `/x/*` 와 `/x` 둘 다 */
@@ -73,6 +73,49 @@ function movesFor(app, top) {
     }
   }
   return lines;
+}
+
+/**
+ * 빌드는 모든 절대 주소를 blog 호스트로 굽는다 (대표 주소, og:url, hreflang, 사이트맵, robots).
+ * 배포마다 주소의 주인 호스트로 고친다. lab 장을 blog 주소로 가리키면 그 주소가 다시 lab 으로 301 이라
+ * 검색엔진이 받는 신호가 서로 엇갈린다 (2026-09-24 실측: lab 도구 장의 canonical 이 blog)
+ *   blog 자리 (`posts/`, `about/`, `feed.xml`) 는 blog, `dash/` 는 dash, lab 자리는 lab
+ *   공용 자산 (`apps/`, `assets/`) 과 뿌리 파일 (사이트맵, robots) 은 지금 배포의 호스트
+ */
+const BLOG_ORIGIN_RE = /https:\/\/blog\.mascari4615\.com\/([^"'\s<>)\]]*)/g;
+function hostFor(app, rest) {
+  const seg = rest.split(/[/?#]/)[0];
+  if (BLOG_OWN.includes(seg)) return HOST.blog;
+  if (seg === 'dash') return HOST.dash;
+  const shared = SHARED.has(seg) || seg === '' || fs.existsSync(path.join(SITE, seg)) && fs.statSync(path.join(SITE, seg)).isFile();
+  if (shared) return HOST[app.id];
+  return HOST.lab;
+}
+
+/** 사이트맵에서 이 배포 호스트가 아닌 주소 줄을 뺀다. blog 는 뿌리 (`/`, 글 목록과 같은 장) 도 뺀다 */
+function ownSitemap(app, xml) {
+  return xml.replace(/<url>\s*<loc>([^<]+)<\/loc>[\s\S]*?<\/url>\s*/g, (block, loc) => {
+    if (!loc.startsWith(HOST[app.id] + '/')) return '';
+    if (app.id === 'blog' && loc === HOST.blog + '/') return '';
+    return block;
+  });
+}
+
+function rehost(app, dest) {
+  let files = 0;
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { walk(p); continue; }
+      if (!/\.(html|xml|txt)$/.test(e.name)) continue;
+      const before = fs.readFileSync(p, 'utf8');
+      let after = before.replace(BLOG_ORIGIN_RE, (all, rest) => hostFor(app, rest) + '/' + rest);
+      if (/^sitemap.*\.xml$/.test(e.name) && path.dirname(p) === dest) after = ownSitemap(app, after);
+      if (after !== before) { fs.writeFileSync(p, after); files += 1; }
+    }
+  };
+  walk(dest);
+  return files;
 }
 
 /** blog, dash 는 lab 의 404 장 (셸 전체를 부른다) 대신 한 장짜리 */
@@ -113,10 +156,11 @@ for (const app of APPS) {
   fs.copyFileSync(rootFile, path.join(dest, 'index.html'));
   const moves = movesFor(app, top);
   if (moves.length) fs.writeFileSync(path.join(dest, '_redirects'), moves.join('\n') + '\n');
+  const rehosted = app.id === 'dash' ? 0 : rehost(app, dest);
   let count = 0;
   let bytes = 0;
   const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else { count += 1; bytes += fs.statSync(p).size; } } };
   walk(dest);
-  made.push(`${app.id} (뿌리 ${app.root}, 파일 ${count}개, ${(bytes / 1e6).toFixed(1)}MB, 넘김 ${moves.length}줄)`);
+  made.push(`${app.id} (뿌리 ${app.root}, 파일 ${count}개, ${(bytes / 1e6).toFixed(1)}MB, 넘김 ${moves.length}줄, 호스트 고친 파일 ${rehosted}개)`);
 }
 console.log(`[split-outputs] 배포 ${made.length}벌 → ${OUT}\n  - ${made.join('\n  - ')}`);
