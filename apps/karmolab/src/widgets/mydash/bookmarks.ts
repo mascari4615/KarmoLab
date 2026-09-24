@@ -145,6 +145,9 @@ import { t, loadNamespace } from '../../lib/i18n';
   const EVENT_V = 1;
   /** 한 번에 보이는 줄 수. 묶음은 접힌 채로 한 줄이다 */
   const PAGE = 100;
+  /** 격자 열 폭과 간격. CSS --bm-col, --bm-gap 과 같은 값 */
+  const GRID_COL = 236;
+  const GRID_GAP = 16;
   /** 재발굴 후보 크기. 여기서 날짜 씨앗으로 하나 뽑는다 */
   const REVISIT_POOL = 40;
   /** 이 기기에서 이미 보여 준 재발굴 id. 순수 보기 편의라 기기마다 따로 둔다 */
@@ -278,7 +281,15 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-card{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-md);border:1px solid var(--border);',
       'border-radius:calc(var(--bm-pic-radius) - 4px);background:var(--bg-secondary);cursor:pointer}',
       '.bm-card.is-cur{border-color:var(--accent)}',
-      '.bm-card.is-done,.bm-tile.is-done{opacity:.45}',
+      '.bm-card.is-done,.bm-tile.is-done,.bm-row.is-done{opacity:.45}',
+      /* 고르기 표시. 칸 왼쪽 위 동그라미, 고르면 강조색으로 채우고 테두리 */
+      '.bm-card.is-pick,.bm-tile.is-pick{position:relative;user-select:none}',
+      '.bm-selmark{position:absolute;top:var(--space-sm);left:var(--space-sm);z-index:1;width:24px;height:24px;border-radius:50%;',
+      'border:2px solid var(--text-primary);background:var(--modal-scrim);pointer-events:none}',
+      '.is-sel>.bm-selmark{background:var(--accent);border-color:var(--accent)}',
+      '.bm-tile.is-sel img,.bm-tile.is-sel .bm-tile-text{outline:3px solid var(--accent);outline-offset:-3px}',
+      '.bm-card.is-sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}',
+      '.bm-card.is-sel.is-done,.bm-tile.is-sel.is-done{opacity:.7}',
       '.bm-card-head{display:flex;justify-content:space-between;gap:var(--space-sm);align-items:baseline}',
       '.bm-card-who{font-weight:600;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.bm-card-src{color:var(--text-tertiary);font-size:var(--bm-meta);flex:none}',
@@ -292,9 +303,10 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-card-tags{display:flex;gap:var(--space-xs);overflow-x:auto;scrollbar-width:none;padding-bottom:2px}',
       '.bm-card-tags .tool-chip{flex:none;min-height:36px}',
       /* 격자 (핀터레스트 식). 열 240, 폰은 2열 */
-      '.bm-view-grid{display:block;columns:var(--bm-col);column-gap:var(--bm-gap);border:0;background:transparent}',
-      '@media(max-width:559px){.bm-view-grid{columns:2}}',
-      '.bm-tile{break-inside:avoid;margin:0 0 var(--bm-gap);position:relative;cursor:pointer}',
+      /* 열은 스크립트가 나눈다 (gridHtml). 열 수만 --bm-ncol 로 받는다 */
+      '.bm-view-grid{display:grid;grid-template-columns:repeat(var(--bm-ncol,4),minmax(0,1fr));gap:var(--bm-gap);align-items:start;border:0;background:transparent}',
+      '.bm-gcol{display:flex;flex-direction:column;gap:var(--bm-gap);min-width:0}',
+      '.bm-tile{position:relative;cursor:pointer}',
       '.bm-tile img{width:100%;display:block;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
       '.bm-tile.is-cur img,.bm-tile.is-cur .bm-tile-text{outline:2px solid var(--accent);outline-offset:2px}',
       '.bm-tile-text{padding:var(--space-md);border-radius:var(--bm-pic-radius);background:var(--bg-secondary);font-size:var(--bm-body);',
@@ -1063,11 +1075,12 @@ import { t, loadNamespace } from '../../lib/i18n';
       esc(t('mydash.bm.search.label', undefined, '검색')) + '" placeholder="' +
       esc(t('mydash.bm.search.ph', undefined, '제목, 작성자, 메모')) + '">' +
       '<button type="button" class="btn btn-ghost" data-act="filters" data-filters-sum="1" aria-expanded="false"></button>' +
+      /* 선택은 머리 줄로 (사용자 2026-09-24 "한 번에 여러 개"). 필터 안에 있으면 못 찾는다 */
+      '<button type="button" class="btn btn-ghost" data-act="select" aria-pressed="false"></button>' +
       '</div>' +
       '<div class="bm-filters" data-filters="1" hidden>' +
       '<div class="bm-filters-acts">' +
       '<button type="button" class="btn btn-ghost" data-act="pending" aria-pressed="false"></button>' +
-      '<button type="button" class="btn btn-ghost" data-act="select"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="judge"></button>' +
       '</div>' +
       '<div class="bm-nums">' + numHtml.join('') + '</div>' +
@@ -1116,8 +1129,12 @@ import { t, loadNamespace } from '../../lib/i18n';
     let view: View = judgeMode ? (isWide() ? 'grid' : 'feed') : readView();
     /** 피드 카드마다 고른 의도. 저장 전까지 여기 */
     const feedPicks = new Map<string, Set<string>>();
-    /** 피드에서 방금 저장한 카드. 흐리게 두고 다음으로 */
+    /** 이 화면에서 방금 판정한 것 (카드, 타일, 선택 일괄). 흐리게 제자리에 둔다 */
     const feedDone = new Set<string>();
+    /** 조건이 바뀌면 다시 흐르는 것이 맞다. 그때 제자리 고정을 푼다 */
+    function resetDone(): void {
+      feedDone.clear();
+    }
 
     function readView(): View {
       try {
@@ -1140,6 +1157,12 @@ import { t, loadNamespace } from '../../lib/i18n';
     const selected = new Set<string>();
     const barIntent = new Set<string>();
     let barBusy = '';
+    /** Shift 범위의 시작. 마지막으로 누른 항목 */
+    let pickAnchor = '';
+    /** 격자가 지금 그린 차례 (열로 나눠 그려 DOM 차례와 다르다). 자판 이동과 Shift 범위가 쓴다 */
+    let gridOrder: string[] = [];
+    /** 격자 열 수. 폭이 바뀌어 이 수가 바뀔 때만 다시 나눈다 */
+    let gridCols = 0;
 
     /* 한 장 모드 */
     type Judge = { list: Item[]; at: number; picks: Set<string>; lastAuthor: string; lastIntent: string[] };
@@ -1259,10 +1282,14 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /* ── 고르기 ── */
     function matches(it: Item): boolean {
-      if (pendingOnly && !isPending(it)) return false;
+      /* 방금 판정한 것은 조건을 벗어나도 제자리에 흐리게 남긴다. 빼면 뒤가 전부 당겨져
+         격자가 통째로 다시 흐른다 (사용자 2026-09-24 "하나 판정하면 전체 배치가 바뀐다").
+         필터나 검색을 바꿀 때 비운다 (resetDone) */
+      const kept = feedDone.has(text(it.id));
+      if (pendingOnly && !isPending(it) && !kept) return false;
       const s = stateOf(it);
       /* 버림과 승격은 아카이브다. 필터를 안 켜면 기본 목록에서 뺀다 */
-      if (!picked.status || !picked.status.size) {
+      if (!kept && (!picked.status || !picked.status.size)) {
         if (HIDDEN_STATUS.indexOf(s.status) >= 0) return false;
       }
       for (const g of groups) {
@@ -1383,7 +1410,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     function rowHtml(it: Item, extra: string): string {
       const cls =
         'tool-list-row bm-row' + (extra ? ' ' + extra : '') + (selectMode ? ' is-pick' : '') +
-        (curId === text(it.id) ? ' is-cur' : '');
+        (curId === text(it.id) ? ' is-cur' : '') + (feedDone.has(text(it.id)) ? ' is-done' : '');
       const rowAct = selectMode ? ' data-act="pick" data-id="' + esc(text(it.id)) + '"' : ' data-act="row"';
       return (
         '<div class="' + cls + '"' + rowAct + ' data-row="' + esc(text(it.id)) + '">' +
@@ -1431,6 +1458,19 @@ import { t, loadNamespace } from '../../lib/i18n';
       return hostOf(it.url);
     }
 
+    /** 선택 모드에서 카드와 타일은 누르면 고르기. 평소엔 옆판 */
+    function tapAct(id: string): string {
+      return selectMode ? ' data-act="pick" data-id="' + esc(id) + '"' : ' data-act="row"';
+    }
+    function selCls(id: string): string {
+      return selectMode ? ' is-pick' + (selected.has(id) ? ' is-sel' : '') : '';
+    }
+    /** 고른 표시. 칸 모서리 동그라미, 고르면 채움 */
+    function selMark(id: string): string {
+      if (!selectMode) return '';
+      return '<span class="bm-selmark" data-selmark="' + esc(id) + '" aria-hidden="true"></span>';
+    }
+
     /**
      * 피드 카드 (트위터 식). 누가와 출처, 내가 쓴 말, 원문, 사진, 아래 판정 셋과 의도 칩.
      * 저장한 카드는 흐려지고 다음 카드로. 카드 어디를 눌러도 옆판 (버튼 제외)
@@ -1445,7 +1485,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       const title = m && m.kind === 'page' ? text(m.title).trim() : '';
       const pic = firstPic(it, 'medium');
       const picks = feedPicks.get(id) || new Set(s.intent);
-      const cls = 'bm-card' + (feedDone.has(id) ? ' is-done' : '') + (curId === id ? ' is-cur' : '');
+      const cls = 'bm-card' + (feedDone.has(id) ? ' is-done' : '') + (curId === id ? ' is-cur' : '') + selCls(id);
       const parts: string[] = [];
       parts.push(
         '<div class="bm-card-head"><span class="bm-card-who">' + esc(whoOf(it)) + '</span>' +
@@ -1471,7 +1511,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         parts.push('<a class="bm-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
           esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a>');
       }
-      parts.push(
+      if (!selectMode) parts.push(
         '<div class="bm-card-acts">' +
         '<button type="button" class="btn btn-ghost bm-act bm-act-drop" data-act="c-drop" data-id="' + esc(id) + '">' +
         esc(valueLabel('status', 'dropped')) + '</button>' +
@@ -1489,7 +1529,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         '</div>' +
         '<div class="tool-status" data-cmsg="' + esc(id) + '"></div>'
       );
-      return '<article class="' + cls + '" data-row="' + esc(id) + '" data-act="row">' + parts.join('') + '</article>';
+      return '<article class="' + cls + '" data-row="' + esc(id) + '"' + tapAct(id) + '>' + selMark(id) + parts.join('') + '</article>';
     }
 
     /** 격자 타일 (핀터레스트 식). 사진이 타일, 없으면 글 타일. 누르면 옆판, 위에 버림과 지금 */
@@ -1505,10 +1545,10 @@ import { t, loadNamespace } from '../../lib/i18n';
       const s = stateOf(it);
       const pic = firstPic(it, 'small');
       const head = capOf(it, s.note) || (pic ? '' : headOf(it, s.note));
-      const cls = 'bm-tile' + (pic ? '' : ' is-text') + (curId === id ? ' is-cur' : '') + (feedDone.has(id) ? ' is-done' : '');
+      const cls = 'bm-tile' + (pic ? '' : ' is-text') + (curId === id ? ' is-cur' : '') + (feedDone.has(id) ? ' is-done' : '') + selCls(id);
       const ratio = pic && pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
       return (
-        '<figure class="' + cls + '" data-row="' + esc(id) + '" data-act="row">' +
+        '<figure class="' + cls + '" data-row="' + esc(id) + '"' + tapAct(id) + '>' + selMark(id) +
         (pic
           ? '<img src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '>'
           : '<div class="bm-tile-text">' + esc(head) + '</div>') +
@@ -1518,13 +1558,51 @@ import { t, loadNamespace } from '../../lib/i18n';
         (isPending(it) ? ' <b>' + esc(t('mydash.bm.pendingChip', undefined, '판정 대기')) + '</b>' : '') +
         (s.priority ? ' <span>' + esc(valueLabel('priority', s.priority)) + '</span>' : '') +
         '</div></figcaption>' +
+        (selectMode ? '' :
         '<div class="bm-tile-acts">' +
         '<button type="button" class="bm-tile-btn" data-act="c-drop" data-id="' + esc(id) + '" title="' + esc(valueLabel('status', 'dropped')) + '">' +
         esc(valueLabel('status', 'dropped')) + '</button>' +
         '<button type="button" class="bm-tile-btn" data-act="c-now" data-id="' + esc(id) + '" title="' + esc(valueLabel('priority', 'now')) + '">' +
         esc(valueLabel('priority', 'now')) + '</button>' +
-        '</div></figure>'
+        '</div>') +
+        '</figure>'
       );
+    }
+
+    /** 격자 열 수. CSS 의 열 폭 (--bm-col) 과 같은 셈. 폰은 2열 */
+    function gridColCount(): number {
+      if (window.matchMedia('(max-width:559px)').matches) return 2;
+      const w = listEl.clientWidth || wrap.clientWidth;
+      return Math.max(1, Math.floor((w + GRID_GAP) / (GRID_COL + GRID_GAP)));
+    }
+
+    /**
+     * 핀터레스트 식 배치. 차례대로 가장 짧은 열 밑.
+     * - 높이는 그림 도착 전에 데이터의 가로세로 비로 어림
+     * - 그림이 늦게 와도, 더 보기로 뒤가 붙어도 앞 칸 자리 유지 (CSS columns 는 전부 다시 나눔)
+     * - 읽는 차례가 왼쪽에서 오른쪽. Shift 범위가 눈에 보이는 덩어리와 일치
+     */
+    function gridHtml(tiles: Item[]): string {
+      const n = gridColCount();
+      gridCols = n;
+      const cols: string[][] = [];
+      const hs: number[] = [];
+      for (let i = 0; i < n; i++) { cols.push([]); hs.push(0); }
+      for (const it of tiles) {
+        let at = 0;
+        for (let i = 1; i < n; i++) if (hs[i] < hs[at] - 0.01) at = i;
+        cols[at].push(tileHtml(it));
+        hs[at] += tileWeight(it);
+      }
+      listEl.style.setProperty('--bm-ncol', String(n));
+      return cols.map((c) => '<div class="bm-gcol">' + c.join('') + '</div>').join('');
+    }
+
+    /** 타일 높이 어림 (열 폭 1 기준). 그림은 세로/가로, 없으면 정사각에 가깝게, 글 줄 몫을 더한다 */
+    function tileWeight(it: Item): number {
+      const pic = firstPic(it, 'small');
+      const body = pic ? (pic.w && pic.h ? Math.min(3, pic.h / pic.w) : 1) : 0.7;
+      return body + 0.35;
     }
 
     /** 피드와 격자의 한 손 판정. 보내고, 카드를 흐리게, 다음 카드로 */
@@ -1713,6 +1791,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       selectBtn.textContent = selectMode
         ? t('mydash.bm.act.selectOff', undefined, '선택 끄기')
         : t('mydash.bm.act.select', undefined, '선택');
+      selectBtn.setAttribute('aria-pressed', selectMode ? 'true' : 'false');
       let on = 0;
       for (const g of groups) on += picked[g.key].size;
       filtersSumEl.textContent = on
@@ -1759,8 +1838,11 @@ import { t, loadNamespace } from '../../lib/i18n';
         /* 격자는 그림이 주인공. 그림 있는 것을 앞에, 글만 있는 것은 뒤에 (각각 최근순 유지) */
         const withPic = list.filter((it) => !!firstPic(it, 'small'));
         const noPic = list.filter((it) => !firstPic(it, 'small'));
-        listEl.innerHTML = withPic.concat(noPic).slice(0, shown).map(tileHtml).join('') || empty;
+        const tiles = withPic.concat(noPic).slice(0, shown);
+        gridOrder = tiles.map((it) => text(it.id));
+        listEl.innerHTML = tiles.length ? gridHtml(tiles) : empty;
       }
+      if (view !== 'grid') gridOrder = [];
       /* 재발굴 칸은 목록 보기에서만. 피드와 격자는 넘기는 화면이라 위에 딴 것을 안 둔다 */
       revisitEl.hidden = view !== 'list' || pendingOnly;
       const viewBtns = Array.from(wrap.querySelectorAll('[data-act="view"]')) as HTMLElement[];
@@ -1820,6 +1902,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /** 지금 화면에 있는 줄의 id 차례 (접힌 묶음은 머리 줄만). 자판 위아래가 도는 줄 */
     function visibleRowIds(): string[] {
+      if (view === 'grid' && gridOrder.length) return gridOrder.slice();
       const rows = Array.from(listEl.querySelectorAll('[data-row]')) as HTMLElement[];
       return rows.map((r) => r.getAttribute('data-row') || '').filter((x) => !!x);
     }
@@ -2216,6 +2299,8 @@ import { t, loadNamespace } from '../../lib/i18n';
         esc(t('mydash.bm.sel.applyIntent', undefined, '의도 적용')) + '</button>' +
         '<button type="button" class="btn btn-ghost" data-act="b-drop">' +
         esc(t('mydash.bm.sel.drop', undefined, '버림')) + '</button>' +
+        '<button type="button" class="btn btn-ghost" data-act="b-now">' +
+        esc(valueLabel('priority', 'now')) + '</button>' +
         '<button type="button" class="btn btn-ghost" data-act="b-cancel">' +
         esc(t('mydash.bm.sel.cancel', undefined, '취소')) + '</button>' +
         '</div>' +
@@ -2256,6 +2341,8 @@ import { t, loadNamespace } from '../../lib/i18n';
         if (done > 0) await gap();
         const r = await sendEvent(make(it));
         done++;
+        /* 큐로 간 것도 화면 상태는 이미 바뀌었다. 둘 다 제자리 고정 */
+        if (r === 'sent' || r === 'queued') feedDone.add(id);
         if (r === 'sent') sent++;
         else if (r === 'queued') queued++;
         else failed++;
@@ -2431,8 +2518,41 @@ import { t, loadNamespace } from '../../lib/i18n';
         selected.clear();
         barIntent.clear();
         barBusy = '';
+        pickAnchor = '';
       }
       paint();
+    }
+
+    function togglePick(id: string): void {
+      if (selected.has(id)) selected.delete(id);
+      else selected.add(id);
+      pickAnchor = id;
+    }
+
+    /** 보이는 차례로 a 부터 b 까지 전부 고른다. 격자는 그린 차례 (왼쪽에서 오른쪽) */
+    function pickRange(a: string, b: string): void {
+      const ids = visibleRowIds();
+      const i = ids.indexOf(a);
+      const j = ids.indexOf(b);
+      if (i < 0 || j < 0) {
+        togglePick(b);
+        return;
+      }
+      for (let k = Math.min(i, j); k <= Math.max(i, j); k++) selected.add(ids[k]);
+      pickAnchor = b;
+    }
+
+    /**
+     * 목록은 안 다시 그림, 칸과 띠만 맞춤.
+     * - 백 줄 다시 그리기는 폰에서 끊김. 안 누른 칸이 새 노드로 갈려 연달아 고르기도 끊김
+     * - 같은 항목이 목록과 재발굴 칸에 둘 다 뜰 수 있어 둘 다 맞춤
+     */
+    function syncPicks(): void {
+      const boxes = Array.from(wrap.querySelectorAll('[data-pick]')) as HTMLInputElement[];
+      for (const box of boxes) box.checked = selected.has(box.getAttribute('data-pick') || '');
+      const cells = Array.from(listEl.querySelectorAll('.bm-card[data-row],.bm-tile[data-row]')) as HTMLElement[];
+      for (const c of cells) c.classList.toggle('is-sel', selected.has(c.getAttribute('data-row') || ''));
+      paintBar();
     }
 
     /* ── 손 ── */
@@ -2467,6 +2587,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       }
       if (act === 'pending') {
         pendingOnly = !pendingOnly;
+        resetDone();
         shown = PAGE;
         paint();
         return;
@@ -2521,6 +2642,19 @@ import { t, loadNamespace } from '../../lib/i18n';
         openSheet(el.getAttribute('data-target') || '');
         return;
       }
+      /* Ctrl (맥은 Cmd) 은 하나 더 고르기, Shift 는 앞에서 누른 것부터 여기까지.
+         선택 모드가 꺼져 있으면 켜면서 고른다 (사용자 2026-09-24 "Ctrl 선택도") */
+      const mod = ev.ctrlKey || ev.metaKey || ev.shiftKey;
+      if ((act === 'row' || act === 'pick' || el.hasAttribute('data-pick')) && mod) {
+        const id = el.getAttribute('data-id') || el.getAttribute('data-pick') || el.getAttribute('data-row') || '';
+        if (!id) return;
+        const wasOn = selectMode;
+        if (ev.shiftKey && pickAnchor && pickAnchor !== id) pickRange(pickAnchor, id);
+        else togglePick(id);
+        if (!wasOn) toggleSelect(true);
+        else syncPicks();
+        return;
+      }
       if (act === 'row') {
         /* 줄 어디를 눌러도 옆판. 링크는 위에서 걸렀고, 버튼은 자기 act 가 먼저 잡힌다 */
         openSheet(el.getAttribute('data-row') || '');
@@ -2529,16 +2663,8 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (act === 'pick' || el.hasAttribute('data-pick')) {
         const id = el.getAttribute('data-id') || el.getAttribute('data-pick') || '';
         if (!id) return;
-        if (selected.has(id)) selected.delete(id);
-        else selected.add(id);
-        /* 목록을 다시 안 그린다. 백 줄을 매번 다시 그리면 폰에서 끊기고, 다시 그리는 순간
-           아직 안 누른 칸이 새 노드로 갈려 연달아 고르기가 끊긴다. 칸과 띠만 맞춘다 */
-        /* 같은 항목이 목록과 재발굴 칸에 두 번 떠 있을 수 있다. 둘 다 맞춘다 */
-        const boxes = Array.from(
-          wrap.querySelectorAll('[data-pick="' + id + '"]')
-        ) as HTMLInputElement[];
-        for (const box of boxes) box.checked = selected.has(id);
-        paintBar();
+        togglePick(id);
+        syncPicks();
         return;
       }
       if (act === 'sheet-close') {
@@ -2626,6 +2752,21 @@ import { t, loadNamespace } from '../../lib/i18n';
         void runBulk((it) => makeEvent('status', text(it.id), { status: 'dropped' }));
         return;
       }
+      if (act === 'b-now') {
+        /* 지금 자리 상한은 한 장 판정과 같다. 넘치면 보내지 않고 알린다 */
+        const cap = nowCap();
+        const fresh = Array.from(selected).filter((id) => {
+          const it = itemById.get(id);
+          return !!it && stateOf(it).priority !== 'now';
+        });
+        if (nowItems(new Set<string>()).length + fresh.length > cap) {
+          barBusy = t('mydash.bm.sel.nowOver', { n: cap }, '지금은 {n}칸까지입니다');
+          paintBar();
+          return;
+        }
+        void runBulk((it) => makeEvent('priority', text(it.id), { priority: 'now' }));
+        return;
+      }
       if (act === 'b-cancel') {
         toggleSelect(false);
         return;
@@ -2659,6 +2800,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       const value = el.getAttribute('data-value') || '';
       if (picked[axis].has(value)) picked[axis].delete(value);
       else picked[axis].add(value);
+      resetDone();
       shown = PAGE;
       paint();
     });
@@ -2713,9 +2855,22 @@ import { t, loadNamespace } from '../../lib/i18n';
     const onWide = (): void => paintSheet();
     wideMq.addEventListener('change', onWide);
     ctx.onDispose(() => wideMq.removeEventListener('change', onWide));
+    /* 격자 열 수는 폭으로 정해진다. 수가 바뀔 때만 다시 나눈다 (같은 수면 칸이 안 움직인다) */
+    if (typeof ResizeObserver === 'function') {
+      const ro = new ResizeObserver(() => {
+        if (view === 'grid' && gridOrder.length && gridColCount() !== gridCols) paint();
+      });
+      ro.observe(listEl);
+      ctx.onDispose(() => ro.disconnect());
+    }
+    /* Shift 로 범위를 고를 때 글자가 같이 긁히지 않게 */
+    listEl.addEventListener('mousedown', (e) => {
+      if (e.shiftKey) e.preventDefault();
+    });
 
     qEl.addEventListener('input', () => {
       query = qEl.value.trim().toLowerCase();
+      resetDone();
       shown = PAGE;
       paint();
     });

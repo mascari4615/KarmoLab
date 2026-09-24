@@ -60,6 +60,7 @@
   "mydash.bm.sel.tally": "Sent {n}, queued {m}, failed {k}",
   "mydash.bm.sel.none": "Nothing is selected",
   "mydash.bm.sel.pickIntent": "Pick an intent",
+  "mydash.bm.sel.nowOver": "Now holds up to {n}",
   "mydash.bm.judge.progress": "{k}/{n}",
   "mydash.bm.judge.saveNext": "Save and next",
   "mydash.bm.judge.skip": "Skip",

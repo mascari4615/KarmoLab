@@ -60,6 +60,7 @@
   "mydash.bm.sel.tally": "送信{n}、キュー{m}、失敗{k}",
   "mydash.bm.sel.none": "選択がありません",
   "mydash.bm.sel.pickIntent": "意図を選んでください",
+  "mydash.bm.sel.nowOver": "今 は{n}件までです",
   "mydash.bm.judge.progress": "{k}/{n}",
   "mydash.bm.judge.saveNext": "保存して次へ",
   "mydash.bm.judge.skip": "スキップ",

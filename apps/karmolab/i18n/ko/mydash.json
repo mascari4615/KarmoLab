@@ -60,6 +60,7 @@
   "mydash.bm.sel.tally": "보냄 {n}, 큐 {m}, 실패 {k}",
   "mydash.bm.sel.none": "고른 것이 없습니다",
   "mydash.bm.sel.pickIntent": "의도를 고르세요",
+  "mydash.bm.sel.nowOver": "지금은 {n}칸까지입니다",
   "mydash.bm.judge.progress": "{k}/{n}",
   "mydash.bm.judge.saveNext": "저장하고 다음",
   "mydash.bm.judge.skip": "건너뛰기",
