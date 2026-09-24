@@ -43,10 +43,16 @@ console.log(
 
 // cargo workspace 멤버 빌드. CARGO_TARGET_DIR 미설정 시 워크스페이스 기본
 // target/ 사용 (단일 lockfile. KL-052-A). cwd = src-tauri (멤버 컨텍스트).
-execSync(
-  `cargo build${release ? " --release" : ""} -p karmolab-ml-sidecar`,
-  { cwd: srcTauri, stdio: "inherit" },
-);
+// 릴리스 판만 KL_SIDECAR_PREBUILT 를 1로 준다. 입력 해시가 같아 캐시에서 꺼낸 실행 파일을
+// 그대로 배치만 한다. fat LTO 엮기 2분 30초를 건너뛴다 (2026-09-25 실측)
+if (process.env.KL_SIDECAR_PREBUILT === "1") {
+  console.log("[build-sidecar] 캐시에서 꺼낸 실행 파일을 쓴다. cargo 건너뜀");
+} else {
+  execSync(
+    `cargo build${release ? " --release" : ""} -p karmolab-ml-sidecar`,
+    { cwd: srcTauri, stdio: "inherit" },
+  );
+}
 
 // workspace target. Cargo.toml [workspace] 루트(apps/karmolab-tauri) 기준.
 // KL-052 워크스페이스 전환 후 단일 target 은 워크스페이스 루트(tauriDir)에

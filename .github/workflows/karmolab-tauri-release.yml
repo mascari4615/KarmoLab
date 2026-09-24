@@ -195,8 +195,40 @@ jobs:
         if: steps.contract.outputs.changed == 'true'
         run: npm ci
 
+      - name: 부품 실행 파일 키 (sidecar, 동반자 창)
+        id: part_keys
+        if: steps.contract.outputs.changed == 'true'
+        shell: bash
+        # 왜: Rust 캐시는 남의 크레이트만 담는다. 우리 바이너리 셋은 매판 fat LTO 로 다시 엮여
+        # sidecar 2분 37초, 동반자 창 2분 24초가 들었다 (2026-09-25, run 36033480947).
+        # 대부분의 판은 본체만 바뀐다. 입력이 같으면 실행 파일을 그대로 꺼내 쓴다.
+        # Cargo.lock 은 판마다 karmolab-desktop 버전 줄만 바뀌므로 그 줄을 빼고 잰다.
+        run: |
+          set -euo pipefail
+          LOCK=$(node -e "const s=require('fs').readFileSync('Cargo.lock','utf8').replace(/(name = \"karmolab-desktop\"\s+version = )\"[^\"]*\"/,'\$1\"\"');console.log(require('crypto').createHash('sha256').update(s).digest('hex').slice(0,16))")
+          RUSTC=$(rustc -V | tr -c 'a-zA-Z0-9.\n' '-')
+          echo "base=${RUSTC}-${LOCK}" >> "$GITHUB_OUTPUT"
+
+      - name: ML sidecar 캐시
+        id: ml_cache
+        if: steps.contract.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: apps/karmolab-tauri/target/release/karmolab-life-ml.exe
+          key: ml-sidecar-${{ steps.part_keys.outputs.base }}-${{ hashFiles('apps/karmolab-tauri/Cargo.toml', 'apps/karmolab-tauri/src-tauri-ml/**', 'apps/karmolab-tauri/src-tauri-shared/**', 'vendor/**') }}
+
+      - name: 동반자 창 캐시
+        id: companion_cache
+        if: steps.contract.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: apps/karmolab-tauri/target/release/companion-window.exe
+          key: companion-window-${{ steps.part_keys.outputs.base }}-${{ hashFiles('apps/karmolab-tauri/Cargo.toml', 'apps/karmolab-tauri/src-tauri-companion/**', 'apps/karmolab-tauri/src-tauri-shared/**', 'vendor/**') }}
+
       - name: Build ML sidecar
         if: steps.contract.outputs.changed == 'true'
+        env:
+          KL_SIDECAR_PREBUILT: ${{ steps.ml_cache.outputs.cache-hit == 'true' && '1' || '' }}
         # KL-052: tauri.release.conf.json externalBin = binaries/karmolab-life-ml.
         # tauri-action 은 `npm run build`(=build:sidecar && tauri build) 가 아니라
         # `tauri build` 만 호출 → sidecar 미생성 시 build.rs:97 panic
@@ -272,7 +304,11 @@ jobs:
           cd ../..
           # 창은 같은 워크스페이스의 두 번째 바이너리다 (KAR-201).
           cd apps/karmolab-tauri
-          cargo build --release --bin companion-window --target-dir target
+          if [ "${{ steps.companion_cache.outputs.cache-hit }}" = "true" ]; then
+            echo "동반자 창은 입력이 지난 판과 같다. 캐시에서 꺼낸 것을 쓴다"
+          else
+            cargo build --release --bin companion-window --target-dir target
+          fi
 
       - name: 동반자 에셋을 릴리스에 올린다
         if: steps.contract.outputs.changed == 'true'
