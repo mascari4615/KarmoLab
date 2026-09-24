@@ -13,6 +13,7 @@ import { loadNamespace, t } from '../../lib/i18n';
 // 내려주기, 굽기는 공용 한 자리(`tools/shared/image`). 여기 있던 지역 download 는 그것과 같은 네 줄이었다.
 import { download, encode } from '../tools/shared/image';
 import { intervalWhileVisible } from '../../lib/tick';
+import { uiZoom } from '../../lib/ui-zoom';
 import { Stroke, defaultBrush, pickColor, type BrushSettings } from './brush';
 import { composite, compositeAll, spriteSheet } from './composite';
 /* GIF 인코더. 약속만 여기서 받고 코드는 늦게 온다. 이미지 묶음이 `tools/gifenc` 를 같이 실으므로
@@ -461,9 +462,16 @@ function buildMeok(container: HTMLElement): void {
     return layer;
   };
 
-  const toDoc = (event: PointerEvent): { x: number; y: number } => {
+  /* 화면 좌표(clientX, rect)는 셸 배율(html zoom) 적용 뒤, 그림판 좌표는 적용 전. 배율 나눗셈으로 맞춤.
+     나눗셈 없이는 배율 0.87 에서 붓 자리가 커서보다 13% 안쪽 (2026-09-25 실측). 정본 lib/ui-zoom */
+  const toView = (event: MouseEvent): { x: number; y: number } => {
     const rect = canvas.getBoundingClientRect();
-    return view.toDoc(event.clientX - rect.left, event.clientY - rect.top);
+    const z = uiZoom(canvas);
+    return { x: (event.clientX - rect.left) / z, y: (event.clientY - rect.top) / z };
+  };
+  const toDoc = (event: PointerEvent): { x: number; y: number } => {
+    const at = toView(event);
+    return view.toDoc(at.x, at.y);
   };
 
   canvas.addEventListener('pointerdown', (event: PointerEvent) => {
@@ -525,7 +533,8 @@ function buildMeok(container: HTMLElement): void {
 
   canvas.addEventListener('pointermove', (event: PointerEvent) => {
     if (panning) {
-      view.pan(event.clientX - panning.x, event.clientY - panning.y);
+      const z = uiZoom(canvas);
+      view.pan((event.clientX - panning.x) / z, (event.clientY - panning.y) / z);
       panning = { x: event.clientX, y: event.clientY };
       view.invalidate();
       return;
@@ -609,8 +618,8 @@ function buildMeok(container: HTMLElement): void {
 
   canvas.addEventListener('wheel', (event: WheelEvent) => {
     event.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    view.zoomAt(event.clientX - rect.left, event.clientY - rect.top, event.deltaY < 0 ? 1.12 : 1 / 1.12);
+    const at = toView(event);
+    view.zoomAt(at.x, at.y, event.deltaY < 0 ? 1.12 : 1 / 1.12);
     syncZoom();
     view.invalidate();
   }, { passive: false });
@@ -1407,10 +1416,12 @@ function buildMeok(container: HTMLElement): void {
   document.addEventListener('keydown', keydown);
   document.addEventListener('keyup', keyup);
 
-  /* 창 크기에 맞춘다. */
+  /* 창 크기에 맞춘다. rect 는 배율 적용 뒤라 나눠서 style px 로. 안 나누면 캔버스가 칸보다 1/배율 만큼 커져
+     아래가 시간줄 밑에 숨었다 (2026-09-25 실측 배율 0.87, 캔버스 801 칸 697). 선명도는 화면 픽셀 기준 */
   const fitViewport = (): void => {
     const rect = wrap.getBoundingClientRect();
-    view.resizeViewport(Math.max(120, rect.width), Math.max(120, rect.height), window.devicePixelRatio || 1);
+    const z = uiZoom(wrap);
+    view.resizeViewport(Math.max(120, rect.width / z), Math.max(120, rect.height / z), (window.devicePixelRatio || 1) * z);
     view.paint();
   };
   const observer = new ResizeObserver(fitViewport);

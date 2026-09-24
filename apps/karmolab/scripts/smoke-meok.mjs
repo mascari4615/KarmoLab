@@ -494,6 +494,28 @@ await page.waitForTimeout(500);
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 if (overflow > 2) problems.push('가로로 ' + overflow + 'px 넘친다');
 
+/* ⑬ 셸 배율(html zoom) 아래 캔버스와 칸 일치, 커서 자리 붓 찍힘.
+   배율 무시 시 캔버스가 칸보다 커져 아래가 시간줄 밑, 붓은 커서에서 어긋남
+   (2026-09-25 실측 배율 0.8: 칸 735 캔버스 588, 커서 아래 픽셀 그대로) */
+await page.evaluate(() => { document.documentElement.style.zoom = '0.8'; });
+await page.waitForTimeout(600);
+const zoomed = await page.evaluate(() => {
+  const wrap = window.__meokQ('[data-canvas]').parentElement.getBoundingClientRect();
+  const c = window.__meokQ('[data-canvas]').getBoundingClientRect();
+  return { wrapH: wrap.height, canvasH: c.height, x: c.left + c.width * 0.5, y: c.top + c.height * 0.5 };
+});
+if (Math.abs(zoomed.wrapH - zoomed.canvasH) > 2) problems.push(`배율 0.8 에서 캔버스(${Math.round(zoomed.canvasH)})가 칸(${Math.round(zoomed.wrapH)})에 안 맞는다`);
+const pixelAt = () => page.evaluate(([x, y]) => {
+  const c = window.__meokQ('[data-canvas]'); const r = c.getBoundingClientRect();
+  return [...c.getContext('2d').getImageData(Math.floor((x - r.left) * c.width / r.width), Math.floor((y - r.top) * c.height / r.height), 1, 1).data].join(',');
+}, [zoomed.x, zoomed.y]);
+await page.click('.meok:visible [data-tool="brush"]');
+const shellZoomPixel = await pixelAt();
+await page.mouse.move(zoomed.x, zoomed.y); await page.mouse.down(); await page.mouse.move(zoomed.x + 1, zoomed.y + 1); await page.mouse.up();
+await page.waitForTimeout(300);
+if (await pixelAt() === shellZoomPixel) problems.push('배율 0.8 에서 붓이 커서 자리에 안 찍힌다');
+await page.evaluate(() => { document.documentElement.style.zoom = ''; });
+
 if (process.argv.includes('--shot')) {
   fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
   const shot = path.join(root, 'tmp/meok.png');
