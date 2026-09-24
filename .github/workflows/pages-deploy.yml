@@ -357,7 +357,7 @@ jobs:
         working-directory: apps/karmolab
         env:
           CI: 'true'
-        run: node scripts/test-split-outputs.mjs --out ../blog/dist
+        run: npm run test:split -- --out ../blog/dist
 
       - name: Deploy to Cloudflare Pages
         env:
