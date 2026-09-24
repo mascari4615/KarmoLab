@@ -320,10 +320,20 @@ pub fn run() {
             let open = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "끝내기", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &quit])?;
-            let mut tray = TrayIconBuilder::with_id("main").tooltip("Karmo Launcher").menu(&menu).show_menu_on_left_click(false);
-            if let Some(icon) = app.default_window_icon().cloned() {
-                tray = tray.icon(icon);
+            /* 창과 트레이 아이콘을 파일에서 직접 박음. 기본 창 아이콘에 맡겼더니 작업 표시줄이 옛 별 아이콘으로
+               돌아갔다 (사용자 2026-09-25 "계속 예전 아이콘으로 돌아가") */
+            let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/128x128@2x.png"))?;
+            {
+                use tauri::Manager;
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.set_icon(icon.clone());
+                }
             }
+            let tray = TrayIconBuilder::with_id("main")
+                .tooltip("Karmo Launcher")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .icon(icon);
             tray.on_menu_event(|app, event| match event.id.as_ref() {
                 "open" => show_main(app),
                 "quit" => app.exit(0),

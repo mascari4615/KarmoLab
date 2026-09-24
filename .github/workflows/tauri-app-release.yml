@@ -141,6 +141,7 @@ jobs:
           gh release upload "$UP" updater/latest.json --repo "${{ github.repository }}" --clobber
 
       - name: 옛 판 릴리스 치우기 (최신 하나만, 태그는 남김)
+        # 첫 판은 치울 것이 없어 grep 이 1 로 끝나고 pipefail 로 판 전체가 빨강이었다 (2026-09-25 launcher-v0.1.1)
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -148,7 +149,7 @@ jobs:
           set -euo pipefail
           KEEP="${{ inputs.tag_prefix }}${VERSION}"
           gh release list --repo "${{ github.repository }}" --limit 200 --json tagName --jq '.[].tagName' \
-            | grep "^${{ inputs.tag_prefix }}" | grep -v "^${KEEP}$" \
+            | { grep "^${{ inputs.tag_prefix }}" || true; } | { grep -v "^${KEEP}$" || true; } \
             | while read -r tag; do
                 gh release delete "$tag" --repo "${{ github.repository }}" --yes || true
               done
