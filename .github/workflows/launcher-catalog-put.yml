@@ -1,0 +1,46 @@
+name: Launcher catalog put (공용)
+
+# 런처 목록 (launcher-catalog 릴리스의 catalog.json) 에 앱 한 줄을 고쳐 씀. 앱 릴리스가 끝난 직후 부른다.
+# 맨 위는 런처라 앱 업데이트는 런처가 이 목록만 보고 맡음 (memo changes/launcher.md 구조 결정).
+# 두 앱이 동시에 끝나면 서로 덮어쓰니 한 번에 하나만 (concurrency)
+#
+# trigger-audit: self-exempt. workflow_call 전용이라 스스로는 안 돈다.
+on:
+  workflow_call:
+    inputs:
+      app_id:
+        description: '목록의 앱 열쇠 (런처 manifest.json 의 id. 예 karmolab)'
+        required: true
+        type: string
+      release_tag:
+        description: '방금 낸 판의 태그 (latest.json 이 있는 릴리스. 예 karmolab-v0.1.119)'
+        required: true
+        type: string
+
+jobs:
+  put:
+    concurrency:
+      group: launcher-catalog
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: apps/karmo-launcher/scripts
+      - name: latest.json 을 목록 한 줄로
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          R="${{ github.repository }}"
+          gh release download "${{ inputs.release_tag }}" --repo "$R" -p latest.json -D in --clobber
+          if gh release view launcher-catalog --repo "$R" >/dev/null 2>&1; then
+            gh release download launcher-catalog --repo "$R" -p catalog.json -D out --clobber || true
+          else
+            gh release create launcher-catalog --repo "$R" --prerelease --title launcher-catalog --notes "런처 목록. 앱마다 최신 판의 버전, 주소, 서명" --target main
+          fi
+          mkdir -p out
+          node apps/karmo-launcher/scripts/catalog-put.mjs out/catalog.json "${{ inputs.app_id }}" in/latest.json
+          gh release upload launcher-catalog out/catalog.json --repo "$R" --clobber

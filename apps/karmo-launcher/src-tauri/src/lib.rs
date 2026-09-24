@@ -14,8 +14,59 @@ use tauri::{AppHandle, Emitter};
 const MANIFEST_URL: &str =
     "https://raw.githubusercontent.com/mascari4615/mascari4615.github.io/main/apps/karmo-launcher/manifest.json";
 
+/// 앱마다 최신 판 (버전, 날짜, 주소, 서명). 릴리스 CI 가 판을 낼 때마다 그 앱 줄을 고쳐 씀 (memo changes/launcher.md 구조 결정)
+const CATALOG_URL: &str =
+    "https://github.com/mascari4615/mascari4615.github.io/releases/download/launcher-catalog/catalog.json";
+
+/// 릴리스 서명 공개 키 (minisign, Tauri 업데이터와 같은 키. tauri.conf.json plugins.updater.pubkey)
+const RELEASE_PUBKEY_B64: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdCNERFQUE2MzRGNTVEQ0IKUldUTFhmVTBwdXBOZXdJMk1RODMyVEw0YjdvYjJZK3ovTzZRWUNlaUM2N2EvNlJxRzZmbkhuSmMK";
+
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+/// Tauri 서명 (minisign 서명 파일을 base64 로 한 번 더 싼 것) 으로 받은 파일을 확인
+fn verify_signature(data: &[u8], signature_b64: &str) -> Result<(), String> {
+    use base64::Engine;
+    let b64 = base64::engine::general_purpose::STANDARD;
+    let key_text = String::from_utf8(b64.decode(RELEASE_PUBKEY_B64).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    let sig_text = String::from_utf8(b64.decode(signature_b64.trim()).map_err(|e| format!("서명 풀기 실패: {}", e))?).map_err(|e| e.to_string())?;
+    let key = minisign_verify::PublicKey::decode(&key_text).map_err(|e| format!("공개 키 {:?}", e))?;
+    let sig = minisign_verify::Signature::decode(&sig_text).map_err(|e| format!("서명 {:?}", e))?;
+    key.verify(data, &sig, false).map_err(|_| "서명이 맞지 않음. 받은 파일을 실행하지 않음".to_string())
+}
+
+/// 한 앱의 최신 판. 목록 (catalog) 을 먼저 보고, 그 줄이 없으면 앱의 Tauri latest.json (옛 길)
+struct Latest {
+    version: Option<String>,
+    pub_date: Option<String>,
+    url: Option<String>,
+    signature: Option<String>,
+}
+
+fn latest_of(app: &Value) -> Result<Latest, String> {
+    let id = str_at(app, &["id"]).unwrap_or_default();
+    if let Ok(text) = get_text(CATALOG_URL) {
+        if let Ok(cat) = serde_json::from_str::<Value>(&text) {
+            if let Some(e) = cat.get("apps").and_then(|a| a.get(id)) {
+                return Ok(Latest {
+                    version: str_at(e, &["version"]).map(String::from),
+                    pub_date: str_at(e, &["pub_date"]).map(String::from),
+                    url: str_at(e, &["url"]).map(String::from),
+                    signature: str_at(e, &["signature"]).map(String::from),
+                });
+            }
+        }
+    }
+    let url = str_at(app, &["source", "url"]).ok_or("최신 판을 물을 곳이 없음")?;
+    let platform = str_at(app, &["source", "platform"]).unwrap_or("windows-x86_64");
+    let latest: Value = serde_json::from_str(&get_text(url)?).map_err(|e| e.to_string())?;
+    Ok(Latest {
+        version: str_at(&latest, &["version"]).map(String::from),
+        pub_date: str_at(&latest, &["pub_date"]).map(String::from),
+        url: str_at(&latest, &["platforms", platform, "url"]).map(String::from),
+        signature: str_at(&latest, &["platforms", platform, "signature"]).map(String::from),
+    })
+}
 
 fn client() -> Result<reqwest::blocking::Client, String> {
     reqwest::blocking::Client::builder()
@@ -56,6 +107,7 @@ struct Status {
     pub_date: Option<String>,
     running: bool,
     download: Option<String>,
+    signature: Option<String>,
     location: Option<String>,
     error: Option<String>,
 }
@@ -146,14 +198,13 @@ async fn app_status(app: Value) -> Result<Status, String> {
                 st.running = reg.get("MainBinaryName").map(|exe| is_running(exe)).unwrap_or(false);
             }
         }
-        if str_at(&app, &["source", "type"]) == Some("tauri-latest") {
-            let url = str_at(&app, &["source", "url"]).unwrap_or_default();
-            let platform = str_at(&app, &["source", "platform"]).unwrap_or("windows-x86_64");
-            match get_text(url).and_then(|t| serde_json::from_str::<Value>(&t).map_err(|e| e.to_string())) {
-                Ok(latest) => {
-                    st.latest = latest.get("version").and_then(|v| v.as_str()).map(String::from);
-                    st.pub_date = latest.get("pub_date").and_then(|v| v.as_str()).map(String::from);
-                    st.download = str_at(&latest, &["platforms", platform, "url"]).map(String::from);
+        if app.get("source").is_some() {
+            match latest_of(&app) {
+                Ok(l) => {
+                    st.latest = l.version;
+                    st.pub_date = l.pub_date;
+                    st.download = l.url;
+                    st.signature = l.signature;
                 }
                 Err(e) => st.error = Some(e),
             }
@@ -175,8 +226,11 @@ struct Progress {
 /// 받기 (진행을 `install-progress` 로), 설치 프로그램을 인자와 함께 실행, 끝날 때까지 대기.
 /// GitHub 자산 API 주소는 `Accept: application/octet-stream` 이라야 파일이 옴
 #[tauri::command]
-async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<String>) -> Result<(), String> {
-    /* 받아서 실행하는 파일이라 출처를 내 저장소 릴리스로 묶음. 서명 확인 (minisign) 은 아직 없음: memo/changes/launcher.md 공백 */
+async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<String>, signature: String) -> Result<(), String> {
+    /* 받아서 실행하는 파일이라 출처를 내 저장소 릴리스로 묶고, 받은 뒤 릴리스 서명 (minisign) 이 맞을 때만 실행 */
+    if signature.trim().is_empty() {
+        return Err("서명이 없는 판은 설치하지 않음".into());
+    }
     const ALLOWED: [&str; 2] = [
         "https://github.com/mascari4615/",
         "https://api.github.com/repos/mascari4615/",
@@ -217,6 +271,12 @@ async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<Strin
             }
         }
         drop(out);
+        say(got, total, "verify");
+        let bytes = std::fs::read(&file).map_err(|e| e.to_string())?;
+        if let Err(e) = verify_signature(&bytes, &signature) {
+            let _ = std::fs::remove_file(&file);
+            return Err(e);
+        }
         say(got, total, "install");
         let status = Command::new(&file).args(&args).status().map_err(|e| e.to_string())?;
         let _ = std::fs::remove_file(&file);
@@ -376,6 +436,22 @@ mod tests {
     #[test]
     fn running_for_explorer() {
         assert!(is_running("explorer.exe"));
+    }
+
+    /// 실제 KarmoLab 최신 설치 파일을 받아 latest.json 의 서명으로 확인 (네트워크 수십 MB). `cargo test -- --ignored`
+    #[test]
+    #[ignore]
+    fn karmolab_signature_live() {
+        let app: Value = serde_json::json!({
+            "id": "karmolab",
+            "source": { "url": "https://github.com/mascari4615/mascari4615.github.io/releases/latest/download/latest.json", "platform": "windows-x86_64-nsis" }
+        });
+        let l = latest_of(&app).unwrap();
+        let bytes = client().unwrap().get(l.url.unwrap()).header("Accept", "application/octet-stream").send().unwrap().bytes().unwrap();
+        verify_signature(&bytes, l.signature.as_deref().unwrap()).expect("서명 확인");
+        let mut bad = bytes.to_vec();
+        bad[1000] ^= 0xff;
+        assert!(verify_signature(&bad, l.signature.as_deref().unwrap()).is_err(), "한 바이트 바뀐 파일은 거절");
     }
 
     #[test]

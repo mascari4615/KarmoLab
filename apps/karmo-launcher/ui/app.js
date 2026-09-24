@@ -97,7 +97,7 @@ function paintMain() {
   const bar =
     busy === app.id
       ? '<div class="bar"><i style="width:' + pct + '%"></i></div><p class="note">' +
-        esc(progress.phase === 'install' ? '설치 중' : progress.phase === 'uninstall' ? '제거 중' : '받는 중 ' + pct + '%') + '</p>'
+        esc(progress.phase === 'verify' ? '서명 확인 중' : progress.phase === 'install' ? '설치 중' : progress.phase === 'uninstall' ? '제거 중' : '받는 중 ' + pct + '%') + '</p>'
       : '';
   actsEl.innerHTML = bar + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
   actsEl.querySelectorAll('button').forEach((b) => (b.disabled = !!busy));
@@ -154,7 +154,7 @@ async function act(kind) {
     if (kind === 'install') {
       progress = { got: 0, total: 0, phase: 'download' };
       paintMain();
-      await invoke('install_app', { id: app.id, url: st.download, args: (app.install && app.install.args) || [] });
+      await invoke('install_app', { id: app.id, url: st.download, args: (app.install && app.install.args) || [], signature: st.signature || '' });
     } else if (kind === 'uninstall') {
       progress = { got: 0, total: 0, phase: 'uninstall' };
       paintMain();
