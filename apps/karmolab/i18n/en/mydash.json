@@ -28,6 +28,8 @@
   "mydash.bm.src.x": "X",
   "mydash.bm.src.edge": "Browser",
   "mydash.bm.src.kakao": "KakaoTalk",
+  "mydash.bm.src.memo": "Memo",
+  "mydash.bm.src.kakao-group": "KakaoTalk groups",
   "mydash.bm.events.applied": "{n} events applied",
   "mydash.bm.events.skipped": "{n} event months could not be read ({months}). Those show older values",
   "mydash.bm.outbox.sent": "{n} queued saves sent",

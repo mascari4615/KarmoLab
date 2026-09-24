@@ -28,6 +28,8 @@
   "mydash.bm.src.x": "X",
   "mydash.bm.src.edge": "ブラウザ",
   "mydash.bm.src.kakao": "カカオトーク",
+  "mydash.bm.src.memo": "メモ",
+  "mydash.bm.src.kakao-group": "カカオトーク グループ",
   "mydash.bm.events.applied": "イベント{n}件を反映",
   "mydash.bm.events.skipped": "イベント{n}か月分を読めませんでした ({months})。その分は古い値のままです",
   "mydash.bm.outbox.sent": "たまっていた保存{n}件を送信",

@@ -28,6 +28,8 @@
   "mydash.bm.src.x": "X",
   "mydash.bm.src.edge": "브라우저",
   "mydash.bm.src.kakao": "카톡",
+  "mydash.bm.src.memo": "메모",
+  "mydash.bm.src.kakao-group": "카톡 그룹방",
   "mydash.bm.events.applied": "이벤트 {n}건 반영",
   "mydash.bm.events.skipped": "이벤트 {n}달을 못 읽었습니다 ({months}). 그만큼 옛 값으로 보입니다",
   "mydash.bm.outbox.sent": "밀린 저장 {n}건 보냈습니다",
