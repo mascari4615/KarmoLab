@@ -11,6 +11,8 @@
  * 그림은 Canvas 2D 로 직접 그린다 (memo-atlas 와 같은 손. 새 의존성 없음).
  */
 import { dashRegistry, esc, hours, short, usd } from './kit';
+import { buildQuota } from '../../lib/ai-quota';
+import { loadNamespace } from '../../lib/i18n';
 import type { DashPanelCtx } from './kit';
 
 (function (): void {
@@ -73,6 +75,10 @@ import type { DashPanelCtx } from './kit';
     el.id = STYLE_ID;
     el.textContent = [
       '.au{display:flex;flex-direction:column;gap:14px}',
+      /* 탭 둘 (사용량, 구독). 플래너 세로줄 단추와 같은 결: 켜진 것만 먹색 */
+      '.au-tabs{display:flex;gap:4px;margin-bottom:14px}',
+      '.au-tab{min-height:36px;padding:0 16px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-secondary);font-weight:700;cursor:pointer}',
+      '.au-tab[aria-selected="true"]{background:var(--text-primary);color:var(--bg-secondary);border-color:var(--text-primary)}',
       /* 폰이 기본. 두 칸이면 큰 숫자가 안 줄어든다. 넓어지면 넷. */
       '.au-nums{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}',
       '@media(min-width:560px){.au-nums{grid-template-columns:repeat(4,1fr)}}',
@@ -282,7 +288,7 @@ import type { DashPanelCtx } from './kit';
     return '<div class="au-sec"><h4>' + esc(title) + '</h4>' + body + '</div>';
   }
 
-  async function render(ctx: DashPanelCtx): Promise<void> {
+  async function renderUsage(ctx: DashPanelCtx): Promise<void> {
     ensureStyle();
     const { root, repo, status } = ctx;
     root.innerHTML = '<div class="au"><div class="au-foot">저장소에서 받는 중...</div></div>';
@@ -412,6 +418,54 @@ import type { DashPanelCtx } from './kit';
         /* 이미 사라진 판 */
       }
     });
+  }
+
+  /* 탭 둘. 사용량 (저장소의 rollups) 과 구독 (lab 도구 내 AI 의 할당량 카드, 2026-09-24 옮겨 옴.
+     사용자 "내 AI 위젯도 이제 Dash 로"). 구독은 브라우저 길이라 노트북 laptop-ops 에서 받음 */
+  type Tab = 'usage' | 'quota';
+  const TAB_KEY = 'karmolab.dash.ai.tab';
+  function savedTab(): Tab {
+    try {
+      return localStorage.getItem(TAB_KEY) === 'quota' ? 'quota' : 'usage';
+    } catch {
+      return 'usage';
+    }
+  }
+
+  async function render(ctx: DashPanelCtx): Promise<void> {
+    ensureStyle();
+    const shell = document.createElement('div');
+    shell.className = 'au-tabs-wrap';
+    shell.innerHTML =
+      '<div class="au-tabs" role="tablist">' +
+      '<button type="button" role="tab" class="au-tab" data-tab="usage">사용량</button>' +
+      '<button type="button" role="tab" class="au-tab" data-tab="quota">구독</button>' +
+      '</div><div class="au-pane" data-pane="usage"></div><div class="au-pane" data-pane="quota" hidden></div>';
+    ctx.root.innerHTML = '';
+    ctx.root.appendChild(shell);
+    const pane = (id: Tab): HTMLElement => shell.querySelector('[data-pane="' + id + '"]') as HTMLElement;
+    const built = new Set<Tab>();
+    async function show(id: Tab): Promise<void> {
+      try {
+        localStorage.setItem(TAB_KEY, id);
+      } catch {
+        /* 못 적으면 다음에 사용량부터 */
+      }
+      shell.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === id)));
+      pane('usage').hidden = id !== 'usage';
+      pane('quota').hidden = id !== 'quota';
+      if (built.has(id)) return;
+      built.add(id);
+      if (id === 'usage') await renderUsage({ ...ctx, root: pane('usage') });
+      else {
+        await loadNamespace('my-ai').catch(() => undefined);
+        buildQuota(pane('quota'), (fn) => ctx.onDispose(fn));
+      }
+    }
+    shell.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) =>
+      b.addEventListener('click', () => void show(b.dataset.tab as Tab))
+    );
+    await show(savedTab());
   }
 
   dashRegistry().register({
