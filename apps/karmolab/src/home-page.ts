@@ -111,7 +111,7 @@ import { dashUrl } from './lib/site-hosts';
             `<kbd>ESC</kbd>${escapeHtml(t('site.nav.menu', undefined, '메뉴'))} <kbd>CTRL K</kbd>${escapeHtml(t('site.nav.search', undefined, '찾기'))}`;
         landing.appendChild(madeWith);
 
-        /* 구석 버튼: ESC 메뉴 (esc-menu.ts). 그 조각이 아직 없으면 예전대로 머리 줄과 옆줄을 되살린다 */
+        /* 구석 버튼: ESC 메뉴 (lib/esc-menu.ts). 그 조각이 아직 없으면 예전대로 머리 줄과 옆줄을 되살린다 */
         top.querySelector('.lq-corner').addEventListener('click', () => {
             const menu = typeof window !== 'undefined' && window.KarmoEscMenu;
             if (menu && menu.toggle) { menu.toggle(); return; }

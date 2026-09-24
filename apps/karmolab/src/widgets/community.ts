@@ -18,7 +18,7 @@
  * 글 주소 = `/?p=<글id>#community`. 앱이 한 페이지라 물음표로 글을 가리킨다.
  * 뒤로 가기로 목록↔글을 오간다.
  */
-import { renderMarkdown, plainPreview, postCover, escapeHtml as escapeMd } from './community-markdown';
+import { renderMarkdown, plainPreview, postCover, escapeHtml as escapeMd } from '../lib/markdown/community';
 import { renderRichMarkdown } from '../lib/markdown/rich-view';
 import { coverAttrs } from '../lib/markdown/frontmatter';
 import { loadPostsIndex, blogBoardSummary, buildBlogBoardBody, type BlogBoardSummary } from './community-blog';

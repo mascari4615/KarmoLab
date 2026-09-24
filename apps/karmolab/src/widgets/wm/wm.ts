@@ -10,7 +10,7 @@
  *
  * 무엇이 공개되는지는 memo/wm/design/web-policy.json 이 정한다(여기서는 못 정한다).
  */
-import { renderMarkdown, escapeHtml } from '../community-markdown';
+import { renderMarkdown, escapeHtml } from '../../lib/markdown/community';
 import { t, loadNamespace } from '../../lib/i18n';
 import { appHash, appPath, appQuery } from '../../lib/site-base';
 

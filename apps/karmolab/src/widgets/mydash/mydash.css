@@ -542,7 +542,7 @@ button.mydh-card--hero:focus-visible {
 .myd--gate .myd-body { max-width: 520px; padding: 24px; }
 
 /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에만. 좁은 화면과 레일은 가로 줄이 이미 있음.
-   누르면 ESC 메뉴 판 (src/esc-menu.css) 이 대시보드 방 칸으로.
+   누르면 ESC 메뉴 판 (src/lib/esc-menu.css) 이 대시보드 방 칸으로.
    dash 장은 스킨 토큰이 없어 홈과 이 버튼의 값은 --mydh-*, --myd-menu-* 로 자체 정의 */
 .myd { position: relative; }
 .myd-menu { display: none; }

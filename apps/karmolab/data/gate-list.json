@@ -17,7 +17,7 @@
       "name": "smoke:esc-menu",
       "watch": [
         "src/boot-late.ts",
-        "src/esc-menu.ts",
+        "src/lib/esc-menu.ts",
         "src/home-page.ts",
         "scripts/smoke-esc-menu.mjs",
         "scripts/lib/shell-page.mjs",
@@ -52,7 +52,7 @@
       "name": "test:markdown",
       "watch": [
         "src/lib/markdown/**",
-        "src/widgets/community-markdown.ts",
+        "src/lib/markdown/community.ts",
         "scripts/test-markdown-render.mjs",
         "scripts/lib/markdown-node.mjs",
         "js/vendor/marked.min.js",

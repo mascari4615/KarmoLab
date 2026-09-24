@@ -10,7 +10,7 @@
  * 그려지기 전에 돌아야 하는 것은 그대로 머리에 남는다. 밖으로 빼면 늦어서 뜻이 없다.
  */
 // 모든 셸에서 쓰는 메뉴를 기존 진입 번들에 포함. 별도 스크립트 요청 제거
-import './esc-menu';
+import './lib/esc-menu';
 
 const idle: (fn: () => void) => void =
   (window as unknown as { requestIdleCallback?: (f: () => void) => void }).requestIdleCallback

@@ -93,7 +93,7 @@ await esbuild.build({
   outfile: join(root, 'js/boot-late.js'),
   ...SAFE_MINIFY,
   bundle: true,
-  // ESC 메뉴 모양 (src/esc-menu.css) 은 글자로 묶음. 파일로 내보내면 부르는 곳 없음
+  // ESC 메뉴 모양 (src/lib/esc-menu.css) 은 글자로 묶음. 파일로 내보내면 부르는 곳 없음
   loader: { '.css': 'text' },
   format: 'iife',
   platform: 'browser',

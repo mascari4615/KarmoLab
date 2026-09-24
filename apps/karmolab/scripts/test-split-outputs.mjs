@@ -13,6 +13,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { stripFrontMatter } from './lib/serve-html.mjs';
 
 const APP_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const i = process.argv.indexOf('--out');
@@ -38,7 +39,7 @@ function serve(root) {
     if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, 'index.html');
     if (!fs.existsSync(f)) { res.writeHead(404, { 'content-type': 'text/html' }); res.end(fs.readFileSync(path.join(root, '404.html'))); return; }
     res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' });
-    res.end(fs.readFileSync(f));
+    res.end(path.extname(f) === '.html' ? stripFrontMatter(fs.readFileSync(f, 'utf8')) : fs.readFileSync(f));
   });
   return new Promise((ok) => server.listen(0, '127.0.0.1', () => ok({ base: `http://127.0.0.1:${server.address().port}`, close: () => server.close() })));
 }

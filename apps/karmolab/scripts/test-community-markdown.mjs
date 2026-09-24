@@ -24,7 +24,7 @@ globalThis.marked = loadMarked();
 // TS 를 그 자리에서 한 번 굽는다. 위젯 번들은 iife 라 밖에서 못 부른다.
 const tmp = path.join(os.tmpdir(), `kl-md-${Date.now()}.mjs`);
 await esbuild.build({
-  entryPoints: [path.join(root, 'src/widgets/community-markdown.ts')],
+  entryPoints: [path.join(root, 'src/lib/markdown/community.ts')],
   outfile: tmp,
   bundle: true,
   format: 'esm',

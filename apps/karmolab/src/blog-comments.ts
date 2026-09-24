@@ -4,7 +4,7 @@
  * 본문은 git에서 구워진 채 그대로 산다. 이 파일이 실패해도 `#comments` 안만 실패 문구로 바뀌고
  * 글은 막지 않는다. 모양, 익명 이름표, 대댓글, 좋아요, 삭제 규칙은 커뮤니티 글 상세와 같다.
  */
-import { renderMarkdown, escapeHtml as esc } from './widgets/community-markdown';
+import { renderMarkdown, escapeHtml as esc } from './lib/markdown/community';
 
 interface AnonFace {
   name: string;

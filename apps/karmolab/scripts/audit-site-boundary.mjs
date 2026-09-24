@@ -25,12 +25,7 @@ const SITES = {
 const SHARED = ['lib/'];
 
 /** 알고 있는 넘는 줄. `사이트: 파일` 또는 `lab -> 파일`. 갚으면 지운다 */
-const KNOWN = new Set([
-  /* dash 의 메뉴 버튼이 lab 과 같은 ESC 메뉴를 쓴다. 칸만 대시보드 방 (shell.ts setMenuCells) */
-  'dash: esc-menu.ts',
-  /* blog 댓글의 마크다운 렌더가 lab 커뮤니티 위젯 것 */
-  'blog: widgets/community-markdown.ts',
-]);
+const KNOWN = new Set([]);
 
 const rel = (abs) => path.relative(SRC, abs).split(path.sep).join('/');
 const inZone = (r, zone) => zone.some((z) => (z.endsWith('/') ? r.startsWith(z) : r === z));

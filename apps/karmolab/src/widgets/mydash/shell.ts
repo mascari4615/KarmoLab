@@ -909,7 +909,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     stripOut.textContent = outBtn.textContent;
 
     /* dash 전용 front 의 메뉴 버튼 (D2b 시안). 넓은 화면에는 셸 사이드바가 없어 방을 옮길 곳이 없음.
-       ESC 메뉴 판 (esc-menu.ts) 에 칸을 대시보드 방으로 바꿔 끼워 연다. 로그인 뒤에만 */
+       ESC 메뉴 판 (lib/esc-menu.ts) 에 칸을 대시보드 방으로 바꿔 끼워 연다. 로그인 뒤에만 */
     const menuBtn = root.querySelector('.myd-menu') as HTMLButtonElement;
     /* 칸 한 벌은 여기 보관, 누를 때 끼움.
        로그인이 ESC 메뉴 조각 (boot-late.js, defer) 보다 먼저 끝나면 그때의 use() 는 헛돎.
