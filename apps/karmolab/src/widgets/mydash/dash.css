@@ -34,8 +34,10 @@ html[data-site="dash"] {
   --dash-photo: url('/apps/karmolab/img/home/sky-village.webp');
   --dash-pad: 56px;
   --dash-top: 110px;
-  --font-sans: 'KarmoSans', 'Noto Sans KR', system-ui, sans-serif;
-  --font-display: 'KarmoDisplay', 'Arial Narrow', 'Noto Sans KR', system-ui, sans-serif;
+  /* 돋움 (메이플 인게임 글꼴, 사용자 2026-09-25 "걍 돋움 쓰라구"). Windows 시스템 글꼴이라 웹폰트 배포 불가, 이름만.
+     없는 기기 (맥, 폰) 는 맑은 고딕, Apple SD 고딕 */
+  --font-sans: 'Dotum', '돋움', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  --font-display: 'Dotum', '돋움', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-size-4xs: 10px;
   --font-size-3xs: 11px;
@@ -166,6 +168,8 @@ html[data-site="dash"] .myd-strip {
   html[data-site="dash"] .myd-main:has(.mc) .myd-body { flex: 1; min-height: 0; }
   html[data-site="dash"] .myd-body > div:has(> .mc) { height: 100%; min-height: 0; }
 }
+/* ESC 메뉴는 lab 과 같이 쓰는 조각. dash 에서만 dash 글꼴 (돋움) */
+html[data-site="dash"] .esc-menu { --esc-font-ko: var(--font-sans); --esc-font-en: var(--font-display); }
 html[data-site="dash"] { --dash-paper: #fff; --pl-line2: #eef1f5; }
 html[data-site="dash"][data-theme="dark"] { --dash-paper: #161b24; --pl-line2: #1f2631; }
 /* 머신 방 (machines.ts). 켜짐 파랑, 꺼짐 회색, 로그 칸. 값은 Z1, Zb 시안 그대로 (2026-09-25) */

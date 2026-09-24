@@ -242,8 +242,8 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-top: clamp(84px, 12vh, 110px);
   --mydh-row: 120px;
   --mydh-icon: none;
-  --mydh-font-ko: 'KarmoSans', 'Noto Sans KR', system-ui, sans-serif;
-  --mydh-font-en: 'KarmoDisplay', 'Arial Narrow', 'Noto Sans KR', system-ui, sans-serif;
+  --mydh-font-ko: var(--font-sans);
+  --mydh-font-en: var(--font-display);
   --mydh-fs-en: 10px;
   --mydh-fs-date: 28px;
   --mydh-fs-name: 18px;
