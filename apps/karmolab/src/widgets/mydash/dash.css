@@ -333,3 +333,12 @@ html[data-site="dash"] .myd-card {
   font: inherit;
   font-size: var(--font-size-xs);
 }
+
+/* 북마크 여러 개 선택 띠. 유리 바탕은 뒤 그림이 비쳐 칩이 안 읽혀서 흰 종이 (2026-09-24) */
+@media (min-width: 900px) {
+  html[data-site="dash"] .bm-bar { left: var(--dash-pad); right: var(--dash-pad); padding: 12px 16px; }
+}
+html[data-site="dash"] .bm-bar {
+  background: var(--dash-paper);
+  box-shadow: var(--dash-shadow);
+}

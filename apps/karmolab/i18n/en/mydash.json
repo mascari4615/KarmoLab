@@ -55,6 +55,8 @@
   "mydash.bm.save.collided": "Same-timestamp collision. Save again",
   "mydash.bm.save.none": "Nothing changed",
   "mydash.bm.sel.applyIntent": "Apply intent",
+  "mydash.bm.sel.apply": "Apply",
+  "mydash.bm.sel.pickAny": "Pick an intent, topic or area",
   "mydash.bm.sel.drop": "Drop",
   "mydash.bm.sel.cancel": "Cancel",
   "mydash.bm.sel.picked": "{n} selected",

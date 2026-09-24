@@ -55,6 +55,8 @@
   "mydash.bm.save.collided": "같은 시각 충돌, 다시 저장",
   "mydash.bm.save.none": "바뀐 것이 없습니다",
   "mydash.bm.sel.applyIntent": "의도 적용",
+  "mydash.bm.sel.apply": "적용",
+  "mydash.bm.sel.pickAny": "의도, 주제, 영역 중 하나를 고르세요",
   "mydash.bm.sel.drop": "버림",
   "mydash.bm.sel.cancel": "취소",
   "mydash.bm.sel.picked": "고른 것 {n}건",

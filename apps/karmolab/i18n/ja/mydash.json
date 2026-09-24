@@ -55,6 +55,8 @@
   "mydash.bm.save.collided": "同じ時刻で衝突しました。もう一度保存してください",
   "mydash.bm.save.none": "変更はありません",
   "mydash.bm.sel.applyIntent": "意図を適用",
+  "mydash.bm.sel.apply": "適用",
+  "mydash.bm.sel.pickAny": "意図、トピック、領域のどれかを選んでください",
   "mydash.bm.sel.drop": "破棄",
   "mydash.bm.sel.cancel": "取消",
   "mydash.bm.sel.picked": "選択{n}件",

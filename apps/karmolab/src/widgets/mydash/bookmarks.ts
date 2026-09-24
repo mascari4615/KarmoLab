@@ -370,7 +370,11 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-bar{position:fixed;left:0;right:0;bottom:0;z-index:2900;background:var(--bg-secondary);',
       'border-top:1px solid var(--border);padding:var(--space-sm);display:flex;',
       'flex-direction:column;gap:var(--space-sm)}',
-      '.bm.has-bar{padding-bottom:calc(var(--bm-tap) * 4)}',
+      /* 의도, 주제, 영역 세 줄. 이름 칸 고정, 칩은 줄바꿈. 화면 절반을 넘으면 띠 안에서 굴림 */
+      '.bm-bar{max-height:50vh;overflow-y:auto}',
+      '.bm-bar-row{display:flex;gap:var(--space-sm);align-items:center}',
+      '.bm-bar-row>.tool-sublabel{flex:0 0 4.5em}',
+      '.bm.has-bar{padding-bottom:calc(var(--bm-tap) * 9)}',
       '.bm-judge{display:flex;flex-direction:column;gap:var(--space-md)}',
       '.bm-judge-title{color:var(--text-primary);word-break:break-word}',
     ].join('');
@@ -1152,10 +1156,13 @@ import { t, loadNamespace } from '../../lib/i18n';
       paintSheet();
     }
 
-    /* 선택 모드. 고른 것과 바에서 고른 의도 */
+    /* 선택 모드. 고른 것과 바에서 고른 의도, 주제, 영역.
+       주제와 영역도 한 번에 (사용자 2026-09-24 "성인 이런거 설정하려고 해도 안 보이는데") */
     let selectMode = false;
     const selected = new Set<string>();
     const barIntent = new Set<string>();
+    const barTopic = new Set<string>();
+    let barDomain: string | null = null;
     let barBusy = '';
     /** Shift 범위의 시작. 마지막으로 누른 항목 */
     let pickAnchor = '';
@@ -2284,19 +2291,23 @@ import { t, loadNamespace } from '../../lib/i18n';
       }
       wrap.classList.add('has-bar');
       barEl.hidden = false;
-      barEl.innerHTML =
-        '<div class="tool-chips">' +
-        axisPicks('intent')
+      const row = (axisKey: string, act: string, on: (v: string) => boolean): string =>
+        '<div class="bm-bar-row"><span class="tool-sublabel">' + esc(axisLabel(axisKey)) + '</span><div class="tool-chips">' +
+        axisPicks(axisKey)
           .map(
             (p) =>
-              '<button type="button" class="tool-chip' + (barIntent.has(p.key) ? ' active' : '') +
-              '" data-act="b-intent" data-value="' + esc(p.key) + '">' + esc(p.label) + '</button>'
+              '<button type="button" class="tool-chip' + (on(p.key) ? ' active' : '') +
+              '" data-act="' + act + '" data-value="' + esc(p.key) + '">' + esc(p.label) + '</button>'
           )
           .join('') +
-        '</div>' +
+        '</div></div>';
+      barEl.innerHTML =
+        row('intent', 'b-intent', (v) => barIntent.has(v)) +
+        row('topic', 'b-topic', (v) => barTopic.has(v)) +
+        row('domain', 'b-domain', (v) => barDomain === v) +
         '<div class="tool-actions">' +
         '<button type="button" class="btn btn-primary" data-act="b-apply">' +
-        esc(t('mydash.bm.sel.applyIntent', undefined, '의도 적용')) + '</button>' +
+        esc(t('mydash.bm.sel.apply', undefined, '적용')) + '</button>' +
         '<button type="button" class="btn btn-ghost" data-act="b-drop">' +
         esc(t('mydash.bm.sel.drop', undefined, '버림')) + '</button>' +
         '<button type="button" class="btn btn-ghost" data-act="b-now">' +
@@ -2517,6 +2528,8 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (!on) {
         selected.clear();
         barIntent.clear();
+        barTopic.clear();
+        barDomain = null;
         barBusy = '';
         pickAnchor = '';
       }
@@ -2738,14 +2751,43 @@ import { t, loadNamespace } from '../../lib/i18n';
         paintBar();
         return;
       }
+      if (act === 'b-topic') {
+        const v = el.getAttribute('data-value') || '';
+        if (barTopic.has(v)) barTopic.delete(v);
+        else barTopic.add(v);
+        barBusy = '';
+        paintBar();
+        return;
+      }
+      if (act === 'b-domain') {
+        const v = el.getAttribute('data-value') || '';
+        barDomain = barDomain === v ? null : v;
+        barBusy = '';
+        paintBar();
+        return;
+      }
       if (act === 'b-apply') {
-        if (!barIntent.size) {
-          barBusy = t('mydash.bm.sel.pickIntent', undefined, '의도를 고르세요');
+        if (!barIntent.size && !barTopic.size && !barDomain) {
+          barBusy = t('mydash.bm.sel.pickAny', undefined, '의도, 주제, 영역 중 하나를 고르세요');
           paintBar();
           return;
         }
-        const picks = Array.from(barIntent);
-        void runBulk((it) => makeEvent('tag', text(it.id), { intent: picks, domain: stateOf(it).domain }));
+        /* 고른 값을 항목마다 더함 (의도, 주제는 합집합, 영역은 바꿈). tag 는 가장 최근 것 하나만 살아서
+           셋을 늘 같이 보냄. 안 보내면 전에 붙인 의도나 주제가 풀림 */
+        const addIntent = Array.from(barIntent);
+        const addTopic = Array.from(barTopic);
+        const setDomain = barDomain;
+        const union = (a: string[], b: string[]): string[] => Array.from(new Set(a.concat(b)));
+        void runBulk((it) => {
+          const st = stateOf(it);
+          /* 주제는 사람이 붙인 것이 있거나 새로 고른 때만 보냄. 보낼 때는 있던 주제 (AI 추정 포함) 에 더함. 주제 이벤트가 목록을 통째로 바꾸기 때문 */
+          const keepTopic = addTopic.length > 0 || st.topicByUser;
+          return makeEvent('tag', text(it.id), {
+            intent: union(st.intent, addIntent),
+            ...(keepTopic ? { topic: union(st.topic, addTopic) } : {}),
+            domain: setDomain !== null ? setDomain : st.domain,
+          });
+        });
         return;
       }
       if (act === 'b-drop') {
