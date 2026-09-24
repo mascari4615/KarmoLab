@@ -69,6 +69,12 @@ description = "Open/read/write repo-relative .env files under the configured rep
 commands = ["repofile_open_default", "repofile_reveal", "repofile_read", "repofile_write"]
 
 [[group]]
+name = "download"
+identifier = "allow-download"
+description = "Save tool downloads into the user's Downloads folder, then reveal or open them (Downloads only, safe extensions only)."
+commands = ["download_save", "download_reveal", "download_open"]
+
+[[group]]
 name = "activity"
 identifier = "allow-activity"
 description = "Allow the activity widget to query the local PC activity tracker (read-only, local file)."

@@ -72,7 +72,7 @@ fn resolve_cmd(state: &LocalDevState, rel_path: &str) -> Result<PathBuf, String>
     resolve_in_repo(&root, rel_path)
 }
 
-fn reveal_in_explorer(path: &Path) -> Result<(), String> {
+pub(crate) fn reveal_in_explorer(path: &Path) -> Result<(), String> {
     if path.is_file() {
         #[cfg(windows)]
         {

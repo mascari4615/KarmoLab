@@ -8,6 +8,7 @@ mod alarm;
 mod cockpit_graph;
 mod claude_env;
 mod desktop_login;
+mod downloads;
 mod files_window;
 #[cfg(debug_assertions)]
 mod dev_static;
@@ -74,6 +75,7 @@ use vault_upload::{
     VaultUploadState,
 };
 use part_fetch::{part_fetch, part_fetched_path};
+use downloads::{download_open, download_reveal, download_save};
 use repo_file::{repofile_open_default, repofile_read, repofile_reveal, repofile_write};
 use terminal::{
     terminal_send_stdin, terminal_start, terminal_status, terminal_stop, TerminalState,

@@ -15,6 +15,8 @@
  * 브라우저의 캔버스가 곧 엔진이라, 여기 모이는 것은 어떻게 부르는가의 되풀이다.
  */
 
+import { saveInDesktop } from '../../../lib/desktop-save';
+
 /** 파일, blob 을 그림으로 읽는다. objectURL 은 **여기서 거둔다**. 각자 거두다 잊으면 샌다. */
 export async function loadImage(src: File | Blob | string): Promise<HTMLImageElement> {
   const url = typeof src === 'string' ? src : URL.createObjectURL(src);
@@ -116,6 +118,12 @@ export function attachImage(el: HTMLImageElement, src: Blob | File): string {
 }
 
 export function download(blob: Blob, filename: string): void {
+  /* 데스크톱 앱은 앱이 다운로드 폴더에 쓰고 알림을 띄움. 웹은 브라우저 자체 표시가 있어 그대로 */
+  if (saveInDesktop(blob, filename, () => anchorDownload(blob, filename))) return;
+  anchorDownload(blob, filename);
+}
+
+function anchorDownload(blob: Blob, filename: string): void {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
