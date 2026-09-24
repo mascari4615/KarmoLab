@@ -2,7 +2,7 @@
 # 정본: memo/changes/launcher.md. karmolab-tauri 워크스페이스와 따로 (그쪽 ML sidecar, vendor patch 를 안 끌어옴)
 [package]
 name = "karmo-launcher"
-version = "0.1.1"
+version = "0.1.2"
 description = "Karmo launcher"
 authors = ["mascari4615"]
 edition = "2021"
