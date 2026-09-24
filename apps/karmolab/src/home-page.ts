@@ -15,7 +15,6 @@
 // @ts-nocheck 셸에서 그대로 옮겨 온 코드 (TASK-KL-128 ①-c)
 import { t } from './lib/i18n.js';
 import { toolIndexPath } from './lib/site-base';
-import { dashUrl } from './lib/site-hosts';
 (function () {
     const switchPage = (id, opts) => Toolbox.switchPage(id, opts);
     const mountHomeDecor = () => Toolbox.mountHomeDecor();
@@ -35,90 +34,81 @@ import { dashUrl } from './lib/site-hosts';
            떠 있고, 화면 사이를 오가도 도형이 이어진다. 위치는 어차피 화면 기준이다. */
         mountHomeDecor();
 
+        /* KarmoLab 제목이 가운데 선 로비로 되돌림 (사용자 2026-09-24 요청).
+           2026-09-21 의 Q2 로비 (큰 타일 여섯, 욘) 이전 판. 대시보드는 dash 주소로 따로 감 */
+
         /* 이름을 두 번 쓰지 않는다 (사용자 요청. 두 줄 넘어간 것들을 한 줄로).
          * 예전엔 작은 KarmoLab 위에 큰 KarmoLab이 또 있었다. 같은 말이 두 줄이었다. */
-        landing.classList.add('landing-q2');
-
-        /* Q2 로비 (karmo-design 판정 2026-09-21 "2는 OK"). 요소는 넷뿐: 구석 버튼, 날짜, 큰 타일 여섯, 욘.
-           찾는 칸은 검사 (smoke-palette, smoke-ask) 가 첫 화면에서 기대하므로 위 줄에 작게 둔다.
-           머리 줄과 옆줄은 첫 화면에서도 그대로 (사용자 2026-09-22). 구석 버튼은 ESC 메뉴 */
-        const top = document.createElement('div');
-        top.className = 'lq-top';
-        const d = new Date();
-        const dow = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
-        // 한국어 원본 셸: 번역 묶음 전 동기 초기화, 초기 문구 유지
-        // 언어별 페이지: 미리 로드한 site 번역 사용
-        top.innerHTML = `
-            <button type="button" class="lq-corner" data-home-chrome="1" title="${escapeHtml(t('site.nav.menu', undefined, '메뉴'))}" aria-label="${escapeHtml(t('site.nav.menu', undefined, '메뉴'))}"><i></i></button>
-            <span class="lq-en">KarmoLab</span>
-            <div class="landing-palette lq-palette"></div>
-            <div class="lq-date"><span class="lq-en">${dow} ${d.getFullYear()}</span><b>${d.getMonth() + 1} / ${d.getDate()}</b></div>
+        const hero = document.createElement('div');
+        hero.className = 'landing-hero';
+        /* 제목 위 한 줄 라벨. 필드 스킨에서만 표시 (CSS). 날짜는 사람별 값 아님, 미리 그려도 무방.
+           도구 수(`TOOLS 243`)는 뺐다 (change.karmolab-axis). 수가 크다는 것이 자랑이 아니라 유틸 사이트로 읽히는 첫 신호였다. */
+        hero.innerHTML = `
+            <p class="landing-label" aria-hidden="true">// ${new Date().toISOString().slice(0, 10)}</p>
+            <h1 class="landing-title">KarmoLab</h1>
+            <p class="landing-tagline">${t('site.tagline', undefined, '삶을 섞고 술을 바꿀 시간')}</p>
         `;
-        landing.appendChild(top);
-        greet(top);
-        const palette = top.querySelector('.landing-palette');
+        landing.appendChild(hero);
+        greet(hero);
+
+        /* TASK-KL-099. 첫 화면의 본체는 찾는 입력이다. 도구가 160개인데 예전에는 이 자리에
+         * 카드 3장과 상단 메뉴에서 카테고리를 열고 도구를 선택하세요만 있었다. 찾는 일을
+         * 사람에게 떠넘기는 화면
+         * 찾는 칸이 **주인공 자리**에 온다 (사용자 요청. 구글같이 검색창이 메인).
+         * 제목 바로 밑이 그 자리다. 갈 곳 카드는 그 아래 한 줄로 깔린다. */
+        const palette = document.createElement('div');
+        palette.className = 'landing-palette';
+        landing.appendChild(palette);
         if (typeof window !== 'undefined' && window.KarmoPalette) {
             window.KarmoPalette.mountInline(palette);
         }
 
-        /* 욘. 첫 화면 왼쪽에 크게, 아래로 잘린다. 그림은 대시보드 홈과 같은 파일 (img/widgets/mydash) */
-        const yawn = document.createElement('img');
-        yawn.className = 'lq-yawn';
-        yawn.src = '/apps/karmolab/img/widgets/mydash/yawn-stand.webp';
-        yawn.alt = '';
-        yawn.setAttribute('aria-hidden', 'true');
-        landing.appendChild(yawn);
-
-        /* 큰 타일 여섯, 3x2. 이름은 `landing-cta-card` 그대로 (검사와 위임 `data-goto` 가 이 이름을 본다).
-           수는 **실측만** 적는다. 도구 수는 목록 길이. 나머지는 여기서 모르므로 빈칸 (0 이 아니다) */
+        /* 갈 곳 카드: 찾는 칸 **아래** 한 줄 (사용자 요청). 아이콘+이름 한 줄, 다섯 장 한 줄 배치. 검색창이 주인공
+         *
+         * 다섯 장은 **내가 만든 것** (change.karmolab-axis, 사용자 결정 2026-09-08)
+         * 전: 즐겨찾기, 도구 목록, 커뮤니티, 오락실 -> 유틸 사이트로 읽힘
+         * 유틸 도구: 검색과 아래 글자 링크로만. 이름: 위젯 제목 열쇠 그대로 (두 벌 금지) */
         const cta = document.createElement('div');
-        cta.className = 'landing-cta lq-grid';
-        const toolCount = (() => { try { return tools().length; } catch (e) { return 0; } })();
-        /* 아이콘은 ESC 메뉴와 같은 그림 (img/shell/menu, 각진 두 톤). CSS mask 라 판 색을 따라간다 */
-        const tiles = [
-            ['mydash', 'site.cta.judgePending', '판정 대기', 'JUDGE', 'judge', '', 'lq-acc'],
-            ['mydash', 'site.cta.dashboard', '대시보드', 'DASHBOARD', 'dash', '', ''],
-            ['tools', 'site.cta.tools', '도구 목록', 'TOOLS', 'tool', toolCount ? String(toolCount) : '', ''],
-            ['arcade', 'widgets.arcade.title', '오락실', 'ARCADE', 'play', '', ''],
-            ['community', 'site.cta.community', '커뮤니티', 'COMMUNITY', 'talk', '', ''],
-            ['favorites', 'site.cta.favorites', '즐겨찾기', 'FAVORITES', 'star', '', '']
+        cta.className = 'landing-cta';
+        const axis = [
+            ['meok', 'widgets.meok.title', '먹', '<path d="M4 20l4-1 10-10-3-3L5 16z"/><path d="M13 7l3 3"/>'],
+            ['heung', 'widgets.heung.title', '흥', '<path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>'],
+            ['karmograph', 'widgets.karmograph.title', 'KarmoGraph', '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="10" cy="18" r="2.5"/><path d="M8.3 7l7.4 1M7 8.5l2 7M16.5 10l-5 6"/>'],
+            ['arcade', 'widgets.arcade.title', '오락실', '<rect x="3" y="7" width="18" height="11" rx="4"/><path d="M7.5 11v3M6 12.5h3"/><path d="M16 12h.01M18 14.5h.01"/>'],
+            ['wm', 'widgets.wm.title', 'Witch-Mendokusai', '<path d="M12 3l2 5h5l-4 3.5 1.5 5.5L12 14l-4.5 3 1.5-5.5L5 8h5z"/>']
         ];
-        cta.innerHTML = tiles.map(([id, key, fallback, en, icon, n, cls]) => {
-            /* 대시보드는 lab 밖 전용 장 (site-hosts). 판정 대기는 그 북마크 방 */
-            const toDash = id === 'mydash';
-            const tag = (id === 'tools' || toDash) ? 'a' : 'button';
-            const attr = id === 'tools' ? `href="${toolIndexPath()}"` : toDash ? `href="${dashUrl()}${icon === 'judge' ? '#bookmarks' : ''}"` : `type="button" data-goto="${id}"`;
-            return `<${tag} class="landing-cta-card lq-tile ${cls}" ${attr}>
-                <span class="lq-ic" style="--lq-m:url(/apps/karmolab/img/shell/menu/${icon}.png)" aria-hidden="true"></span>
-                <span class="landing-cta-card-title">${escapeHtml(t(key, undefined, fallback))}</span>
-                <span class="lq-en">${en}</span>
-                ${n ? `<span class="lq-n">${escapeHtml(n)}</span>` : ''}
-            </${tag}>`;
-        }).join('');
+        cta.innerHTML = `
+            <div class="landing-cta-grid">
+                ${axis.map(([id, key, fallback, icon]) => `
+                <button type="button" class="landing-cta-card" data-goto="${id}">
+                    <span class="landing-cta-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span>
+                    <span class="landing-cta-card-title">${escapeHtml(t(key, undefined, fallback))}</span>
+                </button>`).join('')}
+            </div>
+            <p class="landing-more">
+                <a href="${toolIndexPath()}">${escapeHtml(t('site.cta.tools', undefined, '도구 목록'))}</a>
+                <button type="button" data-goto="favorites">${escapeHtml(t('site.cta.favorites', undefined, '즐겨찾기'))}</button>
+                <button type="button" data-goto="community">${escapeHtml(t('site.cta.community', undefined, '커뮤니티'))}</button>
+            </p>
+        `;
         landing.appendChild(cta);
 
-        /* 사람 수 (TASK-KL-098). 실측만, 비면 안 그려진다. 자리는 아래 왼쪽 한 줄 */
+        /* TASK-KL-098. 사람이 있다를 말이 아니라 **숫자**로 보이는 자리.
+         * 값은 전부 실측이고 지어낸 수는 한 개도 없다. 서버에 못 닿거나 아직 0이면 이 자리는
+         * 통째로 안 그려진다. 문장이 아니라 Today / Total 두 칸이다 (사용자 요청). 문장으로
+         * 쓰면 폭에 따라 두 줄이 되고, 세 가지 수를 한 줄에 우겨 넣는다. */
         const pulse = document.createElement('div');
-        pulse.className = 'landing-pulse lq-pulse';
+        pulse.className = 'landing-pulse';
         pulse.id = 'homePulse';
         landing.appendChild(pulse);
         fillHomePulse(pulse);
 
-        /* 아래 줄은 단축키 둘만. "AI 와 함께 만듭니다, 소스 보기" 는 사용자 요청으로 뺌 (2026-09-22) */
-        const madeWith = document.createElement('p');
-        madeWith.className = 'landing-madewith lq-foot';
-        madeWith.innerHTML =
-            `<kbd>ESC</kbd>${escapeHtml(t('site.nav.menu', undefined, '메뉴'))} <kbd>CTRL K</kbd>${escapeHtml(t('site.nav.search', undefined, '찾기'))}`;
-        landing.appendChild(madeWith);
+        /* 아직 안 써 본 것 은 뺐다 (사용자 지시 2026-08-08).
+         * 첫 화면에서 너 이거 안 써 봤지라고 미는 자리였다. 발견을 돕는다기보다 재촉으로
+         * 읽힌다. 도구를 찾는 길은 이미 둘(도구 전체, 검색) 있다. 서버의 `/kl/suggest` 도
+         * 이 자리 때문에 첫 화면마다 두드리고 있었으므로 그 요청도 같이 없어진다. */
 
-        /* 구석 버튼: ESC 메뉴 (lib/esc-menu.ts). 그 조각이 아직 없으면 예전대로 머리 줄과 옆줄을 되살린다 */
-        top.querySelector('.lq-corner').addEventListener('click', () => {
-            const menu = typeof window !== 'undefined' && window.KarmoEscMenu;
-            if (menu && menu.toggle) { menu.toggle(); return; }
-            const h = document.documentElement;
-            if (h.getAttribute('data-home-chrome') === '1') h.removeAttribute('data-home-chrome');
-            else h.setAttribute('data-home-chrome', '1');
-        });
+        /* 아래 줄 "AI 와 함께 만듭니다, 소스 보기" 는 사용자 요청으로 뺀 채로 (2026-09-22) */
 
         return landing;
     }
