@@ -757,9 +757,9 @@ import { t, loadNamespace } from '../../lib/i18n';
       {
         label: t('mydash.nav.kept', undefined, '모은 것'),
         items: [
-          /* 판정 대기는 따로 방이 아니라 북마크 방의 기본 필터 (사용자 2026-09-23 합침). 안의 "대기만" 으로 전체 */
+          /* 판정 대기는 따로 방이 아니라 북마크 방의 기본 필터 (사용자 2026-09-23 합침). 안의 "대기만" 으로 전체.
+             카톡 메모 방도 없앰. 스크랩과 직접 적은 메모를 한 곳에서 보고 나눔 (사용자 2026-09-24 "일단 북마크로 하자") */
           { id: 'bookmarks', label: t('mydash.nav.bookmarks', undefined, '북마크'), panel: 'bookmarks', mode: 'judge' },
-          { id: 'kakao', label: t('mydash.nav.kakao', undefined, '카톡 메모') },
         ],
       },
       {
@@ -805,7 +805,6 @@ import { t, loadNamespace } from '../../lib/i18n';
     today: 'home',
     me: 'about',
     bookmarks: 'book',
-    kakao: 'memo',
     ai: 'stat',
     pc: 'dash',
     career: 'me',

@@ -129,12 +129,6 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
         count: async (r) => short(num((await bmCounts(r)).pending)),
       },
       { item: 'career', title: t('mydash.nav.career', undefined, '커리어'), icon: 'me', count: careerCount },
-      {
-        item: 'kakao',
-        title: t('mydash.nav.kakao', undefined, '카톡 메모'),
-        icon: 'memo',
-        count: async (r) => short(num((await r.readJson<{ counts?: Counts }>(ME_PATH)).counts?.kakaoMemos)),
-      },
       { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), icon: 'stat', count: aiCount },
       { item: 'pc', title: t('mydash.nav.pc', undefined, 'PC 성능'), icon: 'dash', count: pcCount },
       { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), icon: 'cal', count: calendarCount },
