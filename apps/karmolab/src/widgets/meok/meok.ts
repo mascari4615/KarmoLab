@@ -46,6 +46,7 @@ declare const Toolbox: {
   onDispose?(fn: () => void): void;
   /** 남이 넘긴 파일을 받는 창구 (TASK-KL-238 / 2). 선언(`accepts`)만 하고 안 받으면 빈 화면이 뜬다. */
   onHandoff?(id: string, cb: (file: File) => void): void;
+  isDesktopApp?(): boolean;
 };
 
 type ToolId = 'brush' | 'eraser' | 'fill' | 'pick' | 'pan' | 'marquee' | 'lasso' | 'wand';
@@ -183,7 +184,9 @@ function buildMeok(container: HTMLElement): void {
   container.classList.add('meok-host');
   const page = container.closest('.tool-page') as HTMLElement | null;
   page?.classList.add('meok-page');
-  Toolbox.onDispose?.(() => { page?.classList.remove('meok-page'); });
+  /* 데스크톱 앱에서는 상세 장의 제목과 아래 글까지 걷고 창을 그림판에 준다. 웹은 검색이 그 글을 읽으므로 둔다 */
+  if (Toolbox.isDesktopApp?.()) page?.classList.add('meok-app');
+  Toolbox.onDispose?.(() => { page?.classList.remove('meok-page', 'meok-app'); });
   container.innerHTML = meokMarkup();
 
   injectStyles();
@@ -865,11 +868,11 @@ function buildMeok(container: HTMLElement): void {
     'undo': () => { if (history.undo()) { renderLayers(); renderFrames(); repaint(); touched(); } },
     'redo': () => { if (history.redo()) { renderLayers(); renderFrames(); repaint(); touched(); } },
     'fit': () => { view.fit(); syncZoom(); view.invalidate(); },
-    /* 전체화면. 도구 화면째 던진다 (timer, arcade 와 같은 손). 나올 때 화면 맞춤은 ResizeObserver 가 한다. */
+    /* 전체화면. 그림판 한 겹만 던진다 (arcade 가 무대만 던지는 손). 도구 화면째 던지면 그 안 여백이
+       같이 올라왔다 (2026-09-25 사용자). 나올 때 화면 맞춤은 ResizeObserver 가 한다. */
     'fullscreen': () => {
-      const page = (root.closest('.tool-page') || root) as HTMLElement;
       if (document.fullscreenElement) void document.exitFullscreen();
-      else void page.requestFullscreen?.();
+      else void root.requestFullscreen?.();
     },
     'add-layer': () => { addLayer(doc); renderLayers(); repaint(); touched(); },
     'del-layer': () => {

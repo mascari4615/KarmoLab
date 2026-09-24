@@ -22,10 +22,18 @@ export function injectStyles(): void {
     '.meok-page .pf-mount{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}',
     /* 묶음 머리말은 그림 그리는 동안 자리만 먹는다 (실측 109px). 도구 사이를 오가는 `pf-head` 는 남긴다. */
     '.meok-page > .tool-page-hero{display:none}',
+    /* 데스크톱 앱에서만. 상세 장의 머리(길 28px, 번호 제목 129px)와 아래 상세 글(1568px)을 걷고
+       그림판이 창 높이를 다 쓴다. 위 여백 40px 는 상단 막대 자리라 둔다. 상세 글 때문에 칸이 세로로 굴렀다 (2026-09-25 실측 1600x900, 굴림 2437/900).
+       웹은 tools.css 의 상세 장 규칙(76vh, 아래 글)을 그대로 둔다. 선택자가 길어진 것은 그 규칙보다 세야 해서 */
+    'body.tool-detail .main-content:has(.tool-page.layout-full.meok-app.active) > :is(.tool-crumb,.tool-page-hero,.tool-seo){display:none}',
+    'body.tool-detail .main-content:has(.tool-page.layout-full.meok-app.active){overflow:hidden}',
+    'body.tool-detail .content-body:has(.tool-page.layout-full.meok-app.active){flex:1 1 auto;min-height:0}',
+    'body.tool-detail .tool-page.layout-full.meok-app.active{height:auto;min-height:0;flex:1 1 auto}',
+    '.meok-app .meok{border:0;border-radius:0}',
     /* 사진 놓는 자리도 접는다 (실측 106px). 먹에는 열기와 붙이기 버튼이 자기 머리줄에 있다. */
     '.meok-page .pf-drop{display:none}',
     '.meok-full{margin-left:2px;font-size:var(--font-size-2xs);line-height:1;padding:4px 7px}',
-    '.meok:fullscreen,.meok :fullscreen{border-radius:0}',
+    '.meok:fullscreen{width:100vw;height:100vh;min-height:0;border:0;border-radius:0}',
     '.meok *{box-sizing:border-box}',
     '.meok button{border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);border-radius:var(--radius-md);padding:5px 8px;cursor:pointer;font-size:var(--font-size-2xs)}',
     '.meok button:hover{border-color:var(--accent)}',
