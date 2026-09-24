@@ -881,7 +881,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   /* ── 그리기 ────────────────────────────────────────────────────── */
   function render(root: HTMLElement): void {
     ensureStyle();
-    if (soloDash()) applyLook();
+    applyLook();
     root.innerHTML =
       '<div class="myd">' +
       '<button type="button" class="myd-menu" aria-haspopup="dialog" aria-label="' +
