@@ -66,6 +66,8 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .li.on { background: var(--acc); color: var(--acc-ink); }
 .li em { margin-left: auto; font-style: normal; font-size: 11px; padding: 1px 7px; border: 1px solid currentColor; white-space: nowrap; }
 .li em.soon { opacity: 0.6; }
+.li em.run { color: #4cc794; border-color: #4cc794; }
+.li.on em.run { color: var(--acc-ink); border-color: var(--acc-ink); }
 /* 아이콘은 ESC 메뉴 세트 (어두운 두 톤). 어두운 판에서 반전, 켜진 줄은 판에 맞춰 */
 .ic { display: block; object-fit: contain; filter: invert(1); }
 .li.on .ic { filter: none; }
@@ -94,6 +96,9 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .sub button:hover { color: var(--ink); }
 .start { display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 34px; border: 0; background: var(--acc); color: var(--acc-ink); font: 900 20px var(--ko); cursor: pointer; }
 .start small { font: 400 12px var(--en); letter-spacing: 0.12em; opacity: 0.8; }
+/* 실행 중. 주 버튼이 끄기로 바뀌며 색도 바꿈 (Steam 의 파란 중지 자리) */
+.start.running { background: #3d8fd6; color: #fff; }
+.sub .note { align-self: center; }
 .start:disabled, .sub button:disabled { opacity: 0.5; cursor: default; }
 .bar { width: 300px; height: 6px; background: var(--line); }
 .bar i { display: block; height: 100%; background: var(--acc); width: 0; }

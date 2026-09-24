@@ -54,6 +54,7 @@ struct Status {
     version: Option<String>,
     latest: Option<String>,
     pub_date: Option<String>,
+    running: bool,
     download: Option<String>,
     location: Option<String>,
     error: Option<String>,
@@ -84,6 +85,47 @@ fn registry(key: &str) -> Option<std::collections::HashMap<String, String>> {
     Some(map)
 }
 
+fn hidden(cmd: &mut Command) -> &mut Command {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
+
+/// 실행 중인가. tasklist CSV 한 줄이 `"<exe>",` 로 시작하면 있음 (없으면 안내 문장 한 줄)
+fn is_running(exe: &str) -> bool {
+    let filter = format!("IMAGENAME eq {}", exe);
+    let out = match hidden(Command::new("tasklist").args(["/FI", &filter, "/FO", "CSV", "/NH"])).output() {
+        Ok(o) => o,
+        Err(_) => return false,
+    };
+    let head = format!("\"{}\"", exe.to_lowercase());
+    String::from_utf8_lossy(&out.stdout).lines().any(|l| l.trim().to_lowercase().starts_with(&head))
+}
+
+/// 실행 중인 것만 가볍게. 화면이 몇 초마다 부름 (최신 판은 다시 안 받음)
+#[tauri::command]
+fn running_status(registry_key: String) -> bool {
+    registry(&registry_key)
+        .and_then(|r| r.get("MainBinaryName").cloned())
+        .map(|exe| is_running(&exe))
+        .unwrap_or(false)
+}
+
+/// 끄기. /F 없이 창에 닫기를 보냄 (저장할 틈을 줌)
+#[tauri::command]
+fn stop_app(registry_key: String) -> Result<(), String> {
+    let reg = registry(&registry_key).ok_or("설치 안 됨")?;
+    let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?;
+    let status = hidden(Command::new("taskkill").args(["/IM", exe])).status().map_err(|e| e.to_string())?;
+    if !status.success() {
+        return Err(format!("끄기 실패 {:?}", status.code()));
+    }
+    Ok(())
+}
+
 fn str_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a str> {
     let mut cur = v;
     for p in path {
@@ -101,6 +143,7 @@ async fn app_status(app: Value) -> Result<Status, String> {
                 st.installed = true;
                 st.version = reg.get("DisplayVersion").cloned();
                 st.location = reg.get("InstallLocation").cloned();
+                st.running = reg.get("MainBinaryName").map(|exe| is_running(exe)).unwrap_or(false);
             }
         }
         if str_at(&app, &["source", "type"]) == Some("tauri-latest") {
@@ -223,7 +266,7 @@ fn open_url(url: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fetch_manifest, app_status, install_app, launch_app, uninstall_app, open_url])
+        .invoke_handler(tauri::generate_handler![fetch_manifest, app_status, running_status, stop_app, install_app, launch_app, uninstall_app, open_url])
         .run(tauri::generate_context!())
         .expect("런처를 띄우지 못함");
 }
@@ -241,6 +284,17 @@ mod tests {
         let latest: Value = serde_json::from_str(&get_text("https://github.com/mascari4615/mascari4615.github.io/releases/latest/download/latest.json").unwrap()).unwrap();
         assert!(str_at(&latest, &["platforms", "windows-x86_64-nsis", "url"]).is_some());
         println!("installed {:?} latest {:?}", reg.get("DisplayVersion"), latest.get("version"));
+    }
+
+    #[test]
+    fn not_running_for_unknown_exe() {
+        assert!(!is_running("karmo-launcher-no-such-app.exe"));
+    }
+
+    /// 탐색기는 늘 떠 있음. 있는 것을 있다고 읽는지
+    #[test]
+    fn running_for_explorer() {
+        assert!(is_running("explorer.exe"));
     }
 
     #[test]

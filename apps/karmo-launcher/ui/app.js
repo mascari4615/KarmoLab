@@ -39,7 +39,7 @@ function paintList() {
   listEl.innerHTML = apps
     .map((a) => {
       const st = status.get(a.id);
-      const tag = a.soon ? '<em class="soon">준비 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : '';
+      const tag = a.soon ? '<em class="soon">준비 중</em>' : st && st.running ? '<em class="run">실행 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : '';
       const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
       return (
         '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
@@ -82,12 +82,16 @@ function paintMain() {
   else if (app.kind === 'web') start = '<button type="button" class="start" data-act="open">브라우저로 열기</button>';
   else {
     const key = app.install && app.install.registry;
-    if (!st.installed && st.download) start = '<button type="button" class="start" data-act="install">설치</button>';
+    /* 실행 중이면 Steam 처럼 끄기가 주 버튼. 떠 있는 동안 설치 프로그램이 파일을 못 바꾸니 업데이트, 제거는 막음 */
+    if (st.running) {
+      start = '<button type="button" class="start running" data-act="stop">끄기<small>실행 중</small></button>';
+      if (hasUpdate(st)) sub.push('<p class="note">끈 뒤에 업데이트할 수 있습니다</p>');
+    } else if (!st.installed && st.download) start = '<button type="button" class="start" data-act="install">설치</button>';
     else if (hasUpdate(st) && st.download)
       start = '<button type="button" class="start" data-act="install">업데이트<small>' + esc(st.version) + ' → ' + esc(st.latest) + '</small></button>';
     else if (st.installed) start = '<button type="button" class="start" data-act="launch">실행</button>';
-    if (st.installed && hasUpdate(st)) sub.push('<button type="button" data-act="launch">실행</button>');
-    if (st.installed && key) sub.push('<button type="button" data-act="uninstall">제거</button>');
+    if (!st.running && st.installed && hasUpdate(st)) sub.push('<button type="button" data-act="launch">실행</button>');
+    if (!st.running && st.installed && key) sub.push('<button type="button" data-act="uninstall">제거</button>');
   }
   const pct = progress.total ? Math.round((progress.got / progress.total) * 100) : 0;
   const bar =
@@ -135,7 +139,17 @@ async function act(kind) {
   const st = status.get(app.id) || {};
   try {
     if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
-    if (kind === 'launch') return void (await invoke('launch_app', { registryKey: app.install.registry }));
+    if (kind === 'launch') {
+      await invoke('launch_app', { registryKey: app.install.registry });
+      /* 창이 뜨기까지 잠깐. 바로 한 번, 조금 뒤 한 번 다시 잼 */
+      window.setTimeout(() => void pollRunning(), 1500);
+      return;
+    }
+    if (kind === 'stop') {
+      await invoke('stop_app', { registryKey: app.install.registry });
+      window.setTimeout(() => void pollRunning(), 1500);
+      return;
+    }
     busy = app.id;
     if (kind === 'install') {
       progress = { got: 0, total: 0, phase: 'download' };
@@ -154,6 +168,29 @@ async function act(kind) {
     paint();
   }
 }
+
+/** 설치된 앱들의 실행 여부만 다시. 3초마다, 창이 보일 때만 (최신 판은 다시 안 받음) */
+async function pollRunning() {
+  let changed = false;
+  for (const app of apps) {
+    const st = status.get(app.id);
+    const key = app.install && app.install.registry;
+    if (!st || !st.installed || !key) continue;
+    try {
+      const now = await invoke('running_status', { registryKey: key });
+      if (now !== st.running) {
+        st.running = now;
+        changed = true;
+      }
+    } catch {
+      /* 다음 차례에 다시 */
+    }
+  }
+  if (changed && !busy) paint();
+}
+window.setInterval(() => {
+  if (!document.hidden) void pollRunning();
+}, 3000);
 
 listEl.addEventListener('click', (e) => {
   const b = e.target.closest('[data-id]');
