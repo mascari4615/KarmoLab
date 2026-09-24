@@ -161,6 +161,10 @@ html[data-site="dash"] .myd-strip {
 @media (min-width: 900px) {
   html[data-site="dash"] .myd-main:has(.pl-root) { display: flex; flex-direction: column; overflow: hidden; }
   html[data-site="dash"] .myd-main:has(.pl-root) .myd-body { flex: 1; min-height: 0; }
+  /* 머신 방도 같은 틀. 페이지는 안 밀리고 넘치는 것은 칸 안에서 (사용자 2026-09-25 "전체화면 기준") */
+  html[data-site="dash"] .myd-main:has(.mc) { display: flex; flex-direction: column; overflow: hidden; }
+  html[data-site="dash"] .myd-main:has(.mc) .myd-body { flex: 1; min-height: 0; }
+  html[data-site="dash"] .myd-body > div:has(> .mc) { height: 100%; min-height: 0; }
 }
 html[data-site="dash"] { --dash-paper: #fff; --pl-line2: #eef1f5; }
 html[data-site="dash"][data-theme="dark"] { --dash-paper: #161b24; --pl-line2: #1f2631; }
