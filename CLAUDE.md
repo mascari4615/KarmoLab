@@ -21,7 +21,7 @@
 
 ## 고치기, 검증, 카드 등록
 
-절차 (dev 핫리로드, gates:changed, verify, audit:pages, 서버 모니터와 트레이 등록, localdev HTTP) 는 Skill `karmolab-dev`. 여기는 계약.
+절차 (dev 핫리로드, gates:changed, verify, audit:pages, 서버 모니터와 트레이 등록, localdev HTTP) 는 Skill `io-dev`. 프로젝트별 진입은 `lab`, `blog`, `dash`. 여기는 계약.
 
 - 화면 작업은 `npm run dev` 로 보며 한다. 배포를 기다리거나 새로고침하지 않는다 (KL-100)
 - 작업 중 `npm run build` 반복 금지. `gates:changed` 와 `tsc --noEmit`, 통짜는 push 직전 한 번 (KAR-231)
