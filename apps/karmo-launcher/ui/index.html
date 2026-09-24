@@ -15,11 +15,13 @@
     <span class="msg" id="msg" data-tauri-drag-region></span>
     <button type="button" class="wb" id="reload" title="새로고침" aria-label="새로고침">&#8635;</button>
     <button type="button" class="wb" id="min" title="최소화" aria-label="최소화">_</button>
-    <button type="button" class="wb" id="close" title="닫기" aria-label="닫기">&#10005;</button>
+    <button type="button" class="wb" id="close" title="트레이로 닫기" aria-label="트레이로 닫기">&#10005;</button>
   </header>
   <nav class="side" aria-label="라이브러리"><span class="en">Library</span><div id="list"></div></nav>
   <section class="head" id="head"></section>
   <section class="rel" id="rel" hidden></section>
+  <!-- 런처 자신의 새 판. 켜질 때 한 번 물어봄 -->
+  <button type="button" class="selfup" id="selfup" hidden></button>
   <div class="acts" id="acts"></div>
 </div>
 <img class="yawn" src="img/yawn-launcher.webp" alt="">

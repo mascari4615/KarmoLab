@@ -204,7 +204,36 @@ actsEl.addEventListener('click', (e) => {
 });
 $('reload').addEventListener('click', () => void load());
 $('min').addEventListener('click', () => void appWindow.minimize());
-$('close').addEventListener('click', () => void appWindow.close());
+/* 닫기는 트레이로 (Steam 처럼). 끝내기는 트레이 메뉴 */
+$('close').addEventListener('click', () => void appWindow.hide());
+
+/* 런처 자신의 업데이트. 켜진 뒤 한 번 묻고, 새 판이면 제목 줄 아래 버튼 하나 */
+const selfEl = $('selfup');
+async function checkSelf() {
+  try {
+    const v = await invoke('self_update_check');
+    if (!v) return;
+    selfEl.hidden = false;
+    selfEl.textContent = '런처 새 판 ' + v + ' 받기';
+  } catch {
+    /* 오프라인이거나 아직 릴리스가 없음. 조용히 넘어감 */
+  }
+}
+selfEl.addEventListener('click', async () => {
+  selfEl.disabled = true;
+  selfEl.textContent = '런처 받는 중';
+  try {
+    await invoke('self_update_install');
+  } catch (e) {
+    selfEl.disabled = false;
+    selfEl.textContent = '런처 업데이트 실패: ' + e;
+  }
+});
+void listen('self-update-progress', (ev) => {
+  const [got, total] = ev.payload;
+  if (total) selfEl.textContent = '런처 받는 중 ' + Math.round((got / total) * 100) + '%';
+});
+window.setTimeout(() => void checkSelf(), 3000);
 void listen('install-progress', (ev) => {
   progress = ev.payload;
   paintMain();

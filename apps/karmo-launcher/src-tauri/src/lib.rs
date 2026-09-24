@@ -263,10 +263,81 @@ fn open_url(url: String) -> Result<(), String> {
     open::that(url).map_err(|e| e.to_string())
 }
 
+/// 런처 자신의 새 판. 있으면 판 번호, 없으면 None (tauri-plugin-updater, 엔드포인트는 tauri.conf 의 launcher-updater 릴리스)
+#[tauri::command]
+async fn self_update_check(app: AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    match updater.check().await {
+        Ok(Some(u)) => Ok(Some(u.version.clone())),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// 새 판을 받아 설치하고 다시 켬. 받는 동안 `self-update-progress` (받은 바이트, 전체)
+#[tauri::command]
+async fn self_update_install(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
+        return Err("새 판이 없음".into());
+    };
+    let mut got: u64 = 0;
+    let handle = app.clone();
+    update
+        .download_and_install(
+            move |chunk, total| {
+                got += chunk as u64;
+                let _ = handle.emit("self-update-progress", (got, total.unwrap_or(0)));
+            },
+            || {},
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    app.restart();
+}
+
+fn show_main(app: &AppHandle) {
+    use tauri::Manager;
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fetch_manifest, app_status, running_status, stop_app, install_app, launch_app, uninstall_app, open_url])
+        /* 두 번째로 켜면 새 창 대신 떠 있는 창을 앞으로 */
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .setup(|app| {
+            use tauri::menu::{Menu, MenuItem};
+            use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+            /* 트레이 (Steam 처럼 창을 닫아도 남음). 왼쪽 누르기는 창 열기, 메뉴는 열기와 끝내기 */
+            let open = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "끝내기", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&open, &quit])?;
+            let mut tray = TrayIconBuilder::with_id("main").tooltip("Karmo Launcher").menu(&menu).show_menu_on_left_click(false);
+            if let Some(icon) = app.default_window_icon().cloned() {
+                tray = tray.icon(icon);
+            }
+            tray.on_menu_event(|app, event| match event.id.as_ref() {
+                "open" => show_main(app),
+                "quit" => app.exit(0),
+                _ => {}
+            })
+            .on_tray_icon_event(|tray, event| {
+                if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+                    show_main(tray.app_handle());
+                }
+            })
+            .build(app)?;
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![fetch_manifest, app_status, running_status, stop_app, self_update_check, self_update_install, install_app, launch_app, uninstall_app, open_url])
         .run(tauri::generate_context!())
         .expect("런처를 띄우지 못함");
 }

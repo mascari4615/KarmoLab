@@ -1,0 +1,154 @@
+name: Tauri app release (공용)
+
+# 모노레포의 Tauri 앱 (런처, 나중에 Dash) 이 같이 쓰는 릴리스 판. 부르는 쪽은 앱 폴더와 이름만 넘긴다.
+# 맨 위는 런처 (사용자 2026-09-25 "최상위가 런처가 된 거 아닌지"). 앱 업데이트는 런처가 목록을 보고 맡고,
+# 자체 업데이트는 런처만. updater_tag 는 런처만 넘긴다 (빈 값이면 그 단계를 건너뜀)
+#
+# 런처 자체 업데이트 주소는 고정 태그 하나 (`launcher-updater` 릴리스의 latest.json).
+# 저장소의 releases/latest 는 KarmoLab 이 옛 판부터 기대는 자리라, 여기서 만드는 릴리스는
+# 전부 prerelease (latest 로 안 잡힘). 정본: memo changes/launcher.md
+#
+# trigger-audit: self-exempt. workflow_call 전용이라 스스로는 안 돈다.
+on:
+  workflow_call:
+    inputs:
+      app_dir:
+        description: '앱 폴더 (예 apps/karmo-launcher)'
+        required: true
+        type: string
+      crate:
+        description: 'Cargo 패키지 이름 (Cargo.lock 버전 줄을 찾는 열쇠)'
+        required: true
+        type: string
+      tag_prefix:
+        description: '판 태그 앞머리 (예 launcher-v)'
+        required: true
+        type: string
+      updater_tag:
+        description: 'latest.json 을 올리는 고정 태그 (런처만 launcher-updater. 다른 앱은 빈 값)'
+        required: false
+        default: ''
+        type: string
+      release_name:
+        description: '릴리스 이름 앞머리 (예 Karmo Launcher)'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.app_dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Bump patch version (package.json, tauri.conf.json, Cargo.toml, Cargo.lock)
+        shell: bash
+        # KarmoLab 릴리스 판과 같은 방식. 매번 최신 main 위에서 다시 계산해 밀린 push 를 이겨 냄
+        run: |
+          set -e
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          T="${{ inputs.app_dir }}"
+          PUSHED=
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            CURRENT=$(node -p "require('./$T/src-tauri/tauri.conf.json').version")
+            IFS='.' read -r MA MI PA <<< "$CURRENT"
+            NEW="$MA.$MI.$((PA + 1))"
+            echo "Bump $CURRENT -> $NEW (attempt $attempt)"
+            CRATE="${{ inputs.crate }}" NEW="$NEW" T="$T" node -e "
+              const fs = require('fs');
+              const { T, NEW, CRATE } = process.env;
+              for (const p of [T + '/package.json', T + '/src-tauri/tauri.conf.json']) {
+                const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+                j.version = NEW;
+                fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
+              }
+              const tomlPath = T + '/src-tauri/Cargo.toml';
+              fs.writeFileSync(tomlPath, fs.readFileSync(tomlPath, 'utf8').replace(/^version = \".*\"/m, 'version = \"' + NEW + '\"'));
+              const lockPath = T + '/src-tauri/Cargo.lock';
+              const lock = fs.readFileSync(lockPath, 'utf8');
+              const re = new RegExp('(name = \"' + CRATE + '\"\\\\s+version = )\"[^\"]*\"');
+              const out = lock.replace(re, '\$1\"' + NEW + '\"');
+              if (out === lock) throw new Error('Cargo.lock 에서 ' + CRATE + ' 버전 줄을 못 찾음');
+              fs.writeFileSync(lockPath, out);
+            "
+            git add "$T/package.json" "$T/src-tauri/tauri.conf.json" "$T/src-tauri/Cargo.toml" "$T/src-tauri/Cargo.lock"
+            git commit -m "chore(${{ inputs.tag_prefix }}): bump version $CURRENT -> $NEW [skip ci]"
+            if git push --atomic origin HEAD:main "HEAD:refs/tags/${{ inputs.tag_prefix }}$NEW"; then PUSHED=1; break; fi
+            sleep $((attempt * 3))
+          done
+          test -n "$PUSHED" || { echo "bump push 6회 실패" >&2; exit 1; }
+          echo "VERSION=$NEW" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ inputs.app_dir }}/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ inputs.app_dir }}/src-tauri -> target
+          cache-on-failure: true
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish (prerelease, latest 로 안 잡힘)
+        uses: tauri-apps/tauri-action@action-v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: ${{ inputs.app_dir }}
+          tauriScript: npx tauri
+          args: --config src-tauri/tauri.release.conf.json
+          tagName: ${{ inputs.tag_prefix }}__VERSION__
+          releaseCommitish: main
+          releaseName: ${{ inputs.release_name }} v__VERSION__
+          releaseDraft: false
+          prerelease: true
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
+
+      - name: latest.json 을 고정 태그로 (런처 자체 업데이트 주소)
+        if: inputs.updater_tag != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          TAG="${{ inputs.tag_prefix }}${VERSION}"
+          UP="${{ inputs.updater_tag }}"
+          gh release download "$TAG" --repo "${{ github.repository }}" -p latest.json -D updater --clobber
+          if ! gh release view "$UP" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release create "$UP" --repo "${{ github.repository }}" --prerelease --title "$UP" --notes "업데이트 주소 고정 자리. latest.json 만 둠" --target main
+          fi
+          gh release upload "$UP" updater/latest.json --repo "${{ github.repository }}" --clobber
+
+      - name: 옛 판 릴리스 치우기 (최신 하나만, 태그는 남김)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          KEEP="${{ inputs.tag_prefix }}${VERSION}"
+          gh release list --repo "${{ github.repository }}" --limit 200 --json tagName --jq '.[].tagName' \
+            | grep "^${{ inputs.tag_prefix }}" | grep -v "^${KEEP}$" \
+            | while read -r tag; do
+                gh release delete "$tag" --repo "${{ github.repository }}" --yes || true
+              done

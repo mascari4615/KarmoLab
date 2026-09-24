@@ -1,0 +1,31 @@
+name: Karmo Launcher Release
+
+# 런처 앱 폴더가 main 에 바뀌면 patch 판을 굽고 내보냄. 목록 (manifest.json) 과 README 만 바뀐 것은 안 굽는다
+# (목록은 런처가 raw 주소로 바로 읽음). 절차는 공용 tauri-app-release.yml
+#
+# trigger-audit: self-exempt. 이 파일이 바뀌어 돌면 판이 하나 더 나감 (KarmoLab 릴리스 판과 같은 사정)
+concurrency:
+  group: karmo-launcher-release
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/karmo-launcher/**'
+      - '!apps/karmo-launcher/manifest.json'
+      - '!apps/karmo-launcher/README.md'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/tauri-app-release.yml
+    secrets: inherit
+    with:
+      app_dir: apps/karmo-launcher
+      crate: karmo-launcher
+      tag_prefix: launcher-v
+      updater_tag: launcher-updater
+      release_name: Karmo Launcher
