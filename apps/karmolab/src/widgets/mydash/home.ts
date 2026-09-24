@@ -148,14 +148,13 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
 
   /* ── 그리기 ─────────────────────────────────────────────────── */
 
-  function tileHtml(c: Tile, open: boolean): string {
-    const tag = open ? 'button type="button" data-open="' + esc(c.item) + '"' : 'div';
+  function tileHtml(c: Tile): string {
     return (
-      '<' + tag + ' class="mydh-card' + (c.hero ? ' mydh-card--hero' : '') + '" data-item="' + esc(c.item) + '"' +
+      '<button type="button" data-open="' + esc(c.item) + '" class="mydh-card' + (c.hero ? ' mydh-card--hero' : '') + '" data-item="' + esc(c.item) + '"' +
       ' style="--mydh-icon:url(' + ICON_BASE + esc(c.icon) + '.png)">' +
       '<span class="mydh-ic" aria-hidden="true"></span>' +
       '<b>' + esc(c.title) + '</b>' +
-      '</' + (open ? 'button' : 'div') + '>'
+      '</button>'
     );
   }
 
@@ -169,19 +168,13 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     );
   }
 
-  function frameHtml(open: boolean): string {
+  function frameHtml(): string {
     return (
       '<div class="mydh-bg"></div>' +
       '<img class="mydh-yawn" src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true">' +
       dateHtml() +
-      '<div class="mydh-grid">' + tiles().map((c) => tileHtml(c, open)).join('') + '</div>'
+      '<div class="mydh-grid">' + tiles().map(tileHtml).join('') + '</div>'
     );
-  }
-
-  /** 로그인 전. 같은 배치, 카드는 흐리게, 누를 수 없다 (읽을 것이 없다) */
-  function renderEmpty(root: HTMLElement): void {
-    root.className += ' mydh mydh--empty';
-    root.innerHTML = frameHtml(false);
   }
 
   async function render(ctx: DashPanelCtx): Promise<void> {
@@ -190,7 +183,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     bmOnce = null;
 
     root.className += ' mydh';
-    root.innerHTML = frameHtml(true);
+    root.innerHTML = frameHtml();
     root.addEventListener('click', (ev) => {
       const el = (ev.target as HTMLElement | null)?.closest('[data-open]') as HTMLElement | null;
       if (el) ctx.openItem(el.getAttribute('data-open') || '');
@@ -242,7 +235,6 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     access: 'read',
     paths: [BOOKMARKS_PATH, ME_PATH, CAREER_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
     render,
-    renderEmpty,
   });
 })();
 

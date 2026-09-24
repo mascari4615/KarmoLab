@@ -3840,17 +3840,6 @@ html.has-modal, html.has-modal body { overflow: hidden; }
     font-size: var(--font-size-sm); font-weight: 600;
 }
 
-/* dash 사이트 (html 의 data-site 가 dash, change.site-split 2단계). KarmoLab 껍데기 없이 대시보드만.
-   머리 줄, 옆줄, 아래 탭, 빵 부스러기, 첫 화면 장식을 숨기고 본문이 화면을 다 쓴다 */
-html[data-site="dash"] .header-bar,
-html[data-site="dash"] .sidebar,
-html[data-site="dash"] .mobile-nav,
-html[data-site="dash"] .breadcrumb,
-html[data-site="dash"] .home-decor { display: none !important; }
-html[data-site="dash"] .main-content { margin-left: 0; }
-html[data-site="dash"] .content-body { padding-top: 0; }
-html[data-site="dash"] { --header-h: 0px; }
-
 html.is-layout-full .main-content {
     overflow: hidden;
 }

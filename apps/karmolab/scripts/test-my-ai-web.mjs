@@ -1,12 +1,11 @@
 /**
- * 내 AI 위젯의 브라우저 소스 + 대시보드 로그인 전 화면틀 스모크 (jsdom)
+ * 내 AI 위젯의 브라우저 소스 스모크 (jsdom)
  *
  * 무엇을 재나. 지은 묶음을 가짜 창에 실어 그림. 브라우저도 노트북도 안 부름.
  *  ① 열쇠 없음. 카드 대신 비밀번호 줄
  *  ② 열쇠 있음. `fetch` 를 가짜로 바꿔 노트북 응답 (밀어 받은 카드, `from:mois`) 이 게이지와
  *     낡음 칩과 출처 노트로 그려지는지. 로그인 버튼은 브라우저에서 없음
  *  ③ 401 이면 열쇠 폐기 후 다시 질문
- *  ④ 대시보드 홈 `renderEmpty`: 날짜 + 카드 여섯, 값은 하이픈, 열기 없음
  *
  * 먼저 `node build.mjs`. exit 0 이 통과, 1 은 하나라도 어긋남
  */
@@ -17,11 +16,10 @@ import { JSDOM } from 'jsdom';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const WIDGET = path.join(root, 'js/widgets/my-ai.js');
-const HOME = path.join(root, 'js/widgets/mydash/home.js');
 /* i18n 묶음은 구운 것을 그대로 싣는다. jsdom 은 script 를 안 받아 loadNamespace 가 못 채우고,
    새 열쇠는 코드에 한국어 기본값이 없어 (i18n-source 기준선) 없으면 t() 가 던진다 */
 const I18N = path.join(root, 'js/i18n/ko/my-ai.js');
-for (const b of [WIDGET, HOME, I18N]) {
+for (const b of [WIDGET, I18N]) {
   if (!fs.existsSync(b)) {
     console.error('[my-ai-web] 묶음이 없다. 먼저 node build.mjs: ' + b);
     process.exit(1);
@@ -117,31 +115,6 @@ function bootWidget({ key, fetchImpl }) {
   await tick();
   check('③ 401 이면 열쇠를 버린다', window.localStorage.getItem('laptop.pc.key') === null);
   check('③ 다시 묻는다', rootEl.querySelector('.myai-keyrow').hidden === false);
-}
-
-/* ④ 대시보드 홈 빈 화면틀 */
-{
-  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', {
-    url: 'https://blog.mascari4615.com/apps/karmolab/index.html',
-    runScripts: 'outside-only',
-    pretendToBeVisual: true,
-  });
-  const { window } = dom;
-  window.__KARMO_I18N_NS = [];
-  window.fetch = () => Promise.reject(new Error('fetch 금지'));
-  window.eval(fs.readFileSync(HOME, 'utf8'));
-  const panel = window.KarmoDash && window.KarmoDash.panels.find((p) => p.id === 'home');
-  check('④ 홈 패널에 renderEmpty', !!(panel && typeof panel.renderEmpty === 'function'));
-  if (panel && panel.renderEmpty) {
-    const box = window.document.createElement('div');
-    window.document.body.appendChild(box);
-    panel.renderEmpty(box);
-    const cards = box.querySelectorAll('.mydh-card');
-    check('④ 빈 카드 여섯 (판정 대기는 북마크로 합침, 2026-09-23)', cards.length === 6, String(cards.length));
-    check('④ 값은 하이픈', Array.from(box.querySelectorAll('.mydh-big')).every((b) => b.textContent === '-'));
-    check('④ 열기 없음', box.querySelectorAll('[data-open]').length === 0);
-    check('④ 날짜 줄', !!box.querySelector('.mydh-date'));
-  }
 }
 
 console.log(failed ? `[my-ai-web] FAIL ${failed}` : '[my-ai-web] OK');

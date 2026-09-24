@@ -398,10 +398,6 @@ button.mydh-card--hero:focus-visible {
 .mydh-card--hero .mydh-bad {
   color: var(--mydh-acc-ink);
 }
-/* 로그인 전. 같은 배치, 흐리게 */
-.mydh--empty .mydh-card {
-  opacity: 0.6;
-}
 /* 좁아지면 두 열, 폰은 두 열에 칸을 줄인다. 욘은 위로 */
 @media (max-width: 1099px) {
   .mydh { --mydh-pad: 24px; height: auto; overflow: visible; padding-top: 96px; }

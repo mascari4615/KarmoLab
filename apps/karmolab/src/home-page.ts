@@ -15,7 +15,7 @@
 // @ts-nocheck 셸에서 그대로 옮겨 온 코드 (TASK-KL-128 ①-c)
 import { t } from './lib/i18n.js';
 import { toolIndexPath } from './lib/site-base';
-import { dashUrl, onSplitHost } from './lib/site-hosts';
+import { dashUrl } from './lib/site-hosts';
 (function () {
     const switchPage = (id, opts) => Toolbox.switchPage(id, opts);
     const mountHomeDecor = () => Toolbox.mountHomeDecor();
@@ -84,10 +84,10 @@ import { dashUrl, onSplitHost } from './lib/site-hosts';
             ['favorites', 'site.cta.favorites', '즐겨찾기', 'FAVORITES', 'star', '', '']
         ];
         cta.innerHTML = tiles.map(([id, key, fallback, en, icon, n, cls]) => {
-            /* 대시보드는 주소 셋에서 dash 호스트 (site-hosts). 로컬은 해시 그대로 */
-            const crossDash = id === 'mydash' && onSplitHost();
-            const tag = (id === 'tools' || crossDash) ? 'a' : 'button';
-            const attr = id === 'tools' ? `href="${toolIndexPath()}"` : crossDash ? `href="${dashUrl()}"` : `type="button" data-goto="${id}"`;
+            /* 대시보드는 lab 밖 전용 장 (site-hosts). 판정 대기는 그 북마크 방 */
+            const toDash = id === 'mydash';
+            const tag = (id === 'tools' || toDash) ? 'a' : 'button';
+            const attr = id === 'tools' ? `href="${toolIndexPath()}"` : toDash ? `href="${dashUrl()}${icon === 'judge' ? '#bookmarks' : ''}"` : `type="button" data-goto="${id}"`;
             return `<${tag} class="landing-cta-card lq-tile ${cls}" ${attr}>
                 <span class="lq-ic" style="--lq-m:url(/apps/karmolab/img/shell/menu/${icon}.png)" aria-hidden="true"></span>
                 <span class="landing-cta-card-title">${escapeHtml(t(key, undefined, fallback))}</span>

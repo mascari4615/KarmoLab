@@ -32,26 +32,8 @@ import mydashCss from './mydash.css';
 import dashCss from './dash.css';
 import { t, loadNamespace } from '../../lib/i18n';
 
-declare const Toolbox:
-  | {
-      register: (m: unknown) => void;
-      getLazyWidgetPublicMeta?: (id: string) => object;
-      onDispose?: (fn: () => void) => void;
-      /** 셸 사이드바에 이 도구의 하위 항목을 꽂는다. 도구를 떠나면 셸이 걷는다 */
-      setSubNav?: (toolId: string, groups: SubNavGroup[]) => void;
-      clearSubNav?: (toolId?: string) => void;
-      patchSubNav?: (toolId: string, itemId: string, patch: { count?: string; active?: boolean }) => void;
-    }
-  | undefined;
-
-type SubNavItem = { id: string; label: string; count?: string; active?: boolean; onSelect?: (id: string) => void };
-type SubNavGroup = { label: string; items: SubNavItem[] };
-
 (function (): void {
   'use strict';
-
-  /** 셸 도구 id. `#mydash` 와 setSubNav 의 첫 인자 */
-  const TOOL_ID = 'mydash';
 
   type Config = {
     /** 기기 흐름 릴레이의 뿌리 주소. 끝의 빗금은 있어도 없어도 된다. */
@@ -215,44 +197,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     } catch {
       /* 못 적었다. 여기서부터 이번 화면 동안은 메모리가 정본 */
       outboxFallback = list.slice();
-    }
-  }
-
-  /* ── 다시 찾아올 길 ────────────────────────────────────────────
-     이 도구는 category 'app' 이라 도구 목록에서 빠지고 (`getCategories` 가 'app' 을 거른다)
-     갈래 메뉴에도 안 뜬다. 주소를 외운 사람만 다시 온다.
-     한 번 로그인했으면 셸 옆줄의 "내 것" 칸에 꽂아 둔다. 저장 자리는 셸과 같은 열쇠
-     (`src/toolbox.ts` 의 PINNED_KEY). 셸이 다음 로드에서 그 칸을 그린다.
-     뺄 때는 안 건드린다. 로그아웃은 토큰을 지우는 것이지 즐겨찾기를 지우는 것이 아니다. */
-  const PINNED_KEY = 'toolbox_pinned_tools';
-  const SELF_ID = 'mydash';
-
-  /** 맨바깥 이름 우선, 없는 자리(가짜 셸)에서만 window. 아래 등록부와 같은 손. */
-  function toolbox(): NonNullable<typeof Toolbox> | undefined {
-    const w = window as unknown as { Toolbox?: NonNullable<typeof Toolbox> };
-    return (typeof Toolbox !== 'undefined' && Toolbox) ? Toolbox : w.Toolbox;
-  }
-
-  function readPins(): string[] {
-    try {
-      const raw = window.localStorage.getItem(PINNED_KEY);
-      const arr = raw ? (JSON.parse(raw) as unknown) : [];
-      return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function pinSelf(): void {
-    try {
-      /* 저장 자리를 직접 봄. 셸의 togglePin, isPinned 은 `src/toolbox.ts` 의 IIFE 안 지역 함수라
-         공개 API 에 없음. 있는 척 분기해 두면 영영 안 도는 죽은 코드. */
-      const pins = readPins();
-      if (pins.indexOf(SELF_ID) >= 0) return;
-      pins.push(SELF_ID);
-      window.localStorage.setItem(PINNED_KEY, JSON.stringify(pins));
-    } catch {
-      /* 저장이 막힌 판. 이번 화면은 그대로 돌고, 다음에 다시 로그인하면 또 시도한다. */
     }
   }
 
@@ -778,14 +722,12 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     /* 오락실(`arcade.css`)과 같은 방식. 위젯 옆의 `.css` 를 글자로 묶어 여기서 삽입
        위젯이 지연 로드라 셸의 캐시 목록을 안 건드리고 같이 실려 온다. */
     /* dash 장은 셸 CSS 가 없어 토큰과 공용 부품을 dash.css 가 채운다 */
-    el.textContent = soloDash() ? mydashCss + dashCss : mydashCss;
+    el.textContent = mydashCss + dashCss;
     document.head.appendChild(el);
   }
 
   /* ── 목록 ───────────────────────────────────────────────────────
-     ★ **목록이 탭이다.** PC 에서는 셸 사이드바의 하위 항목(`Toolbox.setSubNav`)으로 뜨고,
-     좁은 화면과 접힌 사이드바에서는 내용 위 가로 줄(`.myd-strip`)로 뜬다. 자체 왼쪽 열은
-     없앴다 (사이드바가 둘이면 KarmoLab 모양이 깨짐. 사용자 2026-09-13).
+     ★ **목록이 탭이다.** 넓은 화면은 메뉴 (`.myd-menu`, ESC 메뉴 칸), 좁은 화면은 내용 위 가로 줄 (`.myd-strip`).
      패널 명부(`dashRegistry`)는 그대로 쓰되, 사람이 보는 자리는 이 표가 정한다. 북마크 방은 `mode: 'judge'` (판정 대기만, 격자) 로 열린다.
      판정 대기 자리는 2026-09-23 에 북마크로 합침. 카톡 메모는 아직 패널이 없어
      자리만 있다(누르면 준비 중 한 줄).
@@ -840,43 +782,22 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
   }
 
   /* ── 주소 ───────────────────────────────────────────────────────
-     해시는 이미 셸 소관이다 (`#mydash` 가 도구 id). 그래서 패널은 쿼리에 남긴다
-     (`?dash=<항목 id>#mydash`). 커뮤니티가 게시판을 주소에 남기는 방식과 같음.
-     `replaceState` 다. 목록을 훑는 동안 뒤로 가기가 대시보드 안에서만 스무 번 쌓이면
-     사람이 이 도구를 못 빠져나간다. */
-  const URL_KEY = 'dash';
-  /** dash 전용 front 는 이 주소가 곧 대시보드. 방은 해시로, 기본 방 (오늘) 은 주소를 비운다 */
-  function soloUrl(): boolean {
-    return document.documentElement.getAttribute('data-site') === 'dash';
-  }
+     이 장 (`dash/index.html`) 이 곧 대시보드. 방은 해시로, 기본 방 (오늘) 은 주소를 비운다.
+     `replaceState` 다. 목록을 훑는 동안 뒤로 가기가 스무 번 쌓이지 않게. */
   function urlItem(): string {
     try {
-      if (soloUrl()) return decodeURIComponent(location.hash.replace(/^#/, ''));
-      return new URLSearchParams(location.search).get(URL_KEY) || '';
+      return decodeURIComponent(location.hash.replace(/^#/, ''));
     } catch {
       return '';
     }
   }
   function setUrlItem(id: string): void {
     try {
-      if (soloUrl()) {
-        const want = !id || id === 'today' ? location.pathname : location.pathname + '#' + encodeURIComponent(id);
-        history.replaceState({}, '', want);
-        return;
-      }
-      const q = new URLSearchParams(location.search);
-      if (id) q.set(URL_KEY, id);
-      else q.delete(URL_KEY);
-      const s = q.toString();
-      history.replaceState({}, '', location.pathname + (s ? '?' + s : '') + location.hash);
+      const want = !id || id === 'today' ? location.pathname : location.pathname + '#' + encodeURIComponent(id);
+      history.replaceState({}, '', want);
     } catch {
       /* 주소를 못 고쳐도 화면은 바뀐다. 새로고침 때 첫 항목으로 돌아갈 뿐 */
     }
-  }
-
-  /** dash 전용 front (change.site-split). KarmoLab 셸 없이 이 화면만 */
-  function soloDash(): boolean {
-    return document.documentElement.getAttribute('data-site') === 'dash';
   }
 
   /** ESC 메뉴 칸의 아이콘 (`img/shell/menu/*.png`). 홈 카드와 같은 매핑, 나 는 소개 그림 */
@@ -985,16 +906,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
         panelBox = null;
       }
     }
-    /* 맨바깥 이름 `Toolbox` 우선 확인, 없는 자리(가짜 셸로 재는 테스트)에서만 window 로 확인.
-       셸은 `const Toolbox` 로 생성하고 const 는 window 에 안 붙음. window 만 보면 실서비스에서
-       등록이 통째로 헛돌아 기기 흐름 폴링이 위젯 이탈 뒤에도 안 멈추는 문제 (memo-atlas 와 동일 패턴). */
-    toolbox()?.onDispose?.(() => {
-      setMenuCells(null);
-      disposePanel();
-      stopOnline?.();
-      toolbox()?.clearSubNav?.(TOOL_ID);
-    });
-
     function say(html: string): void {
       disposePanel();
       bodyEl.innerHTML = html;
@@ -1015,22 +926,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
     /**
      * 목록을 처음부터 다시 그린다. `enabled` 가 거짓이면 회색으로 보이되 못 누름
      * (로그인 전. 무엇이 있는 화면인지는 보이고, 눌러 봐야 읽을 것이 없다).
-     * 두 자리에 같은 것을 그린다. 셸 사이드바 하위 항목과 좁은 화면용 가로 줄.
      */
     function paintNav(enabled: boolean): void {
-      toolbox()?.setSubNav?.(
-        TOOL_ID,
-        navGroups().map((g) => ({
-          label: g.label,
-          items: g.items.map((it) => ({
-            id: it.id,
-            label: it.label,
-            count: counts[it.id],
-            active: it.id === currentItem,
-            onSelect: enabled ? (id: string): void => openItem(id) : undefined,
-          })),
-        }))
-      );
       navEl.textContent = '';
       for (const g of navGroups()) {
         const box = document.createElement('div');
@@ -1062,7 +959,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       for (const b of Array.from(navEl.querySelectorAll('.myd-item'))) {
         b.classList.toggle('on', b.getAttribute('data-item') === currentItem);
       }
-      if (currentItem) toolbox()?.patchSubNav?.(TOOL_ID, currentItem, { active: true });
     }
 
     /** 목록 오른쪽 작은 수. 홈이 읽은 값을 그대로 쓴다 */
@@ -1070,7 +966,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       counts[id] = value;
       const el = navEl.querySelector('[data-n="' + id + '"]');
       if (el) el.textContent = value;
-      toolbox()?.patchSubNav?.(TOOL_ID, id, { count: value });
     }
 
     /** 여는 손. 로그인 뒤에 `showDashboard` 가 갈아 끼운다 */
@@ -1093,31 +988,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       stripOut.hidden = true;
       statEl.textContent = '';
 
-      function loginCardHtml(compact: boolean): string {
-        const paths = reg.panels.map((p) => p.title + ', ' + p.paths.join(', '));
-        return (
-          '<div class="myd-card myd-card--login">' +
-          (why ? '<div class="myd-warn">' + esc(why) + '</div>' : '') +
-          '<div class="myd-note">' +
-          (compact
-            ? '데이터는 <b>private 저장소</b>' +
-              (cfg ? ' (' + esc(cfg.owner + '/' + cfg.repo) + ')' : '') +
-              '에 있고, 로그인한 브라우저가 GitHub 에서 직접 받아 갑니다.'
-            : '차곡의 개인 대시보드입니다. 데이터는 이 사이트가 아니라 <b>private 저장소</b>' +
-              (cfg ? ' (' + esc(cfg.owner + '/' + cfg.repo) + ')' : '') +
-              '에 있고, 로그인한 브라우저가 GitHub 에서 <b>직접</b> 받아 갑니다. ' +
-              '이 사이트의 서버는 그 데이터를 보관하지도 거치지도 않습니다.<br>' +
-              '그 저장소에 접근 권한이 없는 계정으로 로그인하면 GitHub 이 404 를 줍니다. ' +
-              '읽을 수 있는 사람만 읽힙니다.') +
-          '</div>' +
-          (!compact && paths.length
-            ? '<div class="myd-paths">읽는 것: ' + esc(paths.join(' / ')) + '</div>'
-            : '') +
-          '<div class="myd-row"><button class="myd-btn" data-login="1">GitHub 로 로그인</button></div>' +
-          '</div>'
-        );
-      }
-
       function wireLogin(): void {
         const btn = bodyEl.querySelector('[data-login]') as HTMLButtonElement | null;
         btn?.addEventListener('click', () => void startLogin());
@@ -1133,24 +1003,12 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
         titleEl.textContent = it.label;
         const panel = panelFor(it);
         disposePanel();
-        /* dash 전용 front 는 로그인해야 들어간다 (사용자 2026-09-22). 빈 패널 뼈대도 안 그린다 */
-        if (soloDash()) {
-          bodyEl.innerHTML =
-            '<div class="myd-card myd-card--login">' +
-            (why ? '<div class="myd-warn">' + esc(why) + '</div>' : '') +
-            '<div class="myd-row"><button class="myd-btn" data-login="1">GitHub 로 로그인</button></div>' +
-            '</div>';
-          wireLogin();
-          return;
-        }
-        if (panel && panel.renderEmpty) {
-          bodyEl.innerHTML = loginCardHtml(true);
-          const box = document.createElement('div');
-          bodyEl.appendChild(box);
-          panel.renderEmpty(box);
-        } else {
-          bodyEl.innerHTML = loginCardHtml(false);
-        }
+        /* 로그인해야 들어간다 (사용자 2026-09-22). 빈 패널 뼈대도 안 그린다 */
+        bodyEl.innerHTML =
+          '<div class="myd-card myd-card--login">' +
+          (why ? '<div class="myd-warn">' + esc(why) + '</div>' : '') +
+          '<div class="myd-row"><button class="myd-btn" data-login="1">GitHub 로 로그인</button></div>' +
+          '</div>';
         wireLogin();
       };
 
@@ -1158,7 +1016,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       const want = itemById(urlItem());
       openItem(want ? want.id : 'today');
       /* 로그인 전 dash front 는 목록도 제목도 없다. 문 하나 */
-      if (soloDash()) { titleEl.textContent = ''; root.classList.add('myd--gate'); }
+      titleEl.textContent = '';
+      root.classList.add('myd--gate');
     }
 
     function showConfigHelp(msg: string): void {
@@ -1257,8 +1116,6 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
         }
         if (reply.access_token) {
           saveToken(tokenFrom(reply));
-          /* 로그인에 성공한 사람만 꽂는다. 남이 열어 본 화면에는 안 남는다. */
-          pinSelf();
           void showDashboard(cfg);
           return;
         }
@@ -1342,7 +1199,7 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
       stripOut.hidden = false;
       stripOut.title = cfg.owner + '/' + cfg.repo;
       stripOut.onclick = (): void => logout(cfg);
-      if (soloDash()) {
+      {
         setMenuCells({
           title: t('shell.menu.dashboard', undefined, '대시보드'),
           cells: navItems().map((it) => ({ id: it.id, icon: MENU_ICONS[it.id] || 'dash', label: it.label })),
@@ -1542,27 +1399,8 @@ type SubNavGroup = { label: string; items: SubNavItem[] };
   /* 목록의 이름은 그리는 그 순간에 정해진다. 옮긴 말을 미리 받아 둔다 */
   void loadNamespace('mydash').catch(() => undefined);
 
-  /* ── 등록.
-     맨바깥 이름 `Toolbox` 를 먼저 본다 (셸은 `const Toolbox` 로 만든다. const 는 window 에 안 붙는다).
-     memo-atlas 가 이걸로 크게 덴 자리라 같은 손을 쓴다. */
-  /* dash 전용 front (change.site-split) 가 부르는 자리. 셸 없이 통째로 그린다 */
+  /* dash 전용 장 (`dash-app.ts`) 이 부르는 자리 */
   (window as unknown as { KarmoDashShell?: { render: (el: HTMLElement) => void } }).KarmoDashShell = { render };
-
-  const box = toolbox();
-  if (box) {
-    const meta = box.getLazyWidgetPublicMeta
-      ? box.getLazyWidgetPublicMeta('mydash')
-      : { title: '내 대시보드', category: 'app', desc: '내 private 저장소를 폰에서 본다' };
-    /* **탭은 하나.** 패널 그리기는 셸이 직접.
-       셸의 `tabs[]` 는 등록하는 그 순간에 정해진다. 그런데 패널은 나중에 더 붙을 수 있고
-       (북마크, 성능), 무엇보다 **로그인 전에는 그릴 패널이 없다**. 탭으로 만들면
-       남이 열었을 때 빈 탭 넷이 보인다. 안쪽에서 우리가 그리면 상태에 따라 갈 수 있다. */
-    box.register({
-      id: 'mydash',
-      ...meta,
-      tabs: [{ id: 'panels', label: '패널', build: render }],
-    });
-  }
 })();
 
 export {};

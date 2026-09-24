@@ -26,10 +26,11 @@ export function onSplitHost(host: string = typeof location !== 'undefined' ? loc
     return String(host || '').endsWith('.' + DOMAIN);
 }
 
-/** 대시보드로 가는 주소. 같은 호스트면 해시, 다른 호스트면 dash 뿌리 */
+/** 대시보드로 가는 주소. 대시보드는 lab 위젯이 아니라 전용 장 (`apps/karmolab/dash/index.html`).
+ *  로컬과 github.io 는 그 원본 자리. dev 서버에는 조립된 `/dash/` 가 없다 */
 export function dashUrl(): string {
-    if (!onSplitHost()) return '#mydash';
-    return hostKind() === 'dash' ? '#mydash' : HOSTS.dash + '/';
+    if (!onSplitHost()) return '/apps/karmolab/dash/index.html';
+    return hostKind() === 'dash' ? '/' : HOSTS.dash + '/';
 }
 
 /** KarmoLab 첫 화면으로 가는 주소 */
@@ -47,9 +48,4 @@ export function blogUrl(): string {
 /** 소개 주소. 소개는 blog 소속 (2026-09-23 사용자 결정 "About 페이지 블로그로") */
 export function aboutUrl(): string {
     return onSplitHost() && hostKind() !== 'blog' ? HOSTS.blog + '/about/' : '/about/';
-}
-
-/** 이 호스트에서 뿌리 (`/`) 로 들어왔을 때 먼저 보일 화면. dash 는 대시보드 */
-export function hostDefaultPage(): string | null {
-    return onSplitHost() && hostKind() === 'dash' ? 'mydash' : null;
 }

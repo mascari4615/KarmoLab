@@ -69,7 +69,12 @@ for (const name of folders) {
      그래서 **지어지는 list**(build 가 실제로 쓰는 entry 집합)에 있는지로 판정한다. */
   /* 담는 폴더(`tools/`, `ref/` 처럼 여러 개를 품는 자리)도 있으므로, 그 폴더 **밑의 무엇이든**
      지어지면 닿는 것으로 본다. 하나도 안 지어지면 그 폴더는 화면에 못 나온다. */
-  const builds = [...ENTRY_SET].some((e) => e.startsWith(`src/widgets/${name}/`) || e === `src/widgets/${name}.ts`);
+  /* 제 번들 없이 다른 진입점의 import 로 묶여도 빌드 대상. dash 장 (`src/dash-app.ts`) 이
+     `widgets/mydash/`, `widgets/planner/` 를 이렇게 싣는다 (change.site-split, 2026-09-24) */
+  const bundledBy = (e) => {
+    try { return new RegExp(`import\\s[^;]*['"]\\./widgets/${name}/`).test(readFileSync(join(app, e), 'utf8')); } catch { return false; }
+  };
+  const builds = [...ENTRY_SET].some((e) => e.startsWith(`src/widgets/${name}/`) || e === `src/widgets/${name}.ts` || (/^src\/[^/]+\.ts$/.test(e) && bundledBy(e)));
   if (!referenced || !builds) orphans.push(name + (referenced && !builds ? ' (이름은 나오는데 **지어지지 않는다**)' : ''));
 }
 
