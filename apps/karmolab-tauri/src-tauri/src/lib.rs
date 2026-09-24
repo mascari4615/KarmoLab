@@ -186,9 +186,9 @@ extern "system" {
     fn MessageBeep(u_type: u32) -> i32;
 }
 
-// KL-064: 사이트가 커스텀 도메인 이전 → github.io 는 301 로 여기로 튕김.
-// frontendDist/allowlist 가 옛 URL 이라 prod 웹뷰가 301 stub 로딩 = 빈화면.
-const KARMOLAB_WEB_URL: &str = "https://blog.mascari4615.com/karmolab/";
+// KarmoLab 은 lab 호스트 루트에 산다. blog/karmolab/ 은 분리 뒤 404.
+// frontendDist, capabilities, allow_in_webview 도 같은 호스트로 맞춘다 (KL-064).
+const KARMOLAB_WEB_URL: &str = "https://lab.mascari4615.com/";
 const KARMOLAB_DEV_URL: &str = "http://127.0.0.1:8899/apps/karmolab/index.html";
 const KARMOLAB_DEV_PORT: u16 = 8899;
 
@@ -914,10 +914,13 @@ fn allow_in_webview(url: &Url) -> bool {
             let Some(host) = url.host_str() else {
                 return false;
             };
-            // blog.mascari4615.com = 현재 정식 도메인. mascari4615.github.io =
-            // 옛 도메인(301→blog) — 호환 위해 둘 다 허용 (KL-064: 새 도메인
-            // 미허용 → prod 웹뷰 navigation 거부 → 빈화면 근본).
-            if host == "blog.mascari4615.com" || host == "mascari4615.github.io" {
+            // 앱이 여는 KarmoLab 은 lab.mascari4615.com 에 있다 (2026-09 blog 와 분리).
+            // blog 는 소개와 글 링크, mascari4615.github.io 는 옛 도메인(301→blog).
+            // 새 도메인을 빠뜨리면 prod 웹뷰 navigation 거부로 빈 화면 (KL-064).
+            if host == "lab.mascari4615.com"
+                || host == "blog.mascari4615.com"
+                || host == "mascari4615.github.io"
+            {
                 return true;
             }
             /* Files 는 제 도메인에 산다 — 여기 없으면 머리띠 Files 단추가 창을 갈아타지
@@ -1473,7 +1476,9 @@ mod tests {
 
     #[test]
     fn the_app_itself_stays_inside() {
-        assert!(allows("https://blog.mascari4615.com/karmolab/?kl_login=ok"));
+        assert!(allows("https://lab.mascari4615.com/?kl_login=ok"));
+        assert!(allows("https://lab.mascari4615.com/t/meok/"));
+        assert!(allows("https://blog.mascari4615.com/about/"));
         assert!(allows("http://127.0.0.1:8898/apps/karmolab/"));
         // Files = 제 도메인이지만 **앱 안에서 여는 표면**이다 (밖으로 튀면 단추가 헛돈다).
         assert!(allows("https://files.mascari4615.com/#laptop/"));

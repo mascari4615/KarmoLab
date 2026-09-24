@@ -1,6 +1,6 @@
 # KarmoLab (Tauri)
 
-데스크톱에서 시스템 WebView로 [KarmoLab](https://blog.mascari4615.com/)을 여는 얇은 셸입니다. **앱 바이너리에는 사이트 전체를 넣지 않고**, 배포된 GitHub Pages URL을 그대로 띄웁니다. 오프라인은 **KarmoLab 서비스 워커(`/sw.js`)가 받아 둔 캐시**에 의존합니다(한 번 온라인으로 쓴 뒤, WebView가 캐시를 지우지 않았다면 제한적으로 동작).
+데스크톱에서 시스템 WebView로 [KarmoLab](https://lab.mascari4615.com/)을 여는 얇은 셸입니다. **앱 바이너리에는 사이트 전체를 넣지 않고**, 배포된 GitHub Pages URL을 그대로 띄웁니다. 오프라인은 **KarmoLab 서비스 워커(`/sw.js`)가 받아 둔 캐시**에 의존합니다(한 번 온라인으로 쓴 뒤, WebView가 캐시를 지우지 않았다면 제한적으로 동작).
 
 ## 준비물
 
