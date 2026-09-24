@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "런처 창 하나. 이벤트 듣기만 (명령은 앱 자체 command)",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

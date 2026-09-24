@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "updated": "2026-09-25",
+  "apps": [
+    {
+      "id": "karmolab",
+      "name": "KarmoLab",
+      "kind": "tauri",
+      "summary": "도구, 오락실, 커뮤니티를 담은 데스크톱 앱",
+      "source": {
+        "type": "tauri-latest",
+        "url": "https://github.com/mascari4615/mascari4615.github.io/releases/latest/download/latest.json",
+        "platform": "windows-x86_64-nsis"
+      },
+      "install": {
+        "format": "nsis",
+        "args": [
+          "/S"
+        ],
+        "registry": "KarmoLab"
+      }
+    },
+    {
+      "id": "dash",
+      "name": "Dash",
+      "kind": "web",
+      "summary": "개인 대시보드. 데스크톱 앱은 준비 중이라 지금은 브라우저로 연다",
+      "open": "https://dash.mascari4615.com/"
+    },
+    {
+      "id": "wm",
+      "name": "Witch-Mendokusai",
+      "kind": "unity",
+      "summary": "마녀와 인형의 게임. 배포판 준비 중",
+      "soon": true
+    }
+  ]
+}
