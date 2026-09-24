@@ -129,6 +129,7 @@
     "audit:mouse-only": "node scripts/audit-mouse-only.mjs",
     "audit:nightly-alive": "node scripts/audit-nightly-alive.mjs",
     "audit:orphan-widgets": "node scripts/audit-orphan-widgets.mjs",
+    "audit:site-boundary": "node scripts/audit-site-boundary.mjs",
     "audit:orphans": "node scripts/audit-orphan-tests.mjs",
     "audit:page-scripts": "node scripts/audit-page-scripts.mjs",
     "audit:pages": "node scripts/audit-tool-pages-fresh.mjs",

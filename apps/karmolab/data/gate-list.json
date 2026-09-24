@@ -249,6 +249,13 @@
     "test:bundles",
     "audit:script-paths",
     "audit:orphan-widgets",
+    {
+      "name": "audit:site-boundary",
+      "watch": [
+        "src/**/*.ts",
+        "scripts/audit-site-boundary.mjs"
+      ]
+    },
     "audit:shared-bypass",
     "audit:gate-list",
     "test:gate-derive",
