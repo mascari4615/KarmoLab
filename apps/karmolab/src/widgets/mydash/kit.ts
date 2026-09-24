@@ -141,6 +141,12 @@ export interface DashPanelCtx<R extends DashRepoRead = DashRepoRead> {
    * 긴 async 를 도중에 접거나, 셸이 안 막아 주는 것(전역 타이머, 바깥 저장)을 건드릴 때만.
    */
   isCurrent(): boolean;
+  /**
+   * 지금 로그인의 GitHub 토큰. 없거나 죽었으면 null, 갱신에 못 닿으면 던짐.
+   * **저장소 밖으로 나가는 요청 하나만을 위한 것** (머신 방이 laptop-ops `/dash/*` 에 본인 확인으로 실음).
+   * 저장소 읽기는 여전히 `repo`. 받은 토큰의 저장과 다른 주소 전송 금지
+   */
+  ghToken(): Promise<string | null>;
   /** 화면을 떠날 때 치울 것 (타이머, 이벤트). 셸이 불러 준다. */
   onDispose(fn: () => void): void;
 }

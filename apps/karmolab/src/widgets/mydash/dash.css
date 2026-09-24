@@ -164,6 +164,15 @@ html[data-site="dash"] .myd-strip {
 }
 html[data-site="dash"] { --dash-paper: #fff; --pl-line2: #eef1f5; }
 html[data-site="dash"][data-theme="dark"] { --dash-paper: #161b24; --pl-line2: #1f2631; }
+/* 머신 방 (machines.ts). 켜짐 파랑, 꺼짐 회색, 로그 칸. 값은 Z1, Zb 시안 그대로 (2026-09-25) */
+html[data-site="dash"] {
+  --dash-ok: #3d6fd8;
+  --dash-off: #b3bac7;
+  --dash-term: #10141b;
+  --dash-term-ink: #d7dde8;
+  --dash-term-dim: #6d7788;
+}
+html[data-site="dash"][data-theme="dark"] { --dash-ok: #7da2f0; --dash-off: #4a5363; --dash-term: #0b0e13; }
 html[data-site="dash"] .pl-body {
   background: var(--dash-paper);
   border: 1px solid var(--border);

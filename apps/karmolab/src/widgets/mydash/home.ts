@@ -90,11 +90,10 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     return usd(cost);
   }
 
+  /** 머신 방의 작은 수는 서버 (Mois2) 의 마지막 메모리. 폴더가 늘어도 가리키는 기계는 그대로 */
   async function pcCount(repo: DashRepoRead): Promise<string> {
-    const hosts = (await repo.list(PC_DIR)).filter((e) => e.type === 'dir');
-    if (!hosts.length) throw new Error(PC_DIR + ' 아래에 host 폴더가 없다');
     const j = await repo.readJson<{ data?: { latest?: { memUsedPct?: number } } }>(
-      PC_DIR + '/' + hosts[0].name + '/summary.json'
+      PC_DIR + '/Mois2/summary.json'
     );
     return num(j.data && j.data.latest && j.data.latest.memUsedPct) + '%';
   }
@@ -129,7 +128,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
       },
       { item: 'career', title: t('mydash.nav.career', undefined, '커리어'), icon: 'me', count: careerCount },
       { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), icon: 'stat', count: aiCount },
-      { item: 'pc', title: t('mydash.nav.pc', undefined, 'PC 성능'), icon: 'dash', count: pcCount },
+      { item: 'machines', title: t('mydash.nav.machines', undefined, '머신'), icon: 'dash', count: pcCount },
       { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), icon: 'cal', count: calendarCount },
     ];
   }

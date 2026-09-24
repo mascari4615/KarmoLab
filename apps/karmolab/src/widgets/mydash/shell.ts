@@ -765,7 +765,8 @@ import { t, loadNamespace } from '../../lib/i18n';
         label: t('mydash.nav.measured', undefined, '재는 것'),
         items: [
           { id: 'ai', label: t('mydash.nav.ai', undefined, 'AI 사용'), panel: 'ai-usage' },
-          { id: 'pc', label: t('mydash.nav.pc', undefined, 'PC 성능'), panel: 'pc-vitals' },
+          /* 머신 방. 옛 PC 성능 자리 (change.dash-machines, 2026-09-25) */
+          { id: 'machines', label: t('mydash.nav.machines', undefined, '머신'), panel: 'machines' },
           { id: 'career', label: t('mydash.nav.career', undefined, '커리어'), panel: 'career' },
           /* 플래너 (캘린더, 일기, 칸반, 연속일). 옛 캘린더 방 자리 (사용자 2026-09-23) */
           { id: 'planner', label: t('widgets.planner.title', undefined, '플래너'), panel: 'planner' },
@@ -790,8 +791,15 @@ import { t, loadNamespace } from '../../lib/i18n';
       return '';
     }
   }
-  function setUrlItem(id: string): void {
+  /**
+   * 방 이름 뒤 `/` 는 방 안의 자리 (`#machines/Mois2`). 적고 읽는 쪽은 패널
+   * 같은 방 다시 열기 (뒤에서 새 판을 받아 다시 그리기) 는 그 자리 유지
+   * 목록에서 누르면 `keepSub` 거짓으로 방의 첫 화면
+   */
+  function setUrlItem(id: string, keepSub = true): void {
     try {
+      const cur = urlItem();
+      if (keepSub && id && cur.indexOf(id + '/') === 0) return;
       const want = !id || id === 'today' ? location.pathname : location.pathname + '#' + encodeURIComponent(id);
       history.replaceState({}, '', want);
     } catch {
@@ -804,7 +812,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     today: 'home',
     bookmarks: 'book',
     ai: 'stat',
-    pc: 'dash',
+    machines: 'dash',
     career: 'me',
     planner: 'cal',
   };
@@ -969,7 +977,14 @@ import { t, loadNamespace } from '../../lib/i18n';
     function itemById(id: string): NavItem | null {
       /* 옛 주소. 판정 대기 (#judge) 와 카톡 메모 (#kakao) 는 북마크 방, 캘린더 (#calendar) 는 플래너,
          나 (#me) 는 홈. 나 방은 2026-09-24 뺌 (사용자 "나 가 의미가 없는 것 같은데 각 곳에서 보면 되는 거") */
-      const want = id === 'judge' || id === 'kakao' ? 'bookmarks' : id === 'calendar' ? 'planner' : id === 'me' ? 'today' : id;
+      /* 방 안의 자리 (`machines/Mois2`) 는 방 이름만. PC 성능 (#pc) 은 머신 방 */
+      const base = id.split('/')[0];
+      const want =
+        base === 'judge' || base === 'kakao' ? 'bookmarks'
+        : base === 'calendar' ? 'planner'
+        : base === 'me' ? 'today'
+        : base === 'pc' ? 'machines'
+        : base;
       return navItems().filter((x) => x.id === want)[0] || null;
     }
     /** 그 항목이 열 패널. 코드가 아직 안 실렸으면 null */
@@ -1003,7 +1018,10 @@ import { t, loadNamespace } from '../../lib/i18n';
           n.textContent = counts[it.id] || '';
           b.appendChild(label);
           b.appendChild(n);
-          b.addEventListener('click', () => openItem(it.id));
+          b.addEventListener('click', () => {
+            setUrlItem(it.id, false);
+            openItem(it.id);
+          });
           box.appendChild(b);
         }
         navEl.appendChild(box);
@@ -1258,7 +1276,10 @@ import { t, loadNamespace } from '../../lib/i18n';
         setMenuCells({
           title: t('shell.menu.dashboard', undefined, '대시보드'),
           cells: navItems().map((it) => ({ id: it.id, icon: MENU_ICONS[it.id] || 'dash', label: it.label })),
-          pick: (id) => openItem(id),
+          pick: (id) => {
+            setUrlItem(id, false);
+            openItem(id);
+          },
           tools: lookTools(),
           foot: { label: outBtn.textContent || '', pick: () => logout(cfg) },
         });
@@ -1320,6 +1341,7 @@ import { t, loadNamespace } from '../../lib/i18n';
             openItem(id);
           },
           isCurrent,
+          ghToken: () => liveToken(cfg),
           /* 이미 넘어간 패널이 뒤늦게 맡기면 다음 패널 목록에 섞임. 그 자리에서 치우기. */
           onDispose: (fn) => {
             if (!isCurrent()) {
