@@ -168,23 +168,48 @@ const failures = [];
 /* 30초 안에 안 뜬 장. 무거운 장 (territory 의 지구) 이 옆 검사 넷과 같이 돌 때 그랬다 (2026-09-22, 655초 판).
    한 장 때문에 판 전체를 터뜨리지 않고, 못 잼으로 적어 끝에 못 돌림 (2) 으로 낸다. 초록으로 안 센다 */
 const unopened = [];
-for (const skin of RUN_SKINS) for (const theme of RUN_THEMES) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const page = await ctx.newPage();
-  await page.addInitScript((v) => {
-    try {
-      localStorage.setItem('toolbox_theme', v.theme);
-      localStorage.setItem('toolbox_skin', v.skin);
-    } catch { /* 사생활 모드 */ }
-  }, { theme, skin });
-  for (const [name, url] of RUN_SCREENS) {
+/* 탭 여럿을 같이 (2026-09-25). 전수 233장을 탭 하나로 돌면 장마다 1.8초 재움만 합 420초,
+   판 전체 484초였고 verify 에서 제일 긴 검사였다. 재움은 장마다 그대로 두고 탭을 늘린다.
+   탭마다 제 context 라 저장소가 안 섞인다 */
+const LANES = Math.max(1, Number(process.env.KL_A11Y_LANES || 4));
+const queue = [];
+for (const skin of RUN_SKINS) for (const theme of RUN_THEMES) for (const [name, url] of RUN_SCREENS) queue.push({ skin, theme, name, url });
+async function runLane() {
+  const pages = new Map();
+  for (;;) {
+    const job = queue.shift();
+    if (!job) break;
+    await checkScreen(job, pages);
+  }
+  for (const ctx of pages.values()) await ctx.close();
+}
+/** 스킨과 판 짝마다 탭 하나를 두고 다시 쓴다 */
+async function pageFor({ skin, theme }, pages) {
+  const k = `${skin}|${theme}`;
+  if (!pages.has(k)) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addInitScript((v) => {
+      try {
+        localStorage.setItem('toolbox_theme', v.theme);
+        localStorage.setItem('toolbox_skin', v.skin);
+      } catch { /* 사생활 모드 */ }
+    }, { theme, skin });
+    await ctx.newPage();
+    pages.set(k, ctx);
+  }
+  return pages.get(k).pages()[0];
+}
+async function checkScreen(job, pages) {
+  const { skin, theme, name, url } = job;
+  const page = await pageFor(job, pages);
+  {
     const screenStarted = Date.now();
     let res;
     try {
       res = await page.goto(`http://localhost:${PORT_IN_USE}${url}`, { waitUntil: 'load' });
     } catch (e) {
       unopened.push(`${name} (${url}): ${String(e && e.message).split(String.fromCharCode(10))[0].slice(0, 80)}`);
-      continue;
+      return;
     }
     /* ★ **여기서 문제 0건은 안 봤다일 수 있다** (2026-08-21).
      * 이 검사의 합격 조건이 <b>문제 0건</b>이라, 장이 안 열려 화면이 비면 그대로 초록이 된다.
@@ -250,8 +275,8 @@ for (const skin of RUN_SKINS) for (const theme of RUN_THEMES) {
     for (const v of violations) failures.push({ theme: `${skin}/${theme}`, name, ...v });
     console.log(`[smoke-a11y] ${name}: ${violations.length}종, ${Date.now() - screenStarted}ms`);
   }
-  await ctx.close();
 }
+await Promise.all(Array.from({ length: Math.min(LANES, queue.length) }, runLane));
 await browser.close();
 await new Promise((resolve) => {
   server.close(resolve);
