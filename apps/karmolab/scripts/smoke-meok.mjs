@@ -77,10 +77,11 @@ await page.goto(base + '/apps/karmolab/index.html#meok', { waitUntil: 'load', ti
 //   구조가 바뀌면서 조용히 안 뜨게 됐고, 이 검사가 그때부터 빨갰다(2026-08-13 에 고침).
 //   ★ `.meok` 은 **처음부터 DOM 에 있지만 숨겨져** 있다. 개수로 판단하면 이미 있다고 읽고
 //   단추를 안 누른다. **보이는지**로 봐야 한다. 그리고 단추는 한 번만 누른다(다시 누르면 닫힌다).
+// 첫 화면에도 '먹' 카드가 있음 (2026-09-24 제목 로비로 되돌림). 그 카드를 누르면 화면을 다시 옮겨 전환이 끊김. 도구 쪽 버튼만 찾음
 await page.waitForTimeout(3000);
 if (!(await page.locator('.meok:visible').isVisible().catch(() => false))) {
   await page.evaluate(() => {
-    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '먹');
+    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '먹' && !b.closest('.landing-page'));
     if (button) button.click();
   });
   await page.waitForTimeout(2500);
@@ -91,7 +92,7 @@ try {
   //   그래서 이 검사는 매 판 첫 20초를 헛되이 기다리다 화면이 안 떴다로 죽었다(master 실측).
   await page.waitForTimeout(2000);
   await page.evaluate(() => {
-    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '먹');
+    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '먹' && !b.closest('.landing-page'));
     if (button) button.click();
   });
   // ★ 붙어 있기(attached)만 기다린다. 보이기로 기다리면 **숨은 첫 판**을 붙들고 시간이 다 간다.
@@ -387,7 +388,7 @@ await page.reload({ waitUntil: 'load' });
 // 그래서 기다리기 전에 먼저 연다. 순서를 반대로 하면 20 초를 헛되이 기다린다.
 await page.waitForTimeout(3000);
 await page.evaluate(() => {
-  const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '먹');
+  const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '먹' && !b.closest('.landing-page'));
   if (button) button.click();
 });
 await page.waitForSelector('.meok', { state: 'attached', timeout: 20000 });

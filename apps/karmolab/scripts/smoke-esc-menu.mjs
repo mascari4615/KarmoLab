@@ -37,12 +37,12 @@ try {
     await input.click();
     await page.keyboard.press('Escape');
     assert.equal(await menu.isVisible(), false, `${url}: 입력 중 ESC가 메뉴를 열었다`);
-    if (!url.includes('loan')) {
-      await page.locator('[data-home-chrome]').click();
-      await menu.waitFor({ state: 'visible' });
-      await menu.locator('.esc-close').click();
-      await menu.waitFor({ state: 'hidden' });
-    }
+    /* 첫 화면 구석 버튼 ([data-home-chrome]) 은 Q2 로비와 함께 없어짐 (2026-09-24 제목 로비로 되돌림). 닫기 버튼만 잰다. 입력 칸에서 빠져나온 뒤 ESC */
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press('Escape');
+    await menu.waitFor({ state: 'visible' });
+    await menu.locator('.esc-close').click();
+    await menu.waitFor({ state: 'hidden' });
     console.log(`[esc-menu] ${url}: 열기, 닫기, 입력 보호 통과`);
   }
 } finally {
