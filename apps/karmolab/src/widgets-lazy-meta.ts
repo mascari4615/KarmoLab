@@ -681,17 +681,6 @@ window.KARMOLAB_LAZY_META = [
     lazyScriptPaths: ['tierlist/tierlist']
   },
   {
-    /* 소개. 제 주소(`/about/`)가 따로 있다. 작업물과 링크도 이 한 장 (2026-09-08). */
-    id: 'about',
-    noPage: true,
-    get title() { return t('widgets.about.title', undefined, "소개"); },
-    category: 'app',
-    get desc() { return t('widgets-desc.about.desc', undefined, "카모뜨린. 유니티 게임 개발, VRChat 콘텐츠 제작"); },
-    layout: 'wide',
-    icon: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 11v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor"/>',
-    lazyScriptPaths: ['about/about']
-  },
-  {
     id: 'postgraph',
     get title() { return t('widgets.postgraph.title', undefined, "글 그래프"); },
     category: 'app',

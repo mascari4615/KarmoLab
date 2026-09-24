@@ -51,6 +51,9 @@ if (ENTRY_SET.size === 0) {
   process.exit(2);
 }
 
+/* `src/` 바로 아래 진입 파일. build.mjs 가 이름으로 따로 묶는 것 (`about-page.ts`) 포함 */
+const ROOT_ENTRIES = readdirSync(join(app, 'src')).filter((f) => f.endsWith('.ts')).map((f) => `src/${f}`);
+
 const orphans = [];
 for (const name of folders) {
   const folderPath = join(widgetsDir, name);
@@ -74,7 +77,7 @@ for (const name of folders) {
   const bundledBy = (e) => {
     try { return new RegExp(`import\\s[^;]*['"]\\./widgets/${name}/`).test(readFileSync(join(app, e), 'utf8')); } catch { return false; }
   };
-  const builds = [...ENTRY_SET].some((e) => e.startsWith(`src/widgets/${name}/`) || e === `src/widgets/${name}.ts` || (/^src\/[^/]+\.ts$/.test(e) && bundledBy(e)));
+  const builds = [...ENTRY_SET].some((e) => e.startsWith(`src/widgets/${name}/`) || e === `src/widgets/${name}.ts`) || ROOT_ENTRIES.some(bundledBy);
   if (!referenced || !builds) orphans.push(name + (referenced && !builds ? ' (이름은 나오는데 **지어지지 않는다**)' : ''));
 }
 
