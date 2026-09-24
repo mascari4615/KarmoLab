@@ -751,7 +751,6 @@ import { t, loadNamespace } from '../../lib/i18n';
         label: t('mydash.nav.now', undefined, '지금'),
         items: [
           { id: 'today', label: t('mydash.nav.home', undefined, '홈'), panel: 'home' },
-          { id: 'me', label: t('mydash.nav.me', undefined, '나'), panel: 'me' },
         ],
       },
       {
@@ -803,7 +802,6 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** ESC 메뉴 칸의 아이콘 (`img/shell/menu/*.png`). 홈 카드와 같은 매핑, 나 는 소개 그림 */
   const MENU_ICONS: Record<string, string> = {
     today: 'home',
-    me: 'about',
     bookmarks: 'book',
     ai: 'stat',
     pc: 'dash',
@@ -969,8 +967,9 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /** 목록에 있는 그 항목. 없으면 null */
     function itemById(id: string): NavItem | null {
-      /* 옛 주소 둘. 판정 대기 (#judge) 는 북마크 방으로, 캘린더 (#calendar) 는 플래너로 */
-      const want = id === 'judge' ? 'bookmarks' : id === 'calendar' ? 'planner' : id;
+      /* 옛 주소. 판정 대기 (#judge) 와 카톡 메모 (#kakao) 는 북마크 방, 캘린더 (#calendar) 는 플래너,
+         나 (#me) 는 홈. 나 방은 2026-09-24 뺌 (사용자 "나 가 의미가 없는 것 같은데 각 곳에서 보면 되는 거") */
+      const want = id === 'judge' || id === 'kakao' ? 'bookmarks' : id === 'calendar' ? 'planner' : id === 'me' ? 'today' : id;
       return navItems().filter((x) => x.id === want)[0] || null;
     }
     /** 그 항목이 열 패널. 코드가 아직 안 실렸으면 null */

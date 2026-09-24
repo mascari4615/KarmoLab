@@ -21,7 +21,6 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
   'use strict';
 
   const BOOKMARKS_PATH = 'data/bookmarks/summary.json';
-  const ME_PATH = 'data/me/summary.json';
   const CAREER_PATH = 'data/career/summary.json';
   const AI_DIR = 'data/ai-usage';
   const PC_DIR = 'data/pc-vitals';
@@ -135,11 +134,6 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     ];
   }
 
-  /** 카드 격자에 없는 방. 목록 수만 */
-  async function meCount(repo: DashRepoRead): Promise<string> {
-    return short(num((await repo.readJson<{ counts?: Counts }>(ME_PATH)).counts?.eraCandidates));
-  }
-
   /* ── 그리기 ─────────────────────────────────────────────────── */
 
   function tileHtml(c: Tile): string {
@@ -188,7 +182,6 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
       item: c.item,
       count: () => c.count(repo),
     }));
-    jobs.push({ item: 'me', count: () => meCount(repo) });
 
     const results = await Promise.all(
       jobs.map(async (j) => {
@@ -227,7 +220,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
       return t('mydash.nav.home', undefined, '홈');
     },
     access: 'read',
-    paths: [BOOKMARKS_PATH, ME_PATH, CAREER_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
+    paths: [BOOKMARKS_PATH, CAREER_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
     render,
   });
 })();
