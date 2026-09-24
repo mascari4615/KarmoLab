@@ -102,6 +102,10 @@ apps/karmolab/data/about.json
 # 「비슷한 글」 — 색인에서 파생된다 (`npm run gen:related`). 곳간도 이 기계 것이다.
 apps/karmolab/data/related-posts.json
 apps/karmolab/data/.related-cache.json
+# 변경 기록과 그 구독 주소. git 기록에서 굽는다 (`gen:changelog`, `gen:feeds`). 커밋마다 바뀌어
+# 담아 두면 verify 뒤 트리가 더러워져 safe-push rebase 가 막혔다 (2026-09-25). 배포가 새로 굽는다
+apps/karmolab/data/changelog.json
+apps/karmolab/changes.xml
 apps/blog/posts/
 apps/blog/feed.xml
 apps/blog/about/
