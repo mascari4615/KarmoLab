@@ -29,6 +29,16 @@ console.log(fullGates
   ? '[verify] 게이트 통짜 (CI 또는 --full)'
   : '[verify] 게이트는 origin/main 대비 바뀐 것에 걸리는 것만. 통짜는 CI 와 `npm run verify:full`');
 
+/** 로컬 판에서 origin/main 대비 바뀐 파일 (커밋과 작업 트리 둘 다). 못 구하면 null, 그때는 다 돈다 */
+function localChanged() {
+  if (fullGates) return null;
+  const d = spawnSync('git', ['diff', '--name-only', 'origin/main'], { encoding: 'utf8' });
+  const u = spawnSync('git', ['ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' });
+  if (d.status !== 0 || u.status !== 0) return null;
+  return [...d.stdout.split('\n'), ...u.stdout.split('\n')].map((x) => x.trim()).filter(Boolean);
+}
+const changedFiles = localChanged();
+
 /* ★ **어디서 오래 걸리는지 아무도 몰랐다** (2026-08-19). verify 기네는 매번 나오는데
    단계별 시간을 안 재니 손대야 할 자리를 짐작으로 골랐다. 한 번 틀렸다(npm 껍데기가
    범인인 줄 알았으나 재 보니 9%였고, 진짜는 검사 하나가 27%였다).
@@ -205,7 +215,11 @@ run('apps/karmolab 도구 장 짝 찍기 (en/ja)', 'apps/karmolab', 'npm run gen
    두는 값이 훨씬 비싸다. (도구 장 찍기와 같은 자리, 같은 이유.) */
 run('apps/karmolab 첫 화면 미리 그리기 (그 검사가 볼 것)', 'apps/karmolab', 'npm run prerender:home');
 
-run('apps/karmolab 품질 래칫 (부팅, 성능, 누수)', 'apps/karmolab', 'npm run verify:quality');
+/* 로컬은 앱 쪽이 바뀐 판에만 (2026-09-25, 136초). 글 (`content/`) 만 바뀐 판은 부팅, 성능과 무관. CI 는 늘 */
+const qualityTouched = changedFiles === null
+  || changedFiles.some((f) => (f.startsWith('apps/karmolab/') && !f.startsWith('apps/karmolab/content/')) || f.startsWith('packages/'));
+if (qualityTouched) run('apps/karmolab 품질 래칫 (부팅, 성능, 누수)', 'apps/karmolab', 'npm run verify:quality');
+else console.log('[verify] ! apps/karmolab 앱 쪽이 안 바뀌었다. 품질 래칫 건너뜀 (CI 는 늘 잰다)');
 
 // 2.1. 도구 페이지가 앱 셸과 갈라졌는지 (KL-097).
 //    도구 상세 127장은 index.html 에서 **만들어진 것**이다. 단일 출처는 이미 있는데,
@@ -293,6 +307,12 @@ const tauriTouched = (() => {
   if (process.env.VERIFY_TAURI === 'skip') {
     console.log('[verify] ! apps/karmolab-tauri 는 이번 판이 안 건드렸다. cargo check 건너뜀 (시계 판이 늘 잰다)');
     return false;
+  }
+  /* 로컬은 origin/main 대비 (2026-09-25, 100초). 기준이 없던 때는 늘 돌았다 */
+  if (!process.env.VERIFY_DIFF_RANGE && changedFiles) {
+    const touched = changedFiles.some((f) => /^(apps\/karmolab-tauri\/|vendor\/glib-0\.18\.5\/|vendor\/rand-0\.7\.3\/)/.test(f));
+    if (!touched) console.log('[verify] ! apps/karmolab-tauri 가 origin/main 대비 안 바뀌었다. cargo check 건너뜀 (CI 가 잰다)');
+    return touched;
   }
   const range = process.env.VERIFY_DIFF_RANGE;
   if (!range) return true; // 모르면 잰다. 모름을 안 건드림으로 읽지 않는다
