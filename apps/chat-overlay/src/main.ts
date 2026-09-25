@@ -56,7 +56,7 @@ initThemeEditor();
 let lastIngestDup: { key: string; at: number } | null = null;
 const INGEST_DEDUP_MS = 120;
 
-/** KarmoWebExtension 등 → Tauri `POST /ingest` → `extension-ingest` */
+/** KarmoDevExtension 등 → Tauri `POST /ingest` → `extension-ingest` */
 void listen<{ author: string; text: string; ts: number }>("extension-ingest", (event) => {
   const p = event.payload;
   const key = `${p.author}\u0000${p.text}`;

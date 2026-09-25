@@ -3,7 +3,7 @@
  *
  * 왜 다운로드인가: MV3 워커에는 URL.createObjectURL 이 없고, 로컬 수신 서버는
  * 늘 떠 있지 않다. 다운로드 폴더는 늘 있다. 수확은 memo/scripts/harvest-browser-dumps.mjs
- * 정본: memo/systems/karmo-web-extension.md
+ * 정본: memo/systems/karmo-dev-extension.md
  */
 
 const DUMP_DIR = "karmo-taste";

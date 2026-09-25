@@ -26,7 +26,7 @@ async function forwardToLocal(payload) {
       mode: "cors"
     });
   } catch (e) {
-    console.warn("[KarmoWebExtension] ingest 실패 (로컬 앱이 안 떠 있을 수 있음):", e);
+    console.warn("[KarmoDevExtension] ingest 실패 (로컬 앱이 안 떠 있을 수 있음):", e);
   }
 }
 

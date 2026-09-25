@@ -510,7 +510,7 @@
       "docId": "docs-project-commands",
       "heading": "레포 구조 한눈에",
       "title": "레포 구조 한눈에",
-      "description": "경로 역할 ------ ------ 루트 / 모노레포 오케스트레이터. npm run verify main invariant 단일 게이트 apps/karmolab/ KarmoLab 웹앱 TypeScript → js/ 빌드 산출 apps/karmolab-tauri/ KarmoLab 데스크톱 Tauri + 로컬 정적 서버 apps/discord-bots/ Discord 봇 워크스페이스 여러 패키지 apps/chat-overlay/ 방송용 오버레이 Tauri + Vite apps/karmo-web-extension/ Chrome 확장 MV3 apps/blog/ 배포되는 사이",
+      "description": "경로 역할 ------ ------ 루트 / 모노레포 오케스트레이터. npm run verify main invariant 단일 게이트 apps/karmolab/ KarmoLab 웹앱 TypeScript → js/ 빌드 산출 apps/karmolab-tauri/ KarmoLab 데스크톱 Tauri + 로컬 정적 서버 apps/discord-bots/ Discord 봇 워크스페이스 여러 패키지 apps/chat-overlay/ 방송용 오버레이 Tauri + Vite apps/karmo-dev-extension/ Chrome 확장 MV3 apps/blog/ 배포되는 사이",
       "aliases": "project commands guide"
     },
     {
@@ -558,7 +558,7 @@
       "docId": "docs-project-commands",
       "heading": "기타 apps/",
       "title": "기타 apps/",
-      "description": "앱 대표 명령 ---- ----------- chat-overlay cd apps/chat-overlay → npm install → npm run tauri:dev karmo-web-extension Chrome에서 압축해제된 확장 로드 → 폴더 선택 README.md 참고 ---",
+      "description": "앱 대표 명령 ---- ----------- chat-overlay cd apps/chat-overlay → npm install → npm run tauri:dev karmo-dev-extension Chrome에서 압축해제된 확장 로드 → 폴더 선택 README.md 참고 ---",
       "aliases": "project commands guide"
     },
     {

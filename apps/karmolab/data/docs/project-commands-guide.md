@@ -17,7 +17,7 @@
 | `apps/karmolab-tauri/` | KarmoLab **데스크톱**(Tauri + 로컬 정적 서버) |
 | `apps/discord-bots/` | Discord 봇 워크스페이스(여러 패키지) |
 | `apps/chat-overlay/` | 방송용 오버레이(Tauri + Vite) |
-| `apps/karmo-web-extension/` | Chrome 확장(MV3) |
+| `apps/karmo-dev-extension/` | Chrome 확장(MV3) |
 | `apps/blog/` | 배포되는 사이트 껍데기. 글, 도구 장은 빌드 때 여기로 실립니다 |
 
 세부 README: 각 `apps/*/README.md` 및 루트 `README.md`.
@@ -132,7 +132,7 @@ npm run deploy:yawnbot
 | 앱 | 대표 명령 |
 |----|-----------|
 | `chat-overlay` | `cd apps/chat-overlay` → `npm install` → `npm run tauri:dev` |
-| `karmo-web-extension` | Chrome에서 **압축해제된 확장 로드** → 폴더 선택 (`README.md` 참고) |
+| `karmo-dev-extension` | Chrome에서 **압축해제된 확장 로드** → 폴더 선택 (`README.md` 참고) |
 
 ---
 

@@ -384,7 +384,7 @@ async function closeBridgeTabs(exceptId) {
   const tabs = await chrome.tabs.query({ url: ["http://127.0.0.1/*", "http://localhost/*"] });
   let n = 0;
   for (const t of tabs) {
-    if (t.id === exceptId || !/\/apps\/karmo-web-extension\/bridge\.html\?run=/.test(t.url || "")) continue;
+    if (t.id === exceptId || !/\/apps\/karmo-dev-extension\/bridge\.html\?run=/.test(t.url || "")) continue;
     try { await chrome.tabs.remove(t.id); n += 1; } catch { /* 이미 닫힘 */ }
   }
   return n;

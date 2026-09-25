@@ -1,11 +1,11 @@
-# KarmoWebExtension (Chrome MV3)
+# KarmoDevExtension (Chrome MV3)
 
-로컬 앱(`chat-overlay` 등)과 브라우저 방송, 시청 페이지를 잇는 **KarmoWebExtension**입니다.
+로컬 앱(`chat-overlay` 등)과 브라우저 방송, 시청 페이지를 잇는 **KarmoDevExtension**입니다.
 
 ## 개발용 로드
 
 1. Chrome `chrome://extensions` → **개발자 모드**
-2. **압축해제된 확장 프로그램을 로드합니다** → 이 폴더(`karmo-web-extension`) 선택
+2. **압축해제된 확장 프로그램을 로드합니다** → 이 폴더(`karmo-dev-extension`) 선택
 
 기존에 `stream-overlay-extension` 등으로 로드했다면 제거 후 이 폴더를 다시 로드하세요.
 

@@ -6,7 +6,7 @@
  *   (2026-09-21 실측, 스크롤 한 번에 1편, 탭 먼저 소멸)
  * 요청 본뜨기는 yt-hook.js 가 document_start 에서
  * 한 걸음씩인 이유: MV3 워커 30초 무활동 종료
- * 정본: memo/systems/karmo-web-extension.md
+ * 정본: memo/systems/karmo-dev-extension.md
  */
 
 /** 걸음 사이 기억. 탭이 살아 있는 동안 남는다 */

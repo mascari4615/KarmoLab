@@ -1,4 +1,4 @@
-//! 브라우저 확장(KarmoWebExtension 등)이 `POST /ingest` 로 보낸 채팅을 Webview로 넘김.
+//! 브라우저 확장(KarmoDevExtension 등)이 `POST /ingest` 로 보낸 채팅을 Webview로 넘김.
 
 use axum::extract::State;
 use axum::http::{Method, StatusCode};
@@ -83,7 +83,7 @@ pub fn spawn_ingest_server(app: AppHandle) {
                     return;
                 }
             };
-            eprintln!("[ingest] http://127.0.0.1:{port}/ingest 대기 중 (KarmoWebExtension)");
+            eprintln!("[ingest] http://127.0.0.1:{port}/ingest 대기 중 (KarmoDevExtension)");
             if let Err(e) = axum::serve(listener, router).await {
                 eprintln!("[ingest] 서버 오류: {e}");
             }

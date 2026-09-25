@@ -1388,9 +1388,9 @@
     {
       "name": "test:ext-tabs",
       "watch": [
-        "../karmo-web-extension/background.js",
-        "../karmo-web-extension/schedule.js",
-        "../karmo-web-extension/manifest.json",
+        "../karmo-dev-extension/background.js",
+        "../karmo-dev-extension/schedule.js",
+        "../karmo-dev-extension/manifest.json",
         "scripts/smoke-ext-tabs.mjs"
       ]
     }

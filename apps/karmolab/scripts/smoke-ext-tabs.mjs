@@ -1,5 +1,5 @@
 /**
- * KarmoWebExtension 수집 탭 회수 검사.
+ * KarmoDevExtension 수집 탭 회수 검사.
  *
  * 왜 있나: MV3 워커는 30초 무활동이면 죽는다. 죽으면 `finally` 가 안 돌아
  * 수집 탭이 사용자 창에 그대로 남는다. 2026-09-22 에 치지직 창 다섯이 남아
@@ -17,7 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const EXT = path.resolve(HERE, '..', '..', 'karmo-web-extension');
+const EXT = path.resolve(HERE, '..', '..', 'karmo-dev-extension');
 
 if (!fs.existsSync(path.join(EXT, 'manifest.json'))) {
   console.error('[ext-tabs] FAIL 확장 폴더 없음:', EXT);

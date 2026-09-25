@@ -5,7 +5,7 @@
  *   뒤에 끼어들면 잡을 것 없음 (2026-09-21 실측, 후크 0건)
  * 왜 스크롤이 아닌가: 수집 탭은 visibilityState 가 hidden
  *   X 무한 스크롤 로더(IntersectionObserver) 정지
- * 정본: memo/systems/karmo-web-extension.md
+ * 정본: memo/systems/karmo-dev-extension.md
  */
 
 (() => {

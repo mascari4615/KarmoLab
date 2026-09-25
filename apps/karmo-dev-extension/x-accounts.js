@@ -6,7 +6,7 @@
  * 스크롤이 아닌 이유: 수집 탭은 visibilityState 가 hidden. 무한 스크롤 로더 정지
  * 요청 본뜨기는 x-hook.js 가 document_start 에서
  * 한 걸음씩인 이유: MV3 워커 30초 무활동 종료
- * 정본: memo/systems/karmo-web-extension.md
+ * 정본: memo/systems/karmo-dev-extension.md
  */
 
 /** 걸음 사이 기억. 탭이 살아 있는 동안 남는다 */

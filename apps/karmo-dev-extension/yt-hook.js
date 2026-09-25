@@ -4,7 +4,7 @@
  * 왜 후크: 직접 만든 요청은 로그아웃 취급
  *   화면 문구 "로그아웃하면 시청 기록을 볼 수 없습니다". SAPISIDHASH 헤더 필수
  * 왜 스크롤이 아닌가: 수집 탭은 visibilityState 가 hidden. 더 불러오기 정지
- * 정본: memo/systems/karmo-web-extension.md
+ * 정본: memo/systems/karmo-dev-extension.md
  */
 
 (() => {

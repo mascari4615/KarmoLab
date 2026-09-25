@@ -4,7 +4,7 @@
  * 일반 유튜브와 다른 점: ytInitialData 없음, browse 요청도 안 잡힘
  *   화면에 박혀 옴. DOM 에만 있음 (2026-09-21 실측, 첫 화면 199곡)
  * 그래서 이것만 DOM 에서
- * 정본: memo/systems/karmo-web-extension.md
+ * 정본: memo/systems/karmo-dev-extension.md
  */
 
 /** 걸음 사이 기억. 탭이 살아 있는 동안 남는다 */

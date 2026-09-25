@@ -3,7 +3,7 @@
  *
  * 확장인 이유: 자동화 브라우저는 X 와 구글 로그인이 탐지 차단
  * 사용자가 직접 설치한 확장이라 그 벽과 무관
- * 정본: memo/systems/karmo-web-extension.md
+ * 정본: memo/systems/karmo-dev-extension.md
  */
 
 /** 화면이 쓰는 API 를 같은 자격으로. 새로 뚫는 것 없음 */
