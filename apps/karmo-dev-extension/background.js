@@ -259,15 +259,25 @@ async function runInTab(url, file, fnName, world) {
 async function pinRun(url, opt) {
   const tab = await openWorkTab(url);
   try {
-    await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id } };
-    await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["pinterest.js"] }));
-    const [out] = await within(90000, "call", chrome.scripting.executeScript({
-      ...where,
-      func: (o) => globalThis.pinScrape(o),
-      args: [opt],
-    }));
-    return out && out.result;
+    /* 로그인 뒤 핀터레스트는 로드 중에 주소를 한 번 더 바꾼다. 그 사이 주입하면 "Frame with ID 0 was removed"
+       (2026-09-25 실측). 다시 로드를 기다려 한 번 더 */
+    for (let tries = 0; ; tries += 1) {
+      await waitLoaded(tab.id);
+      try {
+        await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["pinterest.js"] }));
+        const [out] = await within(90000, "call", chrome.scripting.executeScript({
+          ...where,
+          func: (o) => globalThis.pinScrape(o),
+          args: [opt],
+        }));
+        return out && out.result;
+      } catch (e) {
+        if (tries >= 2 || !/Frame with ID|was removed|No frame/i.test(String(e && e.message))) throw e;
+        await note("pinterest.related", "주입 다시 " + (tries + 1));
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    }
   } finally {
     await closeWorkTab(tab.id);
   }
@@ -284,7 +294,7 @@ async function pinterestRelated(msg) {
     if (!PIN_HASH_RE.test(String(s.key || ""))) continue;
     let href = String(s.pin || "");
     if (!href && s.q) {
-      const r = await pinRun("https://kr.pinterest.com/search/pins/?q=" + encodeURIComponent(String(s.q)), { key: s.key });
+      const r = await pinRun("https://www.pinterest.com/search/pins/?q=" + encodeURIComponent(String(s.q)), { key: s.key });
       href = (r && r.href) || "";
     }
     href = href.split("?")[0];
