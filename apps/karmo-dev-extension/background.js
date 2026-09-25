@@ -273,6 +273,7 @@ async function pinRun(url, opt) {
        (2026-09-25 실측). 다시 로드를 기다려 한 번 더 */
     for (let tries = 0; ; tries += 1) {
       await waitLoaded(tab.id);
+      await note("pinterest.related", "탭 로드 " + ((await chrome.tabs.get(tab.id).catch(() => ({}))).url || "").slice(0, 60));
       try {
         await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["pinterest.js"] }));
         const [out] = await within(90000, "call", chrome.scripting.executeScript({
@@ -310,11 +311,14 @@ async function pinterestRelated(msg) {
 async function pinterestRelatedBody(msg) {
   const per = Math.max(1, Math.min(80, Number(msg.per) || 25));
   const out = [];
-  for (const s of (Array.isArray(msg.seeds) ? msg.seeds : []).slice(0, 12)) {
+  const seeds = (Array.isArray(msg.seeds) ? msg.seeds : []).slice(0, 12);
+  await note("pinterest.related", "시작 씨앗 " + seeds.length);
+  for (const s of seeds) {
     if (!PIN_HASH_RE.test(String(s.key || ""))) continue;
+    await note("pinterest.related", s.key.slice(0, 8) + " 찾기");
     let href = String(s.pin || "");
     if (!href && s.q) {
-      const r = await pinRun("https://www.pinterest.com/search/pins/?q=" + encodeURIComponent(String(s.q)), { key: s.key });
+      const r = await pinRun("https://kr.pinterest.com/search/pins/?q=" + encodeURIComponent(String(s.q)), { key: s.key });
       href = (r && r.href) || "";
     }
     href = href.split("?")[0];
@@ -323,6 +327,7 @@ async function pinterestRelatedBody(msg) {
       await note("pinterest.related", s.key + " 핀 쪽 없음");
       continue;
     }
+    await note("pinterest.related", s.key.slice(0, 8) + " 핀 쪽 " + href);
     const r = await pinRun(href, { want: per });
     const rows = ((r && r.rows) || []).filter((x) => x.hash !== s.key);
     out.push({ seed: s.key, pin: href, rows });
