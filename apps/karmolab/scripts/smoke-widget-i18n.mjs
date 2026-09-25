@@ -17,6 +17,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WAIT } from './lib/waits.mjs';
 import { LOCALES, SOURCE_LOCALE, catalog, localizedPath } from './lib/locales.mjs';
 
 /** 첫 화면에 바로 그려지는 글만 고른다. 눌러야 나오는 글로 재면 늘 안 보인다가 된다. */
@@ -92,6 +93,12 @@ const server = http.createServer((req, res) => {
   const url = decodeURIComponent(req.url.split('?')[0]);
   let file = path.join(repoRoot, url);
   if (url.endsWith('/')) file = path.join(file, 'index.html');
+  /* 묶음 도구 장은 사이트 주소 (`/en/t/text/#caseconv`) 로 옮겨 간다. 저장소 뿌리에는 없고
+     `apps/blog` 아래에 있다. 여기서 404 가 나 묶음 도구 28개를 한 번도 못 쟀다 (2026-09-25) */
+  if (!fs.existsSync(file)) {
+    const site = path.join(repoRoot, 'apps', 'blog', url, url.endsWith('/') ? 'index.html' : '');
+    if (fs.existsSync(site)) file = site;
+  }
   if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     res.writeHead(404).end('no');
     return;
@@ -158,11 +165,20 @@ async function checkOne({ code, id, page }) {
   /* 있는가 = **마크업**으로 본다. 자리표시(placeholder), 읽어 주는 이름(aria-label)처럼 글자로
      안 보이는 자리도 사람이 쓰는 말이다. 글자만 보면 그 자리는 영영 안 잡힌다(실측: 세계시계의
      찾기 칸이 그래서 안 보인다로 나왔다. 도구는 멀쩡했다). */
-  const seen = await tab
-    .waitForFunction((needle) => document.body.innerHTML.includes(needle), mine[keys[0]], { timeout: 8000 })
+  /* 도구가 그려졌나를 먼저, 글은 그 뒤 짧게 (2026-09-25).
+     글만 8초 기다리던 때: 안 그려진 도구 28개 (묶음 장 404, 위 서버) 가 8초씩 다 써서 전체 120초 중 약 56초.
+     바쁠 때는 멀쩡한 도구도 8초를 넘겨 안 보인다로 셈 (병렬로 경고 1 -> 38 의 원인).
+     그려진 것은 조건 대기 (WAIT), 그 뒤 글은 2초. 못 그렸으면 못 잼으로 기록 */
+  const drew = await tab
+    .waitForFunction(() => !!document.querySelector('#tool-pages .tool-page.active'), undefined, { timeout: WAIT })
     .then(() => true)
     .catch(() => false);
-  if (!seen) fail.push(`${code}/${id}: 도구 화면에 그 언어 글이 안 보인다 (${mine[keys[0]]})`);
+  const seen = drew && await tab
+    .waitForFunction((needle) => document.body.innerHTML.includes(needle), mine[keys[0]], { timeout: 2000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!drew) fail.push(`${code}/${id}: 못 잼. 도구 화면이 ${WAIT}ms 안에 안 그려졌다`);
+  else if (!seen) fail.push(`${code}/${id}: 도구 화면에 그 언어 글이 안 보인다 (${mine[keys[0]]})`);
 
   /* 남았는가 = **도구가 그린 자리 안**에서만 본다. 장에는 도구 밖 조각(미리 그려 둔 뼈대, 다른 도구
      안내)이 함께 있고 그건 이 도구의 몫이 아니다. 거기까지 세면 늘 빨갛고, 그러면 검사가 꺼진다. */
