@@ -47,7 +47,60 @@ fn read_token() -> Result<String, String> {
         .ok_or_else(|| "no-credentials".to_string())
 }
 
+/// 토큰 갱신은 grok CLI 에 맡긴다. access token 수명이 6시간이라 CLI 를 안 켠 날은
+/// 늘 만료 (2026-09-25 실측). `grok models` 가 켜질 때 조용히 갱신하고 쿼터는 안 씀.
+/// auth.json 을 직접 고치면 CLI 의 잠금과 회전하는 refresh token 과 부딪혀서 안 함
+fn refresh_via_cli() -> bool {
+    use std::process::Command;
+    use std::time::{Duration, Instant};
+    let Some(home) = home_dir() else { return false };
+    let bin = home
+        .join(".grok")
+        .join("bin")
+        .join(if cfg!(windows) { "grok.exe" } else { "grok" });
+    if !bin.is_file() {
+        return false;
+    }
+    let mut cmd = Command::new(bin);
+    cmd.arg("models")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    let Ok(mut child) = cmd.spawn() else { return false };
+    let deadline = Instant::now() + Duration::from_secs(30);
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(200)),
+            _ => {
+                let _ = child.kill();
+                return false;
+            }
+        }
+    }
+}
+
 async fn probe_live() -> Result<VendorQuota, String> {
+    match fetch_billing().await {
+        Err(e) if e == "token-expired" => {
+            let refreshed = tauri::async_runtime::spawn_blocking(refresh_via_cli)
+                .await
+                .unwrap_or(false);
+            if !refreshed {
+                return Err(e);
+            }
+            extract_live(&fetch_billing().await?)
+        }
+        other => extract_live(&other?),
+    }
+}
+
+async fn fetch_billing() -> Result<serde_json::Value, String> {
     let token = tauri::async_runtime::spawn_blocking(read_token)
         .await
         .map_err(|e| format!("join-error: {e}"))??;
@@ -68,8 +121,7 @@ async fn probe_live() -> Result<VendorQuota, String> {
         return Err(format!("http-status: {}", status.as_u16()));
     }
 
-    let body: serde_json::Value = res.json().await.map_err(|e| format!("bad-response: {e}"))?;
-    extract_live(&body)
+    res.json().await.map_err(|e| format!("bad-response: {e}"))
 }
 
 /// 비공식 billing 응답: 과거 snake_case와 현재 `config` 아래 camelCase
@@ -85,11 +137,21 @@ fn extract_live(body: &serde_json::Value) -> Result<VendorQuota, String> {
         .map(str::to_string);
 
     // productUsage 우선 — Grok Build 제품 한도 / 전체 credit 사용률은 보조 신호
-    let used = find_key(config, "usagePercent")
+    let used_raw = find_key(config, "usagePercent")
         .or_else(|| find_key(config, "used_percent"))
         .or_else(|| find_key(config, "usage_percent"))
-        .or_else(|| find_key(config, "creditUsagePercent"))
-        .and_then(|v| v.as_f64());
+        .or_else(|| find_key(config, "creditUsagePercent"));
+    // proto3 JSON 은 0 인 숫자 칸을 생략. 기간이 왔는데 사용률 칸만 없으면 이번 기간 0%
+    // (2026-09-25 실측: 리셋 뒤 미사용 주)
+    let has_period_end = config
+        .get("currentPeriod")
+        .and_then(|period| period.get("end"))
+        .is_some();
+    let used = match used_raw {
+        Some(v) => v.as_f64(),
+        None if has_period_end => Some(0.0),
+        None => None,
+    };
     let resets = find_key(config, "reset_at")
         .and_then(|v| v.as_i64())
         .or_else(|| {
@@ -241,5 +303,28 @@ mod tests {
         assert_eq!(quota.windows[0].key, "seven_day");
         assert_eq!(quota.windows[0].used_percent, Some(100.0));
         assert_eq!(quota.windows[0].resets_at, Some(1788180132));
+    }
+
+    #[test]
+    fn omitted_usage_in_a_live_period_is_zero() {
+        // 2026-09-25 실제 응답. 리셋 뒤 미사용 주, 사용률 칸 없음
+        let body = json!({
+            "config": {
+                "currentPeriod": {
+                    "type": "USAGE_PERIOD_TYPE_WEEKLY",
+                    "start": "2026-09-21T12:42:12.372630+00:00",
+                    "end": "2026-09-28T12:42:12.372630+00:00"
+                },
+                "onDemandCap": { "val": 0 },
+                "onDemandUsed": { "val": 0 },
+                "isUnifiedBillingUser": true,
+                "prepaidBalance": { "val": 0 }
+            }
+        });
+
+        let quota = extract_live(&body).expect("period without usage should parse");
+        assert_eq!(quota.windows.len(), 1);
+        assert_eq!(quota.windows[0].key, "seven_day");
+        assert_eq!(quota.windows[0].used_percent, Some(0.0));
     }
 }
