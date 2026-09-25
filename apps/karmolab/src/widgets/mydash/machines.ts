@@ -19,6 +19,7 @@
  */
 import { dashRegistry, esc } from './kit';
 import type { DashPanelCtx, DashRepoRead } from './kit';
+import { createLocalServers } from './local-servers';
 
 (function (): void {
   'use strict';
@@ -508,6 +509,8 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
       ...h, summary: null, spec: null, notes: null, now: null, nowErr: '', nowTried: false,
     }));
     const byId = (id: string): Machine | null => machines.filter((m) => m.id === id)[0] || null;
+    /* 로컬 dev 서버 칸 (옛 lab 서버 모니터). 자리만 비워 두고 DOM 은 local-servers.ts 가 그림 */
+    const ls = createLocalServers({ isCurrent: ctx.isCurrent });
 
     /** 서비스 재시작. 첫 누름은 확인 대기, 같은 단추를 한 번 더 눌러야 보낸다 */
     const armed: Record<string, number> = {};
@@ -539,6 +542,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
       }
     }
     let detail = hostFromUrl();
+    ls.setDetail(!!detail);
 
     /* ── laptop-ops 부르기 ── */
 
@@ -706,6 +710,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
           numsHtml(lk, 'mc-grid4') +
           '<div class="mc-trend">' + trendHtml(m, 'cpu', false) + '</div>' +
           svcBlock +
+          (ls.owns(m.id) ? '<div data-ls-slot="overview"></div>' : '') +
           '<div class="mc-colspec">' + specHtml(m, false) + '</div>' +
           '</section>'
         );
@@ -821,6 +826,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
       const lk = look(m);
       const svcs = servicesOf(m);
       const hasSvc = m.live && svcs.length > 0;
+      const hasLocal = !hasSvc && ls.owns(m.id);
       if (hasSvc && !svcs.some((s) => s.name === logSvc)) {
         logSvc = svcs[0].name;
         logLines = [];
@@ -832,7 +838,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
         '<div class="mc-head"><h2 class="mc-name">' + esc(m.id) + '</h2>' + stateHtml(lk, true) + '</div>' +
         '<span class="mc-lab">' + esc(m.role) + '</span>' +
         numsHtml(lk, 'mc-nums') +
-        (hasSvc ? '<div class="mc-sec">' + trendHtml(m, 'cpu', false) + trendHtml(m, 'ram', false) + '</div>' : '') +
+        (hasSvc || hasLocal ? '<div class="mc-sec">' + trendHtml(m, 'cpu', false) + trendHtml(m, 'ram', false) + '</div>' : '') +
         '<div class="mc-sec"><span class="mc-lab">메모리, ' + esc(mem.head) + '</span><div class="mc-mem">' +
         mem.rows
           .map(([k, v, u]) => '<span>' + esc(k) + '</span><span>' + esc(v) + (v !== DASH && u ? '<small>' + esc(u) + '</small>' : '') + '</span>')
@@ -847,6 +853,8 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
           '<button type="button" class="btn" data-follow="1" aria-pressed="' + (following ? 'true' : 'false') + '">따라보기</button></div>' +
           '<div class="mc-term" data-logbox="1"></div>' +
           '</section>'
+        : hasLocal
+        ? '<section class="mc-paper mc-c" data-ls-slot="detail"></section>'
         : '<section class="mc-paper mc-c">' +
           '<div class="mc-sec" style="border:0;padding:0">' + trendHtml(m, 'cpu', true) + '</div>' +
           '<div class="mc-sec">' + trendHtml(m, 'ram', true) + '</div>' +
@@ -893,6 +901,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
         wrap.addEventListener('keydown', onKey);
       }
       const m = detail ? byId(detail) : null;
+      ls.beforeRepaint();
       if (m) {
         const box = wrap.querySelector('[data-logbox]') as HTMLElement | null;
         const keepScroll = box ? box.scrollTop : -1;
@@ -903,6 +912,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
       } else {
         wrap.innerHTML = overviewHtml();
       }
+      ls.attach(wrap);
       paintStatus();
     }
 
@@ -910,6 +920,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
       detail = id;
       setUrl(id);
       stopFollow();
+      ls.setDetail(true);
       logSvc = '';
       logLines = [];
       logNote = '';
@@ -921,6 +932,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
       detail = '';
       setUrl('');
       stopFollow();
+      ls.setDetail(false);
       paint();
     }
 
@@ -1041,6 +1053,7 @@ import type { DashPanelCtx, DashRepoRead } from './kit';
     ctx.onDispose(() => {
       window.clearInterval(liveTimer);
       stopFollow();
+      ls.dispose();
       for (const k of Object.keys(armed)) window.clearTimeout(armed[k]);
     });
   }

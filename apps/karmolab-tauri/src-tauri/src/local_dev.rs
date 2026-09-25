@@ -18,7 +18,7 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-const CONFIG_REL_PATH: &str = "apps/karmolab/data/servermonitor-config.json";
+pub(crate) const CONFIG_REL_PATH: &str = "apps/karmolab/data/servermonitor-config.json";
 
 /// 카드 마운트/재마운트 시 즉시 emit 할 마지막 라인 수. tail_log_loop 와 follow_log 가 공유.
 const INITIAL_TAIL_LINES: usize = 200;

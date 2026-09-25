@@ -84,6 +84,12 @@ pub fn start(app: tauri::AppHandle) {
             let url = request.url().to_string();
             let (path, query) = split_path_query(&url);
 
+            // Dash 머신 방 길. 인증과 CORS 가 따로라 여기서 넘김 (local_dev_dash)
+            if crate::local_dev_dash::is_dash_path(path) {
+                crate::local_dev_dash::handle(app.clone(), request, cfg.port);
+                continue;
+            }
+
             // /localdev/health 만 무인증 (liveness probe).
             if !(path == "/localdev/health" && method == Method::Get)
                 && !is_authorized(&request, &cfg.token)

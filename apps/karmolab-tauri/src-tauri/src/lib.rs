@@ -15,6 +15,7 @@ mod dev_static;
 mod questlog_hub;
 mod life;
 mod local_dev;
+mod local_dev_dash;
 mod local_dev_http;
 mod part_fetch;
 mod quest_index;
@@ -278,7 +279,7 @@ fn build_tray_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             app,
             "tray_quick_none",
             if repo_root_now.is_none() {
-                "저장소 자리를 먼저 정해라 — 서버 모니터 아래쪽"
+                "저장소 자리를 먼저 정해라. 설정, 이 컴퓨터, 작업 폴더"
             } else {
                 "적어 둔 손잡이가 없다 — data/tray-menu.json"
             },
@@ -448,7 +449,7 @@ fn toggle_dev_mode(handle: &tauri::AppHandle) -> Result<bool, String> {
         .map_err(|e| e.to_string())?
         .clone()
         .ok_or_else(|| {
-            "저장소 루트가 비어 있음. 카모랩 → 서버 모니터 하단에서 먼저 저장하세요.".to_string()
+            "저장소 루트가 비어 있음. 카모랩 → 설정 → 이 컴퓨터 → 작업 폴더에서 먼저 저장.".to_string()
         })?;
 
     let port = KARMOLAB_DEV_PORT.to_string();
