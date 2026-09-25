@@ -181,7 +181,8 @@ if (botReady) {
 // 2. apps/karmolab. build (typecheck 포함). karmolab-ai/dist 를 import.
 //    이전 karmolab-ts.yml + ai-quality.yml karmo-ai-surface 흡수.
 requireDeps('apps/karmolab');
-run('apps/karmolab build', 'apps/karmolab', 'npm run build');
+/* npm 껍데기 없이 같은 사슬 (run-chain.mjs 머리말). 2026-09-25 실측 게이트 앞 사슬 181초 -> 128초 */
+run('apps/karmolab build', 'apps/karmolab', 'npm run build:direct');
 
 // 2.0-b. **품질 래칫은 여기서 본다** (TASK-KL-203 S19).
 //
