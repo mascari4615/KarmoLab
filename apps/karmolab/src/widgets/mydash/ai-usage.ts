@@ -459,7 +459,7 @@ import type { DashPanelCtx } from './kit';
       if (id === 'usage') await renderUsage({ ...ctx, root: pane('usage') });
       else {
         await loadNamespace('my-ai').catch(() => undefined);
-        buildQuota(pane('quota'), (fn) => ctx.onDispose(fn));
+        buildQuota(pane('quota'), (fn) => ctx.onDispose(fn), undefined, () => ctx.ghToken());
       }
     }
     shell.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) =>

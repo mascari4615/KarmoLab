@@ -336,7 +336,16 @@ function renderCard(card: VendorCard): string {
     </section>`;
 }
 
-export function buildQuota(container: HTMLElement, onDispose: (fn: () => void) => void, desktopBridge?: DesktopBridge): void {
+/**
+ * `dashToken` 을 주면 노트북 `/dash/ai-quota` 를 GitHub 로그인으로 부름 (Dash). 비밀번호 줄 없음.
+ * `/ai-quota/api` 는 비밀번호와 lab 출처 전용이라 Dash 에서 막힘 (2026-09-25 "Failed to fetch")
+ */
+export function buildQuota(
+  container: HTMLElement,
+  onDispose: (fn: () => void) => void,
+  desktopBridge?: DesktopBridge,
+  dashToken?: () => Promise<string | null>
+): void {
   bridge = desktopBridge || null;
   ensureCss(
     'my-ai',
@@ -490,8 +499,22 @@ export function buildQuota(container: HTMLElement, onDispose: (fn: () => void) =
     return body.cards;
   }
 
+  async function loadFromDash(token: () => Promise<string | null>): Promise<VendorCard[]> {
+    const tok = await token();
+    if (!tok) throw new Error('login');
+    const res = await fetch(`${LAPTOP_BASE}/dash/ai-quota`, {
+      cache: 'no-store',
+      headers: { authorization: 'Bearer ' + tok },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) throw new Error(`http-${res.status}`);
+    const body = (await res.json()) as { ok?: boolean; cards?: VendorCard[] };
+    if (body.ok !== true || !Array.isArray(body.cards)) throw new Error('bad-response');
+    return body.cards;
+  }
+
   const load = (): Promise<VendorCard[]> =>
-    isDesktop() ? invoke<VendorCard[]>('ai_quota_all') : loadFromLaptop();
+    isDesktop() ? invoke<VendorCard[]>('ai_quota_all') : dashToken ? loadFromDash(dashToken) : loadFromLaptop();
 
   keyBtn.addEventListener('click', () => {
     if (keyInput.value.trim() !== '') refresh();
