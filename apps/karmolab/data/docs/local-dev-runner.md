@@ -1,6 +1,6 @@
 # 로컬 데브 러너 (Tauri 전용)
 
-KarmoLab **데스크톱 앱**(Tauri) 안에서만 쓰는 기능이에요. 일반 브라우저로 GitHub Pages만 열면 **서버 모니터** 위젯 자체가 메뉴에 없습니다.
+KarmoLab **데스크톱 앱**(Tauri) 이 켜져 있어야 도는 기능이에요. 로컬 서버 카드는 KarmoLab 서버 모니터 위젯에서 **Dash 머신 방** (https://dash.mascari4615.com/#machines/Mois) 으로 옮겼습니다. 카드는 아래 **localhost HTTP** 로 데스크톱 앱을 부릅니다.
 
 > **원본 파일:** `apps/karmolab/js/widgets/docs/local-dev-runner.md` (GitHub에서 직접 열어도 동일)
 
@@ -23,12 +23,11 @@ npm run dev
 
 ---
 
-## 위젯에서 쓰는 법
+## 쓰는 법
 
-1. 앱에서 상단 **데스크톱 앱** 메뉴 → **서버 모니터**를 엽니다. 열리면 **한 번 자동으로** URL ping, 카드 갱신이 돌아갑니다. ping은 카드마다 순서대로 끝날 때마다 **그 카드만** 잠깐 연두색 강조와 ✓가 보였다 사라집니다(실제 HTTP 확인이 있는 항목만).
-2. **로컬** 카드(같은 **`id`** 의 `localMonitors` URL 응답 + `devProfiles` 프로세스가 **한 장**에 묶임)에서 **시작**, **종료** 등을 씁니다. **새로고침**으로 다시 ping, 추적을 갱신하고, **목록 새로고침**은 설정, 추적만 다시 읽습니다(URL ping 없음).
-3. **환경 변수(.env):** **로컬** 아래 **환경 변수**에서 `servermonitor-config.json`의 **`envFiles`**에 적은 파일을 탐색기로 열거나, 앱 안에서 편집, 저장할 수 있습니다.
-4. 페이지 **맨 아래** **저장소 루트**에 이 레포의 최상위 폴더를 넣고 **저장**합니다. (예: Windows `C:\Users\…\Mascari4615.github.io`) 값은 WebView `localStorage`와 Rust 쪽 상태에 같이 반영됩니다. `.env` 편집, repofile 경로에 필요합니다.
+1. 데스크톱 앱을 켭니다. 트레이 메뉴 **머신 열기** 또는 https://dash.mascari4615.com/#machines/Mois 로 Dash 머신 방을 엽니다.
+2. 카드 한 장에 같은 **`id`** 의 `localMonitors` URL 응답과 `devProfiles` 프로세스가 묶임. 카드에서 **시작**, **종료** 등을 씁니다.
+3. 작업 폴더(저장소 루트)는 KarmoLab **설정 → 이 컴퓨터 → 작업 폴더** 에서 정합니다. (예: Windows `C:\Users\...\Mascari4615.github.io`) `.env` 편집, repofile 경로에 필요합니다.
 
 ---
 
@@ -64,7 +63,7 @@ npm run dev
 
 ## AI 비-GUI 경로 (localhost HTTP. TASK-KL-065)
 
-서버 모니터의 모든 운영 액션은 GUI(카드) 클릭 외에 **localhost HTTP** 로도 구동됩니다. AI 에이전트(Claude)가 데스크톱 앱 창을 클릭하지 않고 dev 프로필을 직접 start/stop/log/deploy 할 수 있게 하기 위함입니다. 사람 카드와 **같은 `LocalDevState`, 같은 함수 본체**를 공유하므로 한쪽에서 시작한 프로세스를 다른 쪽이 관측, 종료할 수 있습니다(이중 추적 없음).
+로컬 서버의 모든 운영 액션은 **localhost HTTP** 로 구동됩니다. Dash 머신 방 카드도 이 길을 씁니다. AI 에이전트(Claude)가 데스크톱 앱 창을 클릭하지 않고 dev 프로필을 직접 start/stop/log/deploy 할 수 있게 하기 위함입니다. 사람 카드와 **같은 `LocalDevState`, 같은 함수 본체**를 공유하므로 한쪽에서 시작한 프로세스를 다른 쪽이 관측, 종료할 수 있습니다(이중 추적 없음).
 
 - **바인드:** `127.0.0.1` 만 (타 머신 접근 차단). 기본 포트 **8766**.
 - **인증:** `Authorization: Bearer <token>`. 토큰, 포트는 앱이 최초 1회 자동 생성 → `<app_local_data_dir>/localdev-http.json` (`{ "port", "token" }`). Windows 경로 예: `%LOCALAPPDATA%\com.mascari4615.karmolab\localdev-http.json`. `/localdev/health` 만 무인증(liveness).
@@ -92,6 +91,6 @@ npm run dev
 ## 관련 문서
 
 - 터미널 명령 모음: **문서 → 프로젝트 명령**
-- **Deploy, npm i 로그 스트림**(카드 아래 패널)은 구현되어 있으며, 상세는 **문서 → 로컬, deploy 로그** (`servermonitor-deploy-log-stream.md`)를 참고하세요.
+- **Deploy, npm i 로그 스트림** 이벤트 계약은 **문서 → 로컬, deploy 로그** (`servermonitor-deploy-log-stream.md`)를 참고하세요.
 - Tauri 앱 빌드, 업데이트, 트레이: `apps/karmolab-tauri/README.md`
 - Tauri 업데이트, 릴리스 체크리스트: **문서 → 로드맵** (`roadmap.md` 의 Tauri 데스크톱, 자동 업데이트)

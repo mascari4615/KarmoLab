@@ -243,7 +243,7 @@ mod tests {
     #[test]
     fn 조각과_질의는_떨군다() {
         // dev 에서 잰다 — prod 는 제 도메인 한 곳으로 가므로 원래 조각·질의가 남지 않는다.
-        let u = tauri::Url::parse("http://127.0.0.1:8898/apps/karmolab/index.html?dev=1#servermonitor").unwrap();
+        let u = tauri::Url::parse("http://127.0.0.1:8898/apps/karmolab/index.html?dev=1#settings").unwrap();
         let out = files_url_from(&u);
         assert_eq!(out.fragment(), None);
         assert_eq!(out.query(), None);

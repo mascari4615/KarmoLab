@@ -7,7 +7,7 @@
  * 것은 없는 것과 같으므로, 외울 자리를 화면으로 만든다.
  *
  * 새 Rust 커맨드는 하나도 안 쓴다:
- * - 굽기 = `localdev_start` (서버 모니터가 쓰는 그 길). `npm` 만 허용되므로(program_allowed)
+ * - 굽기: `localdev_start` (Dash 머신 방의 localdev HTTP 와 같은 함수 본체). `npm` 만 허용되므로(program_allowed)
  *   cargo 는 `build:*` npm script 뒤에 숨는다.
  * - 깔렸나 = `repofile_read('apps/karmolab-tauri/target/install.json')`. 굽기가 성공할
  *   때만 찍히는 도장이라, 반쯤 구워진 것을 깔렸다고 하지 않는다.
@@ -47,8 +47,8 @@ import { currentWorkFolder, guessWorkFolder, pickWorkFolder, savedWorkFolder, se
   const esc = (v: string): string =>
     v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  /* 스타일을 여기 두는 이유: 이 앱의 위젯 클래스는 css 파일에 없다(서버 모니터의
-     `sm-*` 도 마찬가지다. 전부 붙는 자리가 없는 이름이다). css 파일에 적으면 purge 가
+  /* 스타일을 여기 두는 이유: 이 앱의 위젯 클래스는 css 파일에 없음
+     (전부 붙는 자리가 없는 이름이다). css 파일에 적으면 purge 가
      안 쓰는 이름으로 보고 지울 수도 있다. 위젯이 제 스타일을 들고 다니면 그 둘이 다
      사라진다. 색은 셸의 변수를 빌려 쓴다. 밝기 테마를 따라간다. */
   const STYLE = `
@@ -334,7 +334,7 @@ import { currentWorkFolder, guessWorkFolder, pickWorkFolder, savedWorkFolder, se
   }
 
   /**
-   * 굽는다. 나오는 말은 `localdev-log` 로 흘러온다. 서버 모니터와 같은 물길이다.
+   * 굽기. 나오는 말은 `localdev-log` 이벤트로 받음
    *
    * 굽는 동안 화면이 아무 말도 안 하면 사람은 멈췄다고 읽는다. 그래서 나오는 말을
    * 그대로 흘려보내고, 끝나면 **도장을 다시 읽어** 상태를 갱신한다. 끝났다가 아니라

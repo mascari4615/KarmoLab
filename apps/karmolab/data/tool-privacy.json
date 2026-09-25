@@ -168,13 +168,6 @@
         "당신이 적은 주소"
       ]
     },
-    "laptop": {
-      "where": "ours",
-      "sends": "내 노트북 상태를 물어봅니다 (주인 전용).",
-      "to": [
-        "laptop.mascari4615.com"
-      ]
-    },
     "lotto": {
       "where": "third-party",
       "sends": "당첨 번호를 동행복권에서 받아 옵니다. 고른 번호는 이 기기에만 남습니다.",
@@ -249,13 +242,6 @@
       "whyLocal": "fetch 는 우리 정적 파일(post-graph.json) 한 장뿐. 남의 서버로 가는 것이 없다. 그리기는 전부 브라우저 안.",
       "sends": "아무것도 안 보냅니다.",
       "to": []
-    },
-    "servermonitor": {
-      "where": "third-party",
-      "sends": "등록한 주소가 살아 있는지 브라우저가 직접 두드립니다. 그 서버에 접속 기록이 남습니다.",
-      "to": [
-        "당신이 등록한 주소"
-      ]
     },
     "settings": {
       "where": "ai",

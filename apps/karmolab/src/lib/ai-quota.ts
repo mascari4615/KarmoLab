@@ -59,7 +59,7 @@ type VendorCard = {
 /** 라이브 카드만 의미가 있는 주기. 스냅샷은 다시 읽어도 그대로다. */
 const AUTO_REFRESH_MS = 60_000;
 
-/** 브라우저 소스. 노트북 위젯(laptop.ts)과 같은 주소, 같은 비밀번호 열쇠. */
+/** 브라우저 소스. 노트북 laptop-ops 주소와 비밀번호 열쇠. */
 const LAPTOP_BASE = 'https://laptop.mascari4615.com';
 const KEY_AT = 'laptop.pc.key';
 const savedKey = (): string => { try { return localStorage.getItem(KEY_AT) ?? ''; } catch { return ''; } };
@@ -437,7 +437,7 @@ export function buildQuota(container: HTMLElement, onDispose: (fn: () => void) =
   let fatal = '';
 
   /* ── 브라우저 소스. 노트북에 비밀번호로 묻는다 ──
-     열쇠는 이 브라우저에만 보관 (laptop.ts 와 같은 원칙, 같은 저장 자리). 없으면 카드
+     열쇠는 이 브라우저에만 보관 (my-ai 와 같은 저장 자리). 없으면 카드
      대신 입력 줄, 401 이면 열쇠 폐기 후 다시 질문 */
   const keyRow = document.createElement('div');
   keyRow.className = 'myai-keyrow';

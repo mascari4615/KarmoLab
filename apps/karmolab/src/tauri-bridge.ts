@@ -48,7 +48,7 @@ export function invoke<T = unknown>(cmd: string, args?: unknown): Promise<T> {
 
 /**
  * Tauri 이벤트 listen. 미주입이면 no-op unlisten 반환 (호출자 분기 불요).
- * 핸들러는 *원본 이벤트* `{ payload }` 를 받는다. 기존 위젯(servermonitor/terminal)이
+ * 핸들러는 *원본 이벤트* `{ payload }` 를 받는다. 기존 위젯(install/terminal)이
  * `e.payload` 접근에 이미 의존하므로 언랩하지 않고 그대로 전달 (seam 이 콜러가
  * 의존하는 형태를 숨기지 X = 정직한 계약).
  */

@@ -1,8 +1,8 @@
 # 서버 모니터, Deploy / npm 로그 스트림
 
-**상태:** 구현됨 (데스크톱 Tauri + 서버 모니터 위젯).
+**상태:** Rust 쪽 구현됨. KarmoLab 서버 모니터 위젯은 삭제됨. 로컬 서버 카드는 Dash 머신 방 (https://dash.mascari4615.com/#machines/Mois).
 
-**범위:** KarmoLab 데스크톱(Tauri) **서버 모니터** 위젯에서, 프로필 카드의 **deploy**, **npm i** 실행 시 **표준 출력, 에러를 실시간으로** 카드 아래 패널에 보여 줍니다.
+**범위:** KarmoLab 데스크톱(Tauri) 에서 프로필의 **deploy**, **npm i** 실행 시 **표준 출력, 에러를 실시간으로** 이벤트로 내보냅니다. 아래 UX 절은 옛 서버 모니터 위젯 기준.
 
 ---
 
@@ -77,7 +77,7 @@
 ## 8. 관련 코드, 설정
 
 - Rust: `apps/karmolab-tauri/src-tauri/src/local_dev.rs`
-- UI: `apps/karmolab/src/widgets/servermonitor.ts`
+- UI: Dash 머신 방 (`apps/karmolab/src/widgets/mydash/`)
 - 설정: `apps/karmolab/data/servermonitor-config.json`의 `deployArgs`, `npmInstall`
 
 ---

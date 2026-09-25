@@ -582,7 +582,7 @@
       "docId": "docs-laptop",
       "heading": "노트북. 집에서 24시간 도는 기계",
       "title": "노트북. 집에서 24시간 도는 기계",
-      "description": "KarmoLab 의 노트북 위젯은 집에 켜져 있는 노트북으로 가는 문 이다. 그 노트북은 세 가지 일을 한다. 1. 파일을 주고받는다 . 폰에서 노트북 폴더를 보고, 받고, 올림. 2. 게임을 굽는다 . Witch-Mendokusai 안드로이드, PC 빌드를 여기서 만듦. 3. 알림을 보낸다 . 빌드가 끝나면 디스코드로 링크가 옴. 셋 다 브라우저만 있으면 된다. 앱도, 케이블도, 클라우드 왕복도 없다. ---",
+      "description": "집에 켜져 있는 노트북 . 상태 카드는 Dash 머신 방 machines/Mois . 그 노트북은 세 가지 일을 한다. 1. 파일을 주고받는다 . 폰에서 노트북 폴더를 보고, 받고, 올림. 2. 게임을 굽는다 . Witch-Mendokusai 안드로이드, PC 빌드를 여기서 만듦. 3. 알림을 보낸다 . 빌드가 끝나면 디스코드로 링크가 옴. 셋 다 브라우저만 있으면 된다. 앱도, 케이블도, 클라우드 왕복도 없다. ---",
       "aliases": "laptop"
     },
     {
@@ -638,7 +638,7 @@
       "docId": "docs-local-dev",
       "heading": "로컬 데브 러너 (Tauri 전용)",
       "title": "로컬 데브 러너 (Tauri 전용)",
-      "description": "KarmoLab 데스크톱 앱 Tauri 안에서만 쓰는 기능이에요. 일반 브라우저로 GitHub Pages만 열면 서버 모니터 위젯 자체가 메뉴에 없습니다. 원본 파일: apps/karmolab/js/widgets/docs/local-dev-runner.md GitHub에서 직접 열어도 동일 ---",
+      "description": "KarmoLab 데스크톱 앱 Tauri 이 켜져 있어야 도는 기능이에요. 로컬 서버 카드는 KarmoLab 서버 모니터 위젯에서 Dash 머신 방 machines/Mois 으로 옮겼습니다. 카드는 아래 localhost HTTP 로 데스크톱 앱을 부릅니다. 원본 파일: apps/karmolab/js/widgets/docs/local-dev-runner.md GitHub에서 직접 열어도 동일 ---",
       "aliases": "local dev runner"
     },
     {
@@ -652,9 +652,9 @@
     {
       "id": "docs-local-dev:2",
       "docId": "docs-local-dev",
-      "heading": "위젯에서 쓰는 법",
-      "title": "위젯에서 쓰는 법",
-      "description": "1. 앱에서 상단 데스크톱 앱 메뉴 → 서버 모니터 를 엽니다. 열리면 한 번 자동으로 URL ping, 카드 갱신이 돌아갑니다. ping은 카드마다 순서대로 끝날 때마다 그 카드만 잠깐 연두색 강조와 ✓가 보였다 사라집니다 실제 HTTP 확인이 있는 항목만 . 2. 로컬 카드 같은 id 의 localMonitors URL 응답 + devProfiles 프로세스가 한 장 에 묶임 에서 시작 , 종료 등을 씁니다. 새로고침 으로 다시 ping, 추적을 갱신하고, 목록 새로고침 은 설정, 추적만 다시 읽습니다 URL ping 없음 . 3. 환경 변수 .env : 로컬 아",
+      "heading": "쓰는 법",
+      "title": "쓰는 법",
+      "description": "1. 데스크톱 앱을 켭니다. 트레이 메뉴 머신 열기 또는 machines/Mois 로 Dash 머신 방을 엽니다. 2. 카드 한 장에 같은 id 의 localMonitors URL 응답과 devProfiles 프로세스가 묶임. 카드에서 시작 , 종료 등을 씁니다. 3. 작업 폴더 저장소 루트 는 KarmoLab 설정 → 이 컴퓨터 → 작업 폴더 에서 정합니다. 예: Windows C:\\Users\\...\\Mascari4615.github.io .env 편집, repofile 경로에 필요합니다. ---",
       "aliases": "local dev runner"
     },
     {
@@ -686,7 +686,7 @@
       "docId": "docs-local-dev",
       "heading": "AI 비-GUI 경로 (localhost HTTP. TASK-KL-065)",
       "title": "AI 비-GUI 경로 (localhost HTTP. TASK-KL-065)",
-      "description": "서버 모니터의 모든 운영 액션은 GUI 카드 클릭 외에 localhost HTTP 로도 구동됩니다. AI 에이전트 Claude 가 데스크톱 앱 창을 클릭하지 않고 dev 프로필을 직접 start/stop/log/deploy 할 수 있게 하기 위함입니다. 사람 카드와 같은 LocalDevState , 같은 함수 본체 를 공유하므로 한쪽에서 시작한 프로세스를 다른 쪽이 관측, 종료할 수 있습니다 이중 추적 없음 . - 바인드: 127.0.0.1 만 타 머신 접근 차단 . 기본 포트 8766 . - 인증: Authorization: Bearer <token . 토큰, 포트",
+      "description": "로컬 서버의 모든 운영 액션은 localhost HTTP 로 구동됩니다. Dash 머신 방 카드도 이 길을 씁니다. AI 에이전트 Claude 가 데스크톱 앱 창을 클릭하지 않고 dev 프로필을 직접 start/stop/log/deploy 할 수 있게 하기 위함입니다. 사람 카드와 같은 LocalDevState , 같은 함수 본체 를 공유하므로 한쪽에서 시작한 프로세스를 다른 쪽이 관측, 종료할 수 있습니다 이중 추적 없음 . - 바인드: 127.0.0.1 만 타 머신 접근 차단 . 기본 포트 8766 . - 인증: Authorization: Bearer <token",
       "aliases": "local dev runner"
     },
     {
@@ -694,7 +694,7 @@
       "docId": "docs-local-dev",
       "heading": "관련 문서",
       "title": "관련 문서",
-      "description": "- 터미널 명령 모음: 문서 → 프로젝트 명령 - Deploy, npm i 로그 스트림 카드 아래 패널 은 구현되어 있으며, 상세는 문서 → 로컬, deploy 로그 servermonitor-deploy-log-stream.md 를 참고하세요. - Tauri 앱 빌드, 업데이트, 트레이: apps/karmolab-tauri/README.md - Tauri 업데이트, 릴리스 체크리스트: 문서 → 로드맵 roadmap.md 의 Tauri 데스크톱, 자동 업데이트",
+      "description": "- 터미널 명령 모음: 문서 → 프로젝트 명령 - Deploy, npm i 로그 스트림 이벤트 계약은 문서 → 로컬, deploy 로그 servermonitor-deploy-log-stream.md 를 참고하세요. - Tauri 앱 빌드, 업데이트, 트레이: apps/karmolab-tauri/README.md - Tauri 업데이트, 릴리스 체크리스트: 문서 → 로드맵 roadmap.md 의 Tauri 데스크톱, 자동 업데이트",
       "aliases": "local dev runner"
     },
     {
@@ -702,7 +702,7 @@
       "docId": "docs-servermonitor-deploy-log-design",
       "heading": "서버 모니터, Deploy / npm 로그 스트림",
       "title": "서버 모니터, Deploy / npm 로그 스트림",
-      "description": "상태: 구현됨 데스크톱 Tauri + 서버 모니터 위젯 . 범위: KarmoLab 데스크톱 Tauri 서버 모니터 위젯에서, 프로필 카드의 deploy , npm i 실행 시 표준 출력, 에러를 실시간으로 카드 아래 패널에 보여 줍니다. ---",
+      "description": "상태: Rust 쪽 구현됨. KarmoLab 서버 모니터 위젯은 삭제됨. 로컬 서버 카드는 Dash 머신 방 machines/Mois . 범위: KarmoLab 데스크톱 Tauri 에서 프로필의 deploy , npm i 실행 시 표준 출력, 에러를 실시간으로 이벤트로 내보냅니다. 아래 UX 절은 옛 서버 모니터 위젯 기준. ---",
       "aliases": "servermonitor deploy log stream"
     },
     {
@@ -782,7 +782,7 @@
       "docId": "docs-servermonitor-deploy-log-design",
       "heading": "8. 관련 코드, 설정",
       "title": "8. 관련 코드, 설정",
-      "description": "- Rust: apps/karmolab-tauri/src-tauri/src/local dev.rs - UI: apps/karmolab/src/widgets/servermonitor.ts - 설정: apps/karmolab/data/servermonitor-config.json 의 deployArgs , npmInstall ---",
+      "description": "- Rust: apps/karmolab-tauri/src-tauri/src/local dev.rs - UI: Dash 머신 방 apps/karmolab/src/widgets/mydash/ - 설정: apps/karmolab/data/servermonitor-config.json 의 deployArgs , npmInstall ---",
       "aliases": "servermonitor deploy log stream"
     },
     {

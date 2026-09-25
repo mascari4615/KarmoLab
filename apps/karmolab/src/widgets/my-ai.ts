@@ -12,7 +12,7 @@
  * 두 표면, 그리기는 하나. 데스크톱은 Tauri 백엔드(ai_quota)가 이 컴퓨터의 토큰과 로그를
  * 읽고, 브라우저(폰)는 노트북 laptop-ops `/ai-quota/api` 가 내주는 같은 모양의 카드를
  * 받음. 노트북은 켜져 있는 PC 가 밀어 둔 값을 `live:false` 와 출처 노트로 내줌.
- * 비밀번호는 노트북 위젯과 같은 열쇠(`laptop.pc.key`), 이 브라우저에만 보관.
+ * 비밀번호 열쇠는 `laptop.pc.key`, 이 브라우저에만 보관.
  * 환경 탭은 로컬 파일 검사라 데스크톱에서만. 정본: memo/changes/ai-quota-phone.md
  */
 import { isDesktop, invoke } from '../tauri-bridge';

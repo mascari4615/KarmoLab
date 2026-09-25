@@ -23,10 +23,10 @@
       "order": 30
     },
     {
-      "id": "servermonitor",
-      "kind": "tool",
-      "tool": "servermonitor",
-      "label": "서버 모니터 열기",
+      "id": "machines",
+      "kind": "url",
+      "url": "https://dash.mascari4615.com/#machines/Mois",
+      "label": "머신 열기",
       "order": 40
     },
     {

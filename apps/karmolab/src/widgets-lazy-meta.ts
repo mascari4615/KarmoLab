@@ -139,7 +139,7 @@ window.KARMOLAB_LAZY_META = [
   {
     /* 디버그 창도 부팅에서 뺐다 (TASK-KL-204). 데스크톱 앱에서만 쓰는 것을 **웹으로 오는
        사람까지 받고 있었다**(첫 화면에서 12KB, 한 번도 안 그린다).
-       `desktopOnly` 지연 위젯 선례 = 서버 모니터. */
+       `desktopOnly` 지연 위젯 선례 = 설치. */
     id: 'devtools',
     noPage: true,
     get title() { return t('widgets.devtools.title', undefined, "디버그"); },
@@ -185,17 +185,6 @@ window.KARMOLAB_LAZY_META = [
     layout: 'form',
     icon: '<path d="M12 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8 9l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v3h16v-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
     lazyScriptPaths: ['install']
-  },
-  {
-    id: 'servermonitor',
-    noPage: true,
-    get title() { return t('widgets.servermonitor.title', undefined, "서버 모니터"); },
-    category: 'app',
-    desktopOnly: true,
-    get desc() { return t('widgets-desc.servermonitor.desc', undefined, "로컬 URL, 프로세스, .env (데스크톱)"); },
-    layout: 'form',
-    icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
-    lazyScriptPaths: ['servermonitor']
   },
   {
     /* 내 글 지형도 (TASK-KAR-233). 목록으로 보면 안 보던 걸 또 안 본다.
@@ -2323,17 +2312,6 @@ window.KARMOLAB_LAZY_META = [
     layout: 'full',
     icon: '<path d="M3 7h18l-2 13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 7z M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.5" fill="none"/>',
     lazyScriptPaths: ['stash']
-  },
-
-  /* 노트북(집에서 24시간 도는 기계)으로 가는 문. 파일 공유, 빌드 현황 */
-  {
-    id: 'laptop',
-    get title() { return t('widgets.laptop.title', undefined, "노트북"); },
-    category: 'app',
-    get desc() { return t('widgets-desc.laptop.desc', undefined, "집에서 24시간 도는 노트북. 파일 공유, 빌드 현황으로 가는 문"); },
-    layout: 'form',
-    icon: '<rect x="3" y="5" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M2 19h20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
-    lazyScriptPaths: ['laptop']
   },
 
   /* 흥. 곡을 만드는 자리 (TASK-KL-220). 녹음, 편곡, 믹싱, WAV 출력을 한 프로젝트에서 닫는 DAW. */

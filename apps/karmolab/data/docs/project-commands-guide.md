@@ -109,7 +109,7 @@ npm run dev
 - production .exe (`KarmoLab`) 옆에 그냥 켜면 됨 (별 single-instance 그룹).
 - 설치 패키지 빌드: `npm run build` (release.conf.json 오버라이드, identifier 복원).
 - KL-046. `dev:dual` / `dev:app` / `dev:with-jekyll` / `dev:remote` 변종 폐기(흐름 하나).
-- 데스크톱 앱에서 **KarmoLab → 데스크톱 앱 → 서버 모니터**의 **로컬** 블록에서 KarmoLab 핫리로드, Discord 봇 등 프로필 시작, 종료, `npm install`, (설정 시) **deploy**: **문서 → 데스크톱, 로컬** 탭 (`apps/karmolab/js/widgets/docs/local-dev-runner.md`).
+- 데스크톱 앱이 켜진 상태에서 **Dash 머신 방** (https://dash.mascari4615.com/#machines/Mois) 카드로 KarmoLab 핫리로드, Discord 봇 등 프로필 시작, 종료: **문서 → 데스크톱, 로컬** 탭 (`apps/karmolab/js/widgets/docs/local-dev-runner.md`).
 
 ---
 

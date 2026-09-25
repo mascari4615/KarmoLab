@@ -1,5 +1,5 @@
 {
-  "total": 3341,
+  "total": 3334,
   "files": {
     "src/alarm-fire.ts": 4,
     "src/badapple/load-demo.ts": 4,
@@ -108,7 +108,6 @@
     "src/widgets/karmomap/panels/storage-panel.ts": 1,
     "src/widgets/karmomap/panels/terms-panel.ts": 1,
     "src/widgets/karmomap/panels/text-panel.ts": 3,
-    "src/widgets/laptop.ts": 3,
     "src/widgets/life/life.ts": 5,
     "src/widgets/localai/localai.ts": 5,
     "src/widgets/memo.ts": 2,
@@ -148,7 +147,6 @@
     "src/widgets/ref/regexref.ts": 5,
     "src/widgets/ref/shortcut.ts": 3,
     "src/widgets/ref/specialchar.ts": 3,
-    "src/widgets/servermonitor.ts": 4,
     "src/widgets/settings.ts": 6,
     "src/widgets/shylink.ts": 3,
     "src/widgets/speed.ts": 4,
