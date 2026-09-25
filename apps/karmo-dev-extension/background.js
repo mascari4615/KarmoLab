@@ -163,12 +163,21 @@ async function closeWorkTab(tabId) {
 /** 워커가 다시 뜰 때 지난 실행이 남긴 탭을 닫는다. 사용자가 직접 연 탭은 목록에 없어 안 건드린다 */
 async function reapOrphanTabs() {
   const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
-  if (!cur.length) return 0;
   let closed = 0;
+  /* 에이전트가 주소로 연 bridge 탭 (주소에 run 이 붙은 것). ext.reload 로 워커가 새로 뜨면 4초 뒤 닫기 타이머가 사라져 남음
+     (사용자 2026-09-25 "다 쓰면 좀 닫았으면"). 사람이 연 bridge (run 없음) 는 안 건드림 */
+  try {
+    const left = await chrome.tabs.query({ url: ["http://127.0.0.1/*", "http://localhost/*"] });
+    for (const t of left) {
+      if (/\/karmo-(dev|web)-extension\/bridge\.html\?(.*&)?run=/.test(t.url || "")) {
+        try { await chrome.tabs.remove(t.id); closed += 1; } catch { /* 이미 없음 */ }
+      }
+    }
+  } catch { /* tabs.query 실패는 무시 */ }
   for (const id of cur) {
     try { await chrome.tabs.remove(id); closed += 1; } catch { /* 이미 없음 */ }
   }
-  await chrome.storage.local.set({ [OPEN_TABS_KEY]: [] });
+  if (cur.length) await chrome.storage.local.set({ [OPEN_TABS_KEY]: [] });
   if (closed) await note("reap", `고아 탭 ${closed}개 닫음`);
   return closed;
 }
@@ -592,12 +601,19 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
         });
       } else if (msg?.type === "pinterest.related") {
         /* 무거운 일. 시작만 알리고 결과는 pinterest.last 로 (collect.all 과 같은 까닭) */
+        /* 끝나면 notify (로컬 수신기) 로 결과를 밀어줌. 부르는 쪽이 bridge 탭을 되풀이해 열며 묻지 않게
+           (사용자 2026-09-25 "포커스는 왜 자꾸 가져가", "정신없어") */
+        const notify = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(String(msg.notify || "")) ? msg.notify : "";
         (async () => {
+          let last;
           try {
-            const result = await pinterestRelated(msg);
-            await chrome.storage.local.set({ "karmo.lastPin": { at: new Date().toISOString(), result } });
+            last = { at: new Date().toISOString(), result: await pinterestRelated(msg) };
           } catch (e) {
-            await chrome.storage.local.set({ "karmo.lastPin": { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) } });
+            last = { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) };
+          }
+          await chrome.storage.local.set({ "karmo.lastPin": last });
+          if (notify) {
+            try { await fetch(notify, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(last) }); } catch { /* 수신기가 먼저 닫힘 */ }
           }
         })();
         sendResponse({ ok: true, started: true });
