@@ -297,6 +297,17 @@ const PIN_PAGE_RE = /^https:\/\/([a-z]+\.)?pinterest\.com\/pin\/[0-9]+\/?$/;
 
 /** 씨앗 (좋다 받은 핀) 마다 핀 쪽을 찾아 아래 비슷한 핀을 줍는다. 씨앗은 12개, 한 씨앗에 80장까지 */
 async function pinterestRelated(msg) {
+  /* MV3 워커는 5분쯤 지나면 조용히 꺼짐. 씨앗 다섯은 그보다 김 (2026-09-25 첫 판 3분은 끝나고 둘째 판은 결과 없이 사라짐).
+     확장 API 를 20초마다 불러 깨워 둠 */
+  const keep = setInterval(() => { chrome.runtime.getPlatformInfo(() => {}); }, 20000);
+  try {
+    return await pinterestRelatedBody(msg);
+  } finally {
+    clearInterval(keep);
+  }
+}
+
+async function pinterestRelatedBody(msg) {
   const per = Math.max(1, Math.min(80, Number(msg.per) || 25));
   const out = [];
   for (const s of (Array.isArray(msg.seeds) ? msg.seeds : []).slice(0, 12)) {
