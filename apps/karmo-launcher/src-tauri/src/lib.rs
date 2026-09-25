@@ -166,13 +166,30 @@ fn running_status(registry_key: String) -> bool {
         .unwrap_or(false)
 }
 
-/// 끄기. /F 없이 창에 닫기를 보냄 (저장할 틈을 줌)
+/// 끄기. 창 닫기만으로는 트레이로 숨는 앱이 실행 중으로 남음 (2026-09-25 KarmoLab)
+/// 먼저 `<exe> --quit` 로 트레이 끝내기와 같은 길,
+/// 그 인자를 모르는 옛 판은 8초 뒤 강제 종료
 #[tauri::command]
-fn stop_app(registry_key: String) -> Result<(), String> {
-    let reg = registry(&registry_key).ok_or("설치 안 됨")?;
-    let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?;
-    let status = hidden(Command::new("taskkill").args(["/IM", exe])).status().map_err(|e| e.to_string())?;
-    if !status.success() {
+async fn stop_app(registry_key: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || stop_blocking(&registry_key))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn stop_blocking(registry_key: &str) -> Result<(), String> {
+    let reg = registry(registry_key).ok_or("설치 안 됨")?;
+    let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?.clone();
+    if let Some(dir) = reg.get("InstallLocation") {
+        let _ = hidden(Command::new(std::path::Path::new(dir).join(&exe)).arg("--quit")).spawn();
+    }
+    for _ in 0..16 {
+        if !is_running(&exe) {
+            return Ok(());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+    let status = hidden(Command::new("taskkill").args(["/F", "/IM", &exe])).status().map_err(|e| e.to_string())?;
+    if !status.success() && is_running(&exe) {
         return Err(format!("끄기 실패 {:?}", status.code()));
     }
     Ok(())
@@ -439,6 +456,16 @@ mod tests {
     }
 
     /// 실제 KarmoLab 최신 설치 파일을 받아 latest.json 의 서명으로 확인 (네트워크 수십 MB). `cargo test -- --ignored`
+    /// 떠 있는 KarmoLab 을 끄고 실행 중이 아닌지 (실제로 끔). `cargo test karmolab_stop_live -- --ignored`
+    #[test]
+    #[ignore]
+    fn karmolab_stop_live() {
+        let exe = registry("KarmoLab").and_then(|r| r.get("MainBinaryName").cloned()).expect("KarmoLab 레지스트리");
+        assert!(is_running(&exe), "먼저 KarmoLab 을 켜 둔다");
+        stop_blocking("KarmoLab").unwrap();
+        assert!(!is_running(&exe));
+    }
+
     #[test]
     #[ignore]
     fn karmolab_signature_live() {

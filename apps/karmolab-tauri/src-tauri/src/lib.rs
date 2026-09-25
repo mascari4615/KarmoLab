@@ -1217,7 +1217,13 @@ pub fn run() {
         // KL-052-B: ML sidecar(karmolab-life-ml) spawn 용.
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            // 런처의 끄기. 창 닫기는 트레이로 숨기만 하니 트레이 끝내기와 같은 길
+            if argv.iter().any(|a| a == "--quit") {
+                terminal::shutdown(&app.state::<TerminalState>());
+                app.exit(0);
+                return;
+            }
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
                 let _ = w.show();
