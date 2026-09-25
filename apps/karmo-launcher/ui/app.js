@@ -146,8 +146,9 @@ async function act(kind) {
       return;
     }
     if (kind === 'stop') {
+      /* stop_app 은 꺼진 뒤에 돌아옴. 기다리지 않고 바로 다시 잼 (사용자 "끄기가 바로바로") */
       await invoke('stop_app', { registryKey: app.install.registry });
-      window.setTimeout(() => void pollRunning(), 1500);
+      await pollRunning();
       return;
     }
     busy = app.id;
@@ -207,28 +208,41 @@ $('min').addEventListener('click', () => void appWindow.minimize());
 /* 닫기는 트레이로 (Steam 처럼). 끝내기는 트레이 메뉴 */
 $('close').addEventListener('click', () => void appWindow.hide());
 
-/* 런처 자신의 업데이트. 켜진 뒤 한 번 묻고, 새 판이면 제목 줄 아래 버튼 하나 */
+/* 런처 자신의 업데이트. 새 판이 있으면 묻지 않고 받아 설치하고 다시 켬 (Steam 처럼, 사용자 2026-09-25 "런처는 그래야지").
+   버튼으로만 받게 했더니 0.1.3 이 그대로 남아 끄기 수정이 안 들어왔다. 켜진 뒤 한 번, 트레이에 오래 있으니 6시간마다.
+   앱을 설치하는 중이면 다시 켜면 끊기니 다음 차례로 */
 const selfEl = $('selfup');
-async function checkSelf() {
-  try {
-    const v = await invoke('self_update_check');
-    if (!v) return;
-    selfEl.hidden = false;
-    selfEl.textContent = '런처 새 판 ' + v + ' 받기';
-  } catch {
-    /* 오프라인이거나 아직 릴리스가 없음. 조용히 넘어감 */
-  }
-}
-selfEl.addEventListener('click', async () => {
+const SELF_EVERY_MS = 6 * 3600 * 1000;
+let selfBusy = false;
+async function installSelf() {
+  selfBusy = true;
+  selfEl.hidden = false;
   selfEl.disabled = true;
   selfEl.textContent = '런처 받는 중';
   try {
     await invoke('self_update_install');
   } catch (e) {
+    selfBusy = false;
     selfEl.disabled = false;
     selfEl.textContent = '런처 업데이트 실패: ' + e;
   }
-});
+}
+async function checkSelf() {
+  if (selfBusy) return;
+  try {
+    const v = await invoke('self_update_check');
+    if (!v) return;
+    if (busy) {
+      window.setTimeout(() => void checkSelf(), 60 * 1000);
+      return;
+    }
+    await installSelf();
+  } catch {
+    /* 오프라인이거나 아직 릴리스가 없음. 다음 차례에 다시 */
+  }
+}
+selfEl.addEventListener('click', () => void installSelf());
+window.setInterval(() => void checkSelf(), SELF_EVERY_MS);
 void listen('self-update-progress', (ev) => {
   const [got, total] = ev.payload;
   if (total) selfEl.textContent = '런처 받는 중 ' + Math.round((got / total) * 100) + '%';
