@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>KarmoLab 확장</title>
+<meta name="description" content="유튜브 쇼츠를 넘길 때 영상 올린 날짜를 영상 옆에 표시하는 브라우저 확장.">
+<link rel="canonical" href="https://lab.mascari4615.com/extension/">
+<link rel="icon" href="icon-128.png">
+<style>
+  :root { --bg: #fff; --fg: #111; --sub: #666; --line: #ddd; --chip-bg: #000; --chip-fg: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #000; --fg: #eee; --sub: #999; --line: #333; --chip-bg: #fff; --chip-fg: #000; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 "Malgun Gothic", system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 56px 20px 72px; }
+  header { display: flex; align-items: center; gap: 14px; }
+  header img { width: 56px; height: 56px; }
+  h1 { margin: 0; font-size: 28px; }
+  .lead { margin: 20px 0 8px; font-size: 18px; }
+  .chip { display: inline-block; background: var(--chip-bg); color: var(--chip-fg); padding: 3px 6px; font-size: 13px; font-weight: 600; }
+  .install { display: flex; gap: 10px; flex-wrap: wrap; margin: 28px 0 8px; }
+  .install a, .install span { border: 1px solid var(--fg); color: var(--fg); padding: 8px 14px; text-decoration: none; font-size: 15px; }
+  .install span { border-color: var(--line); color: var(--sub); }
+  h2 { font-size: 17px; margin: 40px 0 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+  ul { margin: 0; padding-left: 20px; }
+  li + li { margin-top: 4px; }
+  footer { margin-top: 48px; color: var(--sub); font-size: 14px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header><img src="icon-128.png" alt=""><h1>KarmoLab 확장</h1></header>
+  <p class="lead">유튜브 쇼츠를 넘길 때 영상 올린 날짜를 영상 옆에 표시합니다.</p>
+  <p><span class="chip">2026. 9. 24. (어제)</span></p>
+
+  <div class="install">
+    <span>Chrome 웹 스토어 (심사 중)</span>
+    <span>Edge 추가 기능 (심사 중)</span>
+  </div>
+
+  <h2>기능</h2>
+  <ul>
+    <li>쇼츠 영상 왼쪽에 올린 날짜와 지난 시간</li>
+    <li>창이 좁으면 짧은 형식 (26. 9. 24.)</li>
+    <li>영상 화면은 가리지 않음</li>
+    <li>확장 아이콘을 눌러 켜고 끄기</li>
+  </ul>
+
+  <h2 id="privacy">개인정보</h2>
+  <ul>
+    <li>수집하거나 보내는 사용자 데이터 없음</li>
+    <li>날짜는 유튜브의 공개 영상 정보에서, 로그인 쿠키 없이 조회</li>
+    <li>저장하는 것은 기능 켜고 끄기 설정 하나</li>
+  </ul>
+
+  <h2>문의</h2>
+  <ul>
+    <li><a href="https://github.com/Mascari4615/karmolab-extension/issues">GitHub 이슈</a></li>
+    <li>소스: <a href="https://github.com/Mascari4615/karmolab-extension">Mascari4615/karmolab-extension</a></li>
+  </ul>
+
+  <footer><a href="/">KarmoLab</a></footer>
+</main>
+</body>
+</html>
