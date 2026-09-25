@@ -130,6 +130,7 @@ export function buildCalendarView(
                     <button type="button" class="pl-cal-mode" data-mode="mine">${esc(t('planner.t96'))}</button>
                     <button type="button" class="pl-cal-mode" data-mode="ai">${esc(t('planner.t97'))}</button>
                 </div>
+                <div class="pl-today" hidden></div>
                 <div class="pl-cal-list"></div>
                 <div class="pl-cal-hint" hidden></div>
             </div>
@@ -141,6 +142,7 @@ export function buildCalendarView(
 
     const sideMini = container.querySelector<HTMLElement>('.pl-mini')!;
     const sideList = container.querySelector<HTMLElement>('.pl-cal-list')!;
+    const sideToday = container.querySelector<HTMLElement>('.pl-today')!;
     const mount = container.querySelector<HTMLElement>('.pl-cal-mount')!;
     const loading = container.querySelector<HTMLElement>('.pl-cal-loading')!;
 
@@ -244,7 +246,8 @@ export function buildCalendarView(
             saveView(info.view.type);
             miniMonth = new Date(info.view.currentStart);
             renderMini();
-            void reload(info.start, info.end);
+            /* 첫 datesSet 은 render() 안에서 울려 아직 calendar 가 초기화 전. 받아 오기는 그 뒤로 (TDZ, 2026-09-25 실측) */
+            queueMicrotask(() => void reload(info.start, info.end));
         }
     };
 
@@ -345,6 +348,7 @@ export function buildCalendarView(
                 .join(' ');
             cells.push(`<button type="button" class="${cls}" data-date="${key}">${d.getDate()}</button>`);
         }
+        renderToday(today);
 
         const dowLabels = [t('planner.t26'), t('planner.t20'), t('planner.t21'), t('planner.t22'), t('planner.t23'), t('planner.t24'), t('planner.t25')];
         sideMini.innerHTML = `
@@ -358,6 +362,27 @@ export function buildCalendarView(
                 ${cells.join('')}
             </div>`;
     }
+
+    /* 왼쪽 판의 오늘 일정 (시안 Q2, 2026-09-25). 종일이 먼저, 그다음 시각 순. 없으면 칸째 숨김 */
+    function renderToday(today: string): void {
+        const hm = (iso: string): string => {
+            const d = new Date(iso);
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        };
+        const items = visible()
+            .filter((e) => (e.allDay ? e.start.slice(0, 10) <= today && (e.end ? e.end.slice(0, 10) > today : e.start.slice(0, 10) === today) : ymd(new Date(e.start)) === today))
+            .sort((a, b) => Number(!a.allDay) - Number(!b.allDay) || a.start.localeCompare(b.start));
+        sideToday.hidden = items.length === 0;
+        sideToday.innerHTML = `<div class="pl-cal-list-title">${esc(t('planner.t81'))}</div>${items
+            .map((e) => `<button type="button" class="pl-today-item" data-date="${today}" style="--pl-ev:${esc(e.backgroundColor || LOCAL_COLOR)}">
+                <span class="pl-today-dot"></span><span class="pl-today-time">${e.allDay ? '' : hm(e.start)}</span><span class="pl-today-name">${esc(e.title || t('planner.t12'))}</span>
+            </button>`)
+            .join('')}`;
+    }
+    sideToday.addEventListener('click', (e) => {
+        const date = (e.target as HTMLElement).closest<HTMLElement>('[data-date]')?.dataset.date;
+        if (date) calendar.changeView('timeGridDay', date);
+    });
 
     sideMini.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;

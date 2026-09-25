@@ -32,8 +32,10 @@ html[data-site="dash"] {
   --dash-shadow: 0 20px 50px -30px rgba(24, 34, 56, 0.5);
   --dash-page: #c9d6e4;
   --dash-photo: url('/apps/karmolab/img/home/sky-village.webp');
-  --dash-pad: 56px;
-  --dash-top: 110px;
+  /* 화면 여백. 56, 110 에서 줄임 (사용자 2026-09-25 "화면 전체 상하좌우 여백이 너무 많은") */
+  --dash-pad: 24px;
+  --dash-top: 72px;
+  --dash-head-top: 17px;
   /* 돋움 (메이플 인게임 글꼴, 사용자 2026-09-25 "걍 돋움 쓰라구"). Windows 시스템 글꼴이라 웹폰트 배포 불가, 이름만.
      없는 기기 (맥, 폰) 는 맑은 고딕, Apple SD 고딕 */
   --font-sans: 'Dotum', '돋움', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
@@ -63,7 +65,7 @@ html[data-site="dash"] {
   --space-2xl: 48px;
   --transition: 180ms ease;
   /* 오른쪽 판 (북마크 bm-sheet) 이 머리 줄 아래에서 시작 */
-  --header-h: 110px;
+  --header-h: 72px;
 }
 html[data-site="dash"][data-theme="dark"] {
   --text-primary: #f2f4f7;
@@ -118,13 +120,13 @@ html[data-site="dash"] .myd::before { background: var(--dash-photo) center / cov
 html[data-site="dash"] .myd::after { background: var(--dash-veil); }
 @media (min-width: 900px) {
   html[data-site="dash"] .myd-main:not(:has(.mydh)) {
-    padding: var(--dash-top) var(--dash-pad) var(--space-2xl);
+    padding: var(--dash-top) var(--dash-pad) var(--dash-pad);
   }
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd-main:not(:has(.mydh)) .myd-head {
     position: absolute;
-    left: 110px;
+    left: calc(var(--dash-pad) + 54px);
     right: var(--dash-pad);
-    top: 36px;
+    top: var(--dash-head-top);
     height: 38px;
     margin: 0;
     padding: 0;
@@ -133,7 +135,7 @@ html[data-site="dash"] .myd::after { background: var(--dash-veil); }
   }
   html[data-site="dash"]:not([data-sidebar="rail"]) .myd-menu {
     left: var(--dash-pad);
-    top: 36px;
+    top: var(--dash-head-top);
   }
 }
 html[data-site="dash"] .myd-title {
@@ -191,12 +193,31 @@ html[data-site="dash"] .pl-body {
 }
 html[data-site="dash"] .pl-bar-right { color: var(--text-primary); }
 html[data-site="dash"] .pl-cal-layout { gap: 0; }
-html[data-site="dash"] .pl-cal-side { width: 248px; padding: 20px; gap: 22px; border-right: 1px solid var(--border); }
+/* 왼쪽 판은 짙은 판 (시안 Q2, 2026-09-25, refcal 005 032). 판 안에서만 글자와 선 토큰을 뒤집음 */
+html[data-site="dash"] { --pl-side: #172033; --pl-side2: #26314a; --pl-side-ink: #e9edf4; --pl-side-ink2: #8e98ab; --pl-fill: 30%; --pl-on: #fff; --radius-pl-ev: 4px; }
+html[data-site="dash"][data-theme="dark"] { --pl-side: #0a0d13; --pl-side2: #1a212d; --pl-side-ink: #e9edf4; --pl-side-ink2: #7c869a; --pl-fill: 34%; }
+html[data-site="dash"] .pl-cal-side {
+  width: 260px; padding: 18px 20px; gap: 18px;
+  background: var(--pl-side); color: var(--pl-side-ink);
+  --text-primary: var(--pl-side-ink); --text-secondary: var(--pl-side-ink2); --text-tertiary: var(--pl-side-ink2);
+  --border: var(--pl-side2); --dash-paper: var(--pl-side); --bg-tertiary: var(--pl-side2); --bg-hover: var(--pl-side2);
+}
+html[data-site="dash"] .pl-cal-side .pl-cal-create { background: var(--accent); border-color: var(--accent); color: var(--pl-on); }
+html[data-site="dash"] .pl-cal-side .pl-cal-mode[aria-pressed="true"] { background: var(--pl-side-ink); color: var(--pl-side); border-color: var(--pl-side-ink); }
+html[data-site="dash"] .pl-today .pl-cal-list-title { margin-bottom: 4px; }
+html[data-site="dash"] .pl-today-item {
+  display: grid; grid-template-columns: 10px 44px 1fr; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 0; border: 0; border-top: 1px solid var(--pl-side2); background: none; color: var(--pl-side-ink);
+  font-size: var(--font-size-xs); text-align: left; cursor: pointer;
+}
+html[data-site="dash"] .pl-today-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pl-ev); }
+html[data-site="dash"] .pl-today-time { font-size: var(--font-size-2xs); color: var(--pl-side-ink2); }
+html[data-site="dash"] .pl-today-name { font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 html[data-site="dash"] .pl-cal-create { align-self: stretch; justify-content: center; min-height: 40px; }
 html[data-site="dash"] .pl-cal-main { padding: 14px 16px 0; }
 html[data-site="dash"] .pl-mini-day--today,
-html[data-site="dash"] .pl-mini-day--today:hover { background: var(--text-primary); color: var(--dash-paper); }
-html[data-site="dash"] .pl-cal-dot { width: 12px; height: 12px; }
+html[data-site="dash"] .pl-mini-day--today:hover { background: var(--accent); color: var(--pl-on); }
+html[data-site="dash"] .pl-cal-dot { width: 12px; height: 12px; border-radius: var(--radius-pl-ev); }
 html[data-site="dash"] .pl-cal-item { font-size: var(--font-size-2xs); color: var(--text-primary); }
 
 /* FullCalendar. 선은 옅게, 숫자는 압축 글꼴, 켜진 보기 단추는 먹색 */
@@ -218,8 +239,8 @@ html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-title { font: 400 22px var(-
 html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day-number { font: 17px var(--font-display); padding: 6px 8px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-day:not(.fc-day-sat):not(.fc-day-sun):not(.pl-holiday) .fc-daygrid-day-number,
 html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell:not(.fc-day-sat):not(.fc-day-sun):not(.pl-holiday) .pl-dh-num { color: var(--text-primary); }
-html[data-site="dash"] .pl-cal-main .fc .pl-dh-num { font: 20px var(--font-display); }
-html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell.fc-day-today .pl-dh-num { background: var(--text-primary); color: var(--dash-paper) !important; padding: 0 6px; }
+html[data-site="dash"] .pl-cal-main .fc .pl-dh-num { display: inline-block; min-width: 34px; font: 24px/34px var(--font-display); text-align: center; }
+html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell.fc-day-today .pl-dh-num { background: var(--text-primary); color: var(--dash-paper) !important; border-radius: 50%; }
 html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell.fc-day-today.pl-holiday .pl-dh-num { background: var(--pl-sun); }
 html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell-cushion { font-weight: 700; padding: 10px 8px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-slot-label-cushion { font: 12px var(--font-display); color: var(--text-secondary); }
@@ -230,18 +251,15 @@ html[data-site="dash"] .pl-daycell-diary { left: auto; right: 4px; }
 /* 오늘은 날짜 숫자만 먹색 칸. 공휴일이 겹치면 빨강 칸 */
 html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: var(--text-primary); color: var(--dash-paper) !important; margin: 4px; padding: 2px 7px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-day-today.pl-holiday .fc-daygrid-day-number { background: var(--pl-sun); }
-/* 주말 칸은 아주 옅게 (시안 P1 P3) */
-html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day.fc-day-sat,
-html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day.fc-day-sun,
-html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-col.fc-day-sat,
-html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-col.fc-day-sun { background: color-mix(in srgb, var(--text-primary) 2.5%, transparent); }
-/* 일정. 캘린더 색을 옅게 깔고 왼쪽 줄만 진하게, 글씨는 먹색 */
+/* 일정 카드. 캘린더 색을 30% 채우고 왼쪽 줄 진하게, 둥글기 4 (시안 Q2). 16% 틴트일 때 주 보기 색 5%, 고른 레퍼런스 평균 14% */
 html[data-site="dash"] .pl-cal-main .fc .fc-h-event,
 html[data-site="dash"] .pl-cal-main .fc .fc-v-event {
-  background: color-mix(in srgb, var(--pl-ev, var(--accent)) 16%, var(--dash-paper)) !important;
+  background: color-mix(in srgb, var(--pl-ev, var(--accent)) var(--pl-fill), var(--dash-paper)) !important;
   border: 0 !important;
+  border-radius: var(--radius-pl-ev);
   box-shadow: inset 3px 0 0 var(--pl-ev, var(--accent));
 }
+html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-event-harness { margin: 0 3px 0 1px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-event-main,
 html[data-site="dash"] .pl-cal-main .fc .fc-event-title { color: var(--text-primary); font-weight: 700; }
 html[data-site="dash"] .pl-cal-main .fc .fc-event-time { font-family: var(--font-display); font-weight: 400; color: color-mix(in srgb, var(--pl-ev, var(--accent)) 70%, var(--text-primary)); }
@@ -249,9 +267,9 @@ html[data-site="dash"] .pl-cal-main .fc .fc-h-event .fc-event-main { padding: 1p
 html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-main { padding: 4px 7px; }
 /* 월 칸 (2차, 2026-09-25 "가독성, 일정 하나도 안 보이고"). Google 캘린더 월 보기 기준:
    날짜 줄 낮게, 일정 한 줄 20px 12px. 시각 일정은 점 + 시각 + 제목, 종일은 캘린더 색 막대에 흰 글씨 */
-html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px 2px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: var(--font-size-xs); padding: 4px 8px 2px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { margin: 3px 4px 1px; padding: 1px 6px; }
-html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-event { font-size: 12px; line-height: 18px; margin-top: 1px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-event { font-size: var(--font-size-2xs); line-height: 18px; margin-top: 1px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event { padding: 0 4px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event:hover { background: color-mix(in srgb, var(--text-primary) 6%, transparent); }
 html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-event-dot { border-width: 4px; border-color: var(--pl-ev, var(--accent)); }
@@ -262,13 +280,13 @@ html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-block-event {
   box-shadow: none;
 }
 html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-block-event .fc-event-main,
-html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-block-event .fc-event-title { color: #fff; font-weight: 400; }
-html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-more-link { font-size: 12px; font-weight: 700; color: var(--text-secondary); padding: 0 4px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-block-event .fc-event-title { color: var(--pl-on); font-weight: 400; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-more-link { font-size: var(--font-size-2xs); font-weight: 700; color: var(--text-secondary); padding: 0 4px; }
 /* 스크롤바. 달력 안 긴 막대 대신 가는 줄 */
 html[data-site="dash"] .pl-cal-main .fc .fc-scroller { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-primary) 22%, transparent) transparent; }
 /* 주 보기 일정 글씨 */
-html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-time { font-size: 11px; }
-html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size: 13px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-time { font-size: var(--font-size-3xs); }
+html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size: var(--font-size-xs); }
 
 /* 패널 변수 중 둥글기. 그림 모서리도 0 */
 html[data-site="dash"] .bm { --bm-pic-radius: 0; }
