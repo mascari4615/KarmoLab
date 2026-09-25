@@ -17,7 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const LIVE = process.argv[2] || process.env.KL_LIVE_URL || 'https://mascari4615.github.io/apps/karmolab/index.html';
+const LIVE = process.argv[2] || process.env.KL_LIVE_URL || 'https://lab.mascari4615.com/';
 
 const MATERIALS = [
   ['PDF', 'smoke-pdf-shell.mjs'],

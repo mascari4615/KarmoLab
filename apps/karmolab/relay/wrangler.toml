@@ -12,4 +12,4 @@ routes = [{ pattern = "mydash-relay.mascari4615.com", custom_domain = true }]
 [vars]
 GITHUB_CLIENT_ID = "Iv23liwmOWcREeN7qrlw"
 GOOGLE_CLIENT_ID = "1020582454802-8luqvaro71f0fdg3fcv72viakohnirs8.apps.googleusercontent.com"
-ALLOWED_ORIGIN = "https://blog.mascari4615.com,https://mascari4615.github.io,https://dash.mascari4615.com,https://lab.mascari4615.com"
+ALLOWED_ORIGIN = "https://blog.mascari4615.com,https://dash.mascari4615.com,https://lab.mascari4615.com"

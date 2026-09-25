@@ -195,7 +195,7 @@ async function defaultFetcher(url: string): Promise<unknown> {
   try {
     const res = await fetch(url, {
       signal: control.signal,
-      headers: { 'User-Agent': 'karmolab/1.0 (+https://mascari4615.github.io)' },
+      headers: { 'User-Agent': 'karmolab/1.0 (+https://lab.mascari4615.com)' },
     });
     if (!res.ok) throw new Error(`${new URL(url).host} ${res.status}`);
     return await res.json();

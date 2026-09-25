@@ -53,7 +53,7 @@ npx wrangler deploy
 | 이름 | 값 | 비밀? |
 | --- | --- | --- |
 | `GITHUB_CLIENT_ID` | 1번에서 적어 둔 Client ID | 아니오 (그래도 여기 두면 사이트를 안 고치고 바꾼다) |
-| `ALLOWED_ORIGIN` | `https://blog.mascari4615.com,https://mascari4615.github.io` (쉼표로 여럿) | 아니오 |
+| `ALLOWED_ORIGIN` | `https://blog.mascari4615.com,https://lab.mascari4615.com` (쉼표로 여럿) | 아니오 |
 | `GITHUB_CLIENT_SECRET` | **넣지 않는다** (OAuth App 으로 할 때만) | 예, 넣는다면 `wrangler secret put` |
 
 확인:

@@ -18,7 +18,7 @@ test('앱 창(Tauri)도 들어온다', () => {
 });
 
 test('밖은 못 들어온다', () => {
-  assert.equal(isThisMachine('https://mascari4615.github.io'), false);
+  assert.equal(isThisMachine('https://lab.mascari4615.com'), false);
   assert.equal(isThisMachine('http://192.168.0.5:8813'), false);
 });
 

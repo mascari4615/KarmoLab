@@ -14,7 +14,7 @@
  *                          비밀은 아니지만 여기 두면 사이트를 안 고치고 교체 가능.
  *   GITHUB_CLIENT_SECRET   선택. **GitHub App 기기 흐름에는 필요 없다.**
  *                          OAuth App 으로 할 때만 필요. 그때는 반드시 secret 으로.
- *   ALLOWED_ORIGIN         필수. 예: https://mascari4615.github.io
+ *   ALLOWED_ORIGIN         필수. 예: https://lab.mascari4615.com
  *                          쉼표로 여럿. 여기 없는 출처에는 CORS 안 줌.
  *   GOOGLE_CLIENT_ID       Google 캘린더 연결용 OAuth 웹 클라이언트 id (공개값)
  *   GOOGLE_CLIENT_SECRET   그 클라이언트의 비밀값. **반드시 secret** (배포 워크플로가 저장소 Secret 에서 넣음)
