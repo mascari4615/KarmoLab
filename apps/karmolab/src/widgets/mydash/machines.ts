@@ -327,10 +327,12 @@ import { createLocalServers } from './local-servers';
       const v = m.now && m.now.vitals;
       if (v) {
         const boot = timeMs(text(v.bootUp));
+        const at = timeMs(m.now ? m.now.at : '');
+        /* 언제 잰 값인지 같이 (사용자 2026-09-25 "언제 마지막으로 갱신된 거지") */
         return {
           state: 'on',
           stateText: '켜짐',
-          seen: isFinite(boot) ? '켜진 지 ' + spanText(Date.now() - boot) : '',
+          seen: [isFinite(boot) ? '켜진 지 ' + spanText(Date.now() - boot) : '', isFinite(at) ? '갱신 ' + agoText(at) : ''].filter(Boolean).join(', '),
           cpu: known(v.cpuPct),
           ram: known(v.usedPct),
           disk: mainDiskFreeGb(v),
@@ -348,7 +350,7 @@ import { createLocalServers } from './local-servers';
       return {
         state: 'on',
         stateText: '켜짐',
-        seen: up !== null ? '켜진 지 ' + spanText(up * 3600000) : '기록 ' + agoText(lastMs),
+        seen: (up !== null ? '켜진 지 ' + spanText(up * 3600000) + ', ' : '') + '갱신 ' + agoText(lastMs),
         cpu: known(latest.cpuPct),
         ram: known(latest.memUsedPct),
         disk,
