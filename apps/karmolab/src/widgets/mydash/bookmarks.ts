@@ -136,6 +136,8 @@ import { t, loadNamespace } from '../../lib/i18n';
   const DATA_DIR = 'data/bookmarks';
   const SUMMARY_PATH = DATA_DIR + '/summary.json';
   const AXES_PATH = DATA_DIR + '/axes.json';
+  /** Jev 제안. memo scripts/bookmarks/jev-suggest.mjs 파생물, 없어도 됨. 정본 memo changes/jev-bookmarks.md */
+  const JEV_PATH = DATA_DIR + '/jev-suggestions.json';
   /** 이벤트 뿌리. 이 아래가 `<YYYY-MM>/<epoch-ms>-<device6>-<nonce4>.json` */
   const EVENTS_DIR = 'bookmarks/events';
 
@@ -377,6 +379,12 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm.has-bar{padding-bottom:calc(var(--bm-tap) * 9)}',
       '.bm-judge{display:flex;flex-direction:column;gap:var(--space-md)}',
       '.bm-judge-title{color:var(--text-primary);word-break:break-word}',
+      /* Jev 제안. 점선 테두리와 작은 글자만, 고르는 것은 사람 */
+      '.tool-chip.bm-jev{border-style:dashed;border-color:var(--accent)}',
+      '.bm-jev-tag{margin-left:4px;font-size:.75em;color:var(--accent)}',
+      '.bm-jev-domain{align-self:flex-start;background:none;border:1px dashed var(--border);',
+      'border-radius:var(--radius-md);padding:var(--space-xs) var(--space-sm);color:var(--text-tertiary);cursor:pointer}',
+      '.bm-jev-domain.active{border-color:var(--accent);color:var(--text-primary)}',
     ].join('');
     document.head.appendChild(el);
   }
@@ -391,6 +399,28 @@ import { t, loadNamespace } from '../../lib/i18n';
   function axesOf(raw: AxesFile): Axis[] {
     const list = (raw && raw.axes) || (raw && raw.data && raw.data.axes) || [];
     return Array.isArray(list) ? list : [];
+  }
+
+  type JevAnswer = { picked?: unknown; confidence?: unknown };
+  type JevFile = { items?: Record<string, { id?: unknown; mode?: unknown; jev?: { intent?: JevAnswer; domain?: JevAnswer } }> };
+  /** 한 항목의 Jev 제안. 값을 고른 것만. 비운 것과 null 은 사용자 채점에서 대부분 틀려 버림 (memo changes/jev-bookmarks.md) */
+  type JevHint = { intent: string[]; domain: string; domainConf: number | null };
+
+  function jevOf(raw: JevFile): Map<string, JevHint> {
+    const out = new Map<string, JevHint>();
+    const rows = raw && raw.items && typeof raw.items === 'object' ? Object.values(raw.items) : [];
+    for (const r of rows) {
+      if (!r || r.mode !== 'fill' || !r.jev) continue;
+      const id = text(r.id);
+      if (!id) continue;
+      const ip = r.jev.intent && r.jev.intent.picked;
+      const intent = Array.isArray(ip) ? ip.filter((x): x is string => typeof x === 'string' && !!x) : [];
+      const domain = text(r.jev.domain && r.jev.domain.picked);
+      const c = r.jev.domain && r.jev.domain.confidence;
+      if (!intent.length && !domain) continue;
+      out.set(id, { intent, domain, domainConf: typeof c === 'number' ? c : null });
+    }
+    return out;
   }
 
   function schemaMajor(schema: unknown): number | null {
@@ -693,10 +723,12 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /* 필수는 summary 하나. axes 는 칩 라벨과 차례만 정하는 파일이라, 못 받으면 빈 정의로
        가고 값 자체를 라벨로 보인다 (미아 은닉 금지와 같은 손). summary 실패만 오류다. */
-    const [rawSummary, rawAxes] = await Promise.all([
+    const [rawSummary, rawAxes, rawJev] = await Promise.all([
       repo.readJson<Summary>(SUMMARY_PATH),
       repo.readJson<AxesFile>(AXES_PATH).catch((): AxesFile => ({})),
+      repo.readJson<JevFile>(JEV_PATH).catch((): JevFile => ({})),
     ]);
+    const jevById = jevOf(rawJev);
 
     const major = schemaMajor(rawSummary.schema);
     if (major !== null && major !== SCHEMA_MAJOR) {
@@ -1172,7 +1204,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     let gridCols = 0;
 
     /* 한 장 모드 */
-    type Judge = { list: Item[]; at: number; picks: Set<string>; lastAuthor: string; lastIntent: string[] };
+    /** jevDomain: 이 장에서 Jev 영역 제안을 받았나. 받으면 저장 때 그 값을 domain 으로 */
+    type Judge = { list: Item[]; at: number; picks: Set<string>; lastAuthor: string; lastIntent: string[]; jevDomain: boolean };
     let judge: Judge | null = null;
 
     /* 시트 */
@@ -2389,7 +2422,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     function enterJudge(): void {
       const list = judgeList();
-      judge = { list, at: 0, picks: new Set<string>(), lastAuthor: '', lastIntent: [] };
+      judge = { list, at: 0, picks: new Set<string>(), lastAuthor: '', lastIntent: [], jevDomain: false };
       if (selectMode) toggleSelect(false);
       paintJudge();
     }
@@ -2435,6 +2468,25 @@ import { t, loadNamespace } from '../../lib/i18n';
       const it = judge.list[judge.at];
       const url = safeLinkUrl(it.url);
       const s = stateOf(it);
+      const hint = jevById.get(text(it.id));
+      const jevIntent = new Set(hint ? hint.intent : []);
+      const jevTag = '<span class="bm-jev-tag">Jev</span>';
+      const domainLine =
+        hint && hint.domain
+          ? '<button type="button" class="bm-jev-domain' + (judge.jevDomain ? ' active' : '') +
+            '" data-act="j-jev-domain" aria-pressed="' + (judge.jevDomain ? 'true' : 'false') + '">' +
+            esc(
+              t(
+                'mydash.bm.judge.jevDomain',
+                {
+                  axis: axisLabel('domain'),
+                  value: valueLabel('domain', hint.domain),
+                  conf: hint.domainConf === null ? '' : ' ' + Math.round(hint.domainConf * 100) + '%',
+                },
+                '{axis}: Jev 추천 {value}{conf}'
+              )
+            ) + '</button>'
+          : '';
       judgeEl.innerHTML =
         '<div class="tool-status">' +
         esc(t('mydash.bm.judge.progress', { k: judge.at + 1, n: total }, '{k}/{n}')) + '</div>' +
@@ -2453,10 +2505,13 @@ import { t, loadNamespace } from '../../lib/i18n';
             (p) =>
               '<button type="button" class="tool-chip' +
               ((judge as Judge).picks.has(p.key) ? ' active' : '') +
-              '" data-act="j-intent" data-value="' + esc(p.key) + '">' + esc(p.label) + '</button>'
+              (jevIntent.has(p.key) ? ' bm-jev' : '') +
+              '" data-act="j-intent" data-value="' + esc(p.key) + '">' + esc(p.label) +
+              (jevIntent.has(p.key) ? jevTag : '') + '</button>'
           )
           .join('') +
         '</div>' +
+        domainLine +
         '<div class="tool-actions">' +
         '<button type="button" class="btn btn-primary" data-act="j-save">' +
         esc(t('mydash.bm.judge.saveNext', undefined, '저장하고 다음')) + '</button>' +
@@ -2475,6 +2530,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       judge.at++;
       const next = judge.list[judge.at];
       judge.picks = new Set<string>();
+      judge.jevDomain = false;
       /* 같은 작가면 앞에서 고른 의도를 미리 체크. 다른 작가면 빈칸에서 시작 */
       if (next && judge.lastAuthor && text(next.author) === judge.lastAuthor) {
         for (const v of judge.lastIntent) judge.picks.add(v);
@@ -2499,7 +2555,9 @@ import { t, loadNamespace } from '../../lib/i18n';
       }
       const picks = Array.from(judge.picks);
       const s = stateOf(it);
-      const r = await sendEvent(makeEvent('tag', text(it.id), { intent: picks, domain: s.domain }));
+      const hint = jevById.get(text(it.id));
+      const domain = judge.jevDomain && hint && hint.domain ? hint.domain : s.domain;
+      const r = await sendEvent(makeEvent('tag', text(it.id), { intent: picks, domain }));
       if (isBad(r)) {
         judgeMsg(sendWord(r), true);
         return;
@@ -2817,6 +2875,11 @@ import { t, loadNamespace } from '../../lib/i18n';
         const v = el.getAttribute('data-value') || '';
         if (judge.picks.has(v)) judge.picks.delete(v);
         else judge.picks.add(v);
+        paintJudge();
+        return;
+      }
+      if (act === 'j-jev-domain' && judge) {
+        judge.jevDomain = !judge.jevDomain;
         paintJudge();
         return;
       }
