@@ -90,16 +90,29 @@ function combos() {
   return [['classic', 'light'], ['classic', 'dark'], ['field', 'dark']];
 }
 
-async function openOne(id, theme, skin) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await page.addInitScript((v) => {
+/* 탭을 레인마다 스킨과 판 짝 하나씩 두고 다시 쓴다 (2026-09-25).
+   도구마다 새 창을 열고 닫으면 663번 창을 만든다. 닫은 창의 프로세스가 늦게 죽어
+   레인 6개인데 브라우저 프로세스 129개, 20.7GB 까지 쌓였다 (verify 메모리 부족의 주범).
+   도구 사이 저장소는 새 문서마다 비운다. 새 창과 같은 빈 상태에서 연다 */
+async function laneTab(lane, theme, skin) {
+  const k = `${skin}|${theme}`;
+  if (lane.tabs.has(k)) return lane.tabs.get(k);
+  /* 짝이 바뀌면 앞 탭은 닫는다. 레인당 탭 하나 */
+  for (const old of lane.tabs.values()) await old.ctx.close();
+  lane.tabs.clear();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await ctx.addInitScript((v) => {
+    if (window !== window.top) return;
     try {
+      localStorage.clear();
+      sessionStorage.clear();
       localStorage.setItem('toolbox_theme', v.theme);
       if (v.skin) localStorage.setItem('toolbox_skin', v.skin);
     } catch { /* 저장이 막힌 판 */ }
   }, { theme, skin });
-  const hits = new Set();
-  page.on('pageerror', (e) => hits.add('오류 ' + String(e).split('\n')[0].slice(0, 90)));
+  const page = await ctx.newPage();
+  const tab = { ctx, page, hits: new Set() };
+  page.on('pageerror', (e) => tab.hits.add('오류 ' + String(e).split('\n')[0].slice(0, 90)));
   page.on('response', (r) => {
     if (r.status() < 400) return;
     const url = r.url();
@@ -107,9 +120,19 @@ async function openOne(id, theme, skin) {
     /* 말 묶음은 뺀다. 통짜 게이트가 도는 동안 `build:i18n` 이 그 폴더를 지웠다 다시 굽는 순간이 있어
        멀쩡한 도구가 열 개씩 빨개졌다 (2026-08-31 실측). 없는 묶음은 `audit:i18n-catalog` 가 따로 본다 */
     if (url.includes('/js/i18n/')) return;
-    hits.add('못 받음 ' + url.split('/apps/karmolab/')[1]);
+    tab.hits.add('못 받음 ' + url.split('/apps/karmolab/')[1]);
   });
+  lane.tabs.set(k, tab);
+  return tab;
+}
+
+async function openOne(lane, id, theme, skin) {
+  const tab = await laneTab(lane, theme, skin);
+  const { page } = tab;
   try {
+    /* 앞 도구의 문서를 먼저 내린다. 해시만 바꾸면 같은 문서라 새로 부팅하지 않는다 */
+    await page.goto('about:blank');
+    tab.hits.clear();
     await page.goto(`${BASE}/apps/karmolab/#${id}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     const drew = await page
       .waitForFunction(() => !!document.querySelector('.tool-page.active'), undefined, { timeout: 25000 })
@@ -122,11 +145,9 @@ async function openOne(id, theme, skin) {
     // 재움-의도: 오류가 터질 틈을 준다. 읽어서 판정하는 값이 없다
     await page.waitForTimeout(900);
     opened++;
-    if (hits.size) failures.push(`${id}(${skin}/${theme}): ${[...hits].slice(0, 3).join(' | ')}`);
+    if (tab.hits.size) failures.push(`${id}(${skin}/${theme}): ${[...tab.hits].slice(0, 3).join(' | ')}`);
   } catch (err) {
     skipped.push(`${id}(${skin}/${theme}): 화면을 못 열었다 (${String(err).slice(0, 60)})`);
-  } finally {
-    await page.close();
   }
 }
 
@@ -136,11 +157,13 @@ try {
   for (const [skin, theme] of combos()) for (const id of ids) queue.push([id, theme, skin]);
   await Promise.all(
     Array.from({ length: LANES }, async () => {
+      const lane = { tabs: new Map() };
       for (;;) {
         const next = queue.shift();
-        if (!next) return;
-        await openOne(next[0], next[1], next[2]);
+        if (!next) break;
+        await openOne(lane, next[0], next[1], next[2]);
       }
+      for (const tab of lane.tabs.values()) await tab.ctx.close();
     })
   );
 } finally {
