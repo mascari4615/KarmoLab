@@ -293,6 +293,57 @@ async function pinRun(url, opt) {
   }
 }
 
+/**
+ * 할 일 받기. 30초마다 로컬 수신기 (`JOB_BASE`) 에 묻고, 있으면 한 단계만 하고 결과를 돌려줌
+ *
+ * 왜: 에이전트가 bridge 탭을 열어 부르면 Edge 가 앞으로 나와 포커스를 가져감 (사용자 2026-09-25 "포커스는 왜 자꾸
+ * 가져가", 2026-09-26 "최종적으로는 포커스를 안 뺏는 형태"). 여기서는 확장이 먼저 묻고 작업 탭은 뒤쪽 탭이라 창을 안 건드림.
+ * 긴 작업을 워커 하나가 쥐면 도중에 꺼져 결과가 사라짐 (같은 날 세 판). 한 번 깰 때 짧은 단계 셋까지, 끊기면 수신기가 다시 내줌.
+ * 받는 일: `pin.scrape` (핀터레스트 쪽 하나에서 pinScrape), `reload` (확장 다시 읽기, 코드 반영용). 수신기는 127.0.0.1 만
+ */
+const JOB_BASE = "http://127.0.0.1:17377";
+const JOB_ALARM = "karmo.jobs";
+
+async function jobTick() {
+  for (let n = 0; n < 3; n += 1) {
+    let job;
+    try {
+      const r = await within(3000, "job", fetch(JOB_BASE + "/job", { cache: "no-store" }));
+      if (r.status !== 200) return;
+      job = await r.json();
+    } catch {
+      return; /* 수신기가 안 떠 있음. 평소 상태 */
+    }
+    if (!job || !job.id) return;
+    const done = (body) => fetch(JOB_BASE + "/done/" + encodeURIComponent(job.id), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body || {}),
+    }).catch(() => {});
+    if (job.kind === "reload") {
+      await done({ ok: true, version: chrome.runtime.getManifest().version });
+      chrome.runtime.reload();
+      return;
+    }
+    let result;
+    try {
+      if (job.kind === "pin.scrape" && /^https:\/\/([a-z]+\.)?pinterest\.com\//.test(String(job.url || ""))) {
+        result = await pinRun(job.url, job.opt || {});
+      } else {
+        result = { error: "모르는 일 " + job.kind };
+      }
+    } catch (e) {
+      result = { error: String(e && e.message ? e.message : e) };
+    }
+    await done(result);
+  }
+}
+
+if (chrome.alarms) {
+  chrome.alarms.create(JOB_ALARM, { periodInMinutes: 0.5 });
+  chrome.alarms.onAlarm.addListener((a) => { if (a.name === JOB_ALARM) jobTick(); });
+}
+
 const PIN_HASH_RE = /^[0-9a-f]{32}$/;
 const PIN_PAGE_RE = /^https:\/\/([a-z]+\.)?pinterest\.com\/pin\/[0-9]+\/?$/;
 
