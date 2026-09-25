@@ -22,8 +22,8 @@
 
 # github.io 전용: yawnbot 정적 config — self-hosted runner dirty/deploy fail
 # 방지 (TASK-YB-003 2026-05-09 사고). `* eol=lf` 와 동일하나 의도 명시 보존.
-apps/discord-bots/apps/yawnbot/config/*.txt text eol=lf
-apps/discord-bots/apps/yawnbot/.env.template text eol=lf
+apps/discord-bots/apps/karmolab-bot/config/*.txt text eol=lf
+apps/discord-bots/apps/karmolab-bot/.env.template text eol=lf
 
 # WitchMendokusai 전용: FMOD 바이너리성 텍스트 LF 강제.
 Assets/Plugins/FMOD/**/*.bundle text eol=lf

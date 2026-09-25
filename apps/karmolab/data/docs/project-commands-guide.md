@@ -121,8 +121,8 @@ npm run dev
 cd apps/discord-bots
 npm install
 npm run build
-npm run start:yawnbot
-npm run deploy:yawnbot
+npm run start:karmolab-bot
+npm run deploy:karmolab-bot
 ```
 
 ---

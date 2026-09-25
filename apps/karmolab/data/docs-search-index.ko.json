@@ -262,7 +262,7 @@
       "docId": "docs-karmo-ai",
       "heading": "Node(욘봇, 스크립트)에서",
       "title": "Node(욘봇, 스크립트)에서",
-      "description": "- apps/discord-bots/apps/yawnbot 에 @karmo/ai 가 file:../../../../packages/ai 로 연결되어 있습니다. - 루트에서 봇 빌드할 때 packages/ai 가 먼저 tsc 됩니다 apps/discord-bots 의 npm run build / build:yawnbot . - 엔트리 분리: 루트 @karmo/ai 는 계약 URL, 카탈로그 만, @karmo/ai/node 에서 AI Studio SDK 또는 Vertex REST 텍스트 호출을 제공합니다. peerDependencies : @google/generativ",
+      "description": "- apps/discord-bots/apps/karmolab-bot 에 @karmo/ai 가 file:../../../../packages/ai 로 연결되어 있습니다. - 루트에서 봇 빌드할 때 packages/ai 가 먼저 tsc 됩니다 apps/discord-bots 의 npm run build / build:karmolab-bot . - 엔트리 분리: 루트 @karmo/ai 는 계약 URL, 카탈로그 만, @karmo/ai/node 에서 AI Studio SDK 또는 Vertex REST 텍스트 호출을 제공합니다. peerDependencies : @google/generativ",
       "aliases": "karmo ai"
     },
     {
@@ -310,7 +310,7 @@
       "docId": "docs-discord-yawnbot",
       "heading": "Discord 봇 (욘 / yawnbot)",
       "title": "Discord 봇 (욘 / yawnbot)",
-      "description": "KarmoLab 문서 위젯 Discord, 욘봇 탭. 음성, DAVE 참고, 구현 요약, TODO , 짧은 향후 검토 , 아이디어 구상 을 둡니다. 무엇 어디 ------ ------ 이 탭 음성, DAVE , 기능 요약 , TODO , 향후 검토 , 아이디어 구상 슬래시, .env , 사용자 안내 레포 yawnbot README.md 워크스페이스 빌드, npm run 문서 위젯 discord-bots, README 탭 또는 discord-bots/README.md 레포: apps/discord-bots/apps/yawnbot/ ---",
+      "description": "KarmoLab 문서 위젯 Discord, 욘봇 탭. 음성, DAVE 참고, 구현 요약, TODO , 짧은 향후 검토 , 아이디어 구상 을 둡니다. 무엇 어디 ------ ------ 이 탭 음성, DAVE , 기능 요약 , TODO , 향후 검토 , 아이디어 구상 슬래시, .env , 사용자 안내 레포 yawnbot README.md 워크스페이스 빌드, npm run 문서 위젯 discord-bots, README 탭 또는 discord-bots/README.md 레포: apps/discord-bots/apps/karmolab-bot/ ---",
       "aliases": "discord yawnbot"
     },
     {
@@ -318,7 +318,7 @@
       "docId": "docs-discord-yawnbot",
       "heading": "음성 연결과 DAVE 트러블슈팅",
       "title": "음성 연결과 DAVE 트러블슈팅",
-      "description": "레포의 Discord 슬래시 봇 욘 은 npm, 폴더명 yawnbot 으로 apps/discord-bots/apps/yawnbot/ 에 있습니다. 음성 /music play , /music speak , /music sound , 음성 입장 등 은 @discordjs/voice 와 Discord 음성 게이트웨이, UDP를 사용합니다.",
+      "description": "레포의 Discord 슬래시 봇 욘 은 npm, 폴더명 yawnbot 으로 apps/discord-bots/apps/karmolab-bot/ 에 있습니다. 음성 /music play , /music speak , /music sound , 음성 입장 등 은 @discordjs/voice 와 Discord 음성 게이트웨이, UDP를 사용합니다.",
       "aliases": "discord yawnbot"
     },
     {
@@ -494,7 +494,7 @@
       "docId": "docs-discord-yawnbot",
       "heading": "참고 링크",
       "title": "참고 링크",
-      "description": "- Discord. Voice Close Event Codes voice-voice-close-event-codes - discord.js. 이슈 11419 DAVE 관련 논의 예시 - 워크스페이스: apps/discord-bots/README.md - 봇 README: apps/discord-bots/apps/yawnbot/README.md",
+      "description": "- Discord. Voice Close Event Codes voice-voice-close-event-codes - discord.js. 이슈 11419 DAVE 관련 논의 예시 - 워크스페이스: apps/discord-bots/README.md - 봇 README: apps/discord-bots/apps/karmolab-bot/README.md",
       "aliases": "discord yawnbot"
     },
     {

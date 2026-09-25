@@ -11,7 +11,7 @@ Discord 슬래시 봇입니다. **표시 이름은욘**, npm, 폴더명은 `yawn
 ```bash
 cd apps/discord-bots
 npm install
-npm run build:yawnbot
+npm run build:karmolab-bot
 ```
 
 환경 변수는 **`config/yawnbot-defaults.txt`(커밋)** 에서 비밀이 아닌 기본값(모델명, 타임아웃, Playing 문구, `kakao-export` 폴링, 라운드 등)을 읽은 뒤, 같은 디렉터리의 **`.env`**(gitignore)가 있으면 그걸로 덮어씁니다. 키 목록, 예시는 [.env.template](./.env.template)를 복사해 `.env`로 쓰면 됩니다.
@@ -23,8 +23,8 @@ npm run build:yawnbot
 > 새 키 추가는 `.github/workflows/deploy-discord-bots.yml` 의 `env:` 매핑 + `$keys` 배열 둘 다 갱신 + 사용자가 secret 등록.
 
 ```bash
-npm run start:yawnbot
-npm run deploy:yawnbot
+npm run start:karmolab-bot
+npm run deploy:karmolab-bot
 ```
 
 전체 워크스페이스 설명은 [apps/discord-bots/README.md](../../README.md)를 참고하세요.
@@ -84,7 +84,7 @@ DM, 전용 채널에서 자유 대화하는 AI 비서 기능. 페르소나는 `m
 
 `/강화`, `/판매`, `/정보`, `/돈`, `/랭킹`, `/출첵`, `/돈내놔`, `/배틀`, `/슬롯`, `/홀짝`, `/가위바위보`, `/주식목록`, `/주식차트`, `/매수`, `/매도`, `/내주식`, `/레이드정보`, `/공격`, `/레이드소환`, `/ping`, `/도움말`
 
-- **`/도움말`**. 선택 **`주제`**: 개요(기본), 음성, /music, 검, 미니게임, 주식, 레이드(기존 페이지 임베드), AI, ping, 음성 입장. 응답은 **나만 보기(ephemeral)** 로 채널을 덜 어지럽힘. 슬래시 **표시 문구**는 Discord 클라이언트 언어에 따라 **한, 영**(`en-US` 로컬라이즈)로 보일 수 있음. 변경 후 **`npm run deploy:yawnbot`** 필요.
+- **`/도움말`**. 선택 **`주제`**: 개요(기본), 음성, /music, 검, 미니게임, 주식, 레이드(기존 페이지 임베드), AI, ping, 음성 입장. 응답은 **나만 보기(ephemeral)** 로 채널을 덜 어지럽힘. 슬래시 **표시 문구**는 Discord 클라이언트 언어에 따라 **한, 영**(`en-US` 로컬라이즈)로 보일 수 있음. 변경 후 **`npm run deploy:karmolab-bot`** 필요.
 
 ---
 

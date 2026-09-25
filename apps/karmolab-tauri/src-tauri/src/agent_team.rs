@@ -518,7 +518,7 @@ pub struct CadenceTickResult {
 fn yawnbot_dir(repo_root: &str) -> PathBuf {
     // 3 케이스 동형 — KAR-116 path-resolve fix.
     let p = PathBuf::from(repo_root);
-    let direct = p.join("apps").join("discord-bots").join("apps").join("yawnbot");
+    let direct = p.join("apps").join("discord-bots").join("apps").join("karmolab-bot");
     if direct.exists() {
         return direct;
     }
@@ -527,7 +527,7 @@ fn yawnbot_dir(repo_root: &str) -> PathBuf {
         .join("apps")
         .join("discord-bots")
         .join("apps")
-        .join("yawnbot");
+        .join("karmolab-bot");
     if nested.exists() {
         return nested;
     }
@@ -537,7 +537,7 @@ fn yawnbot_dir(repo_root: &str) -> PathBuf {
             .join("apps")
             .join("discord-bots")
             .join("apps")
-            .join("yawnbot");
+            .join("karmolab-bot");
         if sibling.exists() {
             return sibling;
         }

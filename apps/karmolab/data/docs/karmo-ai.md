@@ -87,8 +87,8 @@ flowchart TB
 
 ## Node(욘봇, 스크립트)에서
 
-- **`apps/discord-bots/apps/yawnbot`** 에 `@karmo/ai`가 `file:../../../../packages/ai` 로 연결되어 있습니다.
-- 루트에서 봇 빌드할 때 `packages/ai`가 먼저 `tsc` 됩니다 (`apps/discord-bots`의 `npm run build` / `build:yawnbot`).
+- **`apps/discord-bots/apps/karmolab-bot`** 에 `@karmo/ai`가 `file:../../../../packages/ai` 로 연결되어 있습니다.
+- 루트에서 봇 빌드할 때 `packages/ai`가 먼저 `tsc` 됩니다 (`apps/discord-bots`의 `npm run build` / `build:karmolab-bot`).
 - **엔트리 분리:** 루트 `@karmo/ai`는 계약(URL, 카탈로그)만, **`@karmo/ai/node`** 에서 AI Studio(SDK) 또는 Vertex(REST) 텍스트 호출을 제공합니다. (`peerDependencies`: `@google/generative-ai`. AI Studio 경로에만 사용)
 - **호출 표면 전환 (`.env`):**
   - **기본 AI Studio:** `GEMINI_API_KEY` 필수, `GEMINI_MODEL` 선택
@@ -101,8 +101,8 @@ flowchart TB
   - `generateVertexText({ apiKey, projectId, location?, modelId?, userText, systemInstruction? })`. Vertex 단발
   - `generateAiStudioText({ apiKey, modelId?, prompt, signal? })`. AI Studio 단발
   - `createAiStudioTextModel` / `resolveAiStudioTextModelId` / `parseGenerativeSurfaceFromEnv`. 필요 시 저수준 조합
-- **TypeScript(욘봇):** `moduleResolution: node`(classic) 대비 `apps/yawnbot/tsconfig.json`의 `paths`로 `@karmo/ai/node` → `packages/ai/dist/node` 연결
-- **dotenv:** 욘봇, `kakao-export`는 `config/yawnbot-defaults.txt`(커밋 기본값) → 앱 루트 `.env` 순. `apps/yawnbot/.env.template` 참고
+- **TypeScript(욘봇):** `moduleResolution: node`(classic) 대비 `apps/karmolab-bot/tsconfig.json`의 `paths`로 `@karmo/ai/node` → `packages/ai/dist/node` 연결
+- **dotenv:** 욘봇, `kakao-export`는 `config/yawnbot-defaults.txt`(커밋 기본값) → 앱 루트 `.env` 순. `apps/karmolab-bot/.env.template` 참고
 
 모델 ID, 카탈로그만 쓰려면 루트 `@karmo/ai`에서 `DEFAULT_TEXT_MODEL_ID`, `MODEL_CATALOG`, `getDefaultModelId` 를 import 하면 됩니다.
 

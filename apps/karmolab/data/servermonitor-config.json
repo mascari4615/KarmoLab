@@ -35,7 +35,7 @@
     {
       "id": "yawnbot-env",
       "label": "YawnBot .env (dev)",
-      "relPath": "apps/discord-bots/apps/yawnbot/.env",
+      "relPath": "apps/discord-bots/apps/karmolab-bot/.env",
       "hint": "dev 봇 토큰 + dev 길드. prod 는 GitHub Secrets → 노트북 자동 주입 (TASK-YB-002)"
     },
     {
@@ -51,8 +51,8 @@
       "id": "yawnbot-tunnel",
       "label": "YawnBot (dev)",
       "app": "apps/discord-bots",
-      "script": "dev:yawnbot",
-      "deployScript": "deploy:yawnbot",
+      "script": "dev:karmolab-bot",
+      "deployScript": "deploy:karmolab-bot",
       "healthUrl": "http://127.0.0.1:4615/webhook/github",
       "npmInstall": true
     },

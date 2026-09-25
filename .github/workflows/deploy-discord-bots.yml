@@ -8,7 +8,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/discord-bots/apps/yawnbot/**'
+      - 'apps/discord-bots/apps/karmolab-bot/**'
       - 'apps/discord-bots/apps/agent-orchestrator/**'
       - 'apps/discord-bots/packages/**'
       - 'apps/discord-bots/package.json'
@@ -90,9 +90,9 @@ jobs:
       # 시험 두 개(`agent-daemon` `discovery-nonagentic`)가 `@karmo/ai` 를 **지어진 모양**
       # (`dist/`)으로 가져온다. 새 체크아웃엔 그게 없으니 먼저 짓는다. 덤으로 타입 오류도
       # 여기서 걸린다. prod 를 짓기 전에.
-      - name: npm run build:yawnbot
+      - name: npm run build:karmolab-bot
         working-directory: apps/discord-bots
-        run: npm run build:yawnbot
+        run: npm run build:karmolab-bot
       - name: npm test
         working-directory: apps/discord-bots
         run: npm test
@@ -167,7 +167,7 @@ jobs:
         # `git fetch <auth> main` + `git reset --hard FETCH_HEAD` 결정화:
         # tracked 는 origin 과 항상 byte-identical, untracked 런타임은
         # reset --hard 가 *안 건드림*(생존). 영영 abort/diverge 불가.
-        # 헤드리스 재현 증명 = apps/discord-bots/apps/yawnbot/scripts/
+        # 헤드리스 재현 증명 = apps/discord-bots/apps/karmolab-bot/scripts/
         # memo-sync-divergence-repro.sh (#1 divergence 불가 / #2 reset 보존 /
         # #3 대조: tracked 면 reset 이 런타임 파괴 = part2 가 고침 입증).
         # ⚠ part2(런타임 untrack, memo 레포) 와 *동시 착륙 필수*. 분리 착륙
@@ -333,7 +333,7 @@ jobs:
             Write-Host $line
           }
 
-      - name: npm install + build:yawnbot
+      - name: npm install + build:karmolab-bot
         shell: 'powershell -ExecutionPolicy Bypass -File {0}'
         working-directory: ${{ env.BOTS_DIR }}
         run: |
@@ -351,6 +351,25 @@ jobs:
           }
           if ($nssm) { & $nssm stop yawnbot-prod 2>&1 | Out-Null; Start-Sleep -Seconds 2; Write-Host "[KAR-150] yawnbot-prod stopped for clean npm install" }
           else { Write-Warning "[KAR-150] nssm 못 찾음. stop skip" }
+
+          # 폴더 이름 이전 (apps\yawnbot -> apps\karmolab-bot, 2026-09-25). 서비스가 멈춘 뒤 옛 폴더의
+          # git 밖 운영 상태(data\ 의 계정, 채팅, 점수, backups 등)를 새 폴더로 복사. 이미 있는 파일은 덮지 않음.
+          # 옛 폴더는 지우지 않는다 (되돌리기: nssm AppDirectory 를 옛 폴더로).
+          $oldData = Join-Path $PWD 'apps\yawnbot\data'
+          $newData = Join-Path $PWD 'apps\karmolab-bot\data'
+          if (Test-Path -LiteralPath $oldData) {
+            $copied = 0
+            Get-ChildItem -LiteralPath $oldData -Recurse -File -Force | ForEach-Object {
+              $rel = $_.FullName.Substring($oldData.Length).TrimStart('\')
+              $dst = Join-Path $newData $rel
+              if (-not (Test-Path -LiteralPath $dst)) {
+                New-Item -ItemType Directory -Force -Path (Split-Path $dst -Parent) | Out-Null
+                Copy-Item -LiteralPath $_.FullName -Destination $dst -Force
+                $copied++
+              }
+            }
+            Write-Host "[rename] apps\yawnbot\data -> apps\karmolab-bot\data 복사 $copied 개 (옛 폴더 보존)"
+          }
 
           # === KL-190 ①: 짓다 실패해도 **돌아갈 판**을 남긴다 ===
           # 이 step 은 봇을 세워 놓고 짓는다. 그런데 짓다 죽으면 아래 재기동 step 까지 못 가서
@@ -370,7 +389,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { $failed = 'npm install failed' }
 
           # === 곁 꾸러미의 연장도 챙긴다 (2026-08-24, prod 30분 정지) ===
-          # `build:yawnbot` 은 `npm --prefix ../../packages/ai run build` 를 부르는데, 그 폴더는
+          # `build:karmolab-bot` 은 `npm --prefix ../../packages/ai run build` 를 부르는데, 그 폴더는
           # 이 워크스페이스 **밖**이라 위 `npm install` 이 손대지 않는다. 여태 안 터진 건 노트북에
           # 옛 `node_modules` 가 남아 있었기 때문. 이름 이관(`karmolab-ai` → `@karmo/ai`)으로
           # 폴더가 새로 생기자 `@types/node` 가 없어 `TS2688` 로 빌드가 죽었다.
@@ -390,12 +409,12 @@ jobs:
           }
 
           if (-not $failed) {
-            & npm run build:yawnbot
-            if ($LASTEXITCODE -ne 0) { $failed = 'build:yawnbot failed' }
+            & npm run build:karmolab-bot
+            if ($LASTEXITCODE -ne 0) { $failed = 'build:karmolab-bot failed' }
           }
 
           if (-not $failed) {
-            & npm -w apps/yawnbot run smoke:codex-browser
+            & npm -w apps/karmolab-bot run smoke:codex-browser
             if ($LASTEXITCODE -ne 0) { $failed = 'browser smoke failed' }
           }
 
@@ -427,8 +446,8 @@ jobs:
         shell: 'powershell -ExecutionPolicy Bypass -File {0}'
         working-directory: ${{ env.BOTS_DIR }}
         run: |
-          & npm run deploy:yawnbot
-          if ($LASTEXITCODE -ne 0) { throw "deploy:yawnbot failed" }
+          & npm run deploy:karmolab-bot
+          if ($LASTEXITCODE -ne 0) { throw "deploy:karmolab-bot failed" }
         # ops-self-report 의 reportDeploy 가 운영 채널에 임베드 발송
 
       - name: NSSM restart yawnbot-prod
@@ -475,6 +494,10 @@ jobs:
           # 새 env 추가 시 이 라인에 추가 (별도 nssm set 호출 X. 마지막 호출이 전체 덮어씀).
           # 2026-06-09: 에이전트 팀 폐기. AGENT_CADENCE/DIALOGUE env 제거 (봇 reactive 기능만).
           & $nssm set yawnbot-prod AppEnvironmentExtra 'YAWNBOT_ENV=prod' 'USERPROFILE=C:\Users\masca' | Out-Null
+
+          # 서비스가 보는 폴더를 이번 판의 봇 폴더로 (폴더 이름 이전 2026-09-25, apps\karmolab-bot)
+          & $nssm set yawnbot-prod AppDirectory $env:YAWNBOT_DIR | Out-Null
+          Write-Host "[rename] AppDirectory = $env:YAWNBOT_DIR"
 
           # ③ safe.directory '*'. 봇이 USERPROFILE 마스킹 후 보는 사용자 gitconfig
           # (C:\Users\masca\.gitconfig). 미박으면 git fetch 시 'dubious ownership'

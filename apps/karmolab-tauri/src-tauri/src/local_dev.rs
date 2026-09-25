@@ -71,7 +71,7 @@ struct DevProfile {
     app: Option<String>,
     #[serde(default)]
     script: Option<String>,
-    /// optional **Deploy** 버튼 — `npm run <deployScript>` (예: `"deploy:yawnbot"`)
+    /// optional **Deploy** 버튼 — `npm run <deployScript>` (예: `"deploy:karmolab-bot"`)
     #[serde(default)]
     deploy_script: Option<String>,
     // ── raw 형식 (npm 스크립트 아님) ──
@@ -683,7 +683,7 @@ fn run_npm_command_streamed(
 // ─── 외부 실행 dev 프로세스 발견 (TASK-003) ───────────────────────────────
 //
 // 카모랩이 직접 띄운 프로세스는 `state.pids` 로 추적된다. CLI 로 사용자가 직접 띄운
-// 같은 프로필 명령(예: `npm run start:yawnbot`)을 카드에서도 인지·종료할 수 있게,
+// 같은 프로필 명령(예: `npm run start:karmolab-bot`)을 카드에서도 인지·종료할 수 있게,
 // `Win32_Process.CommandLine` 에서 `profile.args.join(' ')` 부분 문자열을 찾는다.
 
 #[cfg(windows)]
@@ -1603,7 +1603,7 @@ mod tests {
         let repo = write_config(
             r#"{ "devProfiles": [
                  { "id": "jekyll", "label": "J", "cwd": ".", "program": "bundle", "args": ["exec","jekyll"] },
-                 { "id": "yawn", "label": "Y", "app": "apps/discord-bots", "script": "dev:yawnbot", "deployScript": "deploy:yawnbot", "npmInstall": true } ] }"#,
+                 { "id": "yawn", "label": "Y", "app": "apps/discord-bots", "script": "dev:karmolab-bot", "deployScript": "deploy:karmolab-bot", "npmInstall": true } ] }"#,
         );
         let (ok, bad) = read_profiles_with_errors(&repo).unwrap();
         assert_eq!(ok.len(), 2);

@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const yawnbotSrc = path.resolve(__dirname, '..', 'apps', 'yawnbot', 'src');
+const yawnbotSrc = path.resolve(__dirname, '..', 'apps', 'karmolab-bot', 'src');
 
 /**
  * services/*.ts 중 *external 서비스 패턴* 만 수집:
@@ -82,7 +82,7 @@ for (const { p, text } of files) {
   }
 }
 
-console.log(`[audit-cron-traceability] yawnbot/src scan. setInterval 포함 ${files.length} file`);
+console.log(`[audit-cron-traceability] karmolab-bot/src scan. setInterval 포함 ${files.length} file`);
 if (violations.length === 0) {
   console.log('  → 위반 0 (룰 ①+② 정합)');
   process.exit(0);

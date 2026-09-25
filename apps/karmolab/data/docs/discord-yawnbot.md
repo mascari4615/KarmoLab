@@ -5,16 +5,16 @@ KarmoLab **문서** 위젯 **Discord, 욘봇** 탭. 음성, DAVE 참고, 구현 
 | 무엇 | 어디 |
 |------|------|
 | **이 탭** | **음성, DAVE**, **기능 요약**, **TODO**, **향후 검토**, **아이디어 구상** |
-| **슬래시, `.env`, 사용자 안내** | 레포 [yawnbot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/yawnbot/README.md) |
+| **슬래시, `.env`, 사용자 안내** | 레포 [yawnbot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/karmolab-bot/README.md) |
 | **워크스페이스 빌드, `npm run`** | 문서 위젯 **discord-bots, README** 탭 또는 [discord-bots/README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/README.md) |
 
-레포: [`apps/discord-bots/apps/yawnbot/`](https://github.com/mascari4615/KarmoLab/tree/master/apps/discord-bots/apps/yawnbot)
+레포: [`apps/discord-bots/apps/karmolab-bot/`](https://github.com/mascari4615/KarmoLab/tree/master/apps/discord-bots/apps/karmolab-bot)
 
 ---
 
 ## 음성 연결과 DAVE 트러블슈팅
 
-레포의 Discord 슬래시 봇 **욘**은 npm, 폴더명 `yawnbot`으로 `apps/discord-bots/apps/yawnbot/`에 있습니다. 음성(`/music play`, `/music speak`, `/music sound`, 음성 입장 등)은 [`@discordjs/voice`](https://github.com/discordjs/voice)와 Discord 음성 게이트웨이, UDP를 사용합니다.
+레포의 Discord 슬래시 봇 **욘**은 npm, 폴더명 `yawnbot`으로 `apps/discord-bots/apps/karmolab-bot/`에 있습니다. 음성(`/music play`, `/music speak`, `/music sound`, 음성 입장 등)은 [`@discordjs/voice`](https://github.com/discordjs/voice)와 Discord 음성 게이트웨이, UDP를 사용합니다.
 
 ### DAVE가 무엇인가요?
 
@@ -56,7 +56,7 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 
 **`clip`에서 허용하는 확장자:** `.mp3` `.ogg` `.wav` `.m4a` `.opus` `.flac` `.webm`
 
-레포 기준 폴더: [`apps/discord-bots/apps/yawnbot/resources/audio/`](https://github.com/mascari4615/KarmoLab/tree/master/apps/discord-bots/apps/yawnbot/resources/audio). 여기에 파일을 두고 `/music sound clip:파일명.wav` 형태로 호출합니다. 기본 샘플로 `demo.wav` 등을 둘 수 있습니다.
+레포 기준 폴더: [`apps/discord-bots/apps/karmolab-bot/resources/audio/`](https://github.com/mascari4615/KarmoLab/tree/master/apps/discord-bots/apps/karmolab-bot/resources/audio). 여기에 파일을 두고 `/music sound clip:파일명.wav` 형태로 호출합니다. 기본 샘플로 `demo.wav` 등을 둘 수 있습니다.
 
 #### 동작 요약
 
@@ -101,7 +101,7 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 | `VOICE_DEBUG` | `1`이면 `@discordjs/voice` 네트워킹 디버그, 상태 로그. **토큰, 키, IP 등 민감 정보가 섞일 수 있어** 상시 켜두지 말 것. |
 | `DISCORD_VOICE_DAVE` | **기본값: DAVE 사용(켬).** 끄려면 `0` / `false` / `off` / `no`. 예전에 4017이 났던 채널은 DAVE가 꺼져 있으면 다시 실패합니다. |
 
-자세한 명령, 경로는 레포 [yawnbot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/yawnbot/README.md)를 참고하세요.
+자세한 명령, 경로는 레포 [yawnbot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/karmolab-bot/README.md)를 참고하세요.
 
 ---
 
@@ -109,7 +109,7 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 
 운영, 디버깅용으로 **이미 들어가 있는 동작**만 짧게 묶었습니다. 세부 env, 명령은 README가 기준입니다.
 
-- **`/yawn`**: 채널 최근 메시지 맥락(`YAWN_CONTEXT_MESSAGES`), 시스템 프롬프트(`YAWN_SYSTEM_PROMPT`), 질문, 전체 프롬프트 길이 상한, API 오류 시 짧은 사용자 안내와 `[yawn]` 콘솔 로그. **선택 슬래시 옵션** `api`(기본, AI Studio, Vertex), `model`(모델 ID). `@karmo/ai/node`의 `generateBlobTextFromEnvWithOptions`. 명령 등록 갱신 후 **`npm run deploy:yawnbot`** 필요.
+- **`/yawn`**: 채널 최근 메시지 맥락(`YAWN_CONTEXT_MESSAGES`), 시스템 프롬프트(`YAWN_SYSTEM_PROMPT`), 질문, 전체 프롬프트 길이 상한, API 오류 시 짧은 사용자 안내와 `[yawn]` 콘솔 로그. **선택 슬래시 옵션** `api`(기본, AI Studio, Vertex), `model`(모델 ID). `@karmo/ai/node`의 `generateBlobTextFromEnvWithOptions`. 명령 등록 갱신 후 **`npm run deploy:karmolab-bot`** 필요.
 - **슬래시 가드, 로그**: 허용 길드, 채널 ID(`YAWNBOT_ALLOWED_*`), 선택적 사용 로그(`YAWNBOT_SLASH_USAGE_LOG`).
 - **도움말, 로컬라이즈**: `/도움말` 선택적 `주제`(개요, 음악, 게임, 기타)로 ephemeral 안내; 등록 명령, 옵션에 **en-US** 설명, 이름 로컬라이즈(`deploy-commands.ts`. 배포 후 반영).
 - **`/music`**: 지금 재생 임베드(경과, 길이, 주기 갱신, env로 끄기/주기 조절), 플레이리스트를 큐에 넣을 때 **n/N** 진행 표시, `shuffle` / `loop` / `remove`, `queue` 페이지, 버튼, 긴 플레이리스트 한 줄 요약, 실패 시 텍스트 채널 알림, 쿨다운, 응답 공개/ephemeral 정책.
@@ -182,4 +182,4 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 - [Discord. Voice Close Event Codes](https://discord.com/developers/docs/topics/opcodes-and-status-codes#voice-voice-close-event-codes)
 - [discord.js. 이슈 #11419 (DAVE 관련 논의 예시)](https://github.com/discordjs/discord.js/issues/11419)
 - 워크스페이스: [`apps/discord-bots/README.md`](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/README.md)
-- 봇 README: [`apps/discord-bots/apps/yawnbot/README.md`](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/yawnbot/README.md)
+- 봇 README: [`apps/discord-bots/apps/karmolab-bot/README.md`](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/karmolab-bot/README.md)

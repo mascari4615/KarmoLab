@@ -1,5 +1,5 @@
 {
-  "name": "yawnbot",
+  "name": "karmolab-bot",
   "private": true,
   "main": "dist/src/main.js",
   "scripts": {

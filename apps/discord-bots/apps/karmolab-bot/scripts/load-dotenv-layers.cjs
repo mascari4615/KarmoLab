@@ -17,7 +17,7 @@ const dotenv = require('dotenv');
  * OS env → .env peek → defaults peek 순으로 먼저 resolve, 기본 'dev'(안전).
  * prod 는 deploy workflow 가 .env 에 `YAWNBOT_ENV=prod` 리터럴을 박음(비밀 아님).
  *
- * @param {string} yawnbotRoot - `apps/discord-bots/apps/yawnbot` 절대 경로
+ * @param {string} yawnbotRoot - `apps/discord-bots/apps/karmolab-bot` 절대 경로
  */
 function peekKey(absPath, key) {
   if (!fs.existsSync(absPath)) return undefined;

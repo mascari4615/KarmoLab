@@ -1,5 +1,5 @@
 # 비밀·호스트 경로가 아닌 기본값만 (레포에 커밋).
-# dotenv와 동일한 KEY=value 형식. 덮어쓰려면 apps/yawnbot/.env 에 같은 키를 적으면 됩니다.
+# dotenv와 동일한 KEY=value 형식. 덮어쓰려면 apps/karmolab-bot/.env 에 같은 키를 적으면 됩니다.
 
 # ── env 판별자 (TASK-YB-028 4-레이어) ──
 # 어느 ② 프로파일(config/yawnbot.<env>.txt)을 읽을지 결정. 기본 dev(안전).

@@ -7,5 +7,5 @@ dist/
 .env
 .env.*
 !.env.template
-!apps/yawnbot/.env.template
+!apps/karmolab-bot/.env.template
 

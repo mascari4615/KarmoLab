@@ -105,7 +105,7 @@ AI 호출 시 프롬프트는 다음 순서로 조립된다 (`ASSISTANT_MAX_PROM
 | `CODEX_CLI_SANDBOX` | `workspace-write` | bypass off일 때 Codex sandbox 모드 |
 | `CODEX_CLI_APPROVAL_POLICY` | `never` | bypass off일 때 Codex approval 정책 |
 
-`yawnbot-defaults.txt` 에 커밋된 기본값은 `apps/yawnbot/.env` 로 덮어쓸 수 있다.
+`yawnbot-defaults.txt` 에 커밋된 기본값은 `apps/karmolab-bot/.env` 로 덮어쓸 수 있다.
 
 ---
 
@@ -135,7 +135,7 @@ relationship: (선택) 사용자와의 관계
 ## 코드 포인터
 
 ```
-apps/discord-bots/apps/yawnbot/src/
+apps/discord-bots/apps/karmolab-bot/src/
 ├── services/
 │   ├── character-service.ts     ← 카드 로드·캐시, .active.json, channelKey helper
 │   └── memory-service.ts        ← 슬러그별 계층형 기억, git commit

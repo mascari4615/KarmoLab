@@ -124,14 +124,14 @@ if (!existsSync('packages/ai/dist')) {
   console.log('[verify] ! packages/ai/dist 존재. build skip (이미 빌드됨)');
 }
 
-// 1.5. apps/discord-bots/apps/yawnbot. **karmolab build 보다 먼저** (2026-08-16).
+// 1.5. apps/discord-bots/apps/karmolab-bot. **karmolab build 보다 먼저** (2026-08-16).
 //    순서가 뒤였을 때 무슨 일이 있었나: karmolab `build` 안에 `gates` 가 있고, 그 목록에
 //    `test:chat` 이 있다. 그 시험은 yawnbot 의 `dist/` 를 읽는데, yawnbot build 는 한참
 //    **뒤**에 있었다. 그래서 `test:chat` 은 로컬에서도 CI 에서도 **한 번도 돈 적이 없다.**
 //    못 돌았다(CANNOT-RUN)라고 정직하게 말하고 있었기 때문에 빨강도 아니었고,
 //    그래서 아무도 안 봤다. 정직한 침묵도 몇 달 쌓이면 없는 검사와 같다.
 //    고치는 자리는 시험이 아니라 **순서**다.
-// 5. apps/discord-bots/apps/yawnbot. build (tsc 타입체크). yawnbot 이 main
+// 5. apps/discord-bots/apps/karmolab-bot. build (tsc 타입체크). yawnbot 이 main
 //    invariant 밖이라 타입 깨는 PR 이 verify green 으로 통과 → prod 배포(deploy-
 //    discord-bots) 가 build red 로 며칠 막혀도 안 보이던 사고(2026-06-07: GitHubCommit
 //    중복 정의 + isTextBased send 가드, KL-091/096 머지가 노출) 재발 기계 차단.
@@ -142,15 +142,15 @@ if (!existsSync('packages/ai/dist')) {
    못 돌림이었다(순서를 고쳤는데도 안 고쳐진 이유가 이것이다. 자리가 아니라 조건이었다).
    봐야 할 것은 **yawnbot 이 실제로 지어질 수 있나** = 그 워크스페이스의 node_modules 다. */
 const yawnbotWs = 'apps/discord-bots';
-const yawnbotReady = existsSync(`${yawnbotWs}/node_modules`) && existsSync('apps/discord-bots/apps/yawnbot/tsconfig.json');
+const yawnbotReady = existsSync(`${yawnbotWs}/node_modules`) && existsSync('apps/discord-bots/apps/karmolab-bot/tsconfig.json');
 if (yawnbotReady) {
-  run('yawnbot build (tsc)', 'apps/discord-bots/apps/yawnbot', 'npx tsc -p tsconfig.json');
+  run('yawnbot build (tsc)', 'apps/discord-bots/apps/karmolab-bot', 'npx tsc -p tsconfig.json');
   /* 타입만 보면 **라우트가 통째로 사라진 것**은 안 잡힌다 (TASK-KL-153).
    * 실제로 그랬다: 한 세션이 `karmolab-api.ts` 를 통째로 덮어쓰면서 다른 세션이 넣은
    * 라우트 두 개가 조용히 없어졌고, 타입도 배포도 초록이었다. 사람 화면에서만 404 였다.
    * 그 라우트를 찌르는 시험은 이미 있었는데 **아무 관문도 그걸 안 돌리고 있었다.**
    * 배포(노트북) 는 tsc 만 본다. 그래서 여기서 돈다. */
-  run('yawnbot 시험 (라우트가 사라져도 잡히게)', 'apps/discord-bots/apps/yawnbot', 'npx vitest run');
+  run('yawnbot 시험 (라우트가 사라져도 잡히게)', 'apps/discord-bots/apps/karmolab-bot', 'npx vitest run');
 } else {
   /* 조용한 skip 은 초록으로 읽힌다. 못 돈 것은 못 돌았다고 말한다. 그래야 다음 사람이 본다. */
   console.log(`[verify] ⚠ yawnbot 을 못 지었다. ${yawnbotWs}/node_modules 가 없다.`);

@@ -1,6 +1,6 @@
 /**
  * YawnBot. Node.js Discord Bot (game bot)
- * 기존 apps/yawnbot-server/src/index.ts 기반
+ * 기존 apps/karmolab-bot-server/src/index.ts 기반
  */
 import './load-env';
 import './install-console-timestamps';
@@ -742,7 +742,7 @@ async function main() {
   const token = process.env.DISCORD_TOKEN?.trim();
   if (!token) {
     console.error(
-        '[YawnBot] DISCORD_TOKEN이 비어 있습니다. apps/yawnbot/.env 에 봇 토큰을 넣으세요. (Discord Developer Portal → 앱 → Bot → Token)',
+        '[YawnBot] DISCORD_TOKEN이 비어 있습니다. apps/karmolab-bot/.env 에 봇 토큰을 넣으세요. (Discord Developer Portal → 앱 → Bot → Token)',
     );
     process.exit(1);
   }

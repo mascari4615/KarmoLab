@@ -53,7 +53,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ── 서버 ─────────────────────────────────────────────── */
 const serverPath = path.resolve(
-  'src/../..', 'discord-bots', 'apps', 'yawnbot', 'scripts', 'serve-arcade-e2e.mjs'
+  'src/../..', 'discord-bots', 'apps', 'karmolab-bot', 'scripts', 'serve-arcade-e2e.mjs'
 );
 const bot = spawn(process.execPath, [serverPath, '--port', String(PORT)], { stdio: ['ignore', 'pipe', 'pipe'] });
 bot.stdout.on('data', (d) => process.stdout.write(`  [서버] ${d}`));
@@ -80,7 +80,7 @@ const rankedSrc = built.outputFiles[0].text;
 
 /* 서버가 셀 답을 이쪽도 미리 안다. 같은 묶음을 부르므로 답이 갈릴 수 없다 */
 const verifierPath = path.resolve(
-  'src/../..', 'discord-bots', 'apps', 'yawnbot', 'data', 'arcade-verifier.cjs'
+  'src/../..', 'discord-bots', 'apps', 'karmolab-bot', 'data', 'arcade-verifier.cjs'
 );
 /* CI 는 욘봇을 안 굽는다. 없으면 여기서 굽는다 (MODULE_NOT_FOUND 로 빨갰다, 2026-09-03) */
 if (!existsSync(verifierPath)) {

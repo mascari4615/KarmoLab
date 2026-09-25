@@ -26,7 +26,7 @@ import { WAIT } from './lib/waits.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(HERE, '..');
 const SITE_ROOT = path.resolve(APP_ROOT, '../..');
-const YAWNBOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/yawnbot');
+const YAWNBOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/karmolab-bot');
 const PROD_ORIGIN = 'https://yawnbot.mascari4615.com';
 
 const failures = [];

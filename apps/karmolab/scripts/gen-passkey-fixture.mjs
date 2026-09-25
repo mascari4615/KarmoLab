@@ -24,7 +24,7 @@ import { chromium } from 'playwright';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.resolve(
   ROOT,
-  '../discord-bots/apps/yawnbot/src/services/__fixtures__/passkey-chrome.json',
+  '../discord-bots/apps/karmolab-bot/src/services/__fixtures__/passkey-chrome.json',
 );
 const TARGET = process.env.URL || 'http://127.0.0.1:8813/apps/karmolab/index.html';
 const origin = new URL(TARGET).origin;

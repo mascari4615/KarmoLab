@@ -24,11 +24,11 @@ export function resolveCursorRepoDir(raw: string | undefined | null): string {
   return path.resolve(s);
 }
 
-// Compiled to dist/src/*.js → two levels up to package root (apps/discord-bots/apps/yawnbot)
+// Compiled to dist/src/*.js → two levels up to package root (apps/discord-bots/apps/karmolab-bot)
 export const PKG_ROOT = path.resolve(__dirname, '..', '..');
 
 /**
- * 이 패키지가 `.../apps/discord-bots/apps/yawnbot`에 있다고 가정할 때의 git 워크스페이스 루트(레포 최상위).
+ * 이 패키지가 `.../apps/discord-bots/apps/karmolab-bot`에 있다고 가정할 때의 git 워크스페이스 루트(레포 최상위).
  * 클론을 어디에 두었는지(`source\repos` 등)와 무관합니다.
  */
 export function defaultCursorRepoRoot(): string {
