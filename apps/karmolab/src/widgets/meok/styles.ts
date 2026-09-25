@@ -46,7 +46,7 @@ export function injectStyles(): void {
     '.meok-menu{position:relative}',
     '.meok .meok-menu-title{border:0;background:none;padding:6px 10px;min-height:28px;border-radius:var(--radius-sm);font-size:var(--font-size-xs)}',
     '.meok .meok-menu-title:hover,.meok .meok-menu-title[aria-expanded="true"]{background:color-mix(in srgb,var(--accent) 16%,transparent);border:0}',
-    '.meok-menu-list{position:absolute;left:0;top:calc(100% + 2px);min-width:220px;padding:4px;display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-float,0 8px 24px rgba(0,0,0,.35));z-index:30}',
+    '.meok-menu-list{position:absolute;left:0;top:calc(100% + 2px);min-width:220px;padding:4px;display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-float);z-index:30}',
     '.meok-menu-list[hidden]{display:none}',
     '.meok .meok-menu-item{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;min-height:28px;padding:5px 10px;border:0;background:none;text-align:left;border-radius:var(--radius-sm);font-size:var(--font-size-xs)}',
     '.meok .meok-menu-item:hover:not(:disabled),.meok .meok-menu-item:focus-visible{background:color-mix(in srgb,var(--accent) 22%,transparent);border:0;outline:none}',
