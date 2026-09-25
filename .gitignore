@@ -142,6 +142,12 @@ apps/discord-bots/apps/karmolab-bot/data/provisioned-channels.*.json
 # 폰이 밀어 넣은 실행 로그 (TASK-WM-201). 런타임 산출물 — 커밋 대상 아님.
 apps/discord-bots/apps/karmolab-bot/data/device-logs/
 
+# 상태 파일 자동 백업, 사람이 올린 그림, 직전 빌드. 배포의 git clean -fd 가 지우지 않게 무시 목록에 둔다
+# (2026-09-25 폴더 이름 이전 때 무시되지 않은 상태 파일이 clean 에 지워진 사고)
+apps/discord-bots/apps/karmolab-bot/data/backups/
+apps/discord-bots/apps/karmolab-bot/data/uploads/
+apps/discord-bots/apps/karmolab-bot/dist.last-good/
+
 # 봇이 받아 둔 것 — 사람이 올린 그림, 알림 상태. 전부 런타임 산출물이다.
 # **이 저장소는 공개다.** 올린 그림이 담기면 그대로 인터넷에 올라간다.
 # 디렉토리째 막는다 — 새 종류가 하나 늘 때마다 다시 뚫리지 않게.

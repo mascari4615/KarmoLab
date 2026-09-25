@@ -121,7 +121,7 @@ jobs:
           if (-not $pick) { $pick = $names[0] }
           $repo = Join-Path $env:UMBRELLA_DIR $pick
           $bots = Join-Path $repo 'apps\discord-bots'
-          $yawn = Join-Path $bots 'apps\yawnbot'
+          $yawn = Join-Path $bots 'apps\karmolab-bot'
           $lines = "REPO_DIR=$repo`nBOTS_DIR=$bots`nYAWNBOT_DIR=$yawn`n"
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, $lines)
           Write-Output "REPO_DIR=$repo"
