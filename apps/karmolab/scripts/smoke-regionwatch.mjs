@@ -170,7 +170,10 @@ await page.waitForTimeout(700);
 await page.evaluate(() => window.__stage.set('box', '#20c040'));
 await page.waitForTimeout(400);
 fires = await page.evaluate(() => window.__rw.fires.map((f) => f.name));
-if (gapBefore < 2500) check(fires.length === 2, `rearm 안에서는 침묵 (첫 울림 뒤 ${Math.round(gapBefore)}ms 에 다시 빨강, 지금 ${fires.length}번)`);
+/* chg 만 셈. mat 슬롯은 rearm 1초라, 판이 느려 초록 복귀가 1초 넘게 늦으면 정당한 재울림
+   (2026-09-25 브라우저 4자리 판에서 전체 울림 3번으로 빨강) */
+const chgInCool = fires.filter((n) => n === 'chg').length;
+if (gapBefore < 2500) check(chgInCool === 1, `rearm 안에서는 침묵 (첫 울림 뒤 ${Math.round(gapBefore)}ms 에 다시 빨강, chg ${chgInCool}번, 전체 ${fires.join(',')})`);
 else check(true, `rearm 침묵은 못 쟀다. 첫 울림 뒤 이미 ${Math.round(gapBefore)}ms 지남`);
 await page.waitForFunction(() => performance.now() - window.__rw.fires.find((f) => f.name === 'chg').at > 3200, null, { timeout: WAIT });
 await page.evaluate(() => window.__stage.set('box', '#c02020'));
@@ -190,11 +193,14 @@ for (let n = 10; n >= 0; n--) {
   await page.evaluate((d) => window.__stage.set('digits', d), String(n));
   await page.waitForTimeout(700);
 }
+/* 고정 1.2초 대신 울림 대기. 읽기는 1초마다라 바쁜 판에서 늦음 (2026-09-25 게이트 6/4 판) */
+await page.waitForFunction(() => window.__rw.fires.some((f) => f.name === 'cnt'), null, { timeout: WAIT }).catch(() => undefined);
 await page.waitForTimeout(1200);
 /* 카운트다운 동안의 읽기만 본다. 그 전후는 숫자 없음이 정상 */
 const reads = await page.evaluate((from) => window.__rw.reads.slice(from).filter((r) => r.slot === 2), readsBefore);
 const numeric = reads.filter((r) => r.secs !== null).length;
-check(reads.length >= 6, `숫자 읽기가 돌았다 (읽기 ${reads.length}회)`);
+/* 읽기 횟수는 판의 바쁨에 딸림. 돌았나만 확인 */
+check(reads.length >= 3, `숫자 읽기가 돌았다 (읽기 ${reads.length}회)`);
 check(numeric >= Math.floor(reads.length * 0.6), `카운트다운 동안 읽은 것 중 숫자가 60% 이상 (숫자 ${numeric} / ${reads.length}: ${reads.map((r) => r.text || '-').join(' ')})`);
 const cntFires = await page.evaluate(() => window.__rw.fires.filter((f) => f.name === 'cnt'));
 check(cntFires.length === 1, `남은 초 슬롯은 한 번만 울린다 (지금 ${cntFires.length}번)`);
@@ -209,7 +215,7 @@ for (const n of [8, 5, 4, 3]) {
   await page.evaluate((d) => window.__stage.set('digits', d), String(n));
   await page.waitForTimeout(800);
 }
-await page.waitForTimeout(1200);
+await page.waitForFunction(() => window.__rw.fires.filter((f) => f.name === 'cnt').length >= 2, null, { timeout: WAIT }).catch(() => undefined);
 const cntFires2 = await page.evaluate(() => window.__rw.fires.filter((f) => f.name === 'cnt').length);
 check(cntFires2 === 2, `숫자가 사라졌다 다시 내려오면 또 울린다 (지금 ${cntFires2}번)`);
 

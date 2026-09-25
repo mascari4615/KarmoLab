@@ -261,8 +261,11 @@ try { previousTimes = JSON.parse(readFileSync(timesFile, 'utf8')); } catch { /* 
    53s instead of 101s and accessibility 57s instead of 96s. Keep explicit overrides
    for dedicated runners; give condition waits the same 30s budget used in CI. */
 const cpuCount = os.cpus().length || 4;
-const workerCount = serial ? 1 : Math.max(1, Number(process.env.KL_GATE_JOBS || Math.min(4, cpuCount - 2)));
-const browserLimit = Math.max(1, Number(process.env.KL_GATE_BROWSER_JOBS || Math.min(2, workerCount)));
+/* 2026-09-25: 코어가 넉넉한 기계는 6/4. 데스크톱 24스레드 게이트 벽시계 814초 -> 393~478초.
+   올리며 드러난 고정 시간 검사 다섯 곳(regionwatch 둘, arcade:cards, newtools, widget-idle)은 검사 쪽 수정.
+   CI 는 KL_GATE_JOBS=4 를 주므로 4/2 그대로 */
+const workerCount = serial ? 1 : Math.max(1, Number(process.env.KL_GATE_JOBS || Math.min(6, cpuCount - 2)));
+const browserLimit = Math.max(1, Number(process.env.KL_GATE_BROWSER_JOBS || (workerCount >= 6 ? 4 : Math.min(2, workerCount))));
 /* 모르는 검사는 **중간쯤**으로 친다. 맨 앞에 세우면 새 검사 하나가 판을 늘어뜨리고,
    맨 뒤에 세우면 사실 긴 놈이 꼬리에 남는다. */
 const knownTimes = Object.values(previousTimes).filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
