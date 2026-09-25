@@ -92,9 +92,15 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
 
   /** 머신 방의 작은 수는 서버 (Mois2) 의 마지막 메모리. 폴더가 늘어도 가리키는 기계는 그대로 */
   async function pcCount(repo: DashRepoRead): Promise<string> {
-    const j = await repo.readJson<{ data?: { latest?: { memUsedPct?: number } } }>(
-      PC_DIR + '/Mois2/summary.json'
-    );
+    type PcSummary = { data?: { latest?: { memUsedPct?: number } } };
+    const path = PC_DIR + '/Mois2/summary.json';
+    /* 수집기 브랜치 먼저 (머신 방과 같은 순서), 없으면 main */
+    const j = await repo
+      .readJson<PcSummary>(path, { ref: 'machines-data' })
+      .catch((e: { kind?: string }) => {
+        if (e && e.kind === 'auth') throw e;
+        return repo.readJson<PcSummary>(path);
+      });
     return num(j.data && j.data.latest && j.data.latest.memUsedPct) + '%';
   }
 

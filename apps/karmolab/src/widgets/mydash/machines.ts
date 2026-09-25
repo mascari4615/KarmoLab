@@ -6,7 +6,8 @@
  * `Zb-machine-onepage-*.html` (카드를 누른 상세).
  *
  * 읽는 것
- * - 저장소 `data/pc-vitals/<host>/summary.json` (봉투 `pc-vitals/1`). 30일 선, 일별, 판정, 마지막 표본
+ * - 저장소 `data/pc-vitals/<host>/summary.json` (봉투 `pc-vitals/1`). 30일 선, 일별, 판정, 마지막 표본.
+ *   브랜치 `machines-data` (기계별 수집기가 10분마다) 먼저, 없으면 main
  * - 저장소 `data/machines/<host>/spec.json` (`machine-spec/1`) 과 `notes.json` (사람이 적는 메모). 둘 다 없어도 됨
  * - Mois2 만 laptop-ops `GET /dash/machine` 을 1분마다 (이 방이 화면에 있을 때만).
  *   본인 확인은 Dash 로그인 토큰 그대로 (`ctx.ghToken`). ops 토큰은 브라우저 밖
@@ -105,6 +106,8 @@ import { createLocalServers } from './local-servers';
   ];
   const LAPTOP = 'https://laptop.mascari4615.com';
   const VITALS_DIR = 'data/pc-vitals';
+  /** 기계별 수집기 (memo scripts/machines) 가 부모 없는 커밋으로 덮어쓰는 브랜치 */
+  const VITALS_BRANCH = 'machines-data';
   const MACHINES_DIR = 'data/machines';
   const LIVE_MS = 60000;
   const LOG_MS = 5000;
@@ -1003,9 +1006,9 @@ import { createLocalServers } from './local-servers';
     status('받는 중');
 
     /* 없는 파일은 없는 것. 한 파일 실패가 방 전체를 막지 않게 하나씩 */
-    async function readOpt<T>(path: string): Promise<T | null> {
+    async function readOpt<T>(path: string, ref?: string): Promise<T | null> {
       try {
-        return await repo.readJson<T>(path);
+        return await repo.readJson<T>(path, ref ? { ref } : undefined);
       } catch (e) {
         const kind = (e as { kind?: string }).kind;
         if (kind === 'auth') throw e;
@@ -1013,20 +1016,32 @@ import { createLocalServers } from './local-servers';
       }
     }
     /* 폴더 목록을 먼저 본다. 없는 파일을 바로 읽으면 GitHub 404 가 콘솔에 빨간 줄로 남는다 (kit.ts tree 설명) */
-    const dirNames = async (path: string): Promise<Set<string>> => {
+    const dirNames = async (path: string, ref?: string): Promise<Set<string>> => {
       try {
-        return new Set((await repo.list(path)).map((e) => e.name));
+        return new Set((await repo.list(path, ref ? { ref } : undefined)).map((e) => e.name));
       } catch (e) {
         if ((e as { kind?: string }).kind === 'auth') throw e;
         return new Set();
       }
     };
-    const [vitalsHosts, specHosts] = await Promise.all([dirNames(VITALS_DIR), dirNames(MACHINES_DIR)]);
+    /* 성능 요약은 수집기가 10분마다 올리는 브랜치가 먼저, 없는 기계만 main (옛 Mois2 손 생성본) */
+    const [liveHosts, vitalsHosts, specHosts] = await Promise.all([
+      dirNames(VITALS_DIR, VITALS_BRANCH),
+      dirNames(VITALS_DIR),
+      dirNames(MACHINES_DIR),
+    ]);
     await Promise.all(
       machines.map(async (m) => {
         const files = specHosts.has(m.id) ? await dirNames(MACHINES_DIR + '/' + m.id) : new Set<string>();
+        const summaryPath = VITALS_DIR + '/' + m.id + '/summary.json';
         const [summary, spec, notes] = await Promise.all([
-          vitalsHosts.has(m.id) ? readOpt<Summary>(VITALS_DIR + '/' + m.id + '/summary.json') : null,
+          liveHosts.has(m.id)
+            ? readOpt<Summary>(summaryPath, VITALS_BRANCH).then((s) =>
+                s || !vitalsHosts.has(m.id) ? s : readOpt<Summary>(summaryPath)
+              )
+            : vitalsHosts.has(m.id)
+              ? readOpt<Summary>(summaryPath)
+              : null,
           files.has('spec.json') ? readOpt<Spec>(MACHINES_DIR + '/' + m.id + '/spec.json') : null,
           files.has('notes.json') ? readOpt<Notes>(MACHINES_DIR + '/' + m.id + '/notes.json') : null,
         ]);
