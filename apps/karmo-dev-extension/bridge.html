@@ -97,6 +97,8 @@
         ytmPlaylistLast: () => call({ type: "ytmusic.playlistLast" }),
         xOne: (url, steps) => call({ type: "x.one", url, steps }),
         gcpClient: (opts) => call({ type: "gcp.client", ...opts }),
+        pinterestRelated: (seeds, per) => call({ type: "pinterest.related", seeds, per }),
+        pinterestLast: () => call({ type: "pinterest.last" }),
         version: () => call({ type: "ext.version" }),
         reload: () => call({ type: "ext.reload" }),
       };
@@ -109,7 +111,7 @@
         if (!type) return false;
         /* 주소만으로 부를 수 있는 것은 이 목록뿐 (읽기와 gcp). 즐겨찾기 삭제 같은 것은 주소로 불가
            (남의 사이트가 이 주소로 보내 확장을 부리는 길 차단) */
-        const RUNNABLE = ["ext.version", "ext.reload", "bridge.cleanup", "dash.inspect", "gcp.branding", "gcp.client", "gcp.last", "gcp.secret", "gcp.secretRow", "gcp.audience", "gcp.read", "collect.progress"];
+        const RUNNABLE = ["ext.version", "ext.reload", "bridge.cleanup", "dash.inspect", "gcp.branding", "gcp.client", "gcp.last", "gcp.secret", "gcp.secretRow", "gcp.audience", "gcp.read", "collect.progress", "pinterest.related", "pinterest.last"];
         if (!RUNNABLE.includes(type)) {
           document.getElementById("out").textContent = "주소로 못 부르는 종류: " + type;
           return true;

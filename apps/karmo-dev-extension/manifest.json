@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "KarmoDevExtension",
   "short_name": "KarmoDev",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7GVGawTAWDl3FZpHLwX56U8fLPr/Qmif/CTTFKVMGeViW8mLtvTojTacpezKR2EI4n/NQhJJrDMo6fHwwTTjXGJOxGgdWGfuz3iReGPGm/s//YLCJClQOHSIAKC1Q7+/sC28uSOZOPGQ0/RPWOar++ssmwwg+e9vFFqonvczPlk441fqYBQmpXJXJEB4EtEOcKrUqcgRjFT9D2f2UFueMhtLvzF0yACbquhK7INicKbVbqyZ80mjEX2tup9BrGhs08TD0gE9x2A6E2ZuPixFHHe9Bwc/L/FR1iMbB2rhZgmRtBtZV6Z82cb26IaiWI9F9TFKWt0hKIJHIl4kxqOvLwIDAQAB",
   "description": "방송, 시청 페이지와 로컬 앱 연결. 즐겨찾기 정리. 유튜브, 치지직, SOOP, X 수집과 하루 한 번 내보내기.",
   "permissions": [
@@ -30,7 +30,9 @@
     "https://twitter.com/*",
     "https://music.youtube.com/*",
     "https://console.cloud.google.com/*",
-    "https://dash.mascari4615.com/*"
+    "https://dash.mascari4615.com/*",
+    "https://pinterest.com/*",
+    "https://*.pinterest.com/*"
   ],
   "background": {
     "service_worker": "background.js"

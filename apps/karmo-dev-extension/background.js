@@ -244,6 +244,55 @@ async function runInTab(url, file, fnName, world) {
 }
 
 /**
+ * 핀터레스트 쪽 하나에서 pinterest.js 의 pinScrape(opt). 탭은 끝나면 닫음
+ * 레퍼런스 모으기의 "비슷한 핀" (karmo-design collect.mjs --seed). 로그인된 사용자 Edge 라 핀이 안 잠김
+ */
+async function pinRun(url, opt) {
+  const tab = await openWorkTab(url);
+  try {
+    await waitLoaded(tab.id);
+    const where = { target: { tabId: tab.id } };
+    await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["pinterest.js"] }));
+    const [out] = await within(90000, "call", chrome.scripting.executeScript({
+      ...where,
+      func: (o) => globalThis.pinScrape(o),
+      args: [opt],
+    }));
+    return out && out.result;
+  } finally {
+    await closeWorkTab(tab.id);
+  }
+}
+
+const PIN_HASH_RE = /^[0-9a-f]{32}$/;
+const PIN_PAGE_RE = /^https:\/\/([a-z]+\.)?pinterest\.com\/pin\/[0-9]+\/?$/;
+
+/** 씨앗 (좋다 받은 핀) 마다 핀 쪽을 찾아 아래 비슷한 핀을 줍는다. 씨앗은 12개, 한 씨앗에 80장까지 */
+async function pinterestRelated(msg) {
+  const per = Math.max(1, Math.min(80, Number(msg.per) || 25));
+  const out = [];
+  for (const s of (Array.isArray(msg.seeds) ? msg.seeds : []).slice(0, 12)) {
+    if (!PIN_HASH_RE.test(String(s.key || ""))) continue;
+    let href = String(s.pin || "");
+    if (!href && s.q) {
+      const r = await pinRun("https://kr.pinterest.com/search/pins/?q=" + encodeURIComponent(String(s.q)), { key: s.key });
+      href = (r && r.href) || "";
+    }
+    href = href.split("?")[0];
+    if (!PIN_PAGE_RE.test(href)) {
+      out.push({ seed: s.key, error: "핀 쪽 주소를 못 찾음" });
+      await note("pinterest.related", s.key + " 핀 쪽 없음");
+      continue;
+    }
+    const r = await pinRun(href, { want: per });
+    const rows = ((r && r.rows) || []).filter((x) => x.hash !== s.key);
+    out.push({ seed: s.key, pin: href, rows });
+    await note("pinterest.related", s.key + " " + rows.length);
+  }
+  return out;
+}
+
+/**
  * Google Cloud Console OAuth 클라이언트 화면 (gcp.js). **보이는 탭** 필수 (숨은 탭은 화면을 안 그림).
  * dryRun 이면 원본 칸만 읽기, 아니면 없는 원본만 더하고 저장. 탭은 끝나면 닫음 (keep 이면 남김)
  */
@@ -541,6 +590,19 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
           last: (await chrome.storage.local.get(STATE_KEY))[STATE_KEY] || null,
           alarms,
         });
+      } else if (msg?.type === "pinterest.related") {
+        /* 무거운 일. 시작만 알리고 결과는 pinterest.last 로 (collect.all 과 같은 까닭) */
+        (async () => {
+          try {
+            const result = await pinterestRelated(msg);
+            await chrome.storage.local.set({ "karmo.lastPin": { at: new Date().toISOString(), result } });
+          } catch (e) {
+            await chrome.storage.local.set({ "karmo.lastPin": { at: new Date().toISOString(), error: String(e && e.message ? e.message : e) } });
+          }
+        })();
+        sendResponse({ ok: true, started: true });
+      } else if (msg?.type === "pinterest.last") {
+        sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.lastPin"))["karmo.lastPin"] || null });
       } else if (msg?.type === "gcp.last") {
         sendResponse({ ok: true, last: (await chrome.storage.local.get("karmo.gcpLast"))["karmo.gcpLast"] || null });
       } else if (msg?.type === "gcp.secret") {
