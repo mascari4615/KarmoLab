@@ -15,6 +15,7 @@
  */
 import { chromium } from 'playwright';
 import { serveRepo } from './lib/serve-static.mjs';
+import { WAIT } from './lib/waits.mjs';
 
 import { fileURLToPath } from 'node:url';
 
@@ -47,27 +48,42 @@ async function sample(label) {
   return delta;
 }
 
+/* 해시로 열면 제 주소가 있는 도구 (moon) 는 `/t/moon/` 으로 새 페이지를 연다. 그러면 세던 수가
+   처음부터 다시 세어져 누수를 못 잰다 (2026-09-22 주소 개편 뒤 줄곧 그랬다, 2026-09-25 발견).
+   셸 안에서 제자리로 연다. 문서가 바뀌면 못 잼으로 끝낸다 */
+await page.waitForFunction(() => typeof Toolbox !== 'undefined' && !!Toolbox.switchPage, null, { timeout: WAIT });
+await page.evaluate(() => { window.__samePage = true; });
+const open = (id) => page.evaluate((widget) => Toolbox.switchPage(widget, { stay: true }), id);
+async function assertSamePage(where) {
+  if (!(await page.evaluate(() => window.__samePage === true))) {
+    console.error(`[widget-idle] CANNOT-RUN: ${where} 에서 페이지가 새로 열렸다. 세던 수가 사라져 못 잰다`);
+    process.exit(2);
+  }
+}
+
 const base = await sample('첫 화면 (아무것도 안 열고)');
 
 const failures = [];
 
 const WIDGETS = process.argv.slice(2).length ? process.argv.slice(2) : ['hourglass', 'moon', 'particle', 'news'];
 for (const id of WIDGETS) {
-  await page.evaluate((widget) => { location.hash = widget; }, id);
+  await open(id);
   await page.waitForTimeout(2500);
+  await assertSamePage(id);
 }
 
 /* ② 보고 있는 동안에는 돈다. 마지막에 연 것이 아직 앞에 있다. 그림이 있는 위젯만 잰다
    (전부가 매 프레임 그리는 것은 아니다. 안 그리는 것이 정상인 위젯도 많다). */
 const LIVE = WIDGETS.filter((id) => ['meong', 'particle', 'bluemarble'].includes(id));
 if (LIVE.length) {
-  await page.evaluate((widget) => { location.hash = widget; }, LIVE[LIVE.length - 1]);
+  await open(LIVE[LIVE.length - 1]);
   await page.waitForTimeout(1200);
   const live = await sample(`${LIVE[LIVE.length - 1]} 를 보고 있는 동안`);
   if (live.raf < 60) failures.push(`보고 있는데 안 돈다. ${LIVE[LIVE.length - 1]} 의 rAF ${live.raf}/2초 (멈춰 놓고 초록을 받는 것을 막는다)`);
 }
-await page.evaluate(() => { location.hash = ''; });
+await open('home');
 await page.waitForTimeout(2500);
+await assertSamePage('첫 화면으로 돌아오기');
 
 const after = await sample(`${WIDGETS.length}개 열었다 나온 뒤`);
 console.log('');

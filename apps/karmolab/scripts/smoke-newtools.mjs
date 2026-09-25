@@ -69,7 +69,10 @@ await page.waitForSelector('#brFile');
 await putPhoto('#brFile');
 await page.waitForFunction(() => document.querySelector('#brCanvas')?.width > 0);
 
-/* 색 겹: 실제로 지워야 한다. 지운 데가 없다면 배선이 끊긴 것이다. */
+/* 색 겹: 실제로 지움. 지운 데가 없으면 배선 끊김
+   캔버스 폭이 서도 지우기는 도는 중일 수 있음. 읽는 중 글이 걷힐 때까지 대기
+   (2026-09-25 게이트 6/4 판에서 "읽는 중..." 을 읽고 빨강) */
+await page.waitForFunction(() => !/읽는 중/.test(document.querySelector('#brStatus')?.textContent || ''), null, { timeout: WAIT }).catch(() => undefined);
 const brStatus = await page.locator('#brStatus').innerText();
 check(/\d+% 를 지웠습니다/.test(brStatus), `한 가지 색 배경은 실제로 지워져야 한다 (지금 ${brStatus})`);
 

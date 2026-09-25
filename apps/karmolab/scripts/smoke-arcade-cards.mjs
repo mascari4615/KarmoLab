@@ -84,8 +84,9 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
         const measure = window.__bjMeasure?.();
         return Array.isArray(measure?.pickables) && measure.pickables.length > 0;
       /* 입체 상이 swiftshader 위에서 그려지는 CI 와 통짜 판(273검사 동시)에서 8초 초과.
-         혼자 돌리면 2초 안. 재는 것은 집을 카드가 생기나이지 몇 초 안에 생기나가 아님 */
-      }, undefined, { timeout: 20000 });
+         혼자 돌리면 2초 안. 재는 것은 집을 카드가 생기나이지 몇 초 안에 생기나가 아님.
+         브라우저 3자리 판에서 20초도 넘겼다 (2026-09-25). 조건 대기라 빠른 판은 손해 없음 */
+      }, undefined, { timeout: Math.max(WAIT * 2, 60000) });
       if (await page.locator('#acIntro').isVisible()) await page.click('#acIntro');
       await page.waitForFunction(() => getComputedStyle(document.querySelector('#acIntro')).display === 'none');
       /* 재움-의도: 배분 애니메이션이 실제로 흐르는 동안 마지막 카드의 출발 시각과
