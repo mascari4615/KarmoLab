@@ -188,11 +188,14 @@ export function buildCalendarView(
         nowIndicator: true,
         scrollTime: '08:00:00',
         dayMaxEvents: true,
+        /* 달마다 필요한 주만 (5주면 5줄). 6줄 고정이면 칸이 낮아져 일정이 "+N 개" 뒤로 숨음 (2026-09-25 사용자 "일정 하나도 안 보이고") */
+        fixedWeekCount: false,
         selectable: true,
         editable: true,
         eventStartEditable: true,
         eventDurationEditable: true,
-        eventDisplay: 'block',
+        /* Google 캘린더처럼 월 칸의 시각 일정은 점 한 줄, 종일만 색 막대. 한 칸에 더 많이 */
+        eventDisplay: 'auto',
         select: (info) => openModal({ start: info.start, end: info.end, allDay: info.allDay }),
         eventClick: (info) => {
             info.jsEvent.preventDefault();

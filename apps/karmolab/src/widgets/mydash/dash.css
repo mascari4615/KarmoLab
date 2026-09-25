@@ -222,7 +222,7 @@ html[data-site="dash"] .pl-cal-main .fc .pl-dh-num { font: 20px var(--font-displ
 html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell.fc-day-today .pl-dh-num { background: var(--text-primary); color: var(--dash-paper) !important; padding: 0 6px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell.fc-day-today.pl-holiday .pl-dh-num { background: var(--pl-sun); }
 html[data-site="dash"] .pl-cal-main .fc .fc-col-header-cell-cushion { font-weight: 700; padding: 10px 8px; }
-html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-slot-label-cushion { font: 11px var(--font-display); color: var(--text-tertiary); }
+html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-slot-label-cushion { font: 12px var(--font-display); color: var(--text-secondary); }
 html[data-site="dash"] .pl-cal-main .fc .fc-scrollgrid { border-left: 0; border-right: 0; }
 /* 월 칸의 날짜는 왼쪽 위 (시안 P3). 일기 단추는 오른쪽으로 비킴 */
 html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-day-top { flex-direction: row; }
@@ -247,6 +247,28 @@ html[data-site="dash"] .pl-cal-main .fc .fc-event-title { color: var(--text-prim
 html[data-site="dash"] .pl-cal-main .fc .fc-event-time { font-family: var(--font-display); font-weight: 400; color: color-mix(in srgb, var(--pl-ev, var(--accent)) 70%, var(--text-primary)); }
 html[data-site="dash"] .pl-cal-main .fc .fc-h-event .fc-event-main { padding: 1px 6px; }
 html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-main { padding: 4px 7px; }
+/* 월 칸 (2차, 2026-09-25 "가독성, 일정 하나도 안 보이고"). Google 캘린더 월 보기 기준:
+   날짜 줄 낮게, 일정 한 줄 20px 12px. 시각 일정은 점 + 시각 + 제목, 종일은 캘린더 색 막대에 흰 글씨 */
+html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px 2px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { margin: 3px 4px 1px; padding: 1px 6px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-event { font-size: 12px; line-height: 18px; margin-top: 1px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event { padding: 0 4px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event:hover { background: color-mix(in srgb, var(--text-primary) 6%, transparent); }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-event-dot { border-width: 4px; border-color: var(--pl-ev, var(--accent)); }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event .fc-event-time { font-weight: 400; color: var(--text-secondary); margin-right: 4px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event .fc-event-title { font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-block-event {
+  background: var(--pl-ev, var(--accent)) !important;
+  box-shadow: none;
+}
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-block-event .fc-event-main,
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-block-event .fc-event-title { color: #fff; font-weight: 400; }
+html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-more-link { font-size: 12px; font-weight: 700; color: var(--text-secondary); padding: 0 4px; }
+/* 스크롤바. 달력 안 긴 막대 대신 가는 줄 */
+html[data-site="dash"] .pl-cal-main .fc .fc-scroller { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-primary) 22%, transparent) transparent; }
+/* 주 보기 일정 글씨 */
+html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-time { font-size: 11px; }
+html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size: 13px; }
 
 /* 패널 변수 중 둥글기. 그림 모서리도 0 */
 html[data-site="dash"] .bm { --bm-pic-radius: 0; }
