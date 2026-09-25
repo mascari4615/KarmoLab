@@ -66,7 +66,7 @@ export class CharacterService {
   private fallbackDefault: string;
   private dirty = false;
 
-  constructor(memoRepoPath: string, fallbackDefault: string = 'yawn') {
+  constructor(memoRepoPath: string, fallbackDefault: string = 'kkamagi') {
     this.memoRepoPath = memoRepoPath;
     this.charactersDir = path.join(memoRepoPath, 'characters');
     this.activeConfigPath = path.join(this.charactersDir, '.active.json');
@@ -299,6 +299,19 @@ export class CharacterService {
     const prev = cfg.channels[channelKey];
     const skin = prev?.skin ?? cfg.default.skin;
     cfg.channels = { ...cfg.channels, [channelKey]: { core, skin } };
+    this._writeActive(cfg);
+  }
+
+  /** default 스킨 교체 (코어 보존). 채널 매핑이 있는 곳은 그대로 */
+  setDefaultSlug(slug: string): void {
+    CharacterService.assertSlug(slug);
+    if (!this.loadCard(slug)) {
+      const available = this.listCharacters().join(', ') || '없음';
+      throw new Error(`캐릭터를 찾을 수 없음: ${slug} (사용 가능: ${available})`);
+    }
+    const cfg = this._readActive();
+    cfg.default = { core: cfg.default.core, skin: slug };
+    this.reloadCard(slug);
     this._writeActive(cfg);
   }
 

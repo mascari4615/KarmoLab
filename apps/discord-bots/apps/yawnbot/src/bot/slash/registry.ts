@@ -62,6 +62,7 @@ import {
   handleCharacterSwitch,
   handleCharacterInfo,
   handleCharacterReset,
+  handleCharacterDefault,
   handleCharacterCore,
   handleCharacterReload,
   handleCharacterImage,
@@ -402,6 +403,9 @@ export const SLASH_COMMANDS: SlashCommand[] = [
             if (!(await guardOwner(ctx, interaction))) return;
             await handleCharacterSwitch(ctx, interaction); break;
           case 'info': await handleCharacterInfo(ctx, interaction); break;
+          case 'default':
+            if (!(await guardOwner(ctx, interaction))) return;
+            await handleCharacterDefault(ctx, interaction); break;
           case 'reset':
             if (!(await guardOwner(ctx, interaction))) return;
             await handleCharacterReset(ctx, interaction); break;

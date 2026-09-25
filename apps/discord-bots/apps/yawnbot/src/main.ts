@@ -132,7 +132,7 @@ const memoRepoPath = process.env.MEMO_REPO_PATH?.trim() || '';
 const characterService = memoRepoPath
   ? new CharacterService(
       memoRepoPath,
-      process.env.ASSISTANT_DEFAULT_CHARACTER?.trim() || 'yawn',
+      process.env.ASSISTANT_DEFAULT_CHARACTER?.trim() || 'kkamagi',
     )
   : null;
 

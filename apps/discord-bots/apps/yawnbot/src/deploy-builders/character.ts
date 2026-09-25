@@ -56,6 +56,20 @@ export const characterCommand = () =>
         )
         .addSubcommand((sub) =>
           sub
+            .setName('default')
+            .setDescription('매핑 없는 DM/채널이 쓰는 기본 캐릭터 변경')
+            .setDescriptionLocalizations(enUS('Change the default character'))
+            .addStringOption((opt) =>
+              opt
+                .setName('slug')
+                .setDescription('기본으로 쓸 캐릭터 슬러그 (예: kkamagi)')
+                .setDescriptionLocalizations(enUS('Character slug (e.g. kkamagi)'))
+                .setRequired(true)
+                .setAutocomplete(true),
+            ),
+        )
+        .addSubcommand((sub) =>
+          sub
             .setName('reset')
             .setDescription('이 DM/채널 매핑 제거 → default 캐릭터로 복귀')
             .setDescriptionLocalizations(enUS('Remove mapping → fall back to default')),

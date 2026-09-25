@@ -175,6 +175,35 @@ export async function handleCharacterReset(ctx: BotContext, interaction: ChatInp
  * /character 카드 core. 이 DM/채널의 에이전트 *코어*(실제 정체성=무슨 일) 설정/조회/해제.
  * 스킨(외모 껍데기)은 /character 카드 switch. 코어/스킨 독립 스왑 (KAR-018-A).
  */
+export async function handleCharacterDefault(ctx: BotContext, interaction: ChatInputCommandInteraction): Promise<void> {
+  const cs: CharacterService | null = ctx.characterService;
+  if (!cs) {
+    await interaction.reply({
+      content: 'MEMO_REPO_PATH가 설정되지 않아 캐릭터 시스템이 비활성화돼 있어요.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const slug = interaction.options.getString('slug', true).trim();
+  const before = cs.getDefaultSlug();
+  try {
+    cs.setDefaultSlug(slug);
+  } catch (e) {
+    const available = cs.listCharacters().join(', ') || '(없음)';
+    await interaction.reply({
+      content: `default 변경 실패: ${e instanceof Error ? e.message : String(e)}\n사용 가능: ${available}`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await interaction.reply({
+    content: `default 를 **${before}** 에서 **${slug}** 로 바꿨어요. 매핑이 있는 DM/채널은 그대로예요.`,
+    flags: MessageFlags.Ephemeral,
+  });
+}
+
 export async function handleCharacterCore(ctx: BotContext, interaction: ChatInputCommandInteraction): Promise<void> {
   const cs: CharacterService | null = ctx.characterService;
   if (!cs) {
