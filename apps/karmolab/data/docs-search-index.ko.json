@@ -262,7 +262,7 @@
       "docId": "docs-karmo-ai",
       "heading": "Node(욘봇, 스크립트)에서",
       "title": "Node(욘봇, 스크립트)에서",
-      "description": "- apps/discord-bots/apps/karmolab-bot 에 @karmo/ai 가 file:../../../../packages/ai 로 연결되어 있습니다. - 루트에서 봇 빌드할 때 packages/ai 가 먼저 tsc 됩니다 apps/discord-bots 의 npm run build / build:karmolab-bot . - 엔트리 분리: 루트 @karmo/ai 는 계약 URL, 카탈로그 만, @karmo/ai/node 에서 AI Studio SDK 또는 Vertex REST 텍스트 호출을 제공합니다. peerDependencies : @google/generativ",
+      "description": "- apps/discord-bots/apps/karmolab-bot 에 @karmo/ai 가 file:../../../../packages/ai 로 연결되어 있습니다. - 루트에서 봇 빌드할 때 packages/ai 가 먼저 tsc 됩니다 apps/discord-bots 의 npm run build / build:karmolab-bot . - 엔트리 분리: 루트 @karmo/ai 는 계약 URL, 카탈로그 만, @karmo/ai/node 에서 AI Studio SDK 또는 Vertex REST 텍스트 호출을 제공합니다. peerDependencies : @google",
       "aliases": "karmo ai"
     },
     {
