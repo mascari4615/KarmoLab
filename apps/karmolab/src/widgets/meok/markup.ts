@@ -30,8 +30,8 @@ const alias = (id: string, label: string, hot = '', extra = ''): MenuEntry => it
 const sep: MenuEntry = '<hr class="meok-menu-sep">';
 const heading = (label: string): MenuEntry => '<div class="meok-menu-head" role="presentation">' + esc(label) + '</div>';
 const menu = (id: string, label: string, entries: MenuEntry[]): string =>
-  '<div class="meok-menu" data-menu="' + id + '">' +
-  '<button type="button" class="meok-menu-title" aria-haspopup="menu" aria-expanded="false">' + esc(label) + '</button>' +
+  '<div class="meok-menu" data-menu="' + id + '" role="none">' +
+  '<button type="button" class="meok-menu-title" role="menuitem" aria-haspopup="menu" aria-expanded="false">' + esc(label) + '</button>' +
   '<div class="meok-menu-list" role="menu" aria-label="' + esc(label) + '" hidden>' + entries.join('') + '</div></div>';
 
 const menuBar = (): string => {
@@ -138,7 +138,7 @@ export function meokMarkup(): string {
         toolButton('wand', 'W', T('toolWand', '마술봉'), '<path d="m4 20 9.5-9.5M15 4l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9zM19.5 12.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>') +
         toolButton('pan', 'Space', T('toolPan', '이동'), '<path d="M12 3v18M3 12h18M12 3 9.5 5.8M12 3l2.5 2.8M12 21l-2.5-2.8M12 21l2.5-2.8M3 12l2.8-2.5M3 12l2.8 2.5M21 12l-2.8-2.5M21 12l-2.8 2.5"/>') +
       '</div>' +
-      '<div class="meok-dock" data-dock="left" aria-label="' + esc(T('dockLeft', '왼쪽 칸')) + '"></div>' +
+      '<div class="meok-dock" data-dock="left" role="region" aria-label="' + esc(T('dockLeft', '왼쪽 칸')) + '"></div>' +
       '<div class="meok-split" data-split="left" role="separator" aria-orientation="vertical" tabindex="0" aria-label="' + esc(T('splitLeft', '왼쪽 칸 폭')) + '"></div>' +
       '<div class="meok-sizebar" title="' + esc(T('size', '굵기')) + '"><b data-out="size"></b><input data-brush="size" type="range" aria-label="' + esc(T('size', '굵기')) + '" orient="vertical" min="1" max="200" step="1"><small>px</small></div>' +
       '<section class="meok-stage">' +
@@ -147,7 +147,7 @@ export function meokMarkup(): string {
           '<button data-act="fit" class="meok-mini">' + esc(T('fit', '맞춤')) + '</button></div>' +
       '</section>' +
       '<div class="meok-split" data-split="right" role="separator" aria-orientation="vertical" tabindex="0" aria-label="' + esc(T('splitRight', '오른쪽 칸 폭')) + '"></div>' +
-      '<div class="meok-dock" data-dock="right" aria-label="' + esc(T('dockRight', '오른쪽 칸')) + '">' +
+      '<div class="meok-dock" data-dock="right" role="region" aria-label="' + esc(T('dockRight', '오른쪽 칸')) + '">' +
         '<details class="meok-panel" data-panel="color" open><summary>' + esc(T('color', '색')) + '</summary><div class="meok-panel-body">' +
           '<input data-color type="color" value="#18202c" aria-label="' + esc(T('color', '색')) + '">' +
           '<div class="meok-palette" data-palette></div>' +
