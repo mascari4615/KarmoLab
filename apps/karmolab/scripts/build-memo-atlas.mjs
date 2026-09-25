@@ -7137,13 +7137,20 @@ function collectAll() {
 export { collect, collectAll, collectBookmarksAll, gist, title, frontmatter, embedLocal, LOCAL_MODEL, attachLinkBodies,
   embedAll, removeSharedBias, wobbleOf, fitTo, runGap };
 
+// 우산 아래 KarmoLab 저장소 폴더. 새 이름 먼저, 옛 이름 다음, 둘 다 없으면 새 이름
+function karmolabRepoDir(umbrella) {
+  const names = ['KarmoLab', 'Mascari4615.github.io'];
+  const hit = names.find((n) => fs.existsSync(path.join(umbrella, n, 'apps', 'karmolab')));
+  return path.join(umbrella, hit || names[0]);
+}
+
 async function main() {
   requireSources();   // 굽기는 소스가 있어야 한다. config 오류, 없는 root 는 여기서 분명히 죽는다
   const limit = Number(opt('--limit', '0')) || 0;
   // 기본 = 스스로 고르기. `--clusters N` 을 주면 그 수로 박는다.
   const k = Number(opt('--clusters', '0')) || 0;
   const memoSrc = SOURCES.find((s) => s.name === 'memo');
-  if (memoSrc) loadEnvFile(path.join(path.dirname(memoSrc.root), 'Mascari4615.github.io', '.env.txt'));
+  if (memoSrc) loadEnvFile(path.join(karmolabRepoDir(path.dirname(memoSrc.root)), '.env.txt'));
   loadEnvFile(path.resolve(KARMOLAB, '../../.env.txt'));
 
   let docs = collectAll();

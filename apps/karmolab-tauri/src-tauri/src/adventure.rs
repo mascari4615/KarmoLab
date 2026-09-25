@@ -119,10 +119,9 @@ fn karmolab_repo_path() -> Result<PathBuf, String> {
     if let Ok(env_path) = env::var("KARMODDRINE_KARMOLAB_PATH") {
         return Ok(PathBuf::from(env_path));
     }
-    Ok(home_dir()?
-        .join("repos")
-        .join("karmoddrine")
-        .join("Mascari4615.github.io"))
+    Ok(crate::umbrella::karmolab_repo_dir(
+        &home_dir()?.join("repos").join("karmoddrine"),
+    ))
 }
 
 #[derive(Deserialize)]

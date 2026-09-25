@@ -26,6 +26,7 @@ mod recall;
 mod repo_file;
 mod terminal;
 mod tray_menu;
+mod umbrella;
 mod vault_open;
 mod vault_upload;
 

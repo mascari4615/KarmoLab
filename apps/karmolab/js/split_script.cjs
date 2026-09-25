@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const targetPath = 'c:\\Users\\masca\\source\\repos\\_Mascari4615\\Mascari4615.github.io\\apps\\karmolab\\js\\toolbox.js';
-const widgetsDir = 'c:\\Users\\masca\\source\\repos\\_Mascari4615\\Mascari4615.github.io\\apps\\karmolab\\js\\widgets';
+// 저장소 폴더 이름과 무관하게 이 파일 옆
+const targetPath = path.join(__dirname, 'toolbox.js');
+const widgetsDir = path.join(__dirname, 'widgets');
 
 if (!fs.existsSync(widgetsDir)) {
     fs.mkdirSync(widgetsDir, { recursive: true });

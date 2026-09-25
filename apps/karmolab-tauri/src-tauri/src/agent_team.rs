@@ -522,9 +522,8 @@ fn yawnbot_dir(repo_root: &str) -> PathBuf {
     if direct.exists() {
         return direct;
     }
-    // umbrella karmoddrine: repo_root/Mascari4615.github.io/...
-    let nested = p
-        .join("Mascari4615.github.io")
+    // umbrella karmoddrine: repo_root/<KarmoLab 폴더>/...
+    let nested = crate::umbrella::karmolab_repo_dir(&p)
         .join("apps")
         .join("discord-bots")
         .join("apps")
@@ -532,10 +531,9 @@ fn yawnbot_dir(repo_root: &str) -> PathBuf {
     if nested.exists() {
         return nested;
     }
-    // memo 형제: repo_root/../Mascari4615.github.io/...
+    // memo 형제: repo_root/../<KarmoLab 폴더>/...
     if let Some(parent) = p.parent() {
-        let sibling = parent
-            .join("Mascari4615.github.io")
+        let sibling = crate::umbrella::karmolab_repo_dir(parent)
             .join("apps")
             .join("discord-bots")
             .join("apps")

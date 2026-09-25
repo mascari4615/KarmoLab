@@ -890,7 +890,9 @@ pub fn localdev_guess_repo_root(state: State<'_, LocalDevState>) -> Option<Strin
         .ok()?;
     let home = PathBuf::from(home);
     for rel in [
+        "repos/karmoddrine/KarmoLab",
         "repos/karmoddrine/Mascari4615.github.io",
+        "repos/KarmoLab",
         "repos/Mascari4615.github.io",
         "source/repos/Mascari4615.github.io",
         "Documents/GitHub/Mascari4615.github.io",

@@ -377,7 +377,12 @@ fn get_questlog_hub_blocking() -> Result<QuestlogHub, String> {
     if let Some(u) = umbrella.as_ref() {
         for repo in ["memo", "Mascari4615.github.io", "WitchMendokusai"] {
             let t_repo = Instant::now();
-            let path = u.join(repo);
+            // 키는 화면 계약 그대로, 폴더만 새 이름과 옛 이름 판정
+            let path = if repo == "Mascari4615.github.io" {
+                crate::umbrella::karmolab_repo_dir(u)
+            } else {
+                u.join(repo)
+            };
             let log = git_log(&path, 10);
             diag_log(
                 &format!("git-log:{}", repo),

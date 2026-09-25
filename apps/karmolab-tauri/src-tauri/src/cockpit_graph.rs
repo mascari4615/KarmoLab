@@ -387,7 +387,10 @@ fn cockpit_get_activity_blocking(repo_root: &str) -> Result<ActivitySnapshot, St
     let repos = [
         ("WitchMendokusai", base.join("WitchMendokusai")),
         ("memo", memo.clone()),
-        ("Mascari4615.github.io", base.join("Mascari4615.github.io")),
+        (
+            "Mascari4615.github.io",
+            crate::umbrella::karmolab_repo_dir(base),
+        ),
     ];
     for (name, path) in &repos {
         commits_by_repo.insert(name.to_string(), git_recent_commits_safe(path));

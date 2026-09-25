@@ -105,12 +105,27 @@ jobs:
 
     # 노트북의 prod 폴더 직접 사용. actions/checkout 의 _work 폴더 X.
     # NSSM 이 보는 폴더 = build 폴더 = runner working dir. 통일.
+    # REPO_DIR, BOTS_DIR, YAWNBOT_DIR 는 첫 단계가 판정해 GITHUB_ENV 로 내보냄.
     env:
-      REPO_DIR: 'C:\Users\masca\repos\karmoddrine\Mascari4615.github.io'
-      BOTS_DIR: 'C:\Users\masca\repos\karmoddrine\Mascari4615.github.io\apps\discord-bots'
-      YAWNBOT_DIR: 'C:\Users\masca\repos\karmoddrine\Mascari4615.github.io\apps\discord-bots\apps\yawnbot'
+      UMBRELLA_DIR: 'C:\Users\masca\repos\karmoddrine'
 
     steps:
+      # 폴더 이름 이전 중: 새 이름 KarmoLab 먼저, 옛 이름 Mascari4615.github.io 다음.
+      # <이름>\apps\karmolab 이 있는 첫 후보, 둘 다 없으면 KarmoLab.
+      - name: Resolve repo dir
+        shell: 'powershell -ExecutionPolicy Bypass -File {0}'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $names = @('KarmoLab', 'Mascari4615.github.io')
+          $pick = $names | Where-Object { Test-Path -LiteralPath (Join-Path $env:UMBRELLA_DIR "$_\apps\karmolab") -PathType Container } | Select-Object -First 1
+          if (-not $pick) { $pick = $names[0] }
+          $repo = Join-Path $env:UMBRELLA_DIR $pick
+          $bots = Join-Path $repo 'apps\discord-bots'
+          $yawn = Join-Path $bots 'apps\yawnbot'
+          $lines = "REPO_DIR=$repo`nBOTS_DIR=$bots`nYAWNBOT_DIR=$yawn`n"
+          [System.IO.File]::AppendAllText($env:GITHUB_ENV, $lines)
+          Write-Output "REPO_DIR=$repo"
+
       - name: Sync to origin/main (force)
         shell: 'powershell -ExecutionPolicy Bypass -File {0}'
         working-directory: ${{ env.REPO_DIR }}
