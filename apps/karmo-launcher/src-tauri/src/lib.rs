@@ -168,7 +168,7 @@ fn running_status(registry_key: String) -> bool {
 
 /// 끄기. 창 닫기만으로는 트레이로 숨는 앱이 실행 중으로 남음 (2026-09-25 KarmoLab)
 /// 먼저 `<exe> --quit` 로 트레이 끝내기와 같은 길,
-/// 그 인자를 모르는 옛 판은 8초 뒤 강제 종료
+/// 그 인자를 모르는 옛 판은 3초 뒤 강제 종료
 #[tauri::command]
 async fn stop_app(registry_key: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || stop_blocking(&registry_key))
@@ -182,7 +182,7 @@ fn stop_blocking(registry_key: &str) -> Result<(), String> {
     if let Some(dir) = reg.get("InstallLocation") {
         let _ = hidden(Command::new(std::path::Path::new(dir).join(&exe)).arg("--quit")).spawn();
     }
-    for _ in 0..16 {
+    for _ in 0..6 {
         if !is_running(&exe) {
             return Ok(());
         }
