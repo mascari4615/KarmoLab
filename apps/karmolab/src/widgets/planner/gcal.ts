@@ -12,6 +12,8 @@
  *   (옛 판은 달력 라이브러리가 끝을 포함으로 봐서 어쩔 수 없었다.)
  */
 
+import { covers, eventsIn, loadCached, mergeDelta, mergeFull, saveCached, syncStamp } from './event-cache';
+
 const CAL_API = 'https://www.googleapis.com/calendar/v3';
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
 
@@ -40,6 +42,8 @@ export interface GoogleEvent {
     end: { dateTime?: string; date?: string };
     htmlLink?: string;
     colorId?: string;
+    /** 'cancelled' 면 지워진 일정 (바뀐 것만 받을 때 온다) */
+    status?: string;
 }
 
 /** FullCalendar 가 먹는 모양 */
@@ -181,6 +185,77 @@ export async function fetchEvents(
         })
     );
     return results.flat();
+}
+
+/** 한 캘린더의 일정 목록. 쪽이 나뉘어 오면 끝까지. 410 (updatedMin 이 너무 옛날) 은 null */
+async function listAll(token: string, calendarId: string, params: Record<string, string>): Promise<GoogleEvent[] | null> {
+    const out: GoogleEvent[] = [];
+    let page = '';
+    for (let i = 0; i < 20; i++) {
+        const q = new URLSearchParams({ ...params, singleEvents: 'true', maxResults: '2500' });
+        if (page) q.set('pageToken', page);
+        const res = await fetch(`${CAL_API}/calendars/${encodeURIComponent(calendarId)}/events?${q}`, { headers: authHeaders(token) });
+        if (res.status === 410) return null;
+        if (!res.ok) throw new Error(`events ${res.status}`);
+        const data = await res.json();
+        if (Array.isArray(data.items)) out.push(...data.items);
+        page = typeof data.nextPageToken === 'string' ? data.nextPageToken : '';
+        if (!page) break;
+    }
+    return out;
+}
+
+/** 저장본만으로 그릴 일정. 네트워크를 안 탄다 */
+export function cachedEvents(calendars: GoogleCalendar[], start: Date, end: Date): FcEvent[] {
+    const targets = calendars.length ? calendars : [{ id: 'primary', summary: '' }];
+    return targets.flatMap((cal) => eventsIn(loadCached(cal.id), +start, +end).map((it) => toFcEvent(it, cal)));
+}
+
+/**
+ * 저장본을 구글과 맞추기. 받아 둔 구간 안이면 마지막으로 받은 뒤 바뀐 것만, 밖이면 그 구간을 새로
+ * `changed` 가 거짓이면 달력 다시 그리기 불필요. 캘린더 하나가 실패해도 나머지는 계속
+ */
+export async function syncEvents(
+    token: string,
+    calendars: GoogleCalendar[],
+    start: Date,
+    end: Date
+): Promise<{ events: FcEvent[]; changed: boolean }> {
+    const targets = calendars.length ? calendars : [{ id: 'primary', summary: '' }];
+    const from = +start;
+    const to = +end;
+    const flags = await Promise.all(
+        targets.map(async (cal) => {
+            const entry = loadCached(cal.id);
+            const stamp = syncStamp(Date.now());
+            try {
+                if (entry && covers(entry, from, to)) {
+                    const delta = await listAll(token, cal.id, {
+                        timeMin: new Date(entry.from).toISOString(),
+                        timeMax: new Date(entry.to).toISOString(),
+                        updatedMin: entry.syncedAt,
+                        showDeleted: 'true',
+                    });
+                    if (delta) {
+                        const merged = mergeDelta(entry, delta, stamp);
+                        saveCached(cal.id, merged.entry);
+                        return merged.changed > 0;
+                    }
+                }
+                const items = await listAll(token, cal.id, {
+                    timeMin: start.toISOString(),
+                    timeMax: end.toISOString(),
+                });
+                const sig = (e: typeof entry) => JSON.stringify(eventsIn(e, from, to).sort((a, b) => (a.id < b.id ? -1 : 1)));
+                const next = mergeFull(entry, items || [], from, to, stamp);
+                saveCached(cal.id, next);
+                return sig(entry) !== sig(next);
+            } catch {
+                return false;
+            }
+        })
+    );
+    return { events: cachedEvents(calendars, start, end), changed: flags.some(Boolean) };
 }
 
 export async function createEvent(token: string, calendarId: string, draft: EventDraft): Promise<void> {

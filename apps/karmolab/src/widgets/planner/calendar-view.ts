@@ -14,7 +14,8 @@ import {
     createEvent,
     deleteEvent,
     fetchCalendars,
-    fetchEvents,
+    cachedEvents,
+    syncEvents,
     patchEvent,
     ymd,
     type FcEvent,
@@ -258,31 +259,49 @@ export function buildCalendarView(
 
     async function reload(start: Date, end: Date): Promise<void> {
         lastRange = { start, end };
+        /* 이 브라우저 것은 늘 있다. 구글은 연동돼 있을 때만 얹는다. */
+        const own = (): FcEvent[] => [...listLocalEvents(t('planner.t50')), ...toAiEvents(followups)];
+        if (!token) {
+            setEvents(own());
+            return;
+        }
+        /* 보이는 구간의 앞뒤로 조금 더. 달을 넘길 때마다 빈 화면이 깜빡이지 않게 */
+        const pad = 7 * 86400000;
+        const from = new Date(+start - pad);
+        const to = new Date(+end + pad);
+        const googleCals = calendars.filter((c) => c.id !== LOCAL_CALENDAR_ID && c.id !== AI_CALENDAR_ID);
+        /* 저장본으로 먼저 그리고, 구글에는 바뀐 것만 묻는다 (event-cache.ts) */
+        setEvents([...own(), ...cachedEvents(googleCals, from, to)]);
         loading.hidden = false;
         try {
-            /* 이 브라우저 것은 늘 있다. 구글은 연동돼 있을 때만 얹는다. */
-            const local = listLocalEvents(t('planner.t50'));
-            let remote: FcEvent[] = [];
-            if (token) {
-                /* 보이는 구간의 앞뒤로 조금 더 받아 둔다. 달을 넘길 때마다 빈 화면이 깜빡이지 않게 */
-                const pad = 7 * 86400000;
-                const googleCals = calendars.filter((c) => c.id !== LOCAL_CALENDAR_ID && c.id !== AI_CALENDAR_ID);
-                remote = await fetchEvents(token, googleCals, new Date(+start - pad), new Date(+end + pad));
-            }
-            if (destroyed) return;
-            allEvents = [...local, ...toAiEvents(followups), ...remote];
-            applyEvents();
-            renderMini();
+            const synced = await syncEvents(token, googleCals, from, to);
+            if (destroyed || lastRange.start !== start) return;
+            if (synced.changed) setEvents([...own(), ...synced.events]);
         } finally {
             loading.hidden = true;
         }
     }
 
+    function setEvents(list: FcEvent[]): void {
+        allEvents = list;
+        applyEvents();
+        renderMini();
+    }
+
+    /* 달력에는 바뀐 일정만 넣고 뺀다. 통째로 지우고 다시 그리면 저장본과 구글 판이 같아도 깜빡인다 */
+    const sigOf = (ev: FcEvent): string => JSON.stringify([ev.title, ev.start, ev.end, ev.allDay, ev.backgroundColor]);
     function applyEvents(): void {
-        calendar.removeAllEvents();
-        for (const ev of visible()) {
-            calendar.addEvent({ ...ev, title: ev.title || t('planner.t12') });
-        }
+        const want = new Map(visible().map((ev) => [ev.id, ev]));
+        calendar.batchRendering(() => {
+            for (const cur of calendar.getEvents()) {
+                const w = want.get(cur.id);
+                if (w && cur.extendedProps.sig === sigOf(w)) want.delete(cur.id);
+                else cur.remove();
+            }
+            for (const ev of want.values()) {
+                calendar.addEvent({ ...ev, title: ev.title || t('planner.t12'), extendedProps: { ...ev.extendedProps, sig: sigOf(ev) } });
+            }
+        });
         markHolidays();
     }
 
@@ -645,26 +664,52 @@ export function buildCalendarView(
 
     let aiGoogleId: string | null = null;
     const hint = container.querySelector<HTMLElement>('.pl-cal-hint')!;
+    /* 캘린더 목록도 저장본으로 먼저. 구글 목록을 기다리느라 첫 화면이 비지 않게 (event-cache.ts 와 같은 까닭) */
+    const CALS_KEY = 'planner.gcal.v1:calendars';
+    function useCalendars(mine: GoogleCalendar[]): void {
+        /* 공휴일은 구독 안 했어도 늘 (Google 공개 대한민국 공휴일). 구독했으면 그것 */
+        const holiday = mine.some((c) => isHolidayCalendar(c.id)) ? [] : [HOLIDAY_CALENDAR];
+        /* 구글 'AI' 캘린더는 복사본이라 목록에 안 올린다 (원본 memo 를 그린다, 두 번 안 보이게) */
+        const googleAi = mine.find((c) => c.summary === AI_GOOGLE_NAME);
+        calendars = [localCalendar(), aiCalendar(), ...mine.filter((c) => c !== googleAi), ...holiday];
+        aiGoogleId = googleAi ? googleAi.id : '';
+    }
     void (async () => {
         if (loadFollowups) followups = await loadFollowups();
+        const view = calendar.view;
+        let shown = '';
         if (token) {
             try {
+                const saved = JSON.parse(localStorage.getItem(CALS_KEY) || 'null');
+                if (Array.isArray(saved) && !destroyed) {
+                    useCalendars(saved);
+                    renderList();
+                    shown = JSON.stringify(saved);
+                    void reload(view.activeStart, view.activeEnd);
+                }
+            } catch {
+                /* 저장본이 없거나 막힌 브라우저 */
+            }
+            try {
                 const mine = await fetchCalendars(token);
-                /* 공휴일은 구독 안 했어도 늘 (Google 공개 대한민국 공휴일). 구독했으면 그것 */
-                const holiday = mine.some((c) => isHolidayCalendar(c.id)) ? [] : [HOLIDAY_CALENDAR];
-                /* 구글 'AI' 캘린더는 복사본이라 목록에 안 올린다 (원본 memo 를 그린다, 두 번 안 보이게) */
-                const googleAi = mine.find((c) => c.summary === AI_GOOGLE_NAME);
-                calendars = [localCalendar(), aiCalendar(), ...mine.filter((c) => c !== googleAi), ...holiday];
-                aiGoogleId = googleAi ? googleAi.id : '';
+                useCalendars(mine);
+                try {
+                    localStorage.setItem(CALS_KEY, JSON.stringify(mine));
+                } catch {
+                    /* 막힌 브라우저 */
+                }
+                if (JSON.stringify(mine) === shown) shown = 'same';
             } catch {
                 /* 구글이 안 되면 이 브라우저 것만으로 계속 쓴다. 화면이 통째로 죽지 않는다 */
                 toast(t('planner.t36'), 'error');
             }
         }
         if (destroyed) return;
-        renderList();
-        const view = calendar.view;
-        await reload(view.activeStart, view.activeEnd);
+        /* 목록이 저장본과 같으면 이미 그린 것으로 충분하다 */
+        if (shown !== 'same') {
+            renderList();
+            await reload(view.activeStart, view.activeEnd);
+        }
         /* 구글 복사본 맞추기. 'AI' 캘린더가 없으면 만드는 법 한 줄 (앱은 일정 쓰기 권한뿐이라 못 만든다) */
         if (token && aiGoogleId === '') {
             hint.textContent = t('planner.t99');

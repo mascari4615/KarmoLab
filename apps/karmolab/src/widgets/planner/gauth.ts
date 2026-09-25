@@ -10,6 +10,8 @@
  * "기간 좀 늘릴 수 없나 무한이라던지"). 단 Console 의 앱 게시 상태가 테스트면 갱신 토큰이 7일
  */
 
+import { clearEventCache } from './event-cache';
+
 declare const __KARMOLAB_GOOGLE_CLIENT_ID__: string;
 
 /** 빌드할 때 박아 넣는다. 구글 클라이언트 id 는 공개값이라 번들에 있어도 된다. */
@@ -156,6 +158,8 @@ export function forgetToken(): void {
     } catch {
         /* 무시 */
     }
+    /* 저장해 둔 일정과 캘린더 목록도. 남의 화면에 내 일정이 남지 않게 */
+    clearEventCache();
     /* 구글 쪽 허가도 같이 철회. 안 하면 이 브라우저에서만 로그아웃.
        갱신 토큰 철회 시 접근 토큰도 같이 무효 */
     const target = rt || token;

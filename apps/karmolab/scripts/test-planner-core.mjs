@@ -293,6 +293,49 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
   check(!calls.some((c) => c.includes('g3')), '표식 없는 사람 일정은 안 건드린다');
 }
 
+/* ── 구글 일정 캐시: 저장본으로 먼저, 바뀐 것만 받아 합치기 (event-cache.ts, 2026-09-25) ── */
+{
+  const C = await load('src/widgets/planner/event-cache.ts', 'planner-cache');
+  const day = (d) => Date.parse(d + 'T00:00:00Z');
+  const ev = (id, d, extra = {}) => ({ id, summary: id, start: { date: d }, end: { date: d }, ...extra });
+  const sep = [day('2026-09-01'), day('2026-10-01')];
+
+  /* 처음 받기 */
+  let e = C.mergeFull(null, [ev('a', '2026-09-05'), ev('b', '2026-09-20')], ...sep, '2026-09-25T00:00:00Z');
+  eq(Object.keys(e.items).length, 2, '처음 받은 두 일정');
+  check(C.covers(e, day('2026-09-10'), day('2026-09-15')), '받은 구간 안이면 다시 다 안 받아도 된다');
+  check(!C.covers(e, day('2026-09-10'), day('2026-10-15')), '구간 밖으로 나가면 새로 받아야 한다');
+
+  /* 바뀐 것만: b 는 지워지고 a 는 제목이 바뀌고 c 는 새로 */
+  const d = C.mergeDelta(e, [ev('b', '2026-09-20', { status: 'cancelled' }), ev('a', '2026-09-05', { summary: '새 제목' }), ev('c', '2026-09-22')], '2026-09-26T00:00:00Z');
+  eq(d.changed, 3, '지움 1, 고침 1, 새 것 1');
+  eq(d.entry.items.b, undefined, '지워진 일정은 빠진다');
+  eq(d.entry.items.a.summary, '새 제목', '고친 일정은 덮어쓴다');
+  eq(d.entry.syncedAt, '2026-09-26T00:00:00Z', '다음엔 이때부터 바뀐 것만');
+  eq(C.mergeDelta(d.entry, [ev('c', '2026-09-22')], 'x').changed, 0, '같은 일정이 또 오면 바뀐 것 0 (다시 안 그림)');
+
+  /* 옆 달을 새로 받으면 구간이 이어지고, 그 달 밖 일정은 남는다 */
+  const n = C.mergeFull(d.entry, [ev('o', '2026-10-10')], day('2026-10-01'), day('2026-11-01'), '2026-09-27T00:00:00Z');
+  eq(n.from, sep[0], '구간 앞은 그대로');
+  eq(n.to, day('2026-11-01'), '구간 뒤가 늘어난다');
+  check(!!n.items.a && !!n.items.o, '9월 것과 10월 것 둘 다');
+  eq(n.syncedAt, '2026-09-26T00:00:00Z', '이어 붙이면 더 옛 받은 때를 쓴다 (9월 쪽 변화를 놓치지 않게)');
+
+  /* 새로 받은 구간 안에서 사라진 일정은 빠진다 */
+  const r = C.mergeFull(n, [], day('2026-10-01'), day('2026-11-01'), '2026-09-28T00:00:00Z');
+  eq(r.items.o, undefined, '10월을 다시 받았더니 없으면 뺀다');
+  check(!!r.items.a, '9월 것은 그대로');
+
+  /* 떨어진 구간이면 사이를 모르니 옛 것을 버린다 */
+  const far = C.mergeFull(r, [ev('z', '2027-03-03')], day('2027-03-01'), day('2027-04-01'), 's');
+  eq(Object.keys(far.items).join(), 'z', '떨어진 구간은 새로 시작');
+
+  /* 저장과 읽기 */
+  C.saveCached('cal1', r);
+  eq(C.loadCached('cal1').items.a.summary, '새 제목', '저장본을 다시 읽는다');
+  eq(C.eventsIn(r, day('2026-09-21'), day('2026-09-23')).map((x) => x.id).join(), 'c', '구간 안 일정만');
+}
+
 process.stdout.write('\n');
 if (failures.length) {
   console.error(`\n[test-planner-core] ${failures.length}건 실패:`);
