@@ -16,7 +16,7 @@ if (typeof ffmpegPath === 'string' && ffmpegPath.length > 0 && !process.env.FFMP
  * 재생 종료 후 임시 파일을 지웁니다.
  */
 export async function createEdgeTtsAudioResource(text: string): Promise<AudioResource> {
-  const dir = await mkdtemp(join(tmpdir(), 'yawnbot-tts-'));
+  const dir = await mkdtemp(join(tmpdir(), 'karmolab-bot-tts-'));
   const filePath = join(dir, 'speech.mp3');
   const proxy = process.env.SPEAK_TTS_PROXY?.trim() || process.env.HTTPS_PROXY?.trim();
   const voice = process.env.SPEAK_VOICE?.trim() || 'ko-KR-SunHiNeural';

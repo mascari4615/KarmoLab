@@ -14,7 +14,7 @@ import type { CharacterCard } from '../services/character-service';
 import { registerOwnWebhookMessage } from './team-room';
 
 /** 봇이 만든 webhook 식별 마커 (재사용 키). */
-const AGENT_WEBHOOK_NAME = 'yawnbot-agent';
+const AGENT_WEBHOOK_NAME = 'karmolab-bot-agent';
 
 /** Manage Webhooks 권한 부재 등으로 webhook 경로 불가. caller 가 fallback. */
 export class WebhookPermissionError extends Error {
@@ -59,7 +59,7 @@ async function getOrCreateWebhook(channel: TextChannel): Promise<Webhook> {
       mine ??
       (await channel.createWebhook({
         name: AGENT_WEBHOOK_NAME,
-        reason: 'yawnbot agent identity (KAR-018-A)',
+        reason: 'karmolab-bot agent identity (KAR-018-A)',
       }));
     webhookCache.set(channel.id, hook);
     ownAgentWebhookIds.add(hook.id); // race-free 루프가드 (send 전에 확정)

@@ -38,7 +38,7 @@ export interface UsageMeta {
     surface?: 'aiStudio' | 'vertex';
     /** tier 라벨 (`lite`/`standard`/`pro`). 미지정 호출은 미설정. */
     tier?: string;
-    /** caller-side 분류 태그 (예: `yawnbot/voiced-worker`, `yawnbot/dialogue`, `yawn-slash`). */
+    /** caller-side 분류 태그 (예: `karmolab-bot/voiced-worker`, `karmolab-bot/dialogue`, `yawn-slash`). */
     tag?: string;
     /** wall-clock 호출 시간 (ms). */
     durationMs: number;

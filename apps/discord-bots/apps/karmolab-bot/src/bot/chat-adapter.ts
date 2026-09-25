@@ -1,7 +1,7 @@
 /**
- * ChatAdapter. yawnbot multi-channel outbound 추상화 (TASK-KAR-110 Phase 2 substrate).
+ * ChatAdapter. karmolab-bot multi-channel outbound 추상화 (TASK-KAR-110 Phase 2 substrate).
  *
- * OpenClaw 갭 #1: yawnbot 의 outbound (embed/text/webhook) 가 Discord 직접 의존
+ * OpenClaw 갭 #1: karmolab-bot 의 outbound (embed/text/webhook) 가 Discord 직접 의존
  * → ChatAdapter interface 로 추상화하면 Slack/Telegram 같은 채널도 동일 caller 가 호출 가능.
  *
  * laptop-ops 의 `chat-adapter.ts` 와 *동일 의도* (monorepo cross-repo = 코드 복제 불가피).

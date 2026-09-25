@@ -29,7 +29,7 @@ fn allowed_api_base(url: &Url) -> bool {
         return false;
     };
     match url.scheme() {
-        // 옛 주소 yawnbot 은 2026-09-25 bot 으로 옮기는 동안 같이 허용
+        // 옛 주소 karmolab-bot 은 2026-09-25 bot 으로 옮기는 동안 같이 허용
         "https" => host == "bot.mascari4615.com" || host == "yawnbot.mascari4615.com",
         // 로컬에서 봇을 띄워 놓고 붙이는 개발 경로 (`window.KARMOLAB_API_BASE`).
         "http" => host == "localhost" || host == "127.0.0.1",

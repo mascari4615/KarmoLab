@@ -24,7 +24,7 @@ import { WAIT } from './lib/waits.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(HERE, '..');
 const SITE_ROOT = path.resolve(APP_ROOT, '../..');
-const YAWNBOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/karmolab-bot');
+const KARMOLAB_BOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/karmolab-bot');
 const PROD_ORIGIN = 'https://bot.mascari4615.com';
 
 const failures = [];
@@ -37,8 +37,8 @@ function cantRun(why) {
   process.exit(2);
 }
 
-const dist = path.join(YAWNBOT, 'dist/src/bot/karmolab-api.js');
-if (!existsSync(dist)) cantRun(`yawnbot 이 아직 안 지어졌다 (${dist} 없음). cd ${YAWNBOT} && npm run build`);
+const dist = path.join(KARMOLAB_BOT, 'dist/src/bot/karmolab-api.js');
+if (!existsSync(dist)) cantRun(`karmolab-bot 이 아직 안 지어졌다 (${dist} 없음). cd ${KARMOLAB_BOT} && npm run build`);
 if (!existsSync(path.join(APP_ROOT, 'js/copresence.js'))) cantRun('카모랩이 아직 안 지어졌다. npm run build');
 
 const require_ = createRequire(dist);
@@ -50,19 +50,19 @@ try {
   express = require_('express');
   ({ registerKarmolabApi } = require_(dist));
   stores = {
-    accounts: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-accounts.js')),
-    traces: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-traces.js')),
-    plays: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-plays.js')),
-    chat: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-chat.js')),
+    accounts: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-accounts.js')),
+    traces: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-traces.js')),
+    plays: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-plays.js')),
+    chat: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-chat.js')),
   };
   // 라우트가 쓰는 것과 **같은 하나**를 든다. 다른 것을 들면 여기서 뺀 사람이 저기 남는다.
-  rooms = require_(path.join(YAWNBOT, 'dist/src/services/karmolab-rooms.js')).getKarmolabRoomStore();
+  rooms = require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-rooms.js')).getKarmolabRoomStore();
 } catch (error) {
-  cantRun(`yawnbot 빌드 산출물을 못 불렀다: ${error.message}`);
+  cantRun(`karmolab-bot 빌드 산출물을 못 불렀다: ${error.message}`);
 }
 
 const apiSource = await readFile(dist, 'utf-8');
-if (!apiSource.includes('/kl/room/')) cantRun('지어 둔 yawnbot 에 방 라우트가 없다 (낡은 산출물). npm run build 부터');
+if (!apiSource.includes('/kl/room/')) cantRun('지어 둔 karmolab-bot 에 방 라우트가 없다 (낡은 산출물). npm run build 부터');
 
 const tmp = await mkdtemp(path.join(tmpdir(), 'kl-copresence-'));
 const app = express();

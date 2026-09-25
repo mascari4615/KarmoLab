@@ -24,7 +24,7 @@ import { ChannelType } from 'discord.js';
 /**
  * 패키지 루트 = `package.json` 을 가진 첫 상위 디렉터리.
  * paths.ts 의 PKG_ROOT 는 *컴파일된 dist 2-depth* 를 가정 → vitest(소스 1-depth)
- * 에서 어긋남. 상향 탐색은 src/dist 양쪽에서 동일하게 yawnbot 루트를 잡는다.
+ * 에서 어긋남. 상향 탐색은 src/dist 양쪽에서 동일하게 karmolab-bot 루트를 잡는다.
  */
 function pkgRoot(): string {
   let dir = __dirname;
@@ -116,13 +116,13 @@ export function getChannelSpec(): ChannelSpec {
             !!c && typeof c.key === 'string' && typeof c.name === 'string',
         )
       : [];
-    specCache = { categoryName: String(raw.categoryName ?? '욘봇'), channels };
+    specCache = { categoryName: String(raw.categoryName ?? 'KarmoLab 봇'), channels };
   } catch (e: unknown) {
     console.warn(
       `[ChannelProvision] ${SPEC_PATH} 로드 실패. 프로비저닝 비활성:`,
       e instanceof Error ? e.message : String(e),
     );
-    specCache = { categoryName: '욘봇', channels: [] };
+    specCache = { categoryName: 'KarmoLab 봇', channels: [] };
   }
   return specCache;
 }
@@ -167,7 +167,7 @@ export function shouldProvisionGuild(
 
 /**
  * 인스턴스 라벨 = 같은 길드에 prod, dev 봇이 공존할 때의 격리 축.
- * 욘봇(prod), 욘봇Dev(dev)가 같은 서버를 쓰므로 카테고리, 맵을 라벨로 분리한다.
+ * KarmoLab 봇(prod), KarmoLab 봇Dev(dev)가 같은 서버를 쓰므로 카테고리, 맵을 라벨로 분리한다.
  */
 export function provisionInstanceLabel(env: NodeJS.ProcessEnv = process.env): string {
   return env.KARMOLAB_BOT_ENV?.trim().toLowerCase() || 'dev';
@@ -226,6 +226,8 @@ export interface ChannelLike {
   availableTags?: DiscordForumTagInput[];
   /** ForumChannel 만 노출. spec 드리프트 동기용. */
   setAvailableTags?: (tags: DiscordForumTagInput[]) => Promise<void>;
+  /** 카테고리 이름 동기용 (spec 의 categoryName 이 바뀐 경우) */
+  setName?: (name: string) => Promise<unknown>;
 }
 export interface GuildChannelManagerLike {
   cache: { find(fn: (c: ChannelLike) => boolean): ChannelLike | undefined };
@@ -315,6 +317,12 @@ export async function reconcileGuildChannels(
   let category = byId(categoryId);
   if (category && category.type === ChannelType.GuildCategory) {
     reused.push(CATEGORY_MAP_KEY);
+    // 저장된 카테고리 이름이 spec 과 다르면 이름만 맞춘다 (2026-09-25 욘봇 -> KarmoLab 봇). 실패해도 계속
+    if (category.name !== categoryName && category.setName) {
+      await category.setName(categoryName).catch((e: unknown) => {
+        console.warn('[Provision] 카테고리 이름 동기 실패:', e instanceof Error ? e.message : e);
+      });
+    }
   } else {
     category = guild.channels.cache.find(
       (c) => c.type === ChannelType.GuildCategory && c.name === categoryName,

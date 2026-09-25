@@ -163,12 +163,12 @@ export function resolveAddressedCore(
  * 규칙 (우선순위):
  *  1. `explicitCoreId` 가 알려진 코어면 그대로 (skill/agent payload 의
  *     이미 authoring 된 의도 존중).
- *  2. 도메인/텍스트가 yawnbot, 디스코드 마커를 담고 'echo' 코어 존재 →
+ *  2. 도메인/텍스트가 karmolab-bot, 디스코드 마커를 담고 'echo' 코어 존재 →
  *     'echo' (콘텐츠/경험 동료).
  *  3. 그 외 = 'atlas' (존재 시). *기존 전량 atlas 행동 보존 (회귀 0)*.
  *  4. atlas 도 없으면 첫 코어 id, 그것도 없으면 'atlas' 문자열.
  *
- * 도메인 마커 = TASK-SCHEMA 도메인 prefix 'yb' / yawnbot, discord-bots
+ * 도메인 마커 = TASK-SCHEMA 도메인 prefix 'yb' / karmolab-bot, discord-bots
  * 경로. atlas 가 default 라 *yb/디스코드 발굴만* echo 로 재라우팅된다.
  */
 export function resolveProposalCore(
@@ -184,7 +184,7 @@ export function resolveProposalCore(
   const isYawnDomain =
     domain === 'yb' ||
     /\byb\b/.test(domain) ||
-    /yawnbot|discord-bots|apps\/discord-bots|디스코드 봇|욘봇/.test(text);
+    /karmolab-bot|karmolab 봇|벼루|yawnbot|욘봇|discord-bots|apps\/discord-bots|디스코드 봇/.test(text);
   if (isYawnDomain && known.has('echo')) return 'echo';
 
   const isWmDomain =

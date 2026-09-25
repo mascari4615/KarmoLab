@@ -53,7 +53,7 @@ export async function fetchRepoFile(
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github.raw',
-        'User-Agent': 'yawnbot-digest-webhook',
+        'User-Agent': 'karmolab-bot-digest-webhook',
       },
     });
     if (!resp.ok) throw new Error(`GitHub API ${resp.status} (${apiUrl})`);
@@ -141,7 +141,7 @@ export async function handleDigestCommit(
         systemInstruction: systemPrompt,
         modelId: process.env.YAWN_DIGEST_MODEL_ID,
         tier: process.env.YAWN_DIGEST_MODEL_ID ? undefined : 'lite',
-        tag: 'yawnbot/digest',
+        tag: 'karmolab-bot/digest',
       });
       yawnResponse = text.trim();
     } catch (e: unknown) {
@@ -186,7 +186,7 @@ export async function handleDigestCommit(
 function buildYawnDigestSystemPrompt(): string {
   const envPrompt = process.env.YAWN_SYSTEM_PROMPT ?? process.env.BOT_YAWN_SYSTEM_PROMPT ?? '';
   const base = envPrompt.trim().replace(/\\n/g, '\n') ||
-    '너는 YawnBot 이야. 활기차고 재치 있는 디스코드 봇. 친절하고 유머러스하게 답해줘.';
+    '너는 벼루 이야. 활기차고 재치 있는 디스코드 봇. 친절하고 유머러스하게 답해줘.';
   return (
     base +
     '\n\n오늘은 daily dev digest 를 받아서 디스코드 채널에 소개하는 역할이야. ' +

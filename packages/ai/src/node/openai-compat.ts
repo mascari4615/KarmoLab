@@ -1,7 +1,7 @@
 // TASK-KAR-115-A. OpenAI Chat Completions 호환 어댑터.
 //
 // OpenAI / OpenRouter / vLLM / SGLang 등 OpenAI-API 호환 백엔드 공용.
-// 별도 SDK 의존 X (fetch 만). yawnbot 의 generateAssistantText 호출 경로에서
+// 별도 SDK 의존 X (fetch 만). karmolab-bot 의 generateAssistantText 호출 경로에서
 // 사용. 기존 gemini/claude-cli/codex-cli 경로와 평행 (회귀 0).
 //
 // 정본 cross-cut: assistant-provider.ts (provider 라우팅),

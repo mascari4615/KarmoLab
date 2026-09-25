@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    yawnbot dev 환경 자동 세팅: cloudflared + gh CLI 설치 + gh 로그인.
+    karmolab-bot dev 환경 자동 세팅: cloudflared + gh CLI 설치 + gh 로그인.
 
 .DESCRIPTION
     GitHub webhook 자동 등록(scripts/tunnel-launcher.mjs) 에 필요한 외부 도구를

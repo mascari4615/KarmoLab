@@ -151,7 +151,7 @@ export class MemoryService {
     }
 
     const time = kstTimeStr(new Date(entry.timestamp));
-    const who = entry.role === 'user' ? '나' : 'YawnBot';
+    const who = entry.role === 'user' ? '나' : '벼루';
     const ch = entry.channel === 'dm' ? 'DM' : '채널';
     content += `[${time} ${ch}] **${who}**: ${entry.content}\n`;
 

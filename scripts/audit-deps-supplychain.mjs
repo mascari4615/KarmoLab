@@ -25,7 +25,7 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const ALLOW = path.join(root, 'data', 'install-scripts-allow.json');
 
 /* ★ **작업 공간이 하나가 아니다** (2026-08-16). 처음엔 karmolab 안에만 세웠는데, 재 보니
-   yawnbot 쪽이 훨씬 넓었다. 꾸러미 292개 중 설치 스크립트 4개(karmolab 은 46 중 1).
+   karmolab-bot 쪽이 훨씬 넓었다. 꾸러미 292개 중 설치 스크립트 4개(karmolab 은 46 중 1).
    게다가 그쪽은 **노트북 prod 로 나간다.** 좁은 곳만 지키는 문지기는 지키는 척이다.
    목록을 두 벌로 만들지 않으려고 검사를 저장소 자리로 올렸다. */
 const WORKSPACES = ['apps/karmolab', 'apps/discord-bots'];
@@ -123,7 +123,7 @@ for (const ws of Object.keys(found)) {
   currentVulns[ws] = { high: v.high ?? 0, critical: v.critical ?? 0 };
 }
 
-/* ★ **0 을 당장 요구하지 않는다** (2026-08-16). 켜 보니 yawnbot 쪽에 이미 high 7, critical 1 이
+/* ★ **0 을 당장 요구하지 않는다** (2026-08-16). 켜 보니 karmolab-bot 쪽에 이미 high 7, critical 1 이
    있었다. 대부분 `@discordjs/opus → node-pre-gyp → tar` 한 줄기이고 **고칠 판이 아직 없다**
    (`fixAvailable: false`). 그걸 이유로 게이트를 안 켜면 그 사이 **새로 생기는 것**도 못 막는다.
    지금 수를 기준선으로 적고 **늘면 빨강**. 기준선은 오직 내려가야 한다. */

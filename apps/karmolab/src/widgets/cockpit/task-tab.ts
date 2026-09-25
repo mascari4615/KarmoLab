@@ -31,21 +31,21 @@ type CardInfo = { ts: string; source: string; session?: string; kind?: string; t
 const DOMAINS: Array<{ value: string; label: string }> = [
   { value: 'wm', label: 'WitchMendokusai' },
   { value: 'karmolab', label: 'KarmoLab' },
-  { value: 'yawnbot', label: 'YawnBot' },
+  { value: 'karmolab-bot', label: 'KarmoLab 봇' },
   { value: 'life', label: t('cockpit.t37', undefined, '인생') },
   { value: 'hobby', label: t('cockpit.t38', undefined, '취미') },
   { value: 'learning', label: t('cockpit.t39', undefined, '학습') },
 ];
 
 const DOMAIN_ICON: Record<string, string> = {
-  wm: '🔮', karmolab: '🧪', yawnbot: '🤖',
+  wm: '🔮', karmolab: '🧪', 'karmolab-bot': '🤖',
   life: '🏠', hobby: '🎨', learning: '📚',
 };
 
 const DOMAIN_SUBTITLE: Record<string, string> = {
   wm:       t('cockpit.t40', undefined, '메인 프로젝트, 주황머리 마녀와 인형들'),
   karmolab: t('cockpit.t41', undefined, 'Tauri 데스크톱 + 웹 위젯 + AI'),
-  yawnbot:  t('cockpit.t42', undefined, 'Discord 봇, 캐릭터 호스트'),
+  'karmolab-bot':  t('cockpit.t42', undefined, 'Discord 봇, 캐릭터 호스트'),
   life:     t('cockpit.t43', undefined, '인생 일반. 건강, 금융, 집, 관계'),
   hobby:    t('cockpit.t44', undefined, '취미. 음악, 독서, 게임, 여행'),
   learning: t('cockpit.t45', undefined, '학습. 책, 강의, 언어, 기술'),
@@ -54,7 +54,7 @@ const DOMAIN_SUBTITLE: Record<string, string> = {
 const DOMAIN_IMAGE: Record<string, string> = {
   wm:       '/apps/karmolab/img/widgets/quest-log/240714-071225.jpg',
   karmolab: '/apps/karmolab/img/widgets/quest-log/250315-170647.png',
-  yawnbot:  '/apps/karmolab/img/widgets/quest-log/250315-173653.png',
+  'karmolab-bot':  '/apps/karmolab/img/widgets/quest-log/250315-173653.png',
   life:     '/apps/karmolab/img/widgets/quest-log/240330-000000.png',
   hobby:    '/apps/karmolab/img/widgets/quest-log/240330-111546.png',
   learning: '/apps/karmolab/img/widgets/quest-log/240513-131941.png',
@@ -71,7 +71,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_ORDER = ['active', 'ready', 'hold', 'seed', 'done', 'sealed'];
 const STATUS_FILTERS = ['all', 'seed', 'ready', 'active', 'hold', 'done', 'sealed'];
-const DOMAIN_ORDER = ['wm', 'karmolab', 'yawnbot', 'life', 'hobby', 'learning'];
+const DOMAIN_ORDER = ['wm', 'karmolab', 'karmolab-bot', 'life', 'hobby', 'learning'];
 
 
 function getInvoke(): ((cmd: string, args?: Record<string, unknown>) => Promise<unknown>) | null {
@@ -410,7 +410,7 @@ function closeDrawer(drawerEl: HTMLElement, backdropEl: HTMLElement): void {
 const DOMAINS_FULL: Array<{ value: string; label: string }> = [
   { value: 'wm', label: 'WitchMendokusai (WM)' },
   { value: 'karmolab', label: 'KarmoLab (KL)' },
-  { value: 'yawnbot', label: 'YawnBot (YB)' },
+  { value: 'karmolab-bot', label: 'KarmoLab 봇 (YB)' },
   { value: 'life', label: t('cockpit.t49', undefined, '인생 (LIFE)') },
   { value: 'hobby', label: t('cockpit.t50', undefined, '취미 (HOBBY)') },
   { value: 'learning', label: t('cockpit.t51', undefined, '학습 (LEARN)') },

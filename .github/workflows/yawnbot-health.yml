@@ -1,13 +1,13 @@
-name: Yawnbot Health Watcher
+name: KarmoLabBot Health Watcher
 
-# TASK-YB-020 사후 인프라. yawnbot prod health endpoint 외부 감시.
+# TASK-YB-020 사후 인프라. karmolab-bot prod health endpoint 외부 감시.
 # monitoring 주체 ≠ monitoring 대상 원칙: github-hosted ubuntu runner 사용
 # (self-hosted runner = prod 노트북 = 감시 대상이라 같이 죽음).
 # alert 채널 = 봇 의존 X Discord Incoming Webhook URL (secret).
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # GH Actions schedule 실 발동 5~15분 지연. yawnbot 분단위 SLA 아님, 충분.
+    - cron: '*/5 * * * *'   # GH Actions schedule 실 발동 5~15분 지연. karmolab-bot 분단위 SLA 아님, 충분.
   workflow_dispatch: {}
 
 permissions:
@@ -66,7 +66,7 @@ jobs:
 
           if [ "$CURL_EXIT" -ne 0 ] || [ "$HTTP_CODE" != "200" ] || [ "$BODY_OK" != "true" ]; then
             echo "status=fail" >> "$GITHUB_OUTPUT"
-            echo "::warning::yawnbot health probe FAIL 2회 (curl_exit=$CURL_EXIT http_code=$HTTP_CODE body_ok=$BODY_OK)"
+            echo "::warning::karmolab-bot health probe FAIL 2회 (curl_exit=$CURL_EXIT http_code=$HTTP_CODE body_ok=$BODY_OK)"
           else
             echo "status=ok" >> "$GITHUB_OUTPUT"
           fi
@@ -88,9 +88,9 @@ jobs:
             --arg body_ok "${{ steps.probe.outputs.body_ok }}" \
             --arg run_url "$RUN_URL" \
             '{
-              username: "Yawnbot Health Watcher",
+              username: "KarmoLabBot Health Watcher",
               embeds: [{
-                title: "yawnbot health check FAIL",
+                title: "karmolab-bot health check FAIL",
                 description: ("URL: " + $url + "\nHTTP code: " + $http + "\ncurl exit: " + $curl + "\nbody ok: " + $body_ok + "\ntime: " + $ts),
                 color: 15158332,
                 fields: [{ name: "Workflow run", value: $run_url, inline: false }]
@@ -181,9 +181,9 @@ jobs:
             --arg ts "$TS_NOW" \
             --arg run_url "$RUN_URL" \
             '{
-              username: "Yawnbot Health Watcher",
+              username: "KarmoLabBot Health Watcher",
               embeds: [{
-                title: "yawnbot heartbeat STALE/FAIL (push 모델)",
+                title: "karmolab-bot heartbeat STALE/FAIL (push 모델)",
                 description: ($reason + "\nlast heartbeat ts: " + $hbts + "\nage: " + $age + "s\nchecked: " + $ts),
                 color: 15158332,
                 fields: [{ name: "Workflow run", value: $run_url, inline: false }]

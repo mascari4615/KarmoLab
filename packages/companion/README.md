@@ -62,7 +62,7 @@ node demo/run.mjs                # 터미널만
 
 Dash 머신 방 (https://dash.mascari4615.com/#machines/Mois) 의 동반자 카드나 트레이 메뉴로도 켠다.
 
-환경변수: `COMPANION_BRAIN`(claude|grok|echo|assistant|preview), `COMPANION_TOOLS`(talk|work), `COMPANION_WORK_DIR`, `COMPANION_SURFACE`(desk|page), `COMPANION_CHARACTER_DIR`(기본 패키지 `characters/`. 다른 저장소 폴더를 꽂을 수 있다. 본문은 이 레포가 모른다), `COMPANION_CHARACTER`, `COMPANION_PORT`(기본 **4620**. 4615 는 yawnbot dev 웹훅이 쓴다), `COMPANION_SCREEN_MS`, `COMPANION_CLOCK_MS`, `COMPANION_MEMORY_FILE`, `COMPANION_DESKTOP`(0 는 창 없이), `COMPANION_DISCORD_TOKEN` + `COMPANION_DISCORD_CHANNELS`, `COMPANION_MODEL_YON`, `COMPANION_PIPER_DIR`, `COMPANION_CLONE_REF`.
+환경변수: `COMPANION_BRAIN`(claude|grok|echo|assistant|preview), `COMPANION_TOOLS`(talk|work), `COMPANION_WORK_DIR`, `COMPANION_SURFACE`(desk|page), `COMPANION_CHARACTER_DIR`(기본 패키지 `characters/`. 다른 저장소 폴더를 꽂을 수 있다. 본문은 이 레포가 모른다), `COMPANION_CHARACTER`, `COMPANION_PORT`(기본 **4620**. 4615 는 karmolab-bot dev 웹훅이 쓴다), `COMPANION_SCREEN_MS`, `COMPANION_CLOCK_MS`, `COMPANION_MEMORY_FILE`, `COMPANION_DESKTOP`(0 는 창 없이), `COMPANION_DISCORD_TOKEN` + `COMPANION_DISCORD_CHANNELS`, `COMPANION_MODEL_YON`, `COMPANION_PIPER_DIR`, `COMPANION_CLONE_REF`.
 
 채팅 창: 벤더 세션 목록을 대신하지 않는다. 왼쪽 **일**: 코딩 CLI, **말**: 곁에만. 그 아래 G 는 이미 떠 있는 그록 창 내려다보기.
 

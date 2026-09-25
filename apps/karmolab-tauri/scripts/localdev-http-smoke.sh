@@ -8,7 +8,7 @@
 #
 # 사용:
 #   bash localdev-http-smoke.sh                 # 읽기 전용 스모크
-#   bash localdev-http-smoke.sh yawnbot-tunnel  # start/stop 라운드트립 포함
+#   bash localdev-http-smoke.sh karmolab-bot-tunnel  # start/stop 라운드트립 포함
 #
 # 토큰/포트는 앱이 자동 생성한 localdev-http.json 에서 읽는다.
 set -euo pipefail

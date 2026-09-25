@@ -50,7 +50,7 @@ try {
     await relay?.attach(context, seat);
     /* 네 소프트웨어 3D 렌더러의 경쟁과 연결 검사를 분리. 3D 화면은 test:arcade:yacht에서 실측 */
     await context.addInitScript((dim) => localStorage.setItem('karmolab.arcade.dim', dim), dimension);
-    /* 로비가 여는 열린 방 목록과 내 지난 판. 막지 않으면 라이브 yawnbot 으로 나가고, CI 의
+    /* 로비가 여는 열린 방 목록과 내 지난 판. 막지 않으면 라이브 karmolab-bot 으로 나가고, CI 의
        임의 포트 origin 은 CORS 허용 목록에 없어 콘솔 오류 158건으로 판이 빨갛다 (2026-09-19 실측) */
     await context.route('**/kl/arcade/rooms*', (route) => route.fulfill({
       contentType: 'application/json', body: JSON.stringify({ rooms: [] })

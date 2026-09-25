@@ -1,14 +1,14 @@
 /**
  * 채팅창이 진짜로 둘을 잇는지 (TASK-KL-149)
  *
- * 서버 시험(`yawnbot/src/bot/karmolab-chat-api.test.ts`)은 HTTP 로만 찔러 본다. 거기서는
+ * 서버 시험(`karmolab-bot/src/bot/karmolab-chat-api.test.ts`)은 HTTP 로만 찔러 본다. 거기서는
  * **화면이 없다.** 창 하나만 보는 검사도 마찬가지로 못 잡는 것이 있다: 껍데기가 안 붙었거나,
  * 흐르는 연결을 화면이 안 듣거나, 남의 줄이 그려지지 않아도 통과한다.
  * 그래서 창을 **둘** 띄우고, 한쪽에서 친 말이 다른 쪽 화면에 실제로 나타나는지 본다.
  *
  * 붙이는 방법: 앱은 `https://bot.mascari4615.com` 을 부르도록 박혀 있다(`src/account.ts`).
  * 그 주소로 가는 요청만 **여기서 띄운 진짜 서버**로 돌린다. 대역폭도 흐름도 실제와 같다.
- * 서버는 흉내가 아니라 yawnbot 이 배포하는 그 코드(`dist/`)를 그대로 쓴다.
+ * 서버는 흉내가 아니라 karmolab-bot 이 배포하는 그 코드(`dist/`)를 그대로 쓴다.
  *
  * 못 돌 때는 못 돌았다(2)로 끝낸다. 통과도 실패도 아니다. 둘을 같은 글자로 적으면
  * 게이트가 죽은 것을 아무도 모른다.
@@ -26,7 +26,7 @@ import { WAIT } from './lib/waits.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(HERE, '..');
 const SITE_ROOT = path.resolve(APP_ROOT, '../..');
-const YAWNBOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/karmolab-bot');
+const KARMOLAB_BOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/karmolab-bot');
 const PROD_ORIGIN = 'https://bot.mascari4615.com';
 
 const failures = [];
@@ -39,11 +39,11 @@ function cantRun(why) {
   process.exit(2);
 }
 
-const dist = path.join(YAWNBOT, 'dist/src/bot/karmolab-api.js');
-if (!existsSync(dist)) cantRun(`yawnbot 이 아직 안 지어졌다 (${dist} 없음). cd ${YAWNBOT} && npm run build`);
+const dist = path.join(KARMOLAB_BOT, 'dist/src/bot/karmolab-api.js');
+if (!existsSync(dist)) cantRun(`karmolab-bot 이 아직 안 지어졌다 (${dist} 없음). cd ${KARMOLAB_BOT} && npm run build`);
 if (!existsSync(path.join(APP_ROOT, 'js/widgets/chat.js'))) cantRun('카모랩이 아직 안 지어졌다. npm run build');
 
-/* **yawnbot 이 있는 자리에서** 부른다. 라이브러리는 위 폴더(`apps/discord-bots/node_modules`)에
+/* **karmolab-bot 이 있는 자리에서** 부른다. 라이브러리는 위 폴더(`apps/discord-bots/node_modules`)에
  * 얹혀 있어서, 여기(카모랩)를 기준으로 찾으면 못 찾는다. */
 const require_ = createRequire(dist);
 let registerKarmolabApi;
@@ -53,19 +53,19 @@ try {
   express = require_('express');
   ({ registerKarmolabApi } = require_(dist));
   stores = {
-    accounts: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-accounts.js')),
-    traces: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-traces.js')),
-    plays: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-plays.js')),
-    chat: require_(path.join(YAWNBOT, 'dist/src/services/karmolab-chat.js')),
+    accounts: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-accounts.js')),
+    traces: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-traces.js')),
+    plays: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-plays.js')),
+    chat: require_(path.join(KARMOLAB_BOT, 'dist/src/services/karmolab-chat.js')),
   };
 } catch (error) {
-  cantRun(`yawnbot 빌드 산출물을 못 불렀다: ${error.message}`);
+  cantRun(`karmolab-bot 빌드 산출물을 못 불렀다: ${error.message}`);
 }
 
 /* 지어 둔 것이 **낡았을 수** 있다. 옛 산출물로 검사하면 고친 것이 안 들어간 채 초록이 뜬다.
  * 채팅 라우트가 실제로 그 안에 있는지부터 확인한다. */
 const apiSource = await readFile(dist, 'utf-8');
-if (!apiSource.includes('/kl/chat/stream')) cantRun('지어 둔 yawnbot 에 채팅 라우트가 없다 (낡은 산출물). npm run build 부터');
+if (!apiSource.includes('/kl/chat/stream')) cantRun('지어 둔 karmolab-bot 에 채팅 라우트가 없다 (낡은 산출물). npm run build 부터');
 
 const tmp = await mkdtemp(path.join(tmpdir(), 'kl149-smoke-'));
 const app = express();
@@ -152,7 +152,7 @@ const FIREFOX = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100
 /** 채팅을 사람이 여는 길로 연다 (2026-09-01).
  *  셸을 다시 짜면서 채팅 버튼이 계정 메뉴 안으로 들어갔다. `#klChatDock` 은 옆줄 밑에
  *  `visibility:hidden` 으로 남은 닻이라, 직접 누르려 하면 늘 시간 초과
- *  이 검사는 그래서 2026-09-01 까지 한 번도 안 돌았다 (yawnbot 미빌드로 못 돌림이었다가,
+ *  이 검사는 그래서 2026-09-01 까지 한 번도 안 돌았다 (karmolab-bot 미빌드로 못 돌림이었다가,
  *  구워서 돌리자마자 이 자리에서 멈췄다). */
 async function openChat(page) {
   await page.waitForSelector('#klChatDock', { state: 'attached', timeout: 15000 });

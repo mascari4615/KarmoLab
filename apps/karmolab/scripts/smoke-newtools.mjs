@@ -293,7 +293,7 @@ if ((await airChip.count()) === 0) {
     .catch(() => '');
   if (said === '' || /못 받았습니다/.test(said)) {
     /* 뒷단이 안 서 있으면 **못 잰 것**이다. 통과로 세지 않는다. */
-    skip(`하늘 겹: 뒷단(yawnbot /kl/air)에 못 닿았다. 통과 아님 (화면이 말한 것: ${said || '아무 말 없음'})`);
+    skip(`하늘 겹: 뒷단(karmolab-bot /kl/air)에 못 닿았다. 통과 아님 (화면이 말한 것: ${said || '아무 말 없음'})`);
   } else {
     check(/하늘에 \d+대|잡히는 게 없습니다/.test(said), `★ 받은 결과를 사람 말로 말한다 (지금 ${said})`);
     check(!/하늘에 0대/.test(said), '0대를 n대로 말하지 않는다 (없으면 없다고 말해야 한다)');

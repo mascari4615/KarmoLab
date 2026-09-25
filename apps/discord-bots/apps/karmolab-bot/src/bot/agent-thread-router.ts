@@ -1,6 +1,6 @@
 // 워커/팀 #team-bus 메시지 → TASK 당 Discord 스레드 라우팅 + 전문 청크.
 // KAR-018-Y (사용자: "내용 짤림 근본해결. TASK 스레드, 단위메시지, 트렁케이트
-// 폐기"). 트렁케이트 = 정보손실 = Sexy X. yawnbot=1차 정보 인터페이스.
+// 폐기"). 트렁케이트 = 정보손실 = Sexy X. karmolab-bot=1차 정보 인터페이스.
 //
 // 순수(extractTaskId/chunkForDiscord) = 전수 단위검증. 상태/Discord IO =
 // makeThreadRouter (client 주입, 봇 프로세스에서만 wired).

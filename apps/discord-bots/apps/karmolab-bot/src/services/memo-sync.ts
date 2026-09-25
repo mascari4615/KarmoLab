@@ -1,7 +1,7 @@
 /**
  * prod memo 자동 동기 (TASK-KAR-MEMOSYNC part4. heartbeat/charstate 패턴 미러)
  *
- * 현 memo-sync 는 *github.io deploy 안에서만* 실행(yawnbot-path push 트리거).
+ * 현 memo-sync 는 *github.io deploy 안에서만* 실행(karmolab-bot-path push 트리거).
  * memo-only 변경(TASK, agent core.md, rules)은 deploy 가 안 일어나면 prod
  * 미반영. 실증: wm-worker `status:inactive`(2026-05-19) 적용에 deploy
  * *수동 트리거* 강제됨. 본 모듈은 prod 봇이 *스스로* memo 클론을

@@ -167,7 +167,7 @@ describe('bundleHash / planSnapshot. skip-if-unchanged', () => {
     const p = planSnapshot({ memoRepoPath: '/memo' }, null, { fsImpl: makeFs(SAMPLE_FILES), now: fixedNow });
     const parsed = JSON.parse(p.payload as string) as CharacterStateBundle;
     expect(parsed.schema).toBe(1);
-    expect(parsed.source).toBe('yawnbot');
+    expect(parsed.source).toBe('karmolab-bot');
     expect(parsed.ts).toBe('2026-05-18T10:00:00.000Z');
     expect(parsed.entries.length).toBe(10);
   });
@@ -446,7 +446,7 @@ describe('serializeBundle. 결정성', () => {
     const b: CharacterStateBundle = {
       schema: 1,
       ts: '2026-05-18T10:00:00.000Z',
-      source: 'yawnbot',
+      source: 'karmolab-bot',
       entries: [{ path: 'characters/.active.json', content: '{}' }],
     };
     expect(serializeBundle(b)).toBe(serializeBundle(b));

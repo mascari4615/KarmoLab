@@ -51,7 +51,7 @@ const page = await context.newPage();
 const errors = [];
 page.on('pageerror', error => errors.push(String(error)));
 page.on('console', message => {
-  if (message.type() === 'error' && !/CORS|ERR_FAILED|Failed to load resource|yawnbot/.test(message.text())) errors.push(message.text());
+  if (message.type() === 'error' && !/CORS|ERR_FAILED|Failed to load resource|karmolab-bot/.test(message.text())) errors.push(message.text());
 });
 
 const problems = [];

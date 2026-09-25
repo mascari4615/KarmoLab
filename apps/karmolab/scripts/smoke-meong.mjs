@@ -60,7 +60,7 @@ const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 }, s
 const page = await ctx.newPage();
 
 const errors = [];
-const NOISE = /CORS|ERR_FAILED|net::|Failed to load resource|yawnbot\.mascari4615\.com/;
+const NOISE = /CORS|ERR_FAILED|net::|Failed to load resource|karmolab-bot\.mascari4615\.com/;
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push('console: ' + m.text()); });
 

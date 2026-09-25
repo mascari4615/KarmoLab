@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const yawnbotSrc = path.resolve(__dirname, '..', 'apps', 'karmolab-bot', 'src');
+const botSrc = path.resolve(__dirname, '..', 'apps', 'karmolab-bot', 'src');
 
 /**
  * services/*.ts 중 *external 서비스 패턴* 만 수집:
@@ -69,10 +69,10 @@ function checkHealthyLog(text) {
   return { ok: true };
 }
 
-const files = scanFiles(yawnbotSrc);
+const files = scanFiles(botSrc);
 const violations = [];
 for (const { p, text } of files) {
-  const rel = path.relative(yawnbotSrc, p);
+  const rel = path.relative(botSrc, p);
   if (!checkManualTrigger(text)) {
     violations.push({ file: rel, rule: '①', detail: 'setInterval 있지만 export trigger*Now / run*Tick 없음 (수동 트리거 누락)' });
   }

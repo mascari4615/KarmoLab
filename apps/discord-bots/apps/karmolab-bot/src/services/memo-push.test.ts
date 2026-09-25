@@ -388,7 +388,7 @@ describe('resolveConfig. defaults.txt 빈 문자열 폴백 회귀', () => {
   it('authorName. env="" → DEFAULT_AUTHOR_NAME', () => {
     const env = { ...baseEnv, KARMOLAB_BOT_PUSH_AUTHOR_NAME: '' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
-    expect(cfg?.authorName).toBe('yawnbot');
+    expect(cfg?.authorName).toBe('karmolab-bot');
   });
 
   it('authorName. env 정상값 → 그 값', () => {
@@ -444,7 +444,7 @@ describe('resolveConfig. defaults.txt 빈 문자열 폴백 회귀', () => {
     expect(cfg).not.toBeNull();
     expect(cfg?.repoSlug).toBe('mascari4615/memo');
     expect(cfg?.branch).toBe('main');
-    expect(cfg?.authorName).toBe('yawnbot');
+    expect(cfg?.authorName).toBe('karmolab-bot');
     expect(cfg?.authorEmail).toBe('noreply@bot.mascari4615.com');
   });
 });

@@ -1,8 +1,8 @@
-# 욘 (yawnbot)
+# 욘 (karmolab-bot)
 
-Discord 슬래시 봇입니다. **표시 이름은욘**, npm, 폴더명은 `yawnbot` 입니다. 소스, 데이터, 이미지 기준 경로는 이 디렉터리입니다.
+Discord 슬래시 봇입니다. **표시 이름은욘**, npm, 폴더명은 `karmolab-bot` 입니다. 소스, 데이터, 이미지 기준 경로는 이 디렉터리입니다.
 
-음성(DAVE) 참고, 구현 요약, TODO, 향후 검토, 아이디어 구상은 KarmoLab **문서** 위젯 **Discord, 욘봇** 탭(`apps/karmolab/js/widgets/docs/discord-yawnbot.md`)에서 봅니다.
+음성(DAVE) 참고, 구현 요약, TODO, 향후 검토, 아이디어 구상은 KarmoLab **문서** 위젯 **Discord, KarmoLab 봇** 탭(`apps/karmolab/js/widgets/docs/discord-bot.md`)에서 봅니다.
 
 ## 빠른 시작
 
@@ -18,7 +18,7 @@ npm run build:karmolab-bot
 
 > **prod (노트북) 의 `.env`** = GitHub Secret 들이 자동 주입.
 >
-> 키별로 [`YB_PROD_<KEY>`](https://github.com/Mascari4615/KarmoLab/settings/secrets/actions) 개별 secret. `Deploy Discord Bots (yawnbot)` workflow 의 *Write prod .env* 단계가 secrets 를 `KEY=VALUE` 라인으로 조립 (빈 값 secret 은 라인 skip). 한 키 갱신 시 그 secret 만 편집 → workflow 재트리거 (`gh workflow run "Deploy Discord Bots (yawnbot)" --repo Mascari4615/KarmoLab`).
+> 키별로 [`YB_PROD_<KEY>`](https://github.com/Mascari4615/KarmoLab/settings/secrets/actions) 개별 secret. `Deploy Discord Bots (karmolab-bot)` workflow 의 *Write prod .env* 단계가 secrets 를 `KEY=VALUE` 라인으로 조립 (빈 값 secret 은 라인 skip). 한 키 갱신 시 그 secret 만 편집 → workflow 재트리거 (`gh workflow run "Deploy Discord Bots (karmolab-bot)" --repo Mascari4615/KarmoLab`).
 >
 > 새 키 추가는 `.github/workflows/deploy-discord-bots.yml` 의 `env:` 매핑 + `$keys` 배열 둘 다 갱신 + 사용자가 secret 등록.
 
@@ -146,7 +146,7 @@ Discord, Gemini, Cursor, 카카오 익스포트 키 목록은 [.env.template](./
 - `/코덱스`: 최근 초기화 공지와 한국시간. `/코덱스 트윗:<URL>`: 개별 링크 조회
 - prod에서 1시간 간격 전용 headless 브라우저 수집, 기존 운영 알림 채널 사용
 - 초기화 본문으로 예정/완료 판정. 시각 언급 없이도 명확한 새 공지는 알림, 시각이 있으면 KST 표시
-- 노트북 YawnBot 폴더에서 `npm run codex:login` 실행 후 열린 Edge에서 X 로그인
+- 노트북 KarmoLab 봇 폴더에서 `npm run codex:login` 실행 후 열린 Edge에서 X 로그인
 - 기존 Edge 로그인 재사용: `edge://inspect`의 Remote debugging 허용 후 `npm run codex:login:edge`. 연결 승인 요청이 뜨면 확인. X 인증 저장 뒤 원격 디버깅을 꺼도 수집 가능
 - 기존 Edge 연결은 X 도메인 쿠키만 저장. 확인용 빈 탭만 닫고 기존 탭 유지. 다른 컴퓨터의 로그인 상태는 복사하지 않음
 - `npm run codex:check`: 외부 알림 없이 실제 수집 검사. 수집 기록 위치는 변경하지 않음

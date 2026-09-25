@@ -5,7 +5,7 @@
  *   COMPANION_BRAIN=grok COMPANION_TOOLS=talk ...
  *   COMPANION_BRAIN=echo ...                    가짜 두뇌
  *
- *   COMPANION_PORT=4620            주소 (4615 는 yawnbot dev 웹훅이 쓴다)
+ *   COMPANION_PORT=4620            주소 (4615 는 karmolab-bot dev 웹훅이 쓴다)
  *   COMPANION_CLOCK_MS=60000       이 간격으로 스스로 깨어나 혼잣말 (0 = 끔)
  *   COMPANION_COOLDOWN_MS=45000    혼잣말 참는 간격
  *   COMPANION_MEMORY_FILE=<경로>   기억을 파일로

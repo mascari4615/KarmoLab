@@ -72,7 +72,7 @@ describe('loadCoreDef', () => {
       [
         '---',
         'id: echo',
-        'role: yawnbot/콘텐츠 도메인',
+        'role: karmolab-bot/콘텐츠 도메인',
         'default_skin: ling',
         'emoji: 📣',
         'display_name: Echo',
@@ -157,12 +157,12 @@ describe('resolveProposalCore (R-4 도메인 라우팅. 결정적, 순수)', () 
     expect(resolveProposalCore(KNOWN, {})).toBe('atlas');
   });
 
-  it('yb 도메인 / yawnbot, 디스코드 마커 → echo', () => {
+  it('yb 도메인 / karmolab-bot, 디스코드 마커 → echo', () => {
     expect(resolveProposalCore(KNOWN, { domain: 'yb' })).toBe('echo');
     expect(
       resolveProposalCore(KNOWN, { text: 'apps/discord-bots 알림 개선' }),
     ).toBe('echo');
-    expect(resolveProposalCore(KNOWN, { text: '욘봇 콘텐츠 발굴' })).toBe(
+    expect(resolveProposalCore(KNOWN, { text: 'KarmoLab 봇 콘텐츠 발굴' })).toBe(
       'echo',
     );
   });

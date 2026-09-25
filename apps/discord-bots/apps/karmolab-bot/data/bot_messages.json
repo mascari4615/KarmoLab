@@ -161,5 +161,5 @@
 	"Admin_Reload_Desc": "데이터 및 설정을 다시 불러왔습니다.",
 	"Admin_Save_Title": "💾 저장 완료",
 	"Admin_Save_Desc": "게임 데이터를 저장했습니다.",
-	"Server_Startup_Greeting": "🚀 **YawnBot 재시작 완료**\n배포가 성공했습니다. (ver {0})"
+	"Server_Startup_Greeting": "🚀 **벼루 재시작 완료**\n배포가 성공했습니다. (ver {0})"
 }

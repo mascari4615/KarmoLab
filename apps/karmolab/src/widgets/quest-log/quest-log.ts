@@ -61,11 +61,11 @@ const _questUnlisten = new WeakMap<HTMLElement, () => void>();
     errors: MemoTaskError[];
   }
 
-  const DOMAIN_ORDER = ['wm', 'karmolab', 'yawnbot', 'life', 'hobby', 'learning'];
+  const DOMAIN_ORDER = ['wm', 'karmolab', 'karmolab-bot', 'life', 'hobby', 'learning'];
   const DOMAIN_LABEL: Record<string, string> = {
     wm: 'WitchMendokusai',
     karmolab: 'KarmoLab',
-    yawnbot: 'YawnBot',
+    'karmolab-bot': 'KarmoLab 봇',
     life: t('quest-log.t20'),
     hobby: t('quest-log.t21'),
     learning: t('quest-log.t22'),
@@ -73,7 +73,7 @@ const _questUnlisten = new WeakMap<HTMLElement, () => void>();
   const DOMAIN_ICON: Record<string, string> = {
     wm: '🔮',
     karmolab: '🧪',
-    yawnbot: '🤖',
+    'karmolab-bot': '🤖',
     life: '🏠',
     hobby: '🎨',
     learning: '📚',
@@ -81,7 +81,7 @@ const _questUnlisten = new WeakMap<HTMLElement, () => void>();
   const DOMAIN_SUBTITLE: Record<string, string> = {
     wm: t('quest-log.t23'),
     karmolab: t('quest-log.t24'),
-    yawnbot: t('quest-log.t25'),
+    'karmolab-bot': t('quest-log.t25'),
     life: t('quest-log.t26'),
     hobby: t('quest-log.t27'),
     learning: t('quest-log.t28'),
@@ -338,7 +338,7 @@ const _questUnlisten = new WeakMap<HTMLElement, () => void>();
   const SCOPE_TO_DOMAIN: Record<string, string> = {
     wm: 'wm', witch: 'wm', witchmendokusai: 'wm', mendokusai: 'wm',
     kl: 'karmolab', karmolab: 'karmolab',
-    yb: 'yawnbot', yawnbot: 'yawnbot', yawn: 'yawnbot',
+    yb: 'karmolab-bot', 'karmolab-bot': 'karmolab-bot', yawn: 'karmolab-bot',
     life: 'life',
     hobby: 'hobby',
     learn: 'learning', learning: 'learning',

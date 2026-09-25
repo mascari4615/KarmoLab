@@ -20,7 +20,7 @@
 *.{cmd,[cC][mM][dD]} text eol=crlf
 *.{bat,[bB][aA][tT]} text eol=crlf
 
-# github.io 전용: yawnbot 정적 config — self-hosted runner dirty/deploy fail
+# github.io 전용: karmolab-bot 정적 config — self-hosted runner dirty/deploy fail
 # 방지 (TASK-YB-003 2026-05-09 사고). `* eol=lf` 와 동일하나 의도 명시 보존.
 apps/discord-bots/apps/karmolab-bot/config/*.txt text eol=lf
 apps/discord-bots/apps/karmolab-bot/.env.template text eol=lf

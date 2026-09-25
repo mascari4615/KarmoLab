@@ -13,7 +13,7 @@
  *  - **pathspec 만**. `git add -- <file>` + `git commit -- <file>` (KAR-025
  *    intra-file foreign session 격리 정합). 다른 dirty 휩쓸기 0.
  *  - **비차단**. 호출부가 try/catch 로 감싸 tick 비차단.
- *  - **author 명시**. `git -c user.name -c user.email` 봇 식별 (yawnbot).
+ *  - **author 명시**. `git -c user.name -c user.email` 봇 식별 (karmolab-bot).
  *  - **dryRun mode**. 테스트 / 출시 검증용 (commit 만, push 안 함).
  *  - **토큰 masking**. error 메시지에서 PAT 가 새지 않도록.
  *
@@ -27,7 +27,7 @@ import { execFile } from 'child_process';
 // git remote 는 자동 리다이렉트하지만 API 는 안 함.
 const DEFAULT_REPO_SLUG = 'mascari4615/memo';
 const DEFAULT_BRANCH = 'main';
-const DEFAULT_AUTHOR_NAME = 'yawnbot';
+const DEFAULT_AUTHOR_NAME = 'karmolab-bot';
 const DEFAULT_AUTHOR_EMAIL = 'noreply@bot.mascari4615.com';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const SHORT_TIMEOUT_MS = 15_000;
@@ -227,7 +227,7 @@ export async function checkMemoPushScope(
       headers: {
         Authorization: `token ${token}`,
         Accept: 'application/vnd.github+json',
-        'User-Agent': 'yawnbot-memo-push-preflight',
+        'User-Agent': 'karmolab-bot-memo-push-preflight',
       },
     });
     if (!res.ok) {

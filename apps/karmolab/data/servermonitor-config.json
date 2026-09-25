@@ -1,8 +1,8 @@
 {
   "localMonitors": [
     {
-      "id": "yawnbot-tunnel",
-      "title": "YawnBot (dev)",
+      "id": "karmolab-bot-tunnel",
+      "title": "KarmoLab 봇 (dev)",
       "subtitle": "cloudflared quick tunnel + webhook 자동등록 (dev)",
       "url": "http://127.0.0.1:4615/webhook/github"
     },
@@ -33,8 +33,8 @@
   ],
   "envFiles": [
     {
-      "id": "yawnbot-env",
-      "label": "YawnBot .env (dev)",
+      "id": "karmolab-bot-env",
+      "label": "KarmoLab 봇 .env (dev)",
       "relPath": "apps/discord-bots/apps/karmolab-bot/.env",
       "hint": "dev 봇 토큰 + dev 길드. prod 는 GitHub Secrets → 노트북 자동 주입 (TASK-YB-002)"
     },
@@ -48,8 +48,8 @@
   "_schema": "devProfiles: npm 스크립트는 {app,script[,deployScript]} 참조 (program/args/cwd 손기재 X. package.json rename 자동 추종, scripts/servermonitor-config-audit.mjs 가 verify 게이트에서 실재 검증). npm 스크립트가 아닌 경우만 raw {cwd,program,args}. 정본 설명 = TASK-KL-066 / Rust DevProfile::resolve / TS resolveProfile.",
   "devProfiles": [
     {
-      "id": "yawnbot-tunnel",
-      "label": "YawnBot (dev)",
+      "id": "karmolab-bot-tunnel",
+      "label": "KarmoLab 봇 (dev)",
       "app": "apps/discord-bots",
       "script": "dev:karmolab-bot",
       "deployScript": "deploy:karmolab-bot",

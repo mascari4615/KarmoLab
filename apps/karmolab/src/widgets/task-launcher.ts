@@ -40,7 +40,7 @@ const esc = (v: unknown): string =>
   const domains = (): Array<{ value: string; label: string; prefix: string }> => [
     { value: 'wm', label: 'WitchMendokusai (WM)', prefix: 'WM' },
     { value: 'karmolab', label: 'KarmoLab (KL)', prefix: 'KL' },
-    { value: 'yawnbot', label: 'YawnBot (YB)', prefix: 'YB' },
+    { value: 'karmolab-bot', label: 'KarmoLab 봇 (YB)', prefix: 'YB' },
     { value: 'life', label: t('task-launcher.t14'), prefix: 'LIFE' },
     { value: 'hobby', label: t('task-launcher.t15'), prefix: 'HOBBY' },
     { value: 'learning', label: t('task-launcher.t16'), prefix: 'LEARN' }

@@ -496,7 +496,7 @@ async function runAcp(opts) {
                             fs: { readTextFile: false, writeTextFile: false },
                             terminal: false,
                         },
-                        clientInfo: { name: 'yawnbot-cursor-runner', version: '1.0.0' },
+                        clientInfo: { name: 'karmolab-bot-cursor-runner', version: '1.0.0' },
                     });
 
                     await send('authenticate', { methodId: 'cursor_login' });

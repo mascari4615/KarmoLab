@@ -2,7 +2,7 @@
  * 글 한 편의 공통 모양 (change.post-model).
  *
  * 저장은 셋. 블로그 글은 git `content/posts`, 문서는 git `data/docs` 와 `world/wiki`,
- * 커뮤니티 글은 yawnbot 서버
+ * 커뮤니티 글은 karmolab-bot 서버
  * 저장 통합 불가. 사용자 글을 git 에 넣으면 글 하나에 배포 한 판, git 글을 서버에 넣으면 버전 소실
  *
  * 합칠 수 있는 것은 다루는 규칙. 목록 줄, 본문 뷰, 찾기 결과가 제각각이면 판마다 화면 갈라짐

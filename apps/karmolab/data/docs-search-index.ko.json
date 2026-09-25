@@ -190,7 +190,7 @@
       "docId": "docs-guide",
       "heading": "문서 위젯",
       "title": "문서 위젯",
-      "description": "문서 도구 안에서는 왼쪽에 세로 목록 으로 문서 제목을 고르고, 오른쪽에 본문이 나와요 탭이 많아서 가로로 두지 않음 . 본문 안에서는 제목 h1-h3 이 둘 이상 이면 세계관 위키와 같은 방식으로 목차 오른쪽 고정, 좁은 화면에서는 위 와 제목 옆 링크 복사 가 붙어요. 소개, 로드맵, 가이드, Discord, 욘봇 discord-yawnbot.md 등은 apps/karmolab/js/widgets/docs/ 안 Markdown이에요. discord-bots, README / Tauri, README 탭만 GitHub raw 로 레포 파일을 불러와요 main pus",
+      "description": "문서 도구 안에서는 왼쪽에 세로 목록 으로 문서 제목을 고르고, 오른쪽에 본문이 나와요 탭이 많아서 가로로 두지 않음 . 본문 안에서는 제목 h1-h3 이 둘 이상 이면 세계관 위키와 같은 방식으로 목차 오른쪽 고정, 좁은 화면에서는 위 와 제목 옆 링크 복사 가 붙어요. 소개, 로드맵, 가이드, Discord, KarmoLab 봇 discord-bot.md 등은 apps/karmolab/js/widgets/docs/ 안 Markdown이에요. discord-bots, README / Tauri, README 탭만 GitHub raw 로 레포 파일을 불러와요 main",
       "aliases": "guide"
     },
     {
@@ -214,7 +214,7 @@
       "docId": "docs-karmo-ai",
       "heading": "왜 패키지로 나눴나",
       "title": "왜 패키지로 나눴나",
-      "description": "KarmoLab 브라우저 앱과 yawnbot, kakao-export.mjs 등 Node 쪽은 같은 모델 ID, 프로바이더 규칙 을 쓰지만, 호출 코드를 한 파일 로 합치기는 어렵습니다. - 브라우저: CORS, fetch , localStorage, UI와 결합된 apps/karmolab/src/gemini.ts 가 실제 REST 호출을 담당합니다. - Node: .env 와 @google/generative-ai 같은 SDK가 자연스럽습니다. 그래서 DOM, 네트워크, 키 저장 없이 모델 카탈로그, 기본 ID, AI Studio/Vertex URL 조립만 pack",
+      "description": "KarmoLab 브라우저 앱과 karmolab-bot, kakao-export.mjs 등 Node 쪽은 같은 모델 ID, 프로바이더 규칙 을 쓰지만, 호출 코드를 한 파일 로 합치기는 어렵습니다. - 브라우저: CORS, fetch , localStorage, UI와 결합된 apps/karmolab/src/gemini.ts 가 실제 REST 호출을 담당합니다. - Node: .env 와 @google/generative-ai 같은 SDK가 자연스럽습니다. 그래서 DOM, 네트워크, 키 저장 없이 모델 카탈로그, 기본 ID, AI Studio/Vertex URL 조립만 pack",
       "aliases": "karmo ai"
     },
     {
@@ -222,7 +222,7 @@
       "docId": "docs-karmo-ai",
       "heading": "소비자 (요약)",
       "title": "소비자 (요약)",
-      "description": "구역 역할 ------ ------ KarmoLab gemini.ts 가 @karmo/ai 를 import해 URL, 모델을 맞추고, fetch , UI, 키는 여기서 yawnbot /ai 등 tryCreateGenerativeTextFromEnv → generateFromPrompt surface는 .env 의 KARMO AI SURFACE 등 카카오 PC보내기 kakao-export.mjs 도 동일 클라이언트로 요약 AI Studio 또는 Vertex",
+      "description": "구역 역할 ------ ------ KarmoLab gemini.ts 가 @karmo/ai 를 import해 URL, 모델을 맞추고, fetch , UI, 키는 여기서 karmolab-bot /ai 등 tryCreateGenerativeTextFromEnv → generateFromPrompt surface는 .env 의 KARMO AI SURFACE 등 카카오 PC보내기 kakao-export.mjs 도 동일 클라이언트로 요약 AI Studio 또는 Vertex",
       "aliases": "karmo ai"
     },
     {
@@ -260,8 +260,8 @@
     {
       "id": "docs-karmo-ai:7",
       "docId": "docs-karmo-ai",
-      "heading": "Node(욘봇, 스크립트)에서",
-      "title": "Node(욘봇, 스크립트)에서",
+      "heading": "Node(KarmoLab 봇, 스크립트)에서",
+      "title": "Node(KarmoLab 봇, 스크립트)에서",
       "description": "- apps/discord-bots/apps/karmolab-bot 에 @karmo/ai 가 file:../../../../packages/ai 로 연결되어 있습니다. - 루트에서 봇 빌드할 때 packages/ai 가 먼저 tsc 됩니다 apps/discord-bots 의 npm run build / build:karmolab-bot . - 엔트리 분리: 루트 @karmo/ai 는 계약 URL, 카탈로그 만, @karmo/ai/node 에서 AI Studio SDK 또는 Vertex REST 텍스트 호출을 제공합니다. peerDependencies : @google",
       "aliases": "karmo ai"
     },
@@ -286,7 +286,7 @@
       "docId": "docs-karmo-ai",
       "heading": "모델 목록을 바꿀 때",
       "title": "모델 목록을 바꿀 때",
-      "description": "1. packages/ai/src/index.ts 의 MODEL CATALOG / isDefault 만 수정 2. packages/ai 에서 npm run build 3. KarmoLab, 욘봇 쪽을 각각 다시 빌드 브라우저와 봇이 같은 ID 문자열을 쓰게 유지할 수 있습니다. ---",
+      "description": "1. packages/ai/src/index.ts 의 MODEL CATALOG / isDefault 만 수정 2. packages/ai 에서 npm run build 3. KarmoLab, KarmoLab 봇 쪽을 각각 다시 빌드 브라우저와 봇이 같은 ID 문자열을 쓰게 유지할 수 있습니다. ---",
       "aliases": "karmo ai"
     },
     {
@@ -306,196 +306,196 @@
       "aliases": "karmo ai"
     },
     {
-      "id": "docs-discord-yawnbot:0",
-      "docId": "docs-discord-yawnbot",
-      "heading": "Discord 봇 (욘 / yawnbot)",
-      "title": "Discord 봇 (욘 / yawnbot)",
-      "description": "KarmoLab 문서 위젯 Discord, 욘봇 탭. 음성, DAVE 참고, 구현 요약, TODO , 짧은 향후 검토 , 아이디어 구상 을 둡니다. 무엇 어디 ------ ------ 이 탭 음성, DAVE , 기능 요약 , TODO , 향후 검토 , 아이디어 구상 슬래시, .env , 사용자 안내 레포 yawnbot README.md 워크스페이스 빌드, npm run 문서 위젯 discord-bots, README 탭 또는 discord-bots/README.md 레포: apps/discord-bots/apps/karmolab-bot/ ---",
-      "aliases": "discord yawnbot"
+      "id": "docs-discord-bot:0",
+      "docId": "docs-discord-bot",
+      "heading": "Discord 봇 (욘 / karmolab-bot)",
+      "title": "Discord 봇 (욘 / karmolab-bot)",
+      "description": "KarmoLab 문서 위젯 Discord, KarmoLab 봇 탭. 음성, DAVE 참고, 구현 요약, TODO , 짧은 향후 검토 , 아이디어 구상 을 둡니다. 무엇 어디 ------ ------ 이 탭 음성, DAVE , 기능 요약 , TODO , 향후 검토 , 아이디어 구상 슬래시, .env , 사용자 안내 레포 karmolab-bot README.md 워크스페이스 빌드, npm run 문서 위젯 discord-bots, README 탭 또는 discord-bots/README.md 레포: apps/discord-bots/apps/karmolab-bot/ ---",
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:1",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:1",
+      "docId": "docs-discord-bot",
       "heading": "음성 연결과 DAVE 트러블슈팅",
       "title": "음성 연결과 DAVE 트러블슈팅",
-      "description": "레포의 Discord 슬래시 봇 욘 은 npm, 폴더명 yawnbot 으로 apps/discord-bots/apps/karmolab-bot/ 에 있습니다. 음성 /music play , /music speak , /music sound , 음성 입장 등 은 @discordjs/voice 와 Discord 음성 게이트웨이, UDP를 사용합니다.",
-      "aliases": "discord yawnbot"
+      "description": "레포의 Discord 슬래시 봇 욘 은 npm, 폴더명 karmolab-bot 으로 apps/discord-bots/apps/karmolab-bot/ 에 있습니다. 음성 /music play , /music speak , /music sound , 음성 입장 등 은 @discordjs/voice 와 Discord 음성 게이트웨이, UDP를 사용합니다.",
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:2",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:2",
+      "docId": "docs-discord-bot",
       "heading": "DAVE가 무엇인가요?",
       "title": "DAVE가 무엇인가요?",
       "description": "DAVE Discord Audio & Video Encryption 는 Discord가 도입한 음성, 영상 E2EE 종단 간 암호화 프로토콜입니다. 이름 그대로 오디오/비디오 미디어에 추가 암호화 계층을 두고, MLS Message Layer Security 등으로 참가자 간 키를 맞춥니다. 클라이언트 공식 앱, 지원 봇 라이브러리 가 DAVE를 구현해야 해당 방식의 채널에 참여할 수 있습니다. - Discord 개발자 문서에서는 음성 연결 종료 코드 4017 을 E2EE/DAVE protocol required. This channel requires a clien",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:3",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:3",
+      "docId": "docs-discord-bot",
       "heading": "Discord 음성 연결이 이루어지는 순서 (아주 짧게)",
       "title": "Discord 음성 연결이 이루어지는 순서 (아주 짧게)",
       "description": "1. 메인 Gateway 로 VOICE STATE UPDATE / VOICE SERVER UPDATE 를 받은 뒤, 음성 서버 예: .discord.media 로 별도의 WebSocket 을 엽니다. 2. 클라이언트가 Identify 등을 내면, 서버가 Hello heartbeat 간격 등 를 보냅니다. 3. 서버가 Ready op:2 로 UDP IP, 포트, SSRC, 암호화 모드 목록 을 주면, 클라이언트가 UDP 소켓을 열고 IP discovery, Select Protocol 을 진행합니다. 4. Session Description 등으로 세션 키를 맞춘 뒤 ",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:4",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:4",
+      "docId": "docs-discord-bot",
       "heading": "/music sound 슬래시 명령 (첨부, URL, 패키지 클립)",
       "title": "/music sound 슬래시 명령 (첨부, URL, 패키지 클립)",
       "description": "YouTube 검색/재생용 /music play 와 같은 음성 연결, 재생 대기열 @discordjs/voice + 내부 뮤직 플레이어 을 사용합니다. 채널이 DAVE E2EE 필수 이면 봇이 DAVE로 음성에 붙어 있어야 /music sound 도 재생됩니다.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:5",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:5",
+      "docId": "docs-discord-bot",
       "heading": "사용 조건",
       "title": "사용 조건",
       "description": "- 길드 서버 에서만 사용할 수 있습니다. DM에서는 불가입니다. - 명령을 친 사용자가 음성 또는 스테이지 채널 에 들어가 있어야 합니다. - 봇에게 해당 채널 보기 View Channel , 연결 Connect , 말하기 Speak 권한이 필요합니다.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:6",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:6",
+      "docId": "docs-discord-bot",
       "heading": "옵션. file / url / clip 중 정확히 하나",
       "title": "옵션. file / url / clip 중 정확히 하나",
       "description": "옵션 설명 ------ ------ file 슬래시 커맨드 입력창에 오디오 파일을 첨부 합니다. Content-Type 이 audio/ 이거나, 파일명 확장자가 아래 목록에 있으면 통과합니다. url 브라우저나 curl 로 직접 받을 수 있는 http s 오디오 주소입니다. YouTube 영상 페이지 URL은 /music play 를 사용하세요. URL 길이는 대략 2000자까지입니다. clip 봇 패키지의 resources/audio/ 아래에 넣은 파일의 파일명만 적습니다. foo/bar.mp3 같은 경로나 .. 는 허용하지 않아 경로 조작을 막습니다 . clip ",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:7",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:7",
+      "docId": "docs-discord-bot",
       "heading": "동작 요약",
       "title": "동작 요약",
       "description": "- 오디오 스트림을 만든 뒤 enqueueCustomTrack 으로 대기열에 넣습니다. 이미 재생 중이면 대기열에만 추가 되고, 응답에 순번이 표시됩니다. - 준비, 재생 시도 전체에 120초 타임아웃 이 있습니다. 네트워크, 포맷 문제 시 /music sound 응답에 에러 문구가 나갑니다.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:8",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:8",
+      "docId": "docs-discord-bot",
       "heading": "이번에 겪은 증상과 좁혀 간 과정",
       "title": "이번에 겪은 증상과 좁혀 간 과정",
       "description": "",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:9",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:9",
+      "docId": "docs-discord-bot",
       "heading": "증상",
       "title": "증상",
       "description": "- 음성 입장 시 signalling ↔ connecting 만 반복 하거나, 곧바로 실패. - VOICE DEBUG=1 로그에서 음성 WebSocket은 잠깐 붙은 것 같지만 udp:false 가 길게 유지 되거나, Ready op:2 전에 끊김 . - Windows 리소스 모니터 에서 node.exe 에 UDP가 안 보이고 TCP만 보임 . 처음에는 \"UDP가 막혔나?\" 쪽으로 의심.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:10",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:10",
+      "docId": "docs-discord-bot",
       "heading": "정리된 오해, 주의점",
       "title": "정리된 오해, 주의점",
       "description": "- 리소스 모니터의 연결 목록은 TCP 중심이라, UDP는 같은 방식으로 잘 안 보이거나 짧게만 잡힐 수 있습니다. UDP가 없다고 해서 곧바로 OS가 UDP를 막는다고 결론 내리기 어렵습니다. - Windows Defender만 쓰는 경우 서드파티 백신 이슈보다는 방화벽, 실제 패킷 Wireshark 쪽이 진단에 유리한 경우가 많습니다. - 진짜로 \"UDP가 안 나간다\"를 보려면 Wireshark 로 Discord 미디어 IP 기준 udp 필터를 보는 편이 확실합니다.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:11",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:11",
+      "docId": "docs-discord-bot",
       "heading": "원인 파악의 전환점",
       "title": "원인 파악의 전환점",
       "description": "- 로그상 흐름은 Identify → Hello op:8 까지는 성공 하지만, 그 직후 Ready op:2 전에 WebSocket이 닫힘 → UDP 소켓을 만들 타이밍 자체에 도달하지 못한 것 과 일치합니다. - @discordjs/voice 는 음성 WebSocket close code가 4014 일 때만 VoiceConnection 을 Disconnected 상태로 두고 closeCode 를 남깁니다. 4014 가 아니면 라이브러리가 자동 재접속 을 위해 곧바로 signalling 으로 되돌리기 때문에 , Disconnected , reason 로그가 안 찍힐 수",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:12",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:12",
+      "docId": "docs-discord-bot",
       "heading": "확인된 종료 코드: 4017",
       "title": "확인된 종료 코드: 4017",
       "description": "- 로그에 Discord 음성 WebSocket close code: 4017 이 찍힘. - 문서상 해당 채널은 DAVE E2EE 를 지원하는 클라이언트만 허용 . 봇에서 daveEncryption 을 켜야 합니다.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:13",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:13",
+      "docId": "docs-discord-bot",
       "heading": "해결",
       "title": "해결",
       "description": "- DISCORD VOICE DAVE=1 또는 이후 코드 변경으로 기본값을 DAVE 켬 후 재시도. - 성공 시 로그에는 op:2 Ready , udp:true , DAVE Session initialized , MLS 관련 송수신 등이 이어지고, 상위 상태가 connecting → ready 로 바뀝니다.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:14",
-      "docId": "docs-discord-yawnbot",
-      "heading": "환경 변수 (yawnbot)",
-      "title": "환경 변수 (yawnbot)",
-      "description": "변수 역할 ------ ------ VOICE DEBUG 1 이면 @discordjs/voice 네트워킹 디버그, 상태 로그. 토큰, 키, IP 등 민감 정보가 섞일 수 있어 상시 켜두지 말 것. DISCORD VOICE DAVE 기본값: DAVE 사용 켬 . 끄려면 0 / false / off / no . 예전에 4017이 났던 채널은 DAVE가 꺼져 있으면 다시 실패합니다. 자세한 명령, 경로는 레포 yawnbot README.md 를 참고하세요. ---",
-      "aliases": "discord yawnbot"
+      "id": "docs-discord-bot:14",
+      "docId": "docs-discord-bot",
+      "heading": "환경 변수 (karmolab-bot)",
+      "title": "환경 변수 (karmolab-bot)",
+      "description": "변수 역할 ------ ------ VOICE DEBUG 1 이면 @discordjs/voice 네트워킹 디버그, 상태 로그. 토큰, 키, IP 등 민감 정보가 섞일 수 있어 상시 켜두지 말 것. DISCORD VOICE DAVE 기본값: DAVE 사용 켬 . 끄려면 0 / false / off / no . 예전에 4017이 났던 채널은 DAVE가 꺼져 있으면 다시 실패합니다. 자세한 명령, 경로는 레포 karmolab-bot README.md 를 참고하세요. ---",
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:15",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:15",
+      "docId": "docs-discord-bot",
       "heading": "구현된 기능 요약",
       "title": "구현된 기능 요약",
       "description": "운영, 디버깅용으로 이미 들어가 있는 동작 만 짧게 묶었습니다. 세부 env, 명령은 README가 기준입니다. - /yawn : 채널 최근 메시지 맥락 YAWN CONTEXT MESSAGES , 시스템 프롬프트 YAWN SYSTEM PROMPT , 질문, 전체 프롬프트 길이 상한, API 오류 시 짧은 사용자 안내와 yawn 콘솔 로그. 선택 슬래시 옵션 api 기본, AI Studio, Vertex , model 모델 ID . @karmo/ai/node 의 generateBlobTextFromEnvWithOptions . 명령 등록 갱신 후 npm run depl",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:16",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:16",
+      "docId": "docs-discord-bot",
       "heading": "남은 작업 (TODO)",
       "title": "남은 작업 (TODO)",
       "description": "아래만 체크리스트로 둡니다. 완료되면 항목을 지우거나 README/코드 주석으로 옮기면 됩니다. - 대기열 . 항목 순서 이동 옵션 - 음성 . 선택 /voice-status 또는 close code 요약 로그 - 음성 . 끊김 시 재입장 상한, 백오프 정책 정리, 구현 - 스테이지 . 발언 요청, 봇 Speak 타이밍 문서화 - 배포 . 글로벌 vs 길드 deploy 절차를 README 한 블록으로 - 데이터 . gamedata.json 백업, git 추적, 민감 필드 운영 정책 - 남용 방지 . 게임/도박 등 서버별 쿨다운, 관리자 예외 - /yawn . 민감 주",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:17",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:17",
+      "docId": "docs-discord-bot",
       "heading": "향후 검토 (우선순위 낮음)",
       "title": "향후 검토 (우선순위 낮음)",
       "description": "한 번에 구현하기보다 필요할 때 이슈로 빼기 좋은 아이디어입니다. - 운영: 관리자만 길드 제한 예외, JSONL 로그, 일별 로테이션, YouTube, AI 일시 오류 백오프 - /yawn : 맥락 표시 푸터, 스레드, 포럼 부모 포함 옵션, 짧은 TTL 세션 메모리, 길드별 프리셋, PII 마스킹 - 음악: NP 채널 분리, pause/resume, 볼륨, 대기열 영속화, 라이브 스트림 NP 표시 - 가드: 카테고리, 역할 단위 허용, 가드 실패 debug 로그 - 기타: 시즌 이벤트, 주식 요약 웹훅, 컴포넌트, 컨텍스트 메뉴 진입, kakao-export 재시",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:18",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:18",
+      "docId": "docs-discord-bot",
       "heading": "아이디어 구상",
       "title": "아이디어 구상",
       "description": "브레인스토밍용입니다. 착수하면 위 남은 작업 TODO 또는 향후 검토 로 옮기고, 여기서는 지우거나 한 줄 링크만 남기면 됩니다.",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:19",
-      "docId": "docs-discord-yawnbot",
-      "heading": "욘봇과 같이 가기 좋은 방향",
-      "title": "욘봇과 같이 가기 좋은 방향",
+      "id": "docs-discord-bot:19",
+      "docId": "docs-discord-bot",
+      "heading": "KarmoLab 봇과 같이 가기 좋은 방향",
+      "title": "KarmoLab 봇과 같이 가기 좋은 방향",
       "description": "- 음성, 뮤직 . 방이 잠잠할 때만 큐를 진행하는 식의 자동 DJ 말하는 사람 감지, 덕킹은 정책이 필요 . 플레이리스트 프리셋 길드, 채널별 고정 URL 묶음 . 재생, 요청 통계 남용 방지, 쿨다운 TODO와 같이 설계 . - /yawn , AI . 스레드, 포럼 긴 글 요약 전용 서브커맨드 맥락 옵션은 향후 검토의 스레드, 포럼 항목과 합칠 수 있음 . FAQ 전용 채널 또는 고정 메시지 범위만 답하는 가벼운 지식 베이스 과하면 운영, 토큰 부담 . - 커뮤니티, 게임 . 외부 캘린더 iCal URL 등 와 D-day, 다음 일정 알림. 버튼 위주 간단 투표,",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:20",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:20",
+      "docId": "docs-discord-bot",
       "heading": "별도 봇, 모듈로 두기 좋은 것",
       "title": "별도 봇, 모듈로 두기 좋은 것",
-      "description": "- 모더레이션 보조 . 신규 계정 쿨다운, 링크, 첨부 화이트리스트, 규칙 위반 시 자동 타임아웃 권한, 사고 반경을 욘봇 본체와 분리 . - 웹훅 허브 . GitHub Actions, 서버 모니터, RSS 등을 지정 채널로만 넘기는 얇은 레이어 향후 검토의 주식 요약 웹훅과 같은 패턴의 일반화 .",
-      "aliases": "discord yawnbot"
+      "description": "- 모더레이션 보조 . 신규 계정 쿨다운, 링크, 첨부 화이트리스트, 규칙 위반 시 자동 타임아웃 권한, 사고 반경을 KarmoLab 봇 본체와 분리 . - 웹훅 허브 . GitHub Actions, 서버 모니터, RSS 등을 지정 채널로만 넘기는 얇은 레이어 향후 검토의 주식 요약 웹훅과 같은 패턴의 일반화 .",
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:21",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:21",
+      "docId": "docs-discord-bot",
       "heading": "기술, 운영",
       "title": "기술, 운영",
       "description": "- 관측 . 대시보드 없이도 관리자 전용 스냅샷 임베드 또는 /debug : 큐 길이, 음성 세션 수, 마지막 voice close 코드 등. TODO 헬스 와 한 이슈로 묶어도 됨. - 멀티 인스턴스 . 스테이징 봇 토큰 + 길드 화이트리스트로 프로덕션과 분리 DAVE, 배포 검증, 실험용 .",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:22",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:22",
+      "docId": "docs-discord-bot",
       "heading": "문서 보완",
       "title": "문서 보완",
       "description": "- 아이디어 중 실제 구현에 들어간 것은 TODO / 향후 검토 와 역할을 나누고 이 섹션에서 중복 제거 ---",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
-      "id": "docs-discord-yawnbot:23",
-      "docId": "docs-discord-yawnbot",
+      "id": "docs-discord-bot:23",
+      "docId": "docs-discord-bot",
       "heading": "참고 링크",
       "title": "참고 링크",
       "description": "- Discord. Voice Close Event Codes voice-voice-close-event-codes - discord.js. 이슈 11419 DAVE 관련 논의 예시 - 워크스페이스: apps/discord-bots/README.md - 봇 README: apps/discord-bots/apps/karmolab-bot/README.md",
-      "aliases": "discord yawnbot"
+      "aliases": "discord bot"
     },
     {
       "id": "docs-project-commands:0",

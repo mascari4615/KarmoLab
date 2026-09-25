@@ -2,7 +2,7 @@
  * 블로그 글 한 장의 내용 조각 (TASK-KL-354, change.board-unify ②③).
  *
  * 바깥 셸은 `shell-page.mjs`, 게시판 모양은 `css/community.css` 한 곳이 맡는다. 답글은
- * `blog-comments.ts`가 yawnbot 커뮤니티 원장에 붙이며, 실패해도 이 정적 본문은 그대로 산다.
+ * `blog-comments.ts`가 karmolab-bot 커뮤니티 원장에 붙이며, 실패해도 이 정적 본문은 그대로 산다.
  */
 import { loadFrontMatterLib } from './markdown-node.mjs';
 

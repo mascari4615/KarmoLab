@@ -42,7 +42,7 @@ function buildNewsEmbed(a: NewsArticle): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle(a.title.slice(0, 250) || '(제목 없음)')
     .setColor(EMBED_COLOR)
-    .setFooter({ text: `YawnBot, News, 키워드: ${a.keyword}` });
+    .setFooter({ text: `벼루, News, 키워드: ${a.keyword}` });
   if (a.link && /^https?:\/\//i.test(a.link)) embed.setURL(a.link);
   const pub = a.pubDate ? new Date(a.pubDate).getTime() : 0;
   if (pub) embed.setTimestamp(new Date(pub));

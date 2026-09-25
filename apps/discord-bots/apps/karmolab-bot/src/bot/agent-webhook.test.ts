@@ -18,7 +18,7 @@ const card = {
 function mockChannel(onSendAssert: () => void) {
   const hook = {
     id: 'WH1',
-    name: 'yawnbot-agent',
+    name: 'karmolab-bot-agent',
     send: vi.fn(async () => {
       onSendAssert(); // send *시점* 에 이미 등록돼 있어야 race-free
       return { id: 'MSG1' };

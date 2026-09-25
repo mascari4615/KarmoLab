@@ -1,5 +1,5 @@
 /**
- * yawnbot 캐릭터 런타임 내구 스냅샷 (TASK-KAR-CHARSTATE. heartbeat 패턴 미러)
+ * karmolab-bot 캐릭터 런타임 내구 스냅샷 (TASK-KAR-CHARSTATE. heartbeat 패턴 미러)
  *
  * KAR-MEMOSYNC part2 가 캐릭터 런타임 상태(mood/relationship/.active/memory
  * logs 등)를 git untrack → prod memo divergence 동결은 해소됐으나 git 백업, 
@@ -85,7 +85,7 @@ export interface CharacterStateBundle {
   schema: number;
   /** 스냅샷 시각 (ISO). */
   ts: string;
-  source: 'yawnbot';
+  source: 'karmolab-bot';
   /** path 오름차순 정렬된 엔트리. 직렬화 결정성. */
   entries: BundleEntry[];
 }
@@ -224,7 +224,7 @@ export function planSnapshot(
   const bundle: CharacterStateBundle = {
     schema: BUNDLE_SCHEMA,
     ts: deps.now().toISOString(),
-    source: 'yawnbot',
+    source: 'karmolab-bot',
     entries,
   };
   return { skip: false, payload: serializeBundle(bundle), hash, entryCount: entries.length };
@@ -317,7 +317,7 @@ export async function writeSnapshotOnce(
       headers: { ...headers, 'Content-Type': 'application/json' },
       signal,
       body: JSON.stringify({
-        message: `chore(charstate): yawnbot 캐릭터 런타임 스냅샷 (${plan.entryCount} 파일)`,
+        message: `chore(charstate): karmolab-bot 캐릭터 런타임 스냅샷 (${plan.entryCount} 파일)`,
         content: contentB64,
         branch: cfg.branch,
         ...(sha ? { sha } : {}),

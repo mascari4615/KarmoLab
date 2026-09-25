@@ -218,7 +218,7 @@ export type GenerativeSurfaceOverride = 'inherit' | 'aiStudio' | 'vertex';
  * **TASK-KAR-145 확장**: `tier`/`tag`/`onUsage`/`systemInstruction` 추가.
  * - `tier`: lite/standard/pro 라벨. `getGeminiModelIdForTier` 로 해소.
  *   `modelId` 명시 시 tier 무시 (explicit > tier).
- * - `tag`: telemetry 분류 라벨 (`yawnbot/voiced-worker` 등). usage 로그에 포함.
+ * - `tag`: telemetry 분류 라벨 (`karmolab-bot/voiced-worker` 등). usage 로그에 포함.
  * - `onUsage`: per-call 콜백. 전역 recorder(`KARMOLAB_AI_USAGE_LOG=1`) 와 둘 다 호출.
  * - `systemInstruction`: 안정 prefix → Vertex implicit cache 정렬 (cache hit 시 청구 25%).
  */

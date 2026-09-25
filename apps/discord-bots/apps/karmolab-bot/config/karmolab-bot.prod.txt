@@ -24,7 +24,7 @@ DISCORD_GUILD_ID=1456979834566873131,400451987268829186
 KARMOLAB_BOT_ALLOWED_GUILD_IDS=1456979834566873131
 
 # ── 알림 채널 ID (prod 서버) — 폴백 전용 (TASK-YB-029) ──
-# 정상 시 미사용: 봇이 부팅 시 본진에 「욘봇」 카테고리+채널을 자동
+# 정상 시 미사용: 봇이 부팅 시 본진에 「KarmoLab 봇」 카테고리+채널을 자동
 # 생성/claim 하고 거기로 보냄 (정본 = data/channel-spec.json).
 # 아래 값은 프로비저닝 OFF(KARMOLAB_BOT_CHANNEL_PROVISION=0)·봇 Manage Channels
 # 권한 상실·reconcile 실패 시에만 쓰이는 안전망. 삭제 X(무음손실 방지),
@@ -42,7 +42,7 @@ KARMOLAB_BOT_CODEX_RESET_ENABLED=1
 KARMOLAB_BOT_CODEX_RESET_BROWSER=chromium
 KARMOLAB_BOT_AI_USER_HOME=C:/Users/masca
 KARMOLAB_BOT_RESET_AI_PROVIDERS=claude
-PLAYWRIGHT_BROWSERS_PATH=C:/ProgramData/YawnBot/playwright
+PLAYWRIGHT_BROWSERS_PATH=C:/ProgramData/KarmoLabBot/playwright
 
 # ── 웹 결산 페이지 (TASK-YB-042) ──
 # 봇이 `/결산` 답에 붙이는 링크의 앞부분. 노트북 express(4615)를 named tunnel 이

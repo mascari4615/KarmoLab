@@ -522,7 +522,7 @@ mod tests {
     #[test]
     fn query_decode() {
         assert_eq!(query_str("path=apps%2Fa%2F.env&x=1", "path").as_deref(), Some("apps/a/.env"));
-        assert_eq!(query_str("profile=yawnbot-tunnel", "profile").as_deref(), Some("yawnbot-tunnel"));
+        assert_eq!(query_str("profile=karmolab-bot-tunnel", "profile").as_deref(), Some("karmolab-bot-tunnel"));
         assert_eq!(query_str("a=1", "profile"), None);
     }
 

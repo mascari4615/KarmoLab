@@ -1,5 +1,5 @@
 /**
- * YawnBot. Node.js Discord Bot (game bot)
+ * 벼루. Node.js Discord Bot (game bot)
  * 기존 apps/karmolab-bot-server/src/index.ts 기반
  */
 import './load-env';
@@ -498,7 +498,7 @@ client.once('clientReady', async () => {
     console.error('[agent-bus] outbound init 실패', e instanceof Error ? e.message : e);
   }
 
-  console.log(`\n  ⚔️  YawnBot (Node.js)`);
+  console.log(`\n  ⚔️  벼루 (Node.js)`);
   console.log(`  ─────────────────────────`);
   console.log(`  로그인: ${client.user?.tag}`);
   console.log(`  서버:   ${client.guilds.cache.size}개`);

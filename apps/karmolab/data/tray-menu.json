@@ -9,10 +9,10 @@
       "order": 10
     },
     {
-      "id": "yawnbot-dev",
+      "id": "karmolab-bot-dev",
       "kind": "dev",
-      "profile": "yawnbot-tunnel",
-      "label": "욘봇 (dev)",
+      "profile": "karmolab-bot-tunnel",
+      "label": "KarmoLab 봇 (dev)",
       "order": 20
     },
     {

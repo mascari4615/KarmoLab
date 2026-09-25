@@ -44,4 +44,4 @@ KarmoLab 의 소녀 연구소장. 조수님을 안내하는 마스코트.
 ## 본문 cite
 
 - `appearance.md`. 외형 한 줄 (image-cache 와 같이 두는 캐릭터 시트)
-- `card.md`. chatbot 시스템 프롬프트 stub (yawnbot 등 별 시스템 용. KarmoLab chatbot 시스템 프롬프트는 본 yaml 의 `chatbot_*` 필드)
+- `card.md`. chatbot 시스템 프롬프트 stub (karmolab-bot 등 별 시스템 용. KarmoLab chatbot 시스템 프롬프트는 본 yaml 의 `chatbot_*` 필드)

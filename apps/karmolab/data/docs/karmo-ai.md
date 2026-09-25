@@ -7,7 +7,7 @@
 
 ## 왜 패키지로 나눴나
 
-KarmoLab 브라우저 앱과 yawnbot, `kakao-export.mjs` 등 Node 쪽은 **같은 모델 ID, 프로바이더 규칙**을 쓰지만, 호출 코드를 **한 파일**로 합치기는 어렵습니다.
+KarmoLab 브라우저 앱과 karmolab-bot, `kakao-export.mjs` 등 Node 쪽은 **같은 모델 ID, 프로바이더 규칙**을 쓰지만, 호출 코드를 **한 파일**로 합치기는 어렵습니다.
 
 - **브라우저:** CORS, `fetch`, localStorage, UI와 결합된 **`apps/karmolab/src/gemini.ts`**가 실제 REST 호출을 담당합니다.
 - **Node:** `.env`와 `@google/generative-ai` 같은 SDK가 자연스럽습니다.
@@ -19,7 +19,7 @@ KarmoLab 브라우저 앱과 yawnbot, `kakao-export.mjs` 등 Node 쪽은 **같�
 | 구역 | 역할 |
 |------|------|
 | KarmoLab | `gemini.ts`가 `@karmo/ai`를 import해 URL, 모델을 맞추고, `fetch`, UI, 키는 여기서 |
-| yawnbot `/ai` 등 | `tryCreateGenerativeTextFromEnv()` → `generateFromPrompt` (surface는 `.env`의 `KARMO_AI_SURFACE` 등) |
+| karmolab-bot `/ai` 등 | `tryCreateGenerativeTextFromEnv()` → `generateFromPrompt` (surface는 `.env`의 `KARMO_AI_SURFACE` 등) |
 | 카카오 PC보내기 | `kakao-export.mjs`도 동일 클라이언트로 요약 (AI Studio 또는 Vertex) |
 
 ```mermaid
@@ -29,7 +29,7 @@ flowchart TB
     GT["gemini.ts"]
   end
   subgraph node["Node"]
-    YB["yawnbot"]
+    YB["karmolab-bot"]
     KAK["kakao-export.mjs"]
   end
   GT --> PKG
@@ -85,7 +85,7 @@ flowchart TB
 
 ---
 
-## Node(욘봇, 스크립트)에서
+## Node(KarmoLab 봇, 스크립트)에서
 
 - **`apps/discord-bots/apps/karmolab-bot`** 에 `@karmo/ai`가 `file:../../../../packages/ai` 로 연결되어 있습니다.
 - 루트에서 봇 빌드할 때 `packages/ai`가 먼저 `tsc` 됩니다 (`apps/discord-bots`의 `npm run build` / `build:karmolab-bot`).
@@ -94,15 +94,15 @@ flowchart TB
   - **기본 AI Studio:** `GEMINI_API_KEY` 필수, `GEMINI_MODEL` 선택
   - **Vertex:** `KARMO_AI_SURFACE=vertex` (또는 `GEMINI_SURFACE=vertex`) + `VERTEX_API_KEY`, `VERTEX_PROJECT_ID` 필수, `VERTEX_LOCATION`, `GEMINI_MODEL` 선택
   - env 키 이름 참고: 루트 패키지 `ENV_GOOGLE_AI`
-- **욘봇 `/yawn`:** 슬래시 옵션 `api`, `model`로 **이번 호출만** Studio/Vertex, 모델 ID를 고를 수 있음(각 API에 맞는 키는 `.env`에 미리 있어야 함). 구현은 `generateBlobTextFromEnvWithOptions` (`@karmo/ai/node`).
+- **KarmoLab 봇 `/yawn`:** 슬래시 옵션 `api`, `model`로 **이번 호출만** Studio/Vertex, 모델 ID를 고를 수 있음(각 API에 맞는 키는 `.env`에 미리 있어야 함). 구현은 `generateBlobTextFromEnvWithOptions` (`@karmo/ai/node`).
 - **`@karmo/ai/node` API (요약):**
   - `generateBlobTextFromEnvWithOptions(env, blobPrompt, { surface?, modelId?, signal? })`. `/yawn` 단발(시스템+맥락+질문 한 덩어리)
   - `tryCreateGenerativeTextFromEnv()` → `{ surface, generateFromPrompt }` 또는 `null`. 봇 기동 로그, 카카오 요약 등
   - `generateVertexText({ apiKey, projectId, location?, modelId?, userText, systemInstruction? })`. Vertex 단발
   - `generateAiStudioText({ apiKey, modelId?, prompt, signal? })`. AI Studio 단발
   - `createAiStudioTextModel` / `resolveAiStudioTextModelId` / `parseGenerativeSurfaceFromEnv`. 필요 시 저수준 조합
-- **TypeScript(욘봇):** `moduleResolution: node`(classic) 대비 `apps/karmolab-bot/tsconfig.json`의 `paths`로 `@karmo/ai/node` → `packages/ai/dist/node` 연결
-- **dotenv:** 욘봇, `kakao-export`는 `config/karmolab-bot-defaults.txt`(커밋 기본값) → 앱 루트 `.env` 순. `apps/karmolab-bot/.env.template` 참고
+- **TypeScript(KarmoLab 봇):** `moduleResolution: node`(classic) 대비 `apps/karmolab-bot/tsconfig.json`의 `paths`로 `@karmo/ai/node` → `packages/ai/dist/node` 연결
+- **dotenv:** KarmoLab 봇, `kakao-export`는 `config/karmolab-bot-defaults.txt`(커밋 기본값) → 앱 루트 `.env` 순. `apps/karmolab-bot/.env.template` 참고
 
 모델 ID, 카탈로그만 쓰려면 루트 `@karmo/ai`에서 `DEFAULT_TEXT_MODEL_ID`, `MODEL_CATALOG`, `getDefaultModelId` 를 import 하면 됩니다.
 
@@ -134,7 +134,7 @@ npm run build
 
 1. **`packages/ai/src/index.ts`** 의 `MODEL_CATALOG` / `isDefault` 만 수정
 2. `packages/ai`에서 `npm run build`
-3. KarmoLab, 욘봇 쪽을 각각 다시 빌드
+3. KarmoLab, KarmoLab 봇 쪽을 각각 다시 빌드
 
 브라우저와 봇이 같은 ID 문자열을 쓰게 유지할 수 있습니다.
 

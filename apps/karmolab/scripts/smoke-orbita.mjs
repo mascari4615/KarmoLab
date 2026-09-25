@@ -57,7 +57,7 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 /* 셸이 부르는 바깥 API(제안, 통계)는 이 기계에서 CORS 로 막힌다. 이 도구와 무관한 소음이다.
    그걸 세면 검사는 항상 빨갛고, 진짜 오류는 그 속에 묻힌다. */
-const NOISE = /CORS|ERR_FAILED|net::|Failed to load resource|yawnbot\.mascari4615\.com/;
+const NOISE = /CORS|ERR_FAILED|net::|Failed to load resource|karmolab-bot\.mascari4615\.com/;
 page.on('console', (m) => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push('console: ' + m.text()); });
 
 await page.addInitScript(() => {

@@ -82,7 +82,7 @@ KAKAO_EXPORT_BETWEEN_CHATS_MS=500
 KAKAO_EXPORT_SKIP_WINDOW_TITLES=카카오톡|KakaoTalk
 # 감시 폴더는 PC마다 다름 → .env 에 KAKAO_EXPORT_WATCH_DIR 만 두면 됨.
 
-# ── GitHub 웹훅 HTTP 서버(욘봇 프로세스 안) ──
+# ── GitHub 웹훅 HTTP 서버(KarmoLab 봇 프로세스 안) ──
 # 리스닝 포트. 호스트·방화벽은 배포 환경에서 따로 설정.
 WEBHOOK_PORT=4615
 

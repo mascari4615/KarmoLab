@@ -1,7 +1,7 @@
 /**
  * governance-adapter. 거버넌스 어댑터 층 (KAR-018-D slice-2).
  *
- * substrate⊥어댑터(parent ⓪'): governance.ts(순수) ↔ yawnbot 배선 사이.
+ * substrate⊥어댑터(parent ⓪'): governance.ts(순수) ↔ karmolab-bot 배선 사이.
  * 본 파일이 fs/ENV/team-room 형(form)을 알고, governance.ts 는 모름.
  *
  * slice-2 책임:

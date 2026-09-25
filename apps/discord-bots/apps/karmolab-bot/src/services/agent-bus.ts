@@ -13,9 +13,9 @@
  *  - **파일 jsonl append-only** = race-free (Linux O_APPEND atomic, Windows
  *    fs.appendFile 64KB 이하 atomic). 외부 broker(Redis/Kafka) X. infra 0,
  *    operational simplicity, 이미 mem/proposals/discoveries 패턴 정합.
- *  - **외부 경로 (yawnbot deploy clean 무관)**. `LAPTOP_AGENT_BUS_ROOT` env
- *    또는 default `~/.karmoddrine/agent-bus`. yawnbot deploy 의 `git clean
- *    -fd` 가 절대 안 닿음 ([[feedback_yawnbot_runtime_state_gitignore_clean_trap]]).
+ *  - **외부 경로 (karmolab-bot deploy clean 무관)**. `LAPTOP_AGENT_BUS_ROOT` env
+ *    또는 default `~/.karmoddrine/agent-bus`. karmolab-bot deploy 의 `git clean
+ *    -fd` 가 절대 안 닿음 ([[feedback_karmolab-bot_runtime_state_gitignore_clean_trap]]).
  *  - **channel scoping** = `<root>/<channelId>/<yyyy-mm-dd>.jsonl`. 일 단위
  *    rotate, 채널별 분리 → tail reader 가 자기 채널만 follow.
  *  - **tail = polling-based** (fs.watch 가 Windows, WSL flaky). interval=500ms

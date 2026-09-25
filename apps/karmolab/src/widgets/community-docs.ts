@@ -51,7 +51,7 @@ function karmolabDocs(): DocEntry[] {
         entry('docs-roadmap', t('community.docs.t18'), t('community.docs.t19'), { kind: 'local', path: 'roadmap.md' }),
         entry('docs-guide', t('community.docs.t20'), t('community.docs.t21'), { kind: 'local', path: 'guide.md' }),
         entry('docs-karmo-ai', 'KarmoLabAI', t('community.docs.t22'), { kind: 'local', path: 'karmo-ai.md' }),
-        entry('docs-discord-yawnbot', t('community.docs.t23'), t('community.docs.t24'), { kind: 'local', path: 'discord-yawnbot.md' }),
+        entry('docs-discord-bot', t('community.docs.t23'), t('community.docs.t24'), { kind: 'local', path: 'discord-bot.md' }),
         entry('docs-discord-bots-readme', 'discord-bots README', t('community.docs.t25'), { kind: 'github', path: 'apps/discord-bots/README.md' }),
         entry('docs-tauri-readme', 'Tauri README', t('community.docs.t26'), { kind: 'github', path: 'apps/karmolab-tauri/README.md' }),
         entry('docs-project-commands', t('community.docs.t27'), t('community.docs.t28'), { kind: 'local', path: 'project-commands-guide.md' }),

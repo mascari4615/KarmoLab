@@ -1,5 +1,5 @@
 /**
- * yawnbot outbound heartbeat (TASK-YB-021. 자체 구현, 제3자 의존 0)
+ * karmolab-bot outbound heartbeat (TASK-YB-021. 자체 구현, 제3자 의존 0)
  *
  * 봇이 *스스로* N분 간격으로 나 살아있음 + 시각을 *노트북 밖* GitHub 에
  * 기록한다. inbound HTTP / cloudflared 터널 의존을 제거한 push 모델:
@@ -148,7 +148,7 @@ export async function writeHeartbeatOnce(
 
   // 2) PUT 으로 시각 기록.
   const ts = now().toISOString();
-  const payload = JSON.stringify({ ts, source: 'yawnbot', schema: 1 }, null, 0);
+  const payload = JSON.stringify({ ts, source: 'karmolab-bot', schema: 1 }, null, 0);
   const contentB64 = Buffer.from(payload, 'utf-8').toString('base64');
   const putRes = await withTimeout((signal) =>
     fetchImpl(base, {
@@ -156,7 +156,7 @@ export async function writeHeartbeatOnce(
       headers: { ...headers, 'Content-Type': 'application/json' },
       signal,
       body: JSON.stringify({
-        message: `chore(heartbeat): yawnbot alive ${ts}`,
+        message: `chore(heartbeat): karmolab-bot alive ${ts}`,
         content: contentB64,
         branch: cfg.branch,
         ...(sha ? { sha } : {}),

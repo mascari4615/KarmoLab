@@ -1,8 +1,8 @@
 // agent_team — KarmoApp 에이전트 팀 운영 GUI 의 read-only substrate (TASK-KAR-116-A).
 //
 // 본 모듈은 *읽기 전용*. 데이터 정본은 `memo/` 안 평문 파일이며, 본 GUI 는
-// yawnbot Discord 표면과 *peer adapter* 관계(KAR-103 정합). 쓰기 액션
-// (cadence run / proposal decide / agent toggle) 은 yawnbot HTTP endpoint 우회
+// karmolab-bot Discord 표면과 *peer adapter* 관계(KAR-103 정합). 쓰기 액션
+// (cadence run / proposal decide / agent toggle) 은 karmolab-bot HTTP endpoint 우회
 // — Phase 2 (TASK-KAR-116-C) 에서 추가.
 //
 // 정본 데이터 소스:
@@ -515,7 +515,7 @@ pub struct CadenceTickResult {
     pub exit_code: Option<i32>,
 }
 
-fn yawnbot_dir(repo_root: &str) -> PathBuf {
+fn bot_dir(repo_root: &str) -> PathBuf {
     // 3 케이스 동형 — KAR-116 path-resolve fix.
     let p = PathBuf::from(repo_root);
     let direct = p.join("apps").join("discord-bots").join("apps").join("karmolab-bot");
@@ -552,23 +552,23 @@ fn tail_lines(s: &str, max: usize) -> String {
 }
 
 fn run_cadence_tick_blocking(repo_root: String, include_worker: bool) -> Result<CadenceTickResult, String> {
-    let yawnbot = yawnbot_dir(&repo_root);
-    if !yawnbot.exists() {
-        return Err(format!("yawnbot 디렉토리 없음: {}", yawnbot.display()));
+    let bot = bot_dir(&repo_root);
+    if !bot.exists() {
+        return Err(format!("karmolab-bot 디렉토리 없음: {}", bot.display()));
     }
-    let dist = yawnbot.join("dist").join("src").join("bot").join("agent-cadence.js");
+    let dist = bot.join("dist").join("src").join("bot").join("agent-cadence.js");
     if !dist.exists() {
         return Err(format!(
-            "yawnbot dist 산출물 없음 ({}). 먼저 `cd {} && npm run build` 실행.",
+            "karmolab-bot dist 산출물 없음 ({}). 먼저 `cd {} && npm run build` 실행.",
             dist.display(),
-            yawnbot.display()
+            bot.display()
         ));
     }
 
     let memo = memo_root(&repo_root);
     let started = std::time::Instant::now();
     let mut cmd = std::process::Command::new(if cfg!(windows) { "npm.cmd" } else { "npm" });
-    cmd.current_dir(&yawnbot).arg("run").arg("cadence-tick");
+    cmd.current_dir(&bot).arg("run").arg("cadence-tick");
     if include_worker {
         cmd.arg("--").arg("--include-worker");
     }
@@ -776,7 +776,7 @@ pub async fn agent_team_list_sessions(repo_root: String) -> Result<Vec<SessionIn
 // ────────────────────────────────────────────────────────────────────────
 // TASK Board (TASK-YB-043 — TASK 정리 표면의 단일 창구).
 //
-// memo TASK md = 정본. 예전엔 yawnbot 이 같은 TASK 를 Discord #team-work
+// memo TASK md = 정본. 예전엔 karmolab-bot 이 같은 TASK 를 Discord #team-work
 // forum-post 로도 투영했고 이 목록이 그 포스트 링크를 얹었으나, 두 표면을
 // 나란히 두는 값이 없어 Discord 쪽을 걷어냈다. 남은 표면 = 이 화면 하나.
 //

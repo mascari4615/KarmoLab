@@ -1,6 +1,6 @@
-name: Deploy Discord Bots (yawnbot)
+name: Deploy Discord Bots (karmolab-bot)
 
-# TASK-YB-002-C. yawnbot prod 자동 deploy.
+# TASK-YB-002-C. karmolab-bot prod 자동 deploy.
 # main push 시 self-hosted runner (노트북) 가 build + .env 주입 + nssm restart.
 # pull_request_target 절대 사용 X (포크 PR RCE 경로).
 
@@ -67,7 +67,7 @@ jobs:
   # **왜 노트북이 아니라 ubuntu 인가**: 아래 배포 job 은 npm install 전에 봇을 세운다.
   # 시험을 거기서 돌리면 빨강일 때 **봇이 멈춘 채로** 남는다(KL-190 이 고쳤던 바로 그 사고).
   # 여기서 먼저 걸러 내면 빨강은 prod 를 아예 건드리지 않는다.
-  test-yawnbot:
+  test-karmolab-bot:
     needs: tip
     if: needs.tip.outputs.current == 'true'
     runs-on: ubuntu-latest
@@ -97,8 +97,8 @@ jobs:
         working-directory: apps/discord-bots
         run: npm test
 
-  deploy-yawnbot:
-    needs: [tip, test-yawnbot]
+  deploy-karmolab-bot:
+    needs: [tip, test-karmolab-bot]
     if: needs.tip.outputs.current == 'true'
     runs-on: [self-hosted, windows, laptop, karmolab-bot]
     timeout-minutes: 15
@@ -152,7 +152,7 @@ jobs:
           # 러너=LocalSystem(사용자 자격증명 안 보임) → 인증 필수.
           # MEMO_GITHUB_PAT 은 *secret* (gh secret list 확인, 2026-05-14 등록).
           MEMO_PAT: ${{ secrets.MEMO_GITHUB_PAT }}
-          # 같은 머신(노트북)에서 도는 yawnbot express 인그레스로 ops 알림.
+          # 같은 머신(노트북)에서 도는 karmolab-bot express 인그레스로 ops 알림.
           # LOCAL_WEBHOOK_SECRET 미설정 시 dev bypass (local-webhook.ts) . 
           # 동일 머신 신뢰 모델. 설정돼 있으면 X-KarmoLab-Bot-Secret 헤더로 전달.
           YB_LOCAL_WEBHOOK_SECRET: ${{ secrets.LOCAL_WEBHOOK_SECRET }}
@@ -161,7 +161,7 @@ jobs:
         # 에이전트 코어, 스킨, 캐릭터 *정의* 정본 = memo. prod 봇이 이 체크아웃을
         # 런타임에 읽는다. 봇이 *쓰는* 파일(.active.json, characters/*/memory/*, 
         # relationship.json, image-cache/*) 은 TASK-KAR-MEMOSYNC 에서 .gitignore
-        # 처리됨(yawnbot src commitIfDirty/commitToGit no-op 화) → 더는 tracked
+        # 처리됨(karmolab-bot src commitIfDirty/commitToGit no-op 화) → 더는 tracked
         # 정본을 mutate 안 함 → origin divergence 가 *구조적으로 불가능*.
         # 그래서 merge 댄스(ff-only→merge--no-edit→abort, KAR-018-Y) 폐기 →
         # `git fetch <auth> main` + `git reset --hard FETCH_HEAD` 결정화:
@@ -177,7 +177,7 @@ jobs:
           $memoUnix = 'C:/Users/masca/repos/karmoddrine/memo'
           & git config --global --add safe.directory $memoUnix 2>&1 | Out-Null
           # LOUD skip. silent Write-Warning 단독 = prod memo 동결 무관측
-          # 근본(2026-05-18 KAR-018-ESC). 같은 머신 yawnbot 인그레스로 #ops
+          # 근본(2026-05-18 KAR-018-ESC). 같은 머신 karmolab-bot 인그레스로 #ops
           # 알림 + Actions ::warning:: + exit 0 (bot-code deploy 는 계속).
           # 직전 YB_OPS_WEBHOOK=secrets.YB_PROD_DISCORD_SUMMARY_WEBHOOK_URL 은
           # 404 였음(deploy 26037374635 "ops alert 송신 실패 404" 실증) . 
@@ -352,10 +352,10 @@ jobs:
           if ($nssm) { & $nssm stop karmolab-bot-prod 2>&1 | Out-Null; Start-Sleep -Seconds 2; Write-Host "[KAR-150] karmolab-bot-prod stopped for clean npm install" }
           else { Write-Warning "[KAR-150] nssm 못 찾음. stop skip" }
 
-          # 폴더 이름 이전 (apps\yawnbot -> apps\karmolab-bot, 2026-09-25). 서비스가 멈춘 뒤 옛 폴더의
+          # 폴더 이름 이전 (apps\karmolab-bot -> apps\karmolab-bot, 2026-09-25). 서비스가 멈춘 뒤 옛 폴더의
           # git 밖 운영 상태(data\ 의 계정, 채팅, 점수, backups 등)를 새 폴더로 복사. 이미 있는 파일은 덮지 않음.
           # 옛 폴더는 지우지 않는다 (되돌리기: nssm AppDirectory 를 옛 폴더로).
-          $oldData = Join-Path $PWD 'apps\yawnbot\data'
+          $oldData = Join-Path $PWD 'apps\karmolab-bot\data'
           $newData = Join-Path $PWD 'apps\karmolab-bot\data'
           if (Test-Path -LiteralPath $oldData) {
             $copied = 0
@@ -368,7 +368,7 @@ jobs:
                 $copied++
               }
             }
-            Write-Host "[rename] apps\yawnbot\data -> apps\karmolab-bot\data 복사 $copied 개 (옛 폴더 보존)"
+            Write-Host "[rename] apps\karmolab-bot\data -> apps\karmolab-bot\data 복사 $copied 개 (옛 폴더 보존)"
           }
 
           # === KL-190 ①: 짓다 실패해도 **돌아갈 판**을 남긴다 ===
@@ -376,8 +376,8 @@ jobs:
           # **봇이 멈춘 채로 남는다.** 2026-08-08 하루에 세 번 그랬고(누가 push 할 때마다),
           # 아무 경보도 없이 웹훅, 로그인, 놀이 순위판이 전부 죽어 있었다.
           # 그래서 짓기 전에 직전 판을 통째로 복사해 두고, 실패하면 그걸 되돌린다.
-          $distDir = Join-Path $PWD 'apps\yawnbot\dist'
-          $lastGood = Join-Path $PWD 'apps\yawnbot\dist.last-good'
+          $distDir = Join-Path $PWD 'apps\karmolab-bot\dist'
+          $lastGood = Join-Path $PWD 'apps\karmolab-bot\dist.last-good'
           if (Test-Path $distDir) {
             if (Test-Path $lastGood) { Remove-Item $lastGood -Recurse -Force -ErrorAction SilentlyContinue }
             Copy-Item $distDir $lastGood -Recurse -Force
@@ -403,7 +403,7 @@ jobs:
           }
 
           if (-not $failed) {
-            $env:PLAYWRIGHT_BROWSERS_PATH = 'C:/ProgramData/YawnBot/playwright'
+            $env:PLAYWRIGHT_BROWSERS_PATH = 'C:/ProgramData/KarmoLabBot/playwright'
             & node node_modules/playwright-core/cli.js install chromium --only-shell
             if ($LASTEXITCODE -ne 0) { $failed = 'browser install failed' }
           }
@@ -563,7 +563,7 @@ jobs:
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "⚠ 웹훅 주소 등록 실패. 토큰 만료/권한 부족. 새 토큰을 ``YB_PROD_GH_WEBHOOK_TOKEN`` 에 넣어 주세요 (봇 배포는 정상)"
             exit 0
           }
-          # cloudflared named tunnel (bot.mascari4615.com) 은 별도 영구 service (KarmoLab Server Monitor 의 yawnbot-tunnel-prod 카드 또는 NSSM)
+          # cloudflared named tunnel (bot.mascari4615.com) 은 별도 영구 service (KarmoLab Server Monitor 의 karmolab-bot-tunnel-prod 카드 또는 NSSM)
 
       # === KL-190 ①: 무슨 일이 있어도 봇은 켜 놓고 나간다 ===
       # 앞의 어느 step 이 죽든 이 step 은 돈다(`if: always()`). 배포가 실패하는 것과

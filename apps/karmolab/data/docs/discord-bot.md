@@ -1,11 +1,11 @@
-# Discord 봇 (욘 / yawnbot)
+# Discord 봇 (욘 / karmolab-bot)
 
-KarmoLab **문서** 위젯 **Discord, 욘봇** 탭. 음성, DAVE 참고, 구현 요약, **TODO**, (짧은) **향후 검토**, **아이디어 구상**을 둡니다.
+KarmoLab **문서** 위젯 **Discord, KarmoLab 봇** 탭. 음성, DAVE 참고, 구현 요약, **TODO**, (짧은) **향후 검토**, **아이디어 구상**을 둡니다.
 
 | 무엇 | 어디 |
 |------|------|
 | **이 탭** | **음성, DAVE**, **기능 요약**, **TODO**, **향후 검토**, **아이디어 구상** |
-| **슬래시, `.env`, 사용자 안내** | 레포 [yawnbot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/karmolab-bot/README.md) |
+| **슬래시, `.env`, 사용자 안내** | 레포 [karmolab-bot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/karmolab-bot/README.md) |
 | **워크스페이스 빌드, `npm run`** | 문서 위젯 **discord-bots, README** 탭 또는 [discord-bots/README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/README.md) |
 
 레포: [`apps/discord-bots/apps/karmolab-bot/`](https://github.com/mascari4615/KarmoLab/tree/master/apps/discord-bots/apps/karmolab-bot)
@@ -14,7 +14,7 @@ KarmoLab **문서** 위젯 **Discord, 욘봇** 탭. 음성, DAVE 참고, 구현 
 
 ## 음성 연결과 DAVE 트러블슈팅
 
-레포의 Discord 슬래시 봇 **욘**은 npm, 폴더명 `yawnbot`으로 `apps/discord-bots/apps/karmolab-bot/`에 있습니다. 음성(`/music play`, `/music speak`, `/music sound`, 음성 입장 등)은 [`@discordjs/voice`](https://github.com/discordjs/voice)와 Discord 음성 게이트웨이, UDP를 사용합니다.
+레포의 Discord 슬래시 봇 **욘**은 npm, 폴더명 `karmolab-bot`으로 `apps/discord-bots/apps/karmolab-bot/`에 있습니다. 음성(`/music play`, `/music speak`, `/music sound`, 음성 입장 등)은 [`@discordjs/voice`](https://github.com/discordjs/voice)와 Discord 음성 게이트웨이, UDP를 사용합니다.
 
 ### DAVE가 무엇인가요?
 
@@ -94,14 +94,14 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 - **`DISCORD_VOICE_DAVE=1`**(또는 이후 코드 변경으로 **기본값을 DAVE 켬**) 후 재시도.
 - 성공 시 로그에는 **`op:2` Ready**, **`udp:true`**, **`[DAVE] Session initialized`**, MLS 관련 송수신 등이 이어지고, 상위 상태가 **`connecting → ready`**로 바뀝니다.
 
-### 환경 변수 (yawnbot)
+### 환경 변수 (karmolab-bot)
 
 | 변수 | 역할 |
 |------|------|
 | `VOICE_DEBUG` | `1`이면 `@discordjs/voice` 네트워킹 디버그, 상태 로그. **토큰, 키, IP 등 민감 정보가 섞일 수 있어** 상시 켜두지 말 것. |
 | `DISCORD_VOICE_DAVE` | **기본값: DAVE 사용(켬).** 끄려면 `0` / `false` / `off` / `no`. 예전에 4017이 났던 채널은 DAVE가 꺼져 있으면 다시 실패합니다. |
 
-자세한 명령, 경로는 레포 [yawnbot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/karmolab-bot/README.md)를 참고하세요.
+자세한 명령, 경로는 레포 [karmolab-bot README.md](https://github.com/mascari4615/KarmoLab/blob/main/apps/discord-bots/apps/karmolab-bot/README.md)를 참고하세요.
 
 ---
 
@@ -132,7 +132,7 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 - [ ] **AI**. `maxOutputTokens` 등을 env로 (`@karmo/ai` 연동 검토)
 - [ ] **운영**. 로그 접두, 심각도, 인터랙션 id 일부 규칙
 - [ ] **테스트**. URL 정규화, 가드 파싱, 에러 메시지 매핑 등 단위 테스트
-- [ ] **CI**. `yawnbot` `npm run build`
+- [ ] **CI**. `karmolab-bot` `npm run build`
 - [ ] **헬스**. ping, 음성 세션 수, HTTP `/health`(웹훅 서버 등과 연계)
 
 **TODO 위치:** 평소엔 이 Markdown으로 두고, 큰 덩어리는 GitHub Issues로 쪼개도 됩니다.
@@ -155,7 +155,7 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 
 브레인스토밍용입니다. **착수하면** 위 **남은 작업 (TODO)** 또는 **향후 검토**로 옮기고, 여기서는 지우거나 한 줄 링크만 남기면 됩니다.
 
-### 욘봇과 같이 가기 좋은 방향
+### KarmoLab 봇과 같이 가기 좋은 방향
 
 - **음성, 뮤직**. 방이 잠잠할 때만 큐를 진행하는 식의 **자동 DJ**(말하는 사람 감지, 덕킹은 정책이 필요). **플레이리스트 프리셋**(길드, 채널별 고정 URL 묶음). **재생, 요청 통계**(남용 방지, 쿨다운 TODO와 같이 설계).
 - **`/yawn`, AI**. 스레드, 포럼 **긴 글 요약** 전용 서브커맨드(맥락 옵션은 향후 검토의 스레드, 포럼 항목과 합칠 수 있음). **FAQ 전용 채널**(또는 고정 메시지) 범위만 답하는 **가벼운 지식 베이스**(과하면 운영, 토큰 부담).
@@ -163,7 +163,7 @@ YouTube 검색/재생용 **`/music play`** 와 **같은 음성 연결, 재생 �
 
 ### 별도 봇, 모듈로 두기 좋은 것
 
-- **모더레이션 보조**. 신규 계정 쿨다운, 링크, 첨부 화이트리스트, 규칙 위반 시 자동 타임아웃(권한, 사고 반경을 욘봇 본체와 분리).
+- **모더레이션 보조**. 신규 계정 쿨다운, 링크, 첨부 화이트리스트, 규칙 위반 시 자동 타임아웃(권한, 사고 반경을 KarmoLab 봇 본체와 분리).
 - **웹훅 허브**. GitHub Actions, 서버 모니터, RSS 등을 **지정 채널로만** 넘기는 얇은 레이어(향후 검토의 주식 요약 웹훅과 같은 패턴의 일반화).
 
 ### 기술, 운영

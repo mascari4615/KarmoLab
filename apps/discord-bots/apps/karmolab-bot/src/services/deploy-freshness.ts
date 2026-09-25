@@ -261,7 +261,7 @@ export async function lastDeployNote(
   try {
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'yawnbot-deploy-freshness',
+      'User-Agent': 'karmolab-bot-deploy-freshness',
     };
     if (token) headers.Authorization = `Bearer ${token}`;
     const runs = (await getJson(
@@ -329,7 +329,7 @@ export async function runFreshnessTick(
   try {
     const ghHeaders: Record<string, string> = {
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'yawnbot-deploy-freshness',
+      'User-Agent': 'karmolab-bot-deploy-freshness',
     };
     if (deps.token) ghHeaders.Authorization = `Bearer ${deps.token}`;
     const body = (await getJson(

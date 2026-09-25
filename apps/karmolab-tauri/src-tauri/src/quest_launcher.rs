@@ -38,7 +38,7 @@ fn domain_to_prefix(domain: &str) -> Option<&'static str> {
     match domain {
         "wm" => Some("WM"),
         "karmolab" => Some("KL"),
-        "yawnbot" => Some("YB"),
+        "karmolab-bot" => Some("YB"),
         "life" => Some("LIFE"),
         "hobby" => Some("HOBBY"),
         "learning" => Some("LEARN"),
@@ -51,7 +51,7 @@ fn domain_to_tasks_dir(domain: &str) -> Option<&'static str> {
     match domain {
         "wm" => Some("wm/tasks"),
         "karmolab" => Some("projects/karmolab/tasks"),
-        "yawnbot" => Some("projects/karmolab-bot/tasks"),
+        "karmolab-bot" => Some("projects/karmolab-bot/tasks"),
         "life" => Some("life/tasks"),
         "hobby" => Some("hobby/tasks"),
         "learning" => Some("learning/tasks"),
@@ -192,7 +192,7 @@ mod tests {
     fn domain_to_prefix_all_six() {
         assert_eq!(domain_to_prefix("wm"), Some("WM"));
         assert_eq!(domain_to_prefix("karmolab"), Some("KL"));
-        assert_eq!(domain_to_prefix("yawnbot"), Some("YB"));
+        assert_eq!(domain_to_prefix("karmolab-bot"), Some("YB"));
         assert_eq!(domain_to_prefix("life"), Some("LIFE"));
         assert_eq!(domain_to_prefix("hobby"), Some("HOBBY"));
         assert_eq!(domain_to_prefix("learning"), Some("LEARN"));

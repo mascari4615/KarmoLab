@@ -37,7 +37,7 @@ if (-not $listening) {
     Write-Host "  (터널은 그래도 띄운다. Play 하면 바로 붙는다)`n"
 }
 
-# ~/.cloudflared/config.yml (욘봇 named tunnel 용) 에는 ingress 규칙이 들어 있다.
+# ~/.cloudflared/config.yml (KarmoLab 봇 named tunnel 용) 에는 ingress 규칙이 들어 있다.
 # 그 파일이 잡히면 catch-all `http_status:404` 가 --url 을 눌러 **모든 요청이 빈 404** 가 된다
 # (2026-08-20 실측: 로컬 200 · 터널 404 · 로그 `ingressRule=1 originService=http_status:404`).
 # 그래서 이 터널만의 설정 파일을 따로 만들어 격리한다.

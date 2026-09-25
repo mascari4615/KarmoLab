@@ -103,7 +103,7 @@ try {
 } finally { await browser.close(); }
 
 const tempRoot = path.resolve(os.tmpdir());
-const profile = fs.mkdtempSync(path.join(tempRoot, 'yawnbot-edge-fixture-'));
+const profile = fs.mkdtempSync(path.join(tempRoot, 'karmolab-bot-edge-fixture-'));
 let existing;
 try {
   existing = await chromium.launchPersistentContext(profile, {
@@ -128,7 +128,7 @@ try {
 } finally {
   await existing?.close();
   assert.equal(path.dirname(path.resolve(profile)), tempRoot);
-  assert.ok(path.basename(profile).startsWith('yawnbot-edge-fixture-'));
+  assert.ok(path.basename(profile).startsWith('karmolab-bot-edge-fixture-'));
   fs.rmSync(profile, { recursive: true, force: true });
 }
 console.log(`PASS: ${channel || 'chromium'} 실제 DOM + 수집/판정/중복 방지/기존 Edge 연결 ${passed}건. X 네트워크/Discord 발송 없는 fixture 검사`);

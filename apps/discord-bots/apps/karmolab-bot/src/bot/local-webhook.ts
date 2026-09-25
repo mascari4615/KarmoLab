@@ -5,7 +5,7 @@
  * 정본 = `webhook-routes.json` 의 `localRoutes` (kind 별 채널) + fallback `localDefault` → `default`.
  *
  * 신뢰 모델:
- *   - 같은 머신 (KarmoLab Tauri ↔ yawnbot NSSM) 또는 신뢰 LAN 내부 호출 가정.
+ *   - 같은 머신 (KarmoLab Tauri ↔ karmolab-bot NSSM) 또는 신뢰 LAN 내부 호출 가정.
  *   - `LOCAL_WEBHOOK_SECRET` env 박혀있으면 `X-KarmoLab-Bot-Secret` header (옛 이름도 받음) 와 정합 검증. 미박힘 시 dev 모드 (auth bypass + warn).
  *
  * 첫 사용처: KarmoLab Tauri 의 `wm_log_watcher.rs` (Editor.log → error CS\d+ 발견 시 POST).

@@ -19,7 +19,7 @@ const base=`http://127.0.0.1:${server.address().port}`;
 const browser=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']});
 const mobile=process.argv.includes('--mobile');
 const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1500,height:1000},serviceWorkers:'block',acceptDownloads:true});
-const page=await context.newPage();const errors=[];page.on('pageerror',(error)=>errors.push(String(error)));page.on('console',(message)=>{if(message.type()==='error'&&!/CORS|ERR_FAILED|Failed to load resource|yawnbot/.test(message.text()))errors.push(message.text());});
+const page=await context.newPage();const errors=[];page.on('pageerror',(error)=>errors.push(String(error)));page.on('console',(message)=>{if(message.type()==='error'&&!/CORS|ERR_FAILED|Failed to load resource|karmolab-bot/.test(message.text()))errors.push(message.text());});
 await page.addInitScript(()=>{window.__ksOsc=0;window.__ksClose=0;window.__ksParamUpdates=0;const original=AudioContext.prototype.createOscillator;AudioContext.prototype.createOscillator=function(){window.__ksOsc++;return original.call(this);};const close=AudioContext.prototype.close;AudioContext.prototype.close=function(){window.__ksClose++;return close.call(this);};const target=AudioParam.prototype.setTargetAtTime;AudioParam.prototype.setTargetAtTime=function(...args){window.__ksParamUpdates++;return target.apply(this,args);};});
 await page.goto(base+'/apps/karmolab/index.html#heung',{waitUntil:'load',timeout:30000});
 try { await page.waitForSelector('.hu-root',{timeout:20000}); }

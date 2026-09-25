@@ -1,5 +1,5 @@
 /**
- * KarmoLab 계정 API (TASK-KL-098 Cycle 1). yawnbot Express 위에 얹는다.
+ * KarmoLab 계정 API (TASK-KL-098 Cycle 1). karmolab-bot Express 위에 얹는다.
  *
  * 왜 여기인가: 노트북에서 24/7 도는 Express 가 이미 있고 `bot.mascari4615.com` 으로
  * 밖에 열려 있다. 계정 하나 때문에 새 서버, 새 요금제를 들이는 것보다, 살아 있는 것 위에

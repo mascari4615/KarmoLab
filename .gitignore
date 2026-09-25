@@ -22,8 +22,8 @@ node_modules/
 !.env.template
 .karmolab.common.env
 .discord-bots.env
-.yawnbot.env
-.yawnbot.kakao.env
+.karmolab-bot.env
+.karmolab-bot.kakao.env
 
 # ── IDE ──────────────────────────────────────────────────────────────────────
 .idea/
@@ -122,7 +122,7 @@ apps/karmolab/scripts/.cache/
 assets/js/dist/
 assets/js/graph-view/
 
-# ── YawnBot 런타임 state ─────────────────────────────────────────────────────
+# ── KarmoLab 봇 런타임 state ─────────────────────────────────────────────────────
 # deploy git clean -fd 가 untracked 을 삭제하므로 ignored 라야 survive.
 # 글롭 = 새 notifier 가 같은 함정 반복 안 하게. TASK-YB-007 / YB-027.
 apps/discord-bots/apps/karmolab-bot/data/*-state.json

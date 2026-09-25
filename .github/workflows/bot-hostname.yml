@@ -80,7 +80,7 @@ jobs:
             echo "DNS 이미 있음"
           else
             curl -s -X POST "${H[@]}" "$API/zones/$ZONE/dns_records" \
-              --data "{\"type\":\"CNAME\",\"name\":\"$NEW_HOST\",\"content\":\"$FOUND.cfargotunnel.com\",\"proxied\":true,\"comment\":\"bot API (yawnbot 에서 이전)\"}" > /tmp/dnsp.json
+              --data "{\"type\":\"CNAME\",\"name\":\"$NEW_HOST\",\"content\":\"$FOUND.cfargotunnel.com\",\"proxied\":true,\"comment\":\"bot API (karmolab-bot 에서 이전)\"}" > /tmp/dnsp.json
             node -e 'const j=require("/tmp/dnsp.json"); console.log("DNS 생성", j.success, JSON.stringify(j.errors||[])); if(!j.success) process.exit(1)'
           fi
 

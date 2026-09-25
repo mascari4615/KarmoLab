@@ -262,7 +262,7 @@ function imageScript(data: WrappedPageData): string {
     g.fillText('0시', 80, base + 44);
     g.fillText('23시', W - 80 - g.measureText('23시').width, base + 44);
     g.fillStyle = '#6f688a'; g.font = font(24);
-    g.fillText('메시지 내용은 저장하지 않습니다, 욘봇', 80, H - 48);
+    g.fillText('메시지 내용은 저장하지 않습니다, KarmoLab 봇', 80, H - 48);
 
     c.toBlob(function (blob) {
       var a = document.createElement('a');
@@ -423,7 +423,7 @@ ${body}
 ${detailSection(data)}
 <footer>
   메시지 내용은 저장하지 않습니다. 길이, 시각, 이모지만 셉니다.<br>
-  욘봇이 만든 결산, <a href="https://lab.mascari4615.com/">KarmoLab</a>
+  KarmoLab 봇이 만든 결산, <a href="https://lab.mascari4615.com/">KarmoLab</a>
 </footer>
 ${imageScript(data)}
 </body></html>`;

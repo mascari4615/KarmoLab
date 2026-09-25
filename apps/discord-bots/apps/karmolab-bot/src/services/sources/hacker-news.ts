@@ -97,5 +97,5 @@ export function buildHnEmbed(s: HnStoryLine): EmbedBuilder {
     .setURL(s.href)
     .setDescription(`${s.score}pt, ${s.host}, ${s.by}`)
     .setColor(HN_COLOR)
-    .setFooter({ text: 'YawnBot, Hacker News' });
+    .setFooter({ text: '벼루, Hacker News' });
 }

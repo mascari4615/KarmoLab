@@ -90,7 +90,7 @@ export function buildGnEmbed(s: GnStoryLine): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle(`📰 ${s.title.slice(0, 250)}`)
     .setColor(GN_COLOR)
-    .setFooter({ text: 'YawnBot, GeekNews' });
+    .setFooter({ text: '벼루, GeekNews' });
   if (/^https?:\/\//i.test(s.href)) embed.setURL(s.href);
   const pub = s.pubDate ? new Date(s.pubDate).getTime() : 0;
   if (pub) embed.setTimestamp(new Date(pub));

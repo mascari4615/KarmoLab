@@ -61,7 +61,7 @@ function parseArgs(argv: string[]): DaemonArgs {
   return out as DaemonArgs;
 }
 
-/** channelId resolve. args/env 없으면 yawnbot provisioned file 통해. */
+/** channelId resolve. args/env 없으면 karmolab-bot provisioned file 통해. */
 async function resolveChannelId(args: DaemonArgs): Promise<string | null> {
   if (args.channelId) return args.channelId;
   try {
@@ -358,7 +358,7 @@ async function main(): Promise<void> {
   const ratePer5min = Number.parseInt(process.env.AGENT_DAEMON_RATE_PER_5MIN || '2', 10);
   const contextMinutes = Number.parseInt(process.env.AGENT_DAEMON_CONTEXT_MINUTES || '5', 10);
 
-  // channelId resolve. boot 시점에 yawnbot 이 아직 provision 안 했을 수 있음 → retry.
+  // channelId resolve. boot 시점에 karmolab-bot 이 아직 provision 안 했을 수 있음 → retry.
   let channelId: string | null = await resolveChannelId(args);
   let waited = 0;
   while (!channelId && waited < 600) {  // 최대 10분 대기
@@ -366,7 +366,7 @@ async function main(): Promise<void> {
     waited += 5;
     channelId = await resolveChannelId(args);
     if (waited % 60 === 0) {
-      console.log(`[agent-daemon] channelId 대기 중 (${waited}s). yawnbot provisioning 대기`);
+      console.log(`[agent-daemon] channelId 대기 중 (${waited}s). karmolab-bot provisioning 대기`);
     }
   }
   if (!channelId) {

@@ -26,7 +26,7 @@ const require = createRequire(import.meta.url);
 
 const PKG_ROOT = resolve(import.meta.dirname, '..');
 const DIST = join(PKG_ROOT, 'dist', 'src');
-const OUT = process.argv[2] ? resolve(process.argv[2]) : join(tmpdir(), 'yawnbot-wrapped-shots');
+const OUT = process.argv[2] ? resolve(process.argv[2]) : join(tmpdir(), 'karmolab-bot-wrapped-shots');
 
 const EDGE_CANDIDATES = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',

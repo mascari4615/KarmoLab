@@ -1,6 +1,6 @@
 /**
  * GitHub webhook upsert. data/webhook-routes.json 의 githubRepos 각각에
- * yawnbot webhook (config.url 끝이 /webhook/github) 을 PATCH (URL 갱신) 또는 POST (신규).
+ * karmolab-bot webhook (config.url 끝이 /webhook/github) 을 PATCH (URL 갱신) 또는 POST (신규).
  *
  * standalone:
  *   node scripts/webhook-upsert.mjs

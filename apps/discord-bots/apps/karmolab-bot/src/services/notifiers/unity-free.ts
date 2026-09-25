@@ -172,7 +172,7 @@ function buildPublisherSaleEmbed(info: PublisherSaleAssetInfo, imageFromAttachme
     .setTitle(title)
     .setDescription(lines.join('\n') || ' ')
     .setColor(EMBED_COLOR)
-    .setFooter({ text: 'YawnBot, Unity Publisher Sale' });
+    .setFooter({ text: '벼루, Unity Publisher Sale' });
   if (info.assetUrl) embed.setURL(info.assetUrl);
   if (imageFromAttachment) {
     embed.setImage(`attachment://${EMBED_IMAGE_ATTACHMENT}`);

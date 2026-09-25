@@ -66,7 +66,7 @@ const context0 = await browser.newContext({ serviceWorkers: 'block', viewport: {
 page.on('console', (m) => {
   if (m.type() !== 'error') return;
   if (m.text().includes('fetching the script')) return;
-  // 로컬에서 띄우면 원격(yawnbot) 호출이 CORS 로 막힌다. 이 검사의 대상이 아니다.
+  // 로컬에서 띄우면 원격(karmolab-bot) 호출이 CORS 로 막힌다. 이 검사의 대상이 아니다.
   if (/CORS|ERR_FAILED|Failed to load resource/i.test(m.text())) return;
   errors.push(m.text());
 });

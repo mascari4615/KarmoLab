@@ -11,7 +11,7 @@ DISCORD_GUILD_ID=1456979834566873131
 KARMOLAB_BOT_ALLOWED_GUILD_IDS=1456979834566873131
 
 # ── 알림 채널 ID (dev 서버) — 폴백 전용 (TASK-YB-029) ──
-# 정상 시 미사용: dev 봇이 본진에 「욘봇-dev」 카테고리+채널 자동 생성/claim.
+# 정상 시 미사용: dev 봇이 본진에 「KarmoLab 봇-dev」 카테고리+채널 자동 생성/claim.
 # 아래는 프로비저닝 OFF·권한 상실·실패 시 안전망 (정본=channel-spec.json).
 GITHUB_WEBHOOK_CHANNEL_ID=1490334302003663058
 KARMOLAB_BOT_OPS_REPORT_CHANNEL_ID=1505165371869757550

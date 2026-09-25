@@ -345,8 +345,8 @@ mod tests {
 
     #[test]
     fn query_param_extracts_and_decodes() {
-        assert_eq!(query_param("profile=yawnbot-tunnel&tail=20", "profile").as_deref(),
-                   Some("yawnbot-tunnel"));
+        assert_eq!(query_param("profile=karmolab-bot-tunnel&tail=20", "profile").as_deref(),
+                   Some("karmolab-bot-tunnel"));
         assert_eq!(query_param("profile=a%2Db", "profile").as_deref(), Some("a-b"));
         assert_eq!(query_param("profile=a", "missing"), None);
     }

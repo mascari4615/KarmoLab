@@ -155,7 +155,7 @@ export function isThisMachine(origin: string): boolean {
 
 export function webBody(options: WebBodyOptions = {}): WebBody {
   const channel = options.channel ?? 'web';
-  // 4615 는 yawnbot dev 웹훅이 이미 쓴다. 둘 다 켜면 나중에 뜬 쪽이 죽는다.
+  // 4615 는 karmolab-bot dev 웹훅이 이미 쓴다. 둘 다 켜면 나중에 뜬 쪽이 죽는다.
   // 기본값이 겹치면 가끔 안 뜬다로만 보이므로 자리를 갈랐다.
   const port = options.port ?? 4620;
   const log = options.log ?? (() => {});

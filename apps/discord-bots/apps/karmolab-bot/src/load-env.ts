@@ -21,5 +21,5 @@ const { applyBotDotenvLayers } = nodeRequire(
 ) as { applyBotDotenvLayers: (root: string) => void };
 
 const botRoot = path.join(__dirname, '..', '..');
-// 2. karmolab-bot-defaults.txt + 3. yawnbot .env
+// 2. karmolab-bot-defaults.txt + 3. karmolab-bot .env
 applyBotDotenvLayers(botRoot);

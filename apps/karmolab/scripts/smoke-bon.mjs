@@ -45,7 +45,7 @@ const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (error) => errors.push(String(error)));
 page.on('console', (message) => {
-  if (message.type() === 'error' && !/CORS|ERR_FAILED|Failed to load resource|yawnbot|laptop\.mascari4615|선반/.test(message.text())) errors.push(message.text());
+  if (message.type() === 'error' && !/CORS|ERR_FAILED|Failed to load resource|karmolab-bot|laptop\.mascari4615|선반/.test(message.text())) errors.push(message.text());
 });
 
 const problems = [];

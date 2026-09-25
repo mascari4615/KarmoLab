@@ -18,7 +18,7 @@ export async function handleHelp(ctx: BotContext, interaction: ChatInputCommandI
 
   if (!topic || topic === 'overview') {
     const embed = new EmbedBuilder()
-      .setTitle('🦦 욘봇 도움말')
+      .setTitle('🦦 KarmoLab 봇 도움말')
       .setDescription(
         '`/도움말 주제`로 자세한 내용을 확인할 수 있어요.\n' +
           '모든 응답은 **나만 보기**로 표시되니 안심하세요!',

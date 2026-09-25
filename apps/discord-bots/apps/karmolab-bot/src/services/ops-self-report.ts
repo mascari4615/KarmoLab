@@ -1,5 +1,5 @@
 /**
- * yawnbot 운영 자기보고 (ops-self-report). TASK-YB-002-D
+ * karmolab-bot 운영 자기보고 (ops-self-report). TASK-YB-002-D
  *
  * 봇 라이프사이클 (시작 / 종료 / 크래시) + deploy 결과를 Discord 운영 채널에
  * 임베드로 보고. 노트북 prod 머신 GUI 부재 → 데스크탑에서 봇 상태 가시성.
@@ -107,7 +107,7 @@ export async function reportStartup(
 ): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor(0x2ecc71)
-    .setTitle('🟢 YawnBot 시작')
+    .setTitle('🟢 벼루 시작')
     .setDescription(
       [
         `**봇**: \`${info.botTag}\``,
@@ -123,7 +123,7 @@ export async function reportStartup(
 export async function reportShutdown(ctx: OpsReportContext, reason: string): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor(0x95a5a6)
-    .setTitle('⚪ YawnBot 종료')
+    .setTitle('⚪ 벼루 종료')
     .setDescription(`**이유**: \`${reason}\``)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
@@ -144,7 +144,7 @@ export async function reportError(
   const stackPreview = stack.split('\n').slice(0, 6).join('\n').slice(0, 1500);
   const embed = new EmbedBuilder()
     .setColor(0xe74c3c)
-    .setTitle(`🔴 YawnBot 에러 (${kind})`)
+    .setTitle(`🔴 벼루 에러 (${kind})`)
     .setDescription(`**메시지**: ${e.message.slice(0, 300)}\n\`\`\`\n${stackPreview}\n\`\`\``)
     .setFooter({ text: `${buildFooter(ctx)}, stack:${stackHash}` })
     .setTimestamp();
@@ -163,7 +163,7 @@ export async function reportHeartbeat(
 ): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor(alert.healthy ? 0x2ecc71 : 0xe67e22)
-    .setTitle(alert.healthy ? '🟢 YawnBot heartbeat 복구' : '🟠 YawnBot heartbeat 실패')
+    .setTitle(alert.healthy ? '🟢 벼루 heartbeat 복구' : '🟠 벼루 heartbeat 실패')
     .setDescription(`**상태**: ${alert.reason.slice(0, 500)}`)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
@@ -183,7 +183,7 @@ export async function reportCharStateSnapshot(
   const embed = new EmbedBuilder()
     .setColor(alert.healthy ? 0x2ecc71 : 0xe67e22)
     .setTitle(
-      alert.healthy ? '🟢 YawnBot 캐릭터 스냅샷 복구' : '🟠 YawnBot 캐릭터 스냅샷 실패',
+      alert.healthy ? '🟢 벼루 캐릭터 스냅샷 복구' : '🟠 벼루 캐릭터 스냅샷 실패',
     )
     .setDescription(`**상태**: ${alert.reason.slice(0, 500)}`)
     .setFooter({ text: buildFooter(ctx) })
@@ -224,7 +224,7 @@ export async function reportMemoSync(
   const embed = new EmbedBuilder()
     .setColor(alert.healthy ? 0x2ecc71 : 0xe67e22)
     .setTitle(
-      alert.healthy ? '🟢 YawnBot memo 동기 복구' : '🟠 YawnBot memo 동기 실패',
+      alert.healthy ? '🟢 벼루 memo 동기 복구' : '🟠 벼루 memo 동기 실패',
     )
     .setDescription(`**상태**: ${alert.reason.slice(0, 500)}`)
     .setFooter({ text: buildFooter(ctx) })
@@ -239,7 +239,7 @@ export async function reportDeploy(
 ): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor(0x3498db)
-    .setTitle('🔵 YawnBot 슬래시 배포')
+    .setTitle('🔵 벼루 슬래시 배포')
     .setDescription(`**${info.count}개** 커맨드 등록 → \`${info.target}\``)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();

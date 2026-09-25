@@ -17,7 +17,7 @@ import { discordAnswerCursorQuestion, getCursorMaxPromptChars, runCursorLocalRun
 import { resolveCursorRepoDirForSlash } from '../../paths';
 import type { BotContext } from './bot-context';
 
-const DEFAULT_YAWN_SYSTEM = `시스템: 너는 'YawnBot'이라는 이름의 활기차고 재치 있는 디스코드 봇이야. 사용자의 질문에 친절하고 유머러스하게 대답해줘.`;
+const DEFAULT_YAWN_SYSTEM = `시스템: 너는 '벼루'라는 이름의 활기차고 재치 있는 디스코드 봇이야. 사용자의 질문에 친절하고 유머러스하게 대답해줘.`;
 
 function yawnSystemPromptFromEnv(): string {
   const raw = process.env.YAWN_SYSTEM_PROMPT ?? process.env.BOT_YAWN_SYSTEM_PROMPT ?? '';
@@ -92,7 +92,7 @@ export async function handleCursorEdit(ctx: BotContext, interaction: ChatInputCo
     await interaction.reply({
       content: triedEnv
         ? '`CURSOR_LOCAL_REPO_DIR`이 가리키는 폴더가 없습니다. .env 경로를 고치거나, 비우면 이 레포 루트(자동)를 씁니다.'
-        : 'Cursor 작업 폴더를 찾을 수 없습니다. yawnbot이 이 레포의 `apps/discord-bots/apps/karmolab-bot` 아래에 있어야 하거나, `.env`에 `CURSOR_LOCAL_REPO_DIR`을 직접 지정하세요.',
+        : 'Cursor 작업 폴더를 찾을 수 없습니다. karmolab-bot이 이 레포의 `apps/discord-bots/apps/karmolab-bot` 아래에 있어야 하거나, `.env`에 `CURSOR_LOCAL_REPO_DIR`을 직접 지정하세요.',
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -299,13 +299,13 @@ export async function handleYawn(ctx: BotContext, interaction: ChatInputCommandI
         modelId: modelOpt,
         tier: modelOpt ? undefined : 'standard',
         systemInstruction,
-        tag: 'yawnbot/yawn-slash',
+        tag: 'karmolab-bot/yawn-slash',
       });
     await stopGeminiTicker();
     stopGeminiTicker = async () => {};
     const apiLabel = usedSurface === 'vertex' ? 'Vertex AI' : 'Google AI Studio';
     const embed = new EmbedBuilder()
-      .setTitle('YawnBot AI Response')
+      .setTitle('벼루 AI Response')
       .setDescription(
         truncateDiscordDescription(
           `**📝 질문**\n\`\`\`\n${truncateEmbedField(prompt, 800)}\n\`\`\`\n\n` + `**💬 답변**\n${response.slice(0, 3000)}`,

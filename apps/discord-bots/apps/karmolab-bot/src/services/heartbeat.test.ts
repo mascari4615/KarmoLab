@@ -59,7 +59,7 @@ describe('writeHeartbeatOnce. Contents API GET sha → PUT', () => {
     expect(putBody.branch).toBe('yawnbot-heartbeat');
     expect(putBody.sha).toBe('oldsha123');
     const decoded = JSON.parse(Buffer.from(putBody.content, 'base64').toString('utf-8'));
-    expect(decoded).toEqual({ ts: '2026-05-17T10:00:00.000Z', source: 'yawnbot', schema: 1 });
+    expect(decoded).toEqual({ ts: '2026-05-17T10:00:00.000Z', source: 'karmolab-bot', schema: 1 });
   });
 
   it('브랜치 존재 + 파일 없음(Contents 404, ref 200) → 부트스트랩 X, sha 없이 PUT', async () => {

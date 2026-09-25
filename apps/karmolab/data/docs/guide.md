@@ -42,11 +42,11 @@
 
 **문서** 도구 안에서는 왼쪽에 **세로 목록**으로 문서 제목을 고르고, 오른쪽에 본문이 나와요(탭이 많아서 가로로 두지 않음). 본문 안에서는 **제목(h1-h3)이 둘 이상**이면 세계관 위키와 같은 방식으로 **목차**(오른쪽 고정, 좁은 화면에서는 위)와 **제목 옆 # 링크 복사**가 붙어요.
 
-소개, 로드맵, 가이드, **Discord, 욘봇**(`discord-yawnbot.md`) 등은 `apps/karmolab/js/widgets/docs/` 안 Markdown이에요. **discord-bots, README** / **Tauri, README** 탭만 GitHub **raw**로 레포 파일을 불러와요 (`main` push 기준).
+소개, 로드맵, 가이드, **Discord, KarmoLab 봇**(`discord-bot.md`) 등은 `apps/karmolab/js/widgets/docs/` 안 Markdown이에요. **discord-bots, README** / **Tauri, README** 탭만 GitHub **raw**로 레포 파일을 불러와요 (`main` push 기준).
 
 | 탭 이름 | 출처 |
 |---------|------|
-| Discord, 욘봇 | `discord-yawnbot.md`. 욘봇은 **탭 하나**; 명령, env는 본문의 GitHub README 링크 |
+| Discord, KarmoLab 봇 | `discord-bot.md`. KarmoLab 봇은 **탭 하나**; 명령, env는 본문의 GitHub README 링크 |
 | discord-bots, README | `apps/discord-bots/README.md` (raw) |
 | Tauri, README | `apps/karmolab-tauri/README.md` (raw) |
 

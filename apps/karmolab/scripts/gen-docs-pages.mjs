@@ -33,7 +33,7 @@ const APP_DOCS = [
     { id: 'docs-roadmap', file: 'roadmap.md', label: '로드맵' },
     { id: 'docs-guide', file: 'guide.md', label: '가이드' },
     { id: 'docs-karmo-ai', file: 'karmo-ai.md', label: 'KarmoLabAI' },
-    { id: 'docs-discord-yawnbot', file: 'discord-yawnbot.md', label: 'Discord, 욘봇' },
+    { id: 'docs-discord-bot', file: 'discord-bot.md', label: 'Discord, KarmoLab 봇' },
     { id: 'docs-project-commands', file: 'project-commands-guide.md', label: '프로젝트 명령' },
     { id: 'docs-laptop', file: 'laptop.md', label: '노트북' },
     { id: 'docs-local-dev', file: 'local-dev-runner.md', label: '데스크톱, 로컬' },

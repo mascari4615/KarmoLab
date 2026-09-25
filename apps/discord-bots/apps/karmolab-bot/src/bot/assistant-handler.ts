@@ -674,7 +674,7 @@ export async function handleAssistantMessage(
             }
           }
         } catch (e: unknown) {
-          // router 부재 / dispatch 에러 = silent. yawnbot prod 가 memo 폴더 없을 수도 있음 (deploy 분리).
+          // router 부재 / dispatch 에러 = silent. karmolab-bot prod 가 memo 폴더 없을 수도 있음 (deploy 분리).
           if (process.env.KAR_115_ROUTER_DEBUG === '1') {
             console.warn(`[Assistant:${card.slug}] KAR-115 router skip: ${e instanceof Error ? e.message : String(e)}`);
           }

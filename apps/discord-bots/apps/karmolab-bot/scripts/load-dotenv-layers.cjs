@@ -5,7 +5,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 /**
- * 욘봇·카카오 스크립트 공통 4-레이어 env 로더 (TASK-YB-028).
+ * KarmoLab 봇·카카오 스크립트 공통 4-레이어 env 로더 (TASK-YB-028).
  *
  * 본질(민감도·가변성)대로 통로 분리. 뒤가 앞을 덮어씀:
  *   ① config/karmolab-bot-defaults.txt     — 불변·비밀 아님 (모델명/간격/임계값). override:false
@@ -30,7 +30,7 @@ function peekKey(absPath, key) {
 }
 
 /** 옛 이름 접두 (2026-09-25 이름 이전). 옛 .env 와 서비스 환경 읽기 호환 */
-const LEGACY_PREFIX = 'YAWNBOT_';
+const LEGACY_PREFIX = 'KARMOLAB_BOT_';
 const PREFIX = 'KARMOLAB_BOT_';
 
 /** 옛 접두 키의 새 접두 복사. 새 키가 이미 있으면 새 키 우선 */

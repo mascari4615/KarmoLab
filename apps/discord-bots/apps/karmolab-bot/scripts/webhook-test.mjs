@@ -1,5 +1,5 @@
 /**
- * 로컬에서 실행 중인 yawnbot 의 GitHub webhook 엔드포인트로
+ * 로컬에서 실행 중인 karmolab-bot 의 GitHub webhook 엔드포인트로
  * 합성(synthetic) payload 를 POST 하는 수동 테스트 도구.
  *
  * 실행: npm run test:webhook -- <event>

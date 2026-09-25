@@ -6,7 +6,7 @@
  *
  * 여기서 가짜인 것은 신원 하나뿐이다. 대기열, 짝짓기, 결과 보고, 패보, 점수, 그리고
  * 서버가 판을 다시 셈하는 자리까지 **진짜 라우트가 진짜로 돈다**
- * (`yawnbot/scripts/serve-arcade-e2e.mjs`).
+ * (`karmolab-bot/scripts/serve-arcade-e2e.mjs`).
  *
  * 창을 둘 띄우고 그 안에서 진짜 클라이언트 묶음(`ranked.ts`)을 부른다. 창 안에서 부르는
  * 이유는 그 코드가 브라우저 것이기 때문이다. Node 에서 돌리면 안 도는 길(fetch 의 쿠키,
@@ -82,7 +82,7 @@ const rankedSrc = built.outputFiles[0].text;
 const verifierPath = path.resolve(
   'src/../..', 'discord-bots', 'apps', 'karmolab-bot', 'data', 'arcade-verifier.cjs'
 );
-/* CI 는 욘봇을 안 굽는다. 없으면 여기서 굽는다 (MODULE_NOT_FOUND 로 빨갰다, 2026-09-03) */
+/* CI 는 KarmoLab 봇을 안 굽는다. 없으면 여기서 굽는다 (MODULE_NOT_FOUND 로 빨갰다, 2026-09-03) */
 if (!existsSync(verifierPath)) {
   const builder = path.resolve(path.dirname(verifierPath), '..', 'scripts', 'build-arcade-verifier.mjs');
   const r = spawnSync(process.execPath, [builder], { stdio: 'inherit' });

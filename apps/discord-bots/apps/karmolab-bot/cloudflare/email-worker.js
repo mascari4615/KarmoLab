@@ -15,9 +15,9 @@
  *     (이름 예: `kl-mail-in`)
  *  3. 그 Worker → **Settings → Variables** 에 둘을 넣는다
  *       KL_MAIL_ENDPOINT = https://bot.mascari4615.com/kl/mail/in
- *       KL_MAIL_HOOK     = (아무 긴 임의 문자열. 노트북 yawnbot 의 KL_MAIL_HOOK_TOKEN 과 같은 값)
+ *       KL_MAIL_HOOK     = (아무 긴 임의 문자열. 노트북 karmolab-bot 의 KL_MAIL_HOOK_TOKEN 과 같은 값)
  *  4. Email → **Routing rules → Catch-all address** → Action = **Send to a Worker** → `kl-mail-in`
- *  5. 노트북 yawnbot 의 `.env` 에 같은 값을 넣는다
+ *  5. 노트북 karmolab-bot 의 `.env` 에 같은 값을 넣는다
  *       KL_MAIL_HOOK_TOKEN=...
  *       KL_MAIL_DOMAIN=mail.mascari4615.com
  *

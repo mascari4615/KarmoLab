@@ -90,6 +90,19 @@ describe('reconcileGuildChannels. 멱등 desired-state', () => {
     expect(r2.reused.length).toBe(spec.channels.length + 1); // +카테고리
   });
 
+  it('저장된 카테고리 이름이 spec 과 다르면 이름만 맞춤 (생성 0)', async () => {
+    const guild = fakeGuild(newGuildId());
+    await reconcileGuildChannels(guild, spec, PROD);
+    const cat = guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory)!;
+    cat.name = '옛 이름';
+    cat.setName = async (name: string) => {
+      cat.name = name;
+    };
+    const r2 = await reconcileGuildChannels(guild, spec, PROD);
+    expect(r2.created).toEqual([]);
+    expect(cat.name).toBe(spec.categoryName);
+  });
+
   it('이름이 이미 존재하면 생성 X. 기존 채널 claim (카테고리 하위 스코프)', async () => {
     const seed: ChannelLike[] = [
       { id: 'cat-x', name: spec.categoryName, type: ChannelType.GuildCategory, parentId: null },
@@ -159,8 +172,8 @@ describe('reconcileGuildChannels. 멱등 desired-state', () => {
         },
       },
     };
-    const rp = await reconcileGuildChannels(guild, spec, PROD); // 욘봇
-    const rd = await reconcileGuildChannels(guild, spec, DEV); // 욘봇-dev
+    const rp = await reconcileGuildChannels(guild, spec, PROD); // KarmoLab 봇
+    const rd = await reconcileGuildChannels(guild, spec, DEV); // KarmoLab 봇-dev
     // 카테고리 2개 (분리)
     const cats = channels.filter((c) => c.type === ChannelType.GuildCategory);
     expect(cats.map((c) => c.name).sort()).toEqual(

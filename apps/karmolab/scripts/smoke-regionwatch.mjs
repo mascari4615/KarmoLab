@@ -42,7 +42,7 @@ page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 /* 콘솔은 이 도구와 tesseract 에 관한 오류만 센다. 시험 서버에는 글 색인과 계정 서버가 없어 404 와 CORS 가 원래 뜸 */
 page.on('console', (m) => {
   const text = m.text();
-  if (m.type() === 'error' && /regionwatch\.js|regionwatch-core|tesseract/i.test(text) && !/yawnbot\.mascari4615\.com/.test(text)) errors.push('console: ' + text);
+  if (m.type() === 'error' && /regionwatch\.js|regionwatch-core|tesseract/i.test(text) && !/karmolab-bot\.mascari4615\.com/.test(text)) errors.push('console: ' + text);
 });
 
 /* 무대와 가짜 화면 공유. 저장된 슬롯(영역, 모드)은 미리 박아 두고 기준 그림만 화면에서 찍기 */

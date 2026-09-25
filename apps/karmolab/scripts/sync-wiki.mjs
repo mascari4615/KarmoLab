@@ -192,7 +192,7 @@ async function walkCharacters() {
     const dir = path.join(charsRoot, entry.name);
     const yamlFile = path.join(dir, 'karmolab.yaml');
     const mdFile = path.join(dir, 'wiki.md');
-    if (!fs.existsSync(yamlFile)) continue;  // KarmoLab entity 가 아닌 캐릭터는 skip (yawnbot 만 사용)
+    if (!fs.existsSync(yamlFile)) continue;  // KarmoLab entity 가 아닌 캐릭터는 skip (karmolab-bot 만 사용)
     if (!fs.existsSync(mdFile)) {
       console.warn(`[character] ${entry.name}: karmolab.yaml 있지만 wiki.md 없음. skip`);
       continue;

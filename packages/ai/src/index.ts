@@ -58,7 +58,7 @@ export const DOC_URL_VERTEX_API_KEYS =
 
 /** 스크립트, 봇 env 이름 (참고용, 런타임 읽기 없음) */
 export const ENV_GOOGLE_AI = {
-  /** AI Studio 스타일 API 키 (욘봇, 카카오 스크립트 등) */
+  /** AI Studio 스타일 API 키 (KarmoLab 봇, 카카오 스크립트 등) */
   apiKey: 'GEMINI_API_KEY',
   modelOverride: 'GEMINI_MODEL',
   /** `aiStudio`(기본) 또는 `vertex`. `KARMO_AI_SURFACE` 우선, 없으면 `GEMINI_SURFACE` */
