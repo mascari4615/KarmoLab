@@ -243,6 +243,15 @@ import { createLocalServers } from './local-servers';
     if (hour < 24) return hour + '시간 전';
     return Math.floor(hour / 24) + '일 전';
   }
+  /** 실제 시각 + 지난 시간. 오늘이면 `18:42 (2분 전)`, 아니면 `9/24 23:10 (19시간 전)`. KST
+   *  (사용자 2026-09-25 "n시간 전 말고 실제 시간도") */
+  function whenText(ms: number): string {
+    if (!isFinite(ms)) return '';
+    const d = new Date(ms + KST_MS);
+    const hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+    const day = kstKey(ms) === kstKey(Date.now()) ? '' : d.getUTCMonth() + 1 + '/' + d.getUTCDate() + ' ';
+    return day + hm + ' (' + agoText(ms) + ')';
+  }
   function spanText(ms: number): string {
     const min = Math.floor(ms / 60000);
     if (min < 60) return Math.max(min, 0) + '분';
@@ -332,7 +341,7 @@ import { createLocalServers } from './local-servers';
         return {
           state: 'on',
           stateText: '켜짐',
-          seen: [isFinite(boot) ? '켜진 지 ' + spanText(Date.now() - boot) : '', isFinite(at) ? '갱신 ' + agoText(at) : ''].filter(Boolean).join(', '),
+          seen: [isFinite(boot) ? '켜진 지 ' + spanText(Date.now() - boot) : '', isFinite(at) ? '갱신 ' + whenText(at) : ''].filter(Boolean).join(', '),
           cpu: known(v.cpuPct),
           ram: known(v.usedPct),
           disk: mainDiskFreeGb(v),
@@ -341,7 +350,7 @@ import { createLocalServers } from './local-servers';
         };
       }
       if (!m.nowTried) return { ...blank, state: 'wait', stateText: '확인 중' };
-      return { ...blank, seen: isFinite(lastMs) ? '마지막 기록 ' + agoText(lastMs) : m.nowErr, why: m.nowErr };
+      return { ...blank, seen: isFinite(lastMs) ? '마지막 기록 ' + whenText(lastMs) : m.nowErr, why: m.nowErr };
     }
     if (!isFinite(lastMs)) return { ...blank, seen: '성능 기록 없음' };
     const disk = known(latest.diskFreeGb);
@@ -350,7 +359,7 @@ import { createLocalServers } from './local-servers';
       return {
         state: 'on',
         stateText: '켜짐',
-        seen: (up !== null ? '켜진 지 ' + spanText(up * 3600000) + ', ' : '') + '갱신 ' + agoText(lastMs),
+        seen: (up !== null ? '켜진 지 ' + spanText(up * 3600000) + ', ' : '') + '갱신 ' + whenText(lastMs),
         cpu: known(latest.cpuPct),
         ram: known(latest.memUsedPct),
         disk,
@@ -359,7 +368,7 @@ import { createLocalServers } from './local-servers';
       };
     }
     /* 꺼진 기계. 디스크 여유만 마지막 표본 그대로 (꺼져 있는 동안 안 바뀐다) */
-    return { ...blank, state: 'off', stateText: '꺼짐', seen: '마지막 ' + agoText(lastMs), disk, diskUnit: 'GB' };
+    return { ...blank, state: 'off', stateText: '꺼짐', seen: '마지막 ' + whenText(lastMs), disk, diskUnit: 'GB' };
   }
 
   function specOf(m: Machine): Spec | null {
@@ -757,7 +766,7 @@ import { createLocalServers } from './local-servers';
       const disk = known(latest.diskFreeGb);
       const net = known(latest.netKbps);
       return {
-        head: isFinite(at) ? '마지막 표본 ' + agoText(at) : '기록 없음',
+        head: isFinite(at) ? '마지막 표본 ' + whenText(at) : '기록 없음',
         rows: [
           ['여유 메모리', DASH, ''],
           ['설명 안 되는 메모리', unexpl === null ? DASH : num1(unexpl), '%'],
