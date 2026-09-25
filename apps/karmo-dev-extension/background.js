@@ -164,16 +164,6 @@ async function closeWorkTab(tabId) {
 async function reapOrphanTabs() {
   const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
   let closed = 0;
-  /* 에이전트가 주소로 연 bridge 탭 (주소에 run 이 붙은 것). ext.reload 로 워커가 새로 뜨면 4초 뒤 닫기 타이머가 사라져 남음
-     (사용자 2026-09-25 "다 쓰면 좀 닫았으면"). 사람이 연 bridge (run 없음) 는 안 건드림 */
-  try {
-    const left = await chrome.tabs.query({ url: ["http://127.0.0.1/*", "http://localhost/*"] });
-    for (const t of left) {
-      if (/\/karmo-(dev|web)-extension\/bridge\.html\?(.*&)?run=/.test(t.url || "")) {
-        try { await chrome.tabs.remove(t.id); closed += 1; } catch { /* 이미 없음 */ }
-      }
-    }
-  } catch { /* tabs.query 실패는 무시 */ }
   for (const id of cur) {
     try { await chrome.tabs.remove(id); closed += 1; } catch { /* 이미 없음 */ }
   }
@@ -183,6 +173,25 @@ async function reapOrphanTabs() {
 }
 
 reapOrphanTabs();
+
+/**
+ * 에이전트가 주소로 연 bridge 탭 (주소에 run 이 붙은 것) 닫기. ext.reload 로 워커가 새로 뜨면 4초 뒤 닫기 타이머가
+ * 사라져 남음 (사용자 2026-09-25 "다 쓰면 좀 닫았으면"). 사람이 연 bridge (run 없음) 는 안 건드림.
+ * 설치, 갱신 때만. 워커가 깰 때마다 돌리면 막 부르러 온 bridge 탭까지 닫아 응답이 안 감 (같은 날 실측)
+ */
+async function reapBridgeTabs() {
+  let closed = 0;
+  try {
+    const left = await chrome.tabs.query({ url: ["http://127.0.0.1/*", "http://localhost/*"] });
+    for (const t of left) {
+      if (/\/karmo-(dev|web)-extension\/bridge\.html\?(.*&)?run=/.test(t.url || "")) {
+        try { await chrome.tabs.remove(t.id); closed += 1; } catch { /* 이미 없음 */ }
+      }
+    }
+  } catch { /* tabs.query 실패는 무시 */ }
+  if (closed) await note("reap", `bridge 탭 ${closed}개 닫음`);
+}
+chrome.runtime.onInstalled.addListener(() => { reapBridgeTabs(); });
 
 /**
  * 한 걸음씩 되부르기. MV3 워커는 30초 무활동이면 종료
