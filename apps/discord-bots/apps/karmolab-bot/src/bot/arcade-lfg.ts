@@ -74,7 +74,7 @@ export function makeLfgCaller(client: Client, now = (): number => Date.now()): O
   return (info: WaitInfo): void => {
     /* 기본은 꺼짐 (사용자 2026-09-01). 부르는 자리는 사람이 명령으로 여는 것.
        이건 그걸 대신하는 게 아니라 나중에 켜 볼 수 있게 남긴 것 */
-    if (process.env.YAWNBOT_ARCADE_LFG !== '1') return;
+    if (process.env.KARMOLAB_BOT_ARCADE_LFG !== '1') return;
     const at = now();
     if (tryCall(info.game, at - info.since, at) !== 'ok') return;
     const mins = Math.max(1, Math.round((at - info.since) / 60_000));

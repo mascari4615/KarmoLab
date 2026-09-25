@@ -199,7 +199,7 @@ export function createBrowserResetSource(author: string, sessionFile = browserSe
     const state = readBrowserSession(sessionFile);
     const modified = fs.statSync(sessionFile).mtimeMs;
     const current = generation;
-    const channel = process.env.YAWNBOT_CODEX_RESET_BROWSER === 'chromium' ? undefined : 'msedge';
+    const channel = process.env.KARMOLAB_BOT_CODEX_RESET_BROWSER === 'chromium' ? undefined : 'msedge';
     const browser = await chromium.launch({ channel, headless: true, chromiumSandbox: true, timeout: 20_000 });
     activeBrowsers.add(browser);
     const deadline = setTimeout(() => { void browser.close(); }, 180_000);

@@ -37,8 +37,8 @@ import { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilde
 
 const require_ = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { applyYawnbotDotenvLayers } = require_('./load-dotenv-layers.cjs');
-applyYawnbotDotenvLayers(ROOT);
+const { applyBotDotenvLayers } = require_('./load-dotenv-layers.cjs');
+applyBotDotenvLayers(ROOT);
 
 const args = process.argv.slice(2);
 const keep = args.includes('--keep');

@@ -179,7 +179,7 @@ const OWNER_ID = process.env.ASSISTANT_USER_ID?.trim() || '';
 /** 운영 자기보고 (TASK-YB-002-D). channelId 미설정 시 null = 모든 report no-op */
 const opsCtx = loadOpsReportContext();
 if (!opsCtx) {
-  console.warn('[OpsReport] YAWNBOT_OPS_REPORT_CHANNEL_ID 미설정. 운영 자기보고 비활성');
+  console.warn('[OpsReport] KARMOLAB_BOT_OPS_REPORT_CHANNEL_ID 미설정. 운영 자기보고 비활성');
 }
 
 function isAdmin(userId: unknown) {
@@ -508,7 +508,7 @@ client.once('clientReady', async () => {
   stock.startMarket();
 
   // 채널 자동 프로비저닝 (dev, prod 공통. 옛 하드코딩 채널 폐기). 허용 길드
-  // (YAWNBOT_ALLOWED_GUILD_IDS)만. 봇이 초대된 친구 서버 등엔 손대지 않음.
+  // (KARMOLAB_BOT_ALLOWED_GUILD_IDS)만. 봇이 초대된 친구 서버 등엔 손대지 않음.
   // 인사, notifier 시작 *전* 에 reconcile → resolver(channelIdFor)가 즉시 신선.
   if (isProvisioningEnabled()) {
     const spec = getChannelSpec();
@@ -569,11 +569,11 @@ client.once('clientReady', async () => {
   // inbound, 외부 watcher 사각이라 ops-report 로도 alert (상태 전이 1회).
   startHeartbeat({
     token: process.env.MEMO_GITHUB_PAT || process.env.GITHUB_TOKEN,
-    repo: process.env.YAWNBOT_HEARTBEAT_REPO,
-    branch: process.env.YAWNBOT_HEARTBEAT_BRANCH,
-    path: process.env.YAWNBOT_HEARTBEAT_PATH,
-    intervalMin: process.env.YAWNBOT_HEARTBEAT_INTERVAL_MIN
-      ? parseInt(process.env.YAWNBOT_HEARTBEAT_INTERVAL_MIN, 10)
+    repo: process.env.KARMOLAB_BOT_HEARTBEAT_REPO,
+    branch: process.env.KARMOLAB_BOT_HEARTBEAT_BRANCH,
+    path: process.env.KARMOLAB_BOT_HEARTBEAT_PATH,
+    intervalMin: process.env.KARMOLAB_BOT_HEARTBEAT_INTERVAL_MIN
+      ? parseInt(process.env.KARMOLAB_BOT_HEARTBEAT_INTERVAL_MIN, 10)
       : undefined,
     alert: opsCtx ? (event) => void reportHeartbeat(opsCtx, event) : undefined,
   });
@@ -583,12 +583,12 @@ client.once('clientReady', async () => {
      services/deploy-freshness.ts 머리말. 2026-08-09 실측: 배포 실행은 초록인데 사이트는 21시간째 전날 판이었다. */
   startDeployFreshness({
     token: process.env.MEMO_GITHUB_PAT || process.env.GITHUB_TOKEN,
-    buildUrl: process.env.YAWNBOT_DEPLOY_BUILD_URL,
-    intervalMin: process.env.YAWNBOT_DEPLOY_CHECK_MIN
-      ? parseInt(process.env.YAWNBOT_DEPLOY_CHECK_MIN, 10)
+    buildUrl: process.env.KARMOLAB_BOT_DEPLOY_BUILD_URL,
+    intervalMin: process.env.KARMOLAB_BOT_DEPLOY_CHECK_MIN
+      ? parseInt(process.env.KARMOLAB_BOT_DEPLOY_CHECK_MIN, 10)
       : undefined,
-    staleAfterMin: process.env.YAWNBOT_DEPLOY_STALE_MIN
-      ? parseInt(process.env.YAWNBOT_DEPLOY_STALE_MIN, 10)
+    staleAfterMin: process.env.KARMOLAB_BOT_DEPLOY_STALE_MIN
+      ? parseInt(process.env.KARMOLAB_BOT_DEPLOY_STALE_MIN, 10)
       : undefined,
     alert: opsCtx ? (event) => void reportDeployFreshness(opsCtx, event) : undefined,
   });
@@ -601,11 +601,11 @@ client.once('clientReady', async () => {
   startCharacterStateSnapshot({
     token: process.env.MEMO_GITHUB_PAT || process.env.GITHUB_TOKEN,
     memoRepoPath: memoRepoPath || undefined,
-    repo: process.env.YAWNBOT_CHARSTATE_REPO,
-    branch: process.env.YAWNBOT_CHARSTATE_BRANCH,
-    path: process.env.YAWNBOT_CHARSTATE_PATH,
-    intervalMin: process.env.YAWNBOT_CHARSTATE_INTERVAL_MIN
-      ? parseInt(process.env.YAWNBOT_CHARSTATE_INTERVAL_MIN, 10)
+    repo: process.env.KARMOLAB_BOT_CHARSTATE_REPO,
+    branch: process.env.KARMOLAB_BOT_CHARSTATE_BRANCH,
+    path: process.env.KARMOLAB_BOT_CHARSTATE_PATH,
+    intervalMin: process.env.KARMOLAB_BOT_CHARSTATE_INTERVAL_MIN
+      ? parseInt(process.env.KARMOLAB_BOT_CHARSTATE_INTERVAL_MIN, 10)
       : undefined,
     alert: opsCtx ? (event) => void reportCharStateSnapshot(opsCtx, event) : undefined,
   });
@@ -621,10 +621,10 @@ client.once('clientReady', async () => {
   startMemoSync({
     token: process.env.MEMO_GITHUB_PAT || process.env.GITHUB_TOKEN,
     memoRepoPath: memoRepoPath || undefined,
-    repoSlug: process.env.YAWNBOT_MEMOSYNC_REPO_SLUG,
-    branch: process.env.YAWNBOT_MEMOSYNC_BRANCH,
-    intervalMin: process.env.YAWNBOT_MEMOSYNC_INTERVAL_MIN
-      ? parseInt(process.env.YAWNBOT_MEMOSYNC_INTERVAL_MIN, 10)
+    repoSlug: process.env.KARMOLAB_BOT_MEMOSYNC_REPO_SLUG,
+    branch: process.env.KARMOLAB_BOT_MEMOSYNC_BRANCH,
+    intervalMin: process.env.KARMOLAB_BOT_MEMOSYNC_INTERVAL_MIN
+      ? parseInt(process.env.KARMOLAB_BOT_MEMOSYNC_INTERVAL_MIN, 10)
       : undefined,
     alert: opsCtx ? (event) => void reportMemoSync(opsCtx, event) : undefined,
   });
@@ -742,7 +742,7 @@ async function main() {
   const token = process.env.DISCORD_TOKEN?.trim();
   if (!token) {
     console.error(
-        '[YawnBot] DISCORD_TOKEN이 비어 있습니다. apps/karmolab-bot/.env 에 봇 토큰을 넣으세요. (Discord Developer Portal → 앱 → Bot → Token)',
+        '[KarmoLabBot] DISCORD_TOKEN이 비어 있습니다. apps/karmolab-bot/.env 에 봇 토큰을 넣으세요. (Discord Developer Portal → 앱 → Bot → Token)',
     );
     process.exit(1);
   }
@@ -752,7 +752,7 @@ async function main() {
   } catch (e: unknown) {
     if (e instanceof Error && (e as Error & { code?: string }).code === 'TokenInvalid') {
       console.error(
-        '[YawnBot] TokenInvalid. 토큰이 만료되었거나 잘못되었습니다. Discord Developer Portal에서 Bot Token을 재발급하고 .env 의 DISCORD_TOKEN을 갱신하세요.',
+        '[KarmoLabBot] TokenInvalid. 토큰이 만료되었거나 잘못되었습니다. Discord Developer Portal에서 Bot Token을 재발급하고 .env 의 DISCORD_TOKEN을 갱신하세요.',
       );
     }
     throw e;

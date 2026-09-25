@@ -52,7 +52,7 @@ export async function handleAdminNewsTick(
   try {
     const r = await triggerAllNewsOnce(client, getNews, characterService.getDefaultSlug());
     if (r.noChannel) {
-      await interaction.editReply({ content: '⚠ 뉴스 채널 미설정 (YAWNBOT_NEWS_CHANNEL_ID)' }).catch(() => {});
+      await interaction.editReply({ content: '⚠ 뉴스 채널 미설정 (KARMOLAB_BOT_NEWS_CHANNEL_ID)' }).catch(() => {});
       return;
     }
     const total = r.google + r.gn + r.hn;

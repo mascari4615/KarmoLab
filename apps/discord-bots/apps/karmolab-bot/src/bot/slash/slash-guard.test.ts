@@ -17,15 +17,15 @@ function fakeInteraction(commandName: string, guildId: string | null) {
   };
 }
 
-const ORIGINAL = process.env.YAWNBOT_ALLOWED_GUILD_IDS;
+const ORIGINAL = process.env.KARMOLAB_BOT_ALLOWED_GUILD_IDS;
 
 describe('허용 목록 게이트', () => {
   beforeEach(() => {
-    process.env.YAWNBOT_ALLOWED_GUILD_IDS = 'home-guild';
+    process.env.KARMOLAB_BOT_ALLOWED_GUILD_IDS = 'home-guild';
   });
   afterEach(() => {
-    if (ORIGINAL === undefined) delete process.env.YAWNBOT_ALLOWED_GUILD_IDS;
-    else process.env.YAWNBOT_ALLOWED_GUILD_IDS = ORIGINAL;
+    if (ORIGINAL === undefined) delete process.env.KARMOLAB_BOT_ALLOWED_GUILD_IDS;
+    else process.env.KARMOLAB_BOT_ALLOWED_GUILD_IDS = ORIGINAL;
   });
 
   it('사적인 명령은 남의 서버에서 거부된다', async () => {

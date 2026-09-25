@@ -7,8 +7,8 @@ export const RESET_PROVIDERS = ['claude', 'codex', 'grok'] as const;
 export type ResetProvider = typeof RESET_PROVIDERS[number];
 
 function commandFor(provider: ResetProvider): { command: string; prefix: string[] } {
-  const configured = process.env[`YAWNBOT_${provider.toUpperCase()}_COMMAND`]?.trim();
-  const home = process.env.YAWNBOT_AI_USER_HOME || os.homedir();
+  const configured = process.env[`KARMOLAB_BOT_${provider.toUpperCase()}_COMMAND`]?.trim();
+  const home = process.env.KARMOLAB_BOT_AI_USER_HOME || os.homedir();
   const candidates = configured ? [configured] : provider === 'codex'
     ? [path.join(home, 'AppData/Local/Programs/OpenAI/Codex/bin/codex.exe'), path.join(home, 'AppData/Roaming/npm/node_modules/@openai/codex/bin/codex.js'), 'codex']
     : provider === 'claude' ? [path.join(home, '.local/bin/claude.exe'), 'claude']
@@ -43,7 +43,7 @@ export async function generateResetCliText(provider: ResetProvider, prompt: stri
       env[`GROK_${vendor}_${feature}_ENABLED`] = '0';
     }
   }
-  const home = process.env.YAWNBOT_AI_USER_HOME;
+  const home = process.env.KARMOLAB_BOT_AI_USER_HOME;
   if (home) {
     env.CLAUDE_CONFIG_DIR = path.join(home, '.claude');
     env.CODEX_HOME = path.join(home, '.codex');
@@ -52,7 +52,7 @@ export async function generateResetCliText(provider: ResetProvider, prompt: stri
   try {
     const invocation = commandFor(provider);
     const flags = resetCliArgs(provider, promptFile, outputFile, instruction);
-    const model = process.env[`YAWNBOT_${provider.toUpperCase()}_MODEL`]?.trim();
+    const model = process.env[`KARMOLAB_BOT_${provider.toUpperCase()}_MODEL`]?.trim();
     if (model) flags.unshift('--model', model);
     const args = [...invocation.prefix, ...flags];
     return await new Promise<string>((resolve, reject) => {

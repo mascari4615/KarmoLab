@@ -11,7 +11,7 @@
  *   --scan [epochMs]     .txt 한 번만 처리 (생략 시 전체, 숫자면 mtime 기준)
  *   --trigger-only       저장만 하고 요약 안 함 (테스트: npm run kakao-export-save). 후보 없음이면 스냅샷 직후 exit 0(카운트다운, 저장 PS 생략)
  *
- * 환경 변수: `config/yawnbot-defaults.txt` → 앱 루트 `.env`
+ * 환경 변수: `config/karmolab-bot-defaults.txt` → 앱 루트 `.env`
  *   KAKAO_EXPORT_WATCH_DIR,
  *   AI: GEMINI_* / VERTEX_* (`.env`). 숫자, 폴링 기본값은 defaults.txt
  *   DISCORD_SUMMARY_WEBHOOK_URL, KAKAO_EXPORT_MAX_ROUNDS,
@@ -30,8 +30,8 @@ import { createRequire } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
-const { applyYawnbotDotenvLayers } = require('./load-dotenv-layers.cjs');
-applyYawnbotDotenvLayers(path.join(__dirname, '..'));
+const { applyBotDotenvLayers } = require('./load-dotenv-layers.cjs');
+applyBotDotenvLayers(path.join(__dirname, '..'));
 const { tryCreateGenerativeTextFromEnv, generativeEnvHint } = require('@karmo/ai/node');
 
 const DEFAULT_EXPORT_DIR = path.join(os.homedir(), 'Documents', '카카오톡 받은 파일');

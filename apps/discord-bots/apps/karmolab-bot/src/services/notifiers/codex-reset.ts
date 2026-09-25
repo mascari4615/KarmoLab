@@ -163,7 +163,7 @@ export class ResetMonitor {
 let monitor: ResetMonitor | null = null;
 function getMonitor(): ResetMonitor {
   if (!monitor) {
-    const author = process.env.YAWNBOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR;
+    const author = process.env.KARMOLAB_BOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR;
     monitor = new ResetMonitor({ author, store, fetchPosts: createBrowserResetSource(author), analyze: analyzeResetPost });
   }
   return monitor;
@@ -174,7 +174,7 @@ export async function getRecentResets(force = false): Promise<{ state: ResetStat
   try { service = getMonitor(); }
   catch {
     console.warn('[CodexReset] 저장 기록 읽기 실패. 파일 보존, 수집 중단');
-    return { state: emptyState(process.env.YAWNBOT_CODEX_RESET_AUTHOR || DEFAULT_RESET_AUTHOR), stale: true, error: '저장 기록 손상. 기존 파일 확인 필요' };
+    return { state: emptyState(process.env.KARMOLAB_BOT_CODEX_RESET_AUTHOR || DEFAULT_RESET_AUTHOR), stale: true, error: '저장 기록 손상. 기존 파일 확인 필요' };
   }
   const old = service.snapshot();
   if (!force && old.checkedAt && Date.now() - Date.parse(old.checkedAt) < 5 * 60_000) return { state: old, stale: false };
@@ -195,7 +195,7 @@ export async function triggerCodexResetOnce(client: Client): Promise<void> {
   tick = (async () => {
     const result = await getRecentResets();
     if (current !== generation) return;
-    const channelId = process.env.YAWNBOT_CODEX_RESET_CHANNEL_ID?.trim() || channelIdFor('ops-report');
+    const channelId = process.env.KARMOLAB_BOT_CODEX_RESET_CHANNEL_ID?.trim() || channelIdFor('ops-report');
     if (!channelId) return;
     const channel = await client.channels.fetch(channelId);
     if (!channel?.isSendable()) throw new Error('초기화 알림 채널 접근 불가');
@@ -220,11 +220,11 @@ export async function triggerCodexResetOnce(client: Client): Promise<void> {
 
 export function startCodexResetNotifier(client: Client): void {
   void stopCodexResetNotifier();
-  if (process.env.YAWNBOT_CODEX_RESET_ENABLED !== '1') {
+  if (process.env.KARMOLAB_BOT_CODEX_RESET_ENABLED !== '1') {
     console.log('[CodexReset] 자동 수집 비활성. /코덱스 조회 사용 가능');
     return;
   }
-  const configured = Number(process.env.YAWNBOT_CODEX_RESET_INTERVAL_MIN || 60);
+  const configured = Number(process.env.KARMOLAB_BOT_CODEX_RESET_INTERVAL_MIN || 60);
   const minutes = Number.isFinite(configured) ? Math.min(60, Math.max(5, configured)) : 60;
   const run = () => { void triggerCodexResetOnce(client).catch(error => console.warn('[CodexReset] 알림 실패:', error instanceof Error ? error.message : 'unknown')); };
   timer = setInterval(run, minutes * 60_000);

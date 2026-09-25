@@ -10,7 +10,7 @@ import { buildResetEmbed } from '../src/services/notifiers/codex-reset';
 import { readExistingEdgeSession } from '../src/services/sources/codex-reset-edge';
 
 async function main(): Promise<void> {
-  const author = process.env.YAWNBOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR;
+  const author = process.env.KARMOLAB_BOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR;
   if (process.argv.includes('--check')) {
     const url = process.argv.find(arg => arg.startsWith('https://'));
     const posts = url ? [await fetchBrowserResetPostLink(url, author)] : await createBrowserResetSource(author)();

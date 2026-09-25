@@ -6,7 +6,7 @@
  *
  * 신뢰 모델:
  *   - 같은 머신 (KarmoLab Tauri ↔ yawnbot NSSM) 또는 신뢰 LAN 내부 호출 가정.
- *   - `LOCAL_WEBHOOK_SECRET` env 박혀있으면 `X-Yawnbot-Secret` header 와 정합 검증. 미박힘 시 dev 모드 (auth bypass + warn).
+ *   - `LOCAL_WEBHOOK_SECRET` env 박혀있으면 `X-KarmoLab-Bot-Secret` header (옛 이름도 받음) 와 정합 검증. 미박힘 시 dev 모드 (auth bypass + warn).
  *
  * 첫 사용처: KarmoLab Tauri 의 `wm_log_watcher.rs` (Editor.log → error CS\d+ 발견 시 POST).
  * 미래 사용처: KarmoLab 다른 알림 (메트릭 / 사고 / 발견) 도 같은 endpoint 재사용. kind 만 분기.
@@ -108,7 +108,7 @@ export function mountLocalWebhook(app: Application, client: Client): void {
   app.post('/webhook/local', async (req, res) => {
     try {
       if (expectedSecret) {
-        const provided = req.headers['x-yawnbot-secret'];
+        const provided = req.headers['x-karmolab-bot-secret'] ?? req.headers['x-yawnbot-secret'];
         if (typeof provided !== 'string' || provided !== expectedSecret) {
           console.warn('[LocalWebhook] secret mismatch. reject');
           res.sendStatus(401);

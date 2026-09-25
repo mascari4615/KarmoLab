@@ -102,7 +102,7 @@ flowchart TB
   - `generateAiStudioText({ apiKey, modelId?, prompt, signal? })`. AI Studio 단발
   - `createAiStudioTextModel` / `resolveAiStudioTextModelId` / `parseGenerativeSurfaceFromEnv`. 필요 시 저수준 조합
 - **TypeScript(욘봇):** `moduleResolution: node`(classic) 대비 `apps/karmolab-bot/tsconfig.json`의 `paths`로 `@karmo/ai/node` → `packages/ai/dist/node` 연결
-- **dotenv:** 욘봇, `kakao-export`는 `config/yawnbot-defaults.txt`(커밋 기본값) → 앱 루트 `.env` 순. `apps/karmolab-bot/.env.template` 참고
+- **dotenv:** 욘봇, `kakao-export`는 `config/karmolab-bot-defaults.txt`(커밋 기본값) → 앱 루트 `.env` 순. `apps/karmolab-bot/.env.template` 참고
 
 모델 ID, 카탈로그만 쓰려면 루트 `@karmo/ai`에서 `DEFAULT_TEXT_MODEL_ID`, `MODEL_CATALOG`, `getDefaultModelId` 를 import 하면 됩니다.
 

@@ -11,7 +11,7 @@
  * reconcile (멱등): 저장된 ID 가 살아있으면 그대로 → 없으면 *이름으로 기존 채널 claim*
  *                   → 그것도 없으면 생성. 사용자가 채널 이름 바꿔도 저장 ID 로 추적.
  *
- * 범위 게이트 (사용자 결정 2026-05-17 "dev 서버만 먼저"): YAWNBOT_ENV==='prod' 면 OFF.
+ * 범위 게이트 (사용자 결정 2026-05-17 "dev 서버만 먼저"): KARMOLAB_BOT_ENV==='prod' 면 OFF.
  *   prod 는 env *_CHANNEL_ID 가 그대로 우선 → 본 모듈은 prod 동작 무영향.
  *
  * 정합: process.md § Ops 인터페이스 사람, AI 공용 / active-sessions 보드 = live 파생 투영
@@ -94,10 +94,10 @@ function entryChannelType(entry: ChannelSpecEntry): number {
 /** 논리 키 → 기존 env 키. prod 우선, dev 폴백 매핑의 단일 정본 (평행정의 0). */
 export const ENV_KEY_BY_LOGICAL: Record<string, string> = {
   'github-webhook': 'GITHUB_WEBHOOK_CHANNEL_ID',
-  'ops-report': 'YAWNBOT_OPS_REPORT_CHANNEL_ID',
-  'unity-free': 'YAWNBOT_UNITY_FREE_CHANNEL_ID',
-  news: 'YAWNBOT_NEWS_CHANNEL_ID',
-  'agent-team': 'YAWNBOT_AGENT_CHANNEL_ID',
+  'ops-report': 'KARMOLAB_BOT_OPS_REPORT_CHANNEL_ID',
+  'unity-free': 'KARMOLAB_BOT_UNITY_FREE_CHANNEL_ID',
+  news: 'KARMOLAB_BOT_NEWS_CHANNEL_ID',
+  'agent-team': 'KARMOLAB_BOT_AGENT_CHANNEL_ID',
   digest: 'YAWN_DIGEST_CHANNEL_ID',
 };
 
@@ -128,15 +128,15 @@ export function getChannelSpec(): ChannelSpec {
 }
 
 /**
- * dev 한정 게이트. YAWNBOT_ENV==='prod' 또는 YAWNBOT_CHANNEL_PROVISION 명시 off 면 false.
- * 명시 on(YAWNBOT_CHANNEL_PROVISION=1) 이면 prod 여도 강제 활성 (수동 마이그레이션용).
+ * dev 한정 게이트. KARMOLAB_BOT_ENV==='prod' 또는 KARMOLAB_BOT_CHANNEL_PROVISION 명시 off 면 false.
+ * 명시 on(KARMOLAB_BOT_CHANNEL_PROVISION=1) 이면 prod 여도 강제 활성 (수동 마이그레이션용).
  */
 export function isProvisioningEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   // 기본 ON (dev, prod 무관). 사용자 기존 채팅방 안 쓰고 싶다(2026-05-17,
   // "dev 먼저" 철회). 옛 하드코딩 채널을 prod 포함 전부 폐기. 안전성은
   // shouldProvisionGuild(허용 길드 한정)이 담보. 봇이 초대된 아무 서버에나
-  // 채널을 만들지 않음. YAWNBOT_CHANNEL_PROVISION=0/off 로 비상 비활성.
-  const flag = env.YAWNBOT_CHANNEL_PROVISION?.trim().toLowerCase();
+  // 채널을 만들지 않음. KARMOLAB_BOT_CHANNEL_PROVISION=0/off 로 비상 비활성.
+  const flag = env.KARMOLAB_BOT_CHANNEL_PROVISION?.trim().toLowerCase();
   if (flag === '0' || flag === 'off' || flag === 'false') return false;
   return true;
 }
@@ -144,7 +144,7 @@ export function isProvisioningEnabled(env: NodeJS.ProcessEnv = process.env): boo
 /**
  * 프로비저닝 *대상 길드* 화이트리스트. 봇이 초대된 모든 길드(친구 서버 등)에
  * 카테고리, 채널을 만드는 사고 방지 = 근본 안전 가드.
- * 우선순위: YAWNBOT_ALLOWED_GUILD_IDS → DISCORD_GUILD_ID → (없으면 빈=아무데도 X).
+ * 우선순위: KARMOLAB_BOT_ALLOWED_GUILD_IDS → DISCORD_GUILD_ID → (없으면 빈=아무데도 X).
  */
 export function allowedGuildIds(env: NodeJS.ProcessEnv = process.env): string[] {
   const pick = (raw: string | undefined): string[] =>
@@ -152,7 +152,7 @@ export function allowedGuildIds(env: NodeJS.ProcessEnv = process.env): string[] 
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-  const allowed = pick(env.YAWNBOT_ALLOWED_GUILD_IDS);
+  const allowed = pick(env.KARMOLAB_BOT_ALLOWED_GUILD_IDS);
   if (allowed.length) return allowed;
   return pick(env.DISCORD_GUILD_ID);
 }
@@ -170,7 +170,7 @@ export function shouldProvisionGuild(
  * 욘봇(prod), 욘봇Dev(dev)가 같은 서버를 쓰므로 카테고리, 맵을 라벨로 분리한다.
  */
 export function provisionInstanceLabel(env: NodeJS.ProcessEnv = process.env): string {
-  return env.YAWNBOT_ENV?.trim().toLowerCase() || 'dev';
+  return env.KARMOLAB_BOT_ENV?.trim().toLowerCase() || 'dev';
 }
 
 /** prod = 기본 카테고리명(사용자 정면), 그 외 = `<base>-<label>` (dev 분리). */

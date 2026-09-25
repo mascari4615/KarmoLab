@@ -96,7 +96,7 @@ export interface SlashCommand {
   autocomplete?: (ctx: BotContext, interaction: AutocompleteInteraction) => Promise<void>;
   /**
    * 남의 서버에서도 쓸 수 있는 명령 (TASK-YB-042).
-   * true 면 `YAWNBOT_ALLOWED_GUILD_IDS` 허용 목록을 타지 않는다. 초대받은 서버에서
+   * true 면 `KARMOLAB_BOT_ALLOWED_GUILD_IDS` 허용 목록을 타지 않는다. 초대받은 서버에서
    * 동작해야 하는 것들만. 사적인 기능은 표시하지 않는다(기본 = 본진 전용).
    */
   public?: boolean;

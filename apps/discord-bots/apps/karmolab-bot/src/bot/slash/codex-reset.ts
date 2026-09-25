@@ -14,7 +14,7 @@ export async function handleCodexReset(interaction: ChatInputCommandInteraction)
   const link = interaction.options.getString('트윗');
   if (link) {
     try {
-      const post = await fetchBrowserResetPostLink(link, process.env.YAWNBOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR);
+      const post = await fetchBrowserResetPostLink(link, process.env.KARMOLAB_BOT_CODEX_RESET_AUTHOR?.trim() || DEFAULT_RESET_AUTHOR);
       const signal = await analyzeResetPost(post);
       const embed = signal ? buildResetEmbed(signal) : new EmbedBuilder().setTitle(post.truncated ? 'X 원문 일부만 조회됨' : '초기화 공지로 판단되지 않은 트윗').setURL(post.url)
         .setDescription(post.truncated ? '전체 글을 읽지 못해 초기화 여부를 판단할 수 없어요. 원문 링크를 확인해 주세요.' : '다음 초기화 시각은 이 글에서 확인할 수 없어요.')

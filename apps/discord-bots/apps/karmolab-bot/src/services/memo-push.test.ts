@@ -321,37 +321,37 @@ describe('resolveConfig. defaults.txt 빈 문자열 폴백 회귀', () => {
   });
 
   it('repoSlug. env="" (defaults.txt 빈 라인) → DEFAULT_REPO_SLUG (← 회귀 핵심)', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_REPO_SLUG: '' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_REPO_SLUG: '' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.repoSlug).toBe('mascari4615/memo');
   });
 
   it('repoSlug. env="   " (whitespace-only) → DEFAULT_REPO_SLUG', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_REPO_SLUG: '   ' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_REPO_SLUG: '   ' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.repoSlug).toBe('mascari4615/memo');
   });
 
   it('repoSlug. env 정상값 → 그 값 사용', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_REPO_SLUG: 'OtherOwner/other-repo' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_REPO_SLUG: 'OtherOwner/other-repo' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.repoSlug).toBe('OtherOwner/other-repo');
   });
 
   it('repoSlug. deps 명시 → env 무시', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_REPO_SLUG: 'env/slug' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_REPO_SLUG: 'env/slug' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, { repoSlug: 'deps/slug' });
     expect(cfg?.repoSlug).toBe('deps/slug');
   });
 
   it('repoSlug. deps="" (빈 문자열) → env 폴백 (deps 도 같은 가드)', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_REPO_SLUG: 'env/slug' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_REPO_SLUG: 'env/slug' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, { repoSlug: '' });
     expect(cfg?.repoSlug).toBe('env/slug');
   });
 
   it('repoSlug. deps="" + env="" → DEFAULT_REPO_SLUG', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_REPO_SLUG: '' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_REPO_SLUG: '' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, { repoSlug: '' });
     expect(cfg?.repoSlug).toBe('mascari4615/memo');
   });
@@ -362,61 +362,61 @@ describe('resolveConfig. defaults.txt 빈 문자열 폴백 회귀', () => {
   });
 
   it('branch. env="" (defaults.txt 빈 라인) → DEFAULT_BRANCH (← 회귀 핵심)', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_BRANCH: '' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_BRANCH: '' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.branch).toBe('main');
   });
 
   it('branch. env 정상값 → 그 값 사용', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_BRANCH: 'develop' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_BRANCH: 'develop' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.branch).toBe('develop');
   });
 
   it('branch. deps 명시 → env 무시', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_BRANCH: 'env-branch' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_BRANCH: 'env-branch' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, { branch: 'deps-branch' });
     expect(cfg?.branch).toBe('deps-branch');
   });
 
   it('branch. deps="" → env 폴백', () => {
-    const env = { ...baseEnv, YAWNBOT_MEMOSYNC_BRANCH: 'env-branch' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_MEMOSYNC_BRANCH: 'env-branch' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, { branch: '' });
     expect(cfg?.branch).toBe('env-branch');
   });
 
   it('authorName. env="" → DEFAULT_AUTHOR_NAME', () => {
-    const env = { ...baseEnv, YAWNBOT_PUSH_AUTHOR_NAME: '' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_PUSH_AUTHOR_NAME: '' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.authorName).toBe('yawnbot');
   });
 
   it('authorName. env 정상값 → 그 값', () => {
-    const env = { ...baseEnv, YAWNBOT_PUSH_AUTHOR_NAME: 'custom-bot' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_PUSH_AUTHOR_NAME: 'custom-bot' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.authorName).toBe('custom-bot');
   });
 
   it('authorName. deps 명시 → env 무시', () => {
-    const env = { ...baseEnv, YAWNBOT_PUSH_AUTHOR_NAME: 'env-bot' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_PUSH_AUTHOR_NAME: 'env-bot' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, { authorName: 'deps-bot' });
     expect(cfg?.authorName).toBe('deps-bot');
   });
 
   it('authorEmail. env="" → DEFAULT_AUTHOR_EMAIL', () => {
-    const env = { ...baseEnv, YAWNBOT_PUSH_AUTHOR_EMAIL: '' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_PUSH_AUTHOR_EMAIL: '' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.authorEmail).toBe('noreply@bot.mascari4615.com');
   });
 
   it('authorEmail. env 정상값 → 그 값', () => {
-    const env = { ...baseEnv, YAWNBOT_PUSH_AUTHOR_EMAIL: 'bot@example.com' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_PUSH_AUTHOR_EMAIL: 'bot@example.com' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg?.authorEmail).toBe('bot@example.com');
   });
 
   it('authorEmail. deps 명시 → env 무시', () => {
-    const env = { ...baseEnv, YAWNBOT_PUSH_AUTHOR_EMAIL: 'env@example.com' } as NodeJS.ProcessEnv;
+    const env = { ...baseEnv, KARMOLAB_BOT_PUSH_AUTHOR_EMAIL: 'env@example.com' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, { authorEmail: 'deps@example.com' });
     expect(cfg?.authorEmail).toBe('deps@example.com');
   });
@@ -435,10 +435,10 @@ describe('resolveConfig. defaults.txt 빈 문자열 폴백 회귀', () => {
     const env = {
       MEMO_GITHUB_PAT: 'tok',
       MEMO_REPO_PATH: '/tmp/fake-memo',
-      YAWNBOT_MEMOSYNC_REPO_SLUG: '',
-      YAWNBOT_MEMOSYNC_BRANCH: '',
-      YAWNBOT_PUSH_AUTHOR_NAME: '',
-      YAWNBOT_PUSH_AUTHOR_EMAIL: '',
+      KARMOLAB_BOT_MEMOSYNC_REPO_SLUG: '',
+      KARMOLAB_BOT_MEMOSYNC_BRANCH: '',
+      KARMOLAB_BOT_PUSH_AUTHOR_NAME: '',
+      KARMOLAB_BOT_PUSH_AUTHOR_EMAIL: '',
     } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
     expect(cfg).not.toBeNull();

@@ -105,7 +105,7 @@ jobs:
 
     # 노트북의 prod 폴더 직접 사용. actions/checkout 의 _work 폴더 X.
     # NSSM 이 보는 폴더 = build 폴더 = runner working dir. 통일.
-    # REPO_DIR, BOTS_DIR, YAWNBOT_DIR 는 첫 단계가 판정해 GITHUB_ENV 로 내보냄.
+    # REPO_DIR, BOTS_DIR, KARMOLAB_BOT_DIR 는 첫 단계가 판정해 GITHUB_ENV 로 내보냄.
     env:
       UMBRELLA_DIR: 'C:\Users\masca\repos\karmoddrine'
 
@@ -122,7 +122,7 @@ jobs:
           $repo = Join-Path $env:UMBRELLA_DIR $pick
           $bots = Join-Path $repo 'apps\discord-bots'
           $yawn = Join-Path $bots 'apps\karmolab-bot'
-          $lines = "REPO_DIR=$repo`nBOTS_DIR=$bots`nYAWNBOT_DIR=$yawn`n"
+          $lines = "REPO_DIR=$repo`nBOTS_DIR=$bots`nKARMOLAB_BOT_DIR=$yawn`n"
           [System.IO.File]::AppendAllText($env:GITHUB_ENV, $lines)
           Write-Output "REPO_DIR=$repo"
 
@@ -136,7 +136,7 @@ jobs:
           & git config --global --add safe.directory $repoUnix 2>&1 | Out-Null
           & git switch main 2>&1 | Out-Null
           # NSSM prod 폴더는 deploy 전용 (사용자 작업 영역 X. 작업은 .worktrees/* 에서). dirty state 는 항상 잔재 (line ending 변환 / 이전 deploy 잔재 / 잘못 복사 등). 강제 동기화로 폐기.
-          # git pull --ff-only 는 working tree dirty 면 fail (yawnbot-defaults.txt CRLF 변환 사고 2026-05-09).
+          # git pull --ff-only 는 working tree dirty 면 fail (karmolab-bot-defaults.txt CRLF 변환 사고 2026-05-09).
           & git fetch origin main 2>&1
           if ($LASTEXITCODE -ne 0) { throw "git fetch failed (exit $LASTEXITCODE)" }
           & git reset --hard origin/main 2>&1
@@ -154,7 +154,7 @@ jobs:
           MEMO_PAT: ${{ secrets.MEMO_GITHUB_PAT }}
           # 같은 머신(노트북)에서 도는 yawnbot express 인그레스로 ops 알림.
           # LOCAL_WEBHOOK_SECRET 미설정 시 dev bypass (local-webhook.ts) . 
-          # 동일 머신 신뢰 모델. 설정돼 있으면 X-Yawnbot-Secret 헤더로 전달.
+          # 동일 머신 신뢰 모델. 설정돼 있으면 X-KarmoLab-Bot-Secret 헤더로 전달.
           YB_LOCAL_WEBHOOK_SECRET: ${{ secrets.LOCAL_WEBHOOK_SECRET }}
           # 어떤 git op 도 절대 자격증명 프롬프트로 hang X (실패=즉시 skip).
           GIT_TERMINAL_PROMPT: '0'
@@ -191,7 +191,7 @@ jobs:
             $port = if ($env:WEBHOOK_PORT) { $env:WEBHOOK_PORT } else { '4615' }
             $headers = @{}
             if (-not [string]::IsNullOrEmpty($env:YB_LOCAL_WEBHOOK_SECRET)) {
-              $headers['X-Yawnbot-Secret'] = $env:YB_LOCAL_WEBHOOK_SECRET
+              $headers['X-KarmoLab-Bot-Secret'] = $env:YB_LOCAL_WEBHOOK_SECRET
             }
             $body = @{
               kind    = 'memo-sync'
@@ -242,8 +242,8 @@ jobs:
 
       - name: Write prod .env (UTF-8 no BOM, secrets 분리 조립)
         shell: 'powershell -ExecutionPolicy Bypass -File {0}'
-        working-directory: ${{ env.YAWNBOT_DIR }}
-        # ③ 진짜 비밀 + 준-비밀 (TASK-YB-028: 21→5 축소). 비밀 아닌 env별 값 = ② config/yawnbot.prod.txt(커밋).
+        working-directory: ${{ env.KARMOLAB_BOT_DIR }}
+        # ③ 진짜 비밀 + 준-비밀 (TASK-YB-028: 21→5 축소). 비밀 아닌 env별 값 = ② config/karmolab-bot.prod.txt(커밋).
         # 새 *비밀* 추가 시에만 아래 env 매핑 + $keys 갱신. 채널/길드/유저 ID = ② 프로파일 편집.
         # VERTEX_PROJECT_ID = credential 아니나 GCP 프로젝트 노출 정찰정보 → public 커밋 X, secret 유지(준-비밀 경계, 사용자 결정 2026-05-17).
         env:
@@ -300,9 +300,9 @@ jobs:
             throw "필수 secret YB_PROD_DISCORD_TOKEN 누락. GitHub Actions secrets 확인"
           }
 
-          # ④ .env = YAWNBOT_ENV=prod 리터럴(비밀 아님, ② prod 프로파일 선택용) + ③ 주입 비밀.
-          # 비밀 아닌 채널/길드/ID 는 .env 에 안 씀. ② config/yawnbot.prod.txt 가 정본.
-          $lines = @('YAWNBOT_ENV=prod')
+          # ④ .env = KARMOLAB_BOT_ENV=prod 리터럴(비밀 아님, ② prod 프로파일 선택용) + ③ 주입 비밀.
+          # 비밀 아닌 채널/길드/ID 는 .env 에 안 씀. ② config/karmolab-bot.prod.txt 가 정본.
+          $lines = @('KARMOLAB_BOT_ENV=prod')
           $missing = @()
           foreach ($key in $keys) {
             $envName = "YB_PROD_$key"
@@ -323,12 +323,12 @@ jobs:
           $envPath = Join-Path $PWD '.env'
           [System.IO.File]::WriteAllText($envPath, $envContent, [System.Text.UTF8Encoding]::new($false))
 
-          Write-Host "[Write prod .env] secrets set=$($lines.Count - 1) missing=$($missing.Count) (+ YAWNBOT_ENV=prod)"
+          Write-Host "[Write prod .env] secrets set=$($lines.Count - 1) missing=$($missing.Count) (+ KARMOLAB_BOT_ENV=prod)"
           if ($missing.Count -gt 0) {
             Write-Host "  missing (skip): $($missing -join ', ')" -ForegroundColor DarkGray
           }
           # 주입 검증. 토큰, 키는 마스킹
-          Get-Content $envPath | Select-String -Pattern '^(DISCORD_TOKEN|YAWNBOT_ENV)=' | ForEach-Object {
+          Get-Content $envPath | Select-String -Pattern '^(DISCORD_TOKEN|KARMOLAB_BOT_ENV)=' | ForEach-Object {
             $line = $_ -replace '(DISCORD_TOKEN=.{15}).*','$1***MASKED***'
             Write-Host $line
           }
@@ -493,11 +493,11 @@ jobs:
           # AppEnvironmentExtra 는 *전체 교체* 라 prod env + USERPROFILE 둘 다 명시.
           # 새 env 추가 시 이 라인에 추가 (별도 nssm set 호출 X. 마지막 호출이 전체 덮어씀).
           # 2026-06-09: 에이전트 팀 폐기. AGENT_CADENCE/DIALOGUE env 제거 (봇 reactive 기능만).
-          & $nssm set karmolab-bot-prod AppEnvironmentExtra 'YAWNBOT_ENV=prod' 'USERPROFILE=C:\Users\masca' | Out-Null
+          & $nssm set karmolab-bot-prod AppEnvironmentExtra 'KARMOLAB_BOT_ENV=prod' 'USERPROFILE=C:\Users\masca' | Out-Null
 
           # 서비스가 보는 폴더를 이번 판의 봇 폴더로 (폴더 이름 이전 2026-09-25, apps\karmolab-bot)
-          & $nssm set karmolab-bot-prod AppDirectory $env:YAWNBOT_DIR | Out-Null
-          Write-Host "[rename] AppDirectory = $env:YAWNBOT_DIR"
+          & $nssm set karmolab-bot-prod AppDirectory $env:KARMOLAB_BOT_DIR | Out-Null
+          Write-Host "[rename] AppDirectory = $env:KARMOLAB_BOT_DIR"
 
           # ③ safe.directory '*'. 봇이 USERPROFILE 마스킹 후 보는 사용자 gitconfig
           # (C:\Users\masca\.gitconfig). 미박으면 git fetch 시 'dubious ownership'
@@ -545,7 +545,7 @@ jobs:
         shell: 'powershell -ExecutionPolicy Bypass -File {0}'
         working-directory: ${{ env.BOTS_DIR }}
         env:
-          YAWNBOT_WEBHOOK_URL: 'https://bot.mascari4615.com/webhook/github'
+          KARMOLAB_BOT_WEBHOOK_URL: 'https://bot.mascari4615.com/webhook/github'
           GH_TOKEN: ${{ secrets.YB_PROD_GH_WEBHOOK_TOKEN }}
         run: |
           $ErrorActionPreference = 'Continue'

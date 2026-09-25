@@ -7,7 +7,7 @@
  *   ③ 사람은 `GET /device-log` 웹 화면, AI 는 `GET /device-log/tail` 평문으로 읽는다.
  *
  * 인증: `DEVICE_LOG_TOKEN` (없으면 `LOCAL_WEBHOOK_SECRET` 재사용). 헤더
- * `X-Yawnbot-Secret` 또는 쿼리 `?t=`. 쿼리를 허용하는 이유는 *폰 브라우저 북마크*
+ * `X-KarmoLab-Bot-Secret` (옛 `X-Yawnbot-Secret`) 또는 쿼리 `?t=`. 쿼리를 허용하는 이유는 *폰 브라우저 북마크*
  * 하나로 로그를 볼 수 있어야 하기 때문(사용자 작업량 최소화). 토큰 미설정 시엔
  * dev 모드로 열되 경고를 남긴다 (local-webhook 과 같은 신뢰 모델).
  *
@@ -62,7 +62,7 @@ function expectedToken(): string {
 function authorized(req: Request): boolean {
   const token = expectedToken();
   if (!token) return true; // dev 모드 (부팅 시 경고 1회)
-  const header = req.headers['x-yawnbot-secret'];
+  const header = req.headers['x-karmolab-bot-secret'] ?? req.headers['x-yawnbot-secret']; // 옛 헤더 이름도 받음 (폰 앱)
   if (typeof header === 'string' && header === token) return true;
   const query = req.query?.t;
   return typeof query === 'string' && query === token;

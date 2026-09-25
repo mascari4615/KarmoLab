@@ -15,13 +15,13 @@ import { channelIdFor } from '../services/channel-provision';
 
 /**
  * 인스턴스 전용 에이전트 채널 (prod/dev 격리, KAR-018-W).
- * `YAWNBOT_AGENT_CHANNEL_ID` 설정 시 = 이 인스턴스는 *오직 그 채널만* 팀 방
+ * `KARMOLAB_BOT_AGENT_CHANNEL_ID` 설정 시 = 이 인스턴스는 *오직 그 채널만* 팀 방
  * 으로 취급 (.active.json, 다른 채널 무시). 미설정(prod default) → 기존
  * .active.json 바인딩 동작 *불변*. 같은 서버에 prod+dev 공존 시 크로스-봇
  * 루프, 검증오염 차단 = env 가 유일하게 인스턴스별로 다른 축(공유 파일 X).
  */
 export function agentChannelId(): string | null {
-  // channelIdFor 경유: prod(프로비저닝 OFF) → env YAWNBOT_AGENT_CHANNEL_ID 그대로
+  // channelIdFor 경유: prod(프로비저닝 OFF) → env KARMOLAB_BOT_AGENT_CHANNEL_ID 그대로
   // (prod 미설정 = null, 기존 .active.json 동작 불변). dev(ON) → 프로비저닝
   // 'agent-team'(team-bus) 우선, 없으면 env 폴백. 정본 = channel-provision.
   return channelIdFor('agent-team');
@@ -39,7 +39,7 @@ export function isTeamRoom(
 
 /**
  * 메시지가 팀 방에서 온 것인가. isDM, channelKey 조립을 은닉 (main.ts 재사용).
- * env 격리 우선: `YAWNBOT_AGENT_CHANNEL_ID` 설정 시 *그 채널만* true
+ * env 격리 우선: `KARMOLAB_BOT_AGENT_CHANNEL_ID` 설정 시 *그 채널만* true
  * (dev 인스턴스가 prod 채널, .active.json 에 절대 반응 안 함, 역도 동일).
  */
 export function isTeamRoomMessage(cs: CharacterService, message: Message): boolean {

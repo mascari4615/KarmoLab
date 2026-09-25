@@ -221,14 +221,14 @@ export async function handleWrapped(_ctx: BotContext, interaction: ChatInputComm
 
 /** 공유 키 → 웹 결산 주소. 공개 주소가 설정 안 됐으면 null (링크 생략). */
 export function wrappedUrl(shareKey: string, days: number): string | null {
-  const base = (process.env.YAWNBOT_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  const base = (process.env.KARMOLAB_BOT_PUBLIC_URL || '').trim().replace(/\/+$/, '');
   if (!base) return null;
   return days === 7 ? `${base}/w/${shareKey}` : `${base}/w/${shareKey}?days=${days}`;
 }
 
 /** 개발 콘솔 주소. 공유 키가 아니라 *개발 키* 로 만든다. */
 export function devConsoleUrl(devKey: string, days: number): string | null {
-  const base = (process.env.YAWNBOT_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  const base = (process.env.KARMOLAB_BOT_PUBLIC_URL || '').trim().replace(/\/+$/, '');
   if (!base) return null;
   return `${base}/w/${devKey}/dev?days=${days}`;
 }

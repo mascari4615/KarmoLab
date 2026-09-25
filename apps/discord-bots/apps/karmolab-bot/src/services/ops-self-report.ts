@@ -6,8 +6,8 @@
  *
  * 환경:
  *   - DISCORD_TOKEN                  (필수. 미설정 시 봇 자체가 못 떠서 무관)
- *   - YAWNBOT_OPS_REPORT_CHANNEL_ID  (선택. 미설정 시 모든 report no-op)
- *   - YAWNBOT_ENV                    (선택. 'dev' | 'prod' | 미설정 시 'unknown')
+ *   - KARMOLAB_BOT_OPS_REPORT_CHANNEL_ID  (선택. 미설정 시 모든 report no-op)
+ *   - KARMOLAB_BOT_ENV                    (선택. 'dev' | 'prod' | 미설정 시 'unknown')
  *   - GIT_COMMIT                     (선택. build 시점 주입. 없으면 'unknown')
  *
  * 모든 send 는 try/catch silent. 자기보고가 봇 자체를 죽이지 않도록.
@@ -39,7 +39,7 @@ export function loadOpsReportContext(): OpsReportContext | null {
   if (!token) return null;
   return {
     token,
-    env: process.env.YAWNBOT_ENV?.trim() || 'unknown',
+    env: process.env.KARMOLAB_BOT_ENV?.trim() || 'unknown',
     hostname: os.hostname(),
     gitCommit: process.env.GIT_COMMIT?.trim() || 'unknown',
     adminMentionIds: parseCommaSeparatedEnv(process.env.ADMIN_IDS),

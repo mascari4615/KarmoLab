@@ -13,7 +13,7 @@ const post: ResetPost = {
 const verdict = { kind: 'reset', status: 'scheduled', summary: '초기화 여부를 묻는 대화에서 작성자가 시간을 제시한 예정 공지', evidenceIds: [post.id, post.context![1].id], timingText: post.text };
 
 describe('문맥 판정 경계', () => {
-  beforeEach(() => vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude,codex,grok'));
+  beforeEach(() => vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', 'claude,codex,grok'));
   afterEach(() => vi.unstubAllEnvs());
   it('reset 없는 실제 시간 답글을 문맥 분석에 전달하고 예정 알림으로 보존', async () => {
     const generate = vi.fn().mockResolvedValue(JSON.stringify(verdict));
@@ -66,7 +66,7 @@ describe('문맥 판정 경계', () => {
 describe('활성 AI 선택', () => {
   afterEach(() => vi.unstubAllEnvs());
   it('Claude 단독으로 판정하고 미로그인 제공자는 호출하지 않음', async () => {
-    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude');
+    vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', 'claude');
     const generate = vi.fn(async (_prompt: string, provider: string) => {
       if (provider !== 'claude') throw new Error('not logged in');
       return JSON.stringify(verdict);
@@ -77,26 +77,26 @@ describe('활성 AI 선택', () => {
     expect(generate).toHaveBeenCalledTimes(1);
   });
   it('설정이 없으면 Claude만 사용', async () => {
-    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', undefined);
+    vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', undefined);
     const generate = vi.fn().mockResolvedValue(JSON.stringify({ kind: null }));
     expect(await analyzeResetPost(post, generate)).toBeNull();
     expect(generate).toHaveBeenCalledTimes(1);
     expect(generate.mock.calls[0][1]).toBe('claude');
   });
   it('선택한 Claude 실패는 다른 미로그인 AI로 넘기지 않음', async () => {
-    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude');
+    vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', 'claude');
     const generate = vi.fn().mockRejectedValue(new Error('offline'));
     await expect(analyzeResetPost(post, generate)).rejects.toThrow('문맥 분석');
     expect(generate).toHaveBeenCalledTimes(1);
   });
   it('잘못된 제공자 설정은 호출 전에 실패', async () => {
-    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude,typo');
+    vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', 'claude,typo');
     const generate = vi.fn().mockResolvedValue(JSON.stringify(verdict));
     await expect(analyzeResetPost(post, generate)).rejects.toThrow('문맥 분석');
     expect(generate).not.toHaveBeenCalled();
   });
   it('Claude가 불확실하다고 판정하면 확인 필요 표시', async () => {
-    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude');
+    vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', 'claude');
     const result = await analyzeResetPost(post, async () => JSON.stringify({ ...verdict, status: 'uncertain' }));
     expect(result).toMatchObject({ status: 'uncertain', analysis: { needsReview: true } });
   });

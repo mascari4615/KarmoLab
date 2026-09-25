@@ -1,7 +1,7 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
 
 function usageLogEnabled(): boolean {
-  const s = String(process.env.YAWNBOT_SLASH_USAGE_LOG ?? '').trim().toLowerCase();
+  const s = String(process.env.KARMOLAB_BOT_SLASH_USAGE_LOG ?? '').trim().toLowerCase();
   return s === '1' || s === 'true' || s === 'yes' || s === 'on';
 }
 

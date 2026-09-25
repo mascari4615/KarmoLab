@@ -208,11 +208,11 @@ describe('문맥 재분석과 복구', () => {
     fetchPosts.mockResolvedValue([timed]);
     const analyze = vi.fn().mockResolvedValue(signal);
     const create = () => new ResetMonitor({ author: 'thsottiaux', store, fetchPosts, analyze, now: () => now });
-    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude');
+    vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', 'claude');
     const first = create();
     await first.refresh();
     expect(await first.deliver(vi.fn())).toBe(1);
-    vi.stubEnv('YAWNBOT_RESET_AI_PROVIDERS', 'claude,codex,grok');
+    vi.stubEnv('KARMOLAB_BOT_RESET_AI_PROVIDERS', 'claude,codex,grok');
     const second = create();
     await second.refresh();
     expect(analyze).toHaveBeenCalledTimes(2);

@@ -22,7 +22,7 @@ describe('/코덱스 사용자 경로', () => {
     expect(command.options?.[0].required).not.toBe(true);
   });
   it('링크 조회는 토큰 없이 개인 응답으로 한국시간 표시', async () => {
-    vi.stubEnv('YAWNBOT_X_BEARER_TOKEN', '');
+    vi.stubEnv('KARMOLAB_BOT_X_BEARER_TOKEN', '');
     vi.mocked(fetchBrowserResetPostLink).mockResolvedValue({ id: '2097174560412246215', text: 'We have reset Codex usage.', postedAt: '2026-09-08T04:05:53Z', url: 'https://x.com/thsottiaux/status/2097174560412246215' });
     vi.mocked(analyzeResetPost).mockImplementation(async post => classifyResetPost(post));
     const input = interaction('https://x.com/thsottiaux/status/2097174560412246215');

@@ -10,7 +10,7 @@
  *   upsertHooks('https://example.com/webhook/github')
  *
  * 환경변수:
- *   YAWNBOT_WEBHOOK_URL (default: https://bot.mascari4615.com/webhook/github)
+ *   KARMOLAB_BOT_WEBHOOK_URL (default: https://bot.mascari4615.com/webhook/github)
  *
  * 사전 요구:
  *   gh CLI 로그인 (gh auth status)
@@ -152,6 +152,6 @@ export function upsertHooks(webhookUrl) {
 
 const isMain = import.meta.url === `file://${process.argv[1]}` || process.argv[1].endsWith('webhook-upsert.mjs');
 if (isMain) {
-  const webhookUrl = process.env.YAWNBOT_WEBHOOK_URL || DEFAULT_URL;
+  const webhookUrl = process.env.KARMOLAB_BOT_WEBHOOK_URL || DEFAULT_URL;
   upsertHooks(webhookUrl);
 }

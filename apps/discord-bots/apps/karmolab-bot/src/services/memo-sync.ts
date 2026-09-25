@@ -37,9 +37,9 @@
  * 환경:
  *  - MEMO_GITHUB_PAT (또는 GITHUB_TOKEN) . memo private fetch 토큰 (미설정 시 비활성)
  *  - MEMO_REPO_PATH                       . 로컬 memo 클론 경로 (미설정 시 비활성)
- *  - YAWNBOT_MEMOSYNC_REPO_SLUG           . 기본 'Mascari4615/memo'
- *  - YAWNBOT_MEMOSYNC_BRANCH              . 기본 'main'
- *  - YAWNBOT_MEMOSYNC_INTERVAL_MIN        . 간격(분, 기본 10, 최소 1)
+ *  - KARMOLAB_BOT_MEMOSYNC_REPO_SLUG           . 기본 'Mascari4615/memo'
+ *  - KARMOLAB_BOT_MEMOSYNC_BRANCH              . 기본 'main'
+ *  - KARMOLAB_BOT_MEMOSYNC_INTERVAL_MIN        . 간격(분, 기본 10, 최소 1)
  */
 
 import { execFile } from 'child_process';

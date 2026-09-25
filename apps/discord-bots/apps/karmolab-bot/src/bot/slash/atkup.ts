@@ -18,7 +18,7 @@ export async function handleAtkupUnity(
   switch (result.status) {
     case 'no_channel':
       await interaction.editReply(
-        'YAWNBOT_UNITY_FREE_CHANNEL_ID 가 .env 에 설정되어 있지 않아 전송할 수 없습니다.',
+        'KARMOLAB_BOT_UNITY_FREE_CHANNEL_ID 가 .env 에 설정되어 있지 않아 전송할 수 없습니다.',
       );
       return;
     case 'fetch_failed':
@@ -36,7 +36,7 @@ export async function handleAtkupUnity(
     }
     case 'channel_unreachable':
       await interaction.editReply(
-        '채널을 찾을 수 없거나 메시지를 보낼 수 없습니다 (YAWNBOT_UNITY_FREE_CHANNEL_ID 확인).',
+        '채널을 찾을 수 없거나 메시지를 보낼 수 없습니다 (KARMOLAB_BOT_UNITY_FREE_CHANNEL_ID 확인).',
       );
       return;
     case 'sent': {

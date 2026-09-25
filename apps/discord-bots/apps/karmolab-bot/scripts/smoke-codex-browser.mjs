@@ -17,7 +17,7 @@ const card = (id, name = author, body = 'We have reset Codex usage.', pinned = f
   <div data-testid="User-Name"><a href="/${name}">${name}</a><a href="/${name}/status/${id}"><time datetime="${at}">now</time></a></div>
   ${body ? `<div data-testid="tweetText" lang="en">${body}</div>` : ''}</article>`;
 let browser;
-const channel = process.env.YAWNBOT_CODEX_RESET_BROWSER === 'chromium' ? undefined : 'msedge';
+const channel = process.env.KARMOLAB_BOT_CODEX_RESET_BROWSER === 'chromium' ? undefined : 'msedge';
 try { browser = await chromium.launch({ channel, headless: true, chromiumSandbox: true }); }
 catch (error) { console.error(`CANNOT-RUN: ${channel || 'chromium'} 실행 실패: ${error.message.split('\n')[0]}`); process.exit(2); }
 let passed = 0;

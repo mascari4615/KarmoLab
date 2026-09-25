@@ -14,7 +14,7 @@ npm install
 npm run build:karmolab-bot
 ```
 
-환경 변수는 **`config/yawnbot-defaults.txt`(커밋)** 에서 비밀이 아닌 기본값(모델명, 타임아웃, Playing 문구, `kakao-export` 폴링, 라운드 등)을 읽은 뒤, 같은 디렉터리의 **`.env`**(gitignore)가 있으면 그걸로 덮어씁니다. 키 목록, 예시는 [.env.template](./.env.template)를 복사해 `.env`로 쓰면 됩니다.
+환경 변수는 **`config/karmolab-bot-defaults.txt`(커밋)** 에서 비밀이 아닌 기본값(모델명, 타임아웃, Playing 문구, `kakao-export` 폴링, 라운드 등)을 읽은 뒤, 같은 디렉터리의 **`.env`**(gitignore)가 있으면 그걸로 덮어씁니다. 키 목록, 예시는 [.env.template](./.env.template)를 복사해 `.env`로 쓰면 됩니다.
 
 > **prod (노트북) 의 `.env`** = GitHub Secret 들이 자동 주입.
 >
@@ -29,7 +29,7 @@ npm run deploy:karmolab-bot
 
 전체 워크스페이스 설명은 [apps/discord-bots/README.md](../../README.md)를 참고하세요.
 
-로그인 후 **프로필 활동(Playing ...)** 은 기본으로 **약 3초마다** 순환합니다. 끄려면 `.env`에 `BOT_PRESENCE_INTERVAL_SEC=0`, 문구, 간격은 `BOT_PRESENCE_LINES`, `BOT_PRESENCE_INTERVAL_SEC`로 바꿀 수 있습니다([.env.template](./.env.template), `yawnbot-defaults.txt` 참고).
+로그인 후 **프로필 활동(Playing ...)** 은 기본으로 **약 3초마다** 순환합니다. 끄려면 `.env`에 `BOT_PRESENCE_INTERVAL_SEC=0`, 문구, 간격은 `BOT_PRESENCE_LINES`, `BOT_PRESENCE_INTERVAL_SEC`로 바꿀 수 있습니다([.env.template](./.env.template), `karmolab-bot-defaults.txt` 참고).
 
 ---
 
@@ -92,14 +92,14 @@ DM, 전용 채널에서 자유 대화하는 AI 비서 기능. 페르소나는 `m
 
 | 변수 | 설명 |
 |------|------|
-| `YAWNBOT_ALLOWED_GUILD_IDS` | (선택) 허용 길드 ID만 슬래시 사용. 비우면 제한 없음. 예전 이름 `YAWNBOT_SLASH_GUILD_IDS`도 동일 |
-| `YAWNBOT_ALLOWED_SLASH_CHANNEL_IDS` | (선택) 슬래시를 칠 수 있는 텍스트 채널 ID만 허용 |
-| `YAWNBOT_SLASH_USAGE_LOG` | `1` 등. 슬래시 사용을 콘솔에 한 줄로 기록 |
+| `KARMOLAB_BOT_ALLOWED_GUILD_IDS` | (선택) 허용 길드 ID만 슬래시 사용. 비우면 제한 없음. 예전 이름 `KARMOLAB_BOT_SLASH_GUILD_IDS`도 동일 |
+| `KARMOLAB_BOT_ALLOWED_SLASH_CHANNEL_IDS` | (선택) 슬래시를 칠 수 있는 텍스트 채널 ID만 허용 |
+| `KARMOLAB_BOT_SLASH_USAGE_LOG` | `1` 등. 슬래시 사용을 콘솔에 한 줄로 기록 |
 | `YAWN_CONTEXT_MESSAGES` | `/yawn`에 붙일 최근 **사용자** 메시지 개수(0~30, 기본 10). `Message Content` 인텐트, 채널 읽기 권한 필요 |
 | `YAWN_SYSTEM_PROMPT` | `/yawn` 시스템 역할(비우면 기본 톤). `\n` 이스케이프 가능 |
 | `YAWN_MAX_QUESTION_CHARS` / `YAWN_MAX_PROMPT_CHARS` | 질문 길이, 전체 프롬프트 상한(비용, 토큰 완화) |
-| `YAWNBOT_NOW_PLAYING_MESSAGE` | `0` 등으로 끄면 `/music play` 알림 채널의지금 재생임베드를 보내지 않음 |
-| `YAWNBOT_NOW_PLAYING_REFRESH_SEC` | 위 임베드 자동 수정 주기(초). `0`이면 첫 메시지만 |
+| `KARMOLAB_BOT_NOW_PLAYING_MESSAGE` | `0` 등으로 끄면 `/music play` 알림 채널의지금 재생임베드를 보내지 않음 |
+| `KARMOLAB_BOT_NOW_PLAYING_REFRESH_SEC` | 위 임베드 자동 수정 주기(초). `0`이면 첫 메시지만 |
 
 플레이리스트를 큐에 넣는 동안 `/music play` 응답에 **몇 곡/전체** 진행이 간헐적으로 갱신됩니다.
 
@@ -124,9 +124,9 @@ Discord, Gemini, Cursor, 카카오 익스포트 키 목록은 [.env.template](./
 
 | 변수 | 설명 |
 |------|------|
-| `YT_DLP_PATH` / `YAWNBOT_YT_DLP_PATH` | `yt-dlp` 실행 파일 직접 지정 |
-| `YT_DLP_COOKIES_PATH` / `YAWNBOT_YOUTUBE_COOKIES_PATH` | Netscape `cookies.txt` (연령, 로그인 제한 완화) |
-| `YAWNBOT_PLAYLIST_MAX_TRACKS` | 플레이리스트에서 가져올 **최대 곡 수**. 기본 `40`. **`0` 이하**면 **한도 없음**(페이지 끝까지; 대형 목록은 로드, 디스코드 응답 시간이 길어질 수 있음). 양수면 그 개수만큼만. |
+| `YT_DLP_PATH` / `KARMOLAB_BOT_YT_DLP_PATH` | `yt-dlp` 실행 파일 직접 지정 |
+| `YT_DLP_COOKIES_PATH` / `KARMOLAB_BOT_YOUTUBE_COOKIES_PATH` | Netscape `cookies.txt` (연령, 로그인 제한 완화) |
+| `KARMOLAB_BOT_PLAYLIST_MAX_TRACKS` | 플레이리스트에서 가져올 **최대 곡 수**. 기본 `40`. **`0` 이하**면 **한도 없음**(페이지 끝까지; 대형 목록은 로드, 디스코드 응답 시간이 길어질 수 있음). 양수면 그 개수만큼만. |
 
 내장 `ffmpeg-static`이 `FFMPEG_PATH`를 잡습니다. 무음이면 봇이 음성 채널에서 음소거되지 않았는지 확인하세요.
 

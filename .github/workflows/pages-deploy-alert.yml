@@ -200,7 +200,7 @@ jobs:
             exit 0
           fi
           if [ -z "$ALERT_WEBHOOK" ]; then
-            echo "::warning::YAWNBOT_HEALTH_ALERT_WEBHOOK_URL 미설정. 알림 건너뜀 (실패 자체는 위 기록에 남는다)"
+            echo "::warning::KARMOLAB_BOT_HEALTH_ALERT_WEBHOOK_URL 미설정. 알림 건너뜀 (실패 자체는 위 기록에 남는다)"
             exit 0
           fi
           curl -fsS -m 10 -X POST -H 'Content-Type: application/json' -d "$PAYLOAD" "$ALERT_WEBHOOK"

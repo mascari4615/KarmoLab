@@ -4,8 +4,8 @@
  *
  * 로드 순서(존재하는 파일만, 뒤가 앞을 덮어씀. TASK-YB-028 4-레이어):
  *   1) `packages/ai/.env`     (공통 AI 키. AI_SURFACE, API 키, Vertex 자격증명)
- *   2) `config/yawnbot-defaults.txt`   (① 불변, 비밀 아닌 기본값, 커밋)
- *   3) `config/yawnbot.<env>.txt`      (② 비밀 아닌 env별 값, 커밋. <env>=YAWNBOT_ENV|dev)
+ *   2) `config/karmolab-bot-defaults.txt`   (① 불변, 비밀 아닌 기본값, 커밋)
+ *   3) `config/karmolab-bot.<env>.txt`      (② 비밀 아닌 env별 값, 커밋. <env>=KARMOLAB_BOT_ENV|dev)
  *   4) `.env`                          (④ 머신 경로 + 로컬 override + ③ 주입 비밀, 최우선)
  */
 import path from 'path';
@@ -16,10 +16,10 @@ import { loadKarmoLabAIEnv } from '@karmo/ai/node';
 loadKarmoLabAIEnv();
 
 const nodeRequire = createRequire(__filename);
-const { applyYawnbotDotenvLayers } = nodeRequire(
+const { applyBotDotenvLayers } = nodeRequire(
   path.join(__dirname, '..', '..', 'scripts', 'load-dotenv-layers.cjs'),
-) as { applyYawnbotDotenvLayers: (root: string) => void };
+) as { applyBotDotenvLayers: (root: string) => void };
 
-const yawnbotRoot = path.join(__dirname, '..', '..');
-// 2. yawnbot-defaults.txt + 3. yawnbot .env
-applyYawnbotDotenvLayers(yawnbotRoot);
+const botRoot = path.join(__dirname, '..', '..');
+// 2. karmolab-bot-defaults.txt + 3. yawnbot .env
+applyBotDotenvLayers(botRoot);

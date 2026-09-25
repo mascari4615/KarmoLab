@@ -5,7 +5,7 @@
 # 진짜 비밀(DISCORD_TOKEN / GEMINI_API_KEY / VERTEX_API_KEY /
 #   DISCORD_SUMMARY_WEBHOOK_URL)은 절대 여기 X — ③ GitHub secret(YB_PROD_*).
 #
-# 로드: yawnbot-defaults.txt → (이 파일, YAWNBOT_ENV=prod 일 때) → .env.
+# 로드: karmolab-bot-defaults.txt → (이 파일, KARMOLAB_BOT_ENV=prod 일 때) → .env.
 # 빈 값(KEY=) = 미설정과 동일(코드에서 undefined 취급) → 해당 기능 비활성.
 #
 # 🔧 마이그레이션: .env.prod-backup(2026-05-09) 의 prod 값으로 채움 (사용자 결정).
@@ -17,38 +17,38 @@
 # ── Discord 앱 (prod 봇 — dev 와 다른 앱) · backup 5/9 ──
 # 1456979834566873131=개발 본진, 400451987268829186=친구방 (사용자 2026-05-17).
 #   DISCORD_GUILD_ID = 슬래시 *등록* → 친구방 포함 둘 다.
-#   YAWNBOT_ALLOWED_GUILD_IDS = *응답* 게이트 → 본진만 (친구방은 명령 보여도
+#   KARMOLAB_BOT_ALLOWED_GUILD_IDS = *응답* 게이트 → 본진만 (친구방은 명령 보여도
 #   실행 시 "등록된 서버에서만" 거부).
 CLIENT_ID=825793713749622816
 DISCORD_GUILD_ID=1456979834566873131,400451987268829186
-YAWNBOT_ALLOWED_GUILD_IDS=1456979834566873131
+KARMOLAB_BOT_ALLOWED_GUILD_IDS=1456979834566873131
 
 # ── 알림 채널 ID (prod 서버) — 폴백 전용 (TASK-YB-029) ──
 # 정상 시 미사용: 봇이 부팅 시 본진에 「욘봇」 카테고리+채널을 자동
 # 생성/claim 하고 거기로 보냄 (정본 = data/channel-spec.json).
-# 아래 값은 프로비저닝 OFF(YAWNBOT_CHANNEL_PROVISION=0)·봇 Manage Channels
+# 아래 값은 프로비저닝 OFF(KARMOLAB_BOT_CHANNEL_PROVISION=0)·봇 Manage Channels
 # 권한 상실·reconcile 실패 시에만 쓰이는 안전망. 삭제 X(무음손실 방지),
 # 수동 개별 교체 불요(프로비저닝이 용도별 분리 자동 처리).
 GITHUB_WEBHOOK_CHANNEL_ID=1490334302003663058
-YAWNBOT_OPS_REPORT_CHANNEL_ID=1490364315545636935
-YAWNBOT_UNITY_FREE_CHANNEL_ID=1490364315545636935
-YAWNBOT_NEWS_CHANNEL_ID=1490364315545636935
+KARMOLAB_BOT_OPS_REPORT_CHANNEL_ID=1490364315545636935
+KARMOLAB_BOT_UNITY_FREE_CHANNEL_ID=1490364315545636935
+KARMOLAB_BOT_NEWS_CHANNEL_ID=1490364315545636935
 # 뉴스 자동 게시 OFF (사용자 결정 2026-06-28). 재활성 = google,gn (HN 제외, 영어 부담).
 # off 센티넬: none/off/-/0 = 폴링 비활성. 빈값/미설정은 전체(google,hn,gn) 폴백이라 끄기 아님 주의.
-YAWNBOT_NEWS_SOURCES=off
+KARMOLAB_BOT_NEWS_SOURCES=off
 
 # 초기화 공지 자동 수집. 노트북 전용 X 로그인 필요
-YAWNBOT_CODEX_RESET_ENABLED=1
-YAWNBOT_CODEX_RESET_BROWSER=chromium
-YAWNBOT_AI_USER_HOME=C:/Users/masca
-YAWNBOT_RESET_AI_PROVIDERS=claude
+KARMOLAB_BOT_CODEX_RESET_ENABLED=1
+KARMOLAB_BOT_CODEX_RESET_BROWSER=chromium
+KARMOLAB_BOT_AI_USER_HOME=C:/Users/masca
+KARMOLAB_BOT_RESET_AI_PROVIDERS=claude
 PLAYWRIGHT_BROWSERS_PATH=C:/ProgramData/YawnBot/playwright
 
 # ── 웹 결산 페이지 (TASK-YB-042) ──
 # 봇이 `/결산` 답에 붙이는 링크의 앞부분. 노트북 express(4615)를 named tunnel 이
 # 이 주소로 내보낸다. 비어 있으면 링크만 생략되고 카드는 그대로 뜬다.
 # 페이지 주소는 `/w/<공유키>` — 서버 ID 로는 못 연다(키는 봇이 서버마다 따로 만듦).
-YAWNBOT_PUBLIC_URL=https://bot.mascari4615.com
+KARMOLAB_BOT_PUBLIC_URL=https://bot.mascari4615.com
 
 # ── 개인 식별자 (Discord 유저 ID — env 불변, dev .env 에서 자동 채움) ──
 ADMIN_IDS=391805564616704002

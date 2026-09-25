@@ -75,7 +75,7 @@ jobs:
         if: steps.probe.outputs.status == 'fail'
         run: |
           if [ -z "$ALERT_WEBHOOK" ]; then
-            echo "::warning::YAWNBOT_HEALTH_ALERT_WEBHOOK_URL secret 미설정. alert skip (probe 는 fail 검출)"
+            echo "::warning::KARMOLAB_BOT_HEALTH_ALERT_WEBHOOK_URL secret 미설정. alert skip (probe 는 fail 검출)"
             exit 0
           fi
           TS=$(date -Iseconds)
@@ -169,7 +169,7 @@ jobs:
         if: steps.hb.outputs.status == 'fail'
         run: |
           if [ -z "$ALERT_WEBHOOK" ]; then
-            echo "::warning::YAWNBOT_HEALTH_ALERT_WEBHOOK_URL 미설정. alert skip (감시는 fail 검출)"
+            echo "::warning::KARMOLAB_BOT_HEALTH_ALERT_WEBHOOK_URL 미설정. alert skip (감시는 fail 검출)"
             exit 0
           fi
           TS_NOW=$(date -Iseconds)

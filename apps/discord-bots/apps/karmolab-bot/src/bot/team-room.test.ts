@@ -54,8 +54,8 @@ describe('isTeamRoomMessage. main.ts bot-gate 임계경로', () => {
     expect(isTeamRoomMessage(fakeCS(null), fakeMsg('tm-ch', false))).toBe(false);
   });
 
-  describe('YAWNBOT_AGENT_CHANNEL_ID env 격리 (prod/dev 크로스봇 차단)', () => {
-    const KEY = 'YAWNBOT_AGENT_CHANNEL_ID';
+  describe('KARMOLAB_BOT_AGENT_CHANNEL_ID env 격리 (prod/dev 크로스봇 차단)', () => {
+    const KEY = 'KARMOLAB_BOT_AGENT_CHANNEL_ID';
     afterEach(() => {
       delete process.env[KEY];
     });

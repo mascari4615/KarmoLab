@@ -257,29 +257,29 @@ export function parseSources(raw: string | undefined): Set<NewsSource> {
 
 /**
  * 환경변수:
- * - YAWNBOT_NEWS_CHANNEL_ID. 알림 채널 (미설정 시 폴링 비활성)
- * - YAWNBOT_NEWS_SOURCES. 활성 소스 목록(쉼표 구분, 기본 google,hn,gn). 새 소스 = 이 값만 수정.
- * - YAWNBOT_NEWS_INTERVAL_MIN. 폴링 간격 (분, 기본 180, 최소 30)
- * - YAWNBOT_NEWS_MAX_AGE_HOURS. google 신선 기사 기준 (시간, 기본 12)
- * - YAWNBOT_NEWS_MAX_PER_POLL. 소스당 1회 최대 게시 수 (기본 3)
+ * - KARMOLAB_BOT_NEWS_CHANNEL_ID. 알림 채널 (미설정 시 폴링 비활성)
+ * - KARMOLAB_BOT_NEWS_SOURCES. 활성 소스 목록(쉼표 구분, 기본 google,hn,gn). 새 소스 = 이 값만 수정.
+ * - KARMOLAB_BOT_NEWS_INTERVAL_MIN. 폴링 간격 (분, 기본 180, 최소 30)
+ * - KARMOLAB_BOT_NEWS_MAX_AGE_HOURS. google 신선 기사 기준 (시간, 기본 12)
+ * - KARMOLAB_BOT_NEWS_MAX_PER_POLL. 소스당 1회 최대 게시 수 (기본 3)
  */
 export function startNewsNotifier(client: Client, getNews: (slug: string) => NewsService, slug: string): void {
   stopNewsNotifier();
 
   const channelId = channelIdFor('news');
   if (!channelId) {
-    console.warn('[News] YAWNBOT_NEWS_CHANNEL_ID 미설정. 관심사 뉴스 알림 비활성');
+    console.warn('[News] KARMOLAB_BOT_NEWS_CHANNEL_ID 미설정. 관심사 뉴스 알림 비활성');
     return;
   }
 
-  const sources = parseSources(process.env.YAWNBOT_NEWS_SOURCES);
+  const sources = parseSources(process.env.KARMOLAB_BOT_NEWS_SOURCES);
   if (sources.size === 0) {
-    console.log('[News] YAWNBOT_NEWS_SOURCES=off. 뉴스 자동 게시 비활성');
+    console.log('[News] KARMOLAB_BOT_NEWS_SOURCES=off. 뉴스 자동 게시 비활성');
     return;
   }
-  const intervalMin = Math.max(30, parseInt(process.env.YAWNBOT_NEWS_INTERVAL_MIN || '180', 10));
-  const maxAgeHours = Math.max(1, parseInt(process.env.YAWNBOT_NEWS_MAX_AGE_HOURS || '12', 10));
-  const maxPerPoll = Math.max(1, parseInt(process.env.YAWNBOT_NEWS_MAX_PER_POLL || '3', 10));
+  const intervalMin = Math.max(30, parseInt(process.env.KARMOLAB_BOT_NEWS_INTERVAL_MIN || '180', 10));
+  const maxAgeHours = Math.max(1, parseInt(process.env.KARMOLAB_BOT_NEWS_MAX_AGE_HOURS || '12', 10));
+  const maxPerPoll = Math.max(1, parseInt(process.env.KARMOLAB_BOT_NEWS_MAX_PER_POLL || '3', 10));
   const intervalMs = intervalMin * 60 * 1000;
 
   const tick = (): void => {
@@ -328,7 +328,7 @@ export function stopNewsNotifier(): void {
 }
 
 /**
- * 슬래시 단발 트리거. Google 키워드 뉴스 1회. YAWNBOT_NEWS_CHANNEL_ID 미설정 시 'no_channel'.
+ * 슬래시 단발 트리거. Google 키워드 뉴스 1회. KARMOLAB_BOT_NEWS_CHANNEL_ID 미설정 시 'no_channel'.
  */
 export async function triggerNewsOnce(
   client: Client,
@@ -344,7 +344,7 @@ export async function triggerNewsOnce(
 }
 
 /**
- * 슬래시 단발 트리거. 활성 소스(YAWNBOT_NEWS_SOURCES) 전체 1회 폴.
+ * 슬래시 단발 트리거. 활성 소스(KARMOLAB_BOT_NEWS_SOURCES) 전체 1회 폴.
  * /관리자 뉴스틱 용.
  */
 export async function triggerAllNewsOnce(
@@ -355,9 +355,9 @@ export async function triggerAllNewsOnce(
   const channelId = channelIdFor('news');
   if (!channelId) return { google: 0, gn: 0, hn: 0, noChannel: true };
 
-  const sources = parseSources(process.env.YAWNBOT_NEWS_SOURCES);
-  const maxAgeHours = Math.max(1, parseInt(process.env.YAWNBOT_NEWS_MAX_AGE_HOURS || '12', 10));
-  const maxPerPoll = Math.max(1, parseInt(process.env.YAWNBOT_NEWS_MAX_PER_POLL || '3', 10));
+  const sources = parseSources(process.env.KARMOLAB_BOT_NEWS_SOURCES);
+  const maxAgeHours = Math.max(1, parseInt(process.env.KARMOLAB_BOT_NEWS_MAX_AGE_HOURS || '12', 10));
+  const maxPerPoll = Math.max(1, parseInt(process.env.KARMOLAB_BOT_NEWS_MAX_PER_POLL || '3', 10));
 
   let google = 0, gn = 0, hn = 0;
 

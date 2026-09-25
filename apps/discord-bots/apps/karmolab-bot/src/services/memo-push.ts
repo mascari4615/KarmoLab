@@ -99,12 +99,12 @@ export function resolveConfig(env: NodeJS.ProcessEnv, deps: MemoPushDeps): MemoP
   return {
     token,
     memoRepoPath,
-    repoSlug: deps.repoSlug || env.YAWNBOT_MEMOSYNC_REPO_SLUG?.trim() || DEFAULT_REPO_SLUG,
+    repoSlug: deps.repoSlug || env.KARMOLAB_BOT_MEMOSYNC_REPO_SLUG?.trim() || DEFAULT_REPO_SLUG,
     // 같은 패턴 (defaults.txt 빈 문자열 line). ?? 는 nullish 만 fallback 이라
     // empty string 통과 → "" 로 깨짐 (KAR-018-PUSH-CLOSURE 2026-05-20).
-    branch: deps.branch || env.YAWNBOT_MEMOSYNC_BRANCH?.trim() || DEFAULT_BRANCH,
-    authorName: deps.authorName || env.YAWNBOT_PUSH_AUTHOR_NAME?.trim() || DEFAULT_AUTHOR_NAME,
-    authorEmail: deps.authorEmail || env.YAWNBOT_PUSH_AUTHOR_EMAIL?.trim() || DEFAULT_AUTHOR_EMAIL,
+    branch: deps.branch || env.KARMOLAB_BOT_MEMOSYNC_BRANCH?.trim() || DEFAULT_BRANCH,
+    authorName: deps.authorName || env.KARMOLAB_BOT_PUSH_AUTHOR_NAME?.trim() || DEFAULT_AUTHOR_NAME,
+    authorEmail: deps.authorEmail || env.KARMOLAB_BOT_PUSH_AUTHOR_EMAIL?.trim() || DEFAULT_AUTHOR_EMAIL,
   };
 }
 
@@ -220,7 +220,7 @@ export async function checkMemoPushScope(
   if (!token) {
     return { ok: false, error: 'MEMO_GITHUB_PAT (and GITHUB_TOKEN) missing' };
   }
-  const slug = deps.repoSlug || env.YAWNBOT_MEMOSYNC_REPO_SLUG?.trim() || DEFAULT_REPO_SLUG;
+  const slug = deps.repoSlug || env.KARMOLAB_BOT_MEMOSYNC_REPO_SLUG?.trim() || DEFAULT_REPO_SLUG;
   const fetchImpl = deps.fetchImpl ?? fetch;
   try {
     const res = await fetchImpl(`https://api.github.com/repos/${slug}`, {

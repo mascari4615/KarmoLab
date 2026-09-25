@@ -19,10 +19,10 @@
  *
  * 환경:
  *  - MEMO_GITHUB_PAT (또는 GITHUB_TOKEN) . memo repo write 토큰 (미설정 시 비활성)
- *  - YAWNBOT_HEARTBEAT_REPO              . 기본 'mascari4615/memo'
- *  - YAWNBOT_HEARTBEAT_BRANCH            . 기본 'yawnbot-heartbeat'
- *  - YAWNBOT_HEARTBEAT_PATH              . 기본 '.heartbeat/yawnbot.json'
- *  - YAWNBOT_HEARTBEAT_INTERVAL_MIN      . 간격(분, 기본 5, 최소 1)
+ *  - KARMOLAB_BOT_HEARTBEAT_REPO              . 기본 'mascari4615/memo'
+ *  - KARMOLAB_BOT_HEARTBEAT_BRANCH            . 기본 'yawnbot-heartbeat'
+ *  - KARMOLAB_BOT_HEARTBEAT_PATH              . 기본 '.heartbeat/yawnbot.json'
+ *  - KARMOLAB_BOT_HEARTBEAT_INTERVAL_MIN      . 간격(분, 기본 5, 최소 1)
  *
  * 순수부(writeHeartbeatOnce / runHeartbeatTick)는 fetch/clock 주입으로
  * 단위 테스트 가능 (Discord client, 실 네트워크, 실 GitHub 무관).

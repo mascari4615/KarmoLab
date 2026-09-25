@@ -276,19 +276,19 @@ async function pollOnce(client: Client, channelId: string, force: boolean): Prom
 
 /**
  * 환경변수:
- * - YAWNBOT_UNITY_FREE_CHANNEL_ID. 알림 채널 (미설정 시 폴링 비활성)
- * - YAWNBOT_UNITY_FREE_INTERVAL_MIN. 폴링 간격 (분, 기본 60, 최소 5)
+ * - KARMOLAB_BOT_UNITY_FREE_CHANNEL_ID. 알림 채널 (미설정 시 폴링 비활성)
+ * - KARMOLAB_BOT_UNITY_FREE_INTERVAL_MIN. 폴링 간격 (분, 기본 60, 최소 5)
  */
 export function startUnityFreeNotifier(client: Client): void {
   stopUnityFreeNotifier();
 
   const channelId = channelIdFor('unity-free');
   if (!channelId) {
-    console.warn('[UnityFree] YAWNBOT_UNITY_FREE_CHANNEL_ID 미설정. Unity 무료 에셋 알림 비활성');
+    console.warn('[UnityFree] KARMOLAB_BOT_UNITY_FREE_CHANNEL_ID 미설정. Unity 무료 에셋 알림 비활성');
     return;
   }
 
-  const intervalMin = Math.max(5, parseInt(process.env.YAWNBOT_UNITY_FREE_INTERVAL_MIN || '60', 10));
+  const intervalMin = Math.max(5, parseInt(process.env.KARMOLAB_BOT_UNITY_FREE_INTERVAL_MIN || '60', 10));
   const intervalMs = intervalMin * 60 * 1000;
 
   console.log(`[UnityFree] Unity 무료 에셋 알림 활성 (채널: ${channelId}, 간격: ${intervalMin}분)`);

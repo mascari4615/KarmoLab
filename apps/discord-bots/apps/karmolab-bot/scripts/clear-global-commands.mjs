@@ -11,10 +11,10 @@ import { REST, Routes } from 'discord.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nodeRequire = createRequire(import.meta.url);
 const { loadKarmoLabAIEnv } = nodeRequire('@karmo/ai/node');
-const { applyYawnbotDotenvLayers } = nodeRequire(path.join(__dirname, 'load-dotenv-layers.cjs'));
+const { applyBotDotenvLayers } = nodeRequire(path.join(__dirname, 'load-dotenv-layers.cjs'));
 
 loadKarmoLabAIEnv();
-applyYawnbotDotenvLayers(path.join(__dirname, '..'));
+applyBotDotenvLayers(path.join(__dirname, '..'));
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;

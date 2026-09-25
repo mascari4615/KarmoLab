@@ -50,7 +50,7 @@ export const YOUTUBE_STREAM_TIMEOUT_MS = 90_000;
  * - 양수: 그 개수만큼만
  */
 export function getYoutubePlaylistMaxTracks(): number {
-  const raw = process.env.YAWNBOT_PLAYLIST_MAX_TRACKS;
+  const raw = process.env.KARMOLAB_BOT_PLAYLIST_MAX_TRACKS;
   if (raw === undefined || String(raw).trim() === '') return 40;
   const n = parseInt(String(raw).trim(), 10);
   if (Number.isNaN(n)) return 40;
@@ -60,12 +60,12 @@ export function getYoutubePlaylistMaxTracks(): number {
 
 /**
  * 2025-2026 권장: 순수 JS 추출기보다 yt-dlp 바이너리가 YouTube 변경에 가장 빨리 따라감.
- * - YT_DLP_PATH / YAWNBOT_YT_DLP_PATH: 실행 파일 직접 지정
- * - YT_DLP_COOKIES_PATH / YAWNBOT_YOUTUBE_COOKIES_PATH: Netscape cookies.txt (연령, 로그인 제한 완화)
+ * - YT_DLP_PATH / KARMOLAB_BOT_YT_DLP_PATH: 실행 파일 직접 지정
+ * - YT_DLP_COOKIES_PATH / KARMOLAB_BOT_YOUTUBE_COOKIES_PATH: Netscape cookies.txt (연령, 로그인 제한 완화)
  * - youtube-dl-exec postinstall 로 내려받은 바이너리(있으면) 자동 사용
  */
 function resolveYtDlpBinary(): string {
-  const fromEnv = process.env.YT_DLP_PATH || process.env.YAWNBOT_YT_DLP_PATH;
+  const fromEnv = process.env.YT_DLP_PATH || process.env.KARMOLAB_BOT_YT_DLP_PATH;
   if (fromEnv && existsSync(fromEnv)) return fromEnv;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -78,7 +78,7 @@ function resolveYtDlpBinary(): string {
 }
 
 function resolveYtDlpCookiesPath(): string | undefined {
-  const p = process.env.YT_DLP_COOKIES_PATH || process.env.YAWNBOT_YOUTUBE_COOKIES_PATH;
+  const p = process.env.YT_DLP_COOKIES_PATH || process.env.KARMOLAB_BOT_YOUTUBE_COOKIES_PATH;
   if (p && existsSync(p)) return p;
   return undefined;
 }
@@ -208,13 +208,13 @@ const PLAY_FAILURE_NOTIFY_COOLDOWN_MS = 15_000;
 
 /** `/music play`로 알림 채널이 잡힌 뒤 임베드 주기 갱신(초). 0이면 첫 메시지만 보내고 자동 갱신 안 함. 기본 45. 최소 15. */
 function nowPlayingRefreshIntervalMs(): number {
-  const sec = parseInt(process.env.YAWNBOT_NOW_PLAYING_REFRESH_SEC || '45', 10);
+  const sec = parseInt(process.env.KARMOLAB_BOT_NOW_PLAYING_REFRESH_SEC || '45', 10);
   if (!Number.isFinite(sec) || sec <= 0) return 0;
   return Math.min(Math.max(sec, 15), 600) * 1000;
 }
 
 function nowPlayingMessageEnabled(): boolean {
-  const raw = process.env.YAWNBOT_NOW_PLAYING_MESSAGE;
+  const raw = process.env.KARMOLAB_BOT_NOW_PLAYING_MESSAGE;
   if (raw === undefined || String(raw).trim() === '') return true;
   const s = String(raw).trim().toLowerCase();
   return !(s === '0' || s === 'false' || s === 'off' || s === 'no');

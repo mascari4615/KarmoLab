@@ -39,10 +39,10 @@
  * 환경:
  *  - MEMO_GITHUB_PAT (또는 GITHUB_TOKEN)       . memo write 토큰 (미설정 시 비활성)
  *  - MEMO_REPO_PATH                             . 로컬 memo 클론 경로 (미설정 시 비활성)
- *  - YAWNBOT_CHARSTATE_REPO                     . 기본 'mascari4615/memo'
- *  - YAWNBOT_CHARSTATE_BRANCH                   . 기본 'yawnbot-character-state'
- *  - YAWNBOT_CHARSTATE_PATH                     . 기본 '.character-state/bundle.json'
- *  - YAWNBOT_CHARSTATE_INTERVAL_MIN             . 간격(분, 기본 30, 최소 1)
+ *  - KARMOLAB_BOT_CHARSTATE_REPO                     . 기본 'mascari4615/memo'
+ *  - KARMOLAB_BOT_CHARSTATE_BRANCH                   . 기본 'yawnbot-character-state'
+ *  - KARMOLAB_BOT_CHARSTATE_PATH                     . 기본 '.character-state/bundle.json'
+ *  - KARMOLAB_BOT_CHARSTATE_INTERVAL_MIN             . 간격(분, 기본 30, 최소 1)
  */
 
 import fs from 'fs';

@@ -4,14 +4,14 @@ import { parseCommaSeparatedEnv } from '@discord-bots/common';
 import { SLASH_BY_NAME } from './registry';
 
 function allowedGuildIdSet(): Set<string> | null {
-  const raw = process.env.YAWNBOT_ALLOWED_GUILD_IDS ?? process.env.YAWNBOT_SLASH_GUILD_IDS;
+  const raw = process.env.KARMOLAB_BOT_ALLOWED_GUILD_IDS ?? process.env.KARMOLAB_BOT_SLASH_GUILD_IDS;
   const ids = parseCommaSeparatedEnv(raw);
   if (ids.length === 0) return null;
   return new Set(ids);
 }
 
 function allowedSlashChannelIdSet(): Set<string> | null {
-  const ids = parseCommaSeparatedEnv(process.env.YAWNBOT_ALLOWED_SLASH_CHANNEL_IDS);
+  const ids = parseCommaSeparatedEnv(process.env.KARMOLAB_BOT_ALLOWED_SLASH_CHANNEL_IDS);
   if (ids.length === 0) return null;
   return new Set(ids);
 }

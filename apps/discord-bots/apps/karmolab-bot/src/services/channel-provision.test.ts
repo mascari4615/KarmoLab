@@ -61,8 +61,8 @@ function fakeGuild(id: string, seed: ChannelLike[] = []): GuildLike {
 }
 
 // prod 라벨 = 카테고리명 = spec.categoryName (suffix 없음, 시드 단순).
-const PROD = { YAWNBOT_ENV: 'prod' } as unknown as NodeJS.ProcessEnv;
-const DEV = { YAWNBOT_ENV: 'dev' } as unknown as NodeJS.ProcessEnv;
+const PROD = { KARMOLAB_BOT_ENV: 'prod' } as unknown as NodeJS.ProcessEnv;
+const DEV = { KARMOLAB_BOT_ENV: 'dev' } as unknown as NodeJS.ProcessEnv;
 
 afterEach(() => {
   for (const gid of usedGuildIds.splice(0)) {
@@ -268,28 +268,28 @@ describe('reconcileGuildChannels. GuildForum (범용 forum 지원)', () => {
 describe('isProvisioningEnabled. 기본 ON, =0 opt-out (prod 무관)', () => {
   it('prod 여도 기본 ON (옛 채널 폐기. dev먼저 철회)', () => {
     expect(
-      isProvisioningEnabled({ YAWNBOT_ENV: 'prod' } as unknown as NodeJS.ProcessEnv),
+      isProvisioningEnabled({ KARMOLAB_BOT_ENV: 'prod' } as unknown as NodeJS.ProcessEnv),
     ).toBe(true);
   });
   it('dev 도 기본 ON', () => {
     expect(
-      isProvisioningEnabled({ YAWNBOT_ENV: 'dev' } as unknown as NodeJS.ProcessEnv),
+      isProvisioningEnabled({ KARMOLAB_BOT_ENV: 'dev' } as unknown as NodeJS.ProcessEnv),
     ).toBe(true);
   });
-  it('YAWNBOT_CHANNEL_PROVISION=0 비상 비활성', () => {
+  it('KARMOLAB_BOT_CHANNEL_PROVISION=0 비상 비활성', () => {
     expect(
-      isProvisioningEnabled({ YAWNBOT_CHANNEL_PROVISION: '0' } as unknown as NodeJS.ProcessEnv),
+      isProvisioningEnabled({ KARMOLAB_BOT_CHANNEL_PROVISION: '0' } as unknown as NodeJS.ProcessEnv),
     ).toBe(false);
     expect(
-      isProvisioningEnabled({ YAWNBOT_CHANNEL_PROVISION: 'off' } as unknown as NodeJS.ProcessEnv),
+      isProvisioningEnabled({ KARMOLAB_BOT_CHANNEL_PROVISION: 'off' } as unknown as NodeJS.ProcessEnv),
     ).toBe(false);
   });
 });
 
 describe('shouldProvisionGuild. 허용 길드 한정 (친구 서버 사고 방지)', () => {
-  it('YAWNBOT_ALLOWED_GUILD_IDS 우선. 본진만 true, 친구방 false', () => {
+  it('KARMOLAB_BOT_ALLOWED_GUILD_IDS 우선. 본진만 true, 친구방 false', () => {
     const env = {
-      YAWNBOT_ALLOWED_GUILD_IDS: '본진111',
+      KARMOLAB_BOT_ALLOWED_GUILD_IDS: '본진111',
       DISCORD_GUILD_ID: '본진111,친구방222',
     } as unknown as NodeJS.ProcessEnv;
     expect(shouldProvisionGuild('본진111', env)).toBe(true);
@@ -309,17 +309,17 @@ describe('shouldProvisionGuild. 허용 길드 한정 (친구 서버 사고 방�
 describe('channelIdFor. ON 기본, 파생 우선 / =0 시 env', () => {
   it('파생 ID 없으면 env 폴백', () => {
     const env = {
-      YAWNBOT_NEWS_CHANNEL_ID: '222',
-      YAWNBOT_ALLOWED_GUILD_IDS: 'no-such-guild',
+      KARMOLAB_BOT_NEWS_CHANNEL_ID: '222',
+      KARMOLAB_BOT_ALLOWED_GUILD_IDS: 'no-such-guild',
     } as unknown as NodeJS.ProcessEnv;
     expect(channelIdFor('news', env)).toBe('222');
   });
 
-  it('YAWNBOT_CHANNEL_PROVISION=0 이면 env 그대로', () => {
+  it('KARMOLAB_BOT_CHANNEL_PROVISION=0 이면 env 그대로', () => {
     const env = {
-      YAWNBOT_CHANNEL_PROVISION: '0',
-      YAWNBOT_NEWS_CHANNEL_ID: '333',
-      YAWNBOT_ALLOWED_GUILD_IDS: 'g1',
+      KARMOLAB_BOT_CHANNEL_PROVISION: '0',
+      KARMOLAB_BOT_NEWS_CHANNEL_ID: '333',
+      KARMOLAB_BOT_ALLOWED_GUILD_IDS: 'g1',
     } as unknown as NodeJS.ProcessEnv;
     expect(channelIdFor('news', env)).toBe('333');
   });

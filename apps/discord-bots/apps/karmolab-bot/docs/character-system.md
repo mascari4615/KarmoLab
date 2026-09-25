@@ -105,7 +105,7 @@ AI 호출 시 프롬프트는 다음 순서로 조립된다 (`ASSISTANT_MAX_PROM
 | `CODEX_CLI_SANDBOX` | `workspace-write` | bypass off일 때 Codex sandbox 모드 |
 | `CODEX_CLI_APPROVAL_POLICY` | `never` | bypass off일 때 Codex approval 정책 |
 
-`yawnbot-defaults.txt` 에 커밋된 기본값은 `apps/karmolab-bot/.env` 로 덮어쓸 수 있다.
+`karmolab-bot-defaults.txt` 에 커밋된 기본값은 `apps/karmolab-bot/.env` 로 덮어쓸 수 있다.
 
 ---
 
