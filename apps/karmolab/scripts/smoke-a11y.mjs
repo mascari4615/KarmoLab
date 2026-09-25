@@ -187,6 +187,9 @@ async function runLane() {
 async function pageFor({ skin, theme }, pages) {
   const k = `${skin}|${theme}`;
   if (!pages.has(k)) {
+    /* 짝이 바뀌면 앞 탭은 닫음. 레인당 탭 하나 (안 닫으면 24판에 3.4GB, 2026-09-25) */
+    for (const old of pages.values()) await old.close();
+    pages.clear();
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     await ctx.addInitScript((v) => {
       try {

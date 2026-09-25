@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { parseEntry, pick } from './lib/gate-scope.mjs';
 import { deriveWatch } from './lib/gate-derive.mjs';
 import { usesBrowserEntry } from './lib/gate-resources.mjs';
+import { startGateMemWatch } from './lib/gate-mem.mjs';
 
 /* ★ **이름 목록은 파일에 있다** (2026-08-14). 예전에는 `package.json` 의 `gates` 한 줄에
    백스물다섯 개가 늘어서 있었다. 세션 여럿이 같은 줄을 동시에 늘리니 충돌이 잦았고,
@@ -221,6 +222,7 @@ function runGate(gate) {
     /* ★ **같이 도니까 흘려보내면 안 된다** (2026-08-19). 여덟 판이 한 화면에 섞여 찍히면
        어느 검사가 한 말인지 못 가린다. 사유 없는 빨강과 같아진다. 모았다가 끝날 때
        한 덩이로 낸다(머리글 + 그 검사의 output). */
+    memWatch.track(child.pid, gate);
     child.stdout.on('data', (c) => { collected.push(String(c)); collect(c); });
     child.stderr.on('data', (c) => { collected.push(String(c)); collect(c); });
     /* ★ **한 검사가 걸리면 판이 통째로 죽는다.** verify:live 에는 검사마다 바깥 상한(12분)이 있는데
@@ -237,7 +239,7 @@ function runGate(gate) {
       else { try { child.kill('SIGKILL'); } catch { /* 이미 죽음 */ } }
     }, limitMs);
     child.on('error', (error) => { clearTimeout(timer); resolve({ status: null, error, tail, output: collected.join('') }); });
-    child.on('close', (status) => { clearTimeout(timer); resolve({ status: timedOut ? 2 : status, error: null, tail, output: collected.join('') }); });
+    child.on('close', (status) => { clearTimeout(timer); memWatch.untrack(child.pid); resolve({ status: timedOut ? 2 : status, error: null, tail, output: collected.join('') }); });
   });
 }
 
@@ -280,6 +282,11 @@ console.log(
   `[gates] 검사 ${gates.length}개, 한 번에 ${workerCount}판씩 (그중 브라우저는 ${browserLimit}판까지, 브라우저 검사 ${browserCount}개), 긴 것부터` +
     (directCount < gates.length ? `, npm 껍데기를 쓰는 검사 ${gates.length - directCount}개` : '')
 );
+/* 검사마다 최고 메모리 (자기와 자손 전부). 상한을 넘으면 그 검사는 빨강 (lib/gate-mem.mjs 머리말).
+   6GB 는 브라우저 넷이 같이 돌아도 32GB 기계에 여유가 남는 값. 2026-09-25 실측 최고는
+   tool-boot 3.5GB, a11y 2.1GB, yacht-ranked 1.7GB. 고치기 전 tool-boot 는 20.7GB */
+const MEM_LIMIT_MB = Number(process.env.KL_GATE_MEM_MB || 6000);
+const memWatch = startGateMemWatch();
 const startedAt = Date.now();
 let finishedCount = 0;
 let browserActive = 0;
@@ -314,6 +321,23 @@ await Promise.all(
     }
   })
 );
+await memWatch.stop();
+for (const r of results) {
+  const peak = memWatch.peaks.get(r.gate);
+  if (!peak) continue;
+  r.mb = peak.mb;
+  r.procs = peak.n;
+  if (peak.mb > MEM_LIMIT_MB && !r.how) {
+    r.how = `메모리 ${peak.mb}MB > 상한 ${MEM_LIMIT_MB}MB (프로세스 ${peak.n}개)`;
+    r.tail = [...(r.tail || []), `[gates] 이 검사가 쥔 메모리 최고 ${peak.mb}MB, 프로세스 ${peak.n}개. 항목마다 새 창 대신 탭 재사용 (memo rules/quality.md 검사 자원)`];
+  }
+}
+if (memWatch.working) {
+  const top = results.filter((r) => r.mb).sort((a, b) => b.mb - a.mb).slice(0, 5);
+  console.log(`${String.fromCharCode(10)}[gates] 메모리 최고 (상한 ${MEM_LIMIT_MB}MB): ${top.map((r) => `${r.gate} ${r.mb}MB/${r.procs}개`).join(', ')}`);
+} else {
+  console.log(`${String.fromCharCode(10)}[gates] 메모리는 못 쟀다 (프로세스 목록 도구가 없다). 판정은 그대로`);
+}
 // 요약은 list 순서로. 끝난 순서로 적으면 판마다 줄이 뒤바뀌어 견주기가 어렵다.
 results.sort((a, b) => a.i - b.i);
 console.log(`
