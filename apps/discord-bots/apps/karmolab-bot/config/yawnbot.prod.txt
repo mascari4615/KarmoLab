@@ -70,7 +70,7 @@ CURSOR_LOCAL_REPO_DIR=
 KAKAO_EXPORT_WATCH_DIR=
 
 # ── claude CLI OAuth 경로 (KAR-018-Y 근본 fix, 비밀 아님) ──
-# 진짜 근본(prod 계측 25987467988 으로 확정, 가설 X): yawnbot-prod nssm
+# 진짜 근본(prod 계측 25987467988 으로 확정, 가설 X): karmolab-bot-prod nssm
 # ObjectName=LocalSystem → claude 가 LocalSystem 프로필에서 OAuth 탐색
 # → 없음(creds 는 C:\Users\masca\.claude 에만) → "Not logged in" exit1
 # → discovery/worker 전 claude spawn 실패 → 제안 0 → 코어↔코어 0 →

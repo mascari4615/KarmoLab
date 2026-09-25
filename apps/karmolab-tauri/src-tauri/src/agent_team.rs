@@ -608,10 +608,10 @@ fn run_cadence_tick_prod_blocking(
     repo_root: String,
     include_worker: bool,
 ) -> Result<CadenceTickResult, String> {
-    // 노트북 yawnbot-prod cadence 1회 = memo/scripts/yawnbot-prod-cadence-tick.mjs
+    // 노트북 karmolab-bot-prod cadence 1회 = memo/scripts/karmolab-bot-prod-cadence-tick.mjs
     // (laptop-ops `/exec` 게이트웨이 우회). 데스크톱 측 ~/.laptop-ops-token 자동 로드.
     let memo = memo_root(&repo_root);
-    let script = memo.join("scripts").join("yawnbot-prod-cadence-tick.mjs");
+    let script = memo.join("scripts").join("karmolab-bot-prod-cadence-tick.mjs");
     if !script.exists() {
         return Err(format!("prod-cadence-tick script 없음: {}", script.display()));
     }

@@ -400,11 +400,11 @@ fn cockpit_get_activity_blocking(repo_root: &str) -> Result<ActivitySnapshot, St
     let token = load_laptop_ops_token();
     let mut services = std::collections::HashMap::new();
     if !token.is_empty() {
-        for svc in &["yawnbot-prod", "laptop-ops", "cloudflared"] {
+        for svc in &["karmolab-bot-prod", "laptop-ops", "cloudflared"] {
             services.insert(svc.to_string(), get_service_status(svc, &token));
         }
     } else {
-        for svc in &["yawnbot-prod", "laptop-ops", "cloudflared"] {
+        for svc in &["karmolab-bot-prod", "laptop-ops", "cloudflared"] {
             services.insert(svc.to_string(), "unknown".to_string());
         }
     }

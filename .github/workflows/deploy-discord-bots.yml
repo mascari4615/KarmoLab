@@ -100,7 +100,7 @@ jobs:
   deploy-yawnbot:
     needs: [tip, test-yawnbot]
     if: needs.tip.outputs.current == 'true'
-    runs-on: [self-hosted, windows, laptop, yawnbot]
+    runs-on: [self-hosted, windows, laptop, karmolab-bot]
     timeout-minutes: 15
 
     # 노트북의 prod 폴더 직접 사용. actions/checkout 의 _work 폴더 X.
@@ -349,7 +349,7 @@ jobs:
               "C:\ProgramData\chocolatey\bin\nssm.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($f) { $nssm = $f.FullName }
           }
-          if ($nssm) { & $nssm stop yawnbot-prod 2>&1 | Out-Null; Start-Sleep -Seconds 2; Write-Host "[KAR-150] yawnbot-prod stopped for clean npm install" }
+          if ($nssm) { & $nssm stop karmolab-bot-prod 2>&1 | Out-Null; Start-Sleep -Seconds 2; Write-Host "[KAR-150] karmolab-bot-prod stopped for clean npm install" }
           else { Write-Warning "[KAR-150] nssm 못 찾음. stop skip" }
 
           # 폴더 이름 이전 (apps\yawnbot -> apps\karmolab-bot, 2026-09-25). 서비스가 멈춘 뒤 옛 폴더의
@@ -450,7 +450,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "deploy:karmolab-bot failed" }
         # ops-self-report 의 reportDeploy 가 운영 채널에 임베드 발송
 
-      - name: NSSM restart yawnbot-prod
+      - name: NSSM restart karmolab-bot-prod
         shell: 'powershell -ExecutionPolicy Bypass -File {0}'
         run: |
           $ErrorActionPreference = 'Continue'
@@ -473,7 +473,7 @@ jobs:
           if (-not $nssm) { throw "nssm.exe 못 찾음. sub-A Phase A 의 winget install NSSM.NSSM 확인 또는 system PATH 에 추가" }
           Write-Host "Using nssm: $nssm"
 
-          # === KAR-018 nssm 영구화 (2026-05-20 yawnbot-prod 12h silent fail 실증) ===
+          # === KAR-018 nssm 영구화 (2026-05-20 karmolab-bot-prod 12h silent fail 실증) ===
           # 본 서비스 ObjectName=LocalSystem default. 사용자 OAuth 자격
           # (C:\Users\masca\.claude\.credentials.json, plain JSON+ACL SYSTEM:(F)) 못 봄.
           # claude CLI 가 인증 에러 본문을 stderr 가 아닌 stdout 으로 박음 → 봇 spawn
@@ -482,21 +482,21 @@ jobs:
           # 본 step 의 nssm set 라인들은 idempotent. 매 deploy 재박힘 (drift 0).
 
           # ① stderr/stdout 로깅 영구화 (자식 출력 휘발 방지. 미설정 = silent fail 12h+ trap)
-          $logDir = 'C:\nssm-logs\yawnbot-prod'
+          $logDir = 'C:\nssm-logs\karmolab-bot-prod'
           if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Force $logDir | Out-Null }
-          & $nssm set yawnbot-prod AppStderr "$logDir\stderr.log" | Out-Null
-          & $nssm set yawnbot-prod AppStdout "$logDir\stdout.log" | Out-Null
-          & $nssm set yawnbot-prod AppRotateFiles 1 | Out-Null
-          & $nssm set yawnbot-prod AppRotateBytes 10485760 | Out-Null
+          & $nssm set karmolab-bot-prod AppStderr "$logDir\stderr.log" | Out-Null
+          & $nssm set karmolab-bot-prod AppStdout "$logDir\stdout.log" | Out-Null
+          & $nssm set karmolab-bot-prod AppRotateFiles 1 | Out-Null
+          & $nssm set karmolab-bot-prod AppRotateBytes 10485760 | Out-Null
 
           # ② USERPROFILE 마스킹. LocalSystem 컨텍스트가 사용자 자격 가시.
           # AppEnvironmentExtra 는 *전체 교체* 라 prod env + USERPROFILE 둘 다 명시.
           # 새 env 추가 시 이 라인에 추가 (별도 nssm set 호출 X. 마지막 호출이 전체 덮어씀).
           # 2026-06-09: 에이전트 팀 폐기. AGENT_CADENCE/DIALOGUE env 제거 (봇 reactive 기능만).
-          & $nssm set yawnbot-prod AppEnvironmentExtra 'YAWNBOT_ENV=prod' 'USERPROFILE=C:\Users\masca' | Out-Null
+          & $nssm set karmolab-bot-prod AppEnvironmentExtra 'YAWNBOT_ENV=prod' 'USERPROFILE=C:\Users\masca' | Out-Null
 
           # 서비스가 보는 폴더를 이번 판의 봇 폴더로 (폴더 이름 이전 2026-09-25, apps\karmolab-bot)
-          & $nssm set yawnbot-prod AppDirectory $env:YAWNBOT_DIR | Out-Null
+          & $nssm set karmolab-bot-prod AppDirectory $env:YAWNBOT_DIR | Out-Null
           Write-Host "[rename] AppDirectory = $env:YAWNBOT_DIR"
 
           # ③ safe.directory '*'. 봇이 USERPROFILE 마스킹 후 보는 사용자 gitconfig
@@ -515,25 +515,25 @@ jobs:
           Write-Host "[KAR-018] nssm 설정 영구화 완료: AppStderr/AppStdout + USERPROFILE 마스킹 + safe.directory"
           # === /KAR-018 nssm 영구화 ===
 
-          & $nssm restart yawnbot-prod 2>&1
+          & $nssm restart karmolab-bot-prod 2>&1
           $exit = $LASTEXITCODE
           if ($exit -ne 0) {
-            & $nssm start yawnbot-prod 2>&1
-            if ($LASTEXITCODE -ne 0) { throw "nssm restart/start yawnbot-prod failed" }
+            & $nssm start karmolab-bot-prod 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "nssm restart/start karmolab-bot-prod failed" }
           }
           # ops-self-report 의 reportShutdown → reportStartup 두 임베드가 운영 채널에 도착
-          Write-Host "yawnbot-prod restarted at $(Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz')"
+          Write-Host "karmolab-bot-prod restarted at $(Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz')"
 
       # === 2026-06-09: 에이전트 팀 폐기 (사용자 결정. "에이전트 팀 개발 중단, 부질없음") ===
       # agent-orchestrator / agent-worker-* / agent-ambient-* daemon NSSM 설치 step 전부 제거.
-      # yawnbot-prod 는 reactive 봇(슬래시, 웹훅, 게임, 뉴스, 캐릭터)만. 자율 cadence 0.
+      # karmolab-bot-prod 는 reactive 봇(슬래시, 웹훅, 게임, 뉴스, 캐릭터)만. 자율 cadence 0.
       #
       # ⚠ 2026-08-13 정정: 노트북 잔존 서비스는 수동 sc delete 로 제거 완료라고 적혀 있었지만
       #   <b>실제로는 12개가 두 달 넘게 남아 있었다</b>(ambient 8 + worker 4).
       #   ambient 는 memo 의 core.md 정본이 폐기(2026-08-01)돼 부팅마다 exit 2 → nssm 무한 재시작 →
       #   nssm 하나당 핸들 3.2만 개 → 커널 메모리 26GB 잠김 → 노트북 메모리 99% 로 강제 재부팅.
       #   worker 4 는 기능 플래그 전부 false, notify=stub 라 부팅 로그만 찍고 무동작이었다.
-      #   그날 12개를 실제로 nssm remove 했다(남은 nssm 서비스 = yawnbot-prod, wm-world , 
+      #   그날 12개를 실제로 nssm remove 했다(남은 nssm 서비스 = karmolab-bot-prod, wm-world , 
       #   laptop-ops, gha-runner-yawnbot). 교훈 = memo/rules/lessons/
       #   reference_laptop_memory_ambient_agent_handle_leak.md
       #
@@ -588,16 +588,16 @@ jobs:
             if ($f) { $nssm = $f.FullName }
           }
           if (-not $nssm) {
-            Write-Output "::warning title=bot-health::nssm not found - cannot check yawnbot-prod"
+            Write-Output "::warning title=bot-health::nssm not found - cannot check karmolab-bot-prod"
             exit 0
           }
 
-          $status = (& $nssm status yawnbot-prod 2>&1) -join ''
+          $status = (& $nssm status karmolab-bot-prod 2>&1) -join ''
           Write-Host "[KL-190] status now: $status"
           if ($status -notmatch 'SERVICE_RUNNING') {
-            & $nssm start yawnbot-prod 2>&1 | Out-Null
+            & $nssm start karmolab-bot-prod 2>&1 | Out-Null
             Start-Sleep -Seconds 8
-            $status = (& $nssm status yawnbot-prod 2>&1) -join ''
+            $status = (& $nssm status karmolab-bot-prod 2>&1) -join ''
             Write-Host "[KL-190] status after start: $status"
           }
 
@@ -617,7 +617,7 @@ jobs:
             #   배포가 **초록으로 지나갔고**, 사람이 502 를 볼 때까지 아무도 몰랐다.
             #   30초(5초 x 6) 를 기다려도 안 뜨면 그것은 느린 것이 아니라 안 뜨는 것이다.
             #   빨강이어야 배포 빨강 알림이 울린다.
-            Write-Output "::error title=bot-not-answering::service started but /kl/health does not answer after 30s - see C:\nssm-logs\yawnbot-prod\stderr.log"
+            Write-Output "::error title=bot-not-answering::service started but /kl/health does not answer after 30s - see C:\nssm-logs\karmolab-bot-prod\stderr.log"
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value 'FAIL: bot does not answer - service started but /kl/health silent after 30s. Bot is DOWN.'
             throw 'bot does not answer /kl/health after deploy'
           }
