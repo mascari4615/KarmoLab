@@ -173,13 +173,12 @@ if (fs.existsSync(serverJsonPath)) {
    * 여기서 고쳐도 **새 버전을 npm 에 올려야** 반영된다.
    */
   /*
-   * 깃허브 정본 표기는 **전부 소문자**다(`gh api repos/... --jq .full_name`). provenance 서명에는
-   * 그 소문자 이름이 박히고, npm 은 package.json 의 `repository.url` 과 **글자 단위로** 대조한다.
-   * 대문자로 적어 두면 서명까지 다 해 놓고 마지막 PUT 에서 422 로 튕긴다(2026-08-10, 여섯 번째).
-   * 같은 함정을 오늘 세 번 밟았다. 레지스트리 네임스페이스, npm Trusted Publisher 화면, 여기.
+   * 정본은 `gh api repos/... --jq .full_name` 표기. provenance 서명에 그 이름이 박히고,
+   * npm 은 package.json 의 `repository.url` 과 **글자 단위로** 대조. 어긋나면 서명까지 다 한 뒤
+   * 마지막 PUT 에서 422 (2026-08-10, 여섯 번째). 그때 정본은 전부 소문자
+   * 2026-09-25 저장소 이름 KarmoLab 뒤 full_name 은 `mascari4615/KarmoLab`.
+   * 계정 부분만 소문자, 저장소 부분은 정본 대소문자 그대로
    */
-  /* 2026-09-25 저장소 이름이 KarmoLab 으로 바뀌며 full_name 이 `mascari4615/KarmoLab`.
-     소문자인 것은 계정 부분뿐. 저장소 부분은 gh 정본 표기 그대로 */
   const repoUrl = pkg.repository?.url ?? '';
   const owner = /github\.com\/([^/]+)\//.exec(repoUrl)?.[1] ?? '';
   if (owner !== owner.toLowerCase()) {
