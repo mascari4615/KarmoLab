@@ -185,6 +185,7 @@
     "fetch:daily": "node scripts/daily/fetch-all.mjs",
     "fetch:hand": "node scripts/fetch-hand.mjs",
     "gates": "node scripts/run-gates.mjs --from data/gate-list.json",
+    "gates:trace-waits": "node scripts/run-gates.mjs --from data/gate-list.json --trace-waits",
     "gates:changed": "node scripts/run-gates.mjs --from data/gate-list.json --changed",
     "gen:arcade-catalog": "node scripts/gen-arcade-catalog.mjs",
     "gen:badapple": "node scripts/gen-badapple-demo.mjs",

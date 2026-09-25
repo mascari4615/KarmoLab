@@ -182,7 +182,9 @@ const chgFires = await page.evaluate(() => window.__rw.fires.filter((f) => f.nam
 check(chgFires === 2, `rearm 이 지나면 다시 울린다 (chg ${chgFires}번)`);
 
 /* ③ 숫자 읽기. 10 부터 0 까지 0.7초마다 (읽기는 1초마다라 문턱 아래 읽기가 2번 이상 나온다) */
-await page.waitForFunction(() => /준비됨|ready|完了|실패|fail|failed/i.test(document.querySelector('#rwStatus')?.textContent || ''), null, { timeout: 90000 }).catch(() => undefined);
+/* 준비 신호는 숫자 칸 (슬롯 2) 을 한 번이라도 읽었나. 상태 글 "준비됨" 은 잠깐 떴다가 앞 알림에 덮여
+   매번 90초 상한을 꽉 채웠다 (2026-09-25 실측 90017ms, 이 검사 144초 중 90초) */
+await page.waitForFunction(() => window.__rw.reads.some((r) => r.slot === 2) || /실패|fail|failed/i.test(document.querySelector('#rwStatus')?.textContent || ''), null, { timeout: 90000 }).catch(() => undefined);
 const ocrStatus = await page.textContent('#rwStatus');
 check(!/실패|fail|failed/i.test(ocrStatus || ''), `숫자 읽기 준비: ${ocrStatus}`);
 const before = await page.evaluate(() => window.__rw.fires.length);

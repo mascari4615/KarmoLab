@@ -26,7 +26,7 @@ import { reapHeadless } from './lib/reap-browsers.mjs';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseEntry, pick } from './lib/gate-scope.mjs';
 import { deriveWatch } from './lib/gate-derive.mjs';
 import { usesBrowserEntry } from './lib/gate-resources.mjs';
@@ -38,7 +38,12 @@ import { startGateMemWatch } from './lib/gate-mem.mjs';
    한 줄에 하나면 서로 다른 줄을 고치므로 git 이 알아서 합친다. */
 // 성능 측정 중 다른 검사의 CPU/브라우저 부하가 겹치지 않도록 단독 실행 지원
 const serial = process.argv.includes('--serial');
-const args = process.argv.slice(2).filter((arg) => arg !== '--serial');
+const args = process.argv.slice(2).filter((arg) => arg !== '--serial' && arg !== '--trace-waits');
+/* 상한까지 간 대기를 적는 추적기를 자식 검사마다 싣는다 (lib/wait-tracer.mjs 머리말). 로그에 [wait-timeout] */
+if (process.argv.includes('--trace-waits')) {
+  const tracer = pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), 'lib', 'wait-tracer.mjs')).href;
+  process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS || ''} --import ${tracer}`.trim();
+}
 const fromIdx = args.indexOf('--from');
 let gates = args;
 if (fromIdx !== -1) {
