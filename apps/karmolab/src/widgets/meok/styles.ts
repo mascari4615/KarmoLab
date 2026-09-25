@@ -32,18 +32,28 @@ export function injectStyles(): void {
     '.meok-app .meok{border:0;border-radius:0}',
     /* 사진 놓는 자리도 접는다 (실측 106px). 먹에는 열기와 붙이기 버튼이 자기 머리줄에 있다. */
     '.meok-page .pf-drop{display:none}',
-    '.meok-full{margin-left:2px;font-size:var(--font-size-2xs);line-height:1;padding:4px 7px}',
     '.meok:fullscreen{width:100vw;height:100vh;min-height:0;border:0;border-radius:0}',
     '.meok *{box-sizing:border-box}',
     '.meok button{border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);border-radius:var(--radius-md);padding:5px 8px;cursor:pointer;font-size:var(--font-size-2xs)}',
     '.meok button:hover{border-color:var(--accent)}',
     '.meok button.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent)}',
-    '.meok-bar{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg-secondary);border-bottom:1px solid var(--border);flex-wrap:wrap}',
+    '.meok-bar{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg-secondary);border-bottom:1px solid var(--border);position:relative;z-index:20}',
     '.meok-logo{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--text-primary);color:var(--bg-primary);font-size:var(--font-size-2xs);font-weight:700;flex:0 0 auto}',
-    '.meok-name{flex:0 1 180px;min-width:90px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:5px 7px}',
-    '.meok-sep{width:1px;height:20px;background:var(--border)}',
-    '.meok-file{border:1px solid var(--border);background:var(--bg-tertiary);border-radius:var(--radius-md);padding:5px 8px;cursor:pointer}',
-    '.meok-status{margin-left:auto;color:var(--text-tertiary);font-size:var(--font-size-3xs)}',
+    '.meok-name{margin-left:auto;flex:0 1 180px;min-width:90px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:5px 7px}',
+    '.meok-status{color:var(--text-tertiary);font-size:var(--font-size-3xs);min-width:48px}',
+    /* 윗메뉴. 제목은 테두리 없는 글자, 펼친 목록은 제목 아래 띄움 */
+    '.meok-menubar{display:flex;align-items:center;gap:2px}',
+    '.meok-menu{position:relative}',
+    '.meok .meok-menu-title{border:0;background:none;padding:6px 10px;min-height:28px;border-radius:var(--radius-sm);font-size:var(--font-size-xs)}',
+    '.meok .meok-menu-title:hover,.meok .meok-menu-title[aria-expanded="true"]{background:color-mix(in srgb,var(--accent) 16%,transparent);border:0}',
+    '.meok-menu-list{position:absolute;left:0;top:calc(100% + 2px);min-width:220px;padding:4px;display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-float,0 8px 24px rgba(0,0,0,.35));z-index:30}',
+    '.meok-menu-list[hidden]{display:none}',
+    '.meok .meok-menu-item{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;min-height:28px;padding:5px 10px;border:0;background:none;text-align:left;border-radius:var(--radius-sm);font-size:var(--font-size-xs)}',
+    '.meok .meok-menu-item:hover:not(:disabled),.meok .meok-menu-item:focus-visible{background:color-mix(in srgb,var(--accent) 22%,transparent);border:0;outline:none}',
+    '.meok .meok-menu-item:disabled{opacity:.4;cursor:default}',
+    '.meok-menu-item kbd{font-family:inherit;font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
+    '.meok-menu-sep{border:0;border-top:1px solid var(--border);margin:4px 2px}',
+    '.meok-menu-head{padding:4px 10px 2px;font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
     '.meok-body{flex:1;display:grid;grid-template-columns:76px minmax(0,1fr) 216px;min-height:0}',
     '.meok-tools{display:flex;flex-direction:column;gap:5px;padding:8px;background:var(--bg-secondary);border-right:1px solid var(--border);overflow:auto}',
     '.meok-tools button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;line-height:1.1}',
@@ -112,7 +122,7 @@ export function injectStyles(): void {
     '.meok-maskmark{color:var(--accent);font-weight:400}',
     '.meok-eye,.meok-lock{padding:2px 3px!important;border-color:transparent!important;background:none!important;font-size:var(--font-size-4xs);color:var(--text-tertiary);opacity:.8;min-width:24px;min-height:24px}',
     /* 밟았을 때 그림이 달라져야 한다 (2.4.11). 이 셋은 표시가 없었다 */
-    '.meok-bar button:focus,.meok-tools button:focus,.meok-layers button:focus,.meok-bar button:focus-visible,.meok-tools button:focus-visible,.meok-layers button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}',
+    '.meok-menu-title:focus-visible,.meok-tools button:focus,.meok-layers button:focus,.meok-tools button:focus-visible,.meok-layers button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}',
     '@media(max-width:860px){.meok-body{grid-template-columns:60px minmax(0,1fr)}.meok-layers{grid-column:1/-1;border-left:0;border-top:1px solid var(--border);max-height:210px}.meok{height:auto}}'
   ].join('');
   document.head.append(style);

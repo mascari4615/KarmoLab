@@ -1300,6 +1300,64 @@ function buildMeok(container: HTMLElement): void {
     button.onclick = () => actions[button.dataset.act || '']?.();
   });
 
+  /* 윗메뉴. 제목 눌러 열기, 열린 채 다른 제목에 올리면 그쪽으로 (데스크톱 앱 관례), 항목이나 바깥 누르면 닫기.
+     키보드: 제목에서 아래 화살표로 첫 항목, 항목 사이 위아래, Esc 로 닫고 제목으로 */
+  const menus = [...root.querySelectorAll<HTMLElement>('.meok-menu')];
+  let openMenu: HTMLElement | null = null;
+  const partsOf = (m: HTMLElement) => ({
+    title: m.querySelector<HTMLButtonElement>('.meok-menu-title')!,
+    list: m.querySelector<HTMLElement>('.meok-menu-list')!,
+  });
+  const itemsOf = (m: HTMLElement) => [...m.querySelectorAll<HTMLButtonElement>('.meok-menu-item:not(:disabled)')];
+  const closeMenus = (): void => {
+    for (const m of menus) { const p = partsOf(m); p.list.hidden = true; p.title.setAttribute('aria-expanded', 'false'); }
+    openMenu = null;
+  };
+  const openOne = (m: HTMLElement, focusFirst = false): void => {
+    closeMenus();
+    const p = partsOf(m);
+    p.list.hidden = false;
+    p.title.setAttribute('aria-expanded', 'true');
+    openMenu = m;
+    if (focusFirst) itemsOf(m)[0]?.focus();
+  };
+  for (const m of menus) {
+    const p = partsOf(m);
+    p.title.onclick = () => { if (openMenu === m) closeMenus(); else openOne(m); };
+    p.title.onpointerenter = () => { if (openMenu && openMenu !== m) openOne(m); };
+    p.title.onkeydown = (event) => {
+      if (event.key === 'ArrowDown') { event.preventDefault(); openOne(m, true); }
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const next = menus[(menus.indexOf(m) + (event.key === 'ArrowRight' ? 1 : menus.length - 1)) % menus.length];
+        partsOf(next).title.focus();
+        if (openMenu) openOne(next);
+      }
+    };
+    p.list.onkeydown = (event) => {
+      const items = itemsOf(m);
+      const at = items.indexOf(document.activeElement as HTMLButtonElement);
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const step = event.key === 'ArrowDown' ? 1 : items.length - 1;
+        items[(at + step) % items.length]?.focus();
+      }
+      if (event.key === 'Escape') { event.preventDefault(); closeMenus(); p.title.focus(); }
+    };
+  }
+  root.querySelectorAll<HTMLButtonElement>('[data-menu-act]').forEach(button => {
+    button.onclick = () => actions[button.dataset.menuAct || '']?.();
+  });
+  pick<HTMLButtonElement>('[data-menu-open]').onclick = () => pick<HTMLInputElement>('[data-open]').click();
+  /* 항목을 누르면 할 일을 한 뒤 닫힘. 각 항목의 onclick 이 먼저 돌고 여기로 올라옴 */
+  pick<HTMLElement>('.meok-menubar').addEventListener('click', (event) => {
+    if ((event.target as HTMLElement).closest('.meok-menu-item')) closeMenus();
+  });
+  const outsideMenu = (event: PointerEvent): void => {
+    if (openMenu && !(event.target as HTMLElement).closest?.('.meok-menubar')) closeMenus();
+  };
+  document.addEventListener('pointerdown', outsideMenu);
+
   /* 이모트 판 첫 그림. `reflowDoc` 은 새 그림과 파일 열기에서만 돌아 첫 진입을 못 덮음.
      미리보기는 접혀 있으면 안 굽고, 펴는 순간 굽는다. */
   renderEmotePicks();
@@ -1456,6 +1514,7 @@ function buildMeok(container: HTMLElement): void {
     view.dispose();
     document.removeEventListener('keydown', keydown);
     document.removeEventListener('keyup', keyup);
+    document.removeEventListener('pointerdown', outsideMenu);
   });
 }
 

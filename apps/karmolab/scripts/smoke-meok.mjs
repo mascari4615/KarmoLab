@@ -73,6 +73,12 @@ await page.addInitScript(() => {
 });
 
 await page.goto(base + '/apps/karmolab/index.html#meok', { waitUntil: 'load', timeout: 30000 });
+/* 윗메뉴로 옮긴 항목은 사람처럼 메뉴를 열고 누름 (2026-09-25 윗메뉴 도입) */
+const menuClick = async (act) => {
+  const title = page.locator(`.meok:visible .meok-menu:has([data-act="${act}"]) .meok-menu-title`);
+  await title.click();
+  await page.click(`.meok:visible .meok-menu-list:not([hidden]) [data-act="${act}"]`);
+};
 // ★ 먹은 이미지 묶음의 한 탭이다(lazy-meta 의 bundle:'image'). 주소로 들어가면 묶음이
 //   열릴 뿐이고, 먹 단추를 한 번 눌러야 그림판이 뜬다. 예전엔 주소만으로 떴는데 묶음
 //   구조가 바뀌면서 조용히 안 뜨게 됐고, 이 검사가 그때부터 빨갰다(2026-08-13 에 고침).
@@ -168,11 +174,11 @@ const painted = await canvasInk();
 if (painted <= before + 200) problems.push('붓으로 그었는데 화면이 안 바뀐다 (' + before + ' → ' + painted + ')');
 
 /* ② 되돌리기. 획 하나가 한 단계로 사라진다. */
-await page.click('.meok:visible [data-act="undo"]');
+await menuClick('undo');
 await page.waitForTimeout(250);
 const undone = await canvasInk();
 if (undone > before + 200) problems.push('되돌렸는데 획이 남아 있다 (' + undone + ')');
-await page.click('.meok:visible [data-act="redo"]');
+await menuClick('redo');
 await page.waitForTimeout(250);
 const redone = await canvasInk();
 if (redone <= before + 200) problems.push('다시 하기가 획을 되살리지 못했다');
@@ -252,7 +258,7 @@ if (!(await page.locator('.meok:visible .meok-frame.active').first().isVisible()
 
 /* ⑥ 픽셀 모드. 격자에 붙는 도트 그림으로 갈아탄다. */
 page.once('dialog', dialog => dialog.accept());
-await page.click('.meok:visible [data-act="new-pixel"]');
+await menuClick('new-pixel');
 await page.waitForTimeout(400);
 const pixelBox = await artRect();
 await page.mouse.move(pixelBox.x + pixelBox.width * 0.5, pixelBox.y + pixelBox.height * 0.5);
@@ -264,7 +270,7 @@ if (dotted < 20) problems.push('픽셀 모드에서 한 칸도 안 찍힌다 (' 
 
 /* ⑦ 선택영역. 골라 놓으면 붓이 그 밖으로 안 샌다. */
 page.once('dialog', dialog => dialog.accept());
-await page.click('.meok:visible [data-act="new"]');
+await menuClick('new');
 await page.waitForTimeout(400);
 const art = await artRect();
 const ax = (f) => art.x + art.w * f;
@@ -332,7 +338,7 @@ await page.locator('.meok-filters button', { hasText: '반전' }).click();
 await page.waitForTimeout(300);
 const afterInvert = await darkAll();
 if (afterInvert >= beforeInvert) problems.push('반전 필터가 화면에 안 닿았다 (' + beforeInvert + ' → ' + afterInvert + ')');
-await page.click('.meok:visible [data-act="undo"]');
+await menuClick('undo');
 await page.waitForTimeout(250);
 if (Math.abs((await darkAll()) - beforeInvert) > 60) problems.push('필터 되돌리기가 원래대로 안 돌아온다');
 
@@ -356,12 +362,12 @@ const ratioAfter = shapeAfter.w / shapeAfter.h;
 if (Math.abs(ratioBefore - 1) > 0.05 && Math.abs(ratioAfter - 1 / ratioBefore) > 0.15) {
   problems.push('90도 회전인데 판 비율이 안 뒤집혔다 (' + ratioBefore.toFixed(2) + ' → ' + ratioAfter.toFixed(2) + ')');
 }
-await page.click('.meok:visible [data-act="undo"]');
+await menuClick('undo');
 await page.waitForTimeout(400);
 
 /* ⑨ 자동 저장. 새로고침해도 그리던 게 남아 있다(이 도구의 제일 아픈 구멍이었다). */
 page.once('dialog', dialog => dialog.accept());
-await page.click('.meok:visible [data-act="new"]');
+await menuClick('new');
 await page.waitForTimeout(400);
 const saveArt = await artRect();
 await page.click('.meok:visible [data-tool="brush"]');
@@ -406,7 +412,7 @@ if (densityAfter < 0.0005) problems.push('새로고침 뒤 그림이 사라졌�
 
 /* ⑩ 가림막. 고른 자리만 보이고, 그림 자체는 안 지워진다(되돌리면 다 돌아온다). */
 page.once('dialog', dialog => dialog.accept());
-await page.click('.meok:visible [data-act="new"]');
+await menuClick('new');
 await page.waitForTimeout(400);
 // ★ 방금 새로를 눌러 판이 **비어 있다**. 그림 기준(`artRect`)으로 자리를 잡으면
 //   잡을 그림이 없다. 빈 판에서는 캔버스 자체가 기준이고, 가운데 쪽 안전한 자리만 쓴다.
@@ -459,7 +465,7 @@ if ((await canvasInk()) < inkFull * 0.8) problems.push('가림막을 없앴는�
 /* ⑪ 글자, 붓 담기, 기울여 돌리기 */
 const layersBeforeText = await page.locator('.meok:visible .meok-layer').count();
 page.once('dialog', dialog => dialog.accept('먹 테스트'));
-await page.click('.meok:visible [data-act="add-text"]');
+await menuClick('add-text');
 await page.waitForTimeout(500);
 if ((await page.locator('.meok:visible .meok-layer').count()) !== layersBeforeText + 1) {
   problems.push('글자를 넣었는데 레이어가 안 늘었다');
@@ -488,7 +494,7 @@ const zoomAfter = parseFloat((await zoomText()) || '0');
 if (!(zoomAfter < zoomBefore * 0.95)) {
   problems.push('기울여 돌렸는데 판이 안 커졌다. 모서리가 잘렸다는 뜻 (' + zoomBefore + '% → ' + zoomAfter + '%)');
 }
-await page.click('.meok:visible [data-act="undo"]');
+await menuClick('undo');
 await page.waitForTimeout(500);
 
 /* ⑫ 화면이 넘치지 않는다(가로 스크롤). */

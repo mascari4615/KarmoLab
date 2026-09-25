@@ -17,6 +17,93 @@ const toolButton = (id: string, hotkey: string, label: string, path: string, act
   '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' +
   '<small>' + esc(label) + '</small></button>';
 
+/* 윗메뉴 (2026-09-25 사용자 "Unity Editor 나 포토샵 같은 메뉴"). 윗줄 버튼 14개를 메뉴 여섯으로.
+   - 윗줄에만 있던 것은 `data-act` 를 그대로 가져감 (코드가 `[data-act="save-gif"]` 로 찾아 잠금)
+   - 옆 칸에도 있는 것은 `data-menu-act`. 같은 `data-act` 가 둘이면 `[data-act="play"]` 가 메뉴 쪽을 먼저 잡음
+   - 켜고 끄는 표시(`data-needs-selection`, `data-needs-mask`)는 메뉴 항목에도 붙여 같이 잠금 */
+type MenuEntry = string;
+const item = (attr: string, label: string, hot = '', extra = '', help = ''): MenuEntry =>
+  '<button type="button" role="menuitem" class="meok-menu-item" ' + attr + extra + (help ? ' title="' + esc(help) + '"' : '') + '>' +
+  '<span>' + esc(label) + '</span>' + (hot ? '<kbd>' + esc(hot) + '</kbd>' : '') + '</button>';
+const act = (id: string, label: string, hot = '', extra = '', help = ''): MenuEntry => item('data-act="' + id + '"', label, hot, extra, help);
+const alias = (id: string, label: string, hot = '', extra = ''): MenuEntry => item('data-menu-act="' + id + '"', label, hot, extra);
+const sep: MenuEntry = '<hr class="meok-menu-sep">';
+const heading = (label: string): MenuEntry => '<div class="meok-menu-head" role="presentation">' + esc(label) + '</div>';
+const menu = (id: string, label: string, entries: MenuEntry[]): string =>
+  '<div class="meok-menu" data-menu="' + id + '">' +
+  '<button type="button" class="meok-menu-title" aria-haspopup="menu" aria-expanded="false">' + esc(label) + '</button>' +
+  '<div class="meok-menu-list" role="menu" aria-label="' + esc(label) + '" hidden>' + entries.join('') + '</div></div>';
+
+const menuBar = (): string => {
+  const needSel = ' data-needs-selection';
+  const needMask = ' data-needs-mask';
+  return '<nav class="meok-menubar" role="menubar" aria-label="' + esc(T('menuBar', '메뉴')) + '">' +
+    menu('file', T('menuFile', '파일'), [
+      act('new', T('menuNew', '새로 만들기'), '', '', T('newHelp', '빈 그림을 새로 시작한다')),
+      act('new-pixel', T('menuNewPixel', '새 픽셀 그림'), '', '', T('newPixelHelp', '격자에 붙는 픽셀 그림. 도트 애니메이션용')),
+      item('data-menu-open', T('menuOpen', '열기...')),
+      sep,
+      act('save-meok', T('menuSaveMeok', '.meok 로 저장'), '', '', T('saveMeokHelp', '레이어, 프레임까지 그대로 담은 파일')),
+      act('save-project', T('menuSaveProject', '프로젝트로 저장')),
+      sep,
+      heading(T('menuExport', '내보내기')),
+      act('save-png', 'PNG'),
+      act('save-sheet', T('menuSheet', '스프라이트 시트')),
+      act('save-gif', 'GIF', '', '', T('saveGifHelp', '프레임을 움직이는 GIF 한 장으로. 초당 값이 속도가 된다')),
+      act('save-apng', 'APNG', '', '', T('saveApngHelp', '움직이는 PNG. 반투명 가장자리가 살아 있다. 디스코드 스티커가 이 형식')),
+      alias('emote-save', T('menuEmote', '이모트 한 벌')),
+      sep,
+      act('to-shelf', T('menuShelf', '선반에 올리기'), '', '', T('toShelfHelp', '만든 것을 선반에 올린다 (CC0)')),
+    ]) +
+    menu('edit', T('menuEdit', '편집'), [
+      act('undo', T('undo', '되돌리기'), 'Ctrl+Z', ' data-hot="Ctrl+Z"'),
+      act('redo', T('redo', '다시'), 'Ctrl+Shift+Z', ' data-hot="Ctrl+Shift+Z"'),
+      sep,
+      act('add-text', T('menuAddText', '글자 넣기'), '', '', T('addTextHelp', '글자를 새 레이어로 얹는다')),
+      act('add-image', T('menuAddImage', '그림 붙이기...'), '', '', T('addImageHelp', '그림 파일을 새 레이어로 얹는다')),
+      sep,
+      alias('brush-save', T('brushSave', '이 붓 담기')),
+      alias('pick-palette', T('paletteFromArt', '그림에서 색 뽑기')),
+    ]) +
+    menu('image', T('menuImage', '이미지'), [
+      alias('resize', T('resizeDoc', '크기...')),
+      alias('trim', T('trim', '여백 자르기')),
+      alias('crop-selection', T('cropToSelection', '고른 자리로 자르기'), '', needSel),
+      sep,
+      alias('rot-left', T('rotLeft', '왼쪽으로 90도')),
+      alias('rot-right', T('rotRight', '오른쪽으로 90도')),
+      alias('rotate-free', T('menuRotateFree', '자유 회전...')),
+      alias('flip-x', T('flipX', '좌우 뒤집기')),
+      alias('flip-y', T('flipY', '상하 뒤집기')),
+      sep,
+      alias('adjust-apply', T('applyAdjust', '보정 굳히기')),
+      alias('adjust-reset', T('menuResetAdjust', '보정 되돌리기')),
+      alias('rembg', T('rembg', '배경 지우기')),
+    ]) +
+    menu('layer', T('menuLayer', '레이어'), [
+      alias('add-layer', T('menuAddLayer', '새 레이어')),
+      alias('merge-layer', T('menuMergeLayer', '아래와 합치기')),
+      alias('del-layer', T('menuDelLayer', '레이어 지우기')),
+      sep,
+      alias('mask-from-selection', T('menuMaskMake', '가림막 만들기'), '', needSel),
+      alias('mask-invert', T('menuMaskInvert', '가림막 뒤집기'), '', needMask),
+      alias('mask-apply', T('menuMaskApply', '가림막 굳히기'), '', needMask),
+      alias('mask-clear', T('menuMaskClear', '가림막 없애기'), '', needMask),
+    ]) +
+    menu('select', T('menuSelect', '선택'), [
+      alias('deselect', T('deselect', '선택 풀기'), '', needSel),
+      alias('feather-selection', T('featherEdge', '가장자리 부드럽게'), '', needSel),
+      alias('clear-selection', T('clearSelection', '고른 자리 지우기'), 'Delete', needSel),
+    ]) +
+    menu('view', T('menuView', '보기'), [
+      alias('fit', T('menuFit', '화면에 맞춤')),
+      act('fullscreen', T('menuFullscreen', '전체화면'), '', '', T('fullscreenHelp', '창을 화면 전체로. 다시 누르면 돌아온다')),
+      sep,
+      alias('play', T('menuPlay', '애니메이션 재생')),
+    ]) +
+    '</nav>';
+};
+
 /** 화면 한 벌. 부르는 쪽이 `container.innerHTML` 에 그대로. */
 export function meokMarkup(): string {
   return     '<div class="meok">' +
@@ -25,27 +112,11 @@ export function meokMarkup(): string {
     '<h1 class="kl-sr">' + esc(T('title', '먹')) + '</h1>' +
     '<header class="meok-bar">' +
       '<strong class="meok-logo">먹</strong>' +
+      menuBar() +
       '<input class="meok-name" data-name aria-label="' + esc(T('docName', '그림 이름')) + '">' +
-      '<span class="meok-sep"></span>' +
-      '<button data-act="new" title="' + esc(T('newHelp', '빈 그림을 새로 시작한다')) + '">' + esc(T('new', '새로')) + '</button>' +
-      '<button data-act="new-pixel" title="' + esc(T('newPixelHelp', '격자에 붙는 픽셀 그림. 도트 애니메이션용')) + '">' + esc(T('newPixel', '픽셀')) + '</button>' +
-      '<label class="meok-file">' + esc(T('open', '열기')) +
-        '<input data-open type="file" accept="image/*,application/json,.json,.meok,.ditherdeck.json" hidden></label>' +
-      '<button data-act="add-text" title="' + esc(T('addTextHelp', '글자를 새 레이어로 얹는다')) + '">' + esc(T('addText', '글자')) + '</button>' +
-      '<button data-act="add-image" title="' + esc(T('addImageHelp', '그림 파일을 새 레이어로 얹는다')) + '">' + esc(T('addImage', '붙이기')) + '</button>' +
-      '<input data-place type="file" accept="image/*" hidden>' +
-      '<button data-act="undo" data-hot="Ctrl+Z">' + esc(T('undo', '되돌리기')) + '</button>' +
-      '<button data-act="redo" data-hot="Ctrl+Shift+Z">' + esc(T('redo', '다시')) + '</button>' +
-      '<span class="meok-sep"></span>' +
-      '<button data-act="save-png">' + esc(T('savePng', 'PNG')) + '</button>' +
-      '<button data-act="to-shelf" title="' + esc(T('toShelfHelp', '만든 것을 선반에 올린다 (CC0)')) + '">' + esc(T('toShelf', '선반')) + '</button>' +
-      '<button data-act="save-sheet">' + esc(T('saveSheet', '시트')) + '</button>' +
-      '<button data-act="save-gif" title="' + esc(T('saveGifHelp', '프레임을 움직이는 GIF 한 장으로. 초당 값이 속도가 된다')) + '">' + esc(T('saveGif', 'GIF')) + '</button>' +
-      '<button data-act="save-apng" title="' + esc(T('saveApngHelp', '움직이는 PNG. 반투명 가장자리가 살아 있다. 디스코드 스티커가 이 형식')) + '">' + esc(T('saveApng', 'APNG')) + '</button>' +
-      '<button data-act="save-meok" title="' + esc(T('saveMeokHelp', '레이어, 프레임까지 그대로 담은 파일')) + '">' + esc(T('saveMeok', '.meok')) + '</button>' +
-      '<button data-act="save-project">' + esc(T('saveProject', '프로젝트')) + '</button>' +
       '<span class="meok-status" data-status></span>' +
-      '<button data-act="fullscreen" class="meok-full" title="' + esc(T('fullscreenHelp', '창을 화면 전체로. 다시 누르면 돌아온다')) + '">⛶</button>' +
+      '<input data-open type="file" accept="image/*,application/json,.json,.meok,.ditherdeck.json" hidden>' +
+      '<input data-place type="file" accept="image/*" hidden>' +
     '</header>' +
     '<div class="meok-body">' +
       '<div class="meok-tools">' +
