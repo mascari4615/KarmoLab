@@ -70,14 +70,14 @@ async function check(width, height, label) {
      *   없는 버그를 쫓게 된다. 실패한 판에서만 응답 코드와 화면에 뜬 글을 적어 둔다. */
     const badResponses = [];
     /* ★ **봇이 안 답하면 우리 화면 탓이 아니다** (2026-08-16, 실측). 커뮤니티, 광장 알맹이는
-       봇(`yawnbot.mascari4615.com`)이 준다. 봇이 잠깐 늦거나 안 뜨면 이 검사는
+       봇(`bot.mascari4615.com`)이 준다. 봇이 잠깐 늦거나 안 뜨면 이 검사는
        알맹이가 안 그려졌다로 **빨강**을 냈다. 내 자리에서는 늘 초록이라 더 헷갈렸다.
        봇이 답을 줬는지를 따로 세어, 안 줬으면 **못 잼**이라고 말한다. */
     let botReply = 0;
     let botLast = '';
     const onResponse = (r) => {
       if (r.status() >= 400) badResponses.push(`${r.status()} ${r.url().slice(0, 90)}`);
-      if (r.url().includes('yawnbot.mascari4615.com')) {
+      if (r.url().includes('bot.mascari4615.com')) {
         botReply += 1;
         botLast = `${r.status()} ${r.url().split('/').slice(-1)[0].slice(0, 40)}`;
       }
@@ -130,7 +130,7 @@ async function check(width, height, label) {
 
 // 서버가 살아 있나. 못 닿으면 통과라고 말하면 안 된다 (KL-098: 게이트는 못 돌았다를 말해야 한다).
 try {
-  const probe = await fetch('https://yawnbot.mascari4615.com/kl/health', { signal: AbortSignal.timeout(6000) });
+  const probe = await fetch('https://bot.mascari4615.com/kl/health', { signal: AbortSignal.timeout(6000) });
   if (!probe.ok) notes.push('기록 서버가 이상하다. 값이 필요한 칸은 못 봤다');
 } catch {
   notes.push('기록 서버에 못 닿았다. 값이 필요한 칸은 못 봤다 (화면이 닫히는 것 자체는 정상)');

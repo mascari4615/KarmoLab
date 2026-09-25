@@ -29,7 +29,8 @@ fn allowed_api_base(url: &Url) -> bool {
         return false;
     };
     match url.scheme() {
-        "https" => host == "yawnbot.mascari4615.com",
+        // 옛 주소 yawnbot 은 2026-09-25 bot 으로 옮기는 동안 같이 허용
+        "https" => host == "bot.mascari4615.com" || host == "yawnbot.mascari4615.com",
         // 로컬에서 봇을 띄워 놓고 붙이는 개발 경로 (`window.KARMOLAB_API_BASE`).
         "http" => host == "localhost" || host == "127.0.0.1",
         _ => false,
@@ -169,10 +170,11 @@ mod tests {
 
     #[test]
     fn only_our_account_server_goes_out_to_the_browser() {
+        assert!(allowed_api_base(&u("https://bot.mascari4615.com")));
         assert!(allowed_api_base(&u("https://yawnbot.mascari4615.com")));
         assert!(allowed_api_base(&u("http://127.0.0.1:8813")));
         assert!(!allowed_api_base(&u("https://evil.example.com")));
-        assert!(!allowed_api_base(&u("https://yawnbot.mascari4615.com.evil.example.com")));
+        assert!(!allowed_api_base(&u("https://bot.mascari4615.com.evil.example.com")));
     }
 
     #[test]

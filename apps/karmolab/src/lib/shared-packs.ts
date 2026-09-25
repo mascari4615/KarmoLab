@@ -17,7 +17,7 @@ import { t, loadNamespace } from './i18n';
    빌드는 브라우저 밖에서도 이 파일을 읽으므로 document 가 있을 때만 부른다. */
 if (typeof document !== 'undefined') void loadNamespace('sharedpacks');
 
-const API_BASE = 'https://yawnbot.mascari4615.com';
+const API_BASE = 'https://bot.mascari4615.com';
 const TIMEOUT_MS = 6000;
 
 export interface SharedPackSummary {

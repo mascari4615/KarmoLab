@@ -16,7 +16,7 @@ import { takePick } from '../../pack-pick';
 import { copyResultCard } from '../../../lib/result-card';
 import { roundChoices, agreement, MIN_RUNNERS, type WcState, type WcAction, type WcRunner, type WcMatch } from './worldcup';
 
-const API_BASE = 'https://yawnbot.mascari4615.com';
+const API_BASE = 'https://bot.mascari4615.com';
 /** 옛 위젯과 같은 열쇠. 옮겨 와도 지난 우승이 그대로 보인다 */
 const HISTORY_KEY = 'karmolab_worldcup_history';
 const CHAMPIONS_KEY = 'champions';

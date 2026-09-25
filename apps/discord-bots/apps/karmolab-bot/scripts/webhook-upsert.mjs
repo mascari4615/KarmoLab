@@ -10,7 +10,7 @@
  *   upsertHooks('https://example.com/webhook/github')
  *
  * 환경변수:
- *   YAWNBOT_WEBHOOK_URL (default: https://yawnbot.mascari4615.com/webhook/github)
+ *   YAWNBOT_WEBHOOK_URL (default: https://bot.mascari4615.com/webhook/github)
  *
  * 사전 요구:
  *   gh CLI 로그인 (gh auth status)
@@ -24,7 +24,7 @@ import process from 'node:process';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROUTES_PATH = path.resolve(__dirname, '..', 'data', 'webhook-routes.json');
 const HOOK_PATH = '/webhook/github';
-const DEFAULT_URL = 'https://yawnbot.mascari4615.com/webhook/github';
+const DEFAULT_URL = 'https://bot.mascari4615.com/webhook/github';
 const EVENTS = ['push', 'pull_request', 'release', 'issues'];
 
 function gh(args) {

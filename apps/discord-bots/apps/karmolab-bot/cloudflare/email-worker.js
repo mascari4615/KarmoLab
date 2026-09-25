@@ -14,14 +14,14 @@
  *  2. **Workers & Pages → Create → Worker** 로 이 파일 내용을 붙여 넣고 배포
  *     (이름 예: `kl-mail-in`)
  *  3. 그 Worker → **Settings → Variables** 에 둘을 넣는다
- *       KL_MAIL_ENDPOINT = https://yawnbot.mascari4615.com/kl/mail/in
+ *       KL_MAIL_ENDPOINT = https://bot.mascari4615.com/kl/mail/in
  *       KL_MAIL_HOOK     = (아무 긴 임의 문자열. 노트북 yawnbot 의 KL_MAIL_HOOK_TOKEN 과 같은 값)
  *  4. Email → **Routing rules → Catch-all address** → Action = **Send to a Worker** → `kl-mail-in`
  *  5. 노트북 yawnbot 의 `.env` 에 같은 값을 넣는다
  *       KL_MAIL_HOOK_TOKEN=...
  *       KL_MAIL_DOMAIN=mail.mascari4615.com
  *
- *  확인: `curl https://yawnbot.mascari4615.com/kl/mail/ready` 가 `{"ready":true,...}` 면 켜진 것이다.
+ *  확인: `curl https://bot.mascari4615.com/kl/mail/ready` 가 `{"ready":true,...}` 면 켜짐
  *  (도구 화면도 그 값을 보고 아직 안 켜졌다를 정직하게 말한다.)
  * ────────────────────────────────────────────────────────────────────────────
  */

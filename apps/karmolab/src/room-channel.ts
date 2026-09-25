@@ -26,7 +26,7 @@ import { deviceId } from './identity';
  */
 export const API_BASE =
     (typeof window !== 'undefined' && (window as { KARMOLAB_API_BASE?: string }).KARMOLAB_API_BASE) ||
-    'https://yawnbot.mascari4615.com';
+    'https://bot.mascari4615.com';
 
 /** 이 창 하나를 가리키는 이름. */
 export const TAB_ID = Math.random().toString(36).slice(2, 10);

@@ -19,7 +19,7 @@ import { WAIT } from './lib/waits.mjs';
 const server = await smokeBase();
 const BASE = server.base;
 const PAGE = `${BASE}/apps/karmolab/index.html`;
-const API = 'https://yawnbot.mascari4615.com/kl/arcade/rooms';
+const API = 'https://bot.mascari4615.com/kl/arcade/rooms';
 const fails = [];
 const check = (name, cond, detail = '') => {
   console.log(`  [${cond ? 'O' : 'X'}] ${name}${cond || !detail ? '' : '. ' + detail}`);
@@ -95,7 +95,7 @@ if (!cantRun) {
     .evaluate(() => {
       const ctl = new AbortController();
       const t = setTimeout(() => ctl.abort(), 3000);
-      return fetch('https://yawnbot.mascari4615.com/kl/arcade/rooms', { cache: 'no-store', signal: ctl.signal })
+      return fetch('https://bot.mascari4615.com/kl/arcade/rooms', { cache: 'no-store', signal: ctl.signal })
         .then(() => true)
         .catch(() => false)
         .finally(() => clearTimeout(t));

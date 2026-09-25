@@ -13,7 +13,7 @@
  */
 import { t } from './i18n';
 
-const RELAY = 'https://yawnbot.mascari4615.com/kl/mail';
+const RELAY = 'https://bot.mascari4615.com/kl/mail';
 const KEEP = 'karmolab_tempmail_v1';
 
 export interface Letter {

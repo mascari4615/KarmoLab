@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     env:
-      HEALTH_URL: 'https://yawnbot.mascari4615.com/health'
+      HEALTH_URL: 'https://bot.mascari4615.com/health'
       ALERT_WEBHOOK: ${{ secrets.YAWNBOT_HEALTH_ALERT_WEBHOOK_URL }}
 
     steps:

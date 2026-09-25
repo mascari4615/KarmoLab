@@ -213,7 +213,7 @@ ctx.addEventListener('fetch', (event: FetchEvent) => {
    * 개인적인 것은 안 담는다: 내 계정, 알림처럼 사람마다 다른 답을 캐시에 두면 다음 사람이
    * 그것을 볼 수 있다. 담는 것은 **누가 보든 같은 답**뿐이다.
    */
-  if (url.hostname === 'yawnbot.mascari4615.com' && url.pathname.startsWith('/kl/')) {
+  if (url.hostname === 'bot.mascari4615.com' && url.pathname.startsWith('/kl/')) {
     const shared =
       /^\/kl\/(tools\/stats|recent|boards|recap|rooms|missions|suggest|flows|stats\/(leaders|achievements)|play\/(board|games|season)|u\/[^/]+(\/(works|follows|activity))?)$/.test(
         url.pathname,

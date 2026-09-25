@@ -6,7 +6,7 @@
  * 흐르는 연결을 화면이 안 듣거나, 남의 줄이 그려지지 않아도 통과한다.
  * 그래서 창을 **둘** 띄우고, 한쪽에서 친 말이 다른 쪽 화면에 실제로 나타나는지 본다.
  *
- * 붙이는 방법: 앱은 `https://yawnbot.mascari4615.com` 을 부르도록 박혀 있다(`src/account.ts`).
+ * 붙이는 방법: 앱은 `https://bot.mascari4615.com` 을 부르도록 박혀 있다(`src/account.ts`).
  * 그 주소로 가는 요청만 **여기서 띄운 진짜 서버**로 돌린다. 대역폭도 흐름도 실제와 같다.
  * 서버는 흉내가 아니라 yawnbot 이 배포하는 그 코드(`dist/`)를 그대로 쓴다.
  *
@@ -27,7 +27,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(HERE, '..');
 const SITE_ROOT = path.resolve(APP_ROOT, '../..');
 const YAWNBOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/karmolab-bot');
-const PROD_ORIGIN = 'https://yawnbot.mascari4615.com';
+const PROD_ORIGIN = 'https://bot.mascari4615.com';
 
 const failures = [];
 const check = (name, condition, detail) => {

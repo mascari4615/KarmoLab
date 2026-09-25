@@ -545,7 +545,7 @@ jobs:
         shell: 'powershell -ExecutionPolicy Bypass -File {0}'
         working-directory: ${{ env.BOTS_DIR }}
         env:
-          YAWNBOT_WEBHOOK_URL: 'https://yawnbot.mascari4615.com/webhook/github'
+          YAWNBOT_WEBHOOK_URL: 'https://bot.mascari4615.com/webhook/github'
           GH_TOKEN: ${{ secrets.YB_PROD_GH_WEBHOOK_TOKEN }}
         run: |
           $ErrorActionPreference = 'Continue'
@@ -563,7 +563,7 @@ jobs:
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "⚠ 웹훅 주소 등록 실패. 토큰 만료/권한 부족. 새 토큰을 ``YB_PROD_GH_WEBHOOK_TOKEN`` 에 넣어 주세요 (봇 배포는 정상)"
             exit 0
           }
-          # cloudflared named tunnel (yawnbot.mascari4615.com) 은 별도 영구 service (KarmoLab Server Monitor 의 yawnbot-tunnel-prod 카드 또는 NSSM)
+          # cloudflared named tunnel (bot.mascari4615.com) 은 별도 영구 service (KarmoLab Server Monitor 의 yawnbot-tunnel-prod 카드 또는 NSSM)
 
       # === KL-190 ①: 무슨 일이 있어도 봇은 켜 놓고 나간다 ===
       # 앞의 어느 step 이 죽든 이 step 은 돈다(`if: always()`). 배포가 실패하는 것과

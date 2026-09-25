@@ -28,7 +28,7 @@ import { execFile } from 'child_process';
 const DEFAULT_REPO_SLUG = 'mascari4615/memo';
 const DEFAULT_BRANCH = 'main';
 const DEFAULT_AUTHOR_NAME = 'yawnbot';
-const DEFAULT_AUTHOR_EMAIL = 'noreply@yawnbot.mascari4615.com';
+const DEFAULT_AUTHOR_EMAIL = 'noreply@bot.mascari4615.com';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const SHORT_TIMEOUT_MS = 15_000;
 

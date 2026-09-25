@@ -68,7 +68,7 @@ if (!fallbackId) {
 
 /* 진짜 방 코드처럼 생겼지만 아무도 안 쓰는 것. 사람이 눌러도 빈 방이라 판이 안 깨진다 */
 const CODE = 'SMOKE';
-const LINK = `https://yawnbot.mascari4615.com/kl/r/${CODE}?g=gomoku`;
+const LINK = `https://bot.mascari4615.com/kl/r/${CODE}?g=gomoku`;
 
 const card = (stage, extra) =>
   new EmbedBuilder()

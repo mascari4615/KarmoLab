@@ -48,7 +48,7 @@ PLAYWRIGHT_BROWSERS_PATH=C:/ProgramData/YawnBot/playwright
 # 봇이 `/결산` 답에 붙이는 링크의 앞부분. 노트북 express(4615)를 named tunnel 이
 # 이 주소로 내보낸다. 비어 있으면 링크만 생략되고 카드는 그대로 뜬다.
 # 페이지 주소는 `/w/<공유키>` — 서버 ID 로는 못 연다(키는 봇이 서버마다 따로 만듦).
-YAWNBOT_PUBLIC_URL=https://yawnbot.mascari4615.com
+YAWNBOT_PUBLIC_URL=https://bot.mascari4615.com
 
 # ── 개인 식별자 (Discord 유저 ID — env 불변, dev .env 에서 자동 채움) ──
 ADMIN_IDS=391805564616704002

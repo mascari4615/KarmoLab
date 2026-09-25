@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { CSP_META } from './lib/head-security.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const API = process.env.KARMOLAB_API_BASE || 'https://yawnbot.mascari4615.com';
+const API = process.env.KARMOLAB_API_BASE || 'https://bot.mascari4615.com';
 const SITE = 'https://blog.mascari4615.com';
 
 const outArg = process.argv.indexOf('--out');

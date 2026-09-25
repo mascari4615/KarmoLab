@@ -14,7 +14,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 import { download } from './shared/image';
 
 (function (): void {
-  const API = 'https://yawnbot.mascari4615.com/kl/note';
+  const API = 'https://bot.mascari4615.com/kl/note';
 
   Toolbox.register({
     id: 'burnnote',

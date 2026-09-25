@@ -36,7 +36,7 @@
       "where": "ours",
       "sends": "점수, 기록이 KarmoLab 서버에 남습니다 (순위표용).",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "askpapers": {
@@ -68,7 +68,7 @@
       "where": "ours",
       "sends": "적은 쪽지가 KarmoLab 서버에 저장됐다가 한 번 읽히면 지워집니다. 서버로 보내지는 것이 이 도구의 목적입니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "charconv": {
@@ -86,14 +86,14 @@
       "where": "ours",
       "sends": "모은 것 목록을 KarmoLab 서버에서 받아 옵니다 (로그인한 사람만).",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "community": {
       "where": "ours",
       "sends": "적은 글, 댓글이 KarmoLab 서버에 저장되어 남에게 보입니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "crypto": {
@@ -125,7 +125,7 @@
       "where": "ours",
       "sends": "만든 흐름과 실행 기록이 KarmoLab 서버에 저장됩니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "heung": {
@@ -206,7 +206,7 @@
       "where": "ours",
       "sends": "만든 묶음을 올리면 KarmoLab 서버에 저장되어 남도 볼 수 있습니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "papermap": {
@@ -227,14 +227,14 @@
       "where": "ours",
       "sends": "어떤 도구가 얼마나 쓰였는지 집계를 받아 옵니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "plaza": {
       "where": "ours",
       "sends": "광장에 남기는 것이 KarmoLab 서버에 저장되어 남에게 보입니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "postgraph": {
@@ -261,14 +261,14 @@
       "where": "ours",
       "sends": "서버가 살아 있는지 물어볼 뿐, 넣는 내용이 없습니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "tempmail": {
       "where": "ours",
       "sends": "임시 편지함과 받은 메일이 KarmoLab 중계 서버를 거칩니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "territory": {
@@ -289,7 +289,7 @@
       "where": "ours",
       "sends": "남이 올린 도구 목록, 실행 횟수, 신고가 KarmoLab 서버를 거칩니다. 도구 자체는 모래상자 안에서 돕니다.",
       "to": [
-        "yawnbot.mascari4615.com"
+        "bot.mascari4615.com"
       ]
     },
     "videobg": {
@@ -310,7 +310,7 @@
       "where": "ours",
       "sends": "게임 소식, 기록을 KarmoLab 서버와 GitHub 공개 자료에서 받아 옵니다.",
       "to": [
-        "yawnbot.mascari4615.com",
+        "bot.mascari4615.com",
         "github.com"
       ]
     },

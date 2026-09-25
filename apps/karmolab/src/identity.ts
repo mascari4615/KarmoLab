@@ -68,7 +68,7 @@ export function deviceId(): string {
  */
 function attach(): void {
     const base =
-        (window as { KARMOLAB_API_BASE?: string }).KARMOLAB_API_BASE || 'https://yawnbot.mascari4615.com';
+        (window as { KARMOLAB_API_BASE?: string }).KARMOLAB_API_BASE || 'https://bot.mascari4615.com';
     const original = window.fetch.bind(window);
     window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
         let url = '';
@@ -103,7 +103,7 @@ let asking: Promise<Me | null> | null = null;
 const watchers = new Set<(me: Me | null) => void>();
 
 function apiBase(): string {
-    return (window as { KARMOLAB_API_BASE?: string }).KARMOLAB_API_BASE || 'https://yawnbot.mascari4615.com';
+    return (window as { KARMOLAB_API_BASE?: string }).KARMOLAB_API_BASE || 'https://bot.mascari4615.com';
 }
 
 /** 지금 아는 나. 아직 안 물어봤으면 null 을 주고 뒤에서 물어본다(화면을 안 막는다). */

@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { PKG_ROOT } from '../../paths';
 
-const CARD = 'https://yawnbot.mascari4615.com/kl/r';
+const CARD = 'https://bot.mascari4615.com/kl/r';
 
 /**
  * 방 코드 알파벳. 사이트(`apps/karmolab/src/lib/room.ts`)와 **같아야 한다.**

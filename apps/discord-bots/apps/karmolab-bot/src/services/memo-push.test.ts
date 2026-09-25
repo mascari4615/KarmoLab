@@ -406,7 +406,7 @@ describe('resolveConfig. defaults.txt 빈 문자열 폴백 회귀', () => {
   it('authorEmail. env="" → DEFAULT_AUTHOR_EMAIL', () => {
     const env = { ...baseEnv, YAWNBOT_PUSH_AUTHOR_EMAIL: '' } as NodeJS.ProcessEnv;
     const cfg = resolveConfig(env, {});
-    expect(cfg?.authorEmail).toBe('noreply@yawnbot.mascari4615.com');
+    expect(cfg?.authorEmail).toBe('noreply@bot.mascari4615.com');
   });
 
   it('authorEmail. env 정상값 → 그 값', () => {
@@ -445,6 +445,6 @@ describe('resolveConfig. defaults.txt 빈 문자열 폴백 회귀', () => {
     expect(cfg?.repoSlug).toBe('mascari4615/memo');
     expect(cfg?.branch).toBe('main');
     expect(cfg?.authorName).toBe('yawnbot');
-    expect(cfg?.authorEmail).toBe('noreply@yawnbot.mascari4615.com');
+    expect(cfg?.authorEmail).toBe('noreply@bot.mascari4615.com');
   });
 });

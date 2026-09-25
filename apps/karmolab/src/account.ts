@@ -46,7 +46,7 @@ interface AccountSummary {
  */
 const API_BASE =
     (typeof window !== 'undefined' && (window as { KARMOLAB_API_BASE?: string }).KARMOLAB_API_BASE) ||
-    'https://yawnbot.mascari4615.com';
+    'https://bot.mascari4615.com';
 /** Files 화면 정본 주소. 앱은 Tauri `files_navigate` 로 창 전환, 웹은 이 링크 */
 const FILES_URL = 'https://files.mascari4615.com/';
 const USER_DATA_KEY = 'toolbox_user_data';

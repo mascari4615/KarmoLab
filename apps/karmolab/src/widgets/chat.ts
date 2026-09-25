@@ -91,7 +91,7 @@ void (async function (): Promise<void> {
      *
      * 이제 계정이 있으면 그 값을 쓰고(검사가 주소를 갈아 끼울 수 있다), 없으면 제 주소를 쓴다.
      */
-    const DEFAULT_API = 'https://yawnbot.mascari4615.com';
+    const DEFAULT_API = 'https://bot.mascari4615.com';
 
     function apiBase(): string {
         return (typeof window !== 'undefined' && window.KarmoAccount && window.KarmoAccount.apiBase) || DEFAULT_API;

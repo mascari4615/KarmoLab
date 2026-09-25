@@ -42,7 +42,7 @@ type BlogWindow = Window & { KARMOLAB_API_BASE?: string; KarmoAccount?: AccountB
 const bridge = (): BlogWindow => window as BlogWindow;
 
 const root = document.querySelector<HTMLElement>('[data-blog-comments]');
-const DEFAULT_API = 'https://yawnbot.mascari4615.com';
+const DEFAULT_API = 'https://bot.mascari4615.com';
 
 function apiBase(): string {
   return bridge().KarmoAccount?.apiBase || bridge().KARMOLAB_API_BASE || DEFAULT_API;

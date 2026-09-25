@@ -53,7 +53,7 @@ interface PublicProfile {
     footprint?: { days: Record<string, number>; streak: { current: number; longest: number } } | null;
 }
 
-const API_BASE = 'https://yawnbot.mascari4615.com';
+const API_BASE = 'https://bot.mascari4615.com';
 
 /** 트랙 id → 사람이 읽는 이름. 모르는 id 는 id 그대로 (지어내지 않는다). */
 const STREAK_LABELS: Record<string, string> = {

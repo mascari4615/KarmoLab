@@ -13,7 +13,7 @@ test('detectKind: Discord/Slack/generic 자동 매핑', () => {
   expect(detectKind('https://discord.com/api/webhooks/1/abc')).toBe('discord');
   expect(detectKind('https://discordapp.com/api/webhooks/1/abc')).toBe('discord');
   expect(detectKind('https://hooks.slack.com/services/T/B/x')).toBe('slack');
-  expect(detectKind('https://yawnbot.mascari4615.com/in/x')).toBe('generic');
+  expect(detectKind('https://bot.mascari4615.com/in/x')).toBe('generic');
 });
 
 test('buildPayload: kind 별 schema', () => {

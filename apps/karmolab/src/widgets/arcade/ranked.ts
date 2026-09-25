@@ -17,7 +17,7 @@ import {
   type RankedOutcome
 } from '@karmo/arcade';
 
-const HOST = 'https://yawnbot.mascari4615.com';
+const HOST = 'https://bot.mascari4615.com';
 /** 알림 주기. 서버 제외 한계 15초보다 넉넉히 자주 */
 const BEAT_MS = 5 * 1000;
 

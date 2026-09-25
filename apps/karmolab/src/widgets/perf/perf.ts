@@ -976,7 +976,7 @@ import { t, loadNamespace, locale } from '../../lib/i18n';
 
           /* 전체 무게는 파일 하나를 더 받아야 안다. 첫 그림을 막지 않게 **그린 뒤에** 받는다.
              실패해도 계기판은 그대로 돈다(그 칸만 못 읽었다로 남는다). */
-          void fetch('https://yawnbot.mascari4615.com/kl/tools/stats', { credentials: 'include' })
+          void fetch('https://bot.mascari4615.com/kl/tools/stats', { credentials: 'include' })
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
             .then((data: { perf?: RealWorld }) => {
               real = data?.perf || null;

@@ -25,7 +25,7 @@ const PAGE = `${site.base}/apps/karmolab/index.html`;
 
 const browser = await chromium.launch();
 const context = await browser.newContext();
-await context.route('https://yawnbot.mascari4615.com/**', (route) => route.abort());
+await context.route('https://bot.mascari4615.com/**', (route) => route.abort());
 await context.addInitScript(() => {
   window.__tick = { interval: 0, raf: 0, timeout: 0 };
   const si = window.setInterval.bind(window);

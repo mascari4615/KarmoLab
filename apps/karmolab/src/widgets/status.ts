@@ -35,7 +35,7 @@ import { appPath } from '../lib/site-base';
         text: string;
     }
 
-    const API_BASE = 'https://yawnbot.mascari4615.com';
+    const API_BASE = 'https://bot.mascari4615.com';
 
     /** 여기서 오래 기다리면 상태 보는 화면 자체가 멈춘 것처럼 보인다. */
     const TIMEOUT_MS = 6000;

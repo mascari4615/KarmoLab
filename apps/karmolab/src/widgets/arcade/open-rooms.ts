@@ -9,7 +9,7 @@
  * 것은 같이 찾기로 연 방뿐이다. 기본값을 어느 쪽으로 두든 한쪽은 놀라므로 단추로 가른다.
  */
 
-const HOST = 'https://yawnbot.mascari4615.com';
+const HOST = 'https://bot.mascari4615.com';
 /** 살아 있다고 알리는 주기. 서버가 10분에 지우므로 그보다 넉넉히 자주. */
 const BEAT_MS = 60 * 1000;
 

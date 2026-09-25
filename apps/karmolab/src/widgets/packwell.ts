@@ -19,7 +19,7 @@ import { putPick } from './pack-pick';
 import { t, loadNamespace, locale } from '../lib/i18n';
 import { appHash, appPath } from '../lib/site-base';
 
-const API_BASE = 'https://yawnbot.mascari4615.com';
+const API_BASE = 'https://bot.mascari4615.com';
 const TIMEOUT_MS = 30000;
 
 interface WellRow {

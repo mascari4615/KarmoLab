@@ -368,7 +368,7 @@ interface WorldBook {
 
   function apiBase(): string {
     const cfg = (window as unknown as { KARMOLAB_API_BASE?: string }).KARMOLAB_API_BASE;
-    return cfg || 'https://yawnbot.mascari4615.com';
+    return cfg || 'https://bot.mascari4615.com';
   }
 
   function whenText(iso: string): string {

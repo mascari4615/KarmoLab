@@ -1521,7 +1521,7 @@ mod tests {
     #[test]
     fn login_pages_and_strangers_open_outside() {
         // 로그인은 시스템 브라우저에서 돈다 (desktop_login.rs 가 되돌려 받는다).
-        assert!(!allows("https://yawnbot.mascari4615.com/kl/auth/discord?return=x"));
+        assert!(!allows("https://bot.mascari4615.com/kl/auth/discord?return=x"));
         assert!(!allows("https://discord.com/api/oauth2/authorize?client_id=1"));
         assert!(!allows("https://example.com/"));
         assert!(!allows("mailto:a@b.c"));

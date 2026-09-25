@@ -19,7 +19,7 @@
  */
 
 /** 우주 두 가지만 거쳐 가는 자리. 나머지는 여전히 브라우저가 바로 부른다. */
-const RELAY = 'https://yawnbot.mascari4615.com/kl/space';
+const RELAY = 'https://bot.mascari4615.com/kl/space';
 
 /** 한 번 받아온 것을 얼마 동안 다시 안 받나 (ms). */
 const TTL = {

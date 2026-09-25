@@ -42,7 +42,7 @@ const TAPE = (seed) => ({
 
 const PORT = 4703;
 const LOCAL = `http://127.0.0.1:${PORT}`;
-const YAWN = 'https://yawnbot.mascari4615.com';
+const YAWN = 'https://bot.mascari4615.com';
 
 const failures = [];
 const check = (name, cond, detail = '') => {

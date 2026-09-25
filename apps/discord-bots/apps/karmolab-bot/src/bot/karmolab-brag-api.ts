@@ -60,7 +60,7 @@ export function registerBragRoutes(app: Application, brag: KarmolabBragStore = g
     const done = num(req.query.done, 20);
     const run = num(req.query.run, 3650);
     const title = done ? `오늘의 판 ${done}판 완주${run >= 2 ? `, ${run}일 연속` : ''}` : '오늘의 판';
-    const image = `https://yawnbot.mascari4615.com/kl/img/${encodeURIComponent(id)}`;
+    const image = `https://bot.mascari4615.com/kl/img/${encodeURIComponent(id)}`;
     /* 나도 해보기는 우리 문(`/go`)을 지나 사이트로 간다. 카드가 사람을 데려왔는지는
        그 자리에서만 셀 수 있다. 사이트 주소를 바로 걸면 그 방문은 다른 방문과 안 갈린다. */
     const go = `/kl/b/${encodeURIComponent(id)}/go`;

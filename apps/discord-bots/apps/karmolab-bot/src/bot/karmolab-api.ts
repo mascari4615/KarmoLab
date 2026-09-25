@@ -1,11 +1,11 @@
 /**
  * KarmoLab 계정 API (TASK-KL-098 Cycle 1). yawnbot Express 위에 얹는다.
  *
- * 왜 여기인가: 노트북에서 24/7 도는 Express 가 이미 있고 `yawnbot.mascari4615.com` 으로
+ * 왜 여기인가: 노트북에서 24/7 도는 Express 가 이미 있고 `bot.mascari4615.com` 으로
  * 밖에 열려 있다. 계정 하나 때문에 새 서버, 새 요금제를 들이는 것보다, 살아 있는 것 위에
  * 얹는 쪽이 근본이다.
  *
- * 도메인이 다르다 (`blog.mascari4615.com` → `yawnbot.mascari4615.com`). 그래서:
+ * 도메인이 다르다 (`blog.mascari4615.com` → `bot.mascari4615.com`). 그래서:
  *  - 쿠키는 `SameSite=None; Secure` 여야 브라우저가 보낸다 (둘 다 https 라 성립).
  *  - CORS 를 직접 답한다. 아무 데나 열지 않고 **아는 출처만** 허용한다.
  *
@@ -267,7 +267,7 @@ export function karmolabOauthConfig(env: NodeJS.ProcessEnv = process.env): {
   const clientId = String(env.CLIENT_ID ?? '').trim();
   const clientSecret = String(env.DISCORD_CLIENT_SECRET ?? '').trim();
   const redirectUri = String(
-    env.KARMOLAB_OAUTH_REDIRECT_URI ?? 'https://yawnbot.mascari4615.com/kl/auth/discord/callback',
+    env.KARMOLAB_OAUTH_REDIRECT_URI ?? 'https://bot.mascari4615.com/kl/auth/discord/callback',
   ).trim();
   return { clientId, clientSecret, redirectUri, ready: Boolean(clientId && clientSecret && redirectUri) };
 }
@@ -935,7 +935,7 @@ export function registerKarmolabApi(
   });
 
   /**
-   * 프로필 공유 주소 (TASK-KL-156 D9). `https://yawnbot.mascari4615.com/kl/u/:handle/card`.
+   * 프로필 공유 주소 (TASK-KL-156 D9). `https://bot.mascari4615.com/kl/u/:handle/card`.
    *
    * 왜 서버가 HTML 을 내보내나: 지금 프로필은 `/u/?h=...` 라 **크롤러가 사람마다 다른
    * 미리보기 그림을 못 읽는다**(정적 파일 한 장이라 og 태그가 모두 같다). 카드 그림은 이미
@@ -958,7 +958,7 @@ export function registerKarmolabApi(
     const esc = (value: string): string =>
       String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const target = `https://blog.mascari4615.com/u/?h=${encodeURIComponent(account.handle)}`;
-    const image = `https://yawnbot.mascari4615.com/kl/u/${encodeURIComponent(account.handle)}/card.svg`;
+    const image = `https://bot.mascari4615.com/kl/u/${encodeURIComponent(account.handle)}/card.svg`;
     const title = `${account.displayName} (@${account.handle}). KarmoLab`;
     const description = account.card?.bio || 'KarmoLab 에서 이어 온 기록.';
 
@@ -2066,7 +2066,7 @@ export function registerKarmolabApi(
   // 논 사람끼리 겨루기(`pack:<id>` 를 놀이 기록 원장의 표 이름으로 그대로 넘긴다).
 
   /**
-   * 표 하나를 자랑하는 주소 (TASK-KL-151 ⑤). `https://yawnbot.mascari4615.com/kl/w/<표>`.
+   * 표 하나를 자랑하는 주소 (TASK-KL-151 ⑤). `https://bot.mascari4615.com/kl/w/<표>`.
    *
    * 왜 봇이 내주나: 우리 사이트는 정적으로 찍혀 나간다. 그런데 표는 **런타임에 생긴다** . 
    * 찍는 시점에는 없는 표라 미리보기(제목, 그림)를 넣어 둘 수가 없다. 링크를 붙였을 때

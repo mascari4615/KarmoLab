@@ -25,7 +25,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(HERE, '..');
 const SITE_ROOT = path.resolve(APP_ROOT, '../..');
 const YAWNBOT = path.resolve(SITE_ROOT, 'apps/discord-bots/apps/karmolab-bot');
-const PROD_ORIGIN = 'https://yawnbot.mascari4615.com';
+const PROD_ORIGIN = 'https://bot.mascari4615.com';
 
 const failures = [];
 const check = (name, condition, detail) => {
