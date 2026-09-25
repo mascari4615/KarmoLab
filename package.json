@@ -4,6 +4,7 @@
   "description": "monorepo orchestrator. sub apps 의 verify 합성 잡 단일 진실. 사이트 조립은 apps/karmolab/scripts/assemble-site.mjs.",
   "scripts": {
     "verify": "node scripts/verify.mjs",
+    "verify:full": "node scripts/verify.mjs --full",
     "acl-audit": "node scripts/tauri-acl-audit.mjs",
     "indexnow": "node scripts/indexnow-submit.mjs",
     "servermonitor-audit": "node scripts/servermonitor-config-audit.mjs"

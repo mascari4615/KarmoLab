@@ -37,7 +37,7 @@ main 브랜치는 항상:
 - `apps/karmolab-tauri/src-tauri` cargo check 통과 + ACL audit (`acl.toml ⟷ #[command] ⟷ caps` cross-check)
 - typos check 통과
 
-verify fail 시 SLO: 1시간 내 revert. 전체 검사는 root `npm run verify`와 CI가 실행한다. 실제 pre-push hook은 `memo/dotfiles/git-hooks/pre-push`이며 KarmoLab의 선별 검사를 실행한다.
+verify fail 시 SLO: 1시간 내 revert. 로컬 `npm run verify` 의 게이트는 origin/main 대비 바뀐 것에 걸리는 것만 돈다. 게이트 통짜는 CI 와 `npm run verify:full` (2026-09-25 사용자 결정). 실제 pre-push hook은 `memo/dotfiles/git-hooks/pre-push`이며 KarmoLab의 선별 검사를 실행한다.
 
 ## Tauri ACL (KL-063)
 

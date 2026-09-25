@@ -19,6 +19,16 @@ import { spawnSync } from 'node:child_process';
 const totalSteps = 12;
 let currentStep = 0;
 
+/* ★ **로컬은 바뀐 것에 걸리는 게이트만, 전체는 CI** (2026-09-25 사용자 결정).
+   게이트 278개 통짜가 로컬 한 판 약 500초. 한 파일 고치면 걸리는 것은 50~60개.
+   발판을 모르는 검사는 언제나 돈다 (`run-gates.mjs --changed` 의 안전 기본값).
+   CI (`CI=true`) 와 `npm run verify:full` 은 통짜. 로컬 초록 뒤 CI 빨강은 1시간 SLO 그대로 */
+const fullGates = Boolean(process.env.CI) || process.argv.includes('--full');
+if (!fullGates) process.env.KL_GATES_CHANGED = '1';
+console.log(fullGates
+  ? '[verify] 게이트 통짜 (CI 또는 --full)'
+  : '[verify] 게이트는 origin/main 대비 바뀐 것에 걸리는 것만. 통짜는 CI 와 `npm run verify:full`');
+
 /* ★ **어디서 오래 걸리는지 아무도 몰랐다** (2026-08-19). verify 기네는 매번 나오는데
    단계별 시간을 안 재니 손대야 할 자리를 짐작으로 골랐다. 한 번 틀렸다(npm 껍데기가
    범인인 줄 알았으나 재 보니 9%였고, 진짜는 검사 하나가 27%였다).

@@ -75,10 +75,12 @@ function pkgScripts() {
 }
 
 const changedIdx = args.indexOf('--changed');
+/* 로컬 root verify 가 KL_GATES_CHANGED=1 을 준다 (scripts/verify.mjs 머리말). 전체 목록 판에만 */
+const envChanged = changedIdx === -1 && fromIdx !== -1 && process.env.KL_GATES_CHANGED === '1' && !process.env.CI;
 let changed = null;
 let skipped = [];
-if (changedIdx !== -1) {
-  const base = args[changedIdx + 1] && !args[changedIdx + 1].startsWith('--') ? args[changedIdx + 1] : 'origin/main';
+if (changedIdx !== -1 || envChanged) {
+  const base = changedIdx !== -1 && args[changedIdx + 1] && !args[changedIdx + 1].startsWith('--') ? args[changedIdx + 1] : 'origin/main';
   changed = changedFiles(base);
   if (changed === null) {
     console.log(`[gates] 바뀐 것을 못 구했다 (${base}). 통짜로 돈다.`);
