@@ -65,6 +65,16 @@ const SCREENS = [
   ['설정', screenUrl('settings')],
 ];
 
+/* 도구 장 (`/apps/blog/t/<id>/`) 은 `gen:tool-pages` 산출물. lane 에는 없을 수 있음
+   없을 때 404 화면을 재 "밟히는 것 0개" FAIL (2026-09-25, passgen). 준비물 부재는 못 돌림 */
+const missingPages = (ALL ? allToolScreens() : SCREENS)
+  .map(([, u]) => u.split('#')[0])
+  .filter((u) => u.startsWith('/apps/blog/') && !fs.existsSync(path.join(repoRoot, u, 'index.html')));
+if (missingPages.length) {
+  console.log(`[wcag22] 못 돌림. 도구 장 ${missingPages.length}개가 없다 (${missingPages.slice(0, 3).join(', ')}). \`npm run gen:tool-pages\` 뒤에 돌려라. 이건 통과가 아니다.`);
+  process.exit(2);
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png',
