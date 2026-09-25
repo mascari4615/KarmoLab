@@ -303,22 +303,23 @@ import { createLocalServers } from './local-servers';
     const v = m.summary && m.summary.data && m.summary.data.verdicts;
     return Array.isArray(v) ? v.filter((x) => !!x) : [];
   }
-  /** 시스템 드라이브 (C:) 가 있으면 그것, 없으면 가장 찬 것 */
-  function mainDiskPct(v: Vitals): number | null {
+  /**
+   * 디스크 여유 GB. 드라이브 중 가장 적은 여유 (summarize.mjs 의 diskFreeGb 와 같은 규칙).
+   * 기계 셋이 같은 단위로 보이게 (2026-09-25, 전에는 Mois2 만 사용률 %). 수집기 장부에 전체 용량이 없어 % 로는 못 맞춤
+   */
+  function mainDiskFreeGb(v: Vitals): number | null {
     const disks = Array.isArray(v.disks) ? v.disks : [];
-    const c = disks.filter((d) => /^c:?$/i.test(text(d.drive)))[0];
-    if (c) return known(c.usedPct);
-    let top: number | null = null;
+    let low: number | null = null;
     for (const d of disks) {
-      const p = known(d.usedPct);
-      if (p !== null && (top === null || p > top)) top = p;
+      const f = known(d.freeMB);
+      if (f !== null && (low === null || f < low)) low = f;
     }
-    return top;
+    return low === null ? null : Math.round((low / 1024) * 10) / 10;
   }
 
   function look(m: Machine): Look {
     const blank: Look = {
-      state: 'none', stateText: '연결 안 됨', seen: '', cpu: null, ram: null, disk: null, diskUnit: '%', temp: null,
+      state: 'none', stateText: '연결 안 됨', seen: '', cpu: null, ram: null, disk: null, diskUnit: 'GB', temp: null,
     };
     const latest = latestOf(m);
     const lastMs = timeMs(text(latest.at));
@@ -332,8 +333,8 @@ import { createLocalServers } from './local-servers';
           seen: isFinite(boot) ? '켜진 지 ' + spanText(Date.now() - boot) : '',
           cpu: known(v.cpuPct),
           ram: known(v.usedPct),
-          disk: mainDiskPct(v),
-          diskUnit: '%',
+          disk: mainDiskFreeGb(v),
+          diskUnit: 'GB',
           temp: known(v.tempC),
         };
       }
