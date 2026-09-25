@@ -178,9 +178,12 @@ if (fs.existsSync(serverJsonPath)) {
    * 대문자로 적어 두면 서명까지 다 해 놓고 마지막 PUT 에서 422 로 튕긴다(2026-08-10, 여섯 번째).
    * 같은 함정을 오늘 세 번 밟았다. 레지스트리 네임스페이스, npm Trusted Publisher 화면, 여기.
    */
+  /* 2026-09-25 저장소 이름이 KarmoLab 으로 바뀌며 full_name 이 `mascari4615/KarmoLab`.
+     소문자인 것은 계정 부분뿐. 저장소 부분은 gh 정본 표기 그대로 */
   const repoUrl = pkg.repository?.url ?? '';
-  if (repoUrl !== repoUrl.toLowerCase()) {
-    mismatches.push(`repository.url 에 대문자가 있다 (${repoUrl}). provenance 는 소문자 정본과 대조한다`);
+  const owner = /github\.com\/([^/]+)\//.exec(repoUrl)?.[1] ?? '';
+  if (owner !== owner.toLowerCase()) {
+    mismatches.push(`repository.url 계정에 대문자가 있다 (${repoUrl}). provenance 는 소문자 계정과 대조한다`);
   }
 
   if (pkg.mcpName !== reg.name) {
