@@ -796,7 +796,7 @@ const TASK_DIRS: [&str; 5] = [
     "wm/tasks",
     "life/tasks",
     "projects/karmolab/tasks",
-    "projects/yawnbot/tasks",
+    "projects/karmolab-bot/tasks",
 ];
 
 const PICKABLE_STATUSES: [&str; 9] = [

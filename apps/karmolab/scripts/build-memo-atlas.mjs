@@ -67,7 +67,7 @@ const SOURCE_EXCLUDE = ['.git', '.github', '.claude', 'node_modules', 'private',
 /** memo 의 낯익은 갈래 이름. 폴더명 그대로면 낯선 것만 골라 한글을 입힌다. */
 const MEMO_LANE_ALIAS = {
   rules: '룰', notes: '노트', systems: '시스템', wm: 'WM', life: '인생',
-  'projects/karmolab': 'KarmoLab', 'projects/yawnbot': '욘봇',
+  'projects/karmolab': 'KarmoLab', 'projects/karmolab-bot': 'KarmoLab 봇',
 };
 
 /**

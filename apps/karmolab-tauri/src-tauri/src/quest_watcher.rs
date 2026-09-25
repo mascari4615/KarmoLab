@@ -3,7 +3,7 @@
 //
 // 동작:
 //   1. 앱 시작 시 단일 watcher 생성 (notify-rs)
-//   2. memo/{wm/tasks, projects/karmolab/tasks, projects/yawnbot/tasks, life/tasks, hobby/tasks, learning/tasks}
+//   2. memo/{wm/tasks, projects/karmolab/tasks, projects/karmolab-bot/tasks, life/tasks, hobby/tasks, learning/tasks}
 //      6개 디렉토리 각각 NonRecursive 등록
 //   3. fs event 받으면 debounce (300ms) — 외부 에디터 atomic save 의 다중 이벤트 묶음
 //   4. debounce 만료 시 Tauri emit("quest-tree-changed") — 위젯이 받아서 fetchMemoTree 재호출

@@ -51,7 +51,7 @@ fn domain_to_tasks_dir(domain: &str) -> Option<&'static str> {
     match domain {
         "wm" => Some("wm/tasks"),
         "karmolab" => Some("projects/karmolab/tasks"),
-        "yawnbot" => Some("projects/yawnbot/tasks"),
+        "yawnbot" => Some("projects/karmolab-bot/tasks"),
         "life" => Some("life/tasks"),
         "hobby" => Some("hobby/tasks"),
         "learning" => Some("learning/tasks"),

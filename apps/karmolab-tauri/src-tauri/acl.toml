@@ -95,7 +95,7 @@ commands = ["get_quest_tree"]
 [[group]]
 name = "quest-writeback"
 identifier = "allow-quest-writeback"
-description = "Allow the QuestLog widget to toggle a single checkbox or change the frontmatter status in a memo TASK file (write-back). Path whitelisted to {memo}/(wm|projects/karmolab|projects/yawnbot|life|hobby|learning)/tasks/TASK-*.md."
+description = "Allow the QuestLog widget to toggle a single checkbox or change the frontmatter status in a memo TASK file (write-back). Path whitelisted to {memo}/(wm|projects/karmolab|projects/karmolab-bot|life|hobby|learning)/tasks/TASK-*.md."
 commands = [
   "toggle_quest_check",
   "set_quest_status",
@@ -108,7 +108,7 @@ commands = [
 [[group]]
 name = "task-launcher"
 identifier = "allow-task-launcher"
-description = "Allow the TASK launcher widget to open existing TASK files in the OS default editor and create new TASK files (next ID auto + frontmatter skeleton). File paths whitelisted to {memo}/(wm|projects/karmolab|projects/yawnbot|life|hobby|learning)/tasks/TASK-*.md."
+description = "Allow the TASK launcher widget to open existing TASK files in the OS default editor and create new TASK files (next ID auto + frontmatter skeleton). File paths whitelisted to {memo}/(wm|projects/karmolab|projects/karmolab-bot|life|hobby|learning)/tasks/TASK-*.md."
 commands = ["open_task_in_editor", "create_task"]
 
 [[group]]

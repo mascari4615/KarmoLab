@@ -5,7 +5,7 @@
 // → 파일 경로 화이트리스트 검증 → 라인 텍스트 검증 → `- [ ]` ↔ `- [x]` 토글 → 파일 write.
 //
 // 보안:
-//   - filePath 는 무조건 {memoPath}/(wm|projects/karmolab|projects/yawnbot|life|hobby|learning)/tasks/TASK-*.md
+//   - filePath 는 무조건 {memoPath}/(wm|projects/karmolab|projects/karmolab-bot|life|hobby|learning)/tasks/TASK-*.md
 //   - 위젯이 임의 파일 쓰기 못하게 차단
 //
 // 정합성 (race-safe):

@@ -4,7 +4,7 @@
 // 데이터 소스 (모두 로컬, github.io 레포 외부):
 //   - {memoPath}/wm/tasks/TASK-WM-*.md
 //   - {memoPath}/projects/karmolab/tasks/TASK-KL-*.md
-//   - {memoPath}/projects/yawnbot/tasks/TASK-YB-*.md
+//   - {memoPath}/projects/karmolab-bot/tasks/TASK-YB-*.md
 //   - {memoPath}/life/tasks/TASK-LIFE-*.md
 //   - {memoPath}/hobby/tasks/TASK-HOBBY-*.md
 //   - {memoPath}/learning/tasks/TASK-LEARN-*.md
@@ -80,7 +80,7 @@ pub struct QuestTree {
 pub const DOMAIN_DIRS: &[&str] = &[
     "wm/tasks",
     "projects/karmolab/tasks",
-    "projects/yawnbot/tasks",
+    "projects/karmolab-bot/tasks",
     "life/tasks",
     "hobby/tasks",
     "learning/tasks",

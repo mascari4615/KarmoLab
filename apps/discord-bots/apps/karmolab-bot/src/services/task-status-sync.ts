@@ -56,7 +56,7 @@ const TASK_DIRS = [
   'wm/tasks',
   'life/tasks',
   'projects/karmolab/tasks',
-  'projects/yawnbot/tasks',
+  'projects/karmolab-bot/tasks',
 ];
 
 export interface TaskStatusUpdate {
