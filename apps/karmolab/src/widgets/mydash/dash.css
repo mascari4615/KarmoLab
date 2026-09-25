@@ -168,6 +168,9 @@ html[data-site="dash"] .myd-strip {
   html[data-site="dash"] .myd-main:has(.mc) .myd-body { flex: 1; min-height: 0; }
   html[data-site="dash"] .myd-body > div:has(> .mc) { height: 100%; min-height: 0; }
 }
+/* 버튼과 입력 칸은 브라우저 기본이 부모 글꼴을 안 물려받는다. 배포 실측 2026-09-25: 플래너 미니 달력 날짜가
+   Arial 69자, 버튼 글자 MS PGothic 43자. 우선순위 0 이라 글꼴을 따로 적은 규칙은 그대로 */
+:where(html[data-site="dash"]) :where(button, input, select, textarea) { font-family: inherit; }
 /* ESC 메뉴는 lab 과 같이 쓰는 조각. dash 에서만 dash 글꼴 (돋움) */
 html[data-site="dash"] .esc-menu { --esc-font-ko: var(--font-sans); --esc-font-en: var(--font-display); }
 html[data-site="dash"] { --dash-paper: #fff; --pl-line2: #eef1f5; }
