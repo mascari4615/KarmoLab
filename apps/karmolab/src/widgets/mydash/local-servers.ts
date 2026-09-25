@@ -83,6 +83,9 @@ const LOG_MS = 2000;
 const LOG_TAIL = 200;
 const FETCH_MS = 8000;
 const PAIR_MS = 120000;
+/** 권한 대기로 멈췄을 때 허용할 자리. 주소창에 붙여 넣는 주소 (Edge 사이트 권한 화면) */
+const PERMISSION_HINT =
+  '브라우저 권한 대기. 주소창 오른쪽 권한 표시를 누르거나, edge://settings/content/siteDetails?site=https%3A%2F%2Fdash.mascari4615.com 에서 로컬 네트워크 허용';
 const ARM_MS = 4000;
 const DEFAULT_HOST = 'Mois';
 const OFF_HINT = '이 PC 에서 KarmoLab 앱이 켜져 있을 때만 조작';
@@ -380,12 +383,21 @@ export function createLocalServers(opts: { isCurrent: () => boolean }): LocalSer
   }
 
   async function connect(auto: boolean): Promise<void> {
+    /* Edge 는 loopback 권한 창을 주소창의 작은 표시로만 띄우기도 함. 사용자가 못 보고 "연결 중" 에서 멈춤
+       (2026-09-25 실측: 요청이 권한 대기로 보류, 사이트 권한 기록 없음). 2초 넘게 대기면 허용 자리 안내 */
+    let waitHint = 0;
     if (!auto) {
       conn = 'pairing';
       why = '';
       paint();
+      waitHint = window.setTimeout(() => {
+        if (conn !== 'pairing' || hello) return;
+        why = PERMISSION_HINT;
+        paint();
+      }, 2000);
     }
     const ok = await sayHello();
+    window.clearTimeout(waitHint);
     if (!ok && conn === 'unpaired' && !auto) {
       conn = 'pairing';
       why = 'KarmoLab 앱 창에서 허용을 누르면 연결';
