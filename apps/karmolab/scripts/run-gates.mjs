@@ -283,9 +283,9 @@ console.log(
     (directCount < gates.length ? `, npm 껍데기를 쓰는 검사 ${gates.length - directCount}개` : '')
 );
 /* 검사마다 최고 메모리 (자기와 자손 전부). 상한을 넘으면 그 검사는 빨강 (lib/gate-mem.mjs 머리말).
-   6GB 는 브라우저 넷이 같이 돌아도 32GB 기계에 여유가 남는 값. 2026-09-25 실측 최고는
-   tool-boot 3.5GB, a11y 2.1GB, yacht-ranked 1.7GB. 고치기 전 tool-boot 는 20.7GB */
-const MEM_LIMIT_MB = Number(process.env.KL_GATE_MEM_MB || 6000);
+   8GB: 폭주 (고치기 전 tool-boot 20.7GB) 를 잡는 선. 2026-09-25 6/4 판 실측 최고는
+   tool-boot 6.6GB (혼자는 3.5GB), a11y 3.1GB, a11y:all 2.8GB. 기계 전체 최고 10.5GB */
+const MEM_LIMIT_MB = Number(process.env.KL_GATE_MEM_MB || 8000);
 const memWatch = startGateMemWatch();
 const startedAt = Date.now();
 let finishedCount = 0;
