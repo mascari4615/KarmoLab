@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko" data-theme="dark" data-site="meok">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>먹</title>
+<meta name="description" content="레이어로 그리고 칸으로 움직이는 그림판. 셸 없이 그림판만">
+<link rel="canonical" href="https://lab.mascari4615.com/meok/">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/apps/karmolab/img/favicon.ico">
+<!-- 테마는 KarmoLab 과 같은 저장값 (memo change.meok-app). 그리기 전에 정해 번쩍임 없음 -->
+<script>try{var d=document.documentElement,t=localStorage.getItem('toolbox_theme');d.setAttribute('data-theme',t==='light'?'light':'dark')}catch(e){}</script>
+<link rel="stylesheet" href="/apps/karmolab/css/fonts.css">
+<!-- 색, 글자, 둥글기 토큰과 알림(#statusToast) 모양이 여기. 셸 배치 규칙은 셸 요소가 없어 안 걸림 -->
+<link rel="stylesheet" href="/apps/karmolab/css/shell-critical.css">
+<style>
+  html,body{height:100%;margin:0;overflow:hidden;background:var(--bg-primary)}
+  #meok-root{height:100vh;display:flex;flex-direction:column}
+  #meok-root .meok{border:0;border-radius:0;min-height:0}
+</style>
+<!-- 셸 대역. 먹은 `Toolbox` 가 있으면 등록만 하고, 화면은 탭의 build 가 만든다 -->
+<script>
+(function () {
+  var disposers = [];
+  window.Toolbox = {
+    register: function (spec) {
+      var tab = spec && spec.tabs && spec.tabs[0];
+      var root = document.getElementById('meok-root');
+      if (tab && root) tab.build(root);
+    },
+    onDispose: function (fn) { disposers.push(fn); },
+    onHandoff: function () {},
+    isDesktopApp: function () { return !!window.__KARMOLAB_DESKTOP__; },
+    showToast: function () {}
+  };
+  window.addEventListener('pagehide', function () { disposers.forEach(function (fn) { try { fn(); } catch (e) {} }); });
+})();
+</script>
+</head>
+<body>
+<h1 class="kl-sr">먹</h1>
+<div id="meok-root"></div>
+<div id="statusToast" class="status-toast" role="status" aria-live="polite"></div>
+<script defer src="/apps/karmolab/js/widgets/meok/meok.js"></script>
+</body>
+</html>

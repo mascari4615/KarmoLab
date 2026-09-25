@@ -205,5 +205,14 @@
   "meok.menuMaskClear": "マスクを削除",
   "meok.menuFit": "画面に合わせる",
   "meok.menuFullscreen": "全画面",
-  "meok.menuPlay": "アニメーション再生"
+  "meok.menuPlay": "アニメーション再生",
+  "meok.menuWindow": "ウィンドウ",
+  "meok.menuDockReset": "レイアウトを初期化",
+  "meok.panelBrush": "ブラシ",
+  "meok.panelLayer": "レイヤープロパティ",
+  "meok.dockLeft": "左ドック",
+  "meok.dockRight": "右ドック",
+  "meok.splitLeft": "左ドックの幅",
+  "meok.splitRight": "右ドックの幅",
+  "meok.splitBottom": "タイムラインの高さ"
 }

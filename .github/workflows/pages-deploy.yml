@@ -135,6 +135,12 @@ jobs:
           mkdir -p apps/blog/dash
           cp apps/karmolab/dash/index.html apps/blog/dash/index.html
 
+      # 먹 전용 장 /meok/ (memo change.meok-app). 셸 없이 그림판만. 런처 독립 앱이 이 주소를 띄운다
+      - name: Prepare meok page
+        run: |
+          mkdir -p apps/blog/meok
+          cp apps/karmolab/meok/index.html apps/blog/meok/index.html
+
       # TASK-KL-129: 봇 소개(/bot/), 프로필(/u/)을 **앱 셸에 얹어** 찍는다.
       # 예전에는 원본을 그대로 복사했다. 그러면 도구를 쓰다 그리로 갈 때 머리띠도 옆줄도
       # 테마 단추도 ⌘K 도 없는 다른 집으로 떨어졌다. 내용의 주인은 여전히 원본 문서다.

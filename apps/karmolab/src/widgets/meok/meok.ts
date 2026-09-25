@@ -21,6 +21,7 @@ import { composite, compositeAll, spriteSheet } from './composite';
 import { getKarmoGif } from '../../lib/karmogif';
 import { encodeApng } from './apng';
 import { injectStyles } from './styles';
+import { setupDock } from './dock';
 import { meokMarkup } from './markup';
 import { EMOTE_PRESETS, emoteName, fitBox, findPreset, limitRatio, overBudgetHint, type EmotePreset } from './emote';
 import {
@@ -1353,6 +1354,19 @@ function buildMeok(container: HTMLElement): void {
   pick<HTMLElement>('.meok-menubar').addEventListener('click', (event) => {
     if ((event.target as HTMLElement).closest('.meok-menu-item')) closeMenus();
   });
+  /* 도킹 패널과 창 메뉴. 캔버스 크기는 칸 ResizeObserver 가 따라감 */
+  const dock = setupDock(root, () => {});
+  const syncWindowMenu = (): void => {
+    root.querySelectorAll<HTMLButtonElement>('[data-panel-toggle]').forEach(b => {
+      b.setAttribute('role', 'menuitemcheckbox');
+      b.setAttribute('aria-checked', String(dock.isShown(b.dataset.panelToggle || '')));
+    });
+  };
+  root.querySelectorAll<HTMLButtonElement>('[data-panel-toggle]').forEach(b => {
+    b.onclick = () => { dock.toggle(b.dataset.panelToggle || ''); syncWindowMenu(); };
+  });
+  pick<HTMLButtonElement>('[data-dock-reset]').onclick = () => { dock.reset(); syncWindowMenu(); };
+  syncWindowMenu();
   const outsideMenu = (event: PointerEvent): void => {
     if (openMenu && !(event.target as HTMLElement).closest?.('.meok-menubar')) closeMenus();
   };
@@ -1479,7 +1493,10 @@ function buildMeok(container: HTMLElement): void {
   const fitViewport = (): void => {
     const rect = wrap.getBoundingClientRect();
     const z = uiZoom(wrap);
+    const was = { w: view.viewW, h: view.viewH };
     view.resizeViewport(Math.max(120, rect.width / z), Math.max(120, rect.height / z), (window.devicePixelRatio || 1) * z);
+    /* 칸 폭이 바뀌면 (도킹 칸 끌기, 창 크기) 그림 중심을 지킴. 안 옮기면 한쪽으로 밀려 잘림 */
+    if (was.w > 1 && was.h > 1) view.pan((view.viewW - was.w) / 2, (view.viewH - was.h) / 2);
     view.paint();
   };
   const observer = new ResizeObserver(fitViewport);
@@ -1515,6 +1532,7 @@ function buildMeok(container: HTMLElement): void {
     document.removeEventListener('keydown', keydown);
     document.removeEventListener('keyup', keyup);
     document.removeEventListener('pointerdown', outsideMenu);
+    dock.dispose();
   });
 }
 

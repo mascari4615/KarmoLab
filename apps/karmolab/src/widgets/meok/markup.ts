@@ -91,15 +91,24 @@ const menuBar = (): string => {
       alias('mask-clear', T('menuMaskClear', '가림막 없애기'), '', needMask),
     ]) +
     menu('select', T('menuSelect', '선택'), [
-      alias('deselect', T('deselect', '선택 풀기'), '', needSel),
-      alias('feather-selection', T('featherEdge', '가장자리 부드럽게'), '', needSel),
-      alias('clear-selection', T('clearSelection', '고른 자리 지우기'), 'Delete', needSel),
+      act('deselect', T('deselect', '선택 풀기'), 'Ctrl+D', needSel),
+      act('feather-selection', T('featherEdge', '가장자리 부드럽게'), '', needSel),
+      act('clear-selection', T('clearSelection', '고른 자리 지우기'), 'Delete', needSel),
     ]) +
     menu('view', T('menuView', '보기'), [
       alias('fit', T('menuFit', '화면에 맞춤')),
       act('fullscreen', T('menuFullscreen', '전체화면'), '', '', T('fullscreenHelp', '창을 화면 전체로. 다시 누르면 돌아온다')),
       sep,
       alias('play', T('menuPlay', '애니메이션 재생')),
+    ]) +
+    menu('window', T('menuWindow', '창'), [
+      item('data-panel-toggle="color"', T('color', '색')),
+      item('data-panel-toggle="brush"', T('panelBrush', '붓')),
+      item('data-panel-toggle="layer"', T('panelLayer', '레이어 속성')),
+      item('data-panel-toggle="fix"', T('fix', '고치기')),
+      item('data-panel-toggle="emote"', T('emote', '이모트')),
+      sep,
+      item('data-dock-reset', T('menuDockReset', '배치 초기화')),
     ]) +
     '</nav>';
 };
@@ -128,59 +137,44 @@ export function meokMarkup(): string {
         toolButton('lasso', 'L', T('toolLasso', '올가미'), '<path d="M12 4.5c4.4 0 8 2.5 8 5.6 0 3-3.6 5.5-8 5.5-1.3 0-2.6-.2-3.7-.6-1.4 1.2-1.6 2.6-1 4.5-2-1.3-2.6-3.4-1.6-5.5C4.4 13 4 11.6 4 10.1c0-3.1 3.6-5.6 8-5.6z"/>') +
         toolButton('wand', 'W', T('toolWand', '마술봉'), '<path d="m4 20 9.5-9.5M15 4l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9zM19.5 12.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>') +
         toolButton('pan', 'Space', T('toolPan', '이동'), '<path d="M12 3v18M3 12h18M12 3 9.5 5.8M12 3l2.5 2.8M12 21l-2.5-2.8M12 21l2.5-2.8M3 12l2.8-2.5M3 12l2.8 2.5M21 12l-2.8-2.5M21 12l-2.8 2.5"/>') +
-        '<hr>' +
-        '<input data-color type="color" value="#18202c" aria-label="' + esc(T('color', '색')) + '">' +
-        '<div class="meok-palette" data-palette></div>' +
-        '<button data-act="pick-palette" class="meok-mini">' + esc(T('paletteFromArt', '그림에서 색 뽑기')) + '</button>' +
-        '<hr>' +
-        '<div class="meok-presets" data-presets></div>' +
-        '<button data-act="brush-save" class="meok-mini">' + esc(T('brushSave', '이 붓 담기')) + '</button>' +
       '</div>' +
+      '<div class="meok-dock" data-dock="left" aria-label="' + esc(T('dockLeft', '왼쪽 칸')) + '"></div>' +
+      '<div class="meok-split" data-split="left" role="separator" aria-orientation="vertical" tabindex="0" aria-label="' + esc(T('splitLeft', '왼쪽 칸 폭')) + '"></div>' +
+      '<div class="meok-sizebar" title="' + esc(T('size', '굵기')) + '"><b data-out="size"></b><input data-brush="size" type="range" aria-label="' + esc(T('size', '굵기')) + '" orient="vertical" min="1" max="200" step="1"><small>px</small></div>' +
       '<section class="meok-stage">' +
-        '<div class="meok-brush">' +
-          '<label>' + esc(T('size', '굵기')) + '<input data-brush="size" type="range" min="1" max="200" step="1"><b data-out="size"></b></label>' +
-          '<label>' + esc(T('hardness', '단단함')) + '<input data-brush="hardness" type="range" min="0" max="1" step="0.01"><b data-out="hardness"></b></label>' +
-          '<label>' + esc(T('opacity', '짙기')) + '<input data-brush="opacity" type="range" min="0" max="1" step="0.01"><b data-out="opacity"></b></label>' +
-          '<label>' + esc(T('flow', '흐름')) + '<input data-brush="flow" type="range" min="0.02" max="1" step="0.01"><b data-out="flow"></b></label>' +
-          '<label>' + esc(T('smoothing', '손떨림')) + '<input data-brush="smoothing" type="range" min="0" max="0.95" step="0.01"><b data-out="smoothing"></b></label>' +
-          '<span class="meok-selbar">' +
-            '<button data-act="deselect" data-needs-selection class="meok-mini" title="Ctrl+D">' + esc(T('deselect', '선택 풀기')) + '</button>' +
-            '<button data-act="feather-selection" data-needs-selection class="meok-mini">' + esc(T('featherEdge', '가장자리 부드럽게')) + '</button>' +
-            '<button data-act="clear-selection" data-needs-selection class="meok-mini" title="Delete">' + esc(T('clearSelection', '고른 자리 지우기')) + '</button>' +
-          '</span>' +
-          '<span class="meok-zoom" data-zoom></span>' +
-          '<button data-act="fit" class="meok-mini">' + esc(T('fit', '맞춤')) + '</button>' +
-        '</div>' +
         '<div class="meok-canvas" data-canvas-wrap><canvas data-canvas></canvas></div>' +
-        '<div class="meok-timeline">' +
-          '<button data-act="play">▶</button>' +
-          '<label>' + esc(T('fps', '초당')) + '<input data-fps type="number" min="1" max="60" value="12"></label>' +
-          '<label class="meok-onion"><input data-onion type="checkbox"> ' + esc(T('onion', '어니언스킨')) + '</label>' +
-          '<div class="meok-frames" data-frames></div>' +
-          '<button data-act="add-frame" title="' + esc(T('addFrameHelp', '지금 프레임을 복사해 뒤에 끼운다')) + '">＋</button>' +
-          '<button data-act="del-frame">－</button>' +
-        '</div>' +
+        '<div class="meok-zoombar"><span class="meok-zoom" data-zoom></span>' +
+          '<button data-act="fit" class="meok-mini">' + esc(T('fit', '맞춤')) + '</button></div>' +
       '</section>' +
-      '<div class="meok-layers">' +
-        '<div class="meok-layer-head">' +
-          '<b>' + esc(T('layers', '레이어')) + '</b>' +
-          '<button data-act="add-layer" title="' + esc(T('addLayerHelp', '위에 새 레이어')) + '">＋</button>' +
-          '<button data-act="merge-layer" title="' + esc(T('mergeHelp', '아래 레이어에 눌러 붙인다')) + '">⇩</button>' +
-          '<button data-act="del-layer">🗑</button>' +
-        '</div>' +
-        '<div class="meok-layer-props">' +
-          '<label>' + esc(T('layerOpacity', '불투명도')) + '<input data-layer="opacity" type="range" min="0" max="1" step="0.01"></label>' +
-          '<label>' + esc(T('blend', '섞기')) + '<select data-layer="blend"></select></label>' +
-          '<label class="meok-check"><input data-layer="clip" type="checkbox"> ' + esc(T('clip', '아래에 끼우기')) + '</label>' +
-          '<div class="meok-fix-row">' +
-            '<button data-act="mask-from-selection" data-needs-selection title="' + esc(T('maskFromSelectionHelp', '고른 자리만 보이게 가림막을 만든다. 그림은 안 지운다')) + '">' + esc(T('maskFromSelection', '가림막')) + '</button>' +
-            '<button data-act="mask-invert" data-needs-mask title="' + esc(T('maskInvertHelp', '보이는 자리와 가린 자리를 맞바꾼다')) + '">' + esc(T('maskInvert', '뒤집기')) + '</button>' +
-            '<button data-act="mask-apply" data-needs-mask title="' + esc(T('maskApplyHelp', '가림막대로 그림을 실제로 지운다')) + '">' + esc(T('maskApply', '굳히기')) + '</button>' +
-            '<button data-act="mask-clear" data-needs-mask>' + esc(T('maskClear', '없애기')) + '</button>' +
+      '<div class="meok-split" data-split="right" role="separator" aria-orientation="vertical" tabindex="0" aria-label="' + esc(T('splitRight', '오른쪽 칸 폭')) + '"></div>' +
+      '<div class="meok-dock" data-dock="right" aria-label="' + esc(T('dockRight', '오른쪽 칸')) + '">' +
+        '<details class="meok-panel" data-panel="color" open><summary>' + esc(T('color', '색')) + '</summary><div class="meok-panel-body">' +
+          '<input data-color type="color" value="#18202c" aria-label="' + esc(T('color', '색')) + '">' +
+          '<div class="meok-palette" data-palette></div>' +
+          '<button data-act="pick-palette" class="meok-mini">' + esc(T('paletteFromArt', '그림에서 색 뽑기')) + '</button>' +
+        '</div></details>' +
+        '<details class="meok-panel" data-panel="brush" open><summary>' + esc(T('panelBrush', '붓')) + '</summary><div class="meok-panel-body">' +
+          '<div class="meok-presets" data-presets></div>' +
+          '<button data-act="brush-save" class="meok-mini">' + esc(T('brushSave', '이 붓 담기')) + '</button>' +
+            '<label>' + esc(T('hardness', '단단함')) + '<input data-brush="hardness" type="range" min="0" max="1" step="0.01"><b data-out="hardness"></b></label>' +
+            '<label>' + esc(T('opacity', '짙기')) + '<input data-brush="opacity" type="range" min="0" max="1" step="0.01"><b data-out="opacity"></b></label>' +
+            '<label>' + esc(T('flow', '흐름')) + '<input data-brush="flow" type="range" min="0.02" max="1" step="0.01"><b data-out="flow"></b></label>' +
+            '<label>' + esc(T('smoothing', '손떨림')) + '<input data-brush="smoothing" type="range" min="0" max="0.95" step="0.01"><b data-out="smoothing"></b></label>' +
+        '</div></details>' +
+        '<details class="meok-panel" data-panel="layer" open><summary>' + esc(T('panelLayer', '레이어 속성')) + '</summary><div class="meok-panel-body">' +
+          '<div class="meok-layer-props">' +
+            '<label>' + esc(T('layerOpacity', '불투명도')) + '<input data-layer="opacity" type="range" min="0" max="1" step="0.01"></label>' +
+            '<label>' + esc(T('blend', '섞기')) + '<select data-layer="blend"></select></label>' +
+            '<label class="meok-check"><input data-layer="clip" type="checkbox"> ' + esc(T('clip', '아래에 끼우기')) + '</label>' +
+            '<div class="meok-fix-row">' +
+              '<button data-act="mask-from-selection" data-needs-selection title="' + esc(T('maskFromSelectionHelp', '고른 자리만 보이게 가림막을 만든다. 그림은 안 지운다')) + '">' + esc(T('maskFromSelection', '가림막')) + '</button>' +
+              '<button data-act="mask-invert" data-needs-mask title="' + esc(T('maskInvertHelp', '보이는 자리와 가린 자리를 맞바꾼다')) + '">' + esc(T('maskInvert', '뒤집기')) + '</button>' +
+              '<button data-act="mask-apply" data-needs-mask title="' + esc(T('maskApplyHelp', '가림막대로 그림을 실제로 지운다')) + '">' + esc(T('maskApply', '굳히기')) + '</button>' +
+              '<button data-act="mask-clear" data-needs-mask>' + esc(T('maskClear', '없애기')) + '</button>' +
+            '</div>' +
           '</div>' +
-        '</div>' +
-        '<div class="meok-layer-list" data-layers></div>' +
-        '<details class="meok-fix"><summary>' + esc(T('fix', '고치기')) + '</summary>' +
+        '</div></details>' +
+        '<details class="meok-panel meok-fix" data-panel="fix"><summary>' + esc(T('fix', '고치기')) + '</summary>' +
           '<div class="meok-fix-row">' +
             '<button data-act="crop-selection" data-needs-selection title="' + esc(T('cropToSelection', '고른 자리로 자르기')) + '">' + esc(T('cropShort', '고른 자리')) + '</button>' +
             '<button data-act="trim" title="' + esc(T('trim', '여백 자르기')) + '">' + esc(T('trimShort', '여백')) + '</button>' +
@@ -206,7 +200,7 @@ export function meokMarkup(): string {
           '</div>' +
           '<div class="meok-filters" data-filters></div>' +
         '</details>' +
-        '<details class="meok-emote"><summary>' + esc(T('emote', '이모트')) + '</summary>' +
+        '<details class="meok-panel meok-emote" data-panel="emote"><summary>' + esc(T('emote', '이모트')) + '</summary>' +
           '<div class="meok-emote-picks" data-emote-picks></div>' +
           '<div class="meok-emote-shots" data-emote-shots></div>' +
           '<p class="meok-emote-note" data-emote-note></p>' +
@@ -214,6 +208,28 @@ export function meokMarkup(): string {
             '<button data-act="emote-save">' + esc(T('emoteSave', '한 벌 뽑기')) + '</button>' +
           '</div>' +
         '</details>' +
+      '</div>' +
+      '<div class="meok-split meok-split-h" data-split="bottom" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="' + esc(T('splitBottom', '타임라인 높이')) + '"></div>' +
+      '<div class="meok-timeline">' +
+        '<div class="meok-tl-layers">' +
+          '<div class="meok-layer-head">' +
+            '<b>' + esc(T('layers', '레이어')) + '</b>' +
+            '<button data-act="add-layer" title="' + esc(T('addLayerHelp', '위에 새 레이어')) + '">＋</button>' +
+            '<button data-act="merge-layer" title="' + esc(T('mergeHelp', '아래 레이어에 눌러 붙인다')) + '">⇩</button>' +
+            '<button data-act="del-layer">🗑</button>' +
+          '</div>' +
+          '<div class="meok-layer-list" data-layers></div>' +
+        '</div>' +
+        '<div class="meok-tl-frames">' +
+          '<div class="meok-tl-bar">' +
+            '<button data-act="play">▶</button>' +
+            '<label>' + esc(T('fps', '초당')) + '<input data-fps type="number" min="1" max="60" value="12"></label>' +
+            '<label class="meok-onion"><input data-onion type="checkbox"> ' + esc(T('onion', '어니언스킨')) + '</label>' +
+            '<button data-act="add-frame" title="' + esc(T('addFrameHelp', '지금 프레임을 복사해 뒤에 끼운다')) + '">＋</button>' +
+            '<button data-act="del-frame">－</button>' +
+          '</div>' +
+          '<div class="meok-frames" data-frames></div>' +
+        '</div>' +
       '</div>' +
     '</div></div>'
 }

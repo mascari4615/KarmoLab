@@ -205,5 +205,14 @@
   "meok.menuMaskClear": "가림막 없애기",
   "meok.menuFit": "화면에 맞춤",
   "meok.menuFullscreen": "전체화면",
-  "meok.menuPlay": "애니메이션 재생"
+  "meok.menuPlay": "애니메이션 재생",
+  "meok.menuWindow": "창",
+  "meok.menuDockReset": "배치 초기화",
+  "meok.panelBrush": "붓",
+  "meok.panelLayer": "레이어 속성",
+  "meok.dockLeft": "왼쪽 칸",
+  "meok.dockRight": "오른쪽 칸",
+  "meok.splitLeft": "왼쪽 칸 폭",
+  "meok.splitRight": "오른쪽 칸 폭",
+  "meok.splitBottom": "타임라인 높이"
 }

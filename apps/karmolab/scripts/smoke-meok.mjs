@@ -74,10 +74,10 @@ await page.addInitScript(() => {
 
 await page.goto(base + '/apps/karmolab/index.html#meok', { waitUntil: 'load', timeout: 30000 });
 /* 윗메뉴로 옮긴 항목은 사람처럼 메뉴를 열고 누름 (2026-09-25 윗메뉴 도입) */
-const menuClick = async (act) => {
-  const title = page.locator(`.meok:visible .meok-menu:has([data-act="${act}"]) .meok-menu-title`);
-  await title.click();
-  await page.click(`.meok:visible .meok-menu-list:not([hidden]) [data-act="${act}"]`);
+const menuClick = async (act) => menuClickAttr(`[data-act="${act}"]`);
+const menuClickAttr = async (sel) => {
+  await page.locator(`.meok:visible .meok-menu:has(${sel}) .meok-menu-title`).click();
+  await page.click(`.meok:visible .meok-menu-list:not([hidden]) ${sel}`);
 };
 // ★ 먹은 이미지 묶음의 한 탭이다(lazy-meta 의 bundle:'image'). 주소로 들어가면 묶음이
 //   열릴 뿐이고, 먹 단추를 한 번 눌러야 그림판이 뜬다. 예전엔 주소만으로 떴는데 묶음
@@ -312,7 +312,7 @@ if (outsideAfter > outsideBefore + 30) problems.push('고른 자리 밖으로 �
 if ((await canvasInk()) < 200) problems.push('고른 자리 안에도 안 그려졌다');
 
 /* 선택을 풀면 다시 온 판에 그려진다. */
-await page.click('.meok:visible [data-act="deselect"]');
+await menuClick('deselect');
 await page.waitForTimeout(200);
 await page.mouse.move(ax(0.62), ay(0.75));
 await page.mouse.down();
@@ -526,6 +526,49 @@ const drawn = await untilTrue(page, ([x, y, before]) => {
 }, { max: 3000, args: [zoomed.x, zoomed.y, shellZoomPixel] });
 if (!drawn) problems.push('배율 0.8 에서 붓이 커서 자리에 안 찍힌다');
 await page.evaluate(() => { document.documentElement.style.zoom = ''; });
+
+/* ⑭ 도킹 패널 (memo change.meok-app). 색 패널 머리를 왼쪽 칸으로 끌면 옮겨지고, 새로고침해도 그 자리,
+   창 메뉴 배치 초기화로 오른쪽에 되돌아옴. 오른쪽 칸 경계를 끌면 폭이 바뀜 */
+const colorHead = page.locator('.meok:visible details.meok-panel[data-panel="color"] > summary');
+const headBox = await colorHead.boundingBox();
+const toolsBox = await page.locator('.meok:visible .meok-tools').boundingBox();
+await page.mouse.move(headBox.x + 20, headBox.y + headBox.height / 2);
+await page.mouse.down();
+await page.mouse.move(headBox.x - 200, headBox.y + 40, { steps: 5 });
+await page.mouse.move(toolsBox.x + toolsBox.width + 30, headBox.y + 40, { steps: 8 });
+await page.mouse.up();
+const colorSide = () => page.evaluate(() => document.querySelector('.meok details[data-panel="color"]')?.closest('.meok-dock')?.dataset.dock);
+if (!(await untilTrue(page, () => document.querySelector('.meok details[data-panel="color"]')?.closest('.meok-dock')?.dataset.dock === 'left'))) {
+  problems.push('색 패널을 왼쪽 칸으로 끌었는데 안 옮겨졌다 (' + (await colorSide()) + ')');
+}
+const rightSplit = page.locator('.meok:visible .meok-split[data-split="right"]');
+const splitBox = await rightSplit.boundingBox();
+const dockWidth = () => page.evaluate(() => Math.round(document.querySelector('.meok .meok-dock[data-dock="right"]').getBoundingClientRect().width));
+const widthBefore = await dockWidth();
+await page.mouse.move(splitBox.x + 2, splitBox.y + 200);
+await page.mouse.down();
+await page.mouse.move(splitBox.x - 80, splitBox.y + 200, { steps: 6 });
+await page.mouse.up();
+const widthAfter = await dockWidth();
+if (widthAfter < widthBefore + 40) problems.push(`오른쪽 칸 경계를 80px 끌었는데 폭이 ${widthBefore} -> ${widthAfter}`);
+const savedLayout = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('meok_dock_v1') || 'null'); } catch { return null; } });
+if (!savedLayout || !savedLayout.left?.includes('color')) problems.push('도킹 배치가 저장되지 않았다');
+await menuClickAttr('[data-dock-reset]');
+if (!(await untilTrue(page, () => document.querySelector('.meok details[data-panel="color"]')?.closest('.meok-dock')?.dataset.dock === 'right'))) {
+  problems.push('배치 초기화 뒤 색 패널이 오른쪽으로 안 돌아왔다');
+}
+
+/* ⑮ 셸 없는 전용 장 `/apps/karmolab/meok/` (배포 주소 `/meok/`). 셸 대역으로 먹이 뜨고 창을 다 쓴다 */
+const solo = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const soloErrors = [];
+solo.on('pageerror', (e) => soloErrors.push(String(e)));
+await solo.goto(base + '/apps/karmolab/meok/index.html', { waitUntil: 'load', timeout: 30000 });
+const soloOk = await untilTrue(solo, () => !!document.querySelector('.meok .meok-canvas canvas') && !document.querySelector('.sidebar, #sidebar'), { max: WAIT });
+const soloFit = await solo.evaluate(() => ({ h: Math.round(document.querySelector('.meok')?.getBoundingClientRect().height || 0), scroll: document.documentElement.scrollHeight }));
+if (!soloOk) problems.push('전용 장에서 먹이 안 뜬다');
+if (soloFit.h < 790 || soloFit.scroll > 801) problems.push(`전용 장이 창을 다 안 쓴다 (높이 ${soloFit.h}, 굴림 ${soloFit.scroll})`);
+if (soloErrors.length) problems.push('전용 장 오류: ' + soloErrors.slice(0, 2).join(' | '));
+await solo.close();
 
 if (process.argv.includes('--shot')) {
   fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });

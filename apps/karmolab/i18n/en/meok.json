@@ -205,5 +205,14 @@
   "meok.menuMaskClear": "Remove mask",
   "meok.menuFit": "Fit to screen",
   "meok.menuFullscreen": "Full screen",
-  "meok.menuPlay": "Play animation"
+  "meok.menuPlay": "Play animation",
+  "meok.menuWindow": "Window",
+  "meok.menuDockReset": "Reset layout",
+  "meok.panelBrush": "Brush",
+  "meok.panelLayer": "Layer properties",
+  "meok.dockLeft": "Left dock",
+  "meok.dockRight": "Right dock",
+  "meok.splitLeft": "Left dock width",
+  "meok.splitRight": "Right dock width",
+  "meok.splitBottom": "Timeline height"
 }

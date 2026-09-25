@@ -15061,7 +15061,16 @@
     "meok.menuMaskClear": "6c585b60b8",
     "meok.menuFit": "ed405b3ed8",
     "meok.menuFullscreen": "0e42a470b0",
-    "meok.menuPlay": "090084ca86"
+    "meok.menuPlay": "090084ca86",
+    "meok.menuWindow": "c214a6b8d0",
+    "meok.menuDockReset": "00e6888163",
+    "meok.panelBrush": "02c55e0da0",
+    "meok.panelLayer": "8ba8c46266",
+    "meok.dockLeft": "fe97ab506d",
+    "meok.dockRight": "9f64e22334",
+    "meok.splitLeft": "b584c23dce",
+    "meok.splitRight": "44341676bf",
+    "meok.splitBottom": "455d91c71b"
   },
   "ja": {
     "about.failed": "f11e2dbbfa",
@@ -30125,6 +30134,15 @@
     "meok.menuMaskClear": "6c585b60b8",
     "meok.menuFit": "ed405b3ed8",
     "meok.menuFullscreen": "0e42a470b0",
-    "meok.menuPlay": "090084ca86"
+    "meok.menuPlay": "090084ca86",
+    "meok.menuWindow": "c214a6b8d0",
+    "meok.menuDockReset": "00e6888163",
+    "meok.panelBrush": "02c55e0da0",
+    "meok.panelLayer": "8ba8c46266",
+    "meok.dockLeft": "fe97ab506d",
+    "meok.dockRight": "9f64e22334",
+    "meok.splitLeft": "b584c23dce",
+    "meok.splitRight": "44341676bf",
+    "meok.splitBottom": "455d91c71b"
   }
 }
