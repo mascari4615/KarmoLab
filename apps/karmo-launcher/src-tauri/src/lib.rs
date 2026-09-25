@@ -182,11 +182,11 @@ fn stop_blocking(registry_key: &str) -> Result<(), String> {
     if let Some(dir) = reg.get("InstallLocation") {
         let _ = hidden(Command::new(std::path::Path::new(dir).join(&exe)).arg("--quit")).spawn();
     }
-    for _ in 0..6 {
+    for _ in 0..30 {
         if !is_running(&exe) {
             return Ok(());
         }
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
     let status = hidden(Command::new("taskkill").args(["/F", "/IM", &exe])).status().map_err(|e| e.to_string())?;
     if !status.success() && is_running(&exe) {

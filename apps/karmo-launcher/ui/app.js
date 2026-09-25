@@ -146,7 +146,9 @@ async function act(kind) {
       return;
     }
     if (kind === 'stop') {
-      /* stop_app 은 꺼진 뒤에 돌아옴. 기다리지 않고 바로 다시 잼 (사용자 "끄기가 바로바로") */
+      /* 누르는 즉시 꺼진 것으로 그림. stop_app 은 꺼진 뒤에 돌아오고, 그때 실제 상태로 다시 잼 (사용자 "끄기가 바로바로") */
+      status.set(app.id, { ...st, running: false });
+      paint();
       await invoke('stop_app', { registryKey: app.install.registry });
       await pollRunning();
       return;
@@ -189,9 +191,10 @@ async function pollRunning() {
   }
   if (changed && !busy) paint();
 }
+/* 1초마다 (3초는 켜고 끈 뒤 표시가 늦다, 사용자 2026-09-25 "기다리는 텀이 너무 길지 않나") */
 window.setInterval(() => {
   if (!document.hidden) void pollRunning();
-}, 3000);
+}, 1000);
 
 listEl.addEventListener('click', (e) => {
   const b = e.target.closest('[data-id]');
@@ -209,10 +212,10 @@ $('min').addEventListener('click', () => void appWindow.minimize());
 $('close').addEventListener('click', () => void appWindow.hide());
 
 /* 런처 자신의 업데이트. 새 판이 있으면 묻지 않고 받아 설치하고 다시 켬 (Steam 처럼, 사용자 2026-09-25 "런처는 그래야지").
-   버튼으로만 받게 했더니 0.1.3 이 그대로 남아 끄기 수정이 안 들어왔다. 켜진 뒤 한 번, 트레이에 오래 있으니 6시간마다.
+   버튼으로만 받게 했더니 0.1.3 이 그대로 남아 끄기 수정이 안 들어왔다. 켜자마자 한 번, 트레이에 오래 있으니 30분마다.
    앱을 설치하는 중이면 다시 켜면 끊기니 다음 차례로 */
 const selfEl = $('selfup');
-const SELF_EVERY_MS = 6 * 3600 * 1000;
+const SELF_EVERY_MS = 30 * 60 * 1000;
 let selfBusy = false;
 async function installSelf() {
   selfBusy = true;
@@ -247,7 +250,7 @@ void listen('self-update-progress', (ev) => {
   const [got, total] = ev.payload;
   if (total) selfEl.textContent = '런처 받는 중 ' + Math.round((got / total) * 100) + '%';
 });
-window.setTimeout(() => void checkSelf(), 3000);
+void checkSelf();
 void listen('install-progress', (ev) => {
   progress = ev.payload;
   paintMain();
