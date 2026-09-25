@@ -1049,7 +1049,10 @@ const KarmoPalette = (() => {
 
     const inst: Instance = { root, input, list, mode, rows: [], active: -1, restoreFocus: null };
 
-    input.addEventListener('input', () => render(inst));
+    input.addEventListener('input', () => {
+      if (mode === 'inline') loadExtraIndexes();
+      render(inst);
+    });
     input.addEventListener('keydown', (e) => onKey(inst, e));
 
     /* 첫 화면에서는 **누르기 전까지 목록을 접어 둔다** (TASK-KL-129, 사용자 요청).
@@ -1098,12 +1101,19 @@ const KarmoPalette = (() => {
   /* ── 바깥 통로 ─────────────────────────────────────────────── */
 
   /** 첫 화면 안에 박아 넣는다 (TASK-KL-099. 여기가 기본 진입로다). */
-  function mountInline(container: HTMLElement): void {
-    if (!entries.length) buildIndex();
+  /* 큰 색인 넷 (글 199KB, 지도 195KB, 문서, 강의): 첫 화면에서는 **첫 글자를 칠 때** 받기
+     (2026-09-25 사용자 결정). 뜨자마자 받으면 느린 폰에서 그 해석이 첫 입력과 겹침.
+     긴 작업 총합 545~2185ms, 예산 1020ms 초과. 대가: 첫 검색에 글과 지도가 조금 늦게 붙음
+     ⌘K 로 여는 창은 찾으려고 연 것이라 열 때 받기 */
+  function loadExtraIndexes(): void {
     void loadStudyMap();
     void loadLessons();
     void loadDocs();
     void loadPosts();
+  }
+
+  function mountInline(container: HTMLElement): void {
+    if (!entries.length) buildIndex();
     void loadAliases().then(() => {
       if (inline && !inline.input.value) render(inline);
     });
