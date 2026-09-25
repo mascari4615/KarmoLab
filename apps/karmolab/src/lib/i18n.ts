@@ -250,7 +250,12 @@ export async function loadNamespace(ns: string): Promise<void> {
   if (!known(ns)) return;
   const code = locale();
   const jobs: Promise<void>[] = [];
-  if (!have(code, ns)) jobs.push(inject(code, ns));
+  /* 번역은 더 안 만든다 (2026-09-25 사용자 결정). 한국어로만 있는 묶음은 다른 언어 파일이 없음.
+     그 언어 파일을 못 받으면 한국어 묶음으로 떨어짐 (lookup 이 원본 언어로 대체). 한국어 실패만 오류 */
+  if (!have(code, ns)) {
+    const own = inject(code, ns);
+    jobs.push(code === DEFAULT_LOCALE ? own : own.catch(() => undefined));
+  }
   if (code !== DEFAULT_LOCALE && !have(DEFAULT_LOCALE, ns)) jobs.push(inject(DEFAULT_LOCALE, ns));
   if (jobs.length) await Promise.all(jobs);
 }

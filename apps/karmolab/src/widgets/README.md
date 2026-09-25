@@ -72,7 +72,8 @@
 1. `apps/karmolab/src/widgets/<slug>/<slug>.ts` (또는 단일 파일 `<slug>.ts`). IIFE + `Toolbox.register({ ...Toolbox.getLazyWidgetPublicMeta(slug), tabs: [...] })`.
 2. `apps/karmolab/src/widgets-lazy-meta.ts`. 메타 entry 추가 (id / title / category / desc / layout / icon / lazyScriptPaths).
    → 묶을 목록은 **여기서 기계가 뽑는다.** `build.mjs` 의 `entryPoints` 에 손으로 적지 않는다.
-3. **i18n 묶음**. 새 `loadNamespace('<ns>')` 를 쓰면 `apps/karmolab/i18n/<언어>/<ns>.json` 을 **세 언어 다** 만들고,
+3. **i18n 묶음**. 새 `loadNamespace('<ns>')` 를 쓰면 `apps/karmolab/i18n/ko/<ns>.json` 을 만들고 (번역은 안 만든다. 2026-09-25 사용자 결정. 다른 언어 화면은 한국어로 떨어진다),
+   화면 글은 한국어를 바로 써도 된다 (`test:i18n:source` 는 빌드에서 뺐다).
    `widgets.<id>.title`, `widgets-desc.<id>.desc` 를 `widgets.json`, `widgets-desc.json` 에 넣는다.
    ⚠ **파일만 만들고 안 구우면 위젯이 통째로 안 그려진다**. 화면은 `js/i18n/<언어>/<ns>.js` 를 받는데
    그게 404 면 받기가 실패하고 그 뒤 코드가 아예 안 돈다. **오류도 안 뜬다.**
