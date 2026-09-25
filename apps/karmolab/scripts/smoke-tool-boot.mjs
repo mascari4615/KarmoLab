@@ -151,7 +151,9 @@ async function openOne(lane, id, theme, skin) {
   }
 }
 
-const LANES = Number(process.env.KL_BOOT_LANES || 6);   // 판 둘을 도니 레인을 늘린다
+/* 탭 4개 (2026-09-25). 6개는 게이트 판 안에서 6.0GB, 4개는 3.5GB. 시간 125초 -> 206초지만
+   판 전체 (427초) 보다 짧아 벽시계에 안 걸림 */
+const LANES = Number(process.env.KL_BOOT_LANES || 4);
 try {
   const queue = [];
   for (const [skin, theme] of combos()) for (const id of ids) queue.push([id, theme, skin]);
