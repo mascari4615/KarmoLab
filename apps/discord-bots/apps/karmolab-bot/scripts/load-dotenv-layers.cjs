@@ -30,7 +30,7 @@ function peekKey(absPath, key) {
 }
 
 /** 옛 이름 접두 (2026-09-25 이름 이전). 옛 .env 와 서비스 환경 읽기 호환 */
-const LEGACY_PREFIX = 'KARMOLAB_BOT_';
+const LEGACY_PREFIX = 'YAWN' + 'BOT_'; // 일괄 치환에 안 걸리게 나눠 씀
 const PREFIX = 'KARMOLAB_BOT_';
 
 /** 옛 접두 키의 새 접두 복사. 새 키가 이미 있으면 새 키 우선 */
