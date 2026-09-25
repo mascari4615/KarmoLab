@@ -214,7 +214,7 @@
       "docId": "docs-karmo-ai",
       "heading": "왜 패키지로 나눴나",
       "title": "왜 패키지로 나눴나",
-      "description": "KarmoLab 브라우저 앱과 karmolab-bot, kakao-export.mjs 등 Node 쪽은 같은 모델 ID, 프로바이더 규칙 을 쓰지만, 호출 코드를 한 파일 로 합치기는 어렵습니다. - 브라우저: CORS, fetch , localStorage, UI와 결합된 apps/karmolab/src/gemini.ts 가 실제 REST 호출을 담당합니다. - Node: .env 와 @google/generative-ai 같은 SDK가 자연스럽습니다. 그래서 DOM, 네트워크, 키 저장 없이 모델 카탈로그, 기본 ID, AI Studio/Vertex URL 조립만 pack",
+      "description": "KarmoLab 브라우저 앱과 karmolab-bot, kakao-export.mjs 등 Node 쪽은 같은 모델 ID, 프로바이더 규칙 을 쓰지만, 호출 코드를 한 파일 로 합치기는 어렵습니다. - 브라우저: CORS, fetch , localStorage, UI와 결합된 apps/karmolab/src/gemini.ts 가 실제 REST 호출을 담당합니다. - Node: .env 와 @google/generative-ai 같은 SDK가 자연스럽습니다. 그래서 DOM, 네트워크, 키 저장 없이 모델 카탈로그, 기본 ID, AI Studio/Vertex URL 조립만",
       "aliases": "karmo ai"
     },
     {
