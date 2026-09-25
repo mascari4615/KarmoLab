@@ -168,6 +168,8 @@ const failures = [];
 /* 30초 안에 안 뜬 장. 무거운 장 (territory 의 지구) 이 옆 검사 넷과 같이 돌 때 그랬다 (2026-09-22, 655초 판).
    한 장 때문에 판 전체를 터뜨리지 않고, 못 잼으로 적어 끝에 못 돌림 (2) 으로 낸다. 초록으로 안 센다 */
 const unopened = [];
+/** 3초 안에 화면 변화가 안 멎은 장. 판정은 그대로, 끝에 이름만 알림 */
+const notQuiet = [];
 /* 탭 여럿을 같이 (2026-09-25). 전수 233장을 탭 하나로 돌면 장마다 1.8초 재움만 합 420초,
    판 전체 484초였고 verify 에서 제일 긴 검사였다. 재움은 장마다 그대로 두고 탭을 늘린다.
    탭마다 제 context 라 저장소가 안 섞인다 */
@@ -228,9 +230,19 @@ async function checkScreen(job, pages) {
       console.error('  이건 문제 없음이 아니라 **아무것도 안 봤다**는 뜻이다. 통과로 안 센다.');
       process.exit(2);
     }
-    /* 재움-의도: 위젯 내부의 비동기 조각 관찰 시간.
-       셸 등록과 등장 효과는 아래에서 실제 완료 상태 확인. */
-    await page.waitForTimeout(1800);
+    /* 위젯 안의 늦게 오는 조각을 기다린다. 고정 1.8초 대신 최소 1.2초, 그 뒤 도구 영역 변화가 0.4초 멎을 때까지
+       (2026-09-25, 전수 223장이라 고정 재움만 400초). 1초마다 바뀌는 시계류는 3초 상한에서 넘어간다.
+       셸 등록과 등장 효과는 아래에서 실제 완료 상태 확인 */
+    await page.evaluate(() => {
+      window.__a11yQuietAt = performance.now();
+      new MutationObserver(() => { window.__a11yQuietAt = performance.now(); })
+        .observe(document.querySelector('#tool-pages') || document.body, { subtree: true, childList: true, characterData: true });
+    });
+    // 재움-의도: 최소 1.2초. 조용해진 뒤 늦게 붙는 조각 (draw, lotto 11개) 을 놓치지 않게
+    await page.waitForTimeout(1200);
+    const settled = await page.waitForFunction(() => performance.now() - window.__a11yQuietAt > 400, null, { timeout: 3000, polling: 100 })
+      .then(() => true).catch(() => false);
+    if (!settled) notQuiet.push(name);
     await page.addScriptTag({ content: axeSource });
     try {
       await waitForA11yScreen(page);
@@ -364,6 +376,7 @@ if (shrunk.length > 0) {
   process.exit(0);
 }
 console.log(`[smoke-a11y] ${RUN_SCREENS.length}장 x ${RUN_SKINS.join('/')} x ${RUN_THEMES.join('/')} = ${RUN_SCREENS.length*RUN_SKINS.length*RUN_THEMES.length}판. 늘지 않았다 (남은 빚 ${total}곳)`);
+if (notQuiet.length) console.log(`[smoke-a11y] 3초 안에 안 멎은 장 ${notQuiet.length}: ${notQuiet.slice(0, 8).join(', ')}`);
 if (unopened.length) {
   console.error(`[smoke-a11y] CANNOT-RUN: 못 연 장 ${unopened.length}. 이 장들은 안 봤다. 통과로 안 센다`);
   for (const u of unopened) console.error('  ? ' + u);
