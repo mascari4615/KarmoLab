@@ -2,7 +2,7 @@
  * CharacterService default 교체 회귀.
  *  ① setDefaultSlug 의 default 스킨 교체와 채널 매핑 보존
  *  ② 카드 없는 슬러그의 throw 와 .active.json 불변
- *  ③ .active.json 없을 때 fallback 기본값 kkamagi
+ *  ③ .active.json 없을 때 fallback 기본값 byeoru
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
@@ -25,7 +25,7 @@ function readActive(): { default: unknown; channels: Record<string, unknown> } {
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'charsvc-'));
   writeCard('yawn');
-  writeCard('kkamagi');
+  writeCard('byeoru');
 });
 
 afterEach(() => {
@@ -37,11 +37,11 @@ describe('CharacterService default', () => {
     const cs = new CharacterService(root, 'yawn');
     cs.initialize();
     cs.setChannelSlug('dm:1', 'yawn');
-    cs.setDefaultSlug('kkamagi');
-    expect(cs.getDefaultSlug()).toBe('kkamagi');
+    cs.setDefaultSlug('byeoru');
+    expect(cs.getDefaultSlug()).toBe('byeoru');
     expect(cs.resolveSlug('dm:1')).toBe('yawn');
-    expect(cs.resolveSlug('dm:2')).toBe('kkamagi');
-    expect(readActive().default).toBe('kkamagi');
+    expect(cs.resolveSlug('dm:2')).toBe('byeoru');
+    expect(readActive().default).toBe('byeoru');
   });
 
   it('카드 없는 슬러그는 throw 하고 파일을 바꾸지 않는다', () => {
@@ -52,9 +52,9 @@ describe('CharacterService default', () => {
     expect(fs.readFileSync(path.join(root, 'characters', '.active.json'), 'utf-8')).toBe(before);
   });
 
-  it('fallback 기본값은 kkamagi', () => {
+  it('fallback 기본값은 byeoru', () => {
     const cs = new CharacterService(root);
     cs.initialize();
-    expect(cs.getDefaultSlug()).toBe('kkamagi');
+    expect(cs.getDefaultSlug()).toBe('byeoru');
   });
 });

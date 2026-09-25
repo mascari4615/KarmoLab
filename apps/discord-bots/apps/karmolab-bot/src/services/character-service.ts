@@ -66,7 +66,7 @@ export class CharacterService {
   private fallbackDefault: string;
   private dirty = false;
 
-  constructor(memoRepoPath: string, fallbackDefault: string = 'kkamagi') {
+  constructor(memoRepoPath: string, fallbackDefault: string = 'byeoru') {
     this.memoRepoPath = memoRepoPath;
     this.charactersDir = path.join(memoRepoPath, 'characters');
     this.activeConfigPath = path.join(this.charactersDir, '.active.json');

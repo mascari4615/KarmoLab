@@ -62,8 +62,8 @@ export const characterCommand = () =>
             .addStringOption((opt) =>
               opt
                 .setName('slug')
-                .setDescription('기본으로 쓸 캐릭터 슬러그 (예: kkamagi)')
-                .setDescriptionLocalizations(enUS('Character slug (e.g. kkamagi)'))
+                .setDescription('기본으로 쓸 캐릭터 슬러그 (예: byeoru)')
+                .setDescriptionLocalizations(enUS('Character slug (e.g. byeoru)'))
                 .setRequired(true)
                 .setAutocomplete(true),
             ),

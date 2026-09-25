@@ -93,7 +93,7 @@ AI 호출 시 프롬프트는 다음 순서로 조립된다 (`ASSISTANT_MAX_PROM
 | `ASSISTANT_USER_ID` | (필수) | 봇이 owner DM(+팀방)에서 응답할 유저 ID. 공개 채널 경로는 YB-036 에서 폐기 |
 | `ASSISTANT_AI_PROVIDER` | `gemini` | `gemini`, `claude-cli`, `codex-cli` |
 | `ASSISTANT_AGENT_REPO_PATH` |. | CLI 프로바이더가 작업할 cwd. 비우면 텍스트 생성만 |
-| `ASSISTANT_DEFAULT_CHARACTER` | `kkamagi` | `.active.json.default` 가 없을 때 폴백 슬러그 |
+| `ASSISTANT_DEFAULT_CHARACTER` | `byeoru` | `.active.json.default` 가 없을 때 폴백 슬러그 |
 | `ASSISTANT_MORNING_HOUR` | `8` | 아침 인사 시각 (KST, 0-23) |
 | `ASSISTANT_MEMORY_COMMIT_INTERVAL_MS` | `3600000` | 기억 자동 커밋 주기(ms). 기본 1시간 |
 | `ASSISTANT_MAX_PROMPT_CHARS` | `12000` | AI 프롬프트 상한 (시스템+컨텍스트+질문 포함) |

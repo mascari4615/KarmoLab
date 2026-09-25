@@ -197,7 +197,7 @@ ASSISTANT_MAX_PROMPT_CHARS=12000
 
 # ── 캐릭터 시스템 (2026-04-20) ──
 # .active.json 에 default 필드가 없거나 characters/ 가 비어 있을 때 폴백 슬러그.
-ASSISTANT_DEFAULT_CHARACTER=kkamagi
+ASSISTANT_DEFAULT_CHARACTER=byeoru
 
 # ── 자발적 메시지 (봇이 먼저 말 걸기) ──
 # 0 또는 끔으로 비활성화. 기본 활성화.
