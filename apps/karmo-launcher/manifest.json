@@ -9,7 +9,7 @@
       "summary": "도구, 오락실, 커뮤니티를 담은 데스크톱 앱",
       "source": {
         "type": "tauri-latest",
-        "url": "https://github.com/mascari4615/mascari4615.github.io/releases/latest/download/latest.json",
+        "url": "https://github.com/mascari4615/KarmoLab/releases/latest/download/latest.json",
         "platform": "windows-x86_64-nsis"
       },
       "install": {

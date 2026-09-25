@@ -626,7 +626,7 @@ ${kinBlock(id)}${sponsorBlock(id)}
 ${privacyNote(id)}
         <p class="tool-seo-note">
           <a href="${BASE_PATH}/">도구 전체 목록</a>, <a href="/">KarmoLab</a>, <a href="https://github.com/Mascari4615" rel="me">만든 사람</a>
-         , AI 와 함께 만들었습니다. <a href="https://github.com/Mascari4615/Mascari4615.github.io">소스 보기</a>
+         , AI 와 함께 만들었습니다. <a href="https://github.com/Mascari4615/KarmoLab">소스 보기</a>
         </p>
       </section>`;
 }

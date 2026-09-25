@@ -1088,7 +1088,7 @@ fn desktop_trigger_release_workflow_blocking(
     ref_name: Option<String>,
     bump_type: Option<String>,
 ) -> Result<String, String> {
-    let repo = "mascari4615/mascari4615.github.io";
+    let repo = "mascari4615/KarmoLab";
     let workflow = "KarmoLab Tauri Release";
     let selected_ref = ref_name
         .map(|value| value.trim().to_string())

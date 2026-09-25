@@ -20,11 +20,11 @@
   "homepage": "https://blog.mascari4615.com/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mascari4615/mascari4615.github.io.git",
+    "url": "git+https://github.com/mascari4615/KarmoLab.git",
     "directory": "packages/mcp"
   },
   "bugs": {
-    "url": "https://github.com/mascari4615/mascari4615.github.io/issues"
+    "url": "https://github.com/mascari4615/KarmoLab/issues"
   },
   "bin": {
     "karmo-mcp": "src/server.mjs"

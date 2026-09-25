@@ -21,7 +21,7 @@ use serde::Serialize;
 use tauri::Manager;
 
 /// 어디서 받나. 릴리스는 이 저장소 것만 본다.
-const REPO: &str = "mascari4615/mascari4615.github.io";
+const REPO: &str = "mascari4615/KarmoLab";
 
 #[derive(Serialize)]
 pub struct FetchedPart {

@@ -12,11 +12,11 @@ use tauri::{AppHandle, Emitter};
 
 /// 목록 정본. 공개 저장소의 파일 하나 (API 가 아니라 raw 라 시간당 60회 제한 없음)
 const MANIFEST_URL: &str =
-    "https://raw.githubusercontent.com/mascari4615/mascari4615.github.io/main/apps/karmo-launcher/manifest.json";
+    "https://raw.githubusercontent.com/mascari4615/KarmoLab/main/apps/karmo-launcher/manifest.json";
 
 /// 앱마다 최신 판 (버전, 날짜, 주소, 서명). 릴리스 CI 가 판을 낼 때마다 그 앱 줄을 고쳐 씀 (memo changes/launcher.md 구조 결정)
 const CATALOG_URL: &str =
-    "https://github.com/mascari4615/mascari4615.github.io/releases/download/launcher-catalog/catalog.json";
+    "https://github.com/mascari4615/KarmoLab/releases/download/launcher-catalog/catalog.json";
 
 /// 릴리스 서명 공개 키 (minisign, Tauri 업데이터와 같은 키. tauri.conf.json plugins.updater.pubkey)
 const RELEASE_PUBKEY_B64: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdCNERFQUE2MzRGNTVEQ0IKUldUTFhmVTBwdXBOZXdJMk1RODMyVEw0YjdvYjJZK3ovTzZRWUNlaUM2N2EvNlJxRzZmbkhuSmMK";
@@ -439,7 +439,7 @@ mod tests {
     fn karmolab_status_live() {
         let reg = registry("KarmoLab").expect("KarmoLab 레지스트리");
         assert!(reg.contains_key("DisplayVersion"));
-        let latest: Value = serde_json::from_str(&get_text("https://github.com/mascari4615/mascari4615.github.io/releases/latest/download/latest.json").unwrap()).unwrap();
+        let latest: Value = serde_json::from_str(&get_text("https://github.com/mascari4615/KarmoLab/releases/latest/download/latest.json").unwrap()).unwrap();
         assert!(str_at(&latest, &["platforms", "windows-x86_64-nsis", "url"]).is_some());
         println!("installed {:?} latest {:?}", reg.get("DisplayVersion"), latest.get("version"));
     }
@@ -471,7 +471,7 @@ mod tests {
     fn karmolab_signature_live() {
         let app: Value = serde_json::json!({
             "id": "karmolab",
-            "source": { "url": "https://github.com/mascari4615/mascari4615.github.io/releases/latest/download/latest.json", "platform": "windows-x86_64-nsis" }
+            "source": { "url": "https://github.com/mascari4615/KarmoLab/releases/latest/download/latest.json", "platform": "windows-x86_64-nsis" }
         });
         let l = latest_of(&app).unwrap();
         let bytes = client().unwrap().get(l.url.unwrap()).header("Accept", "application/octet-stream").send().unwrap().bytes().unwrap();

@@ -49,7 +49,7 @@ import { installContextMenu } from './lib/context-menu';
 
         const notesA = document.createElement('a');
         notesA.className = 'karmolab-update-banner-notes';
-        notesA.href = `https://github.com/mascari4615/mascari4615.github.io/releases/tag/karmolab-v${encodeURIComponent(newVer)}`;
+        notesA.href = `https://github.com/mascari4615/KarmoLab/releases/tag/karmolab-v${encodeURIComponent(newVer)}`;
         notesA.target = '_blank';
         notesA.rel = 'noopener noreferrer';
         notesA.textContent = '변경사항 보기';

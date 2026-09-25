@@ -39,7 +39,7 @@ const WIKI_BASE = '/apps/karmolab/world/wiki/';
 function repoRawBase(): string {
     const custom = ((window as unknown as { KARMOLAB_DOCS_RAW_BASE?: string }).KARMOLAB_DOCS_RAW_BASE ?? '').trim();
     if (custom) return custom.replace(/\/?$/, '/');
-    return 'https://raw.githubusercontent.com/mascari4615/mascari4615.github.io/main/';
+    return 'https://raw.githubusercontent.com/mascari4615/KarmoLab/main/';
 }
 
 /** KarmoLab 문서. 말은 옛 docs 묶음을 그대로 쓴다(세 나라 말이 이미 들어 있다). */

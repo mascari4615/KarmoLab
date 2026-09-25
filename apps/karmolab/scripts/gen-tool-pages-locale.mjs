@@ -244,7 +244,7 @@ ${privacyNote(id, code)}
           <a href="${hub}">${esc(tr(code, 'toolpage.nav.allTools'))}</a>, <a href="${home}">KarmoLab</a>, <a href="https://github.com/Mascari4615" rel="me">${esc(
     tr(code, 'toolpage.nav.maker')
   )}</a>
-         , ${esc(tr(code, 'toolpage.note.ai'))} <a href="https://github.com/Mascari4615/Mascari4615.github.io">${esc(
+         , ${esc(tr(code, 'toolpage.note.ai'))} <a href="https://github.com/Mascari4615/KarmoLab">${esc(
     tr(code, 'toolpage.note.src')
   )}</a>
         </p>

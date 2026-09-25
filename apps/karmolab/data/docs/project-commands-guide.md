@@ -140,7 +140,7 @@ npm run deploy:yawnbot
 
 | 설명 | URL |
 |------|-----|
-| 이 레포 | https://github.com/Mascari4615/Mascari4615.github.io |
+| 이 레포 | https://github.com/Mascari4615/KarmoLab |
 | Tauri v2 | https://v2.tauri.app/ |
 
 ---

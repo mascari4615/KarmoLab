@@ -57,7 +57,7 @@ dev/prod 분기 진실 = Rust `cfg!(debug_assertions)` (debug build = dev / rele
 ## 앱 내 업데이트 (`tauri-plugin-updater`)
 
 - 트레이 메뉴 **업데이트 확인...** 이 GitHub Releases의 정적 manifest를 조회한 뒤, 새 버전이 있으면 내려받아 설치합니다(Windows는 passive 설치 모드). 결과는 OS 알림으로 짧게 알립니다.
-- **엔드포인트**(기본): `https://github.com/mascari4615/mascari4615.github.io/releases/latest/download/latest.json`. 각 릴리스에 `latest.json` 과 플랫폼별 `.sig`, 설치 파일 URL이 있어야 합니다. 형식은 [Tauri Updater](https://v2.tauri.app/plugin/updater/) 의 static JSON 과 동일합니다.
+- **엔드포인트**(기본): `https://github.com/mascari4615/KarmoLab/releases/latest/download/latest.json`. 각 릴리스에 `latest.json` 과 플랫폼별 `.sig`, 설치 파일 URL이 있어야 합니다. 형식은 [Tauri Updater](https://v2.tauri.app/plugin/updater/) 의 static JSON 과 동일합니다.
 - **서명**: 업데이트는 공개키(`tauri.conf.json` → `plugins.updater.pubkey`)로 검증됩니다. 릴리스 빌드 시 **비밀키**가 필요합니다(`.env`는 읽히지 않음).
   - `TAURI_SIGNING_PRIVATE_KEY`: 비밀키 **파일 경로** 또는 PEM/키 **문자열**
   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: 키에 비밀번호를 둔 경우

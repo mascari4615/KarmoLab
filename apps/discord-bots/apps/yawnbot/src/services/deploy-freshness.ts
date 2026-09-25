@@ -187,7 +187,7 @@ export function decideAlert(
 export interface DeployFreshnessDeps {
   /** 사이트가 판을 밝히는 자리. 기본 = KarmoLab build.json. */
   buildUrl?: string;
-  /** `owner/repo`. 기본 'Mascari4615/Mascari4615.github.io'. */
+  /** `owner/repo`. 기본 'Mascari4615/KarmoLab'. */
   repo?: string;
   /** 배포 워크플로 파일 이름. 왜 안 올라갔나를 물을 때 쓴다. */
   workflow?: string;
@@ -212,7 +212,7 @@ export interface DeployFreshnessHandle {
 }
 
 const DEFAULT_BUILD_URL = 'https://blog.mascari4615.com/apps/karmolab/build.json';
-const DEFAULT_REPO = 'Mascari4615/Mascari4615.github.io';
+const DEFAULT_REPO = 'Mascari4615/KarmoLab';
 const DEFAULT_WORKFLOW = 'pages-deploy.yml';
 const DEFAULT_INTERVAL_MIN = 10;
 /** 판이 갈렸을 때만 쓰는 초초한 간격. */

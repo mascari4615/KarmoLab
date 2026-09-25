@@ -252,7 +252,7 @@ fn load_laptop_ops_token() -> String {
 fn collect_ci_runs() -> Vec<CiRunInfo> {
     let repos = [
         "mascari4615/Witch-Mendokusai",
-        "mascari4615/mascari4615.github.io",
+        "mascari4615/KarmoLab",
         "mascari4615/memo",
     ];
     let mut result = Vec::new();

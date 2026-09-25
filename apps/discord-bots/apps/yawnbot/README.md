@@ -18,7 +18,7 @@ npm run build:yawnbot
 
 > **prod (노트북) 의 `.env`** = GitHub Secret 들이 자동 주입.
 >
-> 키별로 [`YB_PROD_<KEY>`](https://github.com/Mascari4615/Mascari4615.github.io/settings/secrets/actions) 개별 secret. `Deploy Discord Bots (yawnbot)` workflow 의 *Write prod .env* 단계가 secrets 를 KEY=VALUE 라인으로 조립 (빈 값 secret 은 라인 skip). 한 키 갱신 시 그 secret 만 편집 → workflow 재트리거 (`gh workflow run "Deploy Discord Bots (yawnbot)" --repo Mascari4615/Mascari4615.github.io`).
+> 키별로 [`YB_PROD_<KEY>`](https://github.com/Mascari4615/KarmoLab/settings/secrets/actions) 개별 secret. `Deploy Discord Bots (yawnbot)` workflow 의 *Write prod .env* 단계가 secrets 를 `KEY=VALUE` 라인으로 조립 (빈 값 secret 은 라인 skip). 한 키 갱신 시 그 secret 만 편집 → workflow 재트리거 (`gh workflow run "Deploy Discord Bots (yawnbot)" --repo Mascari4615/KarmoLab`).
 >
 > 새 키 추가는 `.github/workflows/deploy-discord-bots.yml` 의 `env:` 매핑 + `$keys` 배열 둘 다 갱신 + 사용자가 secret 등록.
 

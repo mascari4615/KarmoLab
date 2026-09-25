@@ -72,7 +72,7 @@ npm audit signatures   # after installing
 ### From a clone (no npm needed)
 
 ```bash
-git clone https://github.com/mascari4615/mascari4615.github.io
+git clone https://github.com/mascari4615/KarmoLab
 cd mascari4615.github.io/packages/mcp
 node build.mjs                       # writes dist/ — needs esbuild from apps/karmolab
 claude mcp add --scope local karmolab -- node "$PWD/src/server.mjs"

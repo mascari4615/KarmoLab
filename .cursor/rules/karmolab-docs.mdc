@@ -33,7 +33,7 @@ alwaysApply: true
 
 ### `window.KARMOLAB_DOCS_RAW_BASE`
 
-- 기본 raw 베이스: `https://raw.githubusercontent.com/mascari4615/mascari4615.github.io/main/`
+- 기본 raw 베이스: `https://raw.githubusercontent.com/mascari4615/KarmoLab/main/`
 - 포크·`main` 브랜치 등: 브라우저 콘솔에서 `window.KARMOLAB_DOCS_RAW_BASE = 'https://raw.githubusercontent.com/USER/REPO/BRANCH/'` (끝 `/` 필수) 후 탭을 다시 연다.
 
 ## 문서 안에 Todo 리스트

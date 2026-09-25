@@ -13,7 +13,7 @@ can be moved".
 Unity 6000.0 or newer.
 
 ```
-https://github.com/Mascari4615/Mascari4615.github.io.git?path=/unity/karmo-gizmo/Packages/com.mascari4615.karmo-gizmo
+https://github.com/Mascari4615/KarmoLab.git?path=/unity/karmo-gizmo/Packages/com.mascari4615.karmo-gizmo
 ```
 
 Works with the built-in pipeline and with URP out of the box. The package

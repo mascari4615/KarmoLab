@@ -241,7 +241,7 @@ export async function syncTaskStatusOnPrMerge(
         projectId,
         delta: `${u.id} done (PR #${prContext.prNumber ?? '?'} merge)`,
         evidence: prContext.prNumber
-          ? `https://github.com/Mascari4615/Mascari4615.github.io/pull/${prContext.prNumber}`
+          ? `https://github.com/Mascari4615/KarmoLab/pull/${prContext.prNumber}`
           : (prContext.prTitle || '').slice(0, 120),
       });
       if (ok) {

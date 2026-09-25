@@ -8,7 +8,7 @@
 `Packages/manifest.json` 에 한 줄:
 
 ```json
-"com.karmo.handheld": "https://github.com/Mascari4615/Mascari4615.github.io.git?path=apps/handheld/unity/Packages/com.karmo.handheld"
+"com.karmo.handheld": "https://github.com/Mascari4615/KarmoLab.git?path=apps/handheld/unity/Packages/com.karmo.handheld"
 ```
 
 또는 프로젝트의 `Packages/` 아래에 이 폴더째 두면 임베디드 패키지로 잡힌다.

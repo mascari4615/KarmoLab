@@ -5,7 +5,7 @@
   "platforms": {
     "windows-x86_64": {
       "signature": "여기에 빌드 산출물 .sig 파일 내용 전체를 붙여 넣습니다",
-      "url": "https://github.com/mascari4615/mascari4615.github.io/releases/download/v0.1.1/KarmoLab_0.1.1_x64-setup.exe"
+      "url": "https://github.com/mascari4615/KarmoLab/releases/download/v0.1.1/KarmoLab_0.1.1_x64-setup.exe"
     },
     "linux-x86_64": {
       "signature": "",
