@@ -21,7 +21,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
   'use strict';
 
   const BOOKMARKS_PATH = 'data/bookmarks/summary.json';
-  const CAREER_PATH = 'data/career/summary.json';
+  const GOALS_PATH = 'data/goals/goals.json';
   const AI_DIR = 'data/ai-usage';
   const PC_DIR = 'data/pc-vitals';
   /** 아이콘은 ESC 메뉴와 같은 그림 (Codex image_gen 자작). CSS mask 로 글자색을 입힌다 */
@@ -72,10 +72,14 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     return bmOnce.then((j) => j.counts || {});
   }
 
-  async function careerCount(repo: DashRepoRead): Promise<string> {
-    const j = await repo.readJson<{ data?: { target?: { date?: string } } }>(CAREER_PATH);
-    const left = daysUntil(j.data && j.data.target && j.data.target.date);
-    return left === null ? '-' : left >= 0 ? 'D-' + left : 'D+' + -left;
+  /** 목표 방의 작은 수는 가장 가까운 D-day (가지의 due 중 오늘 이후 첫 날) */
+  async function goalsCount(repo: DashRepoRead): Promise<string> {
+    const j = await repo.readJson<{ branches?: Array<{ due?: string | null }> }>(GOALS_PATH);
+    const left = (j.branches || [])
+      .map((b) => daysUntil(b.due || undefined))
+      .filter((n): n is number => n !== null && n >= 0)
+      .sort((a, b) => a - b)[0];
+    return left === undefined ? '-' : 'D-' + left;
   }
 
   async function aiCount(repo: DashRepoRead): Promise<string> {
@@ -132,7 +136,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
         hero: true,
         count: async (r) => short(num((await bmCounts(r)).pending)),
       },
-      { item: 'career', title: t('mydash.nav.career', undefined, '커리어'), icon: 'me', count: careerCount },
+      { item: 'goals', title: t('mydash.nav.goals', undefined, '목표'), icon: 'me', count: goalsCount },
       { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), icon: 'stat', count: aiCount },
       { item: 'machines', title: t('mydash.nav.machines', undefined, '머신'), icon: 'dash', count: pcCount },
       { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), icon: 'cal', count: calendarCount },
@@ -225,7 +229,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
       return t('mydash.nav.home', undefined, '홈');
     },
     access: 'read',
-    paths: [BOOKMARKS_PATH, CAREER_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
+    paths: [BOOKMARKS_PATH, GOALS_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
     render,
   });
 })();

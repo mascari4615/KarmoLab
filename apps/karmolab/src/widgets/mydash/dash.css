@@ -186,6 +186,22 @@ html[data-site="dash"] {
   --dash-term-dim: #6d7788;
 }
 html[data-site="dash"][data-theme="dark"] { --dash-ok: #7da2f0; --dash-off: #4a5363; --dash-term: #0b0e13; }
+/* 목표 방 (goals.ts). 게임 로비 L4 시안 값 (2026-09-26). 가지 색 다섯, 명판과 임무 창 머리의 남색에서 파랑 */
+html[data-site="dash"] {
+  --gl-c-o: #e8862e; --gl-c-b: #3d6fd8; --gl-c-p: #8a6ad8; --gl-c-g: #3f9e6e; --gl-c-r: #d9553f;
+  --gl-navy: #1d2a48; --gl-blue: #2f63cf; --gl-acc2: #f4a14f; --gl-ink: #1f2430; --gl-on: #fff;
+  --radius-gl-badge: 10px; --gl-bad: #e5484d; --gl-cell: rgba(23, 32, 51, 0.12); --gl-shade: rgba(23, 32, 51, 0.3); --gl-veil: rgba(255, 255, 255, 0.6);
+  --gl-on-veil: rgba(255, 255, 255, 0.12); --gl-on-veil2: rgba(255, 255, 255, 0.35); --gl-on-veil3: rgba(255, 255, 255, 0.9);
+}
+html[data-site="dash"][data-theme="dark"] {
+  --gl-c-o: #f0a04b; --gl-c-b: #6f98f0; --gl-c-p: #b49cf0; --gl-c-g: #6cc596; --gl-c-r: #f07b7b;
+  --gl-navy: #0b1224; --gl-blue: #4f86ea; --gl-acc2: #f6b86e; --gl-ink: #e9edf4;
+  --gl-cell: rgba(233, 237, 244, 0.12); --gl-shade: rgba(0, 0, 0, 0.55); --gl-veil: rgba(14, 19, 30, 0.6);
+}
+/* 로비 층 (fixed, z 1) 위에 메뉴와 방 이름이 오게 */
+@media (min-width: 900px) {
+  html[data-site="dash"] .myd-main:has(.gl) .myd-head { z-index: 3; }
+}
 html[data-site="dash"] .pl-body {
   background: var(--dash-paper);
   border: 1px solid var(--border);

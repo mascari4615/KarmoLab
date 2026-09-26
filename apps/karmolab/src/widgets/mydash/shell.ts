@@ -767,7 +767,8 @@ import { t, loadNamespace } from '../../lib/i18n';
           { id: 'ai', label: t('mydash.nav.ai', undefined, 'AI 사용'), panel: 'ai-usage' },
           /* 머신 방. 옛 PC 성능 자리 (change.dash-machines, 2026-09-25) */
           { id: 'machines', label: t('mydash.nav.machines', undefined, '머신'), panel: 'machines' },
-          { id: 'career', label: t('mydash.nav.career', undefined, '커리어'), panel: 'career' },
+          /* 목표 방. 옛 커리어 방 자리 (사용자 2026-09-25 "커리어 대신 내 인생 목표", 2026-09-26 로비 L4) */
+          { id: 'goals', label: t('mydash.nav.goals', undefined, '목표'), panel: 'goals' },
           /* 플래너 (캘린더, 일기, 칸반, 연속일). 옛 캘린더 방 자리 (사용자 2026-09-23) */
           { id: 'planner', label: t('widgets.planner.title', undefined, '플래너'), panel: 'planner' },
         ],
@@ -813,7 +814,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     bookmarks: 'book',
     ai: 'stat',
     machines: 'dash',
-    career: 'me',
+    goals: 'me',
     planner: 'cal',
   };
   type EscMenuCells = {
