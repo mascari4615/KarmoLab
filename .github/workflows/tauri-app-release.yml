@@ -44,7 +44,7 @@ jobs:
         working-directory: ${{ inputs.app_dir }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -90,7 +90,7 @@ jobs:
           test -n "$PUSHED" || { echo "bump push 6회 실패" >&2; exit 1; }
           echo "VERSION=$NEW" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
