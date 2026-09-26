@@ -58,6 +58,7 @@ import type { DashPanelCtx } from './kit';
   };
 
   const ROOT_DIR = 'data/ai-usage';
+  const ENV_DIR = 'data/ai-env';
 
   /** 보여 줄 것. 폰에서 한 화면에 넷이 한계다. */
   type MetricId = 'cost' | 'sessions' | 'prompts' | 'commits';
@@ -75,7 +76,7 @@ import type { DashPanelCtx } from './kit';
     el.id = STYLE_ID;
     el.textContent = [
       '.au{display:flex;flex-direction:column;gap:14px}',
-      /* 탭 둘 (사용량, 구독). 플래너 세로줄 단추와 같은 결: 켜진 것만 먹색 */
+      /* 탭 (사용량, 구독, 환경). 플래너 세로줄 단추와 같은 결: 켜진 것만 먹색 */
       '.au-tabs{display:flex;gap:4px;margin-bottom:14px}',
       '.au-tab{min-height:36px;padding:0 16px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-secondary);font-weight:700;cursor:pointer}',
       '.au-tab[aria-selected="true"]{background:var(--text-primary);color:var(--bg-secondary);border-color:var(--text-primary)}',
@@ -102,6 +103,16 @@ import type { DashPanelCtx } from './kit';
       '.au-line i{font-style:normal;font-variant-numeric:tabular-nums;color:var(--text-primary)}',
       '.au-bar{grid-column:1/-1;height:3px;max-width:100%;border-radius:var(--radius-pill);background:var(--accent);opacity:.45}',
       '.au-foot{font-size:var(--font-size-3xs);color:var(--text-tertiary);line-height:1.7}',
+      '.au-env-scroll{overflow-x:auto}',
+      '.au-env{width:100%;border-collapse:collapse;font-size:var(--font-size-2xs)}',
+      '.au-env th,.au-env td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}',
+      '.au-env thead th{color:var(--text-tertiary);font-weight:600}',
+      '.au-env tbody th{width:28%}',
+      '.au-env small{display:block;margin-top:3px;color:var(--text-tertiary)}',
+      '.au-env-state{display:inline-block;border:1px solid var(--border);border-radius:var(--radius-pill);padding:1px 7px}',
+      '.au-env-state--applied{color:var(--success);border-color:var(--success)}',
+      '.au-env-state--partial{color:var(--warning);border-color:var(--warning)}',
+      '.au-env-state--missing{color:var(--error);border-color:var(--error)}',
     ].join('');
     document.head.appendChild(el);
   }
@@ -420,16 +431,71 @@ import type { DashPanelCtx } from './kit';
     });
   }
 
-  /* 탭 둘. 사용량 (저장소의 rollups) 과 구독 (lab 도구 내 AI 의 할당량 카드, 2026-09-24 옮겨 옴.
-     사용자 "내 AI 위젯도 이제 Dash 로"). 구독은 브라우저 길이라 노트북 laptop-ops 에서 받음 */
-  type Tab = 'usage' | 'quota';
+  /* 탭 셋. 사용량 (rollups), 구독 (laptop-ops 카드), 환경 (하네스 표, data/ai-env).
+     2026-09-26 사용자: 표는 Dash, KarmoLab 내 AI 는 목록에서 내림 */
+  type Tab = 'usage' | 'quota' | 'env';
   const TAB_KEY = 'karmolab.dash.ai.tab';
   function savedTab(): Tab {
     try {
-      return localStorage.getItem(TAB_KEY) === 'quota' ? 'quota' : 'usage';
+      const v = localStorage.getItem(TAB_KEY);
+      if (v === 'quota' || v === 'env') return v;
+      return 'usage';
     } catch {
       return 'usage';
     }
+  }
+
+  type EnvVendor = { vendor: string; status: string; reason: string; evidence: string[] };
+  type EnvFeature = { id: string; label: string; description: string; vendors: EnvVendor[] };
+  type EnvAudit = { checked_at: number; features: EnvFeature[] };
+
+  function envStatusLabel(status: string): string {
+    if (status === 'applied') return '적용';
+    if (status === 'partial') return '일부';
+    if (status === 'missing') return '미적용';
+    return '확인 필요';
+  }
+
+  async function renderEnv(ctx: DashPanelCtx): Promise<void> {
+    ensureStyle();
+    const { root, repo, status } = ctx;
+    root.innerHTML = '<div class="au"><div class="au-foot">저장소에서 받는 중...</div></div>';
+    const entries = await repo.list(ENV_DIR);
+    const dirs = entries.filter((e) => e.type === 'dir').map((e) => e.name).sort();
+    if (!dirs.length) {
+      root.innerHTML = '<div class="au"><div class="au-foot">하네스 표가 아직 없다. <code>node memo/scripts/ai-env/audit.mjs</code></div></div>';
+      return;
+    }
+    const host = dirs[0];
+    const audit = await repo.readJson<EnvAudit>(ENV_DIR + '/' + host + '/audit.json');
+    const when = audit.checked_at ? agoSeconds(audit.checked_at) : '';
+    status(host + (when ? ', ' + when : ''));
+    const vendors = ['claude', 'codex', 'grok'] as const;
+    const head = vendors.map((v) => '<th>' + v[0].toUpperCase() + v.slice(1) + '</th>').join('');
+    const rows = (audit.features || []).map((feature) => {
+      const cells = vendors.map((vendor) => {
+        const found = feature.vendors.find((item) => item.vendor === vendor);
+        if (!found) return '<td></td>';
+        const evidence = (found.evidence || []).map(esc).join('\n');
+        return '<td><span class="au-env-state au-env-state--' + esc(found.status) + '" title="' + evidence + '">' +
+          esc(envStatusLabel(found.status)) + '</span><small>' + esc(found.reason) + '</small></td>';
+      }).join('');
+      return '<tr><th scope="row"><strong>' + esc(feature.label) + '</strong><small>' + esc(feature.description) + '</small></th>' + cells + '</tr>';
+    }).join('');
+    root.innerHTML =
+      '<div class="au"><p class="au-foot">이 컴퓨터의 지침, 스킬, 훅이 벤더마다 깔려 있는지. 칸에 마우스를 올리면 근거 경로.</p>' +
+      '<div class="au-env-scroll"><table class="au-env"><thead><tr><th>기능</th>' + head + '</tr></thead><tbody>' +
+      rows + '</tbody></table></div></div>';
+  }
+
+  function agoSeconds(epoch: number): string {
+    const diff = Math.max(0, Math.floor(Date.now() / 1000) - epoch);
+    if (diff < 90) return '방금 검사';
+    const mins = Math.round(diff / 60);
+    if (mins < 60) return mins + '분 전 검사';
+    const hours = Math.round(mins / 60);
+    if (hours < 48) return hours + '시간 전 검사';
+    return Math.round(hours / 24) + '일 전 검사';
   }
 
   async function render(ctx: DashPanelCtx): Promise<void> {
@@ -440,7 +506,8 @@ import type { DashPanelCtx } from './kit';
       '<div class="au-tabs" role="tablist">' +
       '<button type="button" role="tab" class="au-tab" data-tab="usage">사용량</button>' +
       '<button type="button" role="tab" class="au-tab" data-tab="quota">구독</button>' +
-      '</div><div class="au-pane" data-pane="usage"></div><div class="au-pane" data-pane="quota" hidden></div>';
+      '<button type="button" role="tab" class="au-tab" data-tab="env">환경</button>' +
+      '</div><div class="au-pane" data-pane="usage"></div><div class="au-pane" data-pane="quota" hidden></div><div class="au-pane" data-pane="env" hidden></div>';
     ctx.root.innerHTML = '';
     ctx.root.appendChild(shell);
     const pane = (id: Tab): HTMLElement => shell.querySelector('[data-pane="' + id + '"]') as HTMLElement;
@@ -454,9 +521,11 @@ import type { DashPanelCtx } from './kit';
       shell.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === id)));
       pane('usage').hidden = id !== 'usage';
       pane('quota').hidden = id !== 'quota';
+      pane('env').hidden = id !== 'env';
       if (built.has(id)) return;
       built.add(id);
       if (id === 'usage') await renderUsage({ ...ctx, root: pane('usage') });
+      else if (id === 'env') await renderEnv({ ...ctx, root: pane('env') });
       else {
         await loadNamespace('my-ai').catch(() => undefined);
         buildQuota(pane('quota'), (fn) => ctx.onDispose(fn), undefined, () => ctx.ghToken());
@@ -472,7 +541,7 @@ import type { DashPanelCtx } from './kit';
     id: 'ai-usage',
     title: 'AI 사용',
     access: 'read',
-    paths: [ROOT_DIR + '/<host>/rollups.json'],
+    paths: [ROOT_DIR + '/<host>/rollups.json', ENV_DIR + '/<host>/audit.json'],
     render,
   });
 })();
