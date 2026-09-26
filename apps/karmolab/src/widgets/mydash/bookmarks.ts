@@ -136,7 +136,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   const DATA_DIR = 'data/bookmarks';
   const SUMMARY_PATH = DATA_DIR + '/summary.json';
   const AXES_PATH = DATA_DIR + '/axes.json';
-  /** Jev 제안. memo scripts/bookmarks/jev-suggest.mjs 파생물, 없어도 됨. 정본 memo changes/jev-bookmarks.md */
+  /** Jev 제안. memo scripts/bookmarks/jev-suggest.mjs 파생물, 없어도 됨. 정본 memo projects/dash/apps/dash.md 의 Jev 제안 줄 */
   const JEV_PATH = DATA_DIR + '/jev-suggestions.json';
   /** 이벤트 뿌리. 이 아래가 `<YYYY-MM>/<epoch-ms>-<device6>-<nonce4>.json` */
   const EVENTS_DIR = 'bookmarks/events';
@@ -403,7 +403,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 
   type JevAnswer = { picked?: unknown; confidence?: unknown };
   type JevFile = { items?: Record<string, { id?: unknown; mode?: unknown; jev?: { intent?: JevAnswer; domain?: JevAnswer } }> };
-  /** 한 항목의 Jev 제안. 값을 고른 것만. 비운 것과 null 은 사용자 채점에서 대부분 틀려 버림 (memo changes/jev-bookmarks.md) */
+  /** 한 항목의 Jev 제안. 값을 고른 것만. 비운 것과 null 은 사용자 채점에서 대부분 틀려 버림 (memo projects/dash/apps/dash.md 의 Jev 제안 줄) */
   type JevHint = { intent: string[]; domain: string; domainConf: number | null };
 
   function jevOf(raw: JevFile): Map<string, JevHint> {
