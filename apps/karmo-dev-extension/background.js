@@ -543,15 +543,15 @@ async function readOpenTabs(urlPattern, maxChars, withLinks) {
           href: location.href,
           title: document.title,
           text: (document.body && document.body.innerText || "").slice(0, n),
-          /* 목록 페이지의 글 주소. 본문 글자에는 주소가 없음. 최대 300개 */
+          /* 목록 페이지의 글 주소. 본문 글자에는 주소가 없음. links 가 글자면 그 글자가 든 주소만. 최대 300개 */
           links: links
             ? Array.from(document.querySelectorAll("a[href]"))
               .map((a) => ({ href: a.href, text: (a.innerText || "").replace(/\s+/g, " ").trim().slice(0, 200) }))
-              .filter((l) => l.text)
+              .filter((l) => l.text && (typeof links !== "string" || l.href.includes(links)))
               .slice(0, 300)
             : undefined,
         }),
-        args: [max, !!withLinks],
+        args: [max, typeof withLinks === "string" ? withLinks : !!withLinks],
       });
     } catch (e) {
       page = { result: { error: String(e && e.message ? e.message : e) } };
