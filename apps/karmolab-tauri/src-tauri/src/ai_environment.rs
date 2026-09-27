@@ -109,7 +109,13 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
         vendors: vec![
             state("claude", has_entries(&claude_skills), false, "Claude 사용자 스킬", vec![claude_skills.clone()]),
             state("codex", has_entries(&codex_skills) && has_entries(&codex_bundled_skills), has_entries(&codex_skills) || has_entries(&codex_bundled_skills), "Codex 사용자, 시스템 스킬 검색 경로", vec![codex_skills.clone(), codex_bundled_skills.clone()]),
-            state("grok", has_entries(&claude_skills), true, "Claude 호환 스킬 스캔에 의존", vec![claude_skills.clone()]),
+            state(
+                "grok",
+                has_entries(&claude_skills) && has_entries(&codex_skills),
+                has_entries(&claude_skills) != has_entries(&codex_skills),
+                "Claude 스킬과 ~/.agents/skills. 같은 이름은 스킬 설명 하나",
+                vec![claude_skills.clone(), codex_skills.clone()],
+            ),
         ],
     };
 
@@ -133,7 +139,13 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
         vendors: vec![
             state("claude", has_entries(&claude_commands), false, "Claude slash commands", vec![claude_commands.clone()]),
             state("codex", has_entries(&codex_skills), has_entries(&codex_bundled_skills), "Codex skill 명시 호출: $session-start, $session-end", vec![codex_skills.clone(), codex_bundled_skills.clone()]),
-            state("grok", has_entries(&claude_commands), true, "Claude 호환 command 스캔에 의존", vec![claude_commands.clone()]),
+            state(
+                "grok",
+                has_entries(&claude_commands) && has_entries(&codex_skills),
+                has_entries(&claude_commands) != has_entries(&codex_skills),
+                "Claude command와 ~/.agents/skills. 같은 이름은 스킬 쪽으로 접힘",
+                vec![claude_commands.clone(), codex_skills.clone()],
+            ),
         ],
     };
 
