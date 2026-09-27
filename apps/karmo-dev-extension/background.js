@@ -528,7 +528,7 @@ async function collectXAccounts() {
  *  - 상시 content script 없음. 이 호출 때만 그 탭
  *  - url 없으면 현재 창의 활성 탭 하나
  */
-async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter) {
+async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter, withImages) {
   const max = Math.min(Math.max(Number(maxChars) || 20000, 500), 80000);
   const tabs = urlPattern
     ? await chrome.tabs.query({ url: String(urlPattern) })
@@ -540,7 +540,7 @@ async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter) {
       /* 확장 재적재 전에 열린 탭은 executeScript 가 끝나지 않음. 8초 상한 */
       [page] = await Promise.race([chrome.scripting.executeScript({
         target: { tabId: t.id },
-        func: (n, links) => ({
+        func: (n, links, images) => ({
           href: location.href,
           title: document.title,
           text: (document.body && document.body.innerText || "").slice(0, n),
@@ -551,8 +551,15 @@ async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter) {
               .filter((l) => l.text && (typeof links !== "string" || l.href.includes(links)))
               .slice(0, 300)
             : undefined,
+          /* 그림 주소. images 가 글자면 그 글자가 든 주소만. 최대 300개 */
+          images: images
+            ? Array.from(document.images)
+              .map((i) => ({ src: i.currentSrc || i.src, w: i.naturalWidth, h: i.naturalHeight }))
+              .filter((i) => i.src && (typeof images !== "string" || i.src.includes(images)))
+              .slice(0, 300)
+            : undefined,
         }),
-        args: [max, typeof withLinks === "string" ? withLinks : !!withLinks],
+        args: [max, typeof withLinks === "string" ? withLinks : !!withLinks, typeof withImages === "string" ? withImages : !!withImages],
       }), new Promise((_, reject) => setTimeout(() => reject(new Error("8초 초과. 확장 재적재 전 탭이면 새로 열기")), 8000))]);
     } catch (e) {
       page = { result: { error: String(e && e.message ? e.message : e) } };
@@ -589,7 +596,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
       if (msg?.type === "page.text") {
-        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links, msg.close) });
+        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links, msg.close, msg.images) });
         return;
       }
       if (msg?.type === "dash.inspect") {
