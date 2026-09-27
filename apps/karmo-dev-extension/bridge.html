@@ -99,7 +99,7 @@
         gcpClient: (opts) => call({ type: "gcp.client", ...opts }),
         pinterestRelated: (seeds, per) => call({ type: "pinterest.related", seeds, per }),
         pinterestLast: () => call({ type: "pinterest.last" }),
-        pageText: (url, maxChars, links) => call({ type: "page.text", url, maxChars, links }),
+        pageText: (url, maxChars, links, close) => call({ type: "page.text", url, maxChars, links, close }),
         version: () => call({ type: "ext.version" }),
         reload: () => call({ type: "ext.reload" }),
       };

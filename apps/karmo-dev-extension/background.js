@@ -528,7 +528,7 @@ async function collectXAccounts() {
  *  - 상시 content script 없음. 이 호출 때만 그 탭
  *  - url 없으면 현재 창의 활성 탭 하나
  */
-async function readOpenTabs(urlPattern, maxChars, withLinks) {
+async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter) {
   const max = Math.min(Math.max(Number(maxChars) || 20000, 500), 80000);
   const tabs = urlPattern
     ? await chrome.tabs.query({ url: String(urlPattern) })
@@ -537,7 +537,8 @@ async function readOpenTabs(urlPattern, maxChars, withLinks) {
   for (const t of tabs.slice(0, 5)) {
     let page = null;
     try {
-      [page] = await chrome.scripting.executeScript({
+      /* 확장 재적재 전에 열린 탭은 executeScript 가 끝나지 않음. 8초 상한 */
+      [page] = await Promise.race([chrome.scripting.executeScript({
         target: { tabId: t.id },
         func: (n, links) => ({
           href: location.href,
@@ -552,11 +553,16 @@ async function readOpenTabs(urlPattern, maxChars, withLinks) {
             : undefined,
         }),
         args: [max, typeof withLinks === "string" ? withLinks : !!withLinks],
-      });
+      }), new Promise((_, reject) => setTimeout(() => reject(new Error("8초 초과. 확장 재적재 전 탭이면 새로 열기")), 8000))]);
     } catch (e) {
       page = { result: { error: String(e && e.message ? e.message : e) } };
     }
     out.push({ id: t.id, url: t.url, active: t.active, discarded: t.discarded, page: page && page.result });
+  }
+  /* 다 읽은 탭 닫기. 에이전트가 읽으려고 연 탭이 사람 창에 쌓여 메모리를 먹음 (2026-09-27 사용자 지시). url 패턴이 있을 때만 */
+  if (closeAfter && urlPattern) {
+    for (const o of out) await chrome.tabs.remove(o.id).catch(() => {});
+    out.forEach((o) => { o.closed = true; });
   }
   return out;
 }
@@ -583,7 +589,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
       if (msg?.type === "page.text") {
-        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links) });
+        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links, msg.close) });
         return;
       }
       if (msg?.type === "dash.inspect") {
