@@ -523,6 +523,37 @@ async function collectXAccounts() {
   return { rows: [...merged.values()], notes };
 }
 
+/** 열린 탭 본문
+ *  - 호스트 권한은 <all_urls>. 사이트 이름은 매니페스트에 없음
+ *  - 상시 content script 없음. 이 호출 때만 그 탭
+ *  - url 없으면 현재 창의 활성 탭 하나
+ */
+async function readOpenTabs(urlPattern, maxChars) {
+  const max = Math.min(Math.max(Number(maxChars) || 20000, 500), 80000);
+  const tabs = urlPattern
+    ? await chrome.tabs.query({ url: String(urlPattern) })
+    : await chrome.tabs.query({ active: true, currentWindow: true });
+  const out = [];
+  for (const t of tabs.slice(0, 5)) {
+    let page = null;
+    try {
+      [page] = await chrome.scripting.executeScript({
+        target: { tabId: t.id },
+        func: (n) => ({
+          href: location.href,
+          title: document.title,
+          text: (document.body && document.body.innerText || "").slice(0, n),
+        }),
+        args: [max],
+      });
+    } catch (e) {
+      page = { result: { error: String(e && e.message ? e.message : e) } };
+    }
+    out.push({ id: t.id, url: t.url, active: t.active, discarded: t.discarded, page: page && page.result });
+  }
+  return out;
+}
+
 /** bridge 탭 정리. 에이전트가 주소로 부를 때마다 사람 창에 탭이 하나씩 쌓였다 (2026-09-23, 7개에서 dev 서버 연결이 막힘) */
 async function closeBridgeTabs(exceptId) {
   const tabs = await chrome.tabs.query({ url: ["http://127.0.0.1/*", "http://localhost/*"] });
@@ -544,6 +575,10 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   }
   (async () => {
     try {
+      if (msg?.type === "page.text") {
+        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars) });
+        return;
+      }
       if (msg?.type === "dash.inspect") {
         /* 사람 창의 dash 탭이 어떤 판을 싣고 있나. 읽기만. 탭을 바꾸거나 누르지 않는다 */
         const tabs = await chrome.tabs.query({ url: ["https://dash.mascari4615.com/*"] });
