@@ -528,7 +528,7 @@ async function collectXAccounts() {
  *  - 상시 content script 없음. 이 호출 때만 그 탭
  *  - url 없으면 현재 창의 활성 탭 하나
  */
-async function readOpenTabs(urlPattern, maxChars) {
+async function readOpenTabs(urlPattern, maxChars, withLinks) {
   const max = Math.min(Math.max(Number(maxChars) || 20000, 500), 80000);
   const tabs = urlPattern
     ? await chrome.tabs.query({ url: String(urlPattern) })
@@ -539,12 +539,19 @@ async function readOpenTabs(urlPattern, maxChars) {
     try {
       [page] = await chrome.scripting.executeScript({
         target: { tabId: t.id },
-        func: (n) => ({
+        func: (n, links) => ({
           href: location.href,
           title: document.title,
           text: (document.body && document.body.innerText || "").slice(0, n),
+          /* 목록 페이지의 글 주소. 본문 글자에는 주소가 없음. 최대 300개 */
+          links: links
+            ? Array.from(document.querySelectorAll("a[href]"))
+              .map((a) => ({ href: a.href, text: (a.innerText || "").replace(/\s+/g, " ").trim().slice(0, 200) }))
+              .filter((l) => l.text)
+              .slice(0, 300)
+            : undefined,
         }),
-        args: [max],
+        args: [max, !!withLinks],
       });
     } catch (e) {
       page = { result: { error: String(e && e.message ? e.message : e) } };
@@ -576,7 +583,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
       if (msg?.type === "page.text") {
-        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars) });
+        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links) });
         return;
       }
       if (msg?.type === "dash.inspect") {
