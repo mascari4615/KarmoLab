@@ -528,7 +528,7 @@ async function collectXAccounts() {
  *  - 상시 content script 없음. 이 호출 때만 그 탭
  *  - url 없으면 현재 창의 활성 탭 하나
  */
-async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter, withImages) {
+async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter, withImages, withHtml) {
   const max = Math.min(Math.max(Number(maxChars) || 20000, 500), 80000);
   const tabs = urlPattern
     ? await chrome.tabs.query({ url: String(urlPattern) })
@@ -540,7 +540,7 @@ async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter, withIma
       /* 확장 재적재 전에 열린 탭은 executeScript 가 끝나지 않음. 8초 상한 */
       [page] = await Promise.race([chrome.scripting.executeScript({
         target: { tabId: t.id },
-        func: (n, links, images) => ({
+        func: (n, links, images, html) => ({
           href: location.href,
           title: document.title,
           text: (document.body && document.body.innerText || "").slice(0, n),
@@ -558,8 +558,10 @@ async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter, withIma
               .filter((i) => i.src && (typeof images !== "string" || i.src.includes(images)))
               .slice(0, 300)
             : undefined,
+          /* 렌더된 페이지 원본. 재열람 없이 다시 보려는 용도라 통짜로, 400만자 상한 (로컬 저장 전제, 채팅 컨텍스트 아님) */
+          html: html ? document.documentElement.outerHTML.slice(0, 4000000) : undefined,
         }),
-        args: [max, typeof withLinks === "string" ? withLinks : !!withLinks, typeof withImages === "string" ? withImages : !!withImages],
+        args: [max, typeof withLinks === "string" ? withLinks : !!withLinks, typeof withImages === "string" ? withImages : !!withImages, !!withHtml],
       }), new Promise((_, reject) => setTimeout(() => reject(new Error("8초 초과. 확장 재적재 전 탭이면 새로 열기")), 8000))]);
     } catch (e) {
       page = { result: { error: String(e && e.message ? e.message : e) } };
@@ -596,7 +598,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
       if (msg?.type === "page.text") {
-        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links, msg.close, msg.images) });
+        sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links, msg.close, msg.images, msg.html) });
         return;
       }
       if (msg?.type === "dash.inspect") {
