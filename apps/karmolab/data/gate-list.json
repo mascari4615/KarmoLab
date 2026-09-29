@@ -562,6 +562,7 @@
     "audit:i18n-stub",
     "test:new-tool",
     "test:tempmail",
+    "test:vidsum",
     {
       "name": "audit:atlas-fresh",
       "watch": [

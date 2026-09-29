@@ -26,8 +26,7 @@
     "profile-blocking.mjs": "첫 화면을 막는 코드를 재는 조사 도구. 느려졌을 때 사람이 돌린다.",
     "shoot-mobile.mjs": "폰 화면을 찍어 보는 조사 도구. 눈으로 볼 때 사람이 돌린다.",
     "smoke-foundry.mjs": "서버 없을 때의 선반 화면을 본다. 브라우저를 띄운다. 묶기 전에 시간을 재라.",
-    "smoke-wrong-kind.mjs": "재 보니 2분 05초. 기다리는 자리(#pfDropHint)가 아직 안 지어져 여덟 판 모두 빨갛다(TASK-KL-320). 짓고 나서 묶는다.",
-    "test-videosum.mjs": "영상 요약 검사. 이름이 없어 안 돈다(무거울 수 있어 시간부터 재야 한다)."
+    "smoke-wrong-kind.mjs": "재 보니 2분 05초. 기다리는 자리(#pfDropHint)가 아직 안 지어져 여덟 판 모두 빨갛다(TASK-KL-320). 짓고 나서 묶는다."
   },
   "updated": "2026-09-21"
 }

@@ -478,6 +478,7 @@
     "test:v2i": "node scripts/test-video2img.mjs",
     "test:vdur": "node scripts/test-video-duration.mjs",
     "test:video": "node scripts/test-video2gif.mjs",
+    "test:vidsum": "node scripts/test-videosum.mjs",
     "test:voice": "node scripts/test-voicerec.mjs",
     "test:vrot": "node scripts/test-videorotate.mjs",
     "test:wcag": "node scripts/smoke-wcag22.mjs",
