@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Files 업로드 비밀번호를 이 Windows 계정에 한 번 저장한다. 이후 npm run upload 가 안 물어본다.
 
