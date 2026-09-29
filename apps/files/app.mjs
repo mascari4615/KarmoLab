@@ -12,6 +12,7 @@ import {
   unlockVault,
 } from './src/vault.mjs';
 import { pickVaultBase } from './src/vault-base.mjs';
+import { laptopGateFor } from './src/laptop-gate.mjs';
 import { CELL_SIZES, cellSize, mountGallery, worthGallery } from './src/gallery.mjs';
 import { VIDEO_MAX_BYTES, mirrorable } from './src/mirror-policy.mjs';
 import { KINDS, SORTS, activeSummary, arrange, arrangeFolders, between, timeOf } from './src/browse.mjs';
@@ -251,9 +252,10 @@ async function buildFetch(path, options = {}) {
   }
   const headers = { ...(options.headers || {}), Authorization: auth };
   const response = await fetch(LAPTOP_API + path, { ...options, headers });
-  if (response.status === 401 || response.status === 403) {
+  const gate = laptopGateFor(response.status, response.headers.get('Retry-After'));
+  if (gate) {
     sessionStorage.removeItem(LAPTOP_KEY);
-    showLaptopGate('비밀번호가 틀렸거나 만료되었습니다.');
+    showLaptopGate(gate.message);
     return null;
   }
   const data = await response.json().catch(() => ({}));
@@ -583,9 +585,10 @@ function loadLaptop() {
   fetch(LAPTOP_API + '/files/api/list?p=' + encodeURIComponent(p), {
     headers: { Authorization: auth },
   }).then((r) => {
-    if (r.status === 401 || r.status === 403) {
+    const gate = laptopGateFor(r.status, r.headers.get('Retry-After'));
+    if (gate) {
       sessionStorage.removeItem(LAPTOP_KEY);
-      showLaptopGate('비밀번호가 틀렸거나 만료됐습니다.');
+      showLaptopGate(gate.message);
       return null;
     }
     if (r.status === 404) {
@@ -674,6 +677,8 @@ function wireLaptopUpload(dir) {
           headers: { Authorization: auth },
           body: f,
         });
+        const gate = laptopGateFor(r.status, r.headers.get('Retry-After'));
+        if (gate) throw new Error(gate.message);
         if (!r.ok) throw new Error(await r.text());
         done.push((await r.json()).name);
       } catch (e) {
