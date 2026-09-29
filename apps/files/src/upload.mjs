@@ -17,6 +17,7 @@ import { thumbKind } from './thumb.mjs';
 import { hasFfmpeg, makeThumb, probeVideo } from './thumb-node.mjs';
 import { budgetLine, capFromEnv, makeBudget, measureRemote } from './mirror-budget.mjs';
 import { loadFilesEnv } from './env-file.mjs';
+import { loadStoredPassword } from './upload-password.mjs';
 
 await loadFilesEnv();
 
@@ -29,8 +30,23 @@ function need(name) {
   return v;
 }
 
+/**
+ * 비밀번호는 사용자 입력이 기본, 대타 없음.
+ * 우선순위: 명시 FILES_VAULT_PASS(env/.env) > scripts/save-upload-password.ps1 저장값.
+ * 둘 다 없으면 기존 동작(에러 종료) + 저장 안내 한 줄.
+ */
+async function resolvePassword() {
+  const fromEnv = process.env.FILES_VAULT_PASS;
+  if (fromEnv) return fromEnv;
+  const stored = await loadStoredPassword();
+  if (stored) return stored;
+  console.error('없음: FILES_VAULT_PASS');
+  console.error('scripts/save-upload-password.ps1 로 한 번 저장해 두면 이후 자동으로 읽는다');
+  process.exit(2);
+}
+
 const root = need('FILES_VAULT_ROOT');
-const pass = need('FILES_VAULT_PASS');
+const pass = await resolvePassword();
 const remote = process.env.FILES_VAULT_REMOTE || 'gdrive:karm-files-vault';
 const extraRemote = process.env.FILES_VAULT_R2 || '';
 const dry = process.argv.includes('--dry-run');
