@@ -12,8 +12,7 @@
     "profile-blocking.mjs",
     "shoot-mobile.mjs",
     "smoke-foundry.mjs",
-    "smoke-wrong-kind.mjs",
-    "test-videosum.mjs"
+    "smoke-wrong-kind.mjs"
   ],
   "reason": {
     "dupe-ledger.mjs": "합칠 수 있는 것을 세는 원장(KL-257). 사람이 볼 때 돌리는 조사 도구다.",
@@ -28,5 +27,5 @@
     "smoke-foundry.mjs": "서버 없을 때의 선반 화면을 본다. 브라우저를 띄운다. 묶기 전에 시간을 재라.",
     "smoke-wrong-kind.mjs": "재 보니 2분 05초. 기다리는 자리(#pfDropHint)가 아직 안 지어져 여덟 판 모두 빨갛다(TASK-KL-320). 짓고 나서 묶는다."
   },
-  "updated": "2026-09-21"
+  "updated": "2026-09-29"
 }
