@@ -97,6 +97,23 @@ test('틀린 열쇠는 목록을 안 연다', async () => {
   await assert.rejects(() => unlockVault(store, 'wrong-pass'), VaultUnlockError);
 });
 
+test('idx 가져오기 실패는 비밀번호 오판이 아니다', async () => {
+  /* rclone 429, 네트워크 끊김 같은 가져오기 실패 흉내. 복호 시도 자체가 없으니
+     비밀번호가 맞는지 틀린지 판정 불가. VaultUnlockError(비밀번호 틀림)로 뭉개면
+     verify-vault-password.mjs 의 비밀번호 틀림 오판 (2026-09-29 확인된 버그) */
+  const { store } = await fresh();
+  const inner = store.get.bind(store);
+  store.get = async (key) => {
+    if (key === 'idx') throw new Error('googleapi: Error 429: User rate limit exceeded');
+    return inner(key);
+  };
+  await assert.rejects(() => unlockVault(store, PASS), (e) => {
+    assert.equal(e instanceof VaultUnlockError, false);
+    assert.match(e.message, /429/);
+    return true;
+  });
+});
+
 test('경로 탈출은 거절', async () => {
   const { session } = await fresh();
   const bytes = new Uint8Array([1]);

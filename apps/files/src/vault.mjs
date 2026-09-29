@@ -242,8 +242,16 @@ export async function unlockVault(store, passphrase) {
   const session = { store, key, iterations: header.iterations };
   try {
     session.index = await readIndex(session);
-  } catch {
-    throw new VaultUnlockError('index');
+  } catch (e) {
+    /* 비밀번호 틀림 판정 기준: 복호 인증 실패(AES-GCM 태그 불일치) 하나뿐.
+       가져오기 실패(rclone, 429, 네트워크)와 idx 자체 손상은 별개 문제,
+       VaultUnlockError 로 안 바꾸고 원래 오류 그대로 전달.
+       여기서 뭉개면 verify-vault-password.mjs 가 가져오기 실패를
+       비밀번호 틀림으로 오판 (2026-09-29 확인된 버그) */
+    if (e instanceof VaultCorruptError && e.message === 'auth') {
+      throw new VaultUnlockError('index');
+    }
+    throw e;
   }
   return session;
 }
