@@ -14,6 +14,7 @@
  * 사용: node scripts/smoke-regionwatch.mjs
  */
 import { chromium } from 'playwright';
+import { untilTrue } from './lib/settle.mjs';
 import { serveRepo } from './lib/serve-static.mjs';
 import { WAIT } from './lib/waits.mjs';
 
@@ -144,7 +145,7 @@ const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('regionw
 check(saved.profiles && saved.profiles['1280x720'] && saved.profiles['1280x720'][0].name === 'old1', '다른 크기의 프로필은 그대로 남는다');
 await page.click('.rw-slot[data-i="0"] [data-act="ref"]');
 await page.click('.rw-slot[data-i="1"] [data-act="ref"]');
-await page.waitForTimeout(800);
+await untilTrue(page, () => /9\d%|100%/.test(document.querySelector('.rw-slot[data-i="0"] .rw-sim b')?.textContent || ''), { max: 5000 });
 const simAfterRef = await page.textContent('.rw-slot[data-i="0"] .rw-sim b');
 check(/9\d%|100%/.test(simAfterRef || ''), `기준 직후 닮음은 90% 이상이어야 한다 (지금 ${simAfterRef})`);
 const fires0 = await page.evaluate(() => window.__rw.fires.length);
@@ -166,9 +167,9 @@ check(fires.join(',') === 'chg,mat', `초록으로 돌아오면 같아지면 슬
    벽시계가 아니라 페이지 안의 시각으로 잰다. 병렬 게이트에서 느려져도 판정이 안 흔들리게 */
 const gapBefore = await page.evaluate(() => performance.now() - window.__rw.fires.find((f) => f.name === 'chg').at);
 await page.evaluate(() => window.__stage.set('box', '#c02020'));
-await page.waitForTimeout(700);
+await page.waitForTimeout(700); // 재움-의도: 재무장 창 (1초) 안에서 다시 빨강이 되어도 침묵하는지가 판정 대상이라 시간이 지나야 한다
 await page.evaluate(() => window.__stage.set('box', '#20c040'));
-await page.waitForTimeout(400);
+await page.waitForTimeout(400); // 재움-의도: 위와 같은 창. 초록 복귀 뒤 창이 닫히기 전까지 울림이 없어야 한다
 fires = await page.evaluate(() => window.__rw.fires.map((f) => f.name));
 /* chg 만 셈. mat 슬롯은 rearm 1초라, 판이 느려 초록 복귀가 1초 넘게 늦으면 정당한 재울림
    (2026-09-25 브라우저 4자리 판에서 전체 울림 3번으로 빨강) */
@@ -239,14 +240,14 @@ const targetFires = await page.evaluate(() => window.__rw.fires.filter((f) => f.
 check(targetFires === 1, `목표 112,000 에 닿을 때 한 번 (지금 ${targetFires})`);
 
 /* 값이 멈추면 6초 뒤 멈춤 알림. 한 번만 */
-await page.waitForTimeout(7200);
+await page.waitForTimeout(7200); // 재움-의도: 값이 멈춘 뒤 6초가 지나야 멈춤 알림이 나온다. 시간이 곧 조건이다
 const idleFires = await page.evaluate(() => window.__rw.fires.filter((f) => f.name === 'trd' && f.reason === 'idle').length);
 check(idleFires === 1, `값이 멈추면 멈춤 알림 한 번 (지금 ${idleFires})`);
 check(await page.locator('.rw-trend-row.is-idle').count() === 1, '멈춤 줄이 표시된다');
 
 /* 구간 새로, CSV */
 await page.click('.rw-trend-row[data-i="3"] [data-tact="segment"]');
-await page.waitForTimeout(1500);
+await untilTrue(page, () => /구간|segment|区間/i.test(document.querySelector('#rwStatus')?.textContent || ''), { max: 5000 });
 check(/구간|segment|区間/i.test((await page.textContent('#rwStatus')) || ''), `구간을 새로 시작한다 (${await page.textContent('#rwStatus')})`);
 const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }).catch(() => null), page.click('.rw-trend-row[data-i="3"] [data-tact="csv"]')]);
 check(!!dl && /\.csv$/.test(dl.suggestedFilename()), `CSV 를 내려받는다 (${dl && dl.suggestedFilename()})`);
@@ -328,7 +329,7 @@ check(/다시 시작|restart|再開/.test((await page.textContent('#rwCaptureHin
 
 /* ⑥ 멈춤 */
 await page.click('#rwStop');
-await page.waitForTimeout(400);
+await untilTrue(page, () => !document.querySelector('#rwStart').disabled && document.querySelector('#rwStop').disabled, { max: 5000 });
 check(!(await page.isDisabled('#rwStart')) && (await page.isDisabled('#rwStop')), '멈추면 시작 버튼이 살아난다');
 check(/대기|Waiting|待ち/.test((await page.textContent('#rwState')) || ''), `멈추면 알약이 대기로 (${await page.textContent('#rwState')})`);
 check(!(await page.isHidden('#rwEmpty')), '멈추면 빈 화면 안내가 돌아온다');
