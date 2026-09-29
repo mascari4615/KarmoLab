@@ -107,7 +107,14 @@ check(!(await page.locator('#pfJobs').isVisible()), '고르면 격자는 접힌�
 check(await page.locator('#pfFileBar').isVisible(), '**사진 줄은 그대로 남는다**');
 
 /* ⑤ 그리고 그 도구가 사진을 이미 받았다. 다시 올릴 일이 없다 */
-await page.waitForTimeout(900);
+await untilTrue(
+  page,
+  () => {
+    const input = document.querySelector('#pfHost input[type=file]');
+    return !!(input && input.files && input.files.length && input.files[0].name === '사진.png');
+  },
+  { max: 5000 }
+);
 const got = await page.evaluate(() => {
   const input = document.querySelector('#pfHost input[type=file]');
   return input && input.files && input.files.length ? input.files[0].name : '';
@@ -119,7 +126,14 @@ await page.click('#pfBack');
 await page.waitForSelector('#pfJobs:visible', { timeout: WAIT });
 await page.locator('.pf-job[data-job="palette"]').click();
 await page.waitForSelector('#pfMount:visible', { timeout: 15000 });
-await page.waitForTimeout(900);
+await untilTrue(
+  page,
+  () => {
+    const input = document.querySelector('#pfHost input[type=file]');
+    return !!(input && input.files && input.files.length && input.files[0].name === '사진.png');
+  },
+  { max: 5000 }
+);
 const got2 = await page.evaluate(() => {
   const input = document.querySelector('#pfHost input[type=file]');
   return input && input.files && input.files.length ? input.files[0].name : '';
@@ -153,7 +167,7 @@ await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
 /* 잘리는 폭이 **멎을 때까지**. 끌기 반응이 늦으면 옛 폭을 읽는다. */
 const narrow = await untilSettled(page, () => page.locator('#imCmpClip').evaluate((e) => e.style.width));
 await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2);
-await page.waitForTimeout(150);
+await untilTrue(page, (n) => parseFloat(document.querySelector('#imCmpClip').style.width) > n, { max: 3000, args: parseFloat(narrow) });
 const wide = await page.locator('#imCmpClip').evaluate((e) => e.style.width);
 check(parseFloat(narrow) < parseFloat(wide), `손잡이를 옮기면 겹치는 폭이 바뀐다 (${narrow} → ${wide})`);
 
@@ -162,11 +176,11 @@ await page.locator('#imCmp').focus();
 const before = await page.locator('#imCmpClip').evaluate((e) => parseFloat(e.style.width));
 await page.keyboard.press('ArrowLeft');
 await page.keyboard.press('ArrowLeft');
-await page.waitForTimeout(150);
+await untilTrue(page, (n) => parseFloat(document.querySelector('#imCmpClip').style.width) < n, { max: 3000, args: before });
 const after = await page.locator('#imCmpClip').evaluate((e) => parseFloat(e.style.width));
 check(after < before, `화살표로 손잡이가 밀린다 (${before}% → ${after}%)`);
 await page.keyboard.press('End');
-await page.waitForTimeout(150);
+await untilTrue(page, () => parseFloat(document.querySelector('#imCmpClip').style.width) === 100, { max: 3000 });
 check(
   (await page.locator('#imCmpClip').evaluate((e) => parseFloat(e.style.width))) === 100,
   'End 로 끝까지 간다'
@@ -182,7 +196,7 @@ check(
 
 
 await page.click('#pfChainUse');
-await page.waitForTimeout(500);
+await untilTrue(page, () => document.querySelector('#pfName').innerText === '사진-작게.png', { max: 3000 });
 check(
   (await page.locator('#pfName').innerText()) === '사진-작게.png',
   '누르면 **그 결과가 손에 든 사진이 된다**. 다시 안 올린다'
