@@ -144,6 +144,70 @@ async function waitLoaded(tabId) {
   });
 }
 
+/**
+ * 탭이 읽을 준비가 될 때까지 (v0.18.0). 고정 대기 없이 로드 완료 (status complete) 를 기다리고,
+ * `selector` 가 있으면 그 요소가 생길 때까지 250ms 간격으로 다시 봄. 늦게 뜨는 본문 (지연 로딩) 대비
+ * `capMs` 전체 상한, `graceMs` 는 완료 뒤 요소를 더 기다리는 시간 (삭제된 쪽은 끝내 없으므로 짧게)
+ * 결과 `{ ms, complete, found }`. found 는 선택자가 없으면 null
+ */
+async function waitReady(tabId, selector, capMs = 20000, graceMs = 3000) {
+  const t0 = Date.now();
+  const complete = await new Promise((resolve) => {
+    let settled = false;
+    let timer = null;
+    const finish = (v) => {
+      if (settled) return;
+      settled = true;
+      chrome.tabs.onUpdated.removeListener(done);
+      clearTimeout(timer);
+      resolve(v);
+    };
+    const done = (id, info) => { if (id === tabId && info.status === "complete") finish(true); };
+    chrome.tabs.onUpdated.addListener(done);
+    timer = setTimeout(() => finish(false), capMs);
+    /* 이미 끝난 탭. 막 만든 탭의 빈 쪽 (about:blank, pendingUrl) 은 완료로 안 봄 */
+    chrome.tabs.get(tabId).then((t) => {
+      if (t && t.status === "complete" && !t.pendingUrl && t.url && t.url !== "about:blank") finish(true);
+    }, () => finish(false));
+  });
+  if (!selector) return { ms: Date.now() - t0, complete, found: null };
+  const graceEnd = Date.now() + graceMs;
+  for (;;) {
+    let found = false;
+    try {
+      const [r] = await within(3000, "ready", chrome.scripting.executeScript({
+        target: { tabId },
+        func: (s) => !!document.querySelector(s),
+        args: [String(selector)],
+      }));
+      found = !!(r && r.result);
+    } catch { /* 아직 못 읽음. 다음 바퀴 */ }
+    if (found) return { ms: Date.now() - t0, complete, found: true };
+    if (Date.now() - t0 >= capMs || Date.now() >= graceEnd) return { ms: Date.now() - t0, complete, found: false };
+    await new Promise((r) => setTimeout(r, 250));
+  }
+}
+
+/** 주소 패턴으로 읽는 bridge 방식용. 패턴에 맞는 탭이 생길 때까지 기다린 뒤 탭마다 waitReady */
+async function waitPatternReady(urlPattern, selector, capMs = 20000) {
+  const t0 = Date.now();
+  let tabs = [];
+  while (Date.now() - t0 < capMs) {
+    tabs = await chrome.tabs.query({ url: String(urlPattern) }).catch(() => []);
+    if (tabs.length) break;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  for (const t of tabs.slice(0, 5)) await waitReady(t.id, selector, Math.max(capMs - (Date.now() - t0), 500));
+}
+
+/** `ready` 요청 값 풀기. 글자면 선택자, true 면 로드 완료만. `readyMs` 상한은 60초까지 */
+function readyArgs(msg) {
+  return {
+    selector: typeof msg.ready === "string" && msg.ready ? msg.ready : null,
+    capMs: Math.min(Math.max(Number(msg.readyMs) || 20000, 1000), 60000),
+  };
+}
+
 /** 이 확장이 연 수집 탭 id. 워커가 죽으면 finally 가 안 돌아 탭이 남는다 (2026-09-22 치지직, X 탭 실측) */
 const OPEN_TABS_KEY = "karmo.openTabs";
 
@@ -379,10 +443,15 @@ async function runQueueJob(job) {
       if (!/^https?:\/\//.test(String(job.open))) throw new Error("open 은 http 주소만");
       const tab = await openWorkTab(String(job.open));
       try {
-        await waitLoaded(tab.id);
+        /* ready 가 오면 고정 3초 없이 로드 완료와 본문 요소만 기다림 (v0.18.0). 없으면 예전 대기 */
+        let ready = null;
+        if (msg.ready) {
+          const a = readyArgs(msg);
+          ready = await waitReady(tab.id, a.selector, a.capMs);
+        } else await waitLoaded(tab.id);
         if (msg.type === "page.text") {
           const tabs = await readOpenTabs("", msg.maxChars, msg.links, false, msg.images, msg.html, tab.id);
-          tabs.forEach((t) => { t.closed = true; });
+          tabs.forEach((t) => { t.closed = true; if (ready) t.ready = ready; });
           result = { ok: true, tabs };
         } else {
           result = await new Promise((res) => dispatchExt(msg, null, res));
@@ -713,6 +782,7 @@ function dispatchExt(msg, sender, sendResponse) {
   (async () => {
     try {
       if (msg?.type === "page.text") {
+        if (msg.ready && msg.url) { const a = readyArgs(msg); await waitPatternReady(msg.url, a.selector, a.capMs); }
         sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links, msg.close, msg.images, msg.html) });
         return;
       }

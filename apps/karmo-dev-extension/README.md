@@ -47,6 +47,7 @@ chrome.runtime.sendMessage("<확장ID>", { type: "bookmarks.list" }, console.log
 - 확장이 `GET /job` 을 묻는다. 200 이면 `{ id, kind, msg, open }`, 할 일이 없으면 204. 결과는 `POST /done/<id>` 에 JSON
 - `kind: "ext.call"` 은 `msg` 를 bridge 로 부른 것과 같이 처리하고 응답도 같은 모양 (`{ ok, ... }`)
 - `open` 이 있으면 그 주소를 뒤쪽 탭 (`active: false`) 으로 열고, 로드를 기다려 처리한 뒤 닫는다. `page.text` 는 그 탭 하나만 읽는다
+- 읽을 준비 (v0.18.0): `msg.ready` 가 선택자 글자면 고정 대기 없이 로드 완료 (`status: "complete"`) 뒤 그 요소가 생길 때까지 250ms 간격으로 다시 보고 바로 읽는다. 완료 뒤 3초 안에 안 생기면 (삭제된 쪽) 그대로 읽음. `ready: true` 는 로드 완료만. 상한 `msg.readyMs` (기본 20초, 최대 60초). 결과 탭에 `ready: { ms, complete, found }`. `ready` 가 없으면 예전 대기 (완료 뒤 3초). bridge 로 부른 `page.text` 도 `ready` 와 `url` 이 있으면 그 패턴의 탭이 생기고 준비될 때까지 기다린다
 - 큐로 부를 수 있는 것은 읽기뿐 (`QUEUE_TYPES`). 상태를 바꾸는 호출은 지금처럼 bridge 와 키 확인으로만
 - 깨우기: 알람 30초. 서버가 떠 있으면 1초 간격으로 계속 묻고, 동시에 5개까지 처리. 서버가 없으면 한 번 묻고 쉰다
 - 스크립트는 처음에 `ext.version` 을 큐로 물어 45초 안에 답이 없으면 (옛 판, Edge 꺼짐) bridge 탭 방식으로 되돌아가고 경고 한 줄
