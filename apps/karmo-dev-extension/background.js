@@ -339,10 +339,116 @@ async function jobTick() {
   }
 }
 
+/**
+ * 부르는 쪽 큐 (v0.17.0). 스크립트가 `QUEUE_BASE` 에 할 일 큐를 열면 확장이 가져가 처리하고 결과를 돌려줌
+ *
+ * 왜: 스크립트가 bridge 탭과 읽을 쪽을 `Start-Process msedge` 로 열면 탭마다 Edge 가 앞으로 나와 사용자 작업을 가로챔
+ * (사용자 2026-09-30). 여기서는 확장이 먼저 묻고, 읽을 쪽은 뒤쪽 탭 (active false) 으로 열었다가 닫음. 창을 앞으로 부르지 않음.
+ *
+ * 계약. GET `/job` 은 200 JSON `{ id, kind, msg, open }` 또는 204 (할 일 없음). 결과는 POST `/done/<id>` 에 JSON
+ * - kind `ext.call`: `msg` 를 bridge 로 부른 것과 같이 처리. 응답 모양도 같음 (`{ ok, ... }`)
+ * - `open` 이 있으면 그 주소를 뒤쪽 탭으로 열어 로드를 기다린 뒤 처리하고 닫음. `page.text` 는 그 탭 하나만 읽음
+ * - kind `reload`: 결과를 보낸 뒤 확장 다시 읽기
+ * - 큐로 부를 수 있는 것은 `QUEUE_TYPES` 뿐 (읽기만). 상태를 바꾸는 것은 bridge 와 키 확인으로만
+ *
+ * 깨우기는 `JOB_ALARM` (30초). 한 번 깨면 수신기가 떠 있는 동안 1초 간격으로 계속 묻고, 매 바퀴 확장 API 를 불러
+ * 워커가 30초 무활동 종료에 걸리지 않게 함. 한 바퀴는 `QUEUE_TICK_MS` 까지, 다음 알람이 이어받음. 수신기가 없으면 한 번 묻고 끝
+ */
+const QUEUE_BASE = "http://127.0.0.1:17378";
+const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read"];
+const QUEUE_PARALLEL = 5;
+const QUEUE_IDLE_MS = 90000;
+const QUEUE_TICK_MS = 240000;
+let queueBusy = false;
+
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** 큐 할 일 하나. 결과는 늘 돌려보냄 (실패도 `{ ok: false, error }`) */
+async function runQueueJob(job) {
+  let result;
+  try {
+    const msg = (job && job.msg) || {};
+    if (job.kind === "reload") {
+      await queueDone(job.id, { ok: true, version: chrome.runtime.getManifest().version, reloading: true });
+      setTimeout(() => chrome.runtime.reload(), 50);
+      return;
+    }
+    if (job.kind !== "ext.call" || !QUEUE_TYPES.includes(msg.type)) {
+      result = { ok: false, error: "큐로 못 부르는 종류 " + job.kind + " " + (msg.type || "") };
+    } else if (job.open) {
+      if (!/^https?:\/\//.test(String(job.open))) throw new Error("open 은 http 주소만");
+      const tab = await openWorkTab(String(job.open));
+      try {
+        await waitLoaded(tab.id);
+        if (msg.type === "page.text") {
+          const tabs = await readOpenTabs("", msg.maxChars, msg.links, false, msg.images, msg.html, tab.id);
+          tabs.forEach((t) => { t.closed = true; });
+          result = { ok: true, tabs };
+        } else {
+          result = await new Promise((res) => dispatchExt(msg, null, res));
+        }
+      } finally {
+        await closeWorkTab(tab.id);
+      }
+    } else {
+      result = await new Promise((res) => dispatchExt(msg, null, res));
+    }
+  } catch (e) {
+    result = { ok: false, error: String(e && e.message ? e.message : e) };
+  }
+  await queueDone(job.id, result);
+}
+
+function queueDone(id, body) {
+  return fetch(QUEUE_BASE + "/done/" + encodeURIComponent(id), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body || {}),
+  }).catch(() => {});
+}
+
+async function queueTick() {
+  if (queueBusy) return;
+  queueBusy = true;
+  const started = Date.now();
+  let lastWork = Date.now();
+  const running = new Set();
+  try {
+    while (Date.now() - started < QUEUE_TICK_MS) {
+      /* 워커 유지. 확장 API 호출이 무활동 시계를 되돌림 */
+      try { await chrome.runtime.getPlatformInfo(); } catch { /* 없어도 진행 */ }
+      if (running.size >= QUEUE_PARALLEL) {
+        await Promise.race(running);
+        continue;
+      }
+      let job = null;
+      let alive = true;
+      try {
+        const r = await within(3000, "queue", fetch(QUEUE_BASE + "/job", { cache: "no-store" }));
+        if (r.status === 200) job = await r.json();
+      } catch {
+        alive = false; /* 수신기가 안 떠 있음. 평소 상태 */
+      }
+      if (job && job.id) {
+        lastWork = Date.now();
+        const p = runQueueJob(job).finally(() => { running.delete(p); lastWork = Date.now(); });
+        running.add(p);
+        continue;
+      }
+      if (!running.size && (!alive || Date.now() - lastWork > QUEUE_IDLE_MS)) return;
+      await pause(1000);
+    }
+  } finally {
+    await Promise.allSettled([...running]);
+    queueBusy = false;
+  }
+}
+
 if (chrome.alarms) {
   chrome.alarms.create(JOB_ALARM, { periodInMinutes: 0.5 });
-  chrome.alarms.onAlarm.addListener((a) => { if (a.name === JOB_ALARM) jobTick(); });
+  chrome.alarms.onAlarm.addListener((a) => { if (a.name === JOB_ALARM) { jobTick(); queueTick(); } });
 }
+queueTick();
 
 const PIN_HASH_RE = /^[0-9a-f]{32}$/;
 const PIN_PAGE_RE = /^https:\/\/([a-z]+\.)?pinterest\.com\/pin\/[0-9]+\/?$/;
@@ -527,10 +633,13 @@ async function collectXAccounts() {
  *  - 호스트 권한은 <all_urls>. 사이트 이름은 매니페스트에 없음
  *  - 상시 content script 없음. 이 호출 때만 그 탭
  *  - url 없으면 현재 창의 활성 탭 하나
+ *  - onlyTabId 가 있으면 그 탭 하나만. 할 일 큐가 직접 연 작업 탭을 읽을 때. 사용자가 연 같은 주소 탭은 안 건드림
  */
-async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter, withImages, withHtml) {
+async function readOpenTabs(urlPattern, maxChars, withLinks, closeAfter, withImages, withHtml, onlyTabId) {
   const max = Math.min(Math.max(Number(maxChars) || 20000, 500), 80000);
-  const tabs = urlPattern
+  const tabs = onlyTabId
+    ? [await chrome.tabs.get(onlyTabId)]
+    : urlPattern
     ? await chrome.tabs.query({ url: String(urlPattern) })
     : await chrome.tabs.query({ active: true, currentWindow: true });
   const out = [];
@@ -595,6 +704,12 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
     const orig = sendResponse;
     sendResponse = (x) => { orig(x); setTimeout(() => { chrome.tabs.remove(id).catch(() => {}); }, 4000); };
   }
+  dispatchExt(msg, sender, sendResponse);
+  return true; // 비동기 응답
+});
+
+/** 메시지 한 건 처리. bridge 탭 (onMessageExternal) 과 할 일 큐 (queueTick) 가 같이 쓴다 */
+function dispatchExt(msg, sender, sendResponse) {
   (async () => {
     try {
       if (msg?.type === "page.text") {
@@ -805,5 +920,4 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       sendResponse({ ok: false, error: String(e && e.message ? e.message : e) });
     }
   })();
-  return true; // 비동기 응답
-});
+}

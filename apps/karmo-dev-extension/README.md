@@ -39,6 +39,19 @@ chrome.runtime.sendMessage("<확장ID>", { type: "bookmarks.list" }, console.log
 `ext.reload` = 언팩 확장을 디스크에서 다시 읽는다 → **코드 고친 뒤 수동 새로고침 불필요**.
 (단 그 핸들러가 없던 버전에서 올릴 때는 `edge://extensions` 새로고침 1회가 필요하다.)
 
+## 할 일 큐 (v0.17.0, 포커스 안 뺏음)
+
+로컬 스크립트가 bridge 탭을 열지 않고 확장을 부르는 길. 탭을 열 때마다 Edge 창이 앞으로 나오던 문제를 없앤다.
+
+- 포트: `127.0.0.1:17378` (`background.js` 의 `QUEUE_BASE`). 스크립트 쪽 서버는 memo `projects/karmo-ai/scripts/ext-queue.mjs`
+- 확장이 `GET /job` 을 묻는다. 200 이면 `{ id, kind, msg, open }`, 할 일이 없으면 204. 결과는 `POST /done/<id>` 에 JSON
+- `kind: "ext.call"` 은 `msg` 를 bridge 로 부른 것과 같이 처리하고 응답도 같은 모양 (`{ ok, ... }`)
+- `open` 이 있으면 그 주소를 뒤쪽 탭 (`active: false`) 으로 열고, 로드를 기다려 처리한 뒤 닫는다. `page.text` 는 그 탭 하나만 읽는다
+- 큐로 부를 수 있는 것은 읽기뿐 (`QUEUE_TYPES`). 상태를 바꾸는 호출은 지금처럼 bridge 와 키 확인으로만
+- 깨우기: 알람 30초. 서버가 떠 있으면 1초 간격으로 계속 묻고, 동시에 5개까지 처리. 서버가 없으면 한 번 묻고 쉰다
+- 스크립트는 처음에 `ext.version` 을 큐로 물어 45초 안에 답이 없으면 (옛 판, Edge 꺼짐) bridge 탭 방식으로 되돌아가고 경고 한 줄
+- 시험: memo `node --test projects/karmo-ai/scripts/ext-queue.test.mjs` (이 `background.js` 를 가짜 chrome 위에 실어 돈다)
+
 ## 다음 작업 예시
 
 1. 치지직 라이브 시청 페이지에서 채팅 DOM 구조 확인
