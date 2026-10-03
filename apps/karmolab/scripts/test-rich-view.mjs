@@ -182,6 +182,7 @@ const tags = (el, sel) => [...el.querySelectorAll(sel)].map((n) => n.tagName.toL
     const auto = await render(demo, { trust: 'self', demoAutoHeight: true });
     const autoFrame = auto.container.querySelector('iframe.doc-demo-view');
     check('demoAutoHeight: srcdoc 에 높이 알림이 들어감', autoFrame.srcdoc.includes('karmoDemoHeight') && autoFrame.srcdoc.includes('<p>안녕</p>'), autoFrame.srcdoc.slice(-160));
+    check('demoAutoHeight: 실행판 안 스크롤바가 생기지 않게 html overflow hidden (스크롤바 폭 때문에 내용이 다시 줄바꿈되는 것 방지)', autoFrame.srcdoc.includes('html{overflow:hidden}') && !fixedFrame.srcdoc.includes('overflow:hidden'), autoFrame.srcdoc.slice(0, 200));
     const send = (source, value) => window.dispatchEvent(new window.MessageEvent('message', { data: { karmoDemoHeight: value }, source }));
     send(autoFrame.contentWindow, 333);
     check('demoAutoHeight: 내 iframe 이 보낸 높이를 따름', autoFrame.style.height === '333px', autoFrame.style.height);

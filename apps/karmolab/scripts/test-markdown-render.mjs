@@ -141,6 +141,16 @@ function check(name, ok, got) {
     }
     check('deferImages(user): javascript: 와 data: 그림은 여전히 없음', !/<img/.test(defer('![x](javascript:alert(1)) ![y](data:text/html;base64,PHNjcmlwdD4)')), defer('![x](javascript:alert(1))'));
     check('deferImages 기본 꺼짐: src', rel('![그림](pic.png)').includes('src="pic.png"'), rel('![그림](pic.png)'));
+    // strike: 기본은 한 개짜리 ~ 도 취소선 (기존 동작), double 은 ~~글~~ 만. 범위 표기 20~30 이 깨지지 않음
+    const range = '20~30 스텝을 8~12 스텝으로';
+    check('strike 기본: 한 개짜리 ~ 도 취소선 (기존 동작)', user(range).includes('<del>'), user(range));
+    const dbl = (md, trust = 'user') => renderMarkdown(md, { trust, marked, strike: 'double' });
+    for (const trust of ['user', 'self']) {
+        check(`strike double(${trust}): 범위 표기는 글자 그대로`, dbl(range, trust).includes('20~30 스텝을 8~12 스텝으로') && !dbl(range, trust).includes('<del>'), dbl(range, trust));
+        check(`strike double(${trust}): ~~글~~ 은 취소선`, dbl('앞 ~~지움~~ 뒤', trust).includes('<del>지움</del>'), dbl('앞 ~~지움~~ 뒤', trust));
+        check(`strike double(${trust}): 취소선 안 서식도 그대로`, dbl('~~**굵게** 와 `코드`~~', trust).includes('<del><strong>굵게</strong> 와 <code>코드</code></del>'), dbl('~~**굵게** 와 `코드`~~', trust));
+        check(`strike double(${trust}): 한 개짜리 ~글~ 은 취소선 아님`, !dbl('한 개 ~x~ 짝', trust).includes('<del>'), dbl('한 개 ~x~ 짝', trust));
+    }
     // self 는 원래 상대 경로를 그대로 둠 (이 옵션과 무관)
     check('self: 상대 링크 그대로', self_('[문서](../a.md)').includes('href="../a.md"'), self_('[문서](../a.md)'));
 }

@@ -48,6 +48,8 @@ export interface RichViewOptions {
     demos?: boolean;
     /** html 실행판 iframe 이 내용 높이를 따라가게 (80 ~ 640px). 기본 false (기존처럼 220px 고정). 글 안에 실행판을 여럿 쓰는 곳 (위키) 이 켬 */
     demoAutoHeight?: boolean;
+    /** 취소선 문법. `double` 이면 `~~글~~` 만 취소선 (`20~30` 같은 범위 표기가 안 깨짐). 기본 `gfm`. `render.ts` 의 `strike` */
+    strike?: 'gfm' | 'double';
     /** 글 안 제목을 몇 단계 내릴지 (h1 -> h(1+n), 최대 h6). 주면 `headings` 보다 우선. `demoted` 는 2 와 비슷하나 h4, h5 는 안 건드림 */
     headingOffset?: number;
     /** 제목 id 앞말. 기본 '' (블로그 글의 앵커 주소를 지킴) */
@@ -336,7 +338,7 @@ export async function renderRichMarkdown(
         return () => {};
     }
 
-    const rendered = renderMarkdownShared(source, { trust, marked: markedNs, breaks: true, relative: options.relativeLinks, deferImages: !!options.hooks?.image });
+    const rendered = renderMarkdownShared(source, { trust, marked: markedNs, breaks: true, relative: options.relativeLinks, deferImages: !!options.hooks?.image, strike: options.strike });
     body.innerHTML = shiftHeadings(rendered, options);
 
     const layout = document.createElement('div');

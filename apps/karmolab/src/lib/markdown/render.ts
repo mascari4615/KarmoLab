@@ -51,6 +51,11 @@ export interface RenderOptions {
      * 이미지 변환, 위키 밖 그림 거절) 은 그 전에 src 를 안 달아야 평문 경로가 밖으로 안 나감. 기본 false
      */
     deferImages?: boolean;
+    /**
+     * 취소선 문법. 기본 `gfm` 은 `~글~` 한 개짜리도 취소선이라 `20~30 스텝, 8~12 스텝` 같은 범위 표기가 `20<del>30 스텝, 8</del>12` 로 깨짐.
+     * `double` 은 `~~글~~` 만 취소선으로 봄. 범위 표기가 흔한 한국어 문서 (위키) 가 켬
+     */
+    strike?: 'gfm' | 'double';
 }
 
 export const CALLOUT_KINDS = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'] as const;
@@ -168,6 +173,17 @@ function buildInstance(options: RenderOptions): MarkedInstance {
                   },
               },
     });
+    if (options.strike === 'double') {
+        instance.use({
+            tokenizer: {
+                // 한 개짜리 ~ 는 취소선이 아님. 맞는 것이 없으면 undefined 라 marked 기본 (한 개짜리도 허용) 으로 안 넘어감
+                del(this: { lexer: { inlineTokens(source: string): unknown[] } }, src: string) {
+                    const match = /^~~(?=[^\s~])((?:\\.|[^\\])*?(?:\\.|[^\s~\\]))~~(?=[^~]|$)/.exec(src);
+                    return match ? { type: 'del', raw: match[0], text: match[1], tokens: this.lexer.inlineTokens(match[1]) } : undefined;
+                },
+            },
+        });
+    }
     // 내 글 (self): marked 기본 그림 변환을 쓰고, 주소를 호스트가 정할 때만 src 를 미룸
     if (trusted && options.deferImages) {
         instance.use({

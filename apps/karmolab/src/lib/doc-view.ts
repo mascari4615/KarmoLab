@@ -319,7 +319,7 @@ function demoPage(kind: DemoKind, code: string, autoHeight = false): string {
   const heightScript = autoHeight
     ? `<script>(function(){var s=function(){parent.postMessage({${DEMO_HEIGHT_KEY}:document.documentElement.scrollHeight},'*')};addEventListener('load',s);if(window.ResizeObserver)new ResizeObserver(s).observe(document.documentElement);s()})()</script>`
     : '';
-  return `<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:12px;font:14px/1.6 system-ui,sans-serif;color:#222;background:#fff}</style>${code}${heightScript}`;
+  return `<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:12px;font:14px/1.6 system-ui,sans-serif;color:#222;background:#fff}${autoHeight ? 'html{overflow:hidden}' : ''}</style>${code}${heightScript}`;
 }
 
 /** 실행판 안이 부모에게 보내는 높이 메시지의 키. 부모는 보낸 창이 자기 iframe 일 때만 받음 */
