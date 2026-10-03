@@ -20,6 +20,8 @@ use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Deserialize)]
 pub struct IngestBody {
+    #[serde(default)]
+    pub id: Option<String>,
     pub author: String,
     pub text: String,
     #[serde(default)]
@@ -39,6 +41,7 @@ async fn ingest_handler(State(app): State<AppHandle>, Json(body): Json<IngestBod
     if let Err(e) = app.emit(
         "extension-ingest",
         json!({
+            "id": body.id,
             "author": body.author,
             "text": body.text,
             "ts": ts,

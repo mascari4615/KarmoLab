@@ -4,13 +4,15 @@ import type { ChatLine } from "./chat/types";
 import { initThemeEditor } from "./themeEditor";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
+import { historyLines, readingDuration } from "./advisorChat";
 
 const advisorMode = import.meta.env.VITE_ADVISOR_MODE === "1";
-const MAX_LINES = advisorMode ? 4 : 40;
+const MAX_LINES = advisorMode ? 500 : 40;
+const advisorLines = new Map<string, ChatLine>();
 document.body.classList.toggle("advisor-mode", advisorMode);
 document.body.classList.toggle("chat-idle", advisorMode);
 let advisorHideTimer: ReturnType<typeof setTimeout> | undefined;
-const ADVISOR_VISIBLE_MS = 12_000;
+let advisorVisibleMs = 12_000;
 
 function revealAdvisorChat(): void {
   if (!advisorMode) return;
@@ -19,7 +21,7 @@ function revealAdvisorChat(): void {
   if (document.body.classList.contains("layout-edit") || document.body.classList.contains("question-open")) return;
   advisorHideTimer = setTimeout(() => {
     document.body.classList.add("chat-idle");
-  }, ADVISOR_VISIBLE_MS);
+  }, advisorVisibleMs);
 }
 
 function authorHue(author: string): number {
@@ -45,9 +47,19 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-function appendLine(container: HTMLElement, line: ChatLine): void {
-  revealAdvisorChat();
+function appendLine(container: HTMLElement, line: ChatLine, announce = true): void {
+  if (advisorMode) {
+    if (advisorLines.has(line.id)) return;
+    advisorLines.set(line.id, line);
+  }
+  const readingOlder = advisorMode && document.body.classList.contains("question-open") &&
+    container.scrollHeight - container.scrollTop - container.clientHeight > 24;
+  if (announce) {
+    advisorVisibleMs = readingDuration(line.text);
+    revealAdvisorChat();
+  }
   const row = el("div", "line line--enter");
+  row.dataset.id = line.id;
   row.style.setProperty("--author-hue", String(authorHue(line.author)));
   const author = el("span", "author", line.author);
   const text = el("span", "text", line.text);
@@ -59,11 +71,17 @@ function appendLine(container: HTMLElement, line: ChatLine): void {
   row.appendChild(text);
   container.appendChild(row);
   while (container.children.length > MAX_LINES) {
+    const first = container.firstElementChild as HTMLElement;
+    advisorLines.delete(first.dataset.id ?? "");
     container.removeChild(container.firstChild!);
+  }
+  if (!announce) {
+    row.classList.add("line--visible");
+    return;
   }
   requestAnimationFrame(() => {
     row.classList.add("line--visible");
-    if (advisorMode) container.scrollTop = row.offsetTop - container.offsetTop - 12;
+    if (advisorMode && !readingOlder) container.scrollTop = row.offsetTop - container.offsetTop - 12;
   });
 }
 
@@ -74,12 +92,30 @@ if (!log) {
 
 initThemeEditor();
 
+async function reloadHistory(scrollToLatest: boolean): Promise<void> {
+  if (!advisorMode) return;
+  try {
+    const records = await invoke<Parameters<typeof historyLines>[0]>("load_advisor_history");
+    const merged = new Map(historyLines(records).map((line) => [line.id, line]));
+    for (const line of advisorLines.values()) merged.set(line.id, line);
+    const lines = [...merged.values()].sort((a, b) => a.ts - b.ts).slice(-MAX_LINES);
+    advisorLines.clear();
+    log!.replaceChildren();
+    for (const line of lines) appendLine(log!, line, false);
+    if (lines.length) advisorVisibleMs = readingDuration(lines[lines.length - 1].text);
+    if (scrollToLatest) requestAnimationFrame(() => { log!.scrollTop = log!.scrollHeight; });
+  } catch (error) {
+    console.error("[chat-overlay] history:", error);
+  }
+}
+void reloadHistory(false);
+
 /** 짧은 시간에 같은 닉+본문이 연달아 오면 한 줄만 (확장 중복 전송 완화) */
 let lastIngestDup: { key: string; at: number } | null = null;
 const INGEST_DEDUP_MS = 120;
 
 /** KarmoDevExtension 등 → Tauri `POST /ingest` → `extension-ingest` */
-void listen<{ author: string; text: string; ts: number }>("extension-ingest", (event) => {
+void listen<{ id?: string; author: string; text: string; ts: number }>("extension-ingest", (event) => {
   const p = event.payload;
   const key = `${p.author}\u0000${p.text}`;
   const now = Date.now();
@@ -92,7 +128,7 @@ void listen<{ author: string; text: string; ts: number }>("extension-ingest", (e
   }
   lastIngestDup = { key, at: now };
   appendLine(log, {
-    id: `ext-${p.ts}-${Math.random().toString(36).slice(2, 10)}`,
+    id: p.id || `ext-${p.ts}-${Math.random().toString(36).slice(2, 10)}`,
     author: p.author,
     text: p.text,
     ts: p.ts
@@ -114,6 +150,7 @@ if (advisorMode) {
 void listen<{ visible: boolean }>("layout-edit", (e) => {
   document.body.classList.toggle("layout-edit", e.payload.visible);
   revealAdvisorChat();
+  if (e.payload.visible) void reloadHistory(true);
 }).catch(() => {
   /* Tauri 밖 미리보기 */
 });
@@ -153,6 +190,10 @@ if (advisorMode) {
   const input = document.querySelector<HTMLInputElement>("#question-input")!;
   const status = document.querySelector<HTMLElement>("#question-status")!;
   const button = form.querySelector<HTMLButtonElement>("button")!;
+  try { input.value = localStorage.getItem("advisor-question-draft") ?? ""; } catch { /* Storage unavailable */ }
+  input.addEventListener("input", () => {
+    try { localStorage.setItem("advisor-question-draft", input.value); } catch { /* Storage unavailable */ }
+  });
   const hideQuestion = () => {
     form.hidden = true;
     document.body.classList.remove("question-open");
@@ -166,6 +207,7 @@ if (advisorMode) {
     form.hidden = false;
     document.body.classList.add("question-open");
     revealAdvisorChat();
+    void reloadHistory(true);
     input.focus();
   });
   input.addEventListener("keydown", (event) => {
@@ -178,9 +220,10 @@ if (advisorMode) {
     button.textContent = "캡처 중";
     const text = input.value.trim();
     try {
-      await invoke("submit_question", { text });
-      appendLine(log, { id: `user-${Date.now()}`, author: "나", text, ts: Date.now() });
+      const saved = await invoke<{ id: string; ts: number }>("submit_question", { text });
+      appendLine(log, { id: `question-${saved.id}`, author: "나", text, ts: saved.ts });
       input.value = "";
+      try { localStorage.removeItem("advisor-question-draft"); } catch { /* Storage unavailable */ }
       status.textContent = "전송됨. 보좌관 답변 대기 중";
       hideQuestion();
     } catch (error) {

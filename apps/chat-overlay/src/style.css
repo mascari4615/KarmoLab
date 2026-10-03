@@ -20,6 +20,14 @@ body.advisor-mode.chat-idle #log {
   visibility: hidden;
   pointer-events: none;
 }
+body.advisor-mode:not(.question-open):not(.layout-edit) #log .line:nth-last-child(n+5) {
+  display: none;
+}
+body.advisor-mode.question-open #log,
+body.advisor-mode.layout-edit #log {
+  scrollbar-width: thin;
+  scrollbar-color: #b5c7d2 transparent;
+}
 @media (prefers-reduced-motion: reduce) {
   body.advisor-mode #log { transition: none; }
 }

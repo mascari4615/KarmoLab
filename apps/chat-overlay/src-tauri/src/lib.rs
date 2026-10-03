@@ -1,4 +1,5 @@
 mod ingest_server;
+mod advisor_history;
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -113,12 +114,12 @@ fn now_ms() -> i64 {
 }
 
 #[tauri::command]
-async fn submit_question(text: String) -> Result<(), String> {
+async fn submit_question(text: String) -> Result<serde_json::Value, String> {
     tauri::async_runtime::spawn_blocking(move || save_screen_request(text, false))
         .await.map_err(|e| e.to_string())?
 }
 
-fn save_screen_request(text: String, manual: bool) -> Result<(), String> {
+fn save_screen_request(text: String, manual: bool) -> Result<serde_json::Value, String> {
     use std::io::Write;
     static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let text = text.trim();
@@ -148,10 +149,12 @@ fn save_screen_request(text: String, manual: bool) -> Result<(), String> {
     let observation: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
     let mut file = std::fs::OpenOptions::new().create(true).append(true)
         .open(dir.join("questions.jsonl")).map_err(|e| e.to_string())?;
-    writeln!(file, "{}", serde_json::json!({"ts": now_ms(), "text": text,
-        "id": request_id, "kind": if manual { "screen" } else { "question" }, "observation": observation}))
+    let entry = serde_json::json!({"ts": now_ms(), "text": text,
+        "id": request_id, "kind": if manual { "screen" } else { "question" }, "observation": observation});
+    writeln!(file, "{}", entry)
         .map_err(|e| e.to_string())?;
-    file.flush().map_err(|e| e.to_string())
+    file.flush().map_err(|e| e.to_string())?;
+    Ok(entry)
 }
 
 #[cfg(test)]
@@ -162,6 +165,15 @@ mod advisor_tests {
     fn invalid_question_is_rejected_before_capture() {
         assert!(save_screen_request(String::new(), false).is_err());
         assert!(save_screen_request("가".repeat(2001), false).is_err());
+    }
+
+    #[test]
+    #[ignore = "Requires the local advisor conversation files"]
+    fn local_advisor_history_includes_questions_and_answers() {
+        let rows = advisor_history::load_advisor_history().unwrap();
+        assert!(rows.iter().any(|row| row["source"] == "question"));
+        assert!(rows.iter().any(|row| row["source"] == "answer"));
+        assert!(rows.iter().all(|row| row["record"].is_object()));
     }
 
     #[test]
@@ -333,7 +345,7 @@ pub fn run() {
             layout_edit: layout_edit.clone(),
             question_open: AtomicBool::new(false),
         })
-        .invoke_handler(tauri::generate_handler![submit_question, close_question])
+        .invoke_handler(tauri::generate_handler![submit_question, close_question, advisor_history::load_advisor_history])
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
@@ -389,7 +401,7 @@ pub fn run() {
                                         std::thread::spawn(move || {
                                             let result = save_screen_request(String::new(), true);
                                             let text = match result {
-                                                Ok(()) => "지금 게임 화면을 전달했어요.".to_string(),
+                                                Ok(_) => "지금 게임 화면을 전달했어요.".to_string(),
                                                 Err(error) => error,
                                             };
                                             let _ = handle.emit("extension-ingest", serde_json::json!({
