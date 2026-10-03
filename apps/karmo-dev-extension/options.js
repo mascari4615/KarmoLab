@@ -90,8 +90,9 @@ function renderLists(data) {
 function loadLists() {
   chrome.storage.local.get({ blocklist: {}, likelist: {}, karmoSettings: {} }, (items) => {
     renderLists({ block: items.blocklist, like: items.likelist });
-    const s = { linkStyle: "lines", blockSort: "name", ...items.karmoSettings };
+    const s = { linkStyle: "tint", panel: true, ...items.karmoSettings };
     for (const r of document.querySelectorAll('input[name="linkStyle"]')) r.checked = r.value === s.linkStyle;
+    document.getElementById("panel").checked = s.panel !== false;
   });
 }
 loadLists();
@@ -103,6 +104,12 @@ for (const r of document.querySelectorAll('input[name="linkStyle"]')) {
     });
   });
 }
+
+document.getElementById("panel").addEventListener("change", (e) => {
+  chrome.storage.local.get({ karmoSettings: {} }, (i) => {
+    chrome.storage.local.set({ karmoSettings: { ...i.karmoSettings, panel: e.target.checked } });
+  });
+});
 
 document.getElementById("listExport").addEventListener("click", () => {
   chrome.storage.local.get({ blocklist: {}, likelist: {} }, (items) => {

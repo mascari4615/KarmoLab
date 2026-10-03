@@ -44,7 +44,7 @@ KarmoBlock.start({
         continue;
       }
       // 공지 줄은 이어 보이기에서 뺀다 (매니저 공지 여러 줄이 항상 묶임)
-      if (row && !row.classList.contains("notice")) api.tag(row, key);
+      if (row && !row.classList.contains("notice")) api.tag(row, key, el);
       api.addButtons(el.closest(".user-info"), key, name);
     }
   },
