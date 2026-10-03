@@ -190,6 +190,19 @@ if (advisorMode) {
   const input = document.querySelector<HTMLInputElement>("#question-input")!;
   const status = document.querySelector<HTMLElement>("#question-status")!;
   const button = form.querySelector<HTMLButtonElement>("button")!;
+  const quitButton = document.querySelector<HTMLButtonElement>("#advisor-quit")!;
+  quitButton.addEventListener("click", async () => {
+    quitButton.disabled = true;
+    quitButton.textContent = "종료 중";
+    try {
+      await invoke("quit_advisor");
+    } catch (error) {
+      status.hidden = false;
+      status.textContent = `종료 실패: ${String(error)}`;
+      quitButton.disabled = false;
+      quitButton.textContent = "종료";
+    }
+  });
   try { input.value = localStorage.getItem("advisor-question-draft") ?? ""; } catch { /* Storage unavailable */ }
   input.addEventListener("input", () => {
     try { localStorage.setItem("advisor-question-draft", input.value); } catch { /* Storage unavailable */ }

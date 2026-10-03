@@ -114,6 +114,21 @@ fn now_ms() -> i64 {
 }
 
 #[tauri::command]
+fn quit_advisor(app: tauri::AppHandle) -> Result<(), String> {
+    if option_env!("VITE_ADVISOR_MODE") == Some("1") {
+        let home = std::env::var("USERPROFILE").map_err(|e| e.to_string())?;
+        let root = PathBuf::from(home).join(".karmoddrine/civ-advisor");
+        std::fs::create_dir_all(&root).map_err(|e| e.to_string())?;
+        std::fs::write(root.join("shutdown-request"), now_ms().to_string()).map_err(|e| e.to_string())?;
+    }
+    if let Some(w) = app.get_webview_window("main") {
+        save_window_state_webview(&w, &app);
+    }
+    app.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
 async fn submit_question(text: String) -> Result<serde_json::Value, String> {
     tauri::async_runtime::spawn_blocking(move || save_screen_request(text, false))
         .await.map_err(|e| e.to_string())?
@@ -345,7 +360,7 @@ pub fn run() {
             layout_edit: layout_edit.clone(),
             question_open: AtomicBool::new(false),
         })
-        .invoke_handler(tauri::generate_handler![submit_question, close_question, advisor_history::load_advisor_history])
+        .invoke_handler(tauri::generate_handler![submit_question, close_question, quit_advisor, advisor_history::load_advisor_history])
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
@@ -564,10 +579,9 @@ pub fn run() {
                                 } else if event.id == "tray_open_env" {
                                     open_dotenv_file();
                                 } else if event.id == "tray_quit" {
-                                    if let Some(w) = app.get_webview_window("main") {
-                                        save_window_state_webview(&w, app);
+                                    if let Err(error) = quit_advisor(app.clone()) {
+                                        eprintln!("[chat-overlay] 종료 실패: {error}");
                                     }
-                                    app.exit(0);
                                 }
                             })
                             .on_tray_icon_event(|tray, event| {
