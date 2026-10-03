@@ -52,49 +52,72 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-/* 유저 차단 목록. 형식은 block-core.js 의 blocklist = { site: { key: { name, at } } } */
-const blocksEl = document.getElementById("blocks");
+/* 유저 차단, 좋아요, 설정. 형식은 block-core.js 머리 주석 */
+const KEYS = { block: "blocklist", like: "likelist" };
+const LABEL = { block: "차단", like: "좋아요" };
+const listsEl = document.getElementById("lists");
 
-function renderBlocks(all) {
-  blocksEl.textContent = "";
-  for (const [site, users] of Object.entries(all)) {
-    for (const [key, v] of Object.entries(users)) {
-      const li = document.createElement("li");
-      const rm = document.createElement("button");
-      rm.type = "button";
-      rm.className = "secondary";
-      rm.textContent = "해제";
-      rm.addEventListener("click", () => {
-        delete all[site][key];
-        chrome.storage.local.set({ blocklist: all }, () => renderBlocks(all));
-      });
-      const label = document.createElement("span");
-      label.textContent = `${site} · ${v.name} `;
-      const code = document.createElement("code");
-      code.textContent = key;
-      li.append(rm, label, code);
-      blocksEl.append(li);
+function renderLists(data) {
+  listsEl.textContent = "";
+  for (const kind of ["block", "like"]) {
+    const h = document.createElement("h3");
+    h.textContent = LABEL[kind];
+    const ul = document.createElement("ul");
+    for (const [site, users] of Object.entries(data[kind])) {
+      for (const [key, v] of Object.entries(users)) {
+        const li = document.createElement("li");
+        const rm = document.createElement("button");
+        rm.type = "button";
+        rm.className = "secondary";
+        rm.textContent = "해제";
+        rm.addEventListener("click", () => {
+          delete data[kind][site][key];
+          chrome.storage.local.set({ [KEYS[kind]]: data[kind] }, () => renderLists(data));
+        });
+        const label = document.createElement("span");
+        label.textContent = `${site} / ${v.name} `;
+        const code = document.createElement("code");
+        code.textContent = key;
+        li.append(rm, label, code);
+        ul.append(li);
+      }
     }
+    if (!ul.children.length) ul.textContent = "없음";
+    listsEl.append(h, ul);
   }
-  if (!blocksEl.children.length) blocksEl.textContent = "차단한 유저 없음";
 }
 
-chrome.storage.local.get({ blocklist: {} }, (items) => renderBlocks(items.blocklist || {}));
+function loadLists() {
+  chrome.storage.local.get({ blocklist: {}, likelist: {}, karmoSettings: {} }, (items) => {
+    renderLists({ block: items.blocklist, like: items.likelist });
+    const s = { linkStyle: "lines", blockSort: "name", ...items.karmoSettings };
+    for (const r of document.querySelectorAll('input[name="linkStyle"]')) r.checked = r.value === s.linkStyle;
+  });
+}
+loadLists();
 
-document.getElementById("blockExport").addEventListener("click", () => {
-  chrome.storage.local.get({ blocklist: {} }, (items) => {
-    const blob = new Blob([JSON.stringify(items.blocklist || {}, null, 2) + "\n"], { type: "application/json" });
+for (const r of document.querySelectorAll('input[name="linkStyle"]')) {
+  r.addEventListener("change", () => {
+    chrome.storage.local.get({ karmoSettings: {} }, (i) => {
+      chrome.storage.local.set({ karmoSettings: { ...i.karmoSettings, linkStyle: r.value } });
+    });
+  });
+}
+
+document.getElementById("listExport").addEventListener("click", () => {
+  chrome.storage.local.get({ blocklist: {}, likelist: {} }, (items) => {
+    const text = JSON.stringify({ block: items.blocklist, like: items.likelist }, null, 2);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "blocklist.json";
+    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    a.download = "userlists.json";
     a.click();
   });
 });
 
-const blockFile = document.getElementById("blockFile");
-document.getElementById("blockImport").addEventListener("click", () => blockFile.click());
-blockFile.addEventListener("change", async () => {
-  const f = blockFile.files[0];
+const listFile = document.getElementById("listFile");
+document.getElementById("listImport").addEventListener("click", () => listFile.click());
+listFile.addEventListener("change", async () => {
+  const f = listFile.files[0];
   if (!f) return;
   let incoming;
   try {
@@ -103,20 +126,24 @@ blockFile.addEventListener("change", async () => {
     show("JSON 이 아닙니다.", false);
     return;
   }
-  chrome.storage.local.get({ blocklist: {} }, (items) => {
-    const all = items.blocklist || {};
+  /* { block, like } 형태. 옛 형태 (사이트 맵 하나) 는 차단으로 본다 */
+  if (!incoming.block && !incoming.like) incoming = { block: incoming };
+  chrome.storage.local.get({ blocklist: {}, likelist: {} }, (items) => {
+    const cur = { block: items.blocklist, like: items.likelist };
     let n = 0;
-    for (const [site, users] of Object.entries(incoming)) {
-      all[site] = all[site] || {};
-      for (const [key, v] of Object.entries(users || {})) {
-        if (!all[site][key]) n += 1;
-        all[site][key] = all[site][key] || v;
+    for (const kind of ["block", "like"]) {
+      for (const [site, users] of Object.entries(incoming[kind] || {})) {
+        cur[kind][site] = cur[kind][site] || {};
+        for (const [key, v] of Object.entries(users || {})) {
+          if (!cur[kind][site][key]) n += 1;
+          cur[kind][site][key] = cur[kind][site][key] || v;
+        }
       }
     }
-    chrome.storage.local.set({ blocklist: all }, () => {
-      renderBlocks(all);
+    chrome.storage.local.set({ blocklist: cur.block, likelist: cur.like }, () => {
+      renderLists(cur);
       show(`가져옴. 새로 ${n}명`);
     });
   });
-  blockFile.value = "";
+  listFile.value = "";
 });

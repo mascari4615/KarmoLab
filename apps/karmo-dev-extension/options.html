@@ -48,8 +48,8 @@
         color: #444;
         margin-top: 0.5rem;
       }
-      #blocks li { display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0; }
-      #blocks code { color: #666; }
+      #lists li { display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0; }
+      #lists code { color: #666; }
     </style>
   </head>
   <body>
@@ -69,14 +69,19 @@
       <button type="button" id="resetDefault" class="secondary">기본 주소로 저장</button>
     </div>
     <p id="status" aria-live="polite"></p>
-    <h2>유저 차단</h2>
-    <p class="hint">아카라이브 글, 댓글 옆 "차단" 버튼으로 추가. 이 목록이 숨김의 기준.</p>
+    <h2>유저 차단, 좋아요</h2>
+    <p class="hint">아카라이브 글 줄에 마우스를 올리면 나오는 ♥ (좋아요, 줄 바탕이 분홍) 와 × (차단, 숨기고 페이지 맨 아래 블록에 모음) 로 추가.</p>
+    <h3>같은 유저의 글 이어 보기</h3>
+    <p class="hint">한 페이지에 두 줄 이상 쓴 유저를 유저마다 다른 색으로.</p>
+    <label><input type="radio" name="linkStyle" value="lines" /> 왼쪽 여백 세로선</label>
+    <label><input type="radio" name="linkStyle" value="stripe" /> 줄 왼쪽 색 띠</label>
+    <label><input type="radio" name="linkStyle" value="off" /> 끔</label>
     <div class="row">
-      <button type="button" id="blockExport" class="secondary">JSON 내보내기</button>
-      <button type="button" id="blockImport" class="secondary">JSON 가져오기 (합침)</button>
-      <input type="file" id="blockFile" accept="application/json" hidden />
+      <button type="button" id="listExport" class="secondary">JSON 내보내기</button>
+      <button type="button" id="listImport" class="secondary">JSON 가져오기 (합침)</button>
+      <input type="file" id="listFile" accept="application/json" hidden />
     </div>
-    <ul id="blocks"></ul>
+    <div id="lists"></div>
     <script src="options.js"></script>
   </body>
 </html>
