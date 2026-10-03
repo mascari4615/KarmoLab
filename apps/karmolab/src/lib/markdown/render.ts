@@ -41,16 +41,28 @@ export interface RenderOptions {
     marked: MarkedNamespace;
     /** 줄바꿈 한 번 = <br> 로 볼 것인가. 커뮤니티 글(채팅투) = true, 블로그 글 = false. */
     breaks?: boolean;
+    /**
+     * user 신뢰에서 스킴 없는 상대 경로 (`../a.md`, `pic.png`) 도 링크와 그림으로 살릴지. 기본 false (글자만 남김).
+     * 같은 저장소 안 문서끼리 서로 가리키는 곳 (위키) 이 켠다. 스킴이 있는 주소 (`javascript:`, `data:` 등) 와 `//`, 역슬래시, 제어 문자는 계속 거절.
+     */
+    relative?: boolean;
 }
 
 export const CALLOUT_KINDS = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'] as const;
 
-/** 커뮤니티 파서에서 승계한 주소 규율. http(s) 와 사이트 안쪽 절대경로만. */
-export function safeHref(raw: string): string | null {
+/** 스킴이 없는 상대 경로인가. 첫 `:` 앞에 `/` `?` `#` 가 없으면 스킴으로 본다 (`javascript:`, `data:`, `vbscript:`). */
+export function isRelativeUrl(url: string): boolean {
+    if (!url || url.startsWith('//') || /[\\\u0000-\u001f]/.test(url)) return false;
+    return !/^[a-z][a-z0-9+.-]*:/i.test(url);
+}
+
+/** 커뮤니티 파서에서 승계한 주소 규율. http(s) 와 사이트 안쪽 절대경로만. `relative` 를 켜면 상대 경로도. */
+export function safeHref(raw: string, relative = false): string | null {
     const url = raw.trim();
     if (/^https?:\/\//i.test(url)) return url;
     if (/^\/[^/]/.test(url)) return url;
     if (/^#/.test(url)) return url; // 같은 글 안 이동
+    if (relative && isRelativeUrl(url)) return url;
     return null;
 }
 
@@ -136,7 +148,7 @@ function buildInstance(options: RenderOptions): MarkedInstance {
                       tokens: unknown[];
                   }) {
                       const body = this.parser.parseInline(token.tokens);
-                      const url = safeHref(token.href);
+                      const url = safeHref(token.href, options.relative);
                       if (!url) return body; // 주소가 수상하면 링크를 안 만든다. 글자만 남는다
                       const external = /^https?:/i.test(url);
                       return `<a href="${escapeHtml(url)}"${
@@ -144,7 +156,7 @@ function buildInstance(options: RenderOptions): MarkedInstance {
                       }>${body}</a>`;
                   },
                   image: (token: { href: string; text: string }) => {
-                      const url = safeHref(token.href);
+                      const url = safeHref(token.href, options.relative);
                       if (!url || /^data:/i.test(url)) return escapeHtml(token.text);
                       return `<img src="${escapeHtml(url)}" alt="${escapeHtml(token.text)}" loading="lazy">`;
                   },

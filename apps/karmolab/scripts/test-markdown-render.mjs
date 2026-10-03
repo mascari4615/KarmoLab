@@ -106,6 +106,35 @@ function check(name, ok, got) {
     check('바깥 링크 rel', ext.includes('rel="noopener noreferrer"'), ext);
     const inner = user('[도구](/t/qrgen/)');
     check('안쪽 링크 유지', inner.includes('href="/t/qrgen/"'), inner);
+    // 기본값은 상대 경로를 살리지 않는다 (옵션 relative 를 안 켠 커뮤니티 글의 지금 동작)
+    const rel = user('[문서](../a.md) ![그림](pic.png)');
+    check('상대 경로 기본 거절 (링크)', !/href/.test(rel) && rel.includes('문서'), rel);
+    check('상대 경로 기본 거절 (그림)', !/<img/.test(rel), rel);
+}
+
+// ── user 신뢰: relative 를 켜도 위험한 주소는 계속 거절. 켜는 곳은 같은 저장소 문서끼리 가리키는 위키류만
+{
+    const rel = (md) => renderMarkdown(md, { trust: 'user', marked, relative: true });
+    const ok = rel('[문서](../a.md#절) ![그림](img/pic.png) [같은 폴더](b.md)');
+    check('relative: 상대 링크 살림', ok.includes('href="../a.md#절"') && ok.includes('href="b.md"'), ok);
+    check('relative: 상대 그림 살림', ok.includes('src="img/pic.png"'), ok);
+    for (const bad of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'vbscript:x', 'data:text/html;base64,PHNjcmlwdD4', '//evil.example/x', 'file:///etc/passwd', '\\\\evil\\share']) {
+        const html = rel(`[x](${bad}) ![y](${bad})`);
+        check(`relative: 위험 주소 거절 ${bad.slice(0, 18)}`, !/href=|src=/.test(html), html);
+    }
+    // 스킴을 쪼개 우회하는 시도 (탭, 개행, 엔티티). HTML 로 나간 속성값을 브라우저가 해석한 값 (&amp; 만 풀림, &#x09; 는 글자 그대로) 으로
+    // 확인 방법: 공백과 제어 문자를 지운 뒤 스킴 없음 (http, https 만 허용), 클릭으로 코드가 도는 길 없음
+    const decodedHrefs = (html) => [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"'));
+    const schemeOf = (value) => (value.replace(/[\u0000- ]/g, '').match(/^([a-z][a-z0-9+.-]*):/i) || [])[1] || '';
+    for (const bad of ['java&#x09;script:alert(1)', 'java&#10;script:alert(1)', '&#x6A;avascript:alert(1)', 'java%0ascript:alert(1)', ' javascript:alert(1)']) {
+        const html = rel(`[x](${bad})`);
+        const dangerous = decodedHrefs(html).filter((value) => { const s = schemeOf(value).toLowerCase(); return s && s !== 'http' && s !== 'https'; });
+        check(`relative: 스킴 쪼개기 무력 ${bad.slice(0, 22)}`, dangerous.length === 0, html);
+    }
+    const script = rel('<script>alert(1)</script>\n\n[a](b.md)');
+    check('relative: 원문 HTML 은 여전히 escape', !/<script/.test(script) && script.includes('href="b.md"'), script);
+    // self 는 원래 상대 경로를 그대로 둠 (이 옵션과 무관)
+    check('self: 상대 링크 그대로', self_('[문서](../a.md)').includes('href="../a.md"'), self_('[문서](../a.md)'));
 }
 
 // ── self 신뢰. 내 글은 전 기능 (원문 HTML 이 산다)

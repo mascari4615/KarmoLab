@@ -379,6 +379,7 @@
     "test:live": "node scripts/smoke-live-pages.mjs",
     "test:mail": "node scripts/test-mail.mjs",
     "test:markdown": "node scripts/test-markdown-render.mjs",
+    "test:rich-view": "node scripts/test-rich-view.mjs",
     "test:mascot": "node scripts/smoke-mascot.mjs",
     "test:mcp": "node ../../packages/mcp/build.mjs && node scripts/smoke-mcp.mjs",
     "test:mcp:install": "node scripts/smoke-mcp-install.mjs",

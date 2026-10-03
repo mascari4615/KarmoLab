@@ -13,7 +13,7 @@
 import { collectHeadings, watchReading, bindTocClicks, highlightCode, addCopyButtons, mountDemos } from '../doc-view';
 import { specFromMermaid } from '../karmograph/from-mermaid';
 import { renderGraphSvg } from '../karmograph/render';
-import { renderMarkdown as renderMarkdownShared } from './render';
+import { escapeHtml as escapeHtmlShared, renderMarkdown as renderMarkdownShared, type MarkedNamespace } from './render';
 import { splitFrontMatter } from './frontmatter';
 
 export interface RichViewLabels {
@@ -36,11 +36,63 @@ export interface RichViewOptions {
     bodyClass?: string;
     /** `demoted` 면 글 안 제목을 h3~h5 로 내린다. 화면 큰제목과 안 부딪히게 (커뮤니티 글 규칙) */
     headings?: 'as-is' | 'demoted';
+
+    /* ─── 아래는 KarmoLab 앱 밖 (스튜디오 위키 등) 에서 이 엔진을 쓰는 곳을 위한 옵션. 전부 선택, 기본값은 위 동작 그대로 ─── */
+
+    /** 앱 전역 (Toolbox, Mdd, marked) 대신 쓸 의존. 안 준 것은 전역으로 되돌아감 */
+    host?: RichViewHost;
+    /** 글 안 제목을 몇 단계 내릴지 (h1 -> h(1+n), 최대 h6). 주면 `headings` 보다 우선. `demoted` 는 2 와 비슷하나 h4, h5 는 안 건드림 */
+    headingOffset?: number;
+    /** 제목 id 앞말. 기본 '' (블로그 글의 앵커 주소를 지킴) */
+    idPrefix?: string;
+    /** 제목 옆 `#` 닻 (복사 단추). 기본 true */
+    anchors?: boolean;
+    /** 첫 제목이 이 글과 같으면 뺌. 화면이 제목을 따로 보일 때 */
+    skipTitle?: string;
+    /** 주면 표마다 이 class 의 div 로 감쌈 (넘치면 상자 안에서만 스크롤) */
+    tableWrap?: string;
+    /** user 신뢰에서도 스킴 없는 상대 경로 링크와 그림을 살림. `render.ts` 의 `relative` */
+    relativeLinks?: boolean;
+    /** 서식 뒤 손볼 자리. 링크, 그림, 코드 블록마다 한 번씩 부름 */
+    hooks?: RichViewHooks;
+    /** 다 그린 뒤 한 번. 제목 목록을 받아 호스트 목차를 만들 수 있음 */
+    onRendered?: (info: { body: HTMLElement; headings: RichHeading[] }) => void;
+}
+
+/** 앱 전역 대신 주입하는 의존 (change.karmo-ai-wiki-docs). 하나도 안 주면 지금까지처럼 전역을 씀 */
+export interface RichViewHost {
+    /** 마크다운 엔진. 없으면 전역 `marked` (없으면 `ensureScript('vendor/marked.min')` 로 실음) */
+    marked?: MarkedNamespace;
+    injectCSS?: (id: string, css: string) => void;
+    ensureScript?: (path: string) => Promise<unknown>;
+    escapeHtml?: (s: string) => string;
+    showToast?: (message: string) => void;
+}
+
+export interface RichHeading {
+    id: string;
+    text: string;
+    level: number;
+}
+
+export interface RichViewHooks {
+    /** 링크 하나. 속성을 바꿔도 되고 `false` 를 돌려주면 링크를 풀어 글자만 남김 */
+    link?: (a: HTMLAnchorElement) => void | false;
+    /** 그림 하나. `false` 를 돌려주면 대체 글자 (alt) 만 남김 */
+    image?: (img: HTMLImageElement) => void | false;
+    /** 언어 표기가 있는 코드 블록 하나. 호스트가 단추 등을 붙임 (실행판으로 바뀐 블록은 안 부름) */
+    codeBlock?: (pre: HTMLElement, code: HTMLElement, lang: string) => void;
+}
+
+/** 제목 글자 -> 앵커 id. 호스트가 `#앵커` 링크를 같은 규칙으로 찾을 때 씀 */
+export function headingSlug(text: string): string {
+    return slugify(text);
 }
 
 /** 겉모습은 한 곳에서. 문서 판도 글 상세도 같은 글꼴과 같은 여백을 쓴다. */
-export function injectRichViewStyles(): void {
-    Mdd.injectCSS(
+export function injectRichViewStyles(host?: RichViewHost): void {
+    const inject = host?.injectCSS ?? ((id: string, css: string) => Mdd.injectCSS(id, css));
+    inject(
         'doc-rich',
         `
         .docs-md-layout { display:grid; grid-template-columns:minmax(0,1fr) 220px; grid-template-areas:'main toc'; gap:16px; align-items:start; }
@@ -90,8 +142,10 @@ export function injectRichViewStyles(): void {
     );
 }
 
-function esc(s: string): string {
-    return typeof Toolbox !== 'undefined' && Toolbox.escapeHtml ? Toolbox.escapeHtml(s) : s;
+/** 호스트가 준 escape, 없으면 앱 전역, 그것도 없으면 렌더러의 escape. 목차는 innerHTML 이라 escape 없이 두지 않는다 */
+function escWith(host?: RichViewHost): (s: string) => string {
+    if (host?.escapeHtml) return host.escapeHtml;
+    return (s) => (typeof Toolbox !== 'undefined' && Toolbox.escapeHtml ? Toolbox.escapeHtml(s) : escapeHtmlShared(s));
 }
 
 function slugify(s: string): string {
@@ -133,14 +187,17 @@ function applyAnchors(
     tocEl: HTMLElement | null,
     labels: RichViewLabels,
     selector: string,
-): Array<{ id: string; text: string; level: number }> {
+    ctx: { esc: (s: string) => string; toast: (message: string) => void; idPrefix: string; anchors: boolean },
+): RichHeading[] {
+    const { esc } = ctx;
     const used = new Set<string>();
-    const toc = collectHeadings(root, { selector, min: 1, idFrom: (text) => uniqueId(slugify(text), used) });
+    const toc = collectHeadings(root, { selector, min: 1, idFrom: (text) => uniqueId(ctx.idPrefix + slugify(text), used) });
 
     toc.forEach((item) => {
         const el = root.querySelector('#' + CSS.escape(item.id)) as HTMLElement | null;
         if (!el) return;
         el.classList.add('docs-heading');
+        if (!ctx.anchors) return;
         const anchor = document.createElement('span');
         anchor.className = 'docs-anchor';
         anchor.tabIndex = 0;
@@ -151,7 +208,7 @@ function applyAnchors(
             const url = location.origin + location.pathname + location.search + '#' + el.id;
             try {
                 await navigator.clipboard.writeText(url);
-                Toolbox.showToast?.(labels.copied, undefined, undefined);
+                ctx.toast(labels.copied);
             } catch {
                 location.hash = el.id;
             }
@@ -240,20 +297,21 @@ export async function renderRichMarkdown(
     markdown: string,
     options: RichViewOptions,
 ): Promise<() => void> {
-    const { trust, labels } = options;
+    const { trust, labels, host } = options;
     const tocMin = options.tocMin ?? 2;
-    injectRichViewStyles();
+    injectRichViewStyles(host);
 
     const body = document.createElement('div');
     body.className = options.bodyClass ?? 'docs-body md';
     /* 앞머리(`---` 덩어리)는 설정이다. 본문으로도 목차로도 안 샌다 */
     const source = splitFrontMatter(markdown.replace(/^﻿/, '')).body;
 
-    // 서식 엔진은 첫 글을 그릴 때 싣는다 (KL-054). 첫 화면 무게 0.
+    // 서식 엔진 로드는 첫 글을 그릴 때 (KL-054, 첫 화면 무게 0). 호스트가 marked 를 주면 로드 생략
+    const ensure = host?.ensureScript ?? (typeof Toolbox !== 'undefined' ? Toolbox.ensureScript : undefined);
     try {
-        await Toolbox.ensureScript?.('vendor/marked.min');
-        await Toolbox.ensureScript?.('vendor/prism.min');
-        await Toolbox.ensureScript?.('vendor/prism-autoloader.min');
+        if (!host?.marked) await ensure?.('vendor/marked.min');
+        await ensure?.('vendor/prism.min');
+        await ensure?.('vendor/prism-autoloader.min');
         /* 자동 불러오기는 제 자리를 모른다. 안 알려 주면 `components/` 를 이 장 옆에서 찾아 404 가 난다
            (2026-08-31 실측: 코드 사진 도구에서 타입스크립트 규칙을 못 받았다). 같은 줄이 boot-late 와 doc-view 에도 있다 */
         const P = (window as unknown as { Prism?: { plugins?: { autoloader?: { languages_path: string } } } }).Prism;
@@ -261,15 +319,14 @@ export async function renderRichMarkdown(
     } catch {
         /* 아래 방어 검사가 처리 */
     }
-    if (typeof marked === 'undefined') {
+    const markedNs = host?.marked ?? (typeof marked !== 'undefined' ? marked : undefined);
+    if (!markedNs) {
         container.textContent = labels.noMarked;
         return () => {};
     }
 
-    const rendered = renderMarkdownShared(source, { trust, marked, breaks: true });
-    body.innerHTML = options.headings === 'demoted'
-        ? rendered.replace(/<(\/?)h3>/g, '<$1h5>').replace(/<(\/?)h2>/g, '<$1h4>').replace(/<(\/?)h1>/g, '<$1h3>')
-        : rendered;
+    const rendered = renderMarkdownShared(source, { trust, marked: markedNs, breaks: true, relative: options.relativeLinks });
+    body.innerHTML = shiftHeadings(rendered, options);
 
     const layout = document.createElement('div');
     layout.className = 'docs-md-layout';
@@ -289,6 +346,9 @@ export async function renderRichMarkdown(
     container.appendChild(layout);
 
     replaceMermaidFallback(body);
+    if (options.skipTitle) dropLeadingTitle(body, options.skipTitle, 1 + headingOffsetOf(options));
+    if (options.tableWrap) wrapTables(body, options.tableWrap);
+    runLinkAndImageHooks(body, options.hooks);
 
     /* 언어 표기가 없으면 예전엔 javascript 로 칠했다. 셸과 설정 파일이 엉뚱하게 물들어서 그대로 둔다. */
     body.querySelectorAll('pre code').forEach((block) => {
@@ -309,10 +369,17 @@ export async function renderRichMarkdown(
         mountDemos(body, labels.demo);
     }
 
-    void highlightCode(body);
+    runCodeBlockHook(body, options.hooks);
+    void highlightCode(body, ensure);
     addCopyButtons(body, labels.copy, labels.copied);
 
-    const headings = applyAnchors(body, tocNav, labels, options.headings === 'demoted' ? 'h3, h4, h5' : 'h1, h2, h3');
+    const off = headingOffsetOf(options);
+    const headings = applyAnchors(body, tocNav, labels, [1, 2, 3].map((level) => 'h' + Math.min(6, level + off)).join(', '), {
+        esc: escWith(host),
+        toast: host?.showToast ?? ((message) => (typeof Toolbox !== 'undefined' ? Toolbox.showToast?.(message, undefined, undefined) : undefined)),
+        idPrefix: options.idPrefix ?? '',
+        anchors: options.anchors ?? true,
+    });
     let stop: (() => void) | null = null;
     if (tocMin <= 0 || headings.length < Math.max(2, tocMin)) {
         layout.classList.add('docs-md-layout--no-toc');
@@ -328,6 +395,70 @@ export async function renderRichMarkdown(
     }
 
     drawDiagrams(body, labels);
+    options.onRendered?.({ body, headings });
 
     return () => stop?.();
+}
+
+/* ─────────── 호스트 옵션 (change.karmo-ai-wiki-docs) ─────────── */
+
+/** 글 안 제목을 내릴 단계. `headingOffset` 이 우선, 없으면 `headings: 'demoted'` (2) */
+function headingOffsetOf(options: RichViewOptions): number {
+    if (typeof options.headingOffset === 'number' && options.headingOffset > 0) return Math.floor(options.headingOffset);
+    return options.headings === 'demoted' ? 2 : 0;
+}
+
+/** 제목 태그 단계를 내림. 옛 `demoted` 는 h1~h3 만 (h4, h5 는 그대로) 이라 그 규칙을 지키고, `headingOffset` 은 h1~h5 를 한 번에 */
+function shiftHeadings(html: string, options: RichViewOptions): string {
+    if (typeof options.headingOffset === 'number' && options.headingOffset > 0) {
+        const n = Math.floor(options.headingOffset);
+        return html.replace(/<(\/?)h([1-5])(?=[\s>])/g, (_all, slash: string, level: string) => `<${slash}h${Math.min(6, Number(level) + n)}`);
+    }
+    return options.headings === 'demoted'
+        ? html.replace(/<(\/?)h3>/g, '<$1h5>').replace(/<(\/?)h2>/g, '<$1h4>').replace(/<(\/?)h1>/g, '<$1h3>')
+        : html;
+}
+
+/** 첫 제목 (가장 윗단계) 이 화면 제목과 같은 글자면 뺌 */
+function dropLeadingTitle(body: HTMLElement, title: string, level: number): void {
+    const first = body.querySelector<HTMLElement>('h' + Math.min(6, level));
+    const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
+    if (first && norm(first.textContent || '') === norm(title)) first.remove();
+}
+
+function wrapTables(body: HTMLElement, className: string): void {
+    body.querySelectorAll('table').forEach((table) => {
+        if (table.parentElement?.classList.contains(className)) return;
+        const box = document.createElement('div');
+        box.className = className;
+        table.replaceWith(box);
+        box.appendChild(table);
+    });
+}
+
+/** 링크와 그림을 호스트 방식으로. `false` 를 돌려받으면 글자만 남김. 실행판과 도해 안은 건드리지 않음 */
+function runLinkAndImageHooks(body: HTMLElement, hooks?: RichViewHooks): void {
+    if (!hooks?.link && !hooks?.image) return;
+    const skip = '.doc-demo, [data-demo], .mermaid, svg';
+    if (hooks.link) {
+        body.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
+            if (a.closest(skip)) return;
+            if (hooks.link!(a) === false) a.replaceWith(...Array.from(a.childNodes));
+        });
+    }
+    if (hooks.image) {
+        body.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+            if (img.closest(skip)) return;
+            if (hooks.image!(img) === false) img.replaceWith(document.createTextNode(img.getAttribute('alt') || ''));
+        });
+    }
+}
+
+function runCodeBlockHook(body: HTMLElement, hooks?: RichViewHooks): void {
+    if (!hooks?.codeBlock) return;
+    body.querySelectorAll<HTMLElement>('pre > code').forEach((code) => {
+        const pre = code.parentElement;
+        const lang = code.className.match(/language-([\w-]+)/)?.[1];
+        if (pre && lang) hooks.codeBlock!(pre, code, lang);
+    });
 }

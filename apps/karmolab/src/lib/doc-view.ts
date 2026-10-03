@@ -179,12 +179,14 @@ type PrismLike = {
 declare const Toolbox: { ensureScript?: (path: string) => Promise<unknown> } | undefined;
 
 /** Prism 은 첫 사용 시에만 받는다(첫 화면을 무겁게 하지 않으려고. KL-054 와 같은 결). */
-export async function ensurePrism(): Promise<PrismLike | null> {
+export async function ensurePrism(ensureScript?: (path: string) => Promise<unknown>): Promise<PrismLike | null> {
   const w = window as unknown as { Prism?: PrismLike };
   if (w.Prism) return fixLanguagesPath(w.Prism);
+  /* 스크립트를 싣는 길은 부르는 쪽이 줄 수 있다 (앱 밖에서 이 글 엔진을 쓰는 곳). 안 주면 앱 전역 Toolbox, 그것도 없으면 강조만 건너뜀 */
+  const load = ensureScript ?? (typeof Toolbox !== 'undefined' ? Toolbox?.ensureScript : undefined);
   try {
-    await Toolbox?.ensureScript?.('vendor/prism.min');
-    await Toolbox?.ensureScript?.('vendor/prism-autoloader.min');
+    await load?.('vendor/prism.min');
+    await load?.('vendor/prism-autoloader.min');
   } catch {
     /* 못 받아도 코드는 글자 그대로 보인다. 강조만 없다 */
   }
@@ -211,10 +213,10 @@ function fixLanguagesPath(prism: PrismLike): PrismLike {
  * `pre code` 에 언어 클래스를 붙이고 강조한다.
  * 언어를 못 정하면 강조하지 않는다. 아무 언어로나 칠하면 오히려 잘못 읽힌다.
  */
-export async function highlightCode(root: HTMLElement): Promise<void> {
+export async function highlightCode(root: HTMLElement, ensureScript?: (path: string) => Promise<unknown>): Promise<void> {
   const blocks = root.querySelectorAll<HTMLElement>('pre code');
   if (blocks.length === 0) return;
-  const prism = await ensurePrism();
+  const prism = await ensurePrism(ensureScript);
   if (!prism) return;
   blocks.forEach((block) => {
     const lang = block.className.match(/language-([\w-]+)/)?.[1];

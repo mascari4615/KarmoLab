@@ -61,6 +61,18 @@
       ]
     },
     {
+      "name": "test:rich-view",
+      "watch": [
+        "src/lib/markdown/**",
+        "src/lib/doc-view.ts",
+        "src/lib/karmograph/**",
+        "scripts/test-rich-view.mjs",
+        "js/vendor/marked.min.js",
+        "package.json",
+        "data/gate-list.json"
+      ]
+    },
+    {
       "name": "test:gamification",
       "watch": [
         "src/widgets/gamification*",
