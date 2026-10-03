@@ -243,6 +243,30 @@ fn tray_refresh(app: &tauri::AppHandle<Wry>) {
 
 /// 전체화면/최대화에 빠졌을 때 복구 + 기본 크기로 되돌림 (단축키·트레이에서 공통 사용).
 /// move/resize 손잡이 표시 여부. 켜면 마우스 이벤트를 받아야 하므로 클릭 통과는 잠시 끔.
+struct MouseInteraction {
+    ignore_mouse: Arc<AtomicBool>,
+    layout_edit: Arc<AtomicBool>,
+    question_open: AtomicBool,
+}
+
+fn should_ignore_mouse(base: bool, editing: bool, question: bool) -> bool {
+    base && !editing && !question
+}
+
+#[tauri::command]
+fn close_question(app: tauri::AppHandle) -> Result<(), String> {
+    let state = app.state::<MouseInteraction>();
+    state.question_open.store(false, Ordering::SeqCst);
+    if let Some(w) = app.get_webview_window("main") {
+        w.set_ignore_cursor_events(should_ignore_mouse(
+            state.ignore_mouse.load(Ordering::SeqCst),
+            state.layout_edit.load(Ordering::SeqCst),
+            false,
+        )).map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
 fn apply_layout_edit(
     app: &tauri::AppHandle,
     layout_edit: &Arc<AtomicBool>,
@@ -253,8 +277,10 @@ fn apply_layout_edit(
     if let Some(w) = app.get_webview_window("main") {
         if visible {
             let _ = w.set_ignore_cursor_events(false);
+            let _ = w.set_focus();
         } else {
-            let _ = w.set_ignore_cursor_events(ignore_mouse.load(Ordering::SeqCst));
+            let question = app.state::<MouseInteraction>().question_open.load(Ordering::SeqCst);
+            let _ = w.set_ignore_cursor_events(should_ignore_mouse(ignore_mouse.load(Ordering::SeqCst), false, question));
         }
     }
     let _ = app.emit(
@@ -298,11 +324,16 @@ pub fn run() {
     }
 
     // 기본은 "이동/설정 가능" 상태로 시작: 클릭 통과를 켜면 드래그 영역도 함께 막히기 때문.
-    let ignore_mouse = Arc::new(AtomicBool::new(false));
+    let ignore_mouse = Arc::new(AtomicBool::new(option_env!("VITE_ADVISOR_MODE") == Some("1")));
     let layout_edit = Arc::new(AtomicBool::new(false));
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![submit_question])
+        .manage(MouseInteraction {
+            ignore_mouse: ignore_mouse.clone(),
+            layout_edit: layout_edit.clone(),
+            question_open: AtomicBool::new(false),
+        })
+        .invoke_handler(tauri::generate_handler![submit_question, close_question])
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
@@ -341,11 +372,12 @@ pub fn run() {
                                     if shortcut.matches(ctrl_shift, Code::Digit0) {
                                         reset_window_layout(app);
                                     } else if shortcut.matches(ctrl_shift, Code::KeyT) {
-                                        let v = !ig.load(Ordering::SeqCst);
+                                        let v = option_env!("VITE_ADVISOR_MODE") == Some("1") || !ig.load(Ordering::SeqCst);
                                         ig.store(v, Ordering::SeqCst);
                                         if !le.load(Ordering::SeqCst) {
                                             if let Some(w) = app.get_webview_window("main") {
-                                                let _ = w.set_ignore_cursor_events(v);
+                                                let question = app.state::<MouseInteraction>().question_open.load(Ordering::SeqCst);
+                                                let _ = w.set_ignore_cursor_events(should_ignore_mouse(v, false, question));
                                             }
                                         }
                                         tray_refresh(app);
@@ -365,7 +397,7 @@ pub fn run() {
                                             }));
                                         });
                                     } else if shortcut.matches(ctrl_shift, Code::KeyQ) {
-                                        ig.store(false, Ordering::SeqCst);
+                                        app.state::<MouseInteraction>().question_open.store(true, Ordering::SeqCst);
                                         if let Some(w) = app.get_webview_window("main") {
                                             let _ = w.set_ignore_cursor_events(false);
                                             let _ = w.show();
@@ -497,11 +529,12 @@ pub fn run() {
                                     }
                                     tray_refresh(app);
                                 } else if event.id == "tray_toggle_ct" {
-                                    let v = !ig.load(Ordering::SeqCst);
+                                    let v = option_env!("VITE_ADVISOR_MODE") == Some("1") || !ig.load(Ordering::SeqCst);
                                     ig.store(v, Ordering::SeqCst);
                                     if !le.load(Ordering::SeqCst) {
                                         if let Some(w) = app.get_webview_window("main") {
-                                            let _ = w.set_ignore_cursor_events(v);
+                                            let question = app.state::<MouseInteraction>().question_open.load(Ordering::SeqCst);
+                                            let _ = w.set_ignore_cursor_events(should_ignore_mouse(v, false, question));
                                         }
                                     }
                                     tray_refresh(app);

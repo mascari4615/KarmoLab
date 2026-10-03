@@ -137,6 +137,9 @@ if (advisorMode) {
     form.hidden = true;
     document.body.classList.remove("question-open");
     input.blur();
+    void invoke("close_question").catch((error) => {
+      console.error("[chat-overlay] restore mouse pass-through:", error);
+    });
   };
   void listen("question-focus", () => {
     form.hidden = false;
