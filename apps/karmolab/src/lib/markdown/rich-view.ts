@@ -41,6 +41,11 @@ export interface RichViewOptions {
 
     /** 앱 전역 (Toolbox, Mdd, marked) 대신 쓸 의존. 안 준 것은 전역으로 되돌아감 */
     host?: RichViewHost;
+    /**
+     * 실행판 (```demo-*) 을 열지. 기본은 `trust === 'self'`. 실행판은 격리 iframe (sandbox) 안에서만 돌지만, 원문 HTML 과 `javascript:` 링크는
+     * 이 페이지에서 실행되므로 신뢰 수준을 올려야 열리던 것을 따로 뗌. 본문은 `user` 로 엄격히 거르고 직접 쓴 글의 실행판만 열 때 `trust: 'user'` + `demos: true`
+     */
+    demos?: boolean;
     /** 글 안 제목을 몇 단계 내릴지 (h1 -> h(1+n), 최대 h6). 주면 `headings` 보다 우선. `demoted` 는 2 와 비슷하나 h4, h5 는 안 건드림 */
     headingOffset?: number;
     /** 제목 id 앞말. 기본 '' (블로그 글의 앵커 주소를 지킴) */
@@ -360,8 +365,8 @@ export async function renderRichMarkdown(
         if (lang) block.className = 'language-' + lang;
     });
 
-    /* ```demo-html, demo-js, demo-shader 는 정본 글에서만 실행판이 된다. */
-    if (trust === 'self') {
+    /* ```demo-html, demo-js, demo-shader 는 정본 글에서만 실행판이 된다. `demos` 로 신뢰 수준과 따로 정할 수 있다 (본문은 user 처럼 엄격히 거르고 실행판만 허용) */
+    if (options.demos ?? trust === 'self') {
         body.querySelectorAll('pre code[class*="language-demo-"]').forEach((block) => {
             const kind = block.className.match(/language-demo-(html|js|shader)/)?.[1];
             if (!kind) return;

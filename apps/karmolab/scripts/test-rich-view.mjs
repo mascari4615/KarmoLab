@@ -168,6 +168,13 @@ const tags = (el, sel) => [...el.querySelectorAll(sel)].map((n) => n.tagName.toL
     check('self: 실행판은 격리 iframe (allow-scripts 만)', !!frame && frame.getAttribute('sandbox') === 'allow-scripts', self.container.innerHTML);
     const user = await render(demo, { trust: 'user' });
     check('user: 실행판 없음, 코드 글자로', !user.container.querySelector('iframe') && user.container.textContent.includes('<p>안녕</p>'), user.container.innerHTML);
+    // demos 는 신뢰 수준과 따로: 본문은 user 처럼 엄격히 거르고 실행판만 연다 (위키)
+    const mixed = await render(demo + '\n<script>window.__pwn = 1</script>\n\n[누르지 마](javascript:alert(1))\n', { trust: 'user', demos: true });
+    const mixedFrame = mixed.container.querySelector('iframe.doc-demo-view');
+    check('demos true + user: 실행판은 열림 (격리 iframe)', !!mixedFrame && mixedFrame.getAttribute('sandbox') === 'allow-scripts', mixed.container.innerHTML);
+    check('demos true + user: 본문의 원문 script 와 javascript: 링크는 여전히 막힘', !mixed.container.querySelector('script') && !mixed.container.querySelector('a[href^="javascript"]') && globalThis.window.__pwn === undefined, mixed.container.innerHTML);
+    const off = await render(demo, { trust: 'self', demos: false });
+    check('demos false + self: 실행판 안 열림', !off.container.querySelector('iframe'), off.container.innerHTML);
 }
 
 // ── 도해와 목차
