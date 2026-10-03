@@ -38,8 +38,8 @@ function appendLine(container: HTMLElement, line: ChatLine): void {
   const author = el("span", "author", line.author);
   const text = el("span", "text", line.text);
   if (advisorMode) {
-    const clock = new Date(line.ts).toLocaleTimeString("ko-KR", { hour12: false });
-    author.textContent = `${line.author} ${clock}`;
+    const clock = new Date(line.ts).toLocaleTimeString("en-GB", { hour12: false });
+    author.textContent = line.author === "나" ? `나 ${clock}` : clock;
   }
   row.appendChild(author);
   row.appendChild(text);
