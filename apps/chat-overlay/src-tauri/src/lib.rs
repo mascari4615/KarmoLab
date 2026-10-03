@@ -113,22 +113,72 @@ fn now_ms() -> i64 {
 }
 
 #[tauri::command]
-fn submit_question(text: String) -> Result<(), String> {
+async fn submit_question(text: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || save_screen_request(text, false))
+        .await.map_err(|e| e.to_string())?
+}
+
+fn save_screen_request(text: String, manual: bool) -> Result<(), String> {
     use std::io::Write;
     static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let text = text.trim();
-    if text.is_empty() || text.chars().count() > 2000 {
+    if (!manual && text.is_empty()) || text.chars().count() > 2000 {
         return Err("질문은 1~2000자로 입력하세요.".into());
     }
     let _guard = LOCK.lock().map_err(|e| e.to_string())?;
     let home = std::env::var("USERPROFILE").map_err(|e| e.to_string())?;
     let dir = PathBuf::from(home).join(".karmoddrine").join("civ-advisor");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let request_id = format!("{}-{}", now_ms(), SEQUENCE.fetch_add(1, Ordering::SeqCst));
+    let capture_dir = dir.join("requests").join(&request_id);
+    let mut command = std::process::Command::new(dir.join("venv/Scripts/python.exe"));
+    command.arg("-X").arg("utf8").arg(dir.join("capture.py"))
+        .args(["--backend", "wgc", "--output"]).arg(&capture_dir);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000);
+    }
+    let output = command.output().map_err(|e| format!("화면 캡처 실행 실패: {e}"))?;
+    if !output.status.success() {
+        return Err(format!("화면 첨부 실패: {}", String::from_utf8_lossy(&output.stderr).trim()));
+    }
+    let raw = std::fs::read_to_string(capture_dir.join("latest.json")).map_err(|e| e.to_string())?;
+    let observation: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
     let mut file = std::fs::OpenOptions::new().create(true).append(true)
         .open(dir.join("questions.jsonl")).map_err(|e| e.to_string())?;
-    writeln!(file, "{}", serde_json::json!({"ts": now_ms(), "text": text}))
+    writeln!(file, "{}", serde_json::json!({"ts": now_ms(), "text": text,
+        "id": request_id, "kind": if manual { "screen" } else { "question" }, "observation": observation}))
         .map_err(|e| e.to_string())?;
     file.flush().map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod advisor_tests {
+    use super::*;
+
+    #[test]
+    fn invalid_question_is_rejected_before_capture() {
+        assert!(save_screen_request(String::new(), false).is_err());
+        assert!(save_screen_request("가".repeat(2001), false).is_err());
+    }
+
+    #[test]
+    #[ignore = "Requires the local capture runtime and a running Civ game"]
+    fn live_question_has_retained_game_capture() {
+        save_screen_request("화면 첨부 연결 검증 메시지".into(), false).unwrap();
+        let root = PathBuf::from(std::env::var("USERPROFILE").unwrap())
+            .join(".karmoddrine/civ-advisor");
+        let queue = std::fs::read_to_string(root.join("questions.jsonl")).unwrap();
+        let entry: serde_json::Value = serde_json::from_str(queue.lines().last().unwrap()).unwrap();
+        let observation = &entry["observation"];
+        assert_eq!(entry["kind"], "question");
+        assert_eq!(observation["mode"], "windows-graphics-capture");
+        assert!(observation["window"]["executable"].as_str().unwrap().starts_with("Civ7_"));
+        assert!(Path::new(observation["image"].as_str().unwrap()).exists());
+        assert!(observation["image"].as_str().unwrap().contains("requests"));
+    }
 }
 
 fn emit_test_chat(app: &tauri::AppHandle) {
@@ -276,6 +326,7 @@ pub fn run() {
                                 "ctrl+shift+t",
                                 "ctrl+shift+e",
                                 "ctrl+shift+q",
+                                "ctrl+shift+s",
                                 "ctrl+shift+comma",
                             ])?
                             .with_handler({
@@ -301,6 +352,18 @@ pub fn run() {
                                     } else if shortcut.matches(ctrl_shift, Code::KeyE) {
                                         let v = !le.load(Ordering::SeqCst);
                                         apply_layout_edit(app, &le, &ig, v);
+                                    } else if shortcut.matches(ctrl_shift, Code::KeyS) {
+                                        let handle = app.clone();
+                                        std::thread::spawn(move || {
+                                            let result = save_screen_request(String::new(), true);
+                                            let text = match result {
+                                                Ok(()) => "지금 게임 화면을 전달했어요.".to_string(),
+                                                Err(error) => error,
+                                            };
+                                            let _ = handle.emit("extension-ingest", serde_json::json!({
+                                                "author": "캡처", "text": text, "ts": now_ms()
+                                            }));
+                                        });
                                     } else if shortcut.matches(ctrl_shift, Code::KeyQ) {
                                         ig.store(false, Ordering::SeqCst);
                                         if let Some(w) = app.get_webview_window("main") {

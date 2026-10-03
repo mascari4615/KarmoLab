@@ -150,6 +150,7 @@ if (advisorMode) {
     event.preventDefault();
     if (!input.value.trim() || button.disabled) return;
     button.disabled = true;
+    button.textContent = "캡처 중";
     const text = input.value.trim();
     try {
       await invoke("submit_question", { text });
@@ -162,6 +163,7 @@ if (advisorMode) {
       status.textContent = `전송 실패: ${String(error)}`;
     } finally {
       button.disabled = false;
+      button.textContent = "보내기";
     }
   });
 }
