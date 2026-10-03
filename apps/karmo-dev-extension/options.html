@@ -48,6 +48,8 @@
         color: #444;
         margin-top: 0.5rem;
       }
+      #blocks li { display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0; }
+      #blocks code { color: #666; }
     </style>
   </head>
   <body>
@@ -67,6 +69,14 @@
       <button type="button" id="resetDefault" class="secondary">기본 주소로 저장</button>
     </div>
     <p id="status" aria-live="polite"></p>
+    <h2>유저 차단</h2>
+    <p class="hint">아카라이브 글, 댓글 옆 "차단" 버튼으로 추가. 이 목록이 숨김의 기준.</p>
+    <div class="row">
+      <button type="button" id="blockExport" class="secondary">JSON 내보내기</button>
+      <button type="button" id="blockImport" class="secondary">JSON 가져오기 (합침)</button>
+      <input type="file" id="blockFile" accept="application/json" hidden />
+    </div>
+    <ul id="blocks"></ul>
     <script src="options.js"></script>
   </body>
 </html>

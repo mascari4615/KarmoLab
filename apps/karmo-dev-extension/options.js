@@ -51,3 +51,72 @@ input.addEventListener("keydown", (e) => {
     btn.click();
   }
 });
+
+/* 유저 차단 목록. 형식은 block-core.js 의 blocklist = { site: { key: { name, at } } } */
+const blocksEl = document.getElementById("blocks");
+
+function renderBlocks(all) {
+  blocksEl.textContent = "";
+  for (const [site, users] of Object.entries(all)) {
+    for (const [key, v] of Object.entries(users)) {
+      const li = document.createElement("li");
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "secondary";
+      rm.textContent = "해제";
+      rm.addEventListener("click", () => {
+        delete all[site][key];
+        chrome.storage.local.set({ blocklist: all }, () => renderBlocks(all));
+      });
+      const label = document.createElement("span");
+      label.textContent = `${site} · ${v.name} `;
+      const code = document.createElement("code");
+      code.textContent = key;
+      li.append(rm, label, code);
+      blocksEl.append(li);
+    }
+  }
+  if (!blocksEl.children.length) blocksEl.textContent = "차단한 유저 없음";
+}
+
+chrome.storage.local.get({ blocklist: {} }, (items) => renderBlocks(items.blocklist || {}));
+
+document.getElementById("blockExport").addEventListener("click", () => {
+  chrome.storage.local.get({ blocklist: {} }, (items) => {
+    const blob = new Blob([JSON.stringify(items.blocklist || {}, null, 2) + "\n"], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "blocklist.json";
+    a.click();
+  });
+});
+
+const blockFile = document.getElementById("blockFile");
+document.getElementById("blockImport").addEventListener("click", () => blockFile.click());
+blockFile.addEventListener("change", async () => {
+  const f = blockFile.files[0];
+  if (!f) return;
+  let incoming;
+  try {
+    incoming = JSON.parse(await f.text());
+  } catch {
+    show("JSON 이 아닙니다.", false);
+    return;
+  }
+  chrome.storage.local.get({ blocklist: {} }, (items) => {
+    const all = items.blocklist || {};
+    let n = 0;
+    for (const [site, users] of Object.entries(incoming)) {
+      all[site] = all[site] || {};
+      for (const [key, v] of Object.entries(users || {})) {
+        if (!all[site][key]) n += 1;
+        all[site][key] = all[site][key] || v;
+      }
+    }
+    chrome.storage.local.set({ blocklist: all }, () => {
+      renderBlocks(all);
+      show(`가져옴. 새로 ${n}명`);
+    });
+  });
+  blockFile.value = "";
+});
