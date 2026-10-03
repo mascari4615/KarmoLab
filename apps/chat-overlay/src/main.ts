@@ -3,8 +3,11 @@ import { chatFeedKindFromEnv, createChatFeed } from "./chat/createChatFeed";
 import type { ChatLine } from "./chat/types";
 import { initThemeEditor } from "./themeEditor";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 
-const MAX_LINES = 40;
+const advisorMode = import.meta.env.VITE_ADVISOR_MODE === "1";
+const MAX_LINES = advisorMode ? 4 : 40;
+document.body.classList.toggle("advisor-mode", advisorMode);
 
 function authorHue(author: string): number {
   let h = 0;
@@ -34,6 +37,10 @@ function appendLine(container: HTMLElement, line: ChatLine): void {
   row.style.setProperty("--author-hue", String(authorHue(line.author)));
   const author = el("span", "author", line.author);
   const text = el("span", "text", line.text);
+  if (advisorMode) {
+    const clock = new Date(line.ts).toLocaleTimeString("ko-KR", { hour12: false });
+    author.textContent = `${line.author} ${clock}`;
+  }
   row.appendChild(author);
   row.appendChild(text);
   container.appendChild(row);
@@ -42,6 +49,7 @@ function appendLine(container: HTMLElement, line: ChatLine): void {
   }
   requestAnimationFrame(() => {
     row.classList.add("line--visible");
+    if (advisorMode) container.scrollTop = row.offsetTop - container.offsetTop - 12;
   });
 }
 
@@ -119,3 +127,41 @@ window.addEventListener("beforeunload", () => {
   unsub();
   feed.destroy?.();
 });
+
+if (advisorMode) {
+  const form = document.querySelector<HTMLFormElement>("#question-form")!;
+  const input = document.querySelector<HTMLInputElement>("#question-input")!;
+  const status = document.querySelector<HTMLElement>("#question-status")!;
+  const button = form.querySelector<HTMLButtonElement>("button")!;
+  const hideQuestion = () => {
+    form.hidden = true;
+    document.body.classList.remove("question-open");
+    input.blur();
+  };
+  void listen("question-focus", () => {
+    form.hidden = false;
+    document.body.classList.add("question-open");
+    input.focus();
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") hideQuestion();
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!input.value.trim() || button.disabled) return;
+    button.disabled = true;
+    const text = input.value.trim();
+    try {
+      await invoke("submit_question", { text });
+      appendLine(log, { id: `user-${Date.now()}`, author: "나", text, ts: Date.now() });
+      input.value = "";
+      status.textContent = "전송됨. 보좌관 답변 대기 중";
+      hideQuestion();
+    } catch (error) {
+      status.hidden = false;
+      status.textContent = `전송 실패: ${String(error)}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+}

@@ -112,6 +112,25 @@ fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
+#[tauri::command]
+fn submit_question(text: String) -> Result<(), String> {
+    use std::io::Write;
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let text = text.trim();
+    if text.is_empty() || text.chars().count() > 2000 {
+        return Err("질문은 1~2000자로 입력하세요.".into());
+    }
+    let _guard = LOCK.lock().map_err(|e| e.to_string())?;
+    let home = std::env::var("USERPROFILE").map_err(|e| e.to_string())?;
+    let dir = PathBuf::from(home).join(".karmoddrine").join("civ-advisor");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let mut file = std::fs::OpenOptions::new().create(true).append(true)
+        .open(dir.join("questions.jsonl")).map_err(|e| e.to_string())?;
+    writeln!(file, "{}", serde_json::json!({"ts": now_ms(), "text": text}))
+        .map_err(|e| e.to_string())?;
+    file.flush().map_err(|e| e.to_string())
+}
+
 fn emit_test_chat(app: &tauri::AppHandle) {
     let ts = now_ms();
     let _ = app.emit(
@@ -233,6 +252,7 @@ pub fn run() {
     let layout_edit = Arc::new(AtomicBool::new(false));
 
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![submit_question])
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
@@ -255,6 +275,7 @@ pub fn run() {
                                 "ctrl+shift+0",
                                 "ctrl+shift+t",
                                 "ctrl+shift+e",
+                                "ctrl+shift+q",
                                 "ctrl+shift+comma",
                             ])?
                             .with_handler({
@@ -280,6 +301,15 @@ pub fn run() {
                                     } else if shortcut.matches(ctrl_shift, Code::KeyE) {
                                         let v = !le.load(Ordering::SeqCst);
                                         apply_layout_edit(app, &le, &ig, v);
+                                    } else if shortcut.matches(ctrl_shift, Code::KeyQ) {
+                                        ig.store(false, Ordering::SeqCst);
+                                        if let Some(w) = app.get_webview_window("main") {
+                                            let _ = w.set_ignore_cursor_events(false);
+                                            let _ = w.show();
+                                            let _ = w.set_focus();
+                                        }
+                                        let _ = app.emit("question-focus", serde_json::json!({}));
+                                        tray_refresh(app);
                                     } else if shortcut.matches(ctrl_shift, Code::Comma) {
                                         let _ = app.emit("theme-editor-toggle", serde_json::json!({}));
                                     }

@@ -4,6 +4,34 @@
   box-sizing: border-box;
 }
 
+/* Keep the original transparent text, with a small readability adjustment. */
+body.advisor-mode #log {
+  justify-content: flex-start;
+  font-size: 16px;
+  overflow-y: auto;
+  pointer-events: auto;
+  scrollbar-width: none;
+}
+body.advisor-mode #log .line {
+  flex: 0 0 auto;
+  color: #fff;
+  font-weight: 500;
+  text-shadow: -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 1px 1px 1px #000, 0 2px 4px #000;
+}
+body.advisor-mode #log .author { font-size: 12px; font-variant-numeric: tabular-nums; }
+body.advisor-mode #log .text { white-space: pre-wrap; }
+body.advisor-mode.question-open #log { height: calc(100% - 44px); }
+.question-form { position: fixed; bottom: 0; width: 100%; padding: 5px 12px; color: #fff; font-size: 14px; }
+.question-form[hidden], .question-form label, .question-form p[hidden] { display: none; }
+.question-controls { display: flex; gap: 6px; }
+.question-controls input { width: 100%; min-width: 0; padding: 6px; font: inherit; color: #fff; background: rgba(0,0,0,.7); border: 1px solid #b5c7d2; border-radius: 3px; }
+.question-controls input::placeholder { color: #ddd; }
+.question-controls button { flex: 0 0 auto; padding: 6px; font: inherit; cursor: pointer; color: #fff; background: rgba(0,0,0,.7); border: 1px solid #b5c7d2; border-radius: 3px; }
+.question-controls button:hover { background: #263640; }
+.question-controls button:disabled { opacity: .6; cursor: wait; }
+.question-controls :focus-visible { outline: 2px solid #f4d48e; outline-offset: 2px; }
+.question-form p { margin: 3px 0 0; font-size: 12px; background: #111; }
+
 /**
  * 채팅 스타일 변수. chat-theme.css 에서 덮어쓸 수 있음.
  */

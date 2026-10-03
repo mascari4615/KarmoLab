@@ -29,6 +29,14 @@
       </div>
     </div>
     <div id="log" class="log" aria-live="polite"></div>
+    <form id="question-form" class="question-form" hidden>
+      <label for="question-input">보좌관에게 질문 <span>Ctrl+Shift+Q</span></label>
+      <div class="question-controls">
+        <input id="question-input" maxlength="2000" autocomplete="off" placeholder="질문 입력, Enter로 보내기" />
+        <button type="submit">보내기</button>
+      </div>
+      <p id="question-status" role="status">전송한 질문은 보좌관이 관찰 중 확인해요.</p>
+    </form>
 
     <div id="theme-editor" class="theme-editor" hidden>
       <div id="theme-editor-backdrop" class="theme-editor__backdrop" aria-hidden="true"></div>
