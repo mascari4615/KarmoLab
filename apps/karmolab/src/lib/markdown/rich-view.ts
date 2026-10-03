@@ -78,8 +78,12 @@ export interface RichHeading {
 export interface RichViewHooks {
     /** 링크 하나. 속성을 바꿔도 되고 `false` 를 돌려주면 링크를 풀어 글자만 남김 */
     link?: (a: HTMLAnchorElement) => void | false;
-    /** 그림 하나. `false` 를 돌려주면 대체 글자 (alt) 만 남김 */
-    image?: (img: HTMLImageElement) => void | false;
+    /**
+     * 그림 하나. 이 훅을 주면 엔진은 `src` 를 달지 않고 원래 주소를 `src` 인자로만 넘김 (브라우저가 HTML 을 넣는 순간 요청을 보내므로,
+     * 주소 확정 전 요청 방지). 반환값: 문자열이면 그 주소를 src 로, `false` 면 대체 글자 (alt) 만 남김,
+     * 없으면 호스트가 직접 src 를 달 책임 (원격 화면처럼 비동기로 변환하는 경우)
+     */
+    image?: (img: HTMLImageElement, src: string) => void | false | string;
     /** 언어 표기가 있는 코드 블록 하나. 호스트가 단추 등을 붙임 (실행판으로 바뀐 블록은 안 부름) */
     codeBlock?: (pre: HTMLElement, code: HTMLElement, lang: string) => void;
 }
@@ -325,7 +329,7 @@ export async function renderRichMarkdown(
         return () => {};
     }
 
-    const rendered = renderMarkdownShared(source, { trust, marked: markedNs, breaks: true, relative: options.relativeLinks });
+    const rendered = renderMarkdownShared(source, { trust, marked: markedNs, breaks: true, relative: options.relativeLinks, deferImages: !!options.hooks?.image });
     body.innerHTML = shiftHeadings(rendered, options);
 
     const layout = document.createElement('div');
@@ -449,7 +453,11 @@ function runLinkAndImageHooks(body: HTMLElement, hooks?: RichViewHooks): void {
     if (hooks.image) {
         body.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
             if (img.closest(skip)) return;
-            if (hooks.image!(img) === false) img.replaceWith(document.createTextNode(img.getAttribute('alt') || ''));
+            const src = img.getAttribute('data-src') ?? img.getAttribute('src') ?? ''; // 원문 HTML 의 <img src> (self) 는 이미 요청이 나감
+            img.removeAttribute('data-src');
+            const result = hooks.image!(img, src);
+            if (result === false) img.replaceWith(document.createTextNode(img.getAttribute('alt') || ''));
+            else if (typeof result === 'string') img.setAttribute('src', result);
         });
     }
 }

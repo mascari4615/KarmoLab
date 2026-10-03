@@ -114,16 +114,28 @@ const tags = (el, sel) => [...el.querySelectorAll(sel)].map((n) => n.tagName.toL
 }
 {
     const seen = [];
+    const hadSrc = [];
     const { container } = await render('[문서](../a.md) [밖](https://example.com) [죽은 링크](x.ts)\n\n![그림](pic.png) ![밖 그림](https://example.com/a.png)', {
         hooks: {
             link: (a) => { seen.push(a.getAttribute('href')); if (a.getAttribute('href').endsWith('.ts')) return false; a.dataset.act = 'open'; },
-            image: (img) => { if (img.getAttribute('src').startsWith('http')) return false; img.dataset.checked = '1'; },
+            image: (img, src) => { hadSrc.push(img.hasAttribute('src')); if (src.startsWith('http')) return false; img.dataset.checked = '1'; return 'resolved/' + src; },
         },
     });
+    check('hooks.image: 훅이 불릴 때 src 가 없다 (브라우저가 미리 요청하지 않게)', hadSrc.length === 2 && hadSrc.every((x) => x === false), hadSrc.join());
+    check('hooks.image: 문자열을 돌려주면 그 src, data-src 는 남지 않음', container.querySelector('img').getAttribute('src') === 'resolved/pic.png' && !container.querySelector('[data-src]'), container.innerHTML);
     check('hooks.link: 모든 링크를 한 번씩', seen.join() === '../a.md,https://example.com,x.ts', seen.join());
     check('hooks.link: 속성을 붙일 수 있음', container.querySelector('a[href="../a.md"]').dataset.act === 'open', container.innerHTML);
     check('hooks.link: false 면 글자만 남음', !container.querySelector('a[href="x.ts"]') && container.textContent.includes('죽은 링크'), container.innerHTML);
     check('hooks.image: 속성 손봄, false 면 alt 글자', container.querySelectorAll('img').length === 1 && container.querySelector('img').dataset.checked === '1' && container.textContent.includes('밖 그림'), container.innerHTML);
+}
+{
+    // 훅이 아무것도 안 돌려주면 src 는 호스트가 직접 (원격 화면처럼 비동기로 변환). 엔진은 src 를 달지 않음
+    const { container } = await render('![비동기](pic.png)', { hooks: { image: (img) => { img.dataset.owner = 'host'; } } });
+    const img = container.querySelector('img');
+    check('hooks.image: 반환값 없으면 src 없이 호스트 담당', !!img && !img.hasAttribute('src') && img.dataset.owner === 'host', container.innerHTML);
+    // 훅 없음: 기존처럼 src 가 바로 있음
+    const plain = await render('![그림](pic.png)');
+    check('훅 없으면 기존처럼 src', plain.container.querySelector('img')?.getAttribute('src') === 'pic.png', plain.container.innerHTML);
 }
 {
     const calls = [];

@@ -46,6 +46,11 @@ export interface RenderOptions {
      * 같은 저장소 안 문서끼리 서로 가리키는 곳 (위키) 이 켠다. 스킴이 있는 주소 (`javascript:`, `data:` 등) 와 `//`, 역슬래시, 제어 문자는 계속 거절.
      */
     relative?: boolean;
+    /**
+     * 그림을 `<img src>` 대신 `<img data-src>` 로 냄. 브라우저가 HTML 을 넣는 순간 요청을 보내기 때문에, 주소를 호스트가 정하는 곳 (원격 화면의
+     * 이미지 변환, 위키 밖 그림 거절) 은 그 전에 src 를 안 달아야 평문 경로가 밖으로 안 나감. 기본 false
+     */
+    deferImages?: boolean;
 }
 
 export const CALLOUT_KINDS = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'] as const;
@@ -103,6 +108,7 @@ interface MermaidToken {
 function buildInstance(options: RenderOptions): MarkedInstance {
     const instance = new options.marked.Marked();
     const trusted = options.trust === 'self';
+    const srcAttr = options.deferImages ? 'data-src' : 'src';
 
     instance.use({
         gfm: true,
@@ -158,10 +164,19 @@ function buildInstance(options: RenderOptions): MarkedInstance {
                   image: (token: { href: string; text: string }) => {
                       const url = safeHref(token.href, options.relative);
                       if (!url || /^data:/i.test(url)) return escapeHtml(token.text);
-                      return `<img src="${escapeHtml(url)}" alt="${escapeHtml(token.text)}" loading="lazy">`;
+                      return `<img ${srcAttr}="${escapeHtml(url)}" alt="${escapeHtml(token.text)}" loading="lazy">`;
                   },
               },
     });
+    // 내 글 (self): marked 기본 그림 변환을 쓰고, 주소를 호스트가 정할 때만 src 를 미룸
+    if (trusted && options.deferImages) {
+        instance.use({
+            renderer: {
+                image: (token: { href: string; text: string }) =>
+                    `<img data-src="${escapeHtml(token.href)}" alt="${escapeHtml(token.text)}" loading="lazy">`,
+            },
+        });
+    }
     return instance;
 }
 

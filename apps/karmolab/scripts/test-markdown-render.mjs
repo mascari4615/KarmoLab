@@ -133,6 +133,14 @@ function check(name, ok, got) {
     }
     const script = rel('<script>alert(1)</script>\n\n[a](b.md)');
     check('relative: 원문 HTML 은 여전히 escape', !/<script/.test(script) && script.includes('href="b.md"'), script);
+    // deferImages: 그림 주소가 src 가 아니라 data-src 로 나가 브라우저가 미리 요청하지 않음. 위험 주소 규율은 그대로
+    const defer = (md, trust = 'user') => renderMarkdown(md, { trust, marked, relative: true, deferImages: true });
+    for (const trust of ['user', 'self']) {
+        const html = defer('![그림](img/pic.png)', trust);
+        check(`deferImages(${trust}): data-src 로`, html.includes('data-src="img/pic.png"') && !/\ssrc=/.test(html), html);
+    }
+    check('deferImages(user): javascript: 와 data: 그림은 여전히 없음', !/<img/.test(defer('![x](javascript:alert(1)) ![y](data:text/html;base64,PHNjcmlwdD4)')), defer('![x](javascript:alert(1))'));
+    check('deferImages 기본 꺼짐: src', rel('![그림](pic.png)').includes('src="pic.png"'), rel('![그림](pic.png)'));
     // self 는 원래 상대 경로를 그대로 둠 (이 옵션과 무관)
     check('self: 상대 링크 그대로', self_('[문서](../a.md)').includes('href="../a.md"'), self_('[문서](../a.md)'));
 }
