@@ -189,6 +189,7 @@ function render() {
   el("panel").checked = !!s.panel;
   el("hoverHl").checked = !!s.hoverHl;
   el("exBest").checked = !!s.exBest;
+  el("resolveAccounts").checked = !!s.resolveAccounts;
   el("minRec").value = String(s.minRec);
   el("blockSort").value = s.blockSort;
   el("likeColor").value = s.likeColor;
@@ -200,6 +201,7 @@ function render() {
 for (const r of document.querySelectorAll('input[name="linkStyle"]')) r.addEventListener("change", () => patch({ linkStyle: r.value }));
 el("panel").addEventListener("change", (e) => patch({ panel: e.target.checked }));
 el("hoverHl").addEventListener("change", (e) => patch({ hoverHl: e.target.checked }));
+el("resolveAccounts").addEventListener("change", (e) => patch({ resolveAccounts: e.target.checked }));
 el("exBest").addEventListener("change", (e) => patch({ exBest: e.target.checked }));
 el("minRec").addEventListener("change", (e) => patch({ minRec: Math.max(0, parseInt(e.target.value, 10) || 0) }));
 el("blockSort").addEventListener("change", (e) => patch({ blockSort: e.target.value }));

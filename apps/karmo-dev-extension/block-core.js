@@ -110,6 +110,8 @@
 
     const api = {
       isBlocked: (key) => Object.prototype.hasOwnProperty.call(blockMap, key),
+      /** 어댑터가 비동기로 알아낸 것을 반영하려고 다시 검사 */
+      refresh: () => schedule(),
       get settings() {
         return settings;
       },

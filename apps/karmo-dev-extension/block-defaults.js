@@ -9,6 +9,7 @@ globalThis.KARMO_BLOCK_DEFAULTS = {
   blockSort: "name", // 하단 차단 표 기본 정렬: name, id
   exBest: true, // 차단 유저라도 개념글은 표시
   minRec: 10, // 차단 유저라도 추천이 이 값 이상이면 표시, 0 이면 끔
+  resolveAccounts: true, // 목록 줄의 계정 유저는 글을 열어 번호를 확인 (끄면 계정 유저는 목록에서 처리 안 함)
   likeColor: "#ff5c8c", // 좋아요 유저 줄 색
   palette: ["#d9480f", "#1c7ed6", "#2f9e44", "#7048e8", "#0c8599", "#e67700", "#a61e4d", "#364fc7"], // 유저 자동 색
   colors: {}, // 유저별 지정 색 { 키: "#rrggbb" }

@@ -1,17 +1,99 @@
 /**
- * 아카라이브 유저 차단과 좋아요. 유저 키: 사이트의 data-filter 값 (닉네임, 계정은 `닉#번호`)
+ * 아카라이브 유저 차단과 좋아요. 유저 키: 사이트의 data-filter 값 (고정닉은 닉네임, 계정은 `닉#번호`)
  * 대상: 글 목록 줄 (a.vrow), 댓글 (.comment-item), 글 머리 (.article-head)
  * 숨긴 글은 footer 앞 블록에, 목록 줄은 복제해서 사이트 목록 모양 그대로
+ * 목록 줄의 계정 유저: 번호가 없어 글을 열어 번호 확인 (resolveAccount)
  */
-/* 한 사람을 가리키는 키만 통과. 고정닉, 매니저, `닉#번호`
- * 번호 없는 계정 (목록 줄), 아이콘 없는 유동닉은 닉이 겹쳐 제외. 실측 2026-10-03: "ㅇㅇ" 차단에 4줄 동시 숨김 */
+
+const squash = (s, n) => (s || "").replace(/\s+/g, " ").trim().slice(0, n);
+
+/* 계정 번호 확인. 목록 줄의 계정 닉은 겹침 (실측 2026-10-03: "ㅇㅇ" 차단에 4줄 동시 숨김)
+ * 글 페이지의 글쓴이는 `닉#번호`. 그 글을 받아 읽고 글 번호 -> 키로 저장, 재요청 없음 */
+const ID_CACHE = "karmoIdCache";
+const ID_CACHE_MAX = 6000;
+const ID_RETRY_MS = 60000;
+const idCache = new Map(); // "채널/글번호" -> 키
+const idFailed = new Map(); // 같은 곳 -> 실패 시각
+const idPending = new Set();
+const idQueue = [];
+let idRunning = 0;
+let idLoaded = false;
+let idSaveTimer = null;
+let apiRef = null;
+
+chrome.storage.local.get({ [ID_CACHE]: {} }, (items) => {
+  for (const [k, v] of Object.entries(items[ID_CACHE] || {})) idCache.set(k, v);
+  idLoaded = true;
+  apiRef?.refresh();
+});
+
+function saveIdCache() {
+  clearTimeout(idSaveTimer);
+  idSaveTimer = setTimeout(() => {
+    while (idCache.size > ID_CACHE_MAX) idCache.delete(idCache.keys().next().value);
+    chrome.storage.local.set({ [ID_CACHE]: Object.fromEntries(idCache) });
+  }, 1500);
+}
+
+/* 글 페이지 HTML 에서 글쓴이 키 */
+function authorKeyOf(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return doc.querySelector(".article-head .user-info [data-filter]")?.getAttribute("data-filter") || "";
+}
+
+async function resolveOne(job) {
+  try {
+    const res = await fetch(job.href, { credentials: "include" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const key = authorKeyOf(await res.text());
+    if (key.includes("#")) {
+      idCache.set(job.id, key);
+      saveIdCache();
+    } else {
+      idFailed.set(job.id, Date.now());
+    }
+  } catch {
+    idFailed.set(job.id, Date.now());
+  }
+  idPending.delete(job.id);
+  apiRef?.refresh();
+}
+
+function pumpIds() {
+  while (idRunning < 2 && idQueue.length) {
+    const job = idQueue.shift();
+    idRunning += 1;
+    resolveOne(job).finally(() => {
+      idRunning -= 1;
+      setTimeout(pumpIds, 150);
+    });
+  }
+}
+
+/** 목록 줄 글쓴이의 `닉#번호`. 아직 모르면 null 을 주고 글을 받으러 감 */
+function resolveAccount(row, settings) {
+  if (!settings.resolveAccounts || !idLoaded) return null;
+  const m = /\/b\/([^/?#]+)\/(\d+)/.exec(row.getAttribute("href") || "");
+  if (!m) return null;
+  const id = `${m[1]}/${m[2]}`;
+  const hit = idCache.get(id);
+  if (hit) return hit;
+  const failed = idFailed.get(id);
+  if (idPending.has(id) || (failed && Date.now() - failed < ID_RETRY_MS)) return null;
+  idPending.add(id);
+  idQueue.push({ id, href: row.href });
+  pumpIds();
+  return null;
+}
+
+/* 한 사람을 가리키는 키만 통과. 고정닉, 매니저, `닉#번호` (아이콘 없는 유동닉은 닉이 겹쳐 제외) */
 function isUnique(el, key) {
   if (key.includes("#")) return true;
   const title = el.closest(".user-info")?.querySelector(".user-icon")?.getAttribute("title");
   return !!title && title !== "계정";
 }
 
-const squash = (s, n) => (s || "").replace(/\s+/g, " ").trim().slice(0, n);
+const isAccount = (el) => el.closest(".user-info")?.querySelector(".user-icon")?.getAttribute("title") === "계정";
 
 /* 숨긴 줄을 아래 블록에 올릴 정보. 목록 줄은 kind post */
 function summary(row, key, name) {
@@ -35,11 +117,18 @@ KarmoBlock.start({
   footer: "footer.footer",
   listBox: ".list-table",
   scan(root, api) {
+    apiRef = api;
     for (const el of root.querySelectorAll(".user-info [data-filter]")) {
-      const key = el.getAttribute("data-filter");
-      if (!key || el.closest(".karmo-blocked-block") || !isUnique(el, key)) continue;
-      const name = el.textContent.trim() || key;
+      let key = el.getAttribute("data-filter");
+      if (!key || el.closest(".karmo-blocked-block")) continue;
       const row = el.closest("a.vrow, .comment-item");
+      // 목록 줄의 계정 유저: 글을 열어 확인한 `닉#번호` 로 바꿔 쓴다 (공지 줄은 대상 아님)
+      if (row?.matches("a.vrow") && !row.classList.contains("notice") && !key.includes("#") && isAccount(el)) {
+        key = resolveAccount(row, api.settings);
+        if (!key) continue;
+      }
+      if (!isUnique(el, key)) continue;
+      const name = el.textContent.trim() || key;
       const blocked = api.isBlocked(key);
       if (row && blocked) {
         // 목록 글만 예외 판정. 개념글, 추천컷 이상은 숨기지 않고 차단됨 표시
