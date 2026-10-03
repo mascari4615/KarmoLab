@@ -8,6 +8,19 @@ import { invoke } from "@tauri-apps/api/core";
 const advisorMode = import.meta.env.VITE_ADVISOR_MODE === "1";
 const MAX_LINES = advisorMode ? 4 : 40;
 document.body.classList.toggle("advisor-mode", advisorMode);
+document.body.classList.toggle("chat-idle", advisorMode);
+let advisorHideTimer: ReturnType<typeof setTimeout> | undefined;
+const ADVISOR_VISIBLE_MS = 12_000;
+
+function revealAdvisorChat(): void {
+  if (!advisorMode) return;
+  clearTimeout(advisorHideTimer);
+  document.body.classList.remove("chat-idle");
+  if (document.body.classList.contains("layout-edit") || document.body.classList.contains("question-open")) return;
+  advisorHideTimer = setTimeout(() => {
+    document.body.classList.add("chat-idle");
+  }, ADVISOR_VISIBLE_MS);
+}
 
 function authorHue(author: string): number {
   let h = 0;
@@ -33,6 +46,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 function appendLine(container: HTMLElement, line: ChatLine): void {
+  revealAdvisorChat();
   const row = el("div", "line line--enter");
   row.style.setProperty("--author-hue", String(authorHue(line.author)));
   const author = el("span", "author", line.author);
@@ -91,9 +105,15 @@ const moveHandle = document.querySelector<HTMLButtonElement>(".move-handle");
 const resizeHandle = document.querySelector<HTMLButtonElement>(".resize-handle");
 
 const appWindow = getCurrentWindow();
+if (advisorMode) {
+  void appWindow.onFocusChanged((event) => {
+    if (event.payload) revealAdvisorChat();
+  }).catch((error) => console.error("[chat-overlay] focus listener:", error));
+}
 
 void listen<{ visible: boolean }>("layout-edit", (e) => {
   document.body.classList.toggle("layout-edit", e.payload.visible);
+  revealAdvisorChat();
 }).catch(() => {
   /* Tauri 밖 미리보기 */
 });
@@ -136,6 +156,7 @@ if (advisorMode) {
   const hideQuestion = () => {
     form.hidden = true;
     document.body.classList.remove("question-open");
+    revealAdvisorChat();
     input.blur();
     void invoke("close_question").catch((error) => {
       console.error("[chat-overlay] restore mouse pass-through:", error);
@@ -144,6 +165,7 @@ if (advisorMode) {
   void listen("question-focus", () => {
     form.hidden = false;
     document.body.classList.add("question-open");
+    revealAdvisorChat();
     input.focus();
   });
   input.addEventListener("keydown", (event) => {

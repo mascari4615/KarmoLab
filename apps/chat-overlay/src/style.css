@@ -6,11 +6,22 @@
 
 /* Keep the original transparent text, with a small readability adjustment. */
 body.advisor-mode #log {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .35s ease, visibility .35s ease;
   justify-content: flex-start;
   font-size: 16px;
   overflow-y: auto;
   pointer-events: auto;
   scrollbar-width: none;
+}
+body.advisor-mode.chat-idle #log {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.advisor-mode #log { transition: none; }
 }
 body.advisor-mode #log .line {
   flex: 0 0 auto;
