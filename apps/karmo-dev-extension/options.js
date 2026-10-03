@@ -152,6 +152,32 @@ function renderUserColors() {
   if (!entries.length) ul.textContent = "없음";
 }
 
+/* 차단 항목의 사유, 메모, 만료일 입력. 바꾸면 바로 저장 */
+function blockFields(site, key, v) {
+  const save = (fields) => {
+    Object.assign(state.lists.block[site][key], fields);
+    for (const k of Object.keys(fields)) if (!fields[k]) delete state.lists.block[site][key][k];
+    chrome.storage.local.set({ blocklist: state.lists.block });
+  };
+  const tags = [...new Set([...(state.settings.reasonTags || []), ...(v.reason ? [v.reason] : [])])];
+  const sel = document.createElement("select");
+  sel.append(new Option("사유 없음", ""));
+  for (const t of tags) sel.append(new Option(t, t));
+  sel.value = v.reason || "";
+  sel.addEventListener("change", () => save({ reason: sel.value }));
+  const note = document.createElement("input");
+  note.type = "text";
+  note.placeholder = "메모";
+  note.value = v.note || "";
+  note.addEventListener("change", () => save({ note: note.value.trim() }));
+  const until = document.createElement("input");
+  until.type = "date";
+  until.title = "이 날까지만 차단 (비우면 영구)";
+  until.value = (v.until || "").slice(0, 10);
+  until.addEventListener("change", () => save({ until: until.value ? new Date(`${until.value}T23:59:59`).toISOString() : "" }));
+  return [sel, note, until];
+}
+
 function renderLists() {
   const box = el("lists");
   box.textContent = "";
@@ -175,6 +201,7 @@ function renderLists() {
         const code = document.createElement("code");
         code.textContent = key;
         li.append(rm, label, code);
+        if (kind === "block") li.append(...blockFields(site, key, v));
         ul.append(li);
       }
     }
@@ -189,6 +216,7 @@ function render() {
   el("panel").checked = !!s.panel;
   el("hoverHl").checked = !!s.hoverHl;
   el("exBest").checked = !!s.exBest;
+  el("reasonTags").value = (s.reasonTags || []).join(", ");
   el("resolveAccounts").checked = !!s.resolveAccounts;
   el("minRec").value = String(s.minRec);
   el("blockSort").value = s.blockSort;
@@ -202,6 +230,7 @@ for (const r of document.querySelectorAll('input[name="linkStyle"]')) r.addEvent
 el("panel").addEventListener("change", (e) => patch({ panel: e.target.checked }));
 el("hoverHl").addEventListener("change", (e) => patch({ hoverHl: e.target.checked }));
 el("resolveAccounts").addEventListener("change", (e) => patch({ resolveAccounts: e.target.checked }));
+el("reasonTags").addEventListener("change", (e) => patch({ reasonTags: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }));
 el("exBest").addEventListener("change", (e) => patch({ exBest: e.target.checked }));
 el("minRec").addEventListener("change", (e) => patch({ minRec: Math.max(0, parseInt(e.target.value, 10) || 0) }));
 el("blockSort").addEventListener("change", (e) => patch({ blockSort: e.target.value }));

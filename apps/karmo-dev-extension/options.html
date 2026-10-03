@@ -130,6 +130,9 @@
         align-items: center;
         margin: 0.2rem 0;
       }
+      #lists select, #lists input[type="date"], #lists input[type="text"] {
+        font-size: 0.85rem;
+      }
       #lists code,
       #userColors code {
         color: #666;
@@ -198,6 +201,7 @@
         <label class="opt"><input type="checkbox" id="resolveAccounts" /> 목록의 계정 유저는 확장이 그 글을 열어 번호를 확인 (같은 닉의 다른 계정이 같이 가려지지 않게. 한 번 확인한 글은 저장해 두고 다시 안 엶)</label>
         <label class="opt"><input type="checkbox" id="exBest" /> 개념글은 보임</label>
         <label class="opt">추천이 <input type="number" id="minRec" min="0" step="1" /> 이상이면 보임 (0 이면 끔)</label>
+        <label class="opt">차단 사유 칩 (쉼표로 구분) <input type="text" id="reasonTags" style="width: 22rem" /></label>
         <label class="opt">하단 블록 기본 정렬
           <select id="blockSort">
             <option value="name">이름순</option>

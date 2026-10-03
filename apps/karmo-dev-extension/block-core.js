@@ -73,6 +73,9 @@
   `;
   document.documentElement.appendChild(style);
 
+  /* 차단 정보 한 줄: 사유, 메모, 만료일 */
+  const whyOf = (h) => [h.reason, h.note, h.until ? `${h.until.slice(0, 10)} 까지` : ""].filter(Boolean).join(" / ") || "차단 해제";
+
   const hashOf = (key) => {
     let h = 0;
     for (const c of key) h = (h * 31 + c.codePointAt(0)) >>> 0;
@@ -98,8 +101,20 @@
         chrome.storage.local.set({ [storeKey]: all });
       });
     }
-    const setBlock = (key, name) => edit(K.block, (s) => { s[key] = { name, at: new Date().toISOString() }; });
+    const patchBlock = (key, fields) => edit(K.block, (s) => { if (s[key]) Object.assign(s[key], fields); });
     const unblock = (key) => edit(K.block, (s) => { delete s[key]; });
+    /* 차단 직후 토스트로 사유, 기간, 메모 */
+    const setBlock = (key, name) => {
+      edit(K.block, (s) => { s[key] = { name, at: new Date().toISOString() }; });
+      globalThis.KarmoToast?.show({
+        title: name,
+        tags: settings.reasonTags,
+        onReason: (reason) => patchBlock(key, { reason }),
+        onDays: (days) => patchBlock(key, { until: days ? new Date(Date.now() + days * 86400000).toISOString() : null }),
+        onNote: (note) => patchBlock(key, { note }),
+        onUndo: () => unblock(key),
+      });
+    };
     const toggleLike = (key, name) => edit(K.like, (s) => { if (s[key]) delete s[key]; else s[key] = { name, at: new Date().toISOString() }; });
     const setSetting = (patch) => chrome.storage.local.get({ [K.settings]: {} }, (i) => {
       const raw = i[K.settings] || {};
@@ -123,7 +138,7 @@
       /** 제자리에서 숨기고 아래 블록에 info { key, name, kind, el, label, href } 를 올린다 */
       hide(el, info) {
         el.classList.add(HIDDEN);
-        if (info) hidden.push({ ...info, el });
+        if (info) hidden.push({ ...info, el, reason: blockMap[info.key]?.reason, note: blockMap[info.key]?.note, until: blockMap[info.key]?.until });
       },
       /** row: 강조와 색 표시의 대상 줄 (글, 댓글), nick: 닉네임 요소 */
       tag(row, key, nick) {
@@ -281,7 +296,7 @@
 
     /* 숨긴 줄 모음. 글은 사이트의 글 목록 모양 그대로 (줄을 복제), 이름순이 기본. 내용이 같으면 DOM 을 건드리지 않음 */
     function renderBlock() {
-      const sig = settings.blockSort + "\n" + hidden.map((h) => `${h.kind}|${h.key}|${h.href}|${h.label}`).join("\n");
+      const sig = settings.blockSort + "\n" + hidden.map((h) => `${h.kind}|${h.key}|${h.href}|${h.label}|${h.reason}|${h.note}|${h.until}`).join("\n");
       let box = document.querySelector(`.${BLOCK}`);
       if (sig === blockSig) {
         if (box) alignBlock(box);
@@ -308,7 +323,10 @@
       const others = hidden.filter((h) => h.kind !== "post").sort(sorter);
 
       const sum = document.createElement("summary");
-      sum.textContent = `차단한 유저의 글 ${hidden.length}개`;
+      const why = {};
+      for (const h of hidden) if (h.reason) why[h.reason] = (why[h.reason] || 0) + 1;
+      const whyText = Object.entries(why).map(([k, n]) => `${k} ${n}`).join(", ");
+      sum.textContent = `차단한 유저의 글 ${hidden.length}개${whyText ? ` (${whyText})` : ""}`;
       const tools = document.createElement("div");
       tools.className = "tools";
       tools.append("정렬 ");
@@ -343,6 +361,7 @@
           un.type = "button";
           un.className = "un";
           un.textContent = "차단 해제";
+          un.title = whyOf(h);
           un.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); unblock(h.key); });
           c.append(un);
           table.append(c);
@@ -365,6 +384,7 @@
           const un = document.createElement("button");
           un.type = "button";
           un.textContent = "차단 해제";
+          un.title = whyOf(h);
           un.addEventListener("click", () => unblock(h.key));
           li.append(nm, a, un);
           ul.append(li);
@@ -389,7 +409,15 @@
     }
 
     function load(items) {
-      blockMap = (items[K.block] || {})[site] || {};
+      /* 임시 차단: 만료된 항목은 차단에서 빼고 저장소에서도 지움 */
+      const now = Date.now();
+      blockMap = {};
+      const expired = [];
+      for (const [k, v] of Object.entries((items[K.block] || {})[site] || {})) {
+        if (v.until && Date.parse(v.until) <= now) expired.push(k);
+        else blockMap[k] = v;
+      }
+      if (expired.length) edit(K.block, (s) => { for (const k of expired) delete s[k]; });
       likeMap = (items[K.like] || {})[site] || {};
       const raw = items[K.settings] || {};
       settings = { ...DEFAULTS, ...(raw[site] || (raw.linkStyle ? raw : {})) };
@@ -408,9 +436,9 @@
     chrome.storage.onChanged.addListener((ch, area) => {
       if (area === "local" && (ch[K.block] || ch[K.like] || ch[K.settings])) read();
     });
-    const ours = (n) => n.nodeType === 1 && (n.classList.contains(PANEL) || n.classList.contains(BLOCK) || n.classList.contains(BTNS));
+    const ours = (n) => n.nodeType === 1 && (n.classList.contains(PANEL) || n.classList.contains(BLOCK) || n.classList.contains(BTNS) || n.classList.contains("karmo-toast"));
     new MutationObserver((muts) => {
-      const own = (m) => m.target.closest?.(`.${BLOCK}, .${PANEL}`) || (m.type === "childList" && [...m.addedNodes, ...m.removedNodes].every(ours));
+      const own = (m) => m.target.closest?.(`.${BLOCK}, .${PANEL}, .karmo-toast`) || (m.type === "childList" && [...m.addedNodes, ...m.removedNodes].every(ours));
       if (muts.every(own)) return;
       schedule();
     }).observe(document.documentElement, { childList: true, subtree: true });
