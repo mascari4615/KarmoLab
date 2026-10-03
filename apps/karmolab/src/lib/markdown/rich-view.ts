@@ -46,6 +46,8 @@ export interface RichViewOptions {
      * 이 페이지에서 실행되므로 신뢰 수준을 올려야 열리던 것을 따로 뗌. 본문은 `user` 로 엄격히 거르고 직접 쓴 글의 실행판만 열 때 `trust: 'user'` + `demos: true`
      */
     demos?: boolean;
+    /** html 실행판 iframe 이 내용 높이를 따라가게 (80 ~ 640px). 기본 false (기존처럼 220px 고정). 글 안에 실행판을 여럿 쓰는 곳 (위키) 이 켬 */
+    demoAutoHeight?: boolean;
     /** 글 안 제목을 몇 단계 내릴지 (h1 -> h(1+n), 최대 h6). 주면 `headings` 보다 우선. `demoted` 는 2 와 비슷하나 h4, h5 는 안 건드림 */
     headingOffset?: number;
     /** 제목 id 앞말. 기본 '' (블로그 글의 앵커 주소를 지킴) */
@@ -375,7 +377,7 @@ export async function renderRichMarkdown(
             holder.textContent = block.textContent || '';
             block.closest('pre')?.replaceWith(holder);
         });
-        mountDemos(body, labels.demo);
+        mountDemos(body, labels.demo, { autoHeight: options.demoAutoHeight });
     }
 
     runCodeBlockHook(body, options.hooks);

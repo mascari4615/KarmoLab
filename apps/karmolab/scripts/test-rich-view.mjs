@@ -175,6 +175,27 @@ const tags = (el, sel) => [...el.querySelectorAll(sel)].map((n) => n.tagName.toL
     check('demos true + user: 본문의 원문 script 와 javascript: 링크는 여전히 막힘', !mixed.container.querySelector('script') && !mixed.container.querySelector('a[href^="javascript"]') && globalThis.window.__pwn === undefined, mixed.container.innerHTML);
     const off = await render(demo, { trust: 'self', demos: false });
     check('demos false + self: 실행판 안 열림', !off.container.querySelector('iframe'), off.container.innerHTML);
+    // 높이: 기본은 220px 고정 (기존 동작), demoAutoHeight 를 켜면 내용 높이를 따라감
+    const fixed = await render(demo, { trust: 'self' });
+    const fixedFrame = fixed.container.querySelector('iframe.doc-demo-view');
+    check('기본: 실행판 높이 220px 고정, 높이 알림 스크립트 없음', fixedFrame.style.height === '220px' && !fixedFrame.srcdoc.includes('karmoDemoHeight'), fixedFrame.srcdoc.slice(-120));
+    const auto = await render(demo, { trust: 'self', demoAutoHeight: true });
+    const autoFrame = auto.container.querySelector('iframe.doc-demo-view');
+    check('demoAutoHeight: srcdoc 에 높이 알림이 들어감', autoFrame.srcdoc.includes('karmoDemoHeight') && autoFrame.srcdoc.includes('<p>안녕</p>'), autoFrame.srcdoc.slice(-160));
+    const send = (source, value) => window.dispatchEvent(new window.MessageEvent('message', { data: { karmoDemoHeight: value }, source }));
+    send(autoFrame.contentWindow, 333);
+    check('demoAutoHeight: 내 iframe 이 보낸 높이를 따름', autoFrame.style.height === '333px', autoFrame.style.height);
+    send(autoFrame.contentWindow, 5);
+    check('demoAutoHeight: 너무 작으면 80px', autoFrame.style.height === '80px', autoFrame.style.height);
+    send(autoFrame.contentWindow, 99999);
+    check('demoAutoHeight: 너무 크면 640px', autoFrame.style.height === '640px', autoFrame.style.height);
+    send(window, 400);
+    check('demoAutoHeight: 남이 보낸 메시지는 무시', autoFrame.style.height === '640px', autoFrame.style.height);
+    send(autoFrame.contentWindow, 'abc');
+    check('demoAutoHeight: 숫자가 아니면 무시', autoFrame.style.height === '640px', autoFrame.style.height);
+    const otherFrame = fixed.container.querySelector('iframe.doc-demo-view');
+    send(autoFrame.contentWindow, 250);
+    check('demoAutoHeight: 켜지 않은 다른 실행판은 영향 없음', otherFrame.style.height === '220px', otherFrame.style.height);
 }
 
 // ── 도해와 목차

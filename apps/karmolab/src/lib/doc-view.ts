@@ -312,12 +312,20 @@ function shaderPage(frag: string): string {
   <\/script>`;
 }
 
-function demoPage(kind: DemoKind, code: string): string {
+function demoPage(kind: DemoKind, code: string, autoHeight = false): string {
   if (kind === 'js') return jsPage(code);
   if (kind === 'shader') return shaderPage(code);
-  /* html. 글자 크기만 맞춰 주고 나머지는 예제가 정한다 */
-  return `<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:12px;font:14px/1.6 system-ui,sans-serif;color:#222;background:#fff}</style>${code}`;
+  /* html. 글자 크기만 맞춰 주고 나머지는 예제가 정한다. autoHeight 면 끝에 자기 높이를 부모에게 알리는 한 줄 (iframe 이 내용 높이를 따라가게) */
+  const heightScript = autoHeight
+    ? `<script>(function(){var s=function(){parent.postMessage({${DEMO_HEIGHT_KEY}:document.documentElement.scrollHeight},'*')};addEventListener('load',s);if(window.ResizeObserver)new ResizeObserver(s).observe(document.documentElement);s()})()</script>`
+    : '';
+  return `<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:12px;font:14px/1.6 system-ui,sans-serif;color:#222;background:#fff}</style>${code}${heightScript}`;
 }
+
+/** 실행판 안이 부모에게 보내는 높이 메시지의 키. 부모는 보낸 창이 자기 iframe 일 때만 받음 */
+const DEMO_HEIGHT_KEY = 'karmoDemoHeight';
+const DEMO_HEIGHT_MIN = 80;
+const DEMO_HEIGHT_MAX = 640;
 
 /**
  * `[data-demo]` 가 붙은 자리(강의 블록, 문서의 ```demo-... 울타리)를 살아 있는 판으로 바꾼다.
@@ -358,7 +366,7 @@ function controlsHtml(controls: DemoControl[], values: Record<string, string>): 
     .join('');
 }
 
-export function mountDemos(root: HTMLElement, labels: Partial<typeof DEMO_LABELS> = {}): void {
+export function mountDemos(root: HTMLElement, labels: Partial<typeof DEMO_LABELS> = {}, options: { autoHeight?: boolean } = {}): void {
   const L = { ...DEMO_LABELS, ...labels };
   root.querySelectorAll<HTMLElement>('[data-demo]').forEach((host) => {
     if (host.dataset.demoReady === '1') return;
@@ -373,6 +381,19 @@ export function mountDemos(root: HTMLElement, labels: Partial<typeof DEMO_LABELS
     frame.setAttribute('sandbox', 'allow-scripts');
     frame.setAttribute('title', L.result);
     frame.style.height = host.dataset.demoHeight || '220px';
+    /* autoHeight 옵션을 켠 곳의 html 실행판은 내용 높이를 따라감 (data-demo-height 를 주면 그 높이로 고정). 내 iframe 이 보낸 메시지만 받고, 화면에서 빠지면 듣기를 그만둠 */
+    if (options.autoHeight && kind === 'html' && !host.dataset.demoHeight) {
+      const onHeight = (event: MessageEvent): void => {
+        if (!frame.isConnected) {
+          window.removeEventListener('message', onHeight);
+          return;
+        }
+        if (event.source !== frame.contentWindow) return;
+        const height = Number((event.data as Record<string, unknown> | null)?.[DEMO_HEIGHT_KEY]);
+        if (Number.isFinite(height) && height > 0) frame.style.height = Math.min(DEMO_HEIGHT_MAX, Math.max(DEMO_HEIGHT_MIN, Math.ceil(height))) + 'px';
+      };
+      window.addEventListener('message', onHeight);
+    }
 
     const editor = document.createElement('textarea');
     editor.className = 'doc-demo-code';
@@ -410,7 +431,7 @@ export function mountDemos(root: HTMLElement, labels: Partial<typeof DEMO_LABELS
     bar.append(run, reset);
 
     const draw = (): void => {
-      frame.srcdoc = demoPage(kind, fill(editor.value, values));
+      frame.srcdoc = demoPage(kind, fill(editor.value, values), !!(options.autoHeight && !host.dataset.demoHeight));
     };
     let knobTimer = 0;
     knobs.addEventListener('input', (e) => {
