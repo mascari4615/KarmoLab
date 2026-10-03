@@ -3,7 +3,8 @@
  * 저장 (chrome.storage.local), 모두 { site: { key: { name, at } } }
  *   blocklist: 차단. 제자리 숨김, 페이지 맨 아래 (footer 앞) 접힌 블록에 모음. 블록은 목록 폭과 왼쪽에 맞춤
  *   likelist: 좋아요. 올리지 않아도 줄 바탕을 분홍으로 강조
- *   karmoSettings: { linkStyle: pill | tint | off, panel: boolean, blockSort: name | id }
+ *   karmoSettings: { 사이트: { linkStyle: pill | tint | off, panel, blockSort: name | id, exBest, minRec, hoverHl } }
+ *     차단 유저라도 개념글, 추천컷 이상이면 숨기지 않고 "차단됨" 표시로 보임 (어댑터가 판정, api.exempt)
  * 한 페이지에 두 줄 이상 쓴 유저: 유저마다 색, 닉네임을 색 알약으로, 줄 왼쪽에 색 띠 (tint 는 줄 바탕도, 기본). 건수는 닉네임 툴팁과 왼쪽 패널
  * 사용: 어댑터가 KarmoBlock.start({ site, footer, listBox, scan }), 화면이 바뀔 때마다 scan(root, api)
  */
@@ -11,7 +12,7 @@
   if (globalThis.KarmoBlock) return;
 
   const K = { block: "blocklist", like: "likelist", settings: "karmoSettings" };
-  const DEFAULTS = { linkStyle: "tint", panel: true, blockSort: "name" };
+  const DEFAULTS = globalThis.KARMO_BLOCK_DEFAULTS; // block-defaults.js
   const STYLES = ["pill", "tint", "off"];
   const HIDDEN = "karmo-blocked";
   const BTNS = "karmo-btns";
@@ -20,6 +21,7 @@
   const MULTI = "karmo-multi";
   const BLOCK = "karmo-blocked-block";
   const PANEL = "karmo-panel";
+  const EXEMPT = "karmo-exempt";
 
   const style = document.createElement("style");
   style.textContent = `
@@ -36,14 +38,20 @@
     [data-karmo-link="tint"] .${MULTI} { background: color-mix(in srgb, var(--karmo-c) 14%, transparent) !important; }
     [data-karmo-link="pill"] .${MULTI} [data-karmo-nick], [data-karmo-link="tint"] .${MULTI} [data-karmo-nick] {
       background: var(--karmo-c); color: #fff !important; border-radius: 9px; padding: 0 6px; text-decoration: none; }
-    .${LIKE} { background: rgba(255, 92, 140, .14) !important; }
+    .${LIKE} { background: color-mix(in srgb, var(--karmo-like, #ff5c8c) 16%, transparent) !important; }
+    .${EXEMPT} { background-image: repeating-linear-gradient(135deg, rgba(110,110,110,.13) 0 6px, transparent 6px 12px) !important; }
+    .${EXEMPT} [data-karmo-nick] { text-decoration: line-through; opacity: .75; }
+    .${EXEMPT} [data-karmo-ex]::after { content: "차단됨, " attr(data-karmo-ex); display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; text-decoration: none; font-size: 11px; color: #fff; background: #a33; }
+    .${BTNS} .x.on { opacity: 1; color: #c00; border-color: #c00; }
     .${HL} { background: color-mix(in srgb, var(--karmo-c, #f0a000) 26%, transparent) !important; outline: 2px solid var(--karmo-c, #f0a000); outline-offset: -2px; }
     .${PANEL} { position: fixed; left: 8px; top: 110px; width: 190px; padding: 8px 10px; z-index: 50; border: 1px solid #ccc; border-radius: 4px;
       font: 12px/1.5 system-ui, sans-serif; color: #333; background: rgba(255,255,255,.96); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
     .${PANEL} b { display: block; margin-bottom: 4px; font-size: 12px; color: #666; }
     .${PANEL} div { display: flex; gap: 6px; align-items: center; padding: 2px 0; cursor: pointer; }
     .${PANEL} div:hover { background: rgba(128,128,128,.14); }
-    .${PANEL} i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--karmo-c); }
+    .${PANEL} input[type="color"] { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+    .${PANEL} input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .${PANEL} input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
     .${PANEL} span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .${PANEL} em { margin-left: auto; font-style: normal; color: #888; }
     @media (max-width: 1500px) { .${PANEL} { display: none; } }
@@ -65,11 +73,10 @@
   `;
   document.documentElement.appendChild(style);
 
-  /* 유저마다 고정 색. 좋아요의 분홍 (330 부근) 을 피한다 */
-  const colorOf = (key) => {
+  const hashOf = (key) => {
     let h = 0;
     for (const c of key) h = (h * 31 + c.codePointAt(0)) >>> 0;
-    return `hsl(${20 + ((h * 47) % 290)} 70% 42%)`;
+    return h;
   };
 
   function start({ site, footer, listBox, scan }) {
@@ -94,12 +101,23 @@
     const setBlock = (key, name) => edit(K.block, (s) => { s[key] = { name, at: new Date().toISOString() }; });
     const unblock = (key) => edit(K.block, (s) => { delete s[key]; });
     const toggleLike = (key, name) => edit(K.like, (s) => { if (s[key]) delete s[key]; else s[key] = { name, at: new Date().toISOString() }; });
-    const setSetting = (patch) => chrome.storage.local.get({ [K.settings]: {} }, (i) => chrome.storage.local.set({ [K.settings]: { ...(i[K.settings] || {}), ...patch } }));
+    const setSetting = (patch) => chrome.storage.local.get({ [K.settings]: {} }, (i) => {
+      const raw = i[K.settings] || {};
+      chrome.storage.local.set({ [K.settings]: { ...raw, [site]: { ...(raw[site] || {}), ...patch } } });
+    });
 
     const rowsOf = (key) => [...document.querySelectorAll("[data-karmo-row]")].filter((r) => r.dataset.karmoRow === key && !r.classList.contains(HIDDEN));
 
     const api = {
       isBlocked: (key) => Object.prototype.hasOwnProperty.call(blockMap, key),
+      get settings() {
+        return settings;
+      },
+      /** 차단 유저의 줄을 숨기지 않고 표시만. mark 요소 뒤에 사유 why 를 붙임 */
+      exempt(row, mark, why) {
+        row.classList.add(EXEMPT);
+        if (mark) mark.dataset.karmoEx = why;
+      },
       /** 제자리에서 숨기고 아래 블록에 info { key, name, kind, el, label, href } 를 올린다 */
       hide(el, info) {
         el.classList.add(HIDDEN);
@@ -129,10 +147,13 @@
             });
             return b;
           };
-          w.append(mk("like", "♥", `${name} 좋아요`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => setBlock(key, name)));
+          w.append(mk("like", "♥", `${name} 좋아요`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key] ? unblock(key) : setBlock(key, name))));
           anchor.after(w);
         }
         w.querySelector(".like").classList.toggle("on", !!likeMap[key]);
+        const x = w.querySelector(".x");
+        x.classList.toggle("on", !!blockMap[key]);
+        x.title = blockMap[key] ? `${name} 차단 해제` : `${name} 차단`;
       },
     };
 
@@ -149,7 +170,7 @@
       if (x) x.title = `${x.title.replace(/ \(.*\)$/, "")} (이 페이지 ${rows.length}건)`;
     }
     document.addEventListener("mouseover", (e) => {
-      if (e.target.closest?.(`.${PANEL}`)) return;
+      if (e.target.closest?.(`.${PANEL}`) || !settings.hoverHl) return;
       const row = e.target.closest?.("[data-karmo-row]");
       highlightKey(row ? row.dataset.karmoRow : null, row);
     });
@@ -163,10 +184,29 @@
         if (!by.has(k)) by.set(k, []);
         by.get(k).push(r);
       }
+      /* 색: 유저별 지정이 먼저, 나머지는 해시로 팔레트에서 고르되 이 페이지에서 겹치면 다음 칸 */
+      const keys = [...by].filter(([, rs]) => rs.length >= 2).map(([k]) => k).sort();
+      const colorMap = new Map();
+      const used = new Set();
+      for (const k of keys) {
+        const mine = settings.colors?.[k];
+        if (mine) {
+          colorMap.set(k, mine);
+          used.add(mine.toLowerCase());
+        }
+      }
+      const pal = settings.palette?.length ? settings.palette : DEFAULTS.palette;
+      for (const k of keys) {
+        if (colorMap.has(k)) continue;
+        let i = hashOf(k) % pal.length;
+        for (let t = 0; t < pal.length && used.has(pal[i].toLowerCase()); t += 1) i = (i + 1) % pal.length;
+        colorMap.set(k, pal[i]);
+        used.add(pal[i].toLowerCase());
+      }
       const multis = [];
       for (const [key, rs] of by) {
         const multi = rs.length >= 2;
-        const c = colorOf(key);
+        const c = colorMap.get(key);
         for (const r of rs) {
           r.classList.toggle(MULTI, multi);
           r.classList.toggle(LIKE, !!likeMap[key]);
@@ -188,7 +228,7 @@
         panelSig = "";
         return;
       }
-      const sig = multis.map((m) => `${m.key}|${m.n}|${!!likeMap[m.key]}`).join("\n");
+      const sig = multis.map((m) => `${m.key}|${m.n}|${m.c}|${!!likeMap[m.key]}`).join("\n");
       if (sig === panelSig && box) return;
       panelSig = sig;
       if (!box) {
@@ -203,7 +243,12 @@
       for (const m of multis) {
         const row = document.createElement("div");
         row.style.setProperty("--karmo-c", m.c);
-        const dot = document.createElement("i");
+        const dot = document.createElement("input");
+        dot.type = "color";
+        dot.value = m.c;
+        dot.title = "이 유저 색 바꾸기";
+        dot.addEventListener("click", (e) => e.stopPropagation());
+        dot.addEventListener("change", () => setSetting({ colors: { ...(settings.colors || {}), [m.key]: dot.value } }));
         const nm = document.createElement("span");
         nm.textContent = (likeMap[m.key] ? "♥ " : "") + m.name;
         const n = document.createElement("em");
@@ -344,11 +389,14 @@
     function load(items) {
       blockMap = (items[K.block] || {})[site] || {};
       likeMap = (items[K.like] || {})[site] || {};
-      settings = { ...DEFAULTS, ...(items[K.settings] || {}) };
+      const raw = items[K.settings] || {};
+      settings = { ...DEFAULTS, ...(raw[site] || (raw.linkStyle ? raw : {})) };
       if (!STYLES.includes(settings.linkStyle)) settings.linkStyle = DEFAULTS.linkStyle; // 옛 값 (lines, stripe)
       document.documentElement.dataset.karmoLink = settings.linkStyle;
+      document.documentElement.style.setProperty("--karmo-like", settings.likeColor);
       // 해제 반영: 숨김을 모두 지우고 다시 검사
-      document.querySelectorAll(`.${HIDDEN}`).forEach((el) => el.classList.remove(HIDDEN));
+      document.querySelectorAll(`.${HIDDEN}, .${EXEMPT}`).forEach((el) => el.classList.remove(HIDDEN, EXEMPT));
+      document.querySelectorAll("[data-karmo-ex]").forEach((el) => delete el.dataset.karmoEx);
       blockSig = "\0";
       panelSig = "";
       schedule();

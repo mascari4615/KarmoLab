@@ -7,7 +7,7 @@
     <style>
       body {
         font-family: system-ui, sans-serif;
-        max-width: 40rem;
+        max-width: 46rem;
         margin: 2rem auto;
         padding: 0 1rem;
       }
@@ -16,11 +16,19 @@
         margin-bottom: 0.35rem;
         font-weight: 600;
       }
+      label.opt {
+        font-weight: 400;
+        margin: 0.25rem 0;
+      }
       input[type="url"] {
         width: 100%;
         box-sizing: border-box;
         padding: 0.5rem 0.6rem;
         font-size: 1rem;
+      }
+      input[type="number"] {
+        width: 5rem;
+        padding: 0.25rem 0.4rem;
       }
       .row {
         display: flex;
@@ -48,41 +56,168 @@
         color: #444;
         margin-top: 0.5rem;
       }
-      #lists li { display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0; }
-      #lists code { color: #666; }
+      nav.tabs {
+        display: flex;
+        gap: 0.25rem;
+        border-bottom: 2px solid #ccc;
+        margin: 1rem 0 1.25rem;
+      }
+      nav.tabs button {
+        border: 0;
+        background: none;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        padding: 0.5rem 1rem;
+        color: #555;
+      }
+      nav.tabs button.on {
+        border-bottom-color: #1c7ed6;
+        color: #000;
+        font-weight: 600;
+      }
+      section.tab {
+        display: none;
+      }
+      section.tab.on {
+        display: block;
+      }
+      fieldset {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin: 0 0 1rem;
+        padding: 0.5rem 1rem 0.75rem;
+      }
+      legend {
+        font-weight: 700;
+        padding: 0 0.4rem;
+      }
+      .swatches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-items: center;
+        margin: 0.4rem 0;
+      }
+      .swatch {
+        position: relative;
+      }
+      .swatch input[type="color"],
+      input.like[type="color"] {
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 1px solid #aaa;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .swatch button.del {
+        position: absolute;
+        top: -0.5rem;
+        right: -0.5rem;
+        width: 1.1rem;
+        height: 1.1rem;
+        padding: 0;
+        line-height: 1;
+        font-size: 0.75rem;
+        border-radius: 50%;
+        border: 1px solid #888;
+        background: #fff;
+      }
+      #lists li,
+      #userColors li {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin: 0.2rem 0;
+      }
+      #lists code,
+      #userColors code {
+        color: #666;
+      }
+      #userColors input[type="color"] {
+        width: 1.8rem;
+        height: 1.8rem;
+        padding: 0;
+      }
     </style>
   </head>
   <body>
     <h1>KarmoDevExtension</h1>
-    <p class="hint">chat-overlay(Tauri) ingest 주소. 포트를 바꿨으면 여기도 맞춥니다.</p>
-    <label for="ingestUrl">Ingest URL</label>
-    <input
-      id="ingestUrl"
-      type="url"
-      spellcheck="false"
-      autocomplete="off"
-      placeholder="http://127.0.0.1:17376/ingest"
-      autofocus
-    />
-    <div class="row">
-      <button type="button" id="save">저장</button>
-      <button type="button" id="resetDefault" class="secondary">기본 주소로 저장</button>
-    </div>
+    <nav class="tabs">
+      <button type="button" data-tab="general">일반</button>
+      <button type="button" data-tab="arca">아카라이브</button>
+    </nav>
     <p id="status" aria-live="polite"></p>
-    <h2>유저 차단, 좋아요</h2>
-    <p class="hint">아카라이브 글 줄에 마우스를 올리면 나오는 ♥ (좋아요, 줄 바탕이 분홍) 와 × (차단, 숨기고 페이지 맨 아래 블록에 모음) 로 추가.</p>
-    <h3>같은 유저의 글 구분</h3>
-    <p class="hint">한 페이지에 두 줄 이상 쓴 유저를 유저마다 다른 색으로. 닉네임은 색 알약, 줄 왼쪽에 색 띠.</p>
-    <label><input type="radio" name="linkStyle" value="pill" /> 알약과 색 띠 (바탕 없음)</label>
-    <label><input type="radio" name="linkStyle" value="tint" /> 알약, 색 띠, 줄 바탕까지 연한 색 (기본)</label>
-    <label><input type="radio" name="linkStyle" value="off" /> 끔</label>
-    <label><input type="checkbox" id="panel" /> 화면 왼쪽에 "여러 글 쓴 유저" 목록 (너비 1500px 이상, 올리면 그 유저 글 강조)</label>
-    <div class="row">
-      <button type="button" id="listExport" class="secondary">JSON 내보내기</button>
-      <button type="button" id="listImport" class="secondary">JSON 가져오기 (합침)</button>
-      <input type="file" id="listFile" accept="application/json" hidden />
-    </div>
-    <div id="lists"></div>
+
+    <section class="tab" id="tab-general">
+      <p class="hint">chat-overlay(Tauri) ingest 주소. 포트를 바꿨으면 여기도 맞춥니다.</p>
+      <label for="ingestUrl">Ingest URL</label>
+      <input
+        id="ingestUrl"
+        type="url"
+        spellcheck="false"
+        autocomplete="off"
+        placeholder="http://127.0.0.1:17376/ingest"
+      />
+      <div class="row">
+        <button type="button" id="save">저장</button>
+        <button type="button" id="resetDefault" class="secondary">기본 주소로 저장</button>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-arca">
+      <fieldset>
+        <legend>같은 유저의 글 구분</legend>
+        <p class="hint">한 페이지에 두 줄 이상 쓴 유저를 유저마다 다른 색으로 보입니다. 닉네임은 색 알약, 줄 왼쪽에 색 띠.</p>
+        <label class="opt"><input type="radio" name="linkStyle" value="tint" /> 알약, 색 띠, 줄 바탕까지 연한 색</label>
+        <label class="opt"><input type="radio" name="linkStyle" value="pill" /> 알약과 색 띠만 (바탕 없음)</label>
+        <label class="opt"><input type="radio" name="linkStyle" value="off" /> 끔</label>
+        <label class="opt"><input type="checkbox" id="panel" /> 화면 왼쪽에 "여러 글 쓴 유저" 목록 (너비 1500px 이상. 색 동그라미를 눌러 그 유저 색을 바꿈)</label>
+        <label class="opt"><input type="checkbox" id="hoverHl" /> 글 줄에 마우스를 올리면 같은 유저의 글을 강조</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>색</legend>
+        <p class="hint">자동 색은 아래 팔레트에서 유저마다 하나씩 고릅니다. 한 페이지에서 겹치지 않게 다음 칸으로 넘어갑니다.</p>
+        <div class="swatches" id="palette"></div>
+        <div class="row">
+          <button type="button" id="paletteAdd" class="secondary">색 추가</button>
+          <button type="button" id="paletteReset" class="secondary">기본 팔레트로</button>
+        </div>
+        <div class="row">
+          <label for="likeColor" style="margin: 0">좋아요 유저 줄 색</label>
+          <input type="color" id="likeColor" class="like" />
+        </div>
+        <p class="hint">유저별로 지정한 색 (왼쪽 패널에서 바꾼 것)</p>
+        <ul id="userColors"></ul>
+      </fieldset>
+
+      <fieldset>
+        <legend>차단</legend>
+        <p class="hint">차단한 유저의 글은 숨기고 페이지 맨 아래 블록에 모읍니다. 아래 조건이면 숨기지 않고 "차단됨" 표시로 보입니다.</p>
+        <label class="opt"><input type="checkbox" id="exBest" /> 개념글은 보임</label>
+        <label class="opt">추천이 <input type="number" id="minRec" min="0" step="1" /> 이상이면 보임 (0 이면 끔)</label>
+        <label class="opt">하단 블록 기본 정렬
+          <select id="blockSort">
+            <option value="name">이름순</option>
+            <option value="id">번호순</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>차단, 좋아요 목록</legend>
+        <p class="hint">글 줄에 마우스를 올리면 나오는 ♥ (좋아요) 와 × (차단) 로 추가합니다.</p>
+        <div class="row">
+          <button type="button" id="listExport" class="secondary">JSON 내보내기</button>
+          <button type="button" id="listImport" class="secondary">JSON 가져오기 (합침)</button>
+          <input type="file" id="listFile" accept="application/json" hidden />
+        </div>
+        <div id="lists"></div>
+      </fieldset>
+    </section>
+
+    <script src="block-defaults.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

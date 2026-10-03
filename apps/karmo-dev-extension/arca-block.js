@@ -22,6 +22,14 @@ function summary(row, key, name) {
   return { kind: "comment", key, name, label: "댓글: " + squash(row.querySelector(".message .text")?.textContent, 80), href: id ? `#c_${id}` : "" };
 }
 
+/* 차단 유저의 목록 글을 보여줄 사유. 개념글 (제목 앞 별), 추천이 설정값 이상 */
+function exemptReason(row, s) {
+  if (s.exBest && row.querySelector(".title .bi-star-fill")) return "개념글";
+  const rec = parseInt(row.querySelector(".col-rate")?.textContent, 10);
+  if (s.minRec > 0 && rec >= s.minRec) return `추천 ${rec}`;
+  return "";
+}
+
 KarmoBlock.start({
   site: "arca",
   footer: "footer.footer",
@@ -32,17 +40,18 @@ KarmoBlock.start({
       if (!key || el.closest(".karmo-blocked-block") || !isUnique(el, key)) continue;
       const name = el.textContent.trim() || key;
       const row = el.closest("a.vrow, .comment-item");
-      if (row && api.isBlocked(key)) {
-        api.hide(row, summary(row, key, name));
-        continue;
+      const blocked = api.isBlocked(key);
+      if (row && blocked) {
+        // 목록 글만 예외 판정. 개념글, 추천컷 이상은 숨기지 않고 차단됨 표시
+        const why = row.matches("a.vrow") ? exemptReason(row, api.settings) : "";
+        if (!why) {
+          api.hide(row, summary(row, key, name));
+          continue;
+        }
+        api.exempt(row, row.querySelector(".badges") || el, why);
       }
-      // 글 머리 글쓴이: 차단 상태면 글 전체 숨김, 아니면 버튼
-      const head = el.closest(".article-head");
-      if (head && api.isBlocked(key)) {
-        const article = head.closest(".article-wrapper, .article") || head.parentElement;
-        if (article) api.hide(article, { kind: "article", key, name, label: squash(document.title, 100), href: location.href });
-        continue;
-      }
+      // 글 머리 글쓴이: 열어 본 글이므로 숨기지 않고 차단됨 표시만
+      if (el.closest(".article-head") && blocked) api.exempt(el.closest(".article-head"), el, "열어 본 글");
       // 공지 줄은 이어 보이기에서 뺀다 (매니저 공지 여러 줄이 항상 묶임)
       if (row && !row.classList.contains("notice")) api.tag(row, key, el);
       api.addButtons(el.closest(".user-info"), key, name);

@@ -11,6 +11,16 @@ function show(msg, ok = true) {
   status.style.color = ok ? "#0a0" : "#c00";
 }
 
+/* 탭. 주소의 #arca 로 바로 열림 */
+function openTab(name) {
+  for (const t of document.querySelectorAll("section.tab")) t.classList.toggle("on", t.id === `tab-${name}`);
+  for (const b of document.querySelectorAll("nav.tabs button")) b.classList.toggle("on", b.dataset.tab === name);
+  history.replaceState(null, "", `#${name}`);
+}
+for (const b of document.querySelectorAll("nav.tabs button")) b.addEventListener("click", () => openTab(b.dataset.tab));
+openTab(location.hash === "#arca" ? "arca" : "general");
+
+/* 일반 */
 chrome.storage.sync.get({ ingestUrl: DEFAULT_INGEST_URL }, (items) => {
   input.value = items.ingestUrl || DEFAULT_INGEST_URL;
 });
@@ -52,18 +62,104 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-/* 유저 차단, 좋아요, 설정. 형식은 block-core.js 머리 주석 */
+/* 아카라이브. 저장 형식은 block-core.js 머리 주석, 기본값은 block-defaults.js */
+const SITE = "arca";
+const D = globalThis.KARMO_BLOCK_DEFAULTS;
 const KEYS = { block: "blocklist", like: "likelist" };
 const LABEL = { block: "차단", like: "좋아요" };
-const listsEl = document.getElementById("lists");
+let state = { settings: { ...D }, lists: { block: {}, like: {} } };
 
-function renderLists(data) {
-  listsEl.textContent = "";
+function loadAll(cb) {
+  chrome.storage.local.get({ karmoSettings: {}, blocklist: {}, likelist: {} }, (items) => {
+    const raw = items.karmoSettings || {};
+    state = {
+      settings: { ...D, ...(raw[SITE] || (raw.linkStyle ? raw : {})) },
+      lists: { block: items.blocklist, like: items.likelist },
+    };
+    cb();
+  });
+}
+
+/* 설정 한 부분을 저장. 저장 뒤 화면을 다시 그림 */
+function patch(change) {
+  chrome.storage.local.get({ karmoSettings: {} }, (items) => {
+    const raw = items.karmoSettings || {};
+    const cur = { ...(raw[SITE] || (raw.linkStyle ? raw : {})) };
+    chrome.storage.local.set({ karmoSettings: { ...raw, [SITE]: { ...cur, ...change } } }, () => loadAll(render));
+  });
+}
+
+const el = (id) => document.getElementById(id);
+
+function colorInput(value, onChange) {
+  const c = document.createElement("input");
+  c.type = "color";
+  c.value = value;
+  c.addEventListener("change", () => onChange(c.value));
+  return c;
+}
+
+function renderPalette() {
+  const box = el("palette");
+  box.textContent = "";
+  state.settings.palette.forEach((hex, i) => {
+    const w = document.createElement("span");
+    w.className = "swatch";
+    w.append(colorInput(hex, (v) => patch({ palette: state.settings.palette.map((x, j) => (j === i ? v : x)) })));
+    if (state.settings.palette.length > 1) {
+      const d = document.createElement("button");
+      d.type = "button";
+      d.className = "del";
+      d.textContent = "x";
+      d.title = "이 색 빼기";
+      d.addEventListener("click", () => patch({ palette: state.settings.palette.filter((_, j) => j !== i) }));
+      w.append(d);
+    }
+    box.append(w);
+  });
+}
+
+function nameOf(key) {
+  for (const kind of ["block", "like"]) {
+    const v = (state.lists[kind][SITE] || {})[key];
+    if (v) return v.name;
+  }
+  return key;
+}
+
+function renderUserColors() {
+  const ul = el("userColors");
+  ul.textContent = "";
+  const entries = Object.entries(state.settings.colors || {});
+  for (const [key, hex] of entries) {
+    const li = document.createElement("li");
+    const rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "secondary";
+    rm.textContent = "자동 색으로";
+    rm.addEventListener("click", () => {
+      const next = { ...state.settings.colors };
+      delete next[key];
+      patch({ colors: next });
+    });
+    const label = document.createElement("span");
+    label.textContent = nameOf(key);
+    const code = document.createElement("code");
+    code.textContent = key;
+    li.append(colorInput(hex, (v) => patch({ colors: { ...state.settings.colors, [key]: v } })), label, code, rm);
+    ul.append(li);
+  }
+  if (!entries.length) ul.textContent = "없음";
+}
+
+function renderLists() {
+  const box = el("lists");
+  box.textContent = "";
   for (const kind of ["block", "like"]) {
     const h = document.createElement("h3");
     h.textContent = LABEL[kind];
     const ul = document.createElement("ul");
-    for (const [site, users] of Object.entries(data[kind])) {
+    for (const [site, users] of Object.entries(state.lists[kind])) {
       for (const [key, v] of Object.entries(users)) {
         const li = document.createElement("li");
         const rm = document.createElement("button");
@@ -71,8 +167,8 @@ function renderLists(data) {
         rm.className = "secondary";
         rm.textContent = "해제";
         rm.addEventListener("click", () => {
-          delete data[kind][site][key];
-          chrome.storage.local.set({ [KEYS[kind]]: data[kind] }, () => renderLists(data));
+          delete state.lists[kind][site][key];
+          chrome.storage.local.set({ [KEYS[kind]]: state.lists[kind] }, () => loadAll(render));
         });
         const label = document.createElement("span");
         label.textContent = `${site} / ${v.name} `;
@@ -83,46 +179,44 @@ function renderLists(data) {
       }
     }
     if (!ul.children.length) ul.textContent = "없음";
-    listsEl.append(h, ul);
+    box.append(h, ul);
   }
 }
 
-function loadLists() {
-  chrome.storage.local.get({ blocklist: {}, likelist: {}, karmoSettings: {} }, (items) => {
-    renderLists({ block: items.blocklist, like: items.likelist });
-    const s = { linkStyle: "tint", panel: true, ...items.karmoSettings };
-    for (const r of document.querySelectorAll('input[name="linkStyle"]')) r.checked = r.value === s.linkStyle;
-    document.getElementById("panel").checked = s.panel !== false;
-  });
-}
-loadLists();
-
-for (const r of document.querySelectorAll('input[name="linkStyle"]')) {
-  r.addEventListener("change", () => {
-    chrome.storage.local.get({ karmoSettings: {} }, (i) => {
-      chrome.storage.local.set({ karmoSettings: { ...i.karmoSettings, linkStyle: r.value } });
-    });
-  });
+function render() {
+  const s = state.settings;
+  for (const r of document.querySelectorAll('input[name="linkStyle"]')) r.checked = r.value === s.linkStyle;
+  el("panel").checked = !!s.panel;
+  el("hoverHl").checked = !!s.hoverHl;
+  el("exBest").checked = !!s.exBest;
+  el("minRec").value = String(s.minRec);
+  el("blockSort").value = s.blockSort;
+  el("likeColor").value = s.likeColor;
+  renderPalette();
+  renderUserColors();
+  renderLists();
 }
 
-document.getElementById("panel").addEventListener("change", (e) => {
-  chrome.storage.local.get({ karmoSettings: {} }, (i) => {
-    chrome.storage.local.set({ karmoSettings: { ...i.karmoSettings, panel: e.target.checked } });
-  });
+for (const r of document.querySelectorAll('input[name="linkStyle"]')) r.addEventListener("change", () => patch({ linkStyle: r.value }));
+el("panel").addEventListener("change", (e) => patch({ panel: e.target.checked }));
+el("hoverHl").addEventListener("change", (e) => patch({ hoverHl: e.target.checked }));
+el("exBest").addEventListener("change", (e) => patch({ exBest: e.target.checked }));
+el("minRec").addEventListener("change", (e) => patch({ minRec: Math.max(0, parseInt(e.target.value, 10) || 0) }));
+el("blockSort").addEventListener("change", (e) => patch({ blockSort: e.target.value }));
+el("likeColor").addEventListener("change", (e) => patch({ likeColor: e.target.value }));
+el("paletteAdd").addEventListener("click", () => patch({ palette: [...state.settings.palette, "#888888"] }));
+el("paletteReset").addEventListener("click", () => patch({ palette: [...D.palette] }));
+
+el("listExport").addEventListener("click", () => {
+  const text = JSON.stringify({ block: state.lists.block, like: state.lists.like }, null, 2);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = "userlists.json";
+  a.click();
 });
 
-document.getElementById("listExport").addEventListener("click", () => {
-  chrome.storage.local.get({ blocklist: {}, likelist: {} }, (items) => {
-    const text = JSON.stringify({ block: items.blocklist, like: items.likelist }, null, 2);
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-    a.download = "userlists.json";
-    a.click();
-  });
-});
-
-const listFile = document.getElementById("listFile");
-document.getElementById("listImport").addEventListener("click", () => listFile.click());
+const listFile = el("listFile");
+el("listImport").addEventListener("click", () => listFile.click());
 listFile.addEventListener("change", async () => {
   const f = listFile.files[0];
   if (!f) return;
@@ -135,22 +229,25 @@ listFile.addEventListener("change", async () => {
   }
   /* { block, like } 형태. 옛 형태 (사이트 맵 하나) 는 차단으로 본다 */
   if (!incoming.block && !incoming.like) incoming = { block: incoming };
-  chrome.storage.local.get({ blocklist: {}, likelist: {} }, (items) => {
-    const cur = { block: items.blocklist, like: items.likelist };
-    let n = 0;
-    for (const kind of ["block", "like"]) {
-      for (const [site, users] of Object.entries(incoming[kind] || {})) {
-        cur[kind][site] = cur[kind][site] || {};
-        for (const [key, v] of Object.entries(users || {})) {
-          if (!cur[kind][site][key]) n += 1;
-          cur[kind][site][key] = cur[kind][site][key] || v;
-        }
+  const cur = { block: state.lists.block, like: state.lists.like };
+  let n = 0;
+  for (const kind of ["block", "like"]) {
+    for (const [site, users] of Object.entries(incoming[kind] || {})) {
+      cur[kind][site] = cur[kind][site] || {};
+      for (const [key, v] of Object.entries(users || {})) {
+        if (!cur[kind][site][key]) n += 1;
+        cur[kind][site][key] = cur[kind][site][key] || v;
       }
     }
-    chrome.storage.local.set({ blocklist: cur.block, likelist: cur.like }, () => {
-      renderLists(cur);
-      show(`가져옴. 새로 ${n}명`);
-    });
+  }
+  chrome.storage.local.set({ blocklist: cur.block, likelist: cur.like }, () => {
+    loadAll(render);
+    show(`가져옴. 새로 ${n}명`);
   });
   listFile.value = "";
+});
+
+loadAll(render);
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area === "local" && (ch.karmoSettings || ch.blocklist || ch.likelist)) loadAll(render);
 });
