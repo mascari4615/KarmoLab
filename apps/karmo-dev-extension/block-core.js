@@ -9,15 +9,39 @@
   const STORE_KEY = "blocklist";
   const HIDDEN = "karmo-blocked";
   const BTN = "karmo-block-btn";
+  const HL = "karmo-hl";
 
   const style = document.createElement("style");
   style.textContent = `
     .${HIDDEN} { display: none !important; }
-    .${BTN} { all: unset; cursor: pointer; margin-left: 4px; padding: 0 3px; font: 11px/1.4 system-ui, sans-serif;
-      color: #999; border: 1px solid #bbb; border-radius: 2px; opacity: .55; }
-    .${BTN}:hover { opacity: 1; color: #c00; border-color: #c00; }
+    .${BTN} { all: unset; position: absolute; cursor: pointer; margin-left: 3px; padding: 0 4px; font: 12px/1.3 system-ui, sans-serif; white-space: nowrap;
+      color: #888; border: 1px solid #bbb; border-radius: 2px; opacity: 0; }
+    [data-karmo-row]:hover .${BTN}, .user-info:hover + .${BTN}, .${BTN}:hover { opacity: .75; }
+    .${BTN}:hover { opacity: 1 !important; color: #c00; border-color: #c00; }
+    .${HL} { background: rgba(255, 196, 0, .32) !important; outline: 2px solid rgba(255, 160, 0, .9); outline-offset: -2px; }
   `;
   document.documentElement.appendChild(style);
+
+  /* 닉네임 위에 마우스: 이 페이지에서 같은 키의 줄을 모두 강조, 건수를 툴팁으로 */
+  let hlKey = null;
+  function highlight(key) {
+    if (hlKey === key) return;
+    hlKey = key;
+    document.querySelectorAll(`.${HL}`).forEach((el) => el.classList.remove(HL));
+    if (key == null) return;
+    for (const row of document.querySelectorAll("[data-karmo-row]")) {
+      if (row.dataset.karmoRow === key) row.classList.add(HL);
+    }
+  }
+  document.addEventListener("mouseover", (e) => {
+    const name = e.target.closest?.("[data-karmo-name]");
+    if (name) {
+      const key = name.dataset.karmoName;
+      highlight(key);
+      const n = [...document.querySelectorAll("[data-karmo-row]")].filter((r) => r.dataset.karmoRow === key).length;
+      name.title = `이 페이지 ${n}건`;
+    } else highlight(null);
+  });
 
   function start({ site, scan }) {
     let list = {};
@@ -26,6 +50,11 @@
     const api = {
       isBlocked: (key) => Object.prototype.hasOwnProperty.call(list, key),
       hide: (el) => el.classList.add(HIDDEN),
+      /** row 는 강조될 줄, nameEl 은 마우스를 올릴 닉네임 */
+      tag(row, nameEl, key) {
+        if (row) row.dataset.karmoRow = key;
+        nameEl.dataset.karmoName = key;
+      },
       /** anchor 바로 뒤에 차단 버튼을 한 번만 단다 */
       addButton(anchor, key, name) {
         if (anchor.dataset.karmoBlockBtn) return;
@@ -33,7 +62,7 @@
         const b = document.createElement("button");
         b.type = "button";
         b.className = BTN;
-        b.textContent = "차단";
+        b.textContent = "×";
         b.title = `${name} 차단`;
         b.addEventListener("click", (e) => {
           e.preventDefault();

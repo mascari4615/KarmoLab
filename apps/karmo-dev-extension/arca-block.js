@@ -29,6 +29,7 @@ KarmoBlock.start({
         if (article) api.hide(article);
         continue;
       }
+      api.tag(row, el, key);
       api.addButton(el.closest(".user-info"), key, name);
     }
   },
