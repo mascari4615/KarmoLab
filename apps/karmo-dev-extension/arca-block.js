@@ -104,6 +104,20 @@ function summary(row, key, name) {
   return { kind: "comment", key, name, label: "댓글: " + squash(row.querySelector(".message .text")?.textContent, 80), href: id ? `#c_${id}` : "" };
 }
 
+/* 제목의 키워드 판정. 걸린 키워드를 돌려줌, 없으면 빈 문자열 */
+function keywordHit(row, list) {
+  if (!list?.length) return "";
+  const title = squash(row.querySelector(".title")?.textContent, 300).toLowerCase();
+  for (const k of list) {
+    try {
+      if (k.startsWith("re:") ? new RegExp(k.slice(3), "i").test(title) : title.includes(k.toLowerCase())) return k;
+    } catch {
+      /* 깨진 정규식은 건너뜀 */
+    }
+  }
+  return "";
+}
+
 /* 차단 유저의 목록 글을 보여줄 사유. 개념글 (제목 앞 별), 추천이 설정값 이상 */
 function exemptReason(row, s) {
   if (s.exBest && row.querySelector(".title .bi-star-fill")) return "개념글";
@@ -122,6 +136,12 @@ KarmoBlock.start({
       let key = el.getAttribute("data-filter");
       if (!key || el.closest(".karmo-blocked-block")) continue;
       const row = el.closest("a.vrow, .comment-item");
+      // 키워드 숨김은 글쓴이 확인보다 먼저 (번호 확인 전에도 적용)
+      const kw = row?.matches("a.vrow") && !row.classList.contains("notice") ? keywordHit(row, api.settings.keywords) : "";
+      if (kw) {
+        api.hide(row, { ...summary(row, `kw:${kw}`, `키워드 ${kw}`), keyword: kw, reason: "키워드" });
+        continue;
+      }
       // 목록 줄의 계정 유저: 글을 열어 확인한 `닉#번호` 로 바꿔 쓴다 (공지 줄은 대상 아님)
       if (row?.matches("a.vrow") && !row.classList.contains("notice") && !key.includes("#") && isAccount(el)) {
         key = resolveAccount(row, api.settings);

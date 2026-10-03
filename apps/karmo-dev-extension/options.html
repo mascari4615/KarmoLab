@@ -211,6 +211,12 @@
       </fieldset>
 
       <fieldset>
+        <legend>키워드 숨김</legend>
+        <p class="hint">제목에 이 단어가 들어 있는 글을 숨깁니다 (한 줄에 하나, 대소문자 무시, <code>re:</code> 로 시작하면 정규식). 숨긴 글은 차단 글과 같이 페이지 맨 아래 블록에 모이고 거기서 "키워드 빼기"로 풀 수 있습니다.</p>
+        <textarea id="keywords" rows="4" style="width: 100%; box-sizing: border-box" spellcheck="false"></textarea>
+      </fieldset>
+
+      <fieldset>
         <legend>차단, 좋아요 목록</legend>
         <p class="hint">글 줄에 마우스를 올리면 나오는 ♥ (좋아요) 와 × (차단) 로 추가합니다. 바뀔 때마다 다운로드 폴더의 <code>karmo-userlists/userlists.json</code> 에 자동으로 덮어쓰고, 작업 스케줄러의 publish 스크립트가 바뀐 때만 memo 의 userlists-data 브랜치에 커밋합니다.</p>
         <div class="row">

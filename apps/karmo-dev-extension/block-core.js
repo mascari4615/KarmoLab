@@ -103,6 +103,8 @@
     }
     const patchBlock = (key, fields) => edit(K.block, (s) => { if (s[key]) Object.assign(s[key], fields); });
     const unblock = (key) => edit(K.block, (s) => { delete s[key]; });
+    /* 하단 블록의 해제: 키워드로 숨겼으면 그 키워드를 빼고, 아니면 차단 해제 */
+    const release = (h) => (h.keyword ? setSetting({ keywords: (settings.keywords || []).filter((k) => k !== h.keyword) }) : unblock(h.key));
     /* 차단 직후 토스트로 사유, 기간, 메모 */
     const setBlock = (key, name) => {
       edit(K.block, (s) => { s[key] = { name, at: new Date().toISOString() }; });
@@ -138,7 +140,7 @@
       /** 제자리에서 숨기고 아래 블록에 info { key, name, kind, el, label, href } 를 올린다 */
       hide(el, info) {
         el.classList.add(HIDDEN);
-        if (info) hidden.push({ ...info, el, reason: blockMap[info.key]?.reason, note: blockMap[info.key]?.note, until: blockMap[info.key]?.until });
+        if (info) hidden.push({ ...info, el, reason: info.reason ?? blockMap[info.key]?.reason, note: blockMap[info.key]?.note, until: blockMap[info.key]?.until });
       },
       /** row: 강조와 색 표시의 대상 줄 (글, 댓글), nick: 닉네임 요소 */
       tag(row, key, nick) {
@@ -360,9 +362,9 @@
           const un = document.createElement("button");
           un.type = "button";
           un.className = "un";
-          un.textContent = "차단 해제";
+          un.textContent = h.keyword ? "키워드 빼기" : "차단 해제";
           un.title = whyOf(h);
-          un.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); unblock(h.key); });
+          un.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); release(h); });
           c.append(un);
           table.append(c);
         }
@@ -383,9 +385,9 @@
           if (h.href) a.href = h.href;
           const un = document.createElement("button");
           un.type = "button";
-          un.textContent = "차단 해제";
+          un.textContent = h.keyword ? "키워드 빼기" : "차단 해제";
           un.title = whyOf(h);
-          un.addEventListener("click", () => unblock(h.key));
+          un.addEventListener("click", () => release(h));
           li.append(nm, a, un);
           ul.append(li);
         }
