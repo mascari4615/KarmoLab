@@ -211,6 +211,15 @@
       </fieldset>
 
       <fieldset>
+        <legend>인사이트 (왼쪽 패널)</legend>
+        <p class="hint">좋아요 유저 최근 글, 최근 작성량, 취향 제안 (차단 후보와 좋아요 후보) 을 왼쪽 패널에 보입니다. 확장이 같은 보기의 앞쪽 글 목록을 직접 받아 읽고 (10분에 한 번), 내가 연 글과 본 글 수를 유저별로 쌓습니다.</p>
+        <label class="opt"><input type="checkbox" id="insight" /> 인사이트 켜기 (바꾸면 페이지를 새로고침)</label>
+        <label class="opt">읽을 목록 쪽 수 <input type="number" id="scanPages" min="1" max="10" step="1" /></label>
+        <label class="opt">후보에 올리려면 최소 <input type="number" id="candSeen" min="2" step="1" /> 건 이상 본 유저</label>
+        <div class="row"><button type="button" id="statsClear" class="secondary">쌓인 취향 통계 지우기</button><span id="statsState"></span></div>
+      </fieldset>
+
+      <fieldset>
         <legend>키워드 숨김</legend>
         <p class="hint">제목에 이 단어가 들어 있는 글을 숨깁니다 (한 줄에 하나, 대소문자 무시, <code>re:</code> 로 시작하면 정규식). 숨긴 글은 차단 글과 같이 페이지 맨 아래 블록에 모이고 거기서 "키워드 빼기"로 풀 수 있습니다.</p>
         <textarea id="keywords" rows="4" style="width: 100%; box-sizing: border-box" spellcheck="false"></textarea>

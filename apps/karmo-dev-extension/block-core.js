@@ -44,7 +44,7 @@
     .${EXEMPT} [data-karmo-ex]::after { content: "차단됨, " attr(data-karmo-ex); display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; text-decoration: none; font-size: 11px; color: #fff; background: #a33; }
     .${BTNS} .x.on { opacity: 1; color: #c00; border-color: #c00; }
     .${HL} { background: color-mix(in srgb, var(--karmo-c, #f0a000) 26%, transparent) !important; outline: 2px solid var(--karmo-c, #f0a000); outline-offset: -2px; }
-    .${PANEL} { position: fixed; left: 8px; top: 110px; width: 190px; padding: 8px 10px; z-index: 50; border: 1px solid #ccc; border-radius: 4px;
+    .${PANEL} { position: fixed; left: 8px; top: 110px; width: 230px; max-height: calc(100vh - 130px); overflow-y: auto; padding: 8px 10px; z-index: 50; border: 1px solid #ccc; border-radius: 4px;
       font: 12px/1.5 system-ui, sans-serif; color: #333; background: rgba(255,255,255,.96); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
     .${PANEL} b { display: block; margin-bottom: 4px; font-size: 12px; color: #666; }
     .${PANEL} div { display: flex; gap: 6px; align-items: center; padding: 2px 0; cursor: pointer; }
@@ -54,6 +54,13 @@
     .${PANEL} input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
     .${PANEL} span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .${PANEL} em { margin-left: auto; font-style: normal; color: #888; }
+    .${PANEL} h5 { margin: 10px 0 2px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+    .${PANEL} .it a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; }
+    .${PANEL} .it .tg { flex: none; padding: 0 5px; border-radius: 8px; font-size: 11px; color: #fff; background: #e8590c; }
+    .${PANEL} .it .tg.bad { background: #c92a2a; }
+    .${PANEL} .it .tg.good { background: #d6336c; }
+    .${PANEL} .it button { all: unset; flex: none; cursor: pointer; padding: 0 5px; font-size: 11px; border: 1px solid #bbb; border-radius: 3px; color: #666; }
+    .${PANEL} .it button:hover { color: #000; border-color: #000; }
     @media (max-width: 1500px) { .${PANEL} { display: none; } }
     .${BLOCK} { margin: 16px 0; padding: 8px 12px; border: 1px solid #ccc; border-radius: 3px; font: 13px/1.5 system-ui, sans-serif; color: #444; background: rgba(128,128,128,.08); box-sizing: border-box; }
     .${BLOCK} summary { cursor: pointer; font-weight: 600; }
@@ -90,6 +97,9 @@
     let hidden = [];
     let blockSig = "";
     let panelSig = "";
+    let sections = [];
+    let loaded = false;
+    const listeners = [];
     let hlKey = null;
     const turn = new Map();
 
@@ -127,8 +137,26 @@
 
     const api = {
       isBlocked: (key) => Object.prototype.hasOwnProperty.call(blockMap, key),
+      get ready() {
+        return loaded;
+      },
       /** 어댑터가 비동기로 알아낸 것을 반영하려고 다시 검사 */
       refresh: () => schedule(),
+      get likes() {
+        return likeMap;
+      },
+      get blocked() {
+        return blockMap;
+      },
+      like: (key, name) => toggleLike(key, name),
+      block: (key, name) => setBlock(key, name),
+      /** 저장소나 설정이 바뀔 때 부를 함수 등록 */
+      subscribe: (fn) => listeners.push(fn),
+      /** 왼쪽 패널 아래에 붙는 구역 [{ id, title, items: [{ label, href, tag, tagClass, actions: [{ text, title, fn }] }] }] */
+      setSections(next) {
+        sections = next;
+        schedule();
+      },
       get settings() {
         return settings;
       },
@@ -241,13 +269,14 @@
 
     function renderPanel(multis) {
       let box = document.querySelector(`.${PANEL}`);
-      const show = settings.panel && settings.linkStyle !== "off" && multis.length > 0;
+      const secs = sections.filter((x) => x.items.length);
+      const show = settings.panel && ((settings.linkStyle !== "off" && multis.length > 0) || secs.length > 0);
       if (!show) {
         box?.remove();
         panelSig = "";
         return;
       }
-      const sig = multis.map((m) => `${m.key}|${m.n}|${m.c}|${!!likeMap[m.key]}`).join("\n");
+      const sig = JSON.stringify(secs.map((x) => [x.id, x.items.map((i) => [i.label, i.tag, i.href])])) + multis.map((m) => `${m.key}|${m.n}|${m.c}|${!!likeMap[m.key]}`).join("\n");
       if (sig === panelSig && box) return;
       panelSig = sig;
       if (!box) {
@@ -256,9 +285,11 @@
         document.body.append(box);
       }
       box.textContent = "";
-      const t = document.createElement("b");
-      t.textContent = "이 페이지 여러 글 쓴 유저";
-      box.append(t);
+      if (multis.length) {
+        const t = document.createElement("b");
+        t.textContent = "이 페이지 여러 글 쓴 유저";
+        box.append(t);
+      }
       for (const m of multis) {
         const row = document.createElement("div");
         row.style.setProperty("--karmo-c", m.c);
@@ -282,6 +313,35 @@
           rows[i]?.scrollIntoView({ block: "center", behavior: "smooth" });
         });
         box.append(row);
+      }
+      for (const sec of secs) {
+        const h = document.createElement("h5");
+        h.textContent = sec.title;
+        box.append(h);
+        for (const it of sec.items) {
+          const row = document.createElement("div");
+          row.className = "it";
+          const a = document.createElement(it.href ? "a" : "span");
+          a.textContent = it.label;
+          if (it.href) a.href = it.href;
+          if (it.title) a.title = it.title;
+          row.append(a);
+          if (it.tag) {
+            const tg = document.createElement("span");
+            tg.className = `tg ${it.tagClass || ""}`;
+            tg.textContent = it.tag;
+            row.append(tg);
+          }
+          for (const act of it.actions || []) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.textContent = act.text;
+            if (act.title) b.title = act.title;
+            b.addEventListener("click", (e) => { e.stopPropagation(); act.fn(); });
+            row.append(b);
+          }
+          box.append(row);
+        }
       }
     }
 
@@ -425,6 +485,8 @@
       settings = { ...DEFAULTS, ...(raw[site] || (raw.linkStyle ? raw : {})) };
       if (!STYLES.includes(settings.linkStyle)) settings.linkStyle = DEFAULTS.linkStyle; // 옛 값 (lines, stripe)
       document.documentElement.dataset.karmoLink = settings.linkStyle;
+      loaded = true;
+      for (const fn of listeners) fn();
       document.documentElement.style.setProperty("--karmo-like", settings.likeColor);
       // 해제 반영: 숨김을 모두 지우고 다시 검사
       document.querySelectorAll(`.${HIDDEN}, .${EXEMPT}`).forEach((el) => el.classList.remove(HIDDEN, EXEMPT));

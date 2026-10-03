@@ -216,6 +216,9 @@ function render() {
   el("panel").checked = !!s.panel;
   el("hoverHl").checked = !!s.hoverHl;
   el("exBest").checked = !!s.exBest;
+  el("insight").checked = !!s.insight;
+  el("scanPages").value = String(s.scanPages);
+  el("candSeen").value = String(s.candSeen);
   el("reasonTags").value = (s.reasonTags || []).join(", ");
   if (document.activeElement !== el("keywords")) el("keywords").value = (s.keywords || []).join(String.fromCharCode(10));
   el("resolveAccounts").checked = !!s.resolveAccounts;
@@ -233,6 +236,12 @@ el("hoverHl").addEventListener("change", (e) => patch({ hoverHl: e.target.checke
 el("resolveAccounts").addEventListener("change", (e) => patch({ resolveAccounts: e.target.checked }));
 el("reasonTags").addEventListener("change", (e) => patch({ reasonTags: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }));
 el("keywords").addEventListener("change", (e) => patch({ keywords: e.target.value.split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean) }));
+el("insight").addEventListener("change", (e) => patch({ insight: e.target.checked }));
+el("scanPages").addEventListener("change", (e) => patch({ scanPages: Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)) }));
+el("candSeen").addEventListener("change", (e) => patch({ candSeen: Math.max(2, parseInt(e.target.value, 10) || 6) }));
+el("statsClear").addEventListener("click", () => {
+  chrome.storage.local.remove(["karmoStats", "karmoScan"], () => show("취향 통계를 지움"));
+});
 el("exBest").addEventListener("change", (e) => patch({ exBest: e.target.checked }));
 el("minRec").addEventListener("change", (e) => patch({ minRec: Math.max(0, parseInt(e.target.value, 10) || 0) }));
 el("blockSort").addEventListener("change", (e) => patch({ blockSort: e.target.value }));
@@ -249,7 +258,8 @@ function renderSaveState() {
 }
 el("listSave").addEventListener("click", async () => {
   const s = await exportUserlists();
-  show(s.error ? `저장 실패: ${s.error}` : `다운로드/${s.file} 에 저장`, !s.error);
+  const t = await exportStats();
+  show(s.error ? `저장 실패: ${s.error}` : `다운로드/${s.file}${t.skipped ? "" : ` 와 stats.json (유저 ${t.users}명)`} 에 저장`, !s.error);
 });
 renderSaveState();
 

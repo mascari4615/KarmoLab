@@ -10,6 +10,9 @@ globalThis.KARMO_BLOCK_DEFAULTS = {
   exBest: true, // 차단 유저라도 개념글은 표시
   minRec: 10, // 차단 유저라도 추천이 이 값 이상이면 표시, 0 이면 끔
   resolveAccounts: true, // 목록 줄의 계정 유저는 글을 열어 번호를 확인 (끄면 계정 유저는 목록에서 처리 안 함)
+  insight: true, // 좋아요 유저 새 글, 작성량 순위, 취향 제안 (왼쪽 패널)
+  scanPages: 5, // 인사이트가 읽는 목록 쪽 수 (현재 쪽 포함)
+  candSeen: 6, // 후보로 올리려면 최소로 본 글 수
   keywords: [], // 제목에 들어 있으면 숨기는 단어. 대소문자 무시, re: 로 시작하면 정규식
   reasonTags: ["광고", "싸움", "취향 아님", "도배", "기타"], // 차단 직후 토스트의 사유 칩
   likeColor: "#ff5c8c", // 좋아요 유저 줄 색

@@ -57,6 +57,7 @@ async function resolveOne(job) {
   }
   idPending.delete(job.id);
   apiRef?.refresh();
+  for (const fn of resolvedListeners) fn();
 }
 
 function pumpIds() {
@@ -70,21 +71,33 @@ function pumpIds() {
   }
 }
 
-/** 목록 줄 글쓴이의 `닉#번호`. 아직 모르면 null 을 주고 글을 받으러 감 */
-function resolveAccount(row, settings) {
+const idOfHref = (href) => {
+  const m = /\/b\/([^/?#]+)\/(\d+)/.exec(href || "");
+  return m ? `${m[1]}/${m[2]}` : null;
+};
+
+/** 글 주소로 본 글쓴이의 `닉#번호`. 아직 모르면 null 을 주고 (fetchIfMissing 이면) 글을 받으러 감 */
+function resolveHref(href, settings, fetchIfMissing = true) {
   if (!settings.resolveAccounts || !idLoaded) return null;
-  const m = /\/b\/([^/?#]+)\/(\d+)/.exec(row.getAttribute("href") || "");
-  if (!m) return null;
-  const id = `${m[1]}/${m[2]}`;
+  const id = idOfHref(href);
+  if (!id) return null;
   const hit = idCache.get(id);
   if (hit) return hit;
   const failed = idFailed.get(id);
-  if (idPending.has(id) || (failed && Date.now() - failed < ID_RETRY_MS)) return null;
+  if (!fetchIfMissing || idPending.has(id) || (failed && Date.now() - failed < ID_RETRY_MS)) return null;
   idPending.add(id);
-  idQueue.push({ id, href: row.href });
+  idQueue.push({ id, href: new URL(href, location.href).href });
   pumpIds();
   return null;
 }
+
+/* 인사이트 모듈이 쓰는 입구. 대기 중인 확인 건수는 한 번에 몰리지 않게 조절하는 데 씀 */
+globalThis.KarmoArca = {
+  resolveHref,
+  pendingCount: () => idPending.size,
+  onResolved: (fn) => resolvedListeners.push(fn),
+};
+const resolvedListeners = [];
 
 /* 한 사람을 가리키는 키만 통과. 고정닉, 매니저, `닉#번호` (아이콘 없는 유동닉은 닉이 겹쳐 제외) */
 function isUnique(el, key) {
@@ -132,6 +145,7 @@ KarmoBlock.start({
   listBox: ".list-table",
   scan(root, api) {
     apiRef = api;
+    if (api.ready) globalThis.KarmoInsight?.start(api);
     for (const el of root.querySelectorAll(".user-info [data-filter]")) {
       let key = el.getAttribute("data-filter");
       if (!key || el.closest(".karmo-blocked-block")) continue;
@@ -144,7 +158,7 @@ KarmoBlock.start({
       }
       // 목록 줄의 계정 유저: 글을 열어 확인한 `닉#번호` 로 바꿔 쓴다 (공지 줄은 대상 아님)
       if (row?.matches("a.vrow") && !row.classList.contains("notice") && !key.includes("#") && isAccount(el)) {
-        key = resolveAccount(row, api.settings);
+        key = resolveHref(row.getAttribute("href"), api.settings);
         if (!key) continue;
       }
       if (!isUnique(el, key)) continue;
