@@ -1,4 +1,4 @@
-importScripts("schedule.js");
+importScripts("schedule.js", "userlists.js");
 
 /**
  * MV3 service worker. 배지, 알림, 메시지 중계 등은 여기에 추가.

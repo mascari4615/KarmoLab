@@ -207,13 +207,18 @@ el("likeColor").addEventListener("change", (e) => patch({ likeColor: e.target.va
 el("paletteAdd").addEventListener("click", () => patch({ palette: [...state.settings.palette, "#888888"] }));
 el("paletteReset").addEventListener("click", () => patch({ palette: [...D.palette] }));
 
-el("listExport").addEventListener("click", () => {
-  const text = JSON.stringify({ block: state.lists.block, like: state.lists.like }, null, 2);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-  a.download = "userlists.json";
-  a.click();
+/* 파일 저장 상태. 내보내기 본체는 userlists.js */
+function renderSaveState() {
+  chrome.storage.local.get({ [UL_STATE]: null }, (items) => {
+    const s = items[UL_STATE];
+    el("saveState").textContent = !s ? "아직 저장 안 함" : s.error ? `실패: ${s.error}` : `${new Date(s.at).toLocaleString()} 저장, 차단 ${s.block}명, 좋아요 ${s.like}명`;
+  });
+}
+el("listSave").addEventListener("click", async () => {
+  const s = await exportUserlists();
+  show(s.error ? `저장 실패: ${s.error}` : `다운로드/${s.file} 에 저장`, !s.error);
 });
+renderSaveState();
 
 const listFile = el("listFile");
 el("listImport").addEventListener("click", () => listFile.click());
@@ -240,9 +245,16 @@ listFile.addEventListener("change", async () => {
       }
     }
   }
-  chrome.storage.local.set({ blocklist: cur.block, likelist: cur.like }, () => {
-    loadAll(render);
-    show(`가져옴. 새로 ${n}명`);
+  /* 파일에 설정이 있으면 지금 저장된 값이 우선, 빈 자리만 채움 */
+  chrome.storage.local.get({ karmoSettings: {} }, (items) => {
+    const merged = { ...items.karmoSettings };
+    for (const [site, s] of Object.entries(incoming.settings || {})) {
+      if (s && typeof s === "object") merged[site] = { ...s, ...(merged[site] || {}) };
+    }
+    chrome.storage.local.set({ blocklist: cur.block, likelist: cur.like, karmoSettings: merged }, () => {
+      loadAll(render);
+      show(`가져옴. 새로 ${n}명`);
+    });
   });
   listFile.value = "";
 });
@@ -250,4 +262,5 @@ listFile.addEventListener("change", async () => {
 loadAll(render);
 chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && (ch.karmoSettings || ch.blocklist || ch.likelist)) loadAll(render);
+  if (area === "local" && ch[UL_STATE]) renderSaveState();
 });
