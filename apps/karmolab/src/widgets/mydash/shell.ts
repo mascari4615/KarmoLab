@@ -59,6 +59,8 @@ import { t, loadNamespace } from '../../lib/i18n';
   const DEVICE_KEY = 'karmolab.mydash.device';
   const CONFIG_URL = '/apps/karmolab/data/mydash-config.json';
   const DEFAULT_EVENTS_BRANCH = 'karmolab-dashboard';
+  /* 사람 손이 머무는 방 (판정, 목표 기록). 뒤에서 새 판이 와도 강제로 다시 안 그림 */
+  const WRITE_PANELS = ['bookmarks', 'goals'];
   /* 쓰기가 403, 404 로 막혔을 때 사람이 손볼 곳. 토큰을 다시 받아도 안 풀림 */
   const PERM_MSG = 'GitHub App 권한 Contents 를 Read & write 로 바꾸고 설치 화면에서 승인';
 
@@ -68,9 +70,14 @@ import { t, loadNamespace } from '../../lib/i18n';
      사파리 비공개 모드, 저장소 꽉 참, 서드파티 차단에서 localStorage 는 **읽기도** 던진다.
      한 번 던지면 위젯 전체가 안 뜬다. 못 저장하는 판에서는 이번 화면만 쓰고 잊는 것이 맞다. */
   let memoryToken: Saved | null = null;
+  /* 마지막 쓰기가 던졌으면 저장소의 판이 낡은 것. 그때만 memoryToken 이 정본 */
+  let storeFailed = false;
 
+  /* ★ **매번 localStorage 를 다시 읽는다.** 탭 여럿이 같은 토큰 자리를 나눠 씀.
+     한 탭이 갱신하면 GitHub 갱신 토큰은 일회용이라 다른 탭이 들고 있던 판은 죽은 것.
+     메모리 판을 먼저 쓰면 그 죽은 판으로 갱신하다 bad_refresh_token 을 받음 */
   function loadSaved(): Saved | null {
-    if (memoryToken) return memoryToken;
+    if (storeFailed) return memoryToken;
     try {
       const raw = window.localStorage.getItem(STORE_KEY);
       if (!raw) return null;
@@ -78,7 +85,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (!v || typeof v.token !== 'string' || !v.token) return null;
       return v;
     } catch {
-      return null;
+      return memoryToken;
     }
   }
 
@@ -87,9 +94,22 @@ import { t, loadNamespace } from '../../lib/i18n';
     try {
       if (v) window.localStorage.setItem(STORE_KEY, JSON.stringify(v));
       else window.localStorage.removeItem(STORE_KEY);
+      storeFailed = false;
     } catch {
       /* 못 적었다. 이번 화면 동안은 memoryToken 으로 산다. 새로고침하면 다시 로그인이다. */
+      storeFailed = true;
     }
+    /* 토큰을 버리면 읽은 판도 버림. 다음 로그인이 다른 계정이어도 남의 파일이 먼저 안 뜨게 */
+    if (!v) void clearReads();
+  }
+
+  /**
+   * 죽은 토큰 버리기. **지금 저장된 판이 그 죽은 것일 때만.**
+   * 그 사이 다른 탭이 새 토큰을 적었으면 그것은 살아 있으니 둠
+   */
+  function dropToken(dead: (now: Saved) => boolean): void {
+    const now = loadSaved();
+    if (!now || dead(now)) saveToken(null);
   }
 
   /* ── 기기 이름 ─────────────────────────────────────────────────
@@ -327,24 +347,24 @@ import { t, loadNamespace } from '../../lib/i18n';
   /**
    * 갱신 결과 셋.
    * - ok: 새 토큰
-   * - dead: GitHub 명시적 거절. 저장 토큰 삭제
+   * - dead: GitHub 명시적 거절. `used` 는 거절당한 판. 저장된 것이 그 판일 때만 삭제
    * - keep: 네트워크나 5xx. **삭제 안 함**. 이번 요청만 실패, 다음에 재시도
    */
-  type RefreshOut = { kind: 'ok'; saved: Saved } | { kind: 'dead' } | { kind: 'keep' };
+  type RefreshOut = { kind: 'ok'; saved: Saved } | { kind: 'dead'; used: Saved | null } | { kind: 'keep' };
 
   /** GitHub 이 이 이름을 대면 갱신 토큰이 죽은 것. 그 밖의 이름은 다음에 다시 해 본다. */
   const DEAD_REFRESH_ERRORS = ['bad_refresh_token', 'unauthorized_client', 'incorrect_client_credentials', 'access_denied'];
 
   async function refreshOnce(cfg: Config, saved: Saved): Promise<RefreshOut> {
-    if (!saved.refresh) return { kind: 'dead' };
-    if (saved.refreshExpiresAt !== null && saved.refreshExpiresAt < Date.now()) return { kind: 'dead' };
+    if (!saved.refresh) return { kind: 'dead', used: saved };
+    if (saved.refreshExpiresAt !== null && saved.refreshExpiresAt < Date.now()) return { kind: 'dead', used: saved };
     let reply: TokenReply;
     try {
       reply = await relayPost<TokenReply>(cfg, '/device/refresh', { refresh_token: saved.refresh });
     } catch (e) {
-      return (e as DashError).kind === 'auth' ? { kind: 'dead' } : { kind: 'keep' };
+      return (e as DashError).kind === 'auth' ? { kind: 'dead', used: saved } : { kind: 'keep' };
     }
-    if (reply.error) return DEAD_REFRESH_ERRORS.includes(reply.error) ? { kind: 'dead' } : { kind: 'keep' };
+    if (reply.error) return DEAD_REFRESH_ERRORS.includes(reply.error) ? { kind: 'dead', used: saved } : { kind: 'keep' };
     if (!reply.access_token) return { kind: 'keep' };
     const next = tokenFrom(reply);
     saveToken(next);
@@ -354,9 +374,43 @@ import { t, loadNamespace } from '../../lib/i18n';
   /* 패널 둘이 같은 순간에 읽으면 갱신이 두 번 나가고, 늦게 온 쪽이 먼저 받은 토큰 덮어쓰기 발생.
      진행 중인 갱신 하나로 병합. */
   let refreshing: Promise<RefreshOut> | null = null;
+
+  /**
+   * 탭 사이 갱신 하나. 잠금 안에서 저장소를 다시 읽고, 다른 탭이 이미 새 토큰을 적었으면
+   * 그것을 씀. 갱신 토큰이 일회용이라 두 탭이 같은 판으로 갱신하면 늦은 쪽이 죽음.
+   * 잠금이 없는 브라우저는 그냥 갱신. 그 판의 경합은 `liveToken` 의 dead 재확인이 받음
+   */
+  function refreshShared(cfg: Config, saved: Saved): Promise<RefreshOut> {
+    const run = (): Promise<RefreshOut> => {
+      const now = loadSaved();
+      if (!now) return Promise.resolve({ kind: 'dead', used: null });
+      if (now.token !== saved.token && !isExpired(now)) return Promise.resolve({ kind: 'ok', saved: now });
+      return refreshOnce(cfg, now);
+    };
+    const locks = (navigator as unknown as {
+      locks?: { request<T>(name: string, cb: () => Promise<T>): Promise<T> };
+    }).locks;
+    if (!locks) return run();
+    /* 잠금 자체가 막힌 판 (불투명 출처) 만 잠금 없이 다시. 갱신이 이미 나간 뒤면 그대로 던짐 */
+    let ran = false;
+    try {
+      return locks
+        .request(STORE_KEY + '.refresh', () => {
+          ran = true;
+          return run();
+        })
+        .catch((e: unknown) => {
+          if (ran) throw e;
+          return run();
+        });
+    } catch {
+      return run();
+    }
+  }
+
   function refresh(cfg: Config, saved: Saved): Promise<RefreshOut> {
     if (refreshing) return refreshing;
-    const p = refreshOnce(cfg, saved).then(
+    const p = refreshShared(cfg, saved).then(
       (out) => {
         if (refreshing === p) refreshing = null;
         return out;
@@ -383,7 +437,12 @@ import { t, loadNamespace } from '../../lib/i18n';
     const out = await refresh(cfg, saved);
     if (out.kind === 'ok') return out.saved.token;
     if (out.kind === 'dead') {
-      saveToken(null);
+      /* 잠금 없는 판에서 다른 탭이 먼저 갱신했으면 저장소에 산 토큰이 있음. 그것을 씀 */
+      const used = out.used;
+      if (!used) return null;
+      const now = loadSaved();
+      if (now && now.token !== used.token && !isExpired(now)) return now.token;
+      dropToken((s) => s.refresh === used.refresh);
       return null;
     }
     throw new DashError('net', '토큰 갱신에 못 닿았다. 잠시 뒤 다시');
@@ -407,7 +466,12 @@ import { t, loadNamespace } from '../../lib/i18n';
   /* 한 번에 하나만. 로그인 직후와 online 이 겹치면 같은 줄을 두 번 보냄 */
   let flushing: Promise<{ sent: number; left: number }> | null = null;
 
-  function makeRepo(cfg: Config, onFresh?: () => void): DashRepoWrite {
+  /** 읽은 판 캐시의 열쇠. 셸이 방마다 읽은 파일을 셀 때도 같은 것 */
+  function cacheKey(cfg: Config, path: string, opts?: DashReadOpts): string {
+    return cfg.owner + '/' + cfg.repo + '@' + (opts?.ref || cfg.branch || 'main') + ':' + path;
+  }
+
+  function makeRepo(cfg: Config, onFresh?: (key: string) => void): DashRepoWrite {
     /** 이 화면 수명에 뒤에서 새 판을 받은 파일. 한 파일은 한 번만 */
     const revalidated = new Set<string>();
     const eventsBranch = cfg.eventsBranch || DEFAULT_EVENTS_BRANCH;
@@ -426,7 +490,7 @@ import { t, loadNamespace } from '../../lib/i18n';
      *
      * 주소를 통째로 받는 이유는 목록의 다음 장. Link 머리표가 준 주소를 그대로 다시 부름.
      */
-    async function callUrl(url: string, accept: string, label: string): Promise<Response> {
+    async function callUrl(url: string, accept: string, label: string, retried = false): Promise<Response> {
       const token = await liveToken(cfg);
       if (!token) throw new DashError('auth', '로그인이 필요하다');
       let res: Response;
@@ -438,8 +502,10 @@ import { t, loadNamespace } from '../../lib/i18n';
         throw new DashError('net', 'GitHub 에 못 닿았다');
       }
       if (res.status === 401) {
-        /* 토큰이 죽었다. 들고 있어 봐야 다음 요청도 401 이다. */
-        saveToken(null);
+        /* 토큰이 죽었다. 그 사이 다른 탭이 새 토큰을 적었으면 그것으로 한 번 더 */
+        const now = loadSaved();
+        if (!retried && now && now.token !== token) return callUrl(url, accept, label, true);
+        dropToken((s) => s.token === token);
         throw new DashError('auth', '토큰이 만료됐다');
       }
       if (res.status === 404) {
@@ -493,7 +559,7 @@ import { t, loadNamespace } from '../../lib/i18n';
      * 이미 받은 새 판이 저장돼 있어 같은 파일은 재수신 없음
      */
     async function readText(path: string, opts?: DashReadOpts): Promise<string> {
-      const key = cfg.owner + '/' + cfg.repo + '@' + (opts?.ref || cfg.branch || 'main') + ':' + path;
+      const key = cacheKey(cfg, path, opts);
       const old = await cachedRead(key);
       if (old === null) {
         const text = await fetchText(path, opts?.ref);
@@ -501,13 +567,15 @@ import { t, loadNamespace } from '../../lib/i18n';
         revalidated.add(key);
         return text;
       }
+      /* 이벤트 브랜치 파일은 경로가 유일하고 한 번 쓰면 안 바뀜. 다시 물으면 파일 수만큼 요청만 늘어남 */
+      if ((opts?.ref || '') === eventsBranch) return old;
       if (!revalidated.has(key)) {
         revalidated.add(key);
         void fetchText(path, opts?.ref)
           .then(async (text) => {
             if (text === old) return;
             await saveRead(key, text);
-            onFresh?.();
+            onFresh?.(key);
           })
           .catch(() => undefined);
       }
@@ -547,7 +615,8 @@ import { t, loadNamespace } from '../../lib/i18n';
         throw new DashError('net', 'GitHub 에 못 닿았다');
       }
       if (res.status === 401) {
-        saveToken(null);
+        /* 다른 탭이 새 토큰을 적었으면 지우지 않음. 줄은 outbox 에 남아 다음에 감 */
+        dropToken((s) => s.token === token);
         throw new DashError('auth', '토큰이 만료됐다');
       }
       if (res.status === 403 || res.status === 404) throw new DashError('perm', PERM_MSG);
@@ -951,6 +1020,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     let panelGen = 0;
     /** 지금 열린 목록 항목 id */
     let currentItem = '';
+    let hashBound = false;
     /** 목록의 작은 수. 홈이 채운다. 목록을 다시 그려도 남게 여기 든다 */
     const counts: Record<string, string> = {};
 
@@ -1242,8 +1312,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     }
 
     function logout(cfg: Config): void {
+      /* 읽은 판도 같이 비움 (saveToken) */
       saveToken(null);
-      void clearReads();
       setMenuCells(null);
       /* 토큰이 없으면 보낼 수도 없음. 남은 outbox 는 안 지움. 다시 로그인하면 그때 감 */
       stopOnline?.();
@@ -1255,14 +1325,50 @@ import { t, loadNamespace } from '../../lib/i18n';
     /* ── 로그인 뒤 ── */
     async function showDashboard(cfg: Config): Promise<void> {
       root.classList.remove('myd--gate');
-      /* 뒤에서 받은 새 판이 다르면 보던 방을 다시 그림. 여러 파일이 연달아 와도 한 번만 */
+      /* 뒤에서 받은 새 판이 다르면 보던 방을 다시 그림. 여러 파일이 연달아 와도 한 번만.
+         ★ 그 파일을 **지금 방이 읽었을 때만.** 다른 방 파일로 다시 그리면 판정 초안, 거름, 스크롤이 사라짐.
+         쓰는 방이거나 입력 칸에 손이 있으면 강제로 안 그리고 다시 그리기 버튼만 띄움 */
       let freshTimer = 0;
-      const repo = makeRepo(cfg, () => {
+      /** 지금 방이 연 뒤 읽은 파일 열쇠. 방을 열 때마다 새 벌 */
+      let roomKeys = new Set<string>();
+      const freshKeys = new Set<string>();
+      const repo = makeRepo(cfg, (key) => {
+        freshKeys.add(key);
         window.clearTimeout(freshTimer);
         freshTimer = window.setTimeout(() => {
-          if (reopen) reopen();
+          const hit = Array.from(freshKeys).some((k) => roomKeys.has(k));
+          freshKeys.clear();
+          if (!hit || !reopen) return;
+          if (roomBusy()) showFreshNote();
+          else reopen();
         }, 400);
       });
+
+      /** 지금 방을 다시 그리면 입력이 사라지는 판. 쓰는 방, 또는 입력 칸에 커서 */
+      function roomBusy(): boolean {
+        const id = panelBox?.getAttribute('data-panel-box') || '';
+        if (WRITE_PANELS.includes(id)) return true;
+        const el = document.activeElement as HTMLElement | null;
+        if (!el || !bodyEl.contains(el)) return false;
+        return el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+      }
+
+      /** 다시 그리기 버튼 한 줄. 방 칸 바로 위. 방을 갈면 bodyEl 과 같이 사라짐 */
+      function showFreshNote(): void {
+        if (!panelBox || bodyEl.querySelector('[data-fresh]')) return;
+        const note = document.createElement('div');
+        note.className = 'myd-row';
+        note.setAttribute('data-fresh', '1');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'myd-btn ghost';
+        btn.textContent = '새 판 있음, 다시 그리기';
+        btn.addEventListener('click', () => {
+          if (reopen) reopen();
+        });
+        note.appendChild(btn);
+        bodyEl.insertBefore(note, panelBox);
+      }
       /* 로그인 뒤 한 번. 지난 화면에서 그물이 끊겨 못 보낸 것이 남아 있을 수 있음 */
       void flushAndSay(repo);
       watchOnline(repo);
@@ -1326,9 +1432,23 @@ import { t, loadNamespace } from '../../lib/i18n';
           statEl.textContent = text;
         };
         statEl.textContent = '';
+        /* 이 방이 읽은 파일을 세는 겉. 뒤에서 온 새 판이 이 방 것인지 가를 때 씀 */
+        const keys = new Set<string>();
+        roomKeys = keys;
+        const roomRepo: DashRepoWrite = {
+          ...repo,
+          readText: (p, o) => {
+            keys.add(cacheKey(cfg, p, o));
+            return repo.readText(p, o);
+          },
+          readJson: <T>(p: string, o?: DashReadOpts): Promise<T> => {
+            keys.add(cacheKey(cfg, p, o));
+            return repo.readJson<T>(p, o);
+          },
+        };
         const ctx: DashPanelCtx<DashRepoWrite> = {
           root: mine,
-          repo,
+          repo: roomRepo,
           /* 링크 조립용 이름 셋. 패널이 근거에서 원본 파일로 내려갈 때 씀 */
           repoInfo: { owner: cfg.owner, repo: cfg.repo, branch: cfg.branch || 'main' },
           status,
@@ -1376,6 +1496,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         currentItem = it.id;
         markNav();
         setUrlItem(it.id);
+        roomKeys = new Set<string>();
         reopen = (): void => {
           currentItem = '';
           openItem(it.id);
@@ -1396,6 +1517,15 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* 새로고침해도 같은 화면. 주소에 남은 자리가 먼저고, 없거나 모르는 이름이면 오늘 */
       const want = itemById(urlItem());
       openItem(want ? want.id : 'today');
+      /* 주소창에서 해시만 고친 판. 화면이 쓰는 replaceState 는 이 사건을 안 냄. 다시 로그인해도 한 번만 붙임 */
+      if (!hashBound) {
+        hashBound = true;
+        window.addEventListener('hashchange', () => {
+          const it = itemById(urlItem());
+          const id = it ? it.id : 'today';
+          if (id !== currentItem) openItem(id);
+        });
+      }
     }
 
     /**
