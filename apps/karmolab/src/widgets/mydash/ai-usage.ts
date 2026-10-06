@@ -13,7 +13,7 @@
 import { dashRegistry, esc, hours, short, usd } from './kit';
 import { buildQuota } from '../../lib/ai-quota';
 import { loadNamespace } from '../../lib/i18n';
-import type { DashPanelCtx } from './kit';
+import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 
 (function (): void {
   'use strict';
@@ -59,6 +59,40 @@ import type { DashPanelCtx } from './kit';
 
   const ROOT_DIR = 'data/ai-usage';
   const ENV_DIR = 'data/ai-env';
+  /**
+   * 수집기가 매시 올리는 브랜치 (머신 방 VITALS_BRANCH 와 같은 고아 브랜치). main 의 롤업은
+   * 손으로만 갱신돼 늦음. 이 브랜치 먼저, 없으면 main
+   */
+  const DATA_BRANCH = 'machines-data';
+
+  function kindOf(e: unknown): string {
+    return (e as { kind?: string } | null)?.kind || '';
+  }
+
+  /** host 폴더 이름들. 수집기 브랜치 먼저, 비었거나 못 읽으면 main. auth 는 그대로 던짐 */
+  async function listHosts(repo: DashRepoRead): Promise<string[]> {
+    const dirsOf = (entries: DashEntry[]): string[] =>
+      entries.filter((e) => e.type === 'dir').map((e) => e.name).sort();
+    let live: string[] = [];
+    try {
+      live = dirsOf(await repo.list(ROOT_DIR, { ref: DATA_BRANCH }));
+    } catch (e) {
+      if (kindOf(e) === 'auth') throw e;
+    }
+    if (live.length) return live;
+    return dirsOf(await repo.list(ROOT_DIR));
+  }
+
+  /** 롤업 하나. 수집기 브랜치 먼저, 없거나 auth 아닌 실패면 main */
+  async function readRollups(repo: DashRepoRead, host: string): Promise<Rollups> {
+    const path = ROOT_DIR + '/' + host + '/rollups.json';
+    try {
+      return await repo.readJson<Rollups>(path, { ref: DATA_BRANCH });
+    } catch (e) {
+      if (kindOf(e) === 'auth') throw e;
+      return repo.readJson<Rollups>(path);
+    }
+  }
 
   /** 보여 줄 것. 폰에서 한 화면에 넷이 한계다. */
   type MetricId = 'cost' | 'sessions' | 'prompts' | 'commits';
@@ -306,12 +340,11 @@ import type { DashPanelCtx } from './kit';
 
     /* host 찾기. 폴더가 여럿이면 첫 번째. 하나뿐인 지금은 고르는 UI 를 안 만듦
        (없는 선택지를 그리면 화면만 늘고 고를 것이 없다). 늘면 그때 칩을 붙인다. */
-    const entries = await repo.list(ROOT_DIR);
-    const dirs = entries.filter((e) => e.type === 'dir').map((e) => e.name).sort();
+    const dirs = await listHosts(repo);
     if (!dirs.length) throw new Error(ROOT_DIR + ' 아래에 host 폴더가 없다');
     const host = dirs[0];
 
-    const roll = await repo.readJson<Rollups>(ROOT_DIR + '/' + host + '/rollups.json');
+    const roll = await readRollups(repo, host);
     status(host + ', ' + daysAgo(roll.generatedAt));
 
     const wrap = document.createElement('div');
@@ -512,6 +545,17 @@ import type { DashPanelCtx } from './kit';
     ctx.root.appendChild(shell);
     const pane = (id: Tab): HTMLElement => shell.querySelector('[data-pane="' + id + '"]') as HTMLElement;
     const built = new Set<Tab>();
+    /* 셸에 넘기는 길은 render 의 거부 하나뿐. 첫 탭 뒤에 난 auth, config 도 셸로 보내려고
+       render 를 화면을 떠날 때까지 열어 둠 */
+    let fatal: (e: unknown) => void = () => undefined;
+    let done: () => void = () => undefined;
+    const held = new Promise<void>((res, rej) => {
+      done = res;
+      fatal = rej;
+    });
+    /* 첫 탭이 받는 중에 거부되거나 첫 탭이 먼저 던진 판의 처리 안 된 거부 경고 방지. await 는 그대로 거부 */
+    held.catch(() => undefined);
+    ctx.onDispose(() => done());
     async function show(id: Tab): Promise<void> {
       try {
         localStorage.setItem(TAB_KEY, id);
@@ -524,17 +568,45 @@ import type { DashPanelCtx } from './kit';
       pane('env').hidden = id !== 'env';
       if (built.has(id)) return;
       built.add(id);
-      if (id === 'usage') await renderUsage({ ...ctx, root: pane('usage') });
-      else if (id === 'env') await renderEnv({ ...ctx, root: pane('env') });
-      else {
-        await loadNamespace('my-ai').catch(() => undefined);
-        buildQuota(pane('quota'), (fn) => ctx.onDispose(fn), undefined, () => ctx.ghToken());
+      try {
+        if (id === 'usage') await renderUsage({ ...ctx, root: pane('usage') });
+        else if (id === 'env') await renderEnv({ ...ctx, root: pane('env') });
+        else {
+          await loadNamespace('my-ai').catch(() => undefined);
+          buildQuota(pane('quota'), (fn) => ctx.onDispose(fn), undefined, () => ctx.ghToken());
+        }
+      } catch (e) {
+        /* 실패한 탭은 다시 누르면 다시 받음 */
+        built.delete(id);
+        throw e;
       }
     }
+    /** 탭 칸 안의 실패 한 줄과 다시 시도. auth, config 는 셸로 */
+    function failInPane(id: Tab, e: unknown): void {
+      if (!ctx.isCurrent()) return;
+      const kind = kindOf(e);
+      if (kind === 'auth' || kind === 'config') {
+        fatal(e);
+        return;
+      }
+      const el = pane(id);
+      el.innerHTML =
+        '<div class="au"><div class="au-foot">' +
+        esc((e as Error)?.message || '못 읽음') +
+        '</div><div class="au-chips"><button type="button" data-retry>다시 시도</button></div></div>';
+      el.querySelector('[data-retry]')?.addEventListener('click', () => {
+        void show(id).catch((err: unknown) => failInPane(id, err));
+      });
+    }
     shell.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) =>
-      b.addEventListener('click', () => void show(b.dataset.tab as Tab))
+      b.addEventListener('click', () => {
+        const id = b.dataset.tab as Tab;
+        void show(id).catch((e: unknown) => failInPane(id, e));
+      })
     );
+    /* 첫 탭 실패는 그대로 render 거부. 셸 오류 카드로 */
     await show(savedTab());
+    await held;
   }
 
   dashRegistry().register({

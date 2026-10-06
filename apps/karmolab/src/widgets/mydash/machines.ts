@@ -526,6 +526,8 @@ import { createLocalServers } from './local-servers';
     const byId = (id: string): Machine | null => machines.filter((m) => m.id === id)[0] || null;
     /* 로컬 dev 서버 칸 (옛 lab 서버 모니터). 자리만 비워 두고 DOM 은 local-servers.ts 가 그림 */
     const ls = createLocalServers({ isCurrent: ctx.isCurrent });
+    /* 만들자마자 치울 자리 등록. 아래 받기에서 일찍 끝나거나 던져도 타이머가 안 샘 */
+    ctx.onDispose(() => ls.dispose());
 
     /** 서비스 재시작. 첫 누름은 확인 대기, 같은 단추를 한 번 더 눌러야 보낸다 */
     const armed: Record<string, number> = {};
@@ -1080,7 +1082,6 @@ import { createLocalServers } from './local-servers';
     ctx.onDispose(() => {
       window.clearInterval(liveTimer);
       stopFollow();
-      ls.dispose();
       for (const k of Object.keys(armed)) window.clearTimeout(armed[k]);
     });
   }

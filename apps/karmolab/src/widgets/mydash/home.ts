@@ -12,7 +12,7 @@
  * 두 값이 갈리는 순간이 생긴다. 읽는 자리는 하나
  */
 import { dashRegistry, esc, short, usd } from './kit';
-import type { DashPanelCtx, DashRepoRead } from './kit';
+import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
 import { ensureToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents } from '../planner/gcal';
@@ -24,6 +24,10 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
   const GOALS_PATH = 'data/goals/goals.json';
   const AI_DIR = 'data/ai-usage';
   const PC_DIR = 'data/pc-vitals';
+  /** 수집기가 올리는 브랜치. 머신 방 VITALS_BRANCH, AI 방 DATA_BRANCH 와 같은 것 */
+  const DATA_BRANCH = 'machines-data';
+  /** 캘린더 수 상한. 구글 중계가 늦어도 그 카드만 비고 끝남 */
+  const CAL_TIMEOUT_MS = 10000;
   /** 아이콘은 ESC 메뉴와 같은 그림 (Codex image_gen 자작). CSS mask 로 글자색을 입힌다 */
   const ICON_BASE = '/apps/karmolab/img/shell/menu/';
 
@@ -82,12 +86,25 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     return left === undefined ? '-' : 'D-' + left;
   }
 
+  /** AI 방과 같은 순서. 수집기 브랜치 (매시) 먼저, 비었거나 못 읽으면 main. auth 는 그대로 던짐 */
   async function aiCount(repo: DashRepoRead): Promise<string> {
-    const hosts = (await repo.list(AI_DIR)).filter((e) => e.type === 'dir');
+    type Roll = { byDay?: Record<string, { cost?: number }> };
+    const isAuth = (e: unknown): boolean => (e as { kind?: string } | null)?.kind === 'auth';
+    const dirsOf = (entries: DashEntry[]): string[] =>
+      entries.filter((e) => e.type === 'dir').map((e) => e.name).sort();
+    let hosts: string[] = [];
+    try {
+      hosts = dirsOf(await repo.list(AI_DIR, { ref: DATA_BRANCH }));
+    } catch (e) {
+      if (isAuth(e)) throw e;
+    }
+    if (!hosts.length) hosts = dirsOf(await repo.list(AI_DIR));
     if (!hosts.length) throw new Error(AI_DIR + ' 아래에 host 폴더가 없다');
-    const roll = await repo.readJson<{ byDay?: Record<string, { cost?: number }> }>(
-      AI_DIR + '/' + hosts[0].name + '/rollups.json'
-    );
+    const path = AI_DIR + '/' + hosts[0] + '/rollups.json';
+    const roll = await repo.readJson<Roll>(path, { ref: DATA_BRANCH }).catch((e: unknown) => {
+      if (isAuth(e)) throw e;
+      return repo.readJson<Roll>(path);
+    });
     const byDay = roll.byDay || {};
     let cost = 0;
     for (const d of lastDays(30)) cost += num(byDay[d] && byDay[d].cost);
@@ -112,18 +129,29 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
    * 캘린더. 토큰은 캘린더 패널과 플래너가 같이 쓰는 그것 (`planner/gauth`). 없거나 죽었으면
    * 수 없음. 홈에서 로그인 창은 안 띄운다 (카드 일곱이 한 번에 뜨는 자리)
    */
-  async function calendarCount(): Promise<string | null> {
+  async function calendarCountRaw(): Promise<string | null> {
     const token = await ensureToken();
     if (!token) return null;
-    const from = new Date();
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(from.getTime() + 86400000);
+    /* 오늘은 KST 하루. 기기 지역시 자정을 쓰면 해외 기기에서 다른 방과 날이 갈림 */
+    const dayMs = 86400000;
+    const fromMs = Math.floor((Date.now() + KST_OFFSET_MS) / dayMs) * dayMs - KST_OFFSET_MS;
+    const from = new Date(fromMs);
+    const to = new Date(fromMs + dayMs);
     try {
       return String((await fetchEvents(token, await fetchCalendars(token), from, to)).length);
     } catch (e) {
       if (/\b401\b/.test((e as Error).message || '')) return null;
       throw e;
     }
+  }
+
+  /** 시간 상한을 건 캘린더 수. 넘기면 던져 그 카드에 못 읽음 */
+  function calendarCount(): Promise<string | null> {
+    let timer = 0;
+    const late = new Promise<never>((_, rej) => {
+      timer = window.setTimeout(() => rej(new Error('캘린더 응답 없음 (' + CAL_TIMEOUT_MS / 1000 + '초)')), CAL_TIMEOUT_MS);
+    });
+    return Promise.race([calendarCountRaw(), late]).finally(() => window.clearTimeout(timer));
   }
 
   function tiles(): Tile[] {
@@ -192,32 +220,32 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
       count: () => c.count(repo),
     }));
 
+    /* 오는 대로 하나씩 채운다. 느린 출처 하나가 나머지 수를 붙잡지 않게 */
     const results = await Promise.all(
-      jobs.map(async (j) => {
+      jobs.map(async (j): Promise<boolean> => {
+        let value: string | null;
         try {
-          return { item: j.item, ok: true as const, value: await j.count() };
+          value = await j.count();
         } catch (e) {
-          return { item: j.item, ok: false as const, why: (e as Error).message || '' };
+          if (!ctx.isCurrent()) return false;
+          const card = root.querySelector('[data-item="' + j.item + '"]');
+          if (card) {
+            const bad = document.createElement('span');
+            bad.className = 'mydh-bad';
+            bad.textContent = t('mydash.home.bad', undefined, '못 읽음');
+            const why = (e as Error)?.message || '';
+            if (why) bad.title = why;
+            card.appendChild(bad);
+          }
+          return false;
         }
+        /* 못 읽은 자리와 수가 없는 자리는 빈칸 (0 이 아니다) */
+        if (ctx.isCurrent() && value) ctx.setCount(j.item, value);
+        return true;
       })
     );
     if (!ctx.isCurrent()) return;
-
-    for (const r of results) {
-      if (r.ok) {
-        /* 못 읽은 자리와 수가 없는 자리는 빈칸 (0 이 아니다) */
-        if (r.value) ctx.setCount(r.item, r.value);
-        continue;
-      }
-      const card = root.querySelector('[data-item="' + r.item + '"]');
-      if (!card) continue;
-      const bad = document.createElement('span');
-      bad.className = 'mydh-bad';
-      bad.textContent = t('mydash.home.bad', undefined, '못 읽음');
-      if (r.why) bad.title = r.why;
-      card.appendChild(bad);
-    }
-    const alive = results.filter((r) => r.ok).length;
+    const alive = results.filter(Boolean).length;
     ctx.setCount('today', alive + '/' + results.length);
   }
 

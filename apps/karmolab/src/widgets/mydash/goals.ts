@@ -288,8 +288,8 @@ import { t, loadNamespace } from "../../lib/i18n";
     let events = await loadEvents(repo);
     if (!ctx.isCurrent()) return;
 
-    const now = Date.now();
-    const week = weekOf(now);
+    /* 이번 주. 방을 연 채 월요일 0시 (KST) 를 넘기면 refreshWeek 가 바꿈 */
+    let week = weekOf(Date.now());
 
     /* ── 이벤트 접기. 부를 때마다 새로 (몇백 개 수준) ── */
     type View = {
@@ -399,7 +399,25 @@ import { t, loadNamespace } from "../../lib/i18n";
             events = events.filter((x) => x !== ev);
             continue;
           }
-          if (kind === "auth" || kind === "config") throw e;
+          /* 부르는 쪽이 전부 void 라 던지면 조용히 사라짐. 북마크처럼 큐에 남기고 상태 줄로 알림.
+             outbox 는 다시 로그인하면 셸이 보냄 */
+          if (kind === "auth" || kind === "config") {
+            repo.enqueueJson(s.path, ev, message);
+            ctx.status(
+              kind === "auth"
+                ? t(
+                    "mydash.gl.authQueued",
+                    undefined,
+                    "로그인이 풀려 이 기기에 남김. 다시 로그인하면 보냄",
+                  )
+                : t(
+                    "mydash.gl.configQueued",
+                    undefined,
+                    "설정 문제로 저장 못 함. 이 기기에 남김",
+                  ),
+            );
+            return;
+          }
           if (kind === "perm") {
             events = events.filter((x) => x !== ev);
             view = fold();
@@ -420,6 +438,20 @@ import { t, loadNamespace } from "../../lib/i18n";
           return;
         }
       }
+      /* 새 시각으로도 이미 있음. 화면에서 빼고 다시 누르라고 알림 */
+      view = fold();
+      paint();
+      ctx.status(
+        t("mydash.gl.collided", undefined, "같은 시각 충돌, 다시 저장"),
+      );
+    }
+    /** 주가 바뀌었으면 접기와 화면을 새로. 쓰기 직전과 시계 타이머에서 부름 */
+    function refreshWeek(): void {
+      const cur = weekOf(Date.now());
+      if (cur === week) return;
+      week = cur;
+      view = fold();
+      paint();
     }
     const newId = (): string => Date.now().toString(36) + "-" + repo.nonce;
 
@@ -474,7 +506,7 @@ import { t, loadNamespace } from "../../lib/i18n";
             esc(view.steps.get(b.id) ?? b.step ?? "") +
             "</b></div>" +
             "<em>" +
-            esc(dday(b.due, now)) +
+            esc(dday(b.due, Date.now())) +
             "</em></button>",
         )
         .join("");
@@ -711,7 +743,7 @@ import { t, loadNamespace } from "../../lib/i18n";
                 "<div><b>" +
                 esc(b.name) +
                 '</b><span class="lv">Lv -</span></div><div class="dd">' +
-                esc(dday(b.due, now)) +
+                esc(dday(b.due, Date.now())) +
                 '</div><div class="st" contenteditable="true" data-step="' +
                 esc(b.id) +
                 '" data-ph="' +
@@ -901,6 +933,7 @@ import { t, loadNamespace } from "../../lib/i18n";
       const tabEl = el.closest("[data-tab]") as HTMLElement | null;
       if (tabEl) return open(tabEl.getAttribute("data-tab") || "wk");
       if (el.closest("[data-close]") || el === dim) return close();
+      refreshWeek();
       if (el.closest("[data-rest]")) return void send("rest", week, !view.rest);
       if (el.closest(".gl-ch")) {
         const ch = el.closest(".gl-ch") as HTMLElement;
@@ -967,6 +1000,7 @@ import { t, loadNamespace } from "../../lib/i18n";
         '[data-br-of="' + of + '"]',
       ) as HTMLSelectElement | null;
       const v = inp ? inp.value.trim() : "";
+      refreshWeek();
       if (v)
         void send(
           "todo.add",
@@ -985,6 +1019,7 @@ import { t, loadNamespace } from "../../lib/i18n";
     /* 시계와 배너 넘김. 숨은 탭에서는 멈춤 */
     function tick(): void {
       clock();
+      refreshWeek();
       const bn = lobby.querySelectorAll(".gl-bn");
       if (bn.length < 2) return;
       const dots = lobby.querySelectorAll(".gl-dots i");
@@ -998,6 +1033,7 @@ import { t, loadNamespace } from "../../lib/i18n";
     let timer = 0;
     const arm = (): void => {
       window.clearInterval(timer);
+      if (!document.hidden) refreshWeek();
       timer = document.hidden ? 0 : window.setInterval(tick, 5000);
     };
     document.addEventListener("visibilitychange", arm);
