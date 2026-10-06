@@ -20,6 +20,7 @@ import {
     type KanbanColumn
 } from './gcal';
 import { EXP_REWARDS, addExp } from '../../lib/gamification';
+import { withToken } from './gauth';
 import {
     createTask as createLocalTask,
     isLocal,
@@ -93,7 +94,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
         let remote: Record<KanbanColumn, GoogleTask[]> = { todo: [], inProgress: [], done: [] };
         if (token) {
             try {
-                remote = await fetchTasks(token);
+                remote = await withToken(token, fetchTasks);
             } catch {
                 /* 구글이 안 되면 이 브라우저 것만 보여 준다. 화면이 비어 버리지 않는다 */
                 toast(t('planner.t46'), 'error');
@@ -134,7 +135,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
 
         try {
             if (isLocal(id)) moveLocalTask(id, to);
-            else await patchTask(token!, id, payload);
+            else await withToken(token!, (tok) => patchTask(tok, id, payload));
             /* 끝낸 것, 손댄 것에 경험치. 스트릭과 같은 지갑을 쓴다 */
             if (to === 'done') addExp(EXP_REWARDS.TASK_COMPLETE);
             else if (to === 'inProgress' && from === 'todo') addExp(EXP_REWARDS.TASK_IN_PROGRESS);
@@ -218,7 +219,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
         void (async () => {
             try {
                 /* 연동 전이면 이 브라우저에 적는다. 구글이 없다고 못 적을 이유가 없다 */
-                if (token) await createTask(token, title);
+                if (token) await withToken(token, (tok) => createTask(tok, title));
                 else createLocalTask(title);
                 await reload();
             } catch {

@@ -32,6 +32,7 @@ import {
 } from './local-store';
 import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
+import { withToken } from './gauth';
 
 import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -201,7 +202,7 @@ export function buildCalendarView(
         select: (info) => openModal({ start: info.start, end: info.end, allDay: info.allDay }),
         eventClick: (info) => {
             info.jsEvent.preventDefault();
-            openPopover(info.event, info.jsEvent.clientX, info.jsEvent.clientY);
+            openPopover(info.event, info.jsEvent.clientX, info.jsEvent.clientY, info.el);
         },
         /* 자판만 쓰는 사람도 일정을 열 수 있어야 한다. 끌어 옮기기는 마우스만 되므로,
            초점을 받을 수 있게 하고 Enter/Space 로 같은 풍선을 연다(거기서 시각을 고친다). */
@@ -215,7 +216,7 @@ export function buildCalendarView(
                 if (e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
                 const r = info.el.getBoundingClientRect();
-                openPopover(info.event, r.left, r.bottom);
+                openPopover(info.event, r.left, r.bottom, info.el);
             });
         },
         /* 끌어 옮기기, 늘리기. 화면은 이미 옮겨져 있으니 구글에만 알리면 된다.
@@ -280,9 +281,12 @@ export function buildCalendarView(
         setEvents([...own(), ...cachedEvents(googleCals, from, to)]);
         loading.hidden = false;
         try {
-            const synced = await syncEvents(token, googleCals, from, to);
+            const synced = await withToken(token, (tok) => syncEvents(tok, googleCals, from, to));
             if (destroyed || lastRange.start !== start) return;
             if (synced.changed) setEvents([...own(), ...synced.events]);
+        } catch {
+            /* 갱신해도 거절. 저장본만 보이는 중임을 알림 */
+            if (!destroyed) toast(t('planner.t36'), 'error');
         } finally {
             loading.hidden = true;
         }
@@ -457,15 +461,22 @@ export function buildCalendarView(
     /* ===== 만들기, 고치기 창 ===== */
 
     let modalEl: HTMLElement | null = null;
+    /* 창을 열기 전 초점 자리. 닫으면 돌려줌 */
+    let modalOpener: HTMLElement | null = null;
+    const modalTitleId = `pl-modal-title-${Math.random().toString(36).slice(2, 8)}`;
 
-    function closeModal(): void {
+    function closeModal(restore = false): void {
         modalEl?.remove();
         modalEl = null;
+        const back = modalOpener;
+        modalOpener = null;
+        if (restore && back?.isConnected) back.focus();
     }
 
     function openModal(draft: Draft): void {
         closePopover();
         closeModal();
+        modalOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         const ev = draft.event;
         const startDate = ev ? ev.start ?? draft.start : draft.start;
         const endDate = ev ? ev.end ?? addHours(startDate, 1) : draft.end;
@@ -475,9 +486,9 @@ export function buildCalendarView(
         const wrap = document.createElement('div');
         wrap.className = 'pl-modal-overlay';
         wrap.innerHTML = `
-            <div class="pl-modal" role="dialog" aria-modal="true">
+            <div class="pl-modal" role="dialog" aria-modal="true" aria-labelledby="${modalTitleId}">
                 <div class="pl-modal-head">
-                    <h3 class="pl-modal-title">${esc(ev ? t('planner.t16') : t('planner.t17'))}</h3>
+                    <h3 class="pl-modal-title" id="${modalTitleId}">${esc(ev ? t('planner.t16') : t('planner.t17'))}</h3>
                     <button type="button" class="pl-modal-x" aria-label="${esc(t('planner.t18'))}">✕</button>
                 </div>
                 <form class="pl-modal-body">
@@ -518,10 +529,17 @@ export function buildCalendarView(
         allDayBox.addEventListener('change', syncAllDay);
         syncAllDay();
 
-        wrap.querySelector('.pl-modal-x')!.addEventListener('click', closeModal);
-        wrap.querySelector('.pl-modal-cancel')!.addEventListener('click', closeModal);
+        wrap.querySelector('.pl-modal-x')!.addEventListener('click', () => closeModal(true));
+        wrap.querySelector('.pl-modal-cancel')!.addEventListener('click', () => closeModal(true));
         wrap.addEventListener('click', (e) => {
-            if (e.target === wrap) closeModal();
+            if (e.target === wrap) closeModal(true);
+        });
+        wrap.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            /* ESC 메뉴가 같이 열리지 않게 */
+            e.preventDefault();
+            e.stopPropagation();
+            closeModal(true);
         });
         wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.focus();
 
@@ -544,7 +562,7 @@ export function buildCalendarView(
             }
             const calId =
                 (wrap.querySelector<HTMLSelectElement>('[name="event-calendar"]')?.value as string) || currentCal;
-            closeModal();
+            closeModal(true);
             void save(title, start, end, isAllDay, calId, ev);
         });
     }
@@ -570,11 +588,11 @@ export function buildCalendarView(
             if (ev && isLocal(ev.id)) {
                 updateLocalEvent(ev.id, { title, allDay, ...stored(start, end, allDay) });
             } else if (ev) {
-                await patchEvent(token!, calId, ev.extendedProps.googleId as string, { title, start, end, allDay });
+                await withToken(token!, (tok) => patchEvent(tok, calId, ev.extendedProps.googleId as string, { title, start, end, allDay }));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
                 createLocalEvent({ title, allDay, ...stored(start, end, allDay) });
             } else {
-                await createEvent(token, calId, { title, start, end, allDay });
+                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay }));
             }
             if (lastRange) await reload(lastRange.start, lastRange.end);
         } catch {
@@ -590,11 +608,13 @@ export function buildCalendarView(
             return;
         }
         try {
-            await patchEvent(token!, ev.extendedProps.calendarId as string, ev.extendedProps.googleId as string, {
-                start,
-                end,
-                allDay: ev.allDay
-            });
+            await withToken(token!, (tok) =>
+                patchEvent(tok, ev.extendedProps.calendarId as string, ev.extendedProps.googleId as string, {
+                    start,
+                    end,
+                    allDay: ev.allDay
+                })
+            );
         } catch {
             revert();
             toast(t('planner.t32'), 'error');
@@ -604,20 +624,34 @@ export function buildCalendarView(
     /* ===== 일정 하나 눌렀을 때 ===== */
 
     let popoverEl: HTMLElement | null = null;
+    let popoverOpener: HTMLElement | null = null;
 
-    function closePopover(): void {
+    /* 바깥 누름으로 닫을 때는 초점을 안 돌림 (누른 자리가 초점을 가져감) */
+    function closePopover(restore = false): void {
         popoverEl?.remove();
         popoverEl = null;
         document.removeEventListener('mousedown', onOutside, true);
+        document.removeEventListener('keydown', onPopoverKey, true);
+        const back = popoverOpener;
+        popoverOpener = null;
+        if (restore && back?.isConnected) back.focus();
+    }
+
+    function onPopoverKey(e: KeyboardEvent): void {
+        if (e.key !== 'Escape' || !popoverEl) return;
+        e.preventDefault();
+        e.stopPropagation();
+        closePopover(true);
     }
 
     function onOutside(e: MouseEvent): void {
         if (popoverEl && !popoverEl.contains(e.target as Node)) closePopover();
     }
 
-    function openPopover(ev: EventApi, atX: number, atY: number): void {
+    function openPopover(ev: EventApi, atX: number, atY: number, opener?: HTMLElement): void {
         closePopover();
         closeModal();
+        popoverOpener = opener ?? null;
         const link = (ev.extendedProps.htmlLink as string) || '';
         const calName = (ev.extendedProps.calendarName as string) || '';
         const isAi = ev.extendedProps.calendarId === AI_CALENDAR_ID;
@@ -646,18 +680,20 @@ export function buildCalendarView(
         const host = container.getBoundingClientRect();
         box.style.left = `${Math.max(8, Math.min(atX - host.left, host.width - rect.width - 8))}px`;
         box.style.top = `${Math.max(8, Math.min(atY - host.top + 8, host.height - rect.height - 8))}px`;
-        box.querySelector<HTMLElement>('.pl-pop-edit')?.focus();
+        (box.querySelector<HTMLElement>('.pl-pop-edit') ?? box.querySelector<HTMLElement>('.pl-modal-x'))?.focus();
 
-        box.querySelector('.pl-modal-x')!.addEventListener('click', closePopover);
+        box.querySelector('.pl-modal-x')!.addEventListener('click', () => closePopover(true));
         box.querySelector('.pl-pop-edit')?.addEventListener('click', () => {
             const start = ev.start ?? new Date();
-            closePopover();
+            /* 일정 칸으로 초점을 돌린 뒤 창을 연다. 창을 닫으면 그 칸으로 */
+            closePopover(true);
             openModal({ start, end: ev.end ?? addHours(start, 1), allDay: ev.allDay, event: ev });
         });
         box.querySelector('.pl-pop-del')?.addEventListener('click', () => {
             closePopover();
             void remove(ev);
         });
+        document.addEventListener('keydown', onPopoverKey, true);
         setTimeout(() => document.addEventListener('mousedown', onOutside, true), 0);
     }
 
@@ -674,7 +710,7 @@ export function buildCalendarView(
         if (!confirm(t('planner.t34', { title: ev.title }))) return;
         try {
             if (isLocal(ev.id)) deleteLocalEvent(ev.id);
-            else await deleteEvent(token!, ev.extendedProps.calendarId as string, ev.extendedProps.googleId as string);
+            else await withToken(token!, (tok) => deleteEvent(tok, ev.extendedProps.calendarId as string, ev.extendedProps.googleId as string));
             ev.remove();
             allEvents = allEvents.filter((e) => e.extendedProps.googleId !== ev.extendedProps.googleId);
             renderMini();
@@ -719,7 +755,7 @@ export function buildCalendarView(
                 /* 저장본이 없거나 막힌 브라우저 */
             }
             try {
-                const mine = await fetchCalendars(token);
+                const mine = await withToken(token, fetchCalendars);
                 useCalendars(mine);
                 try {
                     localStorage.setItem(CALS_KEY, JSON.stringify(mine));
@@ -743,8 +779,11 @@ export function buildCalendarView(
             hint.textContent = t('planner.t99');
             hint.hidden = false;
         } else if (token && aiGoogleId && followups.length) {
+            /* reload 를 기다리는 사이 화면을 떠났으면 맞춤도 안 함 */
+            if (destroyed) return;
+            const calId = aiGoogleId;
             try {
-                await syncToGoogle(token, aiGoogleId, followups);
+                await withToken(token, (tok) => syncToGoogle(tok, calId, followups));
             } catch {
                 /* 복사본이 늦을 뿐 원본은 그려져 있다. 다음에 열 때 다시 */
             }

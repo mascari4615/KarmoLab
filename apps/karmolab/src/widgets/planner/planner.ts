@@ -285,7 +285,12 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
             cal?.destroy();
             cal = null;
         };
-        onDispose(dispose);
+        /* 첫 그리기는 비동기 뒤. 그 전에 화면을 떠나면 그리지 않음 (안 지운 달력이 남지 않게) */
+        let disposed = false;
+        onDispose(() => {
+            disposed = true;
+            dispose();
+        });
 
         /* 달력은 그대로 두고 오른쪽 판만 갈아 끼운다. 같은 단추를 다시 누르면 닫힘 */
         function openSide(next: SideId | null, diaryDate?: string): void {
@@ -354,7 +359,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                         toast(t('planner.t06'), 'error');
                         return;
                     }
-                    if (token) render();
+                    if (token && !disposed) render();
                 })();
             });
             root.querySelector('.pl-logout')?.addEventListener('click', () => {
@@ -366,7 +371,9 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
 
         /* i18n 묶음이 오기 전에 그리면 키가 그대로 화면에 노출. 받은 뒤 그림.
            한 시간 토큰이 끝났으면 갱신 토큰으로 창 없이 한 번 갱신 */
-        void Promise.all([loadNamespace('planner'), token ? null : ensureToken().then((x) => { token = x; })]).then(render);
+        void Promise.all([loadNamespace('planner'), token ? null : ensureToken().then((x) => { token = x; })]).then(() => {
+            if (!disposed) render();
+        });
     }
 
     dashRegistry().register({

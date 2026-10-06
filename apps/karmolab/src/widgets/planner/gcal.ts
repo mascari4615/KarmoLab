@@ -250,7 +250,9 @@ export async function syncEvents(
                 const next = mergeFull(entry, items || [], from, to, stamp);
                 saveCached(cal.id, next);
                 return sig(entry) !== sig(next);
-            } catch {
+            } catch (e) {
+                /* 토큰 거절은 부르는 쪽이 갱신해 다시. 저장본을 말없이 보여 주지 않게 */
+                if (e instanceof Error && /\b401$/.test(e.message)) throw e;
                 return false;
             }
         })

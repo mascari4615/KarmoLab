@@ -291,6 +291,62 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
   eq(r.fixed, 1, '제목이 바뀐 a 를 고친다');
   eq(r.gone, 1, '원본에 없는 old 를 지운다');
   check(!calls.some((c) => c.includes('g3')), '표식 없는 사람 일정은 안 건드린다');
+
+  /* 쪽이 나뉘어 와도 끝까지, 같은 표식이 겹친 복사본은 하나만 남긴다 */
+  const pages = {
+    '': { items: [{ id: 'p1', summary: '[seo] 색인 재측정', start: { date: '2026-09-28' }, description: 'memo: projects/karmolab/systems/seo-ops.md', extendedProperties: { private: { karmoFollowup: 'a' } } }], nextPageToken: 'n2' },
+    n2: { items: [{ id: 'p2', summary: '[seo] 색인 재측정', start: { date: '2026-09-28' }, extendedProperties: { private: { karmoFollowup: 'a' } } }, { id: 'p3', summary: '새 것', start: { date: '2026-10-01' }, extendedProperties: { private: { karmoFollowup: 'd' } } }] },
+  };
+  const calls2 = [];
+  globalThis.fetch = async (url, init = {}) => {
+    const u = new URL(String(url));
+    calls2.push(`${init.method || 'GET'} ${u.pathname.split('/events')[1] || ''}`);
+    if (!init.method) return { ok: true, json: async () => pages[u.searchParams.get('pageToken') || ''] };
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+  const r2 = await F.syncToGoogle('tok', 'ai-cal', [items[0], { id: 'd', date: '2026-10-01', title: '새 것' }]);
+  eq(calls2.filter((c) => c.startsWith('GET')).length, 2, '다음 쪽까지 받는다');
+  eq(r2.made, 0, '둘째 쪽에 있던 d 는 다시 안 만든다');
+  eq(r2.gone, 1, '겹친 a 복사본 하나를 지운다');
+  check(calls2.includes('DELETE /p2') && !calls2.includes('DELETE /p1'), `먼저 본 것을 남기고 뒤의 것을 지운다 ${calls2.join(', ')}`);
+
+  /* 두 화면이 겹쳐 불러도 맞춤은 한 번 */
+  let posts = 0;
+  globalThis.fetch = async (url, init = {}) => {
+    if (!init.method) return { ok: true, json: async () => ({ items: [] }) };
+    if (init.method === 'POST') posts += 1;
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+  const one = [{ id: 'z', date: '2026-10-02', title: '하나' }];
+  const [x1, x2] = await Promise.all([F.syncToGoogle('tok', 'ai-cal', one), F.syncToGoogle('tok', 'ai-cal', one)]);
+  eq(posts, 1, '같은 항목을 두 번 만들지 않는다');
+  check(x1 === x2, '뒤에 부른 쪽은 도는 맞춤의 결과를 같이 받는다');
+}
+
+/* ── 토큰: 401 이면 갱신해 한 번만 다시 (gauth.ts withToken) ── */
+{
+  globalThis.window = globalThis;
+  const G = await load('src/widgets/planner/gauth.ts', 'planner-gauth');
+  localStorage.clear();
+  localStorage.setItem('karmolab_google_token', JSON.stringify({ access_token: 'old', expires_at: Date.now() + 3600000 }));
+  localStorage.setItem('karmolab_google_refresh', 'rt');
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ access_token: 'new', expires_in: 3599 }) });
+  const seen = [];
+  const got = await G.withToken('old', async (tok) => {
+    seen.push(tok);
+    if (tok === 'old') throw new Error('events 401');
+    return 'ok';
+  });
+  eq(got, 'ok', '갱신한 토큰으로 성공');
+  eq(seen.join(), 'old,new', '거절된 토큰 다음에 새 토큰으로 한 번');
+  let tries = 0;
+  const err = await G.withToken('new', async () => {
+    tries += 1;
+    throw new Error('events 500');
+  }).catch((e) => e.message);
+  eq(err, 'events 500', '401 이 아니면 그대로 실패');
+  eq(tries, 1, '401 이 아니면 다시 안 부른다');
+  localStorage.clear();
 }
 
 /* ── 구글 일정 캐시: 저장본으로 먼저, 바뀐 것만 받아 합치기 (event-cache.ts, 2026-09-25) ── */

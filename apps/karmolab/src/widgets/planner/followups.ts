@@ -77,21 +77,49 @@ function payload(f: Followup): Record<string, unknown> {
   };
 }
 
+type SyncResult = { made: number; fixed: number; gone: number };
+
+/* 맞춤은 한 번에 하나. 두 화면이 겹쳐 돌면 같은 항목을 두 번 만든다 */
+let inFlight: Promise<SyncResult> | null = null;
+
 /**
- * 구글 'AI' 캘린더를 원본에 맞춤. 반환값은 만든 수, 고친 수, 지운 수
- * 하나가 실패해도 나머지는 계속 (다음 열 때 재시도)
+ * 구글 'AI' 캘린더를 원본에 맞춤. 반환값은 만든 수, 고친 수, 지운 수 (겹친 복사본 정리 포함)
+ * 하나가 실패해도 나머지는 계속 (다음 열 때 재시도). 이미 도는 중이면 그 결과를 같이 기다림
  */
-export async function syncToGoogle(token: string, calendarId: string, items: Followup[]): Promise<{ made: number; fixed: number; gone: number }> {
+export function syncToGoogle(token: string, calendarId: string, items: Followup[]): Promise<SyncResult> {
+  if (!inFlight) {
+    inFlight = syncOnce(token, calendarId, items).finally(() => {
+      inFlight = null;
+    });
+  }
+  return inFlight;
+}
+
+async function syncOnce(token: string, calendarId: string, items: Followup[]): Promise<SyncResult> {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   const base = `${CAL_API}/calendars/${encodeURIComponent(calendarId)}/events`;
-  /* privateExtendedProperty 필터는 `이름=값` 꼴만 받아 이름만으로는 못 거른다. 전부 받아 표식으로 가른다 */
-  const res = await fetch(`${base}?maxResults=2500`, { headers });
-  if (!res.ok) throw new Error(`followups list ${res.status}`);
-  const data = (await res.json()) as { items?: TaggedEvent[] };
+  /* privateExtendedProperty 필터는 `이름=값` 꼴만 받아 이름만으로는 못 거름. 전부 받아 표식으로 가름.
+     쪽이 나뉘어 오면 끝까지 */
+  const all: TaggedEvent[] = [];
+  let page = '';
+  for (let i = 0; i < 20; i++) {
+    const q = new URLSearchParams({ maxResults: '2500' });
+    if (page) q.set('pageToken', page);
+    const res = await fetch(`${base}?${q}`, { headers });
+    if (!res.ok) throw new Error(`followups list ${res.status}`);
+    const data = (await res.json()) as { items?: TaggedEvent[]; nextPageToken?: string };
+    all.push(...(data.items || []));
+    page = typeof data.nextPageToken === 'string' ? data.nextPageToken : '';
+    if (!page) break;
+  }
+  /* 같은 표식이 둘 이상이면 하나만 남기고 지움 (예전 겹친 맞춤의 흔적) */
   const mine = new Map<string, TaggedEvent>();
-  for (const ev of data.items || []) {
+  const extra: TaggedEvent[] = [];
+  for (const ev of all) {
     const key = ev.extendedProperties?.private?.[TAG];
-    if (key) mine.set(key, ev);
+    if (!key) continue;
+    if (mine.has(key)) extra.push(ev);
+    else mine.set(key, ev);
   }
   const want = new Map(openItems(items).map((f) => [f.id, f]));
   let made = 0;
@@ -112,8 +140,8 @@ export async function syncToGoogle(token: string, calendarId: string, items: Fol
       /* 다음 맞춤에 다시 */
     }
   }
-  for (const [id, ev] of mine) {
-    if (want.has(id)) continue;
+  const drop = [...extra, ...[...mine].filter(([id]) => !want.has(id)).map(([, ev]) => ev)];
+  for (const ev of drop) {
     try {
       const r = await fetch(`${base}/${encodeURIComponent(ev.id)}`, { method: 'DELETE', headers });
       if (r.ok || r.status === 410) gone += 1;

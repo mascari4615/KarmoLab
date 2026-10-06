@@ -149,6 +149,32 @@ export async function ensureToken(): Promise<string | null> {
     return refreshing;
 }
 
+/** gcal 과 followups 의 오류 문구 끝이 상태 번호. 401 은 토큰 거절 */
+export function isUnauthorized(e: unknown): boolean {
+    return e instanceof Error && /\b401$/.test(e.message);
+}
+
+/**
+ * 구글 호출 한 번. 부를 때마다 살아 있는 토큰 (한 시간이 지나면 갱신), 401 이면 그 토큰을 버리고
+ * 한 번만 다시. `fallback` 은 저장소가 막힌 브라우저용 화면이 든 토큰
+ */
+export async function withToken<T>(fallback: string, fn: (token: string) => Promise<T>): Promise<T> {
+    const first = (await ensureToken()) || fallback;
+    try {
+        return await fn(first);
+    } catch (e) {
+        if (!isUnauthorized(e)) throw e;
+        try {
+            if (storedToken() === first) localStorage.removeItem(TOKEN_KEY);
+        } catch {
+            /* 무시 */
+        }
+        const fresh = await ensureToken();
+        if (!fresh || fresh === first) throw e;
+        return fn(fresh);
+    }
+}
+
 export function forgetToken(): void {
     const token = storedToken();
     const rt = storedRefresh();
