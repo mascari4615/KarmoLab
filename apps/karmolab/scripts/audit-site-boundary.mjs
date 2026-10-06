@@ -19,7 +19,7 @@ const APP = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SRC = path.join(APP, 'src');
 
 const SITES = {
-  dash: { entries: ['dash-app.ts'], own: ['dash-app.ts', 'widgets/mydash/', 'widgets/planner/'] },
+  dash: { entries: ['dash-app.ts', 'dash-calendar.ts'], own: ['dash-app.ts', 'dash-calendar.ts', 'widgets/mydash/', 'widgets/planner/'] },
   blog: { entries: ['blog-app.ts', 'about-page.ts'], own: ['blog-app.ts', 'blog-comments.ts', 'about-page.ts', 'widgets/about/'] },
 };
 const SHARED = ['lib/'];

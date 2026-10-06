@@ -20,7 +20,8 @@ import { t, loadNamespace } from '../../lib/i18n';
 import { dashRegistry } from '../mydash/kit';
 import type { DashPanelCtx } from '../mydash/kit';
 import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken, storedToken } from './gauth';
-import { buildCalendarView, type CalendarViewHandle } from './calendar-view';
+import type { CalendarViewHandle } from './calendar-view';
+import { loadCalendarView } from './calendar-loader';
 import { FOLLOWUPS_PATH, type Followup } from './followups';
 import { buildKanbanView, type KanbanViewHandle } from './kanban-view';
 import { buildStreaksView } from './streaks-view';
@@ -311,6 +312,25 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
             else buildStreaksView(body, () => openSide('diary'));
         }
 
+        /* 달력 번들은 처음 열 때 받음 (calendar-loader). 받는 사이 다시 그렸거나 떠났으면 버림 */
+        let mountSeq = 0;
+        function mountCalendar(paneEl: HTMLElement): void {
+            const seq = ++mountSeq;
+            paneEl.innerHTML = `<div class="pl-cal-loading">${esc(t('planner.t11'))}</div>`;
+            loadCalendarView().then(
+                (build) => {
+                    if (disposed || seq !== mountSeq || !paneEl.isConnected) return;
+                    paneEl.innerHTML = '';
+                    cal = build(paneEl, token, (date) => openSide('diary', date), loadFollowups);
+                },
+                () => {
+                    if (disposed || seq !== mountSeq || !paneEl.isConnected) return;
+                    paneEl.innerHTML = `<div class="pl-cal-loading">달력을 못 받음 <button type="button" class="btn btn-ghost btn-xs">다시 시도</button></div>`;
+                    paneEl.querySelector('button')?.addEventListener('click', () => mountCalendar(paneEl));
+                }
+            );
+        }
+
         function render(): void {
             dispose();
             /* 구글은 **선택**이다. 연동 전에도 세 칸이 전부 돈다(이 브라우저에 적힌다).
@@ -341,7 +361,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                 </div>`;
 
             const paneEl = root.querySelector<HTMLElement>('.pl-pane')!;
-            cal = buildCalendarView(paneEl, token, (date) => openSide('diary', date), loadFollowups);
+            mountCalendar(paneEl);
             openSide(side);
 
             root.querySelectorAll<HTMLElement>('[data-side]').forEach((btn) => {
