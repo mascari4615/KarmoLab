@@ -125,16 +125,42 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
   }
 
   /** 머신 방의 작은 수는 서버 (Mois2) 의 마지막 메모리. 폴더가 늘어도 가리키는 기계는 그대로 */
+  /**
+   * 머신 카드의 작은 수. 사흘 넘게 성능 기록이 안 온 기계가 있으면 그 기계와 날 수 (`Mois3 8일`),
+   * 없으면 서버 (Mois2) 의 마지막 메모리. 2026-10-07 Mois3 가 8일 끊긴 것을 아무도 못 봄.
+   * 기준은 memo scripts/machines/freshness.mjs (세션 시작 알림) 와 같은 72시간
+   */
   async function pcCount(repo: DashRepoRead): Promise<string> {
-    type PcSummary = { data?: { latest?: { memUsedPct?: number } } };
-    const path = PC_DIR + '/Mois2/summary.json';
+    type PcSummary = { generatedAt?: string; data?: { latest?: { memUsedPct?: number; at?: string } } };
+    const isAuth = (e: unknown): boolean => (e as { kind?: string } | null)?.kind === 'auth';
     /* 수집기 브랜치 먼저 (머신 방과 같은 순서), 없으면 main */
-    const j = await repo
-      .readJson<PcSummary>(path, { ref: 'machines-data' })
-      .catch((e: { kind?: string }) => {
-        if (e && e.kind === 'auth') throw e;
-        return repo.readJson<PcSummary>(path);
-      });
+    const read = (host: string): Promise<PcSummary | null> => {
+      const path = PC_DIR + '/' + host + '/summary.json';
+      return repo
+        .readJson<PcSummary>(path, { ref: 'machines-data' })
+        .catch((e: unknown) => {
+          if (isAuth(e)) throw e;
+          return repo.readJson<PcSummary>(path);
+        })
+        .catch((e: unknown) => {
+          if (isAuth(e)) throw e;
+          return null;
+        });
+    };
+    const hosts = ['Mois', 'Mois2', 'Mois3'];
+    const sums = await Promise.all(hosts.map(read));
+    const STALE_MS = 72 * 3600000;
+    let worst: { host: string; ms: number } | null = null;
+    sums.forEach((j, i) => {
+      if (!j) return;
+      const at = Date.parse((j.data && j.data.latest && j.data.latest.at) || j.generatedAt || '');
+      const ms = Date.now() - at;
+      if (Number.isFinite(ms) && ms > STALE_MS && (!worst || ms > worst.ms)) worst = { host: hosts[i], ms };
+    });
+    const w = worst as { host: string; ms: number } | null;
+    if (w) return w.host + ' ' + Math.floor(w.ms / 86400000) + '일';
+    const j = sums[1];
+    if (!j) throw new Error(PC_DIR + '/Mois2 를 못 읽었다');
     return num(j.data && j.data.latest && j.data.latest.memUsedPct) + '%';
   }
 
