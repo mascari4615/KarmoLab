@@ -363,11 +363,11 @@ async function youtubeRemove(list, items) {
 
 /**
  * X 북마크 해제. 북마크 탭을 열어 화면 요청 헤더를 잡은 뒤 x-bookmarks.js 의 xbRemove
- * 걸음당 6건 (건마다 3~6초, 45초 상한 안쪽). 한 번에 최대 60건, 넘으면 다음 실행
+ * 걸음당 15건 (건마다 1~2.5초, 45초 상한 안쪽). 한 번에 최대 300건, 넘으면 다음 실행
  * @param {string[]} ids status id
  */
 async function xBookmarksRemove(ids) {
-  const clean = ids.map(String).filter((x) => /^\d{5,25}$/.test(x)).slice(0, 60);
+  const clean = ids.map(String).filter((x) => /^\d{5,25}$/.test(x)).slice(0, 300);
   const tab = await openWorkTab("https://x.com/i/bookmarks");
   const done = [];
   const failed = [];
@@ -377,8 +377,8 @@ async function xBookmarksRemove(ids) {
     await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["x-bookmarks.js"] }));
     // 첫 걸음이 화면의 Bookmarks 요청을 기다림 (헤더 확보)
     await within(45000, "init", chrome.scripting.executeScript({ ...where, func: () => globalThis.xbStep() }));
-    for (let i = 0; i < clean.length; i += 6) {
-      const part = clean.slice(i, i + 6);
+    for (let i = 0; i < clean.length; i += 15) {
+      const part = clean.slice(i, i + 15);
       const [out] = await within(45000, `xb${i}`, chrome.scripting.executeScript({ ...where, func: (xs) => globalThis.xbRemove(xs), args: [part] }));
       const r = (out && out.result) || { done: [], failed: part.map((id) => ({ id, why: "결과 없음" })) };
       done.push(...r.done);

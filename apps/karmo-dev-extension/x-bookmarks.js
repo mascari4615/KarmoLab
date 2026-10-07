@@ -3,7 +3,7 @@
  *
  * 읽기: 화면이 보낸 Bookmarks GraphQL 을 커서로 이어받기 (x-accounts.js 와 같은 결)
  * 해제: DeleteBookmark mutation. queryId 는 화면 스크립트에서 찾음 (바뀌어도 버팀)
- * 봇 감지 대비 (사용자 요구, skill bookmarks A-2): 해제는 한 건씩 3~6초 간격, 한 번에 상한은 부르는 쪽
+ * 봇 감지 대비 (사용자 요구, skill bookmarks A-2): 해제는 한 건씩 1~2.5초 간격 (사용자 2026-10-08 "너무 보수적"), 한 번에 상한은 부르는 쪽
  * 정본: memo/systems/karmo-dev-extension.md
  */
 
@@ -92,7 +92,7 @@ async function xbDeleteQueryId() {
 }
 
 /**
- * 한 건씩 해제, 3~6초 간격
+ * 한 건씩 해제, 1~2.5초 간격
  * @param {string[]} ids
  */
 async function xbRemove(ids) {
@@ -114,7 +114,7 @@ async function xbRemove(ids) {
     const ok = res.ok && j && j.data && j.data.tweet_bookmark_delete === "Done";
     if (ok) done.push(id); else failed.push({ id, why: `응답 ${res.status} ${j && j.errors ? JSON.stringify(j.errors).slice(0, 120) : ""}` });
     if (res.status === 429) break;
-    await new Promise((r) => setTimeout(r, 3000 + Math.random() * 3000));
+    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1500));
   }
   return { done, failed };
 }
