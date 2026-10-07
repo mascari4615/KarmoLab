@@ -363,7 +363,7 @@ async function youtubeRemove(list, items) {
 
 /**
  * X 북마크 해제. 북마크 탭을 열어 화면 요청 헤더를 잡은 뒤 x-bookmarks.js 의 xbRemove
- * 걸음당 15건 (건마다 1~2.5초, 45초 상한 안쪽). 한 번에 최대 300건, 넘으면 다음 실행
+ * 걸음당 8건 (건마다 1~2.5초, 45초 상한 안쪽). 한 번에 최대 300건, 넘으면 다음 실행
  * @param {string[]} ids status id
  */
 async function xBookmarksRemove(ids) {
@@ -377,9 +377,17 @@ async function xBookmarksRemove(ids) {
     await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["x-bookmarks.js"] }));
     // 첫 걸음이 화면의 Bookmarks 요청을 기다림 (헤더 확보)
     await within(45000, "init", chrome.scripting.executeScript({ ...where, func: () => globalThis.xbStep() }));
-    for (let i = 0; i < clean.length; i += 15) {
-      const part = clean.slice(i, i + 15);
-      const [out] = await within(45000, `xb${i}`, chrome.scripting.executeScript({ ...where, func: (xs) => globalThis.xbRemove(xs), args: [part] }));
+    // 15건은 45초 상한을 넘김 (2026-10-08 실측, 요청 하나 약 1~2초 + 간격). 8건씩
+    for (let i = 0; i < clean.length; i += 8) {
+      const part = clean.slice(i, i + 8);
+      let out = null;
+      try {
+        [out] = await within(45000, `xb${i}`, chrome.scripting.executeScript({ ...where, func: (xs) => globalThis.xbRemove(xs), args: [part] }));
+      } catch (e) {
+        // 시간 초과여도 페이지 안에서는 계속 돌았을 수 있음. 실패로 세지 않고 다음 묶음, 부르는 쪽이 다시 읽어 확인
+        failed.push(...part.map((id) => ({ id, why: "확인 안 됨 " + e.message })));
+        continue;
+      }
       const r = (out && out.result) || { done: [], failed: part.map((id) => ({ id, why: "결과 없음" })) };
       done.push(...r.done);
       failed.push(...r.failed);
