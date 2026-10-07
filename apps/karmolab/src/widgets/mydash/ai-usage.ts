@@ -70,28 +70,31 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
   }
 
   /** host 폴더 이름들. 수집기 브랜치 먼저, 비었거나 못 읽으면 main. auth 는 그대로 던짐 */
-  async function listHosts(repo: DashRepoRead): Promise<string[]> {
+  async function listHosts(repo: DashRepoRead, dir = ROOT_DIR): Promise<string[]> {
     const dirsOf = (entries: DashEntry[]): string[] =>
       entries.filter((e) => e.type === 'dir').map((e) => e.name).sort();
     let live: string[] = [];
     try {
-      live = dirsOf(await repo.list(ROOT_DIR, { ref: DATA_BRANCH }));
+      live = dirsOf(await repo.list(dir, { ref: DATA_BRANCH }));
     } catch (e) {
       if (kindOf(e) === 'auth') throw e;
     }
     if (live.length) return live;
-    return dirsOf(await repo.list(ROOT_DIR));
+    return dirsOf(await repo.list(dir));
   }
 
-  /** 롤업 하나. 수집기 브랜치 먼저, 없거나 auth 아닌 실패면 main */
-  async function readRollups(repo: DashRepoRead, host: string): Promise<Rollups> {
-    const path = ROOT_DIR + '/' + host + '/rollups.json';
+  /** 파일 하나. 수집기 브랜치 먼저, 없거나 auth 아닌 실패면 main. 롤업과 환경 표 (둘 다 매시) */
+  async function readLive<T>(repo: DashRepoRead, path: string): Promise<T> {
     try {
-      return await repo.readJson<Rollups>(path, { ref: DATA_BRANCH });
+      return await repo.readJson<T>(path, { ref: DATA_BRANCH });
     } catch (e) {
       if (kindOf(e) === 'auth') throw e;
-      return repo.readJson<Rollups>(path);
+      return repo.readJson<T>(path);
     }
+  }
+
+  function readRollups(repo: DashRepoRead, host: string): Promise<Rollups> {
+    return readLive<Rollups>(repo, ROOT_DIR + '/' + host + '/rollups.json');
   }
 
   /** 보여 줄 것. 폰에서 한 화면에 넷이 한계다. */
@@ -493,14 +496,13 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
     ensureStyle();
     const { root, repo, status } = ctx;
     root.innerHTML = '<div class="au"><div class="au-foot">저장소에서 받는 중...</div></div>';
-    const entries = await repo.list(ENV_DIR);
-    const dirs = entries.filter((e) => e.type === 'dir').map((e) => e.name).sort();
+    const dirs = await listHosts(repo, ENV_DIR);
     if (!dirs.length) {
       root.innerHTML = '<div class="au"><div class="au-foot">하네스 표가 아직 없다. <code>node memo/scripts/ai-env/audit.mjs</code></div></div>';
       return;
     }
     const host = dirs[0];
-    const audit = await repo.readJson<EnvAudit>(ENV_DIR + '/' + host + '/audit.json');
+    const audit = await readLive<EnvAudit>(repo, ENV_DIR + '/' + host + '/audit.json');
     const when = audit.checked_at ? agoSeconds(audit.checked_at) : '';
     status(host + (when ? ', ' + when : ''));
     const vendors = ['claude', 'codex', 'grok'] as const;
