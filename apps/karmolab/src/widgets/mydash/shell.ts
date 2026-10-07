@@ -1104,7 +1104,18 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     function markNav(): void {
       for (const b of Array.from(navEl.querySelectorAll('.myd-item'))) {
-        b.classList.toggle('on', b.getAttribute('data-item') === currentItem);
+        const on = b.getAttribute('data-item') === currentItem;
+        b.classList.toggle('on', on);
+        /* 좁은 화면의 가로 줄은 넘기는 줄. 지금 방이 끝에 잘려 글자가 안 보이던 것 (390 폭 플래너, 2026-10-07).
+           그 줄 안에서만 옆으로 밀고 페이지는 안 움직임 */
+        const row = b.closest('.myd-groups') as HTMLElement | null;
+        if (on && row && row.scrollWidth > row.clientWidth) {
+          const el = b as HTMLElement;
+          const left = el.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft;
+          const right = left + el.offsetWidth;
+          if (left < row.scrollLeft) row.scrollLeft = Math.max(0, left - 8);
+          else if (right > row.scrollLeft + row.clientWidth) row.scrollLeft = right - row.clientWidth + 8;
+        }
       }
     }
 

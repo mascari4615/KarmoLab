@@ -230,6 +230,9 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
             .pl-rail { order: -2; width: auto; flex-direction: row; border-left: 0; border-bottom: 1px solid var(--border); padding: 6px; }
             .pl-rail-btn { flex: 1; }
             .pl-drawer { order: -1; width: auto; border-left: 0; border-bottom: 1px solid var(--border); max-height: 60vh; }
+            /* 390 폭에서 버튼 글자가 한 글자씩 세로로 갈라지던 것 (2026-10-07 실측). 줄은 버튼 단위로만 넘김 */
+            .pl-cal-mode, .pl-cal-main .fc .fc-button { white-space: nowrap; }
+            .pl-cal-main .fc .fc-header-toolbar { flex-wrap: wrap; gap: 8px; }
         }`;
 
     /* 오른쪽 세로줄에서 여는 판 (Google 캘린더의 오른쪽 할 일, Keep 자리. 사용자 2026-09-24 "구글 캘린더를 벤치마킹, 양쪽에 뭐가 있자나") */
