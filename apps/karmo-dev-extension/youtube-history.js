@@ -82,6 +82,8 @@ function ytHarvest(node, seen, day, out) {
       duration: ytText(v2.lengthText),
       channel: ytText(v2.shortBylineText) || ytText(v2.ownerText),
       title: ytText(v2.title),
+      // 재생목록 안 줄 표식. 나중에 볼 동영상에서 뺄 때 필요 (yt-edit.js)
+      setId: v2.setVideoId || "",
     });
   }
   if (node.continuationCommand && node.continuationCommand.token) out.token = node.continuationCommand.token;
@@ -137,3 +139,4 @@ async function ytStep() {
 
 // background 의 이름 호출용 전역 등록
 globalThis.ytStep = ytStep;
+globalThis.ytTemplate = ytTemplate;

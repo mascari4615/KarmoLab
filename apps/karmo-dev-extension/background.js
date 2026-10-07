@@ -326,6 +326,40 @@ async function runInTab(url, file, fnName, world) {
 }
 
 /**
+ * WL 에서 빼기, LL 좋아요 취소. 재생목록 탭을 열어 화면 요청 헤더를 잡은 뒤 yt-edit.js 의 ytRemove
+ * 한 번에 40개씩 (걸음당 45초 상한, LL 은 250ms 간격)
+ * @param {string} list "WL" | "LL"
+ * @param {Array<{id:string,setId?:string}>} items
+ */
+async function youtubeRemove(list, items) {
+  if (!/^(WL|LL)$/.test(list)) throw new Error("list 는 WL, LL 만");
+  const clean = items.filter((x) => x && /^[\w-]{11}$/.test(String(x.id))).map((x) => ({ id: String(x.id), setId: x.setId ? String(x.setId) : "" }));
+  const tab = await openWorkTab("https://www.youtube.com/playlist?list=" + list);
+  const done = [];
+  const failed = [];
+  try {
+    await waitLoaded(tab.id);
+    const where = { target: { tabId: tab.id }, world: "MAIN" };
+    await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["youtube-history.js", "yt-edit.js"] }));
+    for (let i = 0; i < clean.length; i += 40) {
+      const part = clean.slice(i, i + 40);
+      const [out] = await within(45000, `remove${i}`, chrome.scripting.executeScript({
+        ...where,
+        func: (l, xs) => globalThis.ytRemove(l, xs),
+        args: [list, part],
+      }));
+      const r = (out && out.result) || { done: [], failed: part.map((x) => ({ id: x.id, why: "결과 없음" })) };
+      done.push(...r.done);
+      failed.push(...r.failed);
+      await note("youtube.remove", `${list} ${done.length}/${clean.length}`);
+    }
+  } finally {
+    await closeWorkTab(tab.id);
+  }
+  return { ok: true, list, done, failed };
+}
+
+/**
  * 핀터레스트 쪽 하나에서 pinterest.js 의 pinScrape(opt). 탭은 끝나면 닫음
  * 레퍼런스 모으기의 "비슷한 핀" (karmo-design collect.mjs --seed). 로그인된 사용자 Edge 라 핀이 안 잠김
  */
@@ -419,7 +453,9 @@ async function jobTick() {
  * 워커가 30초 무활동 종료에 걸리지 않게 함. 한 바퀴는 `QUEUE_TICK_MS` 까지, 다음 알람이 이어받음. 수신기가 없으면 한 번 묻고 끝
  */
 const QUEUE_BASE = "http://127.0.0.1:17378";
-const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read"];
+const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read", "youtube.list", "youtube.remove"];
+// youtube.remove 는 상태를 바꾸지만 큐 (127.0.0.1 수신기) 로만 받음. bridge 주소 허용 목록에는 없음
+// 정리가 memo 에 push 된 것만 넘기는 판단은 부르는 쪽 (memo scripts/youtube, 사용자 2026-10-07 "정리 한 번 한거는 지우기")
 const QUEUE_PARALLEL = 5;
 const QUEUE_IDLE_MS = 90000;
 const QUEUE_TICK_MS = 240000;
@@ -828,6 +864,13 @@ function dispatchExt(msg, sender, sendResponse) {
       } else if (msg?.type === "bookmarks.pruneEmptyFolders") {
         const removed = await pruneEmptyFolders();
         sendResponse({ ok: true, removed, remaining: (await listAll()).length });
+      } else if (msg?.type === "youtube.list") {
+        // 나중에 볼 동영상 (WL), 좋아요 (LL). 큐로 부르면 줄을 바로 돌려줌 (732줄 약 110KB, 큐 POST 는 유실 없음)
+        if (!/^(WL|LL)$/.test(String(msg.list))) throw new Error("list 는 WL, LL 만");
+        const r = await stepInTab("https://www.youtube.com/playlist?list=" + msg.list, "youtube-history.js", "ytStep", 200);
+        sendResponse({ ok: true, list: msg.list, count: (r && r.count) || 0, note: r && r.note, rows: (r && r.rows) || [] });
+      } else if (msg?.type === "youtube.remove") {
+        sendResponse(await youtubeRemove(String(msg.list), Array.isArray(msg.items) ? msg.items : []));
       } else if (msg?.type === "youtube.history") {
         const rows = await collectYoutubeHistory(msg.rounds);
         sendResponse({ ok: true, count: rows.length, rows });
