@@ -24,21 +24,28 @@ async function ytPost(path, body) {
   const tpl = globalThis.ytTemplate && globalThis.ytTemplate();
   const cfg = globalThis.ytcfg && globalThis.ytcfg.data_;
   if (!tpl || !cfg) throw new Error("요청 본뜨기 실패");
-  const headers = { ...tpl.headers };
+  const send = async (headers) => {
+    const res = await fetch(`/youtubei/v1/${path}?key=${cfg.INNERTUBE_API_KEY}&prettyPrint=false`, {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify({ context: cfg.INNERTUBE_CONTEXT, ...body }),
+    });
+    const json = await res.json().catch(() => null);
+    return { status: res.status, json, err: json && json.error ? String(json.error.message || json.error.status || "") : "" };
+  };
+  // 잡아 둔 헤더 먼저 (2026-10-07 실측 200). 실패하면 인증만 새로 계산해 한 번 더
+  const first = await send({ ...tpl.headers });
+  if (first.status === 200) return first;
   const auth = await ytAuth();
-  if (auth) {
-    for (const k of Object.keys(headers)) if (k.toLowerCase() === "authorization") delete headers[k];
-    headers.Authorization = auth;
-    headers["X-Origin"] = location.origin;
-  }
-  const res = await fetch(`/youtubei/v1/${path}?key=${cfg.INNERTUBE_API_KEY}&prettyPrint=false`, {
-    method: "POST",
-    credentials: "include",
-    headers,
-    body: JSON.stringify({ context: cfg.INNERTUBE_CONTEXT, ...body }),
-  });
-  const json = await res.json().catch(() => null);
-  return { status: res.status, json };
+  if (!auth) return first;
+  const headers = { ...tpl.headers };
+  for (const k of Object.keys(headers)) if (k.toLowerCase() === "authorization") delete headers[k];
+  headers.Authorization = auth;
+  headers["X-Origin"] = location.origin;
+  const second = await send(headers);
+  second.err = `1차 ${first.status} ${first.err} / 2차 ${second.status} ${second.err}`;
+  return second;
 }
 
 /**
@@ -68,9 +75,9 @@ async function ytRemove(list, items) {
       // 200 이어도 반영 안 된 경우 있음 (2026-10-07). 응답 키를 같이 남겨 부르는 쪽이 다시 읽어 확인
       const keys = r.json ? Object.keys(r.json).join(",") : "";
       if (r.status === 200) done.push(x.id);
-      else failed.push({ id: x.id, why: `응답 ${r.status} ${keys}` });
+      else failed.push({ id: x.id, why: `응답 ${r.status} ${r.err || keys}` });
       if (!globalThis.__karmoYtLast) globalThis.__karmoYtLast = [];
-      globalThis.__karmoYtLast.push({ id: x.id, status: r.status, keys });
+      globalThis.__karmoYtLast.push({ id: x.id, status: r.status, keys, err: r.err });
       await new Promise((ok) => setTimeout(ok, 250));
     }
   } else {
