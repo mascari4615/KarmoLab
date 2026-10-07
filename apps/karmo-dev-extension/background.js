@@ -362,6 +362,37 @@ async function youtubeRemove(list, items) {
 }
 
 /**
+ * X 북마크 해제. 북마크 탭을 열어 화면 요청 헤더를 잡은 뒤 x-bookmarks.js 의 xbRemove
+ * 걸음당 6건 (건마다 3~6초, 45초 상한 안쪽). 한 번에 최대 60건, 넘으면 다음 실행
+ * @param {string[]} ids status id
+ */
+async function xBookmarksRemove(ids) {
+  const clean = ids.map(String).filter((x) => /^\d{5,25}$/.test(x)).slice(0, 60);
+  const tab = await openWorkTab("https://x.com/i/bookmarks");
+  const done = [];
+  const failed = [];
+  try {
+    await waitLoaded(tab.id);
+    const where = { target: { tabId: tab.id }, world: "MAIN" };
+    await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: ["x-bookmarks.js"] }));
+    // 첫 걸음이 화면의 Bookmarks 요청을 기다림 (헤더 확보)
+    await within(45000, "init", chrome.scripting.executeScript({ ...where, func: () => globalThis.xbStep() }));
+    for (let i = 0; i < clean.length; i += 6) {
+      const part = clean.slice(i, i + 6);
+      const [out] = await within(45000, `xb${i}`, chrome.scripting.executeScript({ ...where, func: (xs) => globalThis.xbRemove(xs), args: [part] }));
+      const r = (out && out.result) || { done: [], failed: part.map((id) => ({ id, why: "결과 없음" })) };
+      done.push(...r.done);
+      failed.push(...r.failed);
+      await note("x.bookmarksRemove", `${done.length}/${clean.length}`);
+      if (r.failed.some((f) => /429/.test(f.why))) break;
+    }
+  } finally {
+    await closeWorkTab(tab.id);
+  }
+  return { ok: true, done, failed, capped: ids.length > clean.length };
+}
+
+/**
  * 핀터레스트 쪽 하나에서 pinterest.js 의 pinScrape(opt). 탭은 끝나면 닫음
  * 레퍼런스 모으기의 "비슷한 핀" (karmo-design collect.mjs --seed). 로그인된 사용자 Edge 라 핀이 안 잠김
  */
@@ -455,7 +486,7 @@ async function jobTick() {
  * 워커가 30초 무활동 종료에 걸리지 않게 함. 한 바퀴는 `QUEUE_TICK_MS` 까지, 다음 알람이 이어받음. 수신기가 없으면 한 번 묻고 끝
  */
 const QUEUE_BASE = "http://127.0.0.1:17378";
-const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read", "youtube.list", "youtube.remove"];
+const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read", "youtube.list", "youtube.remove", "x.bookmarks", "x.bookmarksRemove"];
 // youtube.remove 는 상태를 바꾸지만 큐 (127.0.0.1 수신기) 로만 받음. bridge 주소 허용 목록에는 없음
 // 정리가 memo 에 push 된 것만 넘기는 판단은 부르는 쪽 (memo scripts/youtube, 사용자 2026-10-07 "정리 한 번 한거는 지우기")
 const QUEUE_PARALLEL = 5;
@@ -873,6 +904,11 @@ function dispatchExt(msg, sender, sendResponse) {
         sendResponse({ ok: true, list: msg.list, count: (r && r.count) || 0, note: r && r.note, rows: (r && r.rows) || [] });
       } else if (msg?.type === "youtube.remove") {
         sendResponse(await youtubeRemove(String(msg.list), Array.isArray(msg.items) ? msg.items : []));
+      } else if (msg?.type === "x.bookmarks") {
+        const r = await stepInTab("https://x.com/i/bookmarks", "x-bookmarks.js", "xbStep", 120);
+        sendResponse({ ok: true, count: (r && r.count) || 0, note: r && r.note, rows: (r && r.rows) || [] });
+      } else if (msg?.type === "x.bookmarksRemove") {
+        sendResponse(await xBookmarksRemove(Array.isArray(msg.ids) ? msg.ids : []));
       } else if (msg?.type === "youtube.history") {
         const rows = await collectYoutubeHistory(msg.rounds);
         sendResponse({ ok: true, count: rows.length, rows });
