@@ -50,8 +50,22 @@ export function cachedRead(key: string): Promise<string | null> {
   return run<string>('readonly', (s) => s.get(key) as IDBRequest<string>);
 }
 
-export function saveRead(key: string, text: string): Promise<unknown> {
-  return run('readwrite', (s) => s.put(text, key));
+/** 판 표식 (GitHub ETag) 의 칸. 글자 칸과 같은 저장소, 열쇠 끝만 다름 */
+const ETAG = '\u0000etag';
+
+export function saveRead(key: string, text: string, etag?: string | null): Promise<unknown> {
+  return Promise.all([
+    run('readwrite', (s) => s.put(text, key)),
+    etag ? run('readwrite', (s) => s.put(etag, key + ETAG)) : run('readwrite', (s) => s.delete(key + ETAG)),
+  ]);
+}
+
+/**
+ * 마지막 판의 ETag. 뒤에서 새 판을 물을 때 If-None-Match 로 보내 안 바뀌었으면 304 (본문 0바이트).
+ * 2026-10-07 실측: 북마크 목록 7.6MB 를 방을 열 때마다 다시 받던 것이 304 0바이트로
+ */
+export function cachedEtag(key: string): Promise<string | null> {
+  return run<string>('readonly', (s) => s.get(key + ETAG) as IDBRequest<string>);
 }
 
 export function clearReads(): Promise<unknown> {

@@ -27,7 +27,7 @@
  */
 import { dashRegistry, esc, httpsUrl } from './kit';
 import type { DashEntry, DashPanel, DashPanelCtx, DashReadOpts, DashRepoWrite } from './kit';
-import { cachedRead, clearReads, saveRead } from './read-cache';
+import { cachedEtag, cachedRead, clearReads, saveRead } from './read-cache';
 import mydashCss from './mydash.css';
 import dashCss from './dash.css';
 import { t, loadNamespace } from '../../lib/i18n';
@@ -490,21 +490,23 @@ import { t, loadNamespace } from '../../lib/i18n';
      *
      * 주소를 통째로 받는 이유는 목록의 다음 장. Link 머리표가 준 주소를 그대로 다시 부름.
      */
-    async function callUrl(url: string, accept: string, label: string, retried = false): Promise<Response> {
+    async function callUrl(url: string, accept: string, label: string, retried = false, etag?: string): Promise<Response> {
       const token = await liveToken(cfg);
       if (!token) throw new DashError('auth', '로그인이 필요하다');
       let res: Response;
+      const headers: Record<string, string> = { authorization: 'Bearer ' + token, accept, 'x-github-api-version': '2022-11-28' };
+      /* 판 표식이 있으면 바뀌었을 때만 본문. 브라우저 HTTP 캐시가 끼면 304 가 200 으로 바뀌어 와 no-store */
+      if (etag) headers['if-none-match'] = etag;
       try {
-        res = await fetch(url, {
-          headers: { authorization: 'Bearer ' + token, accept, 'x-github-api-version': '2022-11-28' },
-        });
+        res = await fetch(url, etag ? { headers, cache: 'no-store' } : { headers });
       } catch {
         throw new DashError('net', 'GitHub 에 못 닿았다');
       }
+      if (etag && res.status === 304) return res;
       if (res.status === 401) {
         /* 토큰이 죽었다. 그 사이 다른 탭이 새 토큰을 적었으면 그것으로 한 번 더 */
         const now = loadSaved();
-        if (!retried && now && now.token !== token) return callUrl(url, accept, label, true);
+        if (!retried && now && now.token !== token) return callUrl(url, accept, label, true, etag);
         dropToken((s) => s.token === token);
         throw new DashError('auth', '토큰이 만료됐다');
       }
@@ -529,10 +531,6 @@ import { t, loadNamespace } from '../../lib/i18n';
       return res;
     }
 
-    function call(path: string, accept: string, ref?: string): Promise<Response> {
-      return callUrl(contentsUrl(path, ref), accept, path);
-    }
-
     /**
      * Link 머리표의 다음 장 주소. 없으면 null.
      *
@@ -548,9 +546,11 @@ import { t, loadNamespace } from '../../lib/i18n';
       return null;
     }
 
-    async function fetchText(path: string, ref?: string): Promise<string> {
-      const res = await call(path, 'application/vnd.github.raw', ref);
-      return res.text();
+    /** 본문과 판 표식. `etag` 를 주면 안 바뀐 판은 text null (304) */
+    async function fetchFresh(path: string, ref?: string, etag?: string): Promise<{ text: string | null; etag: string | null }> {
+      const res = await callUrl(contentsUrl(path, ref), 'application/vnd.github.raw', path, false, etag);
+      if (res.status === 304) return { text: null, etag: etag || null };
+      return { text: await res.text(), etag: res.headers.get('etag') };
     }
 
     /**
@@ -562,8 +562,9 @@ import { t, loadNamespace } from '../../lib/i18n';
       const key = cacheKey(cfg, path, opts);
       const old = await cachedRead(key);
       if (old === null) {
-        const text = await fetchText(path, opts?.ref);
-        void saveRead(key, text);
+        const got = await fetchFresh(path, opts?.ref);
+        const text = got.text || '';
+        void saveRead(key, text, got.etag);
         revalidated.add(key);
         return text;
       }
@@ -571,10 +572,12 @@ import { t, loadNamespace } from '../../lib/i18n';
       if ((opts?.ref || '') === eventsBranch) return old;
       if (!revalidated.has(key)) {
         revalidated.add(key);
-        void fetchText(path, opts?.ref)
-          .then(async (text) => {
-            if (text === old) return;
-            await saveRead(key, text);
+        void cachedEtag(key)
+          .then((etag) => fetchFresh(path, opts?.ref, etag || undefined))
+          .then(async (got) => {
+            if (got.text === null) return;
+            await saveRead(key, got.text, got.etag);
+            if (got.text === old) return;
             onFresh?.(key);
           })
           .catch(() => undefined);
