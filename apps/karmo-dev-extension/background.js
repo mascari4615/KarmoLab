@@ -337,6 +337,7 @@ async function youtubeRemove(list, items) {
   const tab = await openWorkTab("https://www.youtube.com/playlist?list=" + list);
   const done = [];
   const failed = [];
+  const trace = [];
   try {
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id }, world: "MAIN" };
@@ -351,12 +352,13 @@ async function youtubeRemove(list, items) {
       const r = (out && out.result) || { done: [], failed: part.map((x) => ({ id: x.id, why: "결과 없음" })) };
       done.push(...r.done);
       failed.push(...r.failed);
+      if (r.trace) trace.push(...r.trace);
       await note("youtube.remove", `${list} ${done.length}/${clean.length}`);
     }
   } finally {
     await closeWorkTab(tab.id);
   }
-  return { ok: true, list, done, failed };
+  return { ok: true, list, done, failed, trace: trace.slice(-20) };
 }
 
 /**
