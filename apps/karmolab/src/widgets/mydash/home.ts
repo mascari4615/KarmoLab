@@ -100,14 +100,27 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
     }
     if (!hosts.length) hosts = dirsOf(await repo.list(AI_DIR));
     if (!hosts.length) throw new Error(AI_DIR + ' 아래에 host 폴더가 없다');
-    const path = AI_DIR + '/' + hosts[0] + '/rollups.json';
-    const roll = await repo.readJson<Roll>(path, { ref: DATA_BRANCH }).catch((e: unknown) => {
-      if (isAuth(e)) throw e;
-      return repo.readJson<Roll>(path);
-    });
-    const byDay = roll.byDay || {};
+    /* 기계 전부의 30일 합 (AI 사용 방의 전체 칩과 같은 값). 못 읽은 기계는 뺌 */
+    const rolls = await Promise.all(
+      hosts.map((h) => {
+        const path = AI_DIR + '/' + h + '/rollups.json';
+        return repo
+          .readJson<Roll>(path, { ref: DATA_BRANCH })
+          .catch((e: unknown) => {
+            if (isAuth(e)) throw e;
+            return repo.readJson<Roll>(path);
+          })
+          .catch((e: unknown) => {
+            if (isAuth(e)) throw e;
+            return null;
+          });
+      })
+    );
     let cost = 0;
-    for (const d of lastDays(30)) cost += num(byDay[d] && byDay[d].cost);
+    for (const roll of rolls) {
+      const byDay = (roll && roll.byDay) || {};
+      for (const d of lastDays(30)) cost += num(byDay[d] && byDay[d].cost);
+    }
     return usd(cost);
   }
 

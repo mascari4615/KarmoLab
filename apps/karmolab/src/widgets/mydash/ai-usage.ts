@@ -97,6 +97,45 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
     return readLive<Rollups>(repo, ROOT_DIR + '/' + host + '/rollups.json');
   }
 
+  /** 롤업의 표 자리. 이 안의 숫자는 기계끼리 더해도 뜻이 같음 (세션, 비용, 토큰, 시간) */
+  const SUM_KEYS = ['byDay', 'byMonth', 'byRepo', 'byModel', 'byHour', 'promptsByDay', 'promptsByMonth', 'byRepoByDay', 'byModelByDay'] as const;
+
+  /** 숫자는 더하고 객체는 안으로. 나머지 (글자, 배열) 는 먼저 온 값 */
+  function addInto(into: Record<string, unknown>, from: Record<string, unknown>): void {
+    for (const [k, v] of Object.entries(from)) {
+      const cur = into[k];
+      if (typeof v === 'number') into[k] = (typeof cur === 'number' ? cur : 0) + v;
+      else if (v && typeof v === 'object' && !Array.isArray(v)) {
+        const box = cur && typeof cur === 'object' && !Array.isArray(cur) ? (cur as Record<string, unknown>) : {};
+        into[k] = box;
+        addInto(box, v as Record<string, unknown>);
+      } else if (!(k in into)) into[k] = v;
+    }
+  }
+
+  /** 기계 여럿의 롤업 합. 구운 시각은 가장 오래된 것 (묵은 기계가 있으면 그만큼 묵었다고 보이게) */
+  function mergeRollups(list: Rollups[]): Rollups {
+    const out = { generatedAt: '', host: list.map((r) => r.host).join('+') } as unknown as Record<string, unknown>;
+    for (const r of list) {
+      for (const k of SUM_KEYS) {
+        const v = (r as unknown as Record<string, unknown>)[k];
+        if (!v) continue;
+        const box = (out[k] as Record<string, unknown>) || {};
+        out[k] = box;
+        addInto(box, v as Record<string, unknown>);
+      }
+    }
+    const times = list.map((r) => r.generatedAt).filter(Boolean).sort();
+    out.generatedAt = times[0] || '';
+    if (!out.byDay) out.byDay = {};
+    return out as unknown as Rollups;
+  }
+
+  /** 기계 폴더 이름을 머신 방 표기로 (mois3 -> Mois3) */
+  function hostLabel(h: string): string {
+    return h.replace(/^mois/i, 'Mois');
+  }
+
   /** 보여 줄 것. 폰에서 한 화면에 넷이 한계다. */
   type MetricId = 'cost' | 'sessions' | 'prompts' | 'commits';
   const METRICS: Array<{ id: MetricId; label: string; get: (b: Bucket) => number; fmt: (n: number) => string }> = [
@@ -341,14 +380,35 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
     const { root, repo, status } = ctx;
     root.innerHTML = '<div class="au"><div class="au-foot">저장소에서 받는 중...</div></div>';
 
-    /* host 찾기. 폴더가 여럿이면 첫 번째. 하나뿐인 지금은 고르는 UI 를 안 만듦
-       (없는 선택지를 그리면 화면만 늘고 고를 것이 없다). 늘면 그때 칩을 붙인다. */
+    /* 기계 폴더 전부. 둘 이상이면 전체 (합) 와 기계별 칩. 2026-10-07 Mois3 가 올리기 시작.
+       못 읽은 기계는 빼고 그림. auth 는 그대로 던짐 */
     const dirs = await listHosts(repo);
     if (!dirs.length) throw new Error(ROOT_DIR + ' 아래에 host 폴더가 없다');
-    const host = dirs[0];
-
-    const roll = await readRollups(repo, host);
-    status(host + ', ' + daysAgo(roll.generatedAt));
+    const got = await Promise.all(
+      dirs.map((h) =>
+        readRollups(repo, h).then(
+          (r) => ({ h, r }),
+          (e: unknown) => {
+            if (kindOf(e) === 'auth') throw e;
+            return null;
+          }
+        )
+      )
+    );
+    const byHost = got.filter((x): x is { h: string; r: Rollups } => x !== null);
+    if (!byHost.length) throw new Error(ROOT_DIR + ' 롤업을 하나도 못 읽었다');
+    const ALL = '';
+    const choices = byHost.length > 1 ? [ALL, ...byHost.map((x) => x.h)] : [byHost[0].h];
+    let pick = choices[0];
+    let host = '';
+    let roll: Rollups = byHost[0].r;
+    const usePick = (): void => {
+      const one = byHost.filter((x) => x.h === pick)[0];
+      roll = one ? one.r : mergeRollups(byHost.map((x) => x.r));
+      host = one ? hostLabel(one.h) : '전체 (' + byHost.map((x) => hostLabel(x.h)).join(', ') + ')';
+      status(host + ', ' + daysAgo(roll.generatedAt));
+    };
+    usePick();
 
     const wrap = document.createElement('div');
     wrap.className = 'au';
@@ -369,6 +429,22 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
     const restEl = document.createElement('div');
     restEl.className = 'au';
 
+    let hostEl: HTMLElement | null = null;
+    if (choices.length > 1) {
+      hostEl = document.createElement('div');
+      hostEl.className = 'au-chips';
+      for (const c of choices) {
+        const b = document.createElement('button');
+        b.textContent = c === ALL ? '전체' : hostLabel(c);
+        b.addEventListener('click', () => {
+          pick = c;
+          usePick();
+          paint();
+        });
+        hostEl.appendChild(b);
+      }
+      wrap.appendChild(hostEl);
+    }
     wrap.appendChild(spanEl);
     wrap.appendChild(numsEl);
     wrap.appendChild(metricEl);
@@ -402,6 +478,7 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
       const totalSessions = sessionsInWindow(roll, days);
       const m = METRICS.filter((x) => x.id === metric)[0];
 
+      if (hostEl) Array.from(hostEl.querySelectorAll('button')).forEach((b, i) => b.classList.toggle('on', choices[i] === pick));
       const chips = Array.from(spanEl.querySelectorAll('button'));
       chips.forEach((b, i) => b.classList.toggle('on', [30, 90, 365][i] === span));
       Array.from(metricEl.querySelectorAll('button')).forEach((b, i) =>
