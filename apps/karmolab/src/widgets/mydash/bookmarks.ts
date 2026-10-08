@@ -2402,8 +2402,9 @@ import { t, loadNamespace } from '../../lib/i18n';
     }
 
     /**
-     * 고른 것마다 이벤트 하나씩 순차로. 파일 하나에 이벤트 하나 규약은 여기서도 그대로라,
-     * 묶어 보내지 않고 한 건씩 보냄.
+     * 고른 것마다 이벤트 파일 하나. 파일 하나에 이벤트 하나 규약은 그대로지만, 먼저 전부를
+     * **커밋 하나로** 보냄 (putNewJsonMany). 한 건씩 PUT 은 건당 1초 남짓이라 여러 건 설정이
+     * 느렸다 (2026-10-09 사용자 지적). 묶음이 실패하면 아무것도 안 들어간 것이라 아래 한 건씩 길로.
      *
      * 끝에 셋을 센다. 보냄, 큐, 실패. 전에는 한 줄로 진행만 보이고 끝나면 지웠는데,
      * 그러면 몇 건이 큐로 갔는지 사람이 알 길이 없었다. 큐나 실패가 있으면 **선택을 안
@@ -2422,13 +2423,36 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* 안 끝난 것 중 가장 나쁜 갈래. 집계 줄 뒤에 이 갈래의 안내를 한 번만 붙인다 */
       let worst: SendResult = 'sent';
       let done = 0;
+      const outs: Array<{ id: string; out: Outgoing }> = [];
       for (const id of ids) {
         const it = itemById.get(id);
-        if (!it) continue;
+        if (it) outs.push({ id, out: make(it) });
+      }
+      if (outs.length > 1) {
+        barBusy = t('mydash.bm.sel.progress', { n: 0, m: outs.length }, '{n}/{m}');
+        paintBar();
+        try {
+          await repo.putNewJsonMany(
+            outs.map((o) => ({ path: o.out.path, value: o.out.ev })),
+            'dash: ' + outs[0].out.ev.type + ' ' + outs.length + '건'
+          );
+          for (const o of outs) {
+            applySent(o.out.ev);
+            feedDone.add(o.id);
+          }
+          barBusy = t('mydash.bm.sel.tally', { n: outs.length, m: 0, k: 0 }, '보냄 {n}, 큐 {m}, 실패 {k}');
+          selected.clear();
+          paint();
+          return;
+        } catch {
+          /* 한 건씩 길로. 묶음은 다 들어가거나 하나도 안 들어감 */
+        }
+      }
+      for (const { id, out } of outs) {
         /* 요청 사이 간격. 한 건씩 순차라 왕복 시간이 여기 더해진다. GitHub 의 쓰기
            2차 한도에 걸려 통째로 막히는 것보다 조금 느린 편이 낫다 */
         if (done > 0) await gap();
-        const r = await sendEvent(make(it));
+        const r = await sendEvent(out);
         done++;
         /* 큐로 간 것도 화면 상태는 이미 바뀌었다. 둘 다 제자리 고정 */
         if (r === 'sent' || r === 'queued') feedDone.add(id);

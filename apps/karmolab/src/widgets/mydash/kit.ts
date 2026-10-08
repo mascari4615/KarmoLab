@@ -79,6 +79,8 @@ export interface DashRepoWrite extends DashRepoRead {
    * `kind` 가 없거나 이 목록 밖이면 `net` 으로 취급. 셸의 오류 카드도 같은 규칙.
    */
   putNewJson(path: string, value: unknown, message: string): Promise<void>;
+  /** 새 파일 여럿을 커밋 하나로. 실패 갈래는 putNewJson 과 같고, 하나라도 실패면 아무것도 안 들어감 */
+  putNewJsonMany(files: Array<{ path: string; value: unknown }>, message: string): Promise<void>;
   /** 실패한 쓰기를 outbox 에 넣고 나중에 다시 보냄. 반환은 즉시 */
   enqueueJson(path: string, value: unknown, message: string): void;
   /** outbox 를 지금 비움. 보낸 수와 남은 수 */

@@ -645,6 +645,70 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (!res.ok) throw new DashError('net', 'GitHub 이 ' + res.status + ' 를 줬다');
     }
 
+    /** git 데이터 API 한 번. 쓰기 실패 갈래는 putNewJson 과 같다 */
+    async function gitSend(method: string, tail: string, payload?: unknown): Promise<{ sha?: string; object?: { sha: string }; tree?: { sha: string } }> {
+      const token = await liveToken(cfg);
+      if (!token) throw new DashError('auth', '로그인이 필요하다');
+      let res: Response;
+      try {
+        res = await fetch(API + '/repos/' + cfg.owner + '/' + cfg.repo + '/git/' + tail, {
+          method,
+          headers: {
+            authorization: 'Bearer ' + token,
+            accept: 'application/vnd.github+json',
+            'content-type': 'application/json',
+            'x-github-api-version': '2022-11-28',
+          },
+          body: payload === undefined ? undefined : JSON.stringify(payload),
+        });
+      } catch {
+        throw new DashError('net', 'GitHub 에 못 닿았다');
+      }
+      if (res.status === 401) {
+        dropToken((s) => s.token === token);
+        throw new DashError('auth', '토큰이 만료됐다');
+      }
+      if (res.status === 403 || res.status === 404) throw new DashError('perm', PERM_MSG);
+      /* ref 갱신의 422 는 브랜치가 그 사이 움직인 것 (fast-forward 아님) */
+      if (res.status === 422) throw new DashError('exists', tail + ' 422');
+      if (res.status === 429) throw new DashError('ratelimit', 'GitHub 요청 한도. 잠시 뒤 다시');
+      if (!res.ok) throw new DashError('net', 'GitHub 이 ' + res.status + ' 를 줬다');
+      return res.json();
+    }
+
+    /**
+     * 새 파일 여럿을 **커밋 하나로**. 요청 수는 건수와 무관하게 다섯 (ref, commit, tree, commit, ref).
+     * 파일마다 contents PUT 은 같은 브랜치 쓰기 대기로 건당 1초 남짓
+     * (여러 건 설정의 한 건씩 느린 진행 원인, 2026-10-09 사용자 지적).
+     *
+     * 경로 중복 방지는 호출자 몫 (시각 + 기기 + 탭). 트리 쓰기는 같은 경로 덮어쓰기라
+     * putNewJson 의 422 검사 없음. 그 사이 브랜치 이동 시 새 끝에서 재시도 (3번까지)
+     */
+    async function putNewJsonMany(files: Array<{ path: string; value: unknown }>, message: string): Promise<void> {
+      if (!files.length) return;
+      const branch = encPath(eventsBranch);
+      const tree = files.map((f) => ({
+        path: f.path,
+        mode: '100644',
+        type: 'blob',
+        content: JSON.stringify(f.value, null, 2) + '\n',
+      }));
+      const msg = message.indexOf('dash: ') === 0 ? message : 'dash: ' + message;
+      for (let attempt = 0; ; attempt++) {
+        const head = await gitSend('GET', 'ref/heads/' + branch);
+        const parent = head.object?.sha || '';
+        const base = await gitSend('GET', 'commits/' + parent);
+        const made = await gitSend('POST', 'trees', { base_tree: base.tree?.sha, tree });
+        const commit = await gitSend('POST', 'commits', { message: msg, tree: made.sha, parents: [parent] });
+        try {
+          await gitSend('PATCH', 'refs/heads/' + branch, { sha: commit.sha, force: false });
+          return;
+        } catch (e) {
+          if ((e as DashError).kind !== 'exists' || attempt >= 2) throw e;
+        }
+      }
+    }
+
     /* 지금 저장소에 있는 줄 위에 얹는다. 들고 있던 벌에 얹으면 다른 탭이 그 사이에 넣은 것이 날아감 */
     function enqueueJson(path: string, value: unknown, message: string): void {
       const list = readOutbox();
@@ -792,6 +856,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         return out;
       },
       putNewJson,
+      putNewJsonMany,
       enqueueJson,
       flushOutbox,
       eventsBranch,
