@@ -151,6 +151,7 @@
   "mydash.bm.view.feed": "フィード",
   "mydash.bm.view.grid": "グリッド",
   "mydash.bm.act.pendingOnly": "未判定のみ",
+  "mydash.bm.act.freshOnly": "新着 {n}",
   "mydash.bm.card.keep": "残す",
   "mydash.bm.card.more": "他"
 }

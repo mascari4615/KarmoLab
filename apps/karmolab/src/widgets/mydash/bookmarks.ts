@@ -56,6 +56,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     label?: string | null;
     author?: string | null;
     recordedAt?: string | null;
+    /** 정본 문서에 들어온 날 (배치 머리줄 날짜). recordedAt 은 출처마다 뜻이 달라 새로 들어옴 필터는 이것 */
+    addedAt?: string | null;
     note?: string | null;
     /** 원본 줄의 작은 제목. label 이 비었을 때 표시 문자열의 첫 조각이 된다 */
     subhead?: string | null;
@@ -175,6 +177,8 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** 출처 칸 차례. 나머지는 뒤에 이름순으로 붙는다 */
   const SRC_ORDER = ['x', 'edge', 'kakao', 'kakao-group', 'youtube', 'memo'];
   const KST_OFFSET_MS = 9 * 3600000;
+  /** 새로 들어옴 필터의 기간 (일) */
+  const FRESH_DAYS = 7;
   /** 보기 셋. 목록 (묶음 접힘, 옆판), 피드 (한 장씩 세로, 카드 아래 판정), 격자 (그림 타일) */
   type View = 'list' | 'feed' | 'grid';
   const VIEWS: View[] = ['list', 'feed', 'grid'];
@@ -962,6 +966,14 @@ import { t, loadNamespace } from '../../lib/i18n';
      * 의도를 비운 tag 이벤트는 대기가 아닌 것이 됐다. 지금은 의도가 하나라도 있으면 해제.
      * 버린 것과 승격한 것도 다시 물을 이유 없음.
      */
+    /** 최근 FRESH_DAYS 일 안에 정본에 들어온 것 (카톡, 유튜브, X 자동 수집분) */
+    const freshSince = new Date(Date.now() + KST_OFFSET_MS - FRESH_DAYS * 86400000).toISOString().slice(0, 10);
+    function isFresh(it: Item): boolean {
+      const d = text(it.addedAt).slice(0, 10);
+      return !!d && d >= freshSince;
+    }
+    const freshCount = items.filter(isFresh).length;
+
     function isPending(it: Item): boolean {
       if (!text(it.pending)) return false;
       const s = stateOf(it);
@@ -1117,6 +1129,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       '<div class="bm-filters" data-filters="1" hidden>' +
       '<div class="bm-filters-acts">' +
       '<button type="button" class="btn btn-ghost" data-act="pending" aria-pressed="false"></button>' +
+      '<button type="button" class="btn btn-ghost" data-act="fresh" aria-pressed="false"></button>' +
       '<button type="button" class="btn btn-ghost" data-act="judge"></button>' +
       '</div>' +
       '<div class="bm-nums">' + numHtml.join('') + '</div>' +
@@ -1162,6 +1175,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     /* 보기. 사이드바 "판정 대기" 로 들어오면 대기만 걸러 폰은 피드, PC 는 격자 (사용자 2026-09-19) */
     const judgeMode = ctx.mode === 'judge';
     let pendingOnly = judgeMode;
+    let freshOnly = false;
     let view: View = judgeMode ? (isWide() ? 'grid' : 'feed') : readView();
     /** 피드 카드마다 고른 의도. 저장 전까지 여기 */
     const feedPicks = new Map<string, Set<string>>();
@@ -1327,6 +1341,7 @@ import { t, loadNamespace } from '../../lib/i18n';
          필터나 검색을 바꿀 때 비운다 (resetDone) */
       const kept = feedDone.has(text(it.id));
       if (pendingOnly && !isPending(it) && !kept) return false;
+      if (freshOnly && !isFresh(it) && !kept) return false;
       const s = stateOf(it);
       /* 버림과 승격은 아카이브다. 필터를 안 켜면 기본 목록에서 뺀다 */
       if (!kept && (!picked.status || !picked.status.size)) {
@@ -1891,6 +1906,12 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (pendBtn) {
         pendBtn.setAttribute('aria-pressed', pendingOnly ? 'true' : 'false');
         pendBtn.textContent = t('mydash.bm.act.pendingOnly', undefined, '대기만');
+      }
+      const freshBtn = wrap.querySelector('[data-act="fresh"]') as HTMLElement | null;
+      if (freshBtn) {
+        freshBtn.setAttribute('aria-pressed', freshOnly ? 'true' : 'false');
+        freshBtn.textContent = t('mydash.bm.act.freshOnly', { n: freshCount, d: FRESH_DAYS }, '새로 들어옴 {n}');
+        (freshBtn as HTMLButtonElement).disabled = freshCount === 0 && !freshOnly;
       }
       const restUnits = (view === 'list' ? units.length : list.length) - shown;
       const restItems = view === 'list' ? units.slice(shown).reduce((n, u) => n + u.items.length, 0) : Math.max(0, restUnits);
@@ -2658,6 +2679,15 @@ import { t, loadNamespace } from '../../lib/i18n';
       }
       if (act === 'pending') {
         pendingOnly = !pendingOnly;
+        if (pendingOnly) freshOnly = false;
+        resetDone();
+        shown = PAGE;
+        paint();
+        return;
+      }
+      if (act === 'fresh') {
+        freshOnly = !freshOnly;
+        if (freshOnly) pendingOnly = false;
         resetDone();
         shown = PAGE;
         paint();

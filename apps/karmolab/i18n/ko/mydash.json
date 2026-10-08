@@ -151,6 +151,7 @@
   "mydash.bm.view.feed": "피드",
   "mydash.bm.view.grid": "격자",
   "mydash.bm.act.pendingOnly": "대기만",
+  "mydash.bm.act.freshOnly": "새로 들어옴 {n}",
   "mydash.bm.card.keep": "둔다",
   "mydash.bm.card.more": "더"
 }

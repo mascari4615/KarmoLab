@@ -151,6 +151,7 @@
   "mydash.bm.view.feed": "Feed",
   "mydash.bm.view.grid": "Grid",
   "mydash.bm.act.pendingOnly": "Pending only",
+  "mydash.bm.act.freshOnly": "New {n}",
   "mydash.bm.card.keep": "Keep",
   "mydash.bm.card.more": "More"
 }
