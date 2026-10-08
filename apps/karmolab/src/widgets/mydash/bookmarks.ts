@@ -173,7 +173,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** 일괄 적용에서 쓰기 요청 사이 간격 ms. 한 건씩 순차라 왕복 시간이 여기 더해진다 */
   const BULK_GAP_MS = 150;
   /** 출처 칸 차례. 나머지는 뒤에 이름순으로 붙는다 */
-  const SRC_ORDER = ['x', 'edge', 'kakao', 'memo'];
+  const SRC_ORDER = ['x', 'edge', 'kakao', 'kakao-group', 'youtube', 'memo'];
   const KST_OFFSET_MS = 9 * 3600000;
   /** 보기 셋. 목록 (묶음 접힘, 옆판), 피드 (한 장씩 세로, 카드 아래 판정), 격자 (그림 타일) */
   type View = 'list' | 'feed' | 'grid';
