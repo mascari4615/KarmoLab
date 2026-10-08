@@ -55,6 +55,8 @@ import { t, loadNamespace } from '../../lib/i18n';
 
   const API = 'https://api.github.com';
   const STORE_KEY = 'karmolab.mydash.gh';
+  /** 생성기가 `<경로>.gz` 를 같이 쓰는 파일. 읽을 때 gz 를 먼저 받음 (fetchFresh) */
+  const GZ_PATHS = ['data/bookmarks/summary.json'];
   const OUTBOX_KEY = 'karmolab.mydash.outbox';
   const DEVICE_KEY = 'karmolab.mydash.device';
   const CONFIG_URL = '/apps/karmolab/data/mydash-config.json';
@@ -548,6 +550,20 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /** 본문과 판 표식. `etag` 를 주면 안 바뀐 판은 text null (304) */
     async function fetchFresh(path: string, ref?: string, etag?: string): Promise<{ text: string | null; etag: string | null }> {
+      /* 큰 파일은 생성기가 옆에 .gz 를 같이 둔다. API 원문 받기는 압축이 없어 북마크 14MB 가 61초 (2026-10-09 실측).
+         gz 3MB 를 받아 브라우저에서 풂. gz 가 없거나 못 풀면 원래 파일로 */
+      if (GZ_PATHS.indexOf(path) >= 0 && typeof DecompressionStream === 'function') {
+        try {
+          const gz = await callUrl(contentsUrl(path + '.gz', ref), 'application/vnd.github.raw', path + '.gz', false, etag);
+          if (gz.status === 304) return { text: null, etag: etag || null };
+          if (gz.body) {
+            const text = await new Response(gz.body.pipeThrough(new DecompressionStream('gzip'))).text();
+            return { text, etag: gz.headers.get('etag') };
+          }
+        } catch {
+          /* 원래 파일로 */
+        }
+      }
       const res = await callUrl(contentsUrl(path, ref), 'application/vnd.github.raw', path, false, etag);
       if (res.status === 304) return { text: null, etag: etag || null };
       return { text: await res.text(), etag: res.headers.get('etag') };

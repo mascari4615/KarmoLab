@@ -312,7 +312,8 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* 열은 스크립트가 나눈다 (gridHtml). 열 수만 --bm-ncol 로 받는다 */
       '.bm-view-grid{display:grid;grid-template-columns:repeat(var(--bm-ncol,4),minmax(0,1fr));gap:var(--bm-gap);align-items:start;border:0;background:transparent}',
       '.bm-gcol{display:flex;flex-direction:column;gap:var(--bm-gap);min-width:0}',
-      '.bm-tile{position:relative;cursor:pointer}',
+      /* figure 의 브라우저 기본 여백 (좌우 40px) 제거. 칸 245px 에 그림 165px 이던 것 (사용자 2026-10-09 "사진 여백이 크다") */
+      '.bm-tile{position:relative;cursor:pointer;margin:0}',
       '.bm-tile img{width:100%;display:block;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
       '.bm-tile.is-cur img,.bm-tile.is-cur .bm-tile-text{outline:2px solid var(--accent);outline-offset:2px}',
       '.bm-tile-text{padding:var(--space-md);border-radius:var(--bm-pic-radius);background:var(--bg-secondary);font-size:var(--bm-body);',
@@ -1157,6 +1158,29 @@ import { t, loadNamespace } from '../../lib/i18n';
     const listEl = wrap.querySelector('[data-list]') as HTMLElement;
     const moreEl = wrap.querySelector('[data-more]') as HTMLElement;
     const moreBtn = wrap.querySelector('[data-act="more"]') as HTMLElement;
+    /* 스크롤로 더 보기 칸이 가까워지면 다음 묶음을 저절로 (사용자 2026-10-09 "더 보기 눌러야만 로딩").
+       버튼은 관찰기가 없는 환경과 키보드용으로 남김. 그린 뒤에도 칸이 보이면 한 번 더 */
+    let autoMoreBusy = false;
+    function moreInView(): boolean {
+      if (moreEl.style.display === 'none' || !moreEl.isConnected) return false;
+      const r = moreEl.getBoundingClientRect();
+      return r.top < window.innerHeight + 800 && r.bottom > -800;
+    }
+    function autoMore(): void {
+      if (autoMoreBusy || !moreInView()) return;
+      autoMoreBusy = true;
+      shown += PAGE;
+      paint();
+      requestAnimationFrame(() => {
+        autoMoreBusy = false;
+        autoMore();
+      });
+    }
+    if (typeof IntersectionObserver === 'function') {
+      new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) autoMore();
+      }, { rootMargin: '800px 0px' }).observe(moreEl);
+    }
     const selectBtn = wrap.querySelector('[data-act="select"]') as HTMLElement;
     const judgeBtn = wrap.querySelector('[data-act="judge"]') as HTMLElement;
     const judgeEl = wrap.querySelector('[data-judge]') as HTMLElement;
