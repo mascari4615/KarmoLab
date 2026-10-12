@@ -1065,6 +1065,11 @@ function dispatchExt(msg, sender, sendResponse) {
         sendResponse({ ok: true, result: await gcpOnce(url, "gcpAudienceStep", { publish: !!msg.publish }) });
       } else if (msg?.type === "gcp.client") {
         sendResponse({ ok: true, result: await gcpClient(msg) });
+      } else if (msg?.type === "queue.wake") {
+        const origin = new URL(sender?.url || 'http://invalid').origin;
+        if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) throw new Error('local queue wake only');
+        void queueTick();
+        sendResponse({ ok: true, version: chrome.runtime.getManifest().version });
       } else if (msg?.type === "ext.version") {
         const m = chrome.runtime.getManifest();
         sendResponse({ ok: true, version: m.version, name: m.name });

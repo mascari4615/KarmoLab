@@ -41,6 +41,9 @@ chrome.runtime.sendMessage("<확장ID>", { type: "bookmarks.list" }, console.log
 
 ## 할 일 큐 (v0.17.0, 포커스 안 뺏음)
 
+- v0.30.3: 로컬 페이지의 `{type: "queue.wake"}` 메시지로 큐 즉시 확인. 서버 큐 준비 후 전송, 기존 30초 알람은 연결 복구용.
+- 깨우기는 `http://127.0.0.1`, `http://localhost` 출처만. 새 권한 없음, 작업 종류와 뒤쪽 탭 제한 유지.
+
 로컬 스크립트가 bridge 탭을 열지 않고 확장을 부르는 길. 탭을 열 때마다 Edge 창이 앞으로 나오던 문제를 없앤다.
 
 - 포트: `127.0.0.1:17378` (`background.js` 의 `QUEUE_BASE`). 스크립트 쪽 서버는 memo `projects/karmo-ai/scripts/ext-queue.mjs`
