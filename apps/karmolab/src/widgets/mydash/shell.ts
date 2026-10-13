@@ -30,6 +30,7 @@ import type { DashEntry, DashPanel, DashPanelCtx, DashReadOpts, DashRepoWrite } 
 import { cachedEtag, cachedRead, clearReads, saveRead } from './read-cache';
 import mydashCss from './mydash.css';
 import dashCss from './dash.css';
+import kakaoDailyCss from './kakao-daily.css';
 import { t, loadNamespace } from '../../lib/i18n';
 
 (function (): void {
@@ -875,7 +876,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     /* 오락실(`arcade.css`)과 같은 방식. 위젯 옆의 `.css` 를 글자로 묶어 여기서 삽입
        위젯이 지연 로드라 셸의 캐시 목록을 안 건드리고 같이 실려 온다. */
     /* dash 장은 셸 CSS 가 없어 토큰과 공용 부품을 dash.css 가 채운다 */
-    el.textContent = mydashCss + dashCss;
+    el.textContent = mydashCss + dashCss + kakaoDailyCss;
     document.head.appendChild(el);
   }
 
@@ -912,6 +913,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           /* 판정 대기는 따로 방이 아니라 북마크 방의 기본 필터 (사용자 2026-09-23 합침). 안의 "대기만" 으로 전체.
              카톡 메모 방도 없앰. 스크랩과 직접 적은 메모를 한 곳에서 보고 나눔 (사용자 2026-09-24 "일단 북마크로 하자") */
           { id: 'bookmarks', label: t('mydash.nav.bookmarks', undefined, '북마크'), panel: 'bookmarks', mode: 'judge' },
+          { id: 'kakao-daily', label: '카톡 정리', panel: 'kakao-daily' },
         ],
       },
       {
@@ -965,6 +967,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   const MENU_ICONS: Record<string, string> = {
     today: 'home',
     bookmarks: 'book',
+    'kakao-daily': 'book',
     ai: 'stat',
     machines: 'dash',
     goals: 'me',

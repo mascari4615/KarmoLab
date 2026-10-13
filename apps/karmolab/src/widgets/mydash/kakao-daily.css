@@ -1,0 +1,44 @@
+.kd { max-width: 960px; margin-inline: auto; padding: 24px; background: var(--dash-glass-strong); color: var(--text-primary); line-height: 1.65; }
+.kd-dates { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.kd button, .kd select, .kd input { min-height: 44px; font: inherit; color: var(--text-primary); background: var(--bg-secondary); border: 1px solid var(--border); padding: 8px 12px; max-width: 100%; }
+.kd button, .kd select, .kd summary { cursor: pointer; }
+.kd button:hover:not(:disabled), .kd select:hover, .kd summary:hover { background: var(--bg-hover); }
+.kd button:disabled { opacity: .45; cursor: default; }
+.kd :is(button, select, input, a, summary):focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; }
+.kd ::selection { background: var(--accent-subtle); color: var(--text-primary); }
+.kd input { caret-color: var(--accent-ink); }
+.kd input::placeholder { color: var(--text-secondary); }
+.kd-head { padding-block: 24px 8px; }
+.kd h2 { margin: 0 0 12px; font-size: var(--font-size-display-sm); line-height: 1.35; text-wrap: balance; }
+.kd h3 { margin: 0 0 16px; font-size: var(--font-size-md); }
+.kd h4 { margin: 0; font-size: var(--font-size-sm); line-height: 1.6; overflow-wrap: anywhere; }
+.kd p { margin: 8px 0; }
+.kd-caption, .kd-meta, .kd-original { color: var(--text-secondary); font-size: var(--font-size-xs); overflow-wrap: anywhere; }
+.kd-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding-block: 16px; border-bottom: 1px solid var(--border); }
+.kd-filter label { display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; }
+.kd-filter label:last-of-type { flex: 1; }
+.kd .kd-filter input { box-sizing: border-box; flex: 1; width: 0; min-width: 0; min-height: 44px; padding: 8px 12px; font: inherit; appearance: none; }
+.kd-filter [data-count] { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.kd-topic { margin-top: 32px; }
+.kd-topic h3 span { font-weight: normal; color: var(--text-secondary); margin-left: 8px; }
+.kd-topic ul { padding: 0; margin: 0; list-style: none; }
+.kd-topic li { padding: 20px 0; border-top: 1px solid var(--border); }
+.kd-topic a { color: var(--text-primary); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.kd-topic a:hover { color: var(--accent-ink); }
+.kd-description { max-width: 72ch; overflow-wrap: anywhere; }
+.kd-details { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 16px; }
+.kd-details summary { min-height: 44px; padding: 8px 0; color: var(--text-secondary); }
+.kd-details section { margin-top: 24px; }
+.kd-details ul { padding-left: 20px; overflow-wrap: anywhere; }
+.kd-notice { padding: 12px 16px; background: var(--accent-subtle); }
+.kd-empty { padding-block: 32px; }
+@media (max-width: 600px) {
+  .kd { padding: 16px; }
+  .kd-dates { flex-wrap: wrap; gap: 8px; }
+  .kd-dates label { order: -1; width: 100%; }
+  .kd-dates select { width: calc(100% - 40px); }
+  .kd-dates button { flex: 1; }
+  .kd-filter label { width: 100%; }
+  .kd-filter label:last-of-type { flex-basis: 100%; }
+  .kd h2 { font-size: var(--font-size-title); }
+}
