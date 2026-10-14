@@ -471,6 +471,7 @@
     "test:tierlist-keys": "node scripts/smoke-tierlist-keys.mjs",
     "test:timecapsule": "node scripts/smoke-timecapsule.mjs",
     "test:tool-search": "node scripts/test-tool-search.mjs",
+    "test:prepush-build": "node --test scripts/test-prepush-build.mjs",
     "test:tool-url": "node scripts/smoke-tool-url.mjs",
     "test:tools": "node scripts/smoke-tools.mjs",
     "test:trim": "node scripts/test-videotrim.mjs",
