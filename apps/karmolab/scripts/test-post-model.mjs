@@ -11,6 +11,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
+import ts from 'typescript';
 
 const root = new URL('..', import.meta.url);
 
@@ -99,13 +100,37 @@ if (existsSync(indexPath)) {
   console.log('[post-model] posts-index.json 없음. 빌드 산출이라 건너뜀 (CANNOT-RUN 아님, 위 검사는 다 돌았다)');
 }
 
-// 실행판(```demo)은 trust self 안에서만. 울타리가 풀리면 남의 글이 코드 실행
+// 실행판 기본은 self, 호스트 명시 허용은 demos. 주석과 들여쓰기 대신 실제 호출의 조건 검사
 const richSource = await readFile(fileURLToPath(new URL('src/lib/markdown/rich-view.ts', root)), 'utf8');
-const guardAt = richSource.indexOf("trust === 'self'");
-const mountAt = richSource.indexOf('mountDemos(');
-assert.ok(guardAt > 0, 'rich-view 에 trust self 울타리가 없다');
-assert.ok(mountAt > guardAt, '실행판이 trust self 울타리 밖에서 열린다');
-const guardBlockEnd = richSource.indexOf(String.fromCharCode(10) + '    }', guardAt);
-assert.ok(mountAt < guardBlockEnd, '실행판 호출이 울타리 블록 밖으로 나갔다');
+function assertDemoGuard(source) {
+  const tree = ts.createSourceFile('rich-view.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const calls = [];
+  function visit(node) {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'mountDemos') calls.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(tree);
+  assert.equal(calls.length, 1, '실행판 호출이 한 곳이어야 한다');
+  let child = calls[0];
+  let guarded = false;
+  for (let parent = child.parent; parent; child = parent, parent = parent.parent) {
+    if (!ts.isIfStatement(parent) || parent.thenStatement !== child) continue;
+    const expr = parent.expression;
+    if (!ts.isBinaryExpression(expr) || expr.operatorToken.kind !== ts.SyntaxKind.QuestionQuestionToken) continue;
+    const left = expr.left;
+    const right = expr.right;
+    guarded = ts.isPropertyAccessExpression(left) && ts.isIdentifier(left.expression) && left.expression.text === 'options' && left.name.text === 'demos'
+      && ts.isBinaryExpression(right) && right.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+      && ts.isIdentifier(right.left) && right.left.text === 'trust' && ts.isStringLiteral(right.right) && right.right.text === 'self';
+    if (guarded) break;
+  }
+  assert.ok(guarded, '실행판 호출에 demos 또는 self 조건이 없다');
+}
+assertDemoGuard(richSource);
+// 실제 위험 두 가지: 무조건 허용과 조건문 밖 호출. 주석의 self 글자는 방어 조건 아님
+assert.throws(() => assertDemoGuard(richSource.replace("if (options.demos ?? trust === 'self')", 'if (true)')), /실행판 호출에/);
+const call = 'mountDemos(body, labels.demo, { autoHeight: options.demoAutoHeight });';
+const outside = richSource.replace(call, '').replace('    runCodeBlockHook(body, options.hooks);', `${call}\n    runCodeBlockHook(body, options.hooks);`);
+assert.throws(() => assertDemoGuard(outside), /실행판 호출에/);
 
 console.log('[post-model] 세 갈래가 한 모양으로 담긴다. 주소, 신뢰 등급, 찾기, 실행판 울타리까지');
