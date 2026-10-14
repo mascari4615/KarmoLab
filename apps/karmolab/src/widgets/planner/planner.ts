@@ -154,6 +154,15 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-repeat-day:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
         .pl-repeat-day:has(:disabled) { cursor: default; opacity: .6; }
         .pl-repeat-note { margin: 0; font-size: var(--font-size-xs); color: var(--text-secondary); }
+        .pl-repeat-config, .pl-linked-settings[open] { display: grid; gap: 12px; }
+        .pl-linked-settings { border-top: 1px solid var(--border); padding-top: 8px; }
+        .pl-linked-settings summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: var(--font-weight-medium); }
+        .pl-link-row { min-width: 0; border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+        .pl-link-times { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+        .pl-exceptions { display: grid; gap: 8px; }
+        .pl-exception-row { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .pl-cal-main .fc .pl-linked-short.fc-timegrid-event .fc-event-time { display: none; }
+        .pl-cal-main .fc .pl-linked-short.fc-timegrid-event .fc-event-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .pl-form-error { color: var(--error); margin: 0; }
         .pl-modal [hidden] { display: none; }
         .pl-times[data-allday="1"] { grid-template-columns: 1fr; }

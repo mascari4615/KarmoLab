@@ -25,6 +25,7 @@ export interface CachedCalendar {
     /** 이 시각 이후 바뀐 것만 물으면 된다 (ISO) */
     syncedAt: string;
     items: Record<string, GoogleEvent>;
+    needsRefresh?: boolean;
 }
 
 /* ===== 순수 계산 (scripts/test-planner-core.mjs 가 잰다) ===== */
@@ -133,4 +134,9 @@ export function clearEventCache(): void {
     } catch {
         /* 막힌 브라우저 */
     }
+}
+
+export function invalidateCached(calendarId: string): void {
+    const entry = loadCached(calendarId);
+    if (entry) saveCached(calendarId, { ...entry, needsRefresh: true });
 }

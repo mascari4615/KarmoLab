@@ -13,6 +13,7 @@
  */
 import type { FcEvent, GoogleTask, KanbanColumn } from './gcal';
 import { occurrences, type RepeatRule } from './recurrence';
+import type { LinkedEvent } from './event-group';
 
 export const LOCAL_PREFIX = 'local__';
 export const LOCAL_CALENDAR_ID = 'local';
@@ -59,6 +60,8 @@ export interface LocalEventInput {
     allDay: boolean;
     color?: string;
     repeat?: RepeatRule | null;
+    linkedEvents?: LinkedEvent[];
+    exceptions?: Record<string, { cancelled?: boolean; title?: string; start?: string; end?: string; allDay?: boolean; linkedEvents?: LinkedEvent[] }>;
 }
 
 /** 저장된 것 → 달력이 쓰는 모양. 구글에서 온 것과 **구분이 안 가게** 같은 틀로 낸다. */
@@ -77,7 +80,8 @@ export function toFcEvent(stored: LocalEventInput & { id: string }, calendarName
             calendarName,
             googleId: stored.id,
             htmlLink: '',
-            ...(stored.repeat ? { localSeriesId: stored.id, repeatRule: stored.repeat, seriesStart: stored.start, seriesEnd: stored.end } : {})
+            linkedEvents: stored.linkedEvents,
+            ...(stored.repeat ? { localSeriesId: stored.id, repeatRule: stored.repeat, seriesStart: stored.start, seriesEnd: stored.end, seriesTitle: stored.title, seriesLinks: stored.linkedEvents, exceptions: stored.exceptions } : {})
         },
         ...(stored.repeat ? { startEditable: false, durationEditable: false } : {})
     };
@@ -87,12 +91,26 @@ export function listEvents(calendarName: string, from?: Date, to?: Date): FcEven
     return read<LocalEventInput & { id: string }>(EVENTS_KEY).flatMap((e) => {
         const event = toFcEvent(e, calendarName);
         if (!e.repeat || !from || !to) return [event];
-        return occurrences(new Date(e.allDay ? `${e.start}T00:00:00` : e.start), new Date(e.allDay ? `${e.end}T00:00:00` : e.end), e.repeat, from, to).map((item) => ({
+        const start = new Date(e.allDay ? `${e.start}T00:00:00` : e.start), end = new Date(e.allDay ? `${e.end}T00:00:00` : e.end);
+        const key = (d: Date): string => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const originals = new Map(occurrences(start, end, e.repeat, from, to).map(item => [key(item.start), item]));
+        for (const date of Object.keys(e.exceptions || {})) {
+            const at = new Date(`${date}T00:00:00`), next = new Date(at); next.setDate(next.getDate() + 1);
+            for (const item of occurrences(start, end, e.repeat, at, next)) if (key(item.start) === date) originals.set(date, item);
+        }
+        return [...originals].flatMap(([date, item]) => {
+            const exception = e.exceptions?.[date];
+            if (exception?.cancelled) return [];
+            const result: FcEvent = {
             ...event,
             id: `${e.id}::${item.start.getFullYear()}-${item.start.getMonth() + 1}-${item.start.getDate()}`,
             start: e.allDay ? `${item.start.getFullYear()}-${String(item.start.getMonth() + 1).padStart(2, '0')}-${String(item.start.getDate()).padStart(2, '0')}` : item.start.toISOString(),
-            end: e.allDay ? `${item.end.getFullYear()}-${String(item.end.getMonth() + 1).padStart(2, '0')}-${String(item.end.getDate()).padStart(2, '0')}` : item.end.toISOString()
-        }));
+            end: e.allDay ? `${item.end.getFullYear()}-${String(item.end.getMonth() + 1).padStart(2, '0')}-${String(item.end.getDate()).padStart(2, '0')}` : item.end.toISOString(),
+            ...exception,
+            extendedProps: { ...event.extendedProps, occurrenceDate: date, occurrenceStart: e.allDay ? key(item.start) : item.start.toISOString(), occurrenceEnd: e.allDay ? key(item.end) : item.end.toISOString(), linkedEvents: exception?.linkedEvents ?? e.linkedEvents, occurrenceChanged: !!exception }
+            };
+            return new Date(result.end.length === 10 ? `${result.end}T00:00:00` : result.end) > from && new Date(result.start.length === 10 ? `${result.start}T00:00:00` : result.start) < to ? [result] : [];
+        });
     });
 }
 
@@ -110,6 +128,15 @@ export function updateEvent(id: string, patch: Partial<LocalEventInput>): void {
     if (at < 0) return;
     items[at] = { ...items[at], ...patch };
     write(EVENTS_KEY, items);
+}
+
+export function updateOccurrence(id: string, date: string, patch: NonNullable<LocalEventInput['exceptions']>[string] | null): void {
+    const event = read<LocalEventInput & { id: string }>(EVENTS_KEY).find(e => e.id === id);
+    if (!event) return;
+    const exceptions = { ...event.exceptions };
+    if (patch === null) delete exceptions[date];
+    else exceptions[date] = patch;
+    updateEvent(id, { exceptions });
 }
 
 export function deleteEvent(id: string): void {

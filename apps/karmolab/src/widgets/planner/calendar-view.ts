@@ -16,6 +16,7 @@ import {
     fetchCalendars,
     cachedEvents,
     syncEvents,
+    hydrateGroups,
     patchEvent,
     ymd,
     type FcEvent,
@@ -28,12 +29,14 @@ import {
     deleteEvent as deleteLocalEvent,
     isLocal,
     listEvents as listLocalEvents,
-    updateEvent as updateLocalEvent
+    updateEvent as updateLocalEvent,
+    updateOccurrence
 } from './local-store';
 import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { withToken } from './gauth';
 import { HOLIDAY_YEARS, holidayRangeSupported, repeatWindow, type RepeatRule } from './recurrence';
+import { parseLinks, withLinkedEvents, type LinkedEvent } from './event-group';
 
 import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -218,9 +221,12 @@ export function buildCalendarView(
             info.jsEvent.preventDefault();
             openPopover(info.event, info.jsEvent.clientX, info.jsEvent.clientY, info.el);
         },
+        eventClassNames: ({ event }) => event.extendedProps.parentEventId ? ['pl-linked-event', ...(event.start && event.end && +event.end - +event.start <= 30 * 60000 ? ['pl-linked-short'] : [])] : [],
         /* 자판만 쓰는 사람도 일정을 열 수 있어야 한다. 끌어 옮기기는 마우스만 되므로,
            초점을 받을 수 있게 하고 Enter/Space 로 같은 풍선을 연다(거기서 시각을 고친다). */
         eventDidMount: (info) => {
+            info.el.setAttribute('aria-label', `${info.event.title}, ${describeWhen(info.event)}${info.event.extendedProps.parentTitle ? `, ${t('planner.groupParent', { title: info.event.extendedProps.parentTitle as string })}` : ''}`);
+            info.el.title = info.el.getAttribute('aria-label') || info.event.title;
             /* 캘린더 색을 변수로. dash 는 이 색을 옅게 깔고 왼쪽 줄로만 진하게 (P1 시안, 2026-09-24) */
             const color = info.event.backgroundColor || info.backgroundColor;
             if (color) info.el.style.setProperty('--pl-ev', color);
@@ -294,7 +300,7 @@ export function buildCalendarView(
     async function reload(start: Date, end: Date): Promise<void> {
         lastRange = { start, end };
         /* 이 브라우저 것은 늘 있다. 구글은 연동돼 있을 때만 얹는다. */
-        const own = (): FcEvent[] => [...listLocalEvents(t('planner.t50'), start, end), ...toAiEvents(followups)];
+        const own = (): FcEvent[] => [...listLocalEvents(t('planner.t50'), new Date(+start - 2 * 86400000), new Date(+end + 2 * 86400000)), ...toAiEvents(followups)];
         if (!token) {
             setEvents(own());
             return;
@@ -310,7 +316,9 @@ export function buildCalendarView(
         try {
             const synced = await withToken(token, (tok) => syncEvents(tok, googleCals, from, to));
             if (destroyed || lastRange.start !== start) return;
-            if (synced.changed) setEvents([...own(), ...synced.events]);
+            const googleEvents = await withToken(token, (tok) => hydrateGroups(tok, synced.events));
+            if (destroyed || lastRange.start !== start) return;
+            setEvents([...own(), ...googleEvents]);
         } catch {
             /* 갱신해도 거절. 저장본만 보이는 중임을 알림 */
             if (!destroyed) toast(t('planner.t36'), 'error');
@@ -320,13 +328,13 @@ export function buildCalendarView(
     }
 
     function setEvents(list: FcEvent[]): void {
-        allEvents = list;
+        allEvents = withLinkedEvents(list);
         applyEvents();
         renderMini();
     }
 
     /* 달력에는 바뀐 일정만 넣고 뺀다. 통째로 지우고 다시 그리면 저장본과 구글 판이 같아도 깜빡인다 */
-    const sigOf = (ev: FcEvent): string => JSON.stringify([ev.title, ev.start, ev.end, ev.allDay, ev.backgroundColor, ev.extendedProps.repeatRule]);
+    const sigOf = (ev: FcEvent): string => JSON.stringify([ev.title, ev.start, ev.end, ev.allDay, ev.backgroundColor, ev.extendedProps]);
     function applyEvents(): void {
         const want = new Map(visible().map((ev) => [ev.id, ev]));
         calendar.batchRendering(() => {
@@ -508,8 +516,8 @@ export function buildCalendarView(
         const ev = draft.event;
         const localRepeat = ev?.extendedProps.repeatRule as RepeatRule | undefined;
         const seriesDate = (value: string): Date => new Date(value.length === 10 ? `${value}T00:00:00` : value);
-        const startDate = localRepeat ? seriesDate(ev!.extendedProps.seriesStart as string) : ev ? ev.start ?? draft.start : draft.start;
-        const endDate = localRepeat ? seriesDate(ev!.extendedProps.seriesEnd as string) : ev ? ev.end ?? addHours(startDate, 1) : draft.end;
+        const startDate = ev ? ev.start ?? draft.start : draft.start;
+        const endDate = ev ? ev.end ?? addHours(startDate, 1) : draft.end;
         const allDay = ev ? ev.allDay : draft.allDay;
         const currentCal = (ev?.extendedProps.calendarId as string) || calendars[0]?.id || 'primary';
         const editableCalendars = calendars.filter((cal) => cal.id !== AI_CALENDAR_ID && !isHolidayCalendar(cal.id));
@@ -525,6 +533,7 @@ export function buildCalendarView(
                     <button type="button" class="pl-modal-x" aria-label="${esc(t('planner.t18'))}">✕</button>
                 </div>
                 <form class="pl-modal-body">
+                    ${localRepeat || googleInstance ? `<label class="pl-field"><span class="pl-label">${esc(t('planner.groupScope'))}</span><select class="pl-input" name="event-scope"><option value="day">${esc(t('planner.groupDay'))}</option>${ev?.extendedProps.seriesStart ? `<option value="series">${esc(t('planner.groupSeries'))}</option>` : ''}</select></label>` : ''}
                     <label class="pl-field"><span class="pl-label">${esc(t('planner.t19'))}</span><input type="text" name="event-title" class="pl-input pl-modal-name" required value="${esc(ev?.title ?? '')}"></label>
                     ${
                         editableCalendars.length > 1 && !ev
@@ -544,7 +553,7 @@ export function buildCalendarView(
                             <input type="datetime-local" name="event-end" class="pl-input pl-end-time" value="${localInputValue(endDate)}">
                         </label>
                     </div>
-                    <label class="pl-field"><span class="pl-label">${esc(t('planner.repeat'))}</span>
+                    <div class="pl-repeat-config"><label class="pl-field"><span class="pl-label">${esc(t('planner.repeat'))}</span>
                         <select class="pl-input" name="event-repeat" ${googleInstance ? 'disabled' : ''}>
                             <option value="none">${esc(t(googleInstance ? 'planner.repeatExisting' : 'planner.repeatNone'))}</option>
                             <option value="daily" ${localRepeat?.frequency === 'daily' ? 'selected' : ''}>${esc(t('planner.repeatDaily'))}</option>
@@ -561,7 +570,16 @@ export function buildCalendarView(
                         <label class="pl-check"><input type="checkbox" name="event-repeat-exclude-holidays" ${localRepeat?.excludeHolidays ? 'checked' : ''}><span>${esc(t('planner.repeatExcludeHolidays'))}</span></label>
                         <p class="pl-repeat-note pl-holiday-hint" hidden>${esc(t('planner.repeatHolidayHint').replace('{from}', String(HOLIDAY_YEARS[0])).replace('{to}', String(HOLIDAY_YEARS[HOLIDAY_YEARS.length - 1])))}</p>
                     </div>
-                    ${localRepeat ? `<p class="pl-repeat-note">${esc(t('planner.repeatSeriesEdit'))}</p>` : googleInstance ? `<p class="pl-repeat-note">${esc(t('planner.repeatInstanceEdit'))}</p>` : ''}
+                    </div>
+                    <details class="pl-linked-settings" ${parseLinks(ev?.extendedProps.linkedEvents).length ? 'open' : ''}><summary>${esc(t('planner.groupLinks'))}</summary>
+                        <p class="pl-repeat-note">${esc(t('planner.groupHint'))}</p>
+                        ${(['before', 'after'] as const).map(side => { const link = parseLinks(ev?.extendedProps.linkedEvents).find(x => x.side === side); return `<fieldset class="pl-link-row" data-side="${side}"><legend><label class="pl-check"><input type="checkbox" name="link-${side}" ${link ? 'checked' : ''}><span>${esc(t(side === 'before' ? 'planner.groupBefore' : 'planner.groupAfter'))}</span></label></legend>
+                            <label class="pl-field"><span class="pl-label">${esc(t('planner.t19'))}</span><input class="pl-input" name="link-${side}-title" maxlength="100" required value="${esc(link?.title || t(side === 'before' ? 'planner.groupCommuteIn' : 'planner.groupCommuteOut'))}"></label>
+                            <div class="pl-link-times"><label class="pl-field"><span class="pl-label">${esc(t('planner.groupMinutes'))}</span><input class="pl-input" type="number" name="link-${side}-minutes" required min="1" max="1440" step="1" value="${link?.minutes ?? 30}"></label><label class="pl-field"><span class="pl-label">${esc(t('planner.groupGap'))}</span><input class="pl-input" type="number" name="link-${side}-gap" required min="0" max="1440" step="1" value="${link?.gap ?? 0}"></label></div></fieldset>`; }).join('')}
+                        <p class="pl-repeat-note pl-linked-allday" hidden>${esc(t('planner.groupTimedOnly'))}</p>
+                    </details>
+                    ${localRepeat ? `<section class="pl-exceptions" hidden><h4 class="pl-label">${esc(t('planner.groupExceptions'))}</h4>${Object.entries(ev!.extendedProps.exceptions || {}).map(([date, change]) => `<div class="pl-exception-row"><span>${esc(date)} ${esc(t((change as { cancelled?: boolean }).cancelled ? 'planner.groupSkipped' : 'planner.groupChanged'))}</span><button type="button" class="btn btn-ghost" data-restore="${esc(date)}">${esc(t('planner.groupRestore'))}</button></div>`).join('') || `<p class="pl-repeat-note">${esc(t('planner.groupNoExceptions'))}</p>`}</section>` : ''}
+                    ${localRepeat || googleInstance ? `<p class="pl-repeat-note pl-scope-note">${esc(t('planner.groupDayHint'))}</p>` : ''}
                     <p class="pl-form-error" role="alert" hidden></p>
                     <div class="pl-modal-actions">
                         <button type="button" class="btn btn-ghost pl-modal-cancel">${esc(t('planner.t30'))}</button>
@@ -574,6 +592,7 @@ export function buildCalendarView(
         wrap.showModal();
 
         const form = wrap.querySelector('form')!;
+        const scope = wrap.querySelector<HTMLSelectElement>('[name="event-scope"]');
         const allDayBox = wrap.querySelector<HTMLInputElement>('[name="event-allday"]')!;
         const times = wrap.querySelector<HTMLElement>('.pl-times')!;
         const syncAllDay = (): void => {
@@ -604,12 +623,15 @@ export function buildCalendarView(
             repeatStartInput.max = repeatUntil.max = excluding ? `${HOLIDAY_YEARS[HOLIDAY_YEARS.length - 1]}-12-31` : '';
         };
         const syncRepeat = (): void => {
-            repeatDays.hidden = repeatSelect.value !== 'weekly';
+            const scoped = !!scope && scope.value === 'day';
+            wrap.querySelector<HTMLElement>('.pl-repeat-config')!.hidden = scoped || googleInstance;
+            repeatSelect.disabled = scoped || googleInstance;
+            repeatDays.hidden = scoped || googleInstance || repeatSelect.value !== 'weekly';
             repeatDays.disabled = repeatDays.hidden;
-            repeatStartField.hidden = repeatSelect.value === 'none';
+            repeatStartField.hidden = scoped || googleInstance || repeatSelect.value === 'none';
             repeatStartInput.disabled = repeatStartField.hidden;
             wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!.min = repeatStartInput.value;
-            repeatOptions.hidden = repeatSelect.value === 'none';
+            repeatOptions.hidden = scoped || googleInstance || repeatSelect.value === 'none';
             repeatOptions.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.disabled = repeatOptions.hidden; });
             syncHoliday();
             wrap.querySelector<HTMLElement>('.pl-repeat-interval-label')!.textContent = t(repeatSelect.value === 'weekly' ? 'planner.repeatWeekInterval' : 'planner.repeatDayInterval');
@@ -617,6 +639,43 @@ export function buildCalendarView(
         repeatSelect.addEventListener('change', syncRepeat);
         excludeHolidays.addEventListener('change', syncHoliday);
         syncRepeat();
+        const syncLinked = (): void => {
+            for (const side of ['before', 'after']) {
+                const box = wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!;
+                box.disabled = allDayBox.checked;
+                wrap.querySelectorAll<HTMLInputElement>(`.pl-link-row[data-side="${side}"] .pl-input`).forEach(input => { input.disabled = allDayBox.checked || !box.checked; });
+            }
+            wrap.querySelector<HTMLElement>('.pl-linked-allday')!.hidden = !allDayBox.checked;
+        };
+        allDayBox.addEventListener('change', syncLinked);
+        wrap.querySelectorAll<HTMLInputElement>('.pl-link-row [type="checkbox"]').forEach(box => box.addEventListener('change', syncLinked));
+        syncLinked();
+        scope?.addEventListener('change', () => {
+            wrap.querySelectorAll<HTMLInputElement>('input').forEach(input => input.setCustomValidity(''));
+            const whole = scope.value === 'series';
+            const at = whole ? seriesDate(ev!.extendedProps.seriesStart as string) : ev!.start!;
+            const finish = whole ? seriesDate(ev!.extendedProps.seriesEnd as string) : ev!.end ?? addHours(at, 1);
+            allDayBox.checked = whole ? (ev!.extendedProps.seriesStart as string).length === 10 : ev!.allDay;
+            wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.value = whole ? ev!.extendedProps.seriesTitle as string || ev!.title : ev!.title;
+            wrap.querySelector<HTMLInputElement>('[name="event-start"]')!.value = localInputValue(at);
+            wrap.querySelector<HTMLInputElement>('[name="event-start-date"]')!.value = ymd(at);
+            wrap.querySelector<HTMLInputElement>('[name="event-end"]')!.value = localInputValue(finish);
+            const links = parseLinks(whole ? ev!.extendedProps.seriesLinks : ev!.extendedProps.linkedEvents);
+            for (const side of ['before', 'after'] as const) {
+                const link = links.find(x => x.side === side);
+                wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked = !!link;
+                wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!.value = link?.title || t(side === 'before' ? 'planner.groupCommuteIn' : 'planner.groupCommuteOut');
+                wrap.querySelector<HTMLInputElement>(`[name="link-${side}-minutes"]`)!.value = String(link?.minutes ?? 30);
+                wrap.querySelector<HTMLInputElement>(`[name="link-${side}-gap"]`)!.value = String(link?.gap ?? 0);
+            }
+            const exceptions = wrap.querySelector<HTMLElement>('.pl-exceptions'); if (exceptions) exceptions.hidden = !whole;
+            wrap.querySelector<HTMLElement>('.pl-scope-note')!.textContent = t(whole ? 'planner.groupSeriesHint' : 'planner.groupDayHint');
+            syncAllDay(); syncRepeat(); syncLinked();
+        });
+        wrap.querySelectorAll<HTMLButtonElement>('[data-restore]').forEach(button => button.addEventListener('click', async () => {
+            updateOccurrence(ev!.extendedProps.localSeriesId as string, button.dataset.restore!, null);
+            closeModal(true); if (lastRange) await reload(lastRange.start, lastRange.end);
+        }));
         wrap.addEventListener('input', (e) => {
             wrap.querySelectorAll<HTMLInputElement>('input').forEach((input) => input.setCustomValidity(''));
             if (e.target === repeatStartInput) repeatStartTouched = true;
@@ -650,6 +709,10 @@ export function buildCalendarView(
             e.preventDefault();
             const title = wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.value.trim();
             if (!title) return;
+            if (!allDayBox.checked) for (const side of ['before', 'after']) {
+                const input = wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!;
+                if (wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked && !input.value.trim()) { input.setCustomValidity(t('planner.groupLinkTitle')); input.reportValidity(); return; }
+            }
             const isAllDay = allDayBox.checked;
             let start: Date;
             let end: Date;
@@ -661,7 +724,7 @@ export function buildCalendarView(
             } else {
                 start = new Date(wrap.querySelector<HTMLInputElement>('[name="event-start"]')!.value);
                 end = new Date(wrap.querySelector<HTMLInputElement>('[name="event-end"]')!.value);
-                if (!(end > start)) end = addHours(start, 1);
+                if (!(end > start)) { const input = wrap.querySelector<HTMLInputElement>('[name="event-end"]')!; input.setCustomValidity(t('planner.groupTimeInvalid')); input.reportValidity(); return; }
             }
             const calId =
                 (wrap.querySelector<HTMLSelectElement>('[name="event-calendar"]')?.value as string) || currentCal;
@@ -670,7 +733,7 @@ export function buildCalendarView(
                 input.setCustomValidity(t('planner.repeatDateInvalid')); input.reportValidity(); return;
             }
             let repeat: RepeatRule | null | undefined = googleInstance ? undefined : null;
-            if (!googleInstance && repeatSelect.value !== 'none') {
+            if (!googleInstance && scope?.value !== 'day' && repeatSelect.value !== 'none') {
                 const days = [...repeatDays.querySelectorAll<HTMLInputElement>('input:checked')].map((input) => Number(input.value));
                 if (repeatSelect.value === 'weekly' && !days.length) {
                     const input = repeatDays.querySelector<HTMLInputElement>('input')!;
@@ -685,7 +748,8 @@ export function buildCalendarView(
             const submit = wrap.querySelector<HTMLButtonElement>('[type="submit"]')!;
             submit.disabled = true;
             form.setAttribute('aria-busy', 'true');
-            const ok = await save(title, start, end, isAllDay, calId, ev, repeat);
+            const links: LinkedEvent[] = isAllDay ? [] : (['before', 'after'] as const).filter(side => wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked).map(side => ({ side, title: wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!.value.trim(), minutes: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-minutes"]`)!.value), gap: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-gap"]`)!.value) }));
+            const ok = await save(title, start, end, isAllDay, calId, ev, repeat, links, scope?.value === 'day');
             if (modalEl !== wrap) return;
             if (ok) closeModal(true);
             else { const error = wrap.querySelector<HTMLElement>('.pl-form-error')!; error.hidden = false; error.textContent = t('planner.t32'); submit.disabled = false; form.removeAttribute('aria-busy'); }
@@ -707,18 +771,39 @@ export function buildCalendarView(
         allDay: boolean,
         calId: string,
         ev?: EventApi,
-        repeat?: RepeatRule | null
+        repeat?: RepeatRule | null,
+        linkedEvents: LinkedEvent[] = [],
+        single = false
     ): Promise<boolean> {
         try {
             /* 어디에 쓸지는 **id 앞머리**가 정한다. 이 브라우저 것과 구글 것이 한 화면에 섞여 있다 */
             if (ev && isLocal(ev.id)) {
-                updateLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id, { title, allDay, repeat, ...stored(start, end, allDay) });
+                if (single && ev.extendedProps.localSeriesId) {
+                    const times = stored(start, end, allDay);
+                    const patch = {
+                        ...(title !== ev.extendedProps.seriesTitle ? { title } : {}),
+                        ...(allDay !== ((ev.extendedProps.seriesStart as string).length === 10) ? { allDay } : {}),
+                        ...(times.start !== ev.extendedProps.occurrenceStart ? { start: times.start } : {}),
+                        ...(times.end !== ev.extendedProps.occurrenceEnd ? { end: times.end } : {}),
+                        ...(JSON.stringify(linkedEvents) !== JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)) ? { linkedEvents } : {})
+                    };
+                    updateOccurrence(ev.extendedProps.localSeriesId as string, ev.extendedProps.occurrenceDate as string, Object.keys(patch).length ? patch : null);
+                }
+                else updateLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id, { title, allDay, repeat, linkedEvents, ...(repeat === null ? { exceptions: {} } : {}), ...stored(start, end, allDay) });
             } else if (ev) {
-                await withToken(token!, (tok) => patchEvent(tok, calId, ev.extendedProps.googleId as string, { title, start, end, allDay, repeat }));
+                const id = !single && ev.extendedProps.recurringEventId ? ev.extendedProps.recurringEventId as string : ev.extendedProps.googleId as string;
+                const links = single && ev.extendedProps.recurringEventId && JSON.stringify(linkedEvents) === JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)) ? ev.extendedProps.linksOverride ? null : undefined : linkedEvents;
+                const omit: Array<'summary' | 'start' | 'end'> = [];
+                if (single) {
+                    if (title === ev.title) omit.push('summary');
+                    if (allDay === ev.allDay && +start === +(ev.start || NaN)) omit.push('start');
+                    if (allDay === ev.allDay && +end === +(ev.end || NaN)) omit.push('end');
+                }
+                await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, repeat, linkedEvents: links }, omit));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
-                createLocalEvent({ title, allDay, repeat, ...stored(start, end, allDay) });
+                createLocalEvent({ title, allDay, repeat, linkedEvents, ...stored(start, end, allDay) });
             } else {
-                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, repeat }));
+                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, repeat, linkedEvents }));
             }
             if (lastRange) await reload(lastRange.start, lastRange.end);
             return true;
@@ -733,6 +818,7 @@ export function buildCalendarView(
         const end = ev.end ?? addHours(start, 1);
         if (isLocal(ev.id)) {
             updateLocalEvent(ev.id, { allDay: ev.allDay, ...stored(start, end, ev.allDay) });
+            if (lastRange) await reload(lastRange.start, lastRange.end);
             return;
         }
         try {
@@ -743,6 +829,7 @@ export function buildCalendarView(
                     allDay: ev.allDay
                 })
             );
+            if (lastRange) await reload(lastRange.start, lastRange.end);
         } catch {
             revert();
             toast(t('planner.t32'), 'error');
@@ -777,6 +864,8 @@ export function buildCalendarView(
     }
 
     function openPopover(ev: EventApi, atX: number, atY: number, opener?: HTMLElement): void {
+        const linked = !!ev.extendedProps.parentEventId;
+        if (linked) { const parent = calendar.getEventById(ev.extendedProps.parentEventId as string); if (!parent) return; ev = parent; }
         closePopover();
         closeModal();
         popoverOpener = opener ?? null;
@@ -793,12 +882,15 @@ export function buildCalendarView(
             </div>
             <div class="pl-pop-title">${esc(ev.title)}</div>
             <div class="pl-pop-time">${esc(describeWhen(ev))}</div>
+            ${linked || parseLinks(ev.extendedProps.linkedEvents).length ? `<div class="pl-pop-cal">${esc(t('planner.groupParent', { title: ev.title }))}</div>` : ''}
             ${calName ? `<div class="pl-pop-cal">${esc(calName)}</div>` : ''}
             ${isAi ? `<div class="pl-pop-cal">${esc(t('planner.t98'))}${doc ? ` <code>${esc(doc)}</code>` : ''}</div>` : `
             <div class="pl-pop-actions">
                 <button type="button" class="btn btn-ghost pl-pop-edit">${esc(t('planner.t16'))}</button>
                 ${link ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Google ↗</a>` : ''}
-                <button type="button" class="btn btn-ghost pl-pop-del">${esc(t('planner.t33'))}</button>
+                <button type="button" class="btn btn-ghost pl-pop-del">${esc(t(ev.extendedProps.localSeriesId || ev.extendedProps.recurringEventId ? 'planner.groupSkipDay' : 'planner.t33'))}</button>
+                ${ev.extendedProps.localSeriesId || ev.extendedProps.recurringEventId ? `<button type="button" class="btn btn-ghost pl-pop-del-series">${esc(t('planner.groupDeleteSeries'))}</button>` : ''}
+                ${ev.extendedProps.occurrenceChanged ? `<button type="button" class="btn btn-ghost pl-pop-restore">${esc(t('planner.groupRestore'))}</button>` : ''}
             </div>`}`;
         container.appendChild(box);
         popoverEl = box;
@@ -819,8 +911,10 @@ export function buildCalendarView(
         });
         box.querySelector('.pl-pop-del')?.addEventListener('click', () => {
             closePopover();
-            void remove(ev);
+            void remove(ev, ev.extendedProps.localSeriesId || ev.extendedProps.recurringEventId ? 'day' : 'series');
         });
+        box.querySelector('.pl-pop-del-series')?.addEventListener('click', () => { closePopover(); void remove(ev, 'series'); });
+        box.querySelector('.pl-pop-restore')?.addEventListener('click', async () => { closePopover(); updateOccurrence(ev.extendedProps.localSeriesId as string, ev.extendedProps.occurrenceDate as string, null); if (lastRange) await reload(lastRange.start, lastRange.end); });
         document.addEventListener('keydown', onPopoverKey, true);
         setTimeout(() => document.addEventListener('mousedown', onOutside, true), 0);
     }
@@ -834,15 +928,14 @@ export function buildCalendarView(
         return ev.end ? `${day} ${hm(start)} - ${hm(ev.end)}` : `${day} ${hm(start)}`;
     }
 
-    async function remove(ev: EventApi): Promise<void> {
-        if (!confirm(t(ev.extendedProps.localSeriesId ? 'planner.repeatSeriesDelete' : 'planner.t34', { title: ev.title }))) return;
+    async function remove(ev: EventApi, scope: 'day' | 'series' = 'series'): Promise<void> {
+        if (!confirm(t(scope === 'day' ? 'planner.groupSkipConfirm' : ev.extendedProps.localSeriesId || ev.extendedProps.recurringEventId ? 'planner.groupDeleteSeriesConfirm' : 'planner.groupDeleteConfirm', { title: ev.title }))) return;
         try {
-            if (isLocal(ev.id)) deleteLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id);
-            else await withToken(token!, (tok) => deleteEvent(tok, ev.extendedProps.calendarId as string, ev.extendedProps.googleId as string));
-            if (ev.extendedProps.localSeriesId && lastRange) { await reload(lastRange.start, lastRange.end); return; }
-            ev.remove();
-            allEvents = allEvents.filter((e) => e.extendedProps.googleId !== ev.extendedProps.googleId);
-            renderMini();
+            if (isLocal(ev.id)) {
+                if (scope === 'day' && ev.extendedProps.localSeriesId) updateOccurrence(ev.extendedProps.localSeriesId as string, ev.extendedProps.occurrenceDate as string, { cancelled: true });
+                else deleteLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id);
+            } else await withToken(token!, (tok) => deleteEvent(tok, ev.extendedProps.calendarId as string, scope === 'series' && ev.extendedProps.recurringEventId ? ev.extendedProps.recurringEventId as string : ev.extendedProps.googleId as string));
+            if (lastRange) await reload(lastRange.start, lastRange.end);
         } catch {
             toast(t('planner.t35'), 'error');
         }

@@ -390,9 +390,48 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
   C.saveCached('cal1', r);
   eq(C.loadCached('cal1').items.a.summary, '새 제목', '저장본을 다시 읽는다');
   eq(C.eventsIn(r, day('2026-09-21'), day('2026-09-23')).map((x) => x.id).join(), 'c', '구간 안 일정만');
+  C.invalidateCached('cal1');check(C.loadCached('cal1').needsRefresh,'일정 쓰기 후 전체 갱신 필요 표시');eq(C.loadCached('cal1').items.a.summary,'새 제목','후속 읽기 실패에도 저장본 보존');
 }
 
 const R = await load('src/widgets/planner/recurrence.ts', 'recurrence');
+{
+  const groups=await load('src/widgets/planner/event-group.ts','event-groups');
+  const local=await load('src/widgets/planner/local-store.ts','group-local');
+  localStorage.removeItem('karmolab_planner_events');
+  const links=[{side:'before',title:'출근',minutes:30,gap:10},{side:'after',title:'퇴근',minutes:60,gap:0}];
+  const id=local.createEvent({title:'회사',start:new Date(2026,9,14,9).toISOString(),end:new Date(2026,9,14,18).toISOString(),allDay:false,linkedEvents:links,repeat:{frequency:'daily',interval:1,days:[],until:'2026-10-16'}});
+  const range=[new Date(2026,9,14),new Date(2026,9,17)];
+  let events=groups.withLinkedEvents(local.listEvents('내 일정',...range));
+  eq(events.length,9,'회사3회에 앞뒤6회 파생');
+  const before=events.find(e=>e.title==='출근');eq(new Date(before.start).getHours()+':'+new Date(before.start).getMinutes(),'8:20','출근 길이30분과 간격10분');
+  eq(new Date(events.find(e=>e.title==='퇴근').start).getHours(),18,'퇴근은 회사 종료부터');
+  check(events.filter(e=>e.extendedProps.parentEventId).every(e=>!e.startEditable&&!e.durationEditable),'연결 일정 독립 이동 보호');
+  local.updateOccurrence(id,'2026-10-15',{end:new Date(2026,9,15,20,30).toISOString()});
+  events=groups.withLinkedEvents(local.listEvents('내 일정',...range));
+  eq(events.filter(e=>e.title==='퇴근').map(e=>new Date(e.start).getHours()+':'+new Date(e.start).getMinutes()).join(),'18:0,20:30,18:0','야근 하루만 퇴근 이동');
+  local.updateOccurrence(id,'2026-10-16',{cancelled:true});eq(groups.withLinkedEvents(local.listEvents('내 일정',...range)).length,6,'휴가 하루 그룹3개 함께 제외');
+  const reread=await load('src/widgets/planner/local-store.ts','group-reload');eq(groups.withLinkedEvents(reread.listEvents('내 일정',...range)).length,6,'재읽기 후 야근과 휴가 유지');
+  local.updateOccurrence(id,'2026-10-16',null);eq(groups.withLinkedEvents(local.listEvents('내 일정',...range)).length,9,'휴가 그룹 복원');
+  local.updateEvent(id,{linkedEvents:[links[0],{...links[1],minutes:45}]});
+  events=groups.withLinkedEvents(local.listEvents('내 일정',...range));check(events.filter(e=>e.title==='퇴근').every(e=>Date.parse(e.end)-Date.parse(e.start)===45*60000),'야근 예외도 전체 연결 길이 변경 상속');
+  local.updateOccurrence(id,'2026-10-14',{start:new Date(2026,10,2,9).toISOString(),end:new Date(2026,10,2,18).toISOString()});
+  const moved=local.listEvents('내 일정',new Date(2026,10,1),new Date(2026,10,3));eq(moved.length,1,'원래 달 밖으로 이동한 예외 표시');eq(moved[0].extendedProps.occurrenceDate,'2026-10-14','이동 후 원래 날짜로 예외 식별');
+  local.updateOccurrence(id,'2026-10-14',null);local.deleteEvent(id);eq(groups.withLinkedEvents(local.listEvents('내 일정',...range)).length,0,'반복 전체 삭제 후 연결 일정 잔존0');
+  const parent=P.toFcEvent({id:'parent',summary:'밤근무',start:{dateTime:new Date(2026,9,14,23).toISOString()},end:{dateTime:new Date(2026,9,15,1).toISOString()},extendedProperties:{private:{karmoLinks:JSON.stringify(links)}}},CAL);
+  const night=groups.withLinkedEvents([parent]);eq(new Date(night[2].start).getDate(),15,'밤샘 뒤 연결 일정 다음날');
+  eq(groups.withLinkedEvents([{...parent,allDay:true}]).length,1,'종일에 연결 시간 생성 없음');eq(groups.parseLinks('bad').length,0,'잘못된 구글 메타데이터 방어');
+  const payload=P.toGooglePayload({title:'회사',start:new Date(2026,9,14,9),end:new Date(2026,9,14,18),allDay:false,linkedEvents:links});eq(JSON.parse(payload.extendedProperties.private.karmoLinks).length,2,'구글 기준 일정 속성에 연결 규칙2개 저장');
+  eq(P.toGooglePayload({title:'해제',start:new Date(),end:new Date(),allDay:false,linkedEvents:null}).extendedProperties.private.karmoLinks,null,'구글 회차 연결 덮어쓰기 해제');
+  const holiday=local.createEvent({title:'회사',start:new Date(2026,9,8,9).toISOString(),end:new Date(2026,9,8,18).toISOString(),allDay:false,linkedEvents:links,repeat:{frequency:'daily',interval:1,days:[],startDate:'2026-10-08',until:'2026-10-10',excludeHolidays:true}});
+  eq(groups.withLinkedEvents(local.listEvents('내 일정',new Date(2026,9,8),new Date(2026,9,11))).length,6,'공휴일에는 회사와 앞뒤 일정 모두 없음');local.deleteEvent(holiday);
+  const oldFetch=globalThis.fetch;let reads=0;globalThis.fetch=async()=>{reads++;return new Response(JSON.stringify({id:'master',summary:'회사',start:{dateTime:parent.start},end:{dateTime:parent.end},extendedProperties:{private:{karmoLinks:JSON.stringify(links)}}}));};
+  try {
+    const a={...parent,id:'primary__a',extendedProps:{...parent.extendedProps,calendarId:'primary',googleId:'a',recurringEventId:'master',linkedEvents:[]}};
+    const b={...a,id:'primary__b',extendedProps:{...a.extendedProps,googleId:'b'}};
+    const hydrated=await P.hydrateGroups('account-a-fixture',[a,b]);eq(reads,1,'구글 반복 부모 조회 회차별 중복 없음');eq(groups.withLinkedEvents(hydrated).length,6,'구글 부모 연결 규칙 상속');
+    await P.hydrateGroups('account-b-fixture',[a]);eq(reads,2,'다른 계정에 부모 캐시 공유 없음');
+  }finally{globalThis.fetch=oldFetch;}
+}
 {
   const start=new Date(2026,8,21,10),end=new Date(2026,8,21,11);
   const rule={frequency:'daily',interval:1,days:[],startDate:'2026-09-21',until:'2026-09-27',excludeHolidays:true};

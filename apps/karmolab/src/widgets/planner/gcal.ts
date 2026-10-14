@@ -12,8 +12,9 @@
  *   (옛 판은 달력 라이브러리가 끝을 포함으로 봐서 어쩔 수 없었다.)
  */
 
-import { covers, eventsIn, loadCached, mergeDelta, mergeFull, saveCached, syncStamp } from './event-cache';
+import { covers, eventsIn, invalidateCached, loadCached, mergeDelta, mergeFull, saveCached, syncStamp } from './event-cache';
 import { recurrenceLines, repeatWindow, type RepeatRule } from './recurrence';
+import { parseLinks, type LinkedEvent } from './event-group';
 
 const CAL_API = 'https://www.googleapis.com/calendar/v3';
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
@@ -46,6 +47,7 @@ export interface GoogleEvent {
     /** 'cancelled' 면 지워진 일정 (바뀐 것만 받을 때 온다) */
     status?: string;
     recurringEventId?: string;
+    extendedProperties?: { private?: Record<string, string> };
 }
 
 /** FullCalendar 가 먹는 모양 */
@@ -69,6 +71,17 @@ export interface FcEvent {
         repeatRule?: RepeatRule;
         seriesStart?: string;
         seriesEnd?: string;
+        seriesTitle?: string;
+        seriesLinks?: LinkedEvent[];
+        linkedEvents?: LinkedEvent[];
+        parentEventId?: string;
+        parentTitle?: string;
+        occurrenceDate?: string;
+        occurrenceChanged?: boolean;
+        occurrenceStart?: string;
+        occurrenceEnd?: string;
+        linksOverride?: boolean;
+        exceptions?: Record<string, { cancelled?: boolean; title?: string; start?: string; end?: string }>;
     };
 }
 
@@ -112,6 +125,8 @@ export function toFcEvent(item: GoogleEvent, cal: GoogleCalendar): FcEvent {
             calendarName: cal.summary,
             googleId: item.id,
             htmlLink: item.htmlLink || '',
+            linkedEvents: parseLinks(item.extendedProperties?.private?.karmoLinks),
+            linksOverride: item.extendedProperties?.private?.karmoLinks !== undefined,
             ...(item.recurringEventId ? { recurringEventId: item.recurringEventId } : {})
         }
     };
@@ -128,6 +143,7 @@ export interface EventDraft {
     end: Date;
     allDay: boolean;
     repeat?: RepeatRule | null;
+    linkedEvents?: LinkedEvent[] | null;
 }
 
 /** 구글에 보낼 모양. 종일이면 날짜만, 아니면 시각까지. 끝은 양쪽 다 다음이다. */
@@ -135,6 +151,7 @@ export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
     const { start, end } = draft.repeat ? repeatWindow(draft.start, draft.end, draft.repeat) : draft;
     const body: Record<string, unknown> = {};
     if (draft.title) body.summary = draft.title;
+    if (draft.linkedEvents !== undefined) body.extendedProperties = { private: { karmoLinks: draft.linkedEvents === null ? null : JSON.stringify(parseLinks(draft.linkedEvents)) } };
     if (draft.allDay) {
         const startYmd = ymd(start);
         const endYmd = ymd(end);
@@ -154,6 +171,31 @@ export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
         }
     }
     return body;
+}
+
+const masterCache = new Map<string, { at: number; event: GoogleEvent }>();
+export async function hydrateGroups(token: string, events: FcEvent[]): Promise<FcEvent[]> {
+    const masters = new Map<string, Promise<GoogleEvent | undefined>>();
+    return Promise.all(events.map(async event => {
+        const { calendarId, recurringEventId, googleId } = event.extendedProps;
+        if (!recurringEventId || calendarId.endsWith('#holiday@group.v.calendar.google.com')) return event;
+        const key = `${token}__${calendarId}__${recurringEventId}`;
+        if (!masters.has(key)) masters.set(key, (async () => {
+            const cached = masterCache.get(key);
+            if (cached && Date.now() - cached.at < 300000) return cached.event;
+            const res = await fetch(`${CAL_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(recurringEventId)}`, { headers: authHeaders(token) });
+            if (res.status === 401) throw new Error('events 401');
+            if (!res.ok) return undefined;
+            const master = await res.json() as GoogleEvent;
+            masterCache.set(key, { at: Date.now(), event: master }); return master;
+        })());
+        const master = await masters.get(key)!;
+        if (!master?.start || !master.end) return event;
+        const entry = loadCached(calendarId)?.items[googleId];
+        const own = entry?.extendedProperties?.private?.karmoLinks;
+        const links = parseLinks(master.extendedProperties?.private?.karmoLinks);
+        return { ...event, extendedProps: { ...event.extendedProps, seriesStart: master.start.dateTime || master.start.date, seriesEnd: master.end.dateTime || master.end.date, seriesTitle: master.summary || event.title, seriesLinks: links, linkedEvents: own === undefined ? links : parseLinks(own) } };
+    }));
 }
 
 /* ===== 주고받기 ===== */
@@ -249,7 +291,7 @@ export async function syncEvents(
             const entry = loadCached(cal.id);
             const stamp = syncStamp(Date.now());
             try {
-                if (entry && covers(entry, from, to)) {
+                if (entry && !entry.needsRefresh && covers(entry, from, to)) {
                     const delta = await listAll(token, cal.id, {
                         timeMin: new Date(entry.from).toISOString(),
                         timeMax: new Date(entry.to).toISOString(),
@@ -287,19 +329,24 @@ export async function createEvent(token: string, calendarId: string, draft: Even
         body: JSON.stringify(toGooglePayload(draft))
     });
     if (!res.ok) throw new Error(`createEvent ${res.status}`);
+    invalidateCached(calendarId); masterCache.clear();
 }
 
 export async function patchEvent(
     token: string,
     calendarId: string,
     eventId: string,
-    draft: Partial<EventDraft> & { start: Date; end: Date; allDay: boolean }
+    draft: Partial<EventDraft> & { start: Date; end: Date; allDay: boolean },
+    omit: Array<'summary' | 'start' | 'end'> = []
 ): Promise<void> {
+    const body = toGooglePayload(draft as EventDraft);
+    for (const field of omit) delete body[field];
     const res = await fetch(
         `${CAL_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
-        { method: 'PATCH', headers: authHeaders(token, true), body: JSON.stringify(toGooglePayload(draft as EventDraft)) }
+        { method: 'PATCH', headers: authHeaders(token, true), body: JSON.stringify(body) }
     );
     if (!res.ok) throw new Error(`patchEvent ${res.status}`);
+    invalidateCached(calendarId); masterCache.clear();
 }
 
 export async function deleteEvent(token: string, calendarId: string, eventId: string): Promise<void> {
@@ -309,6 +356,7 @@ export async function deleteEvent(token: string, calendarId: string, eventId: st
     );
     /* 이미 지워진 것(410)은 성공으로 친다. 두 번 눌렀다고 빨간 글씨를 볼 이유가 없다 */
     if (!res.ok && res.status !== 410) throw new Error(`deleteEvent ${res.status}`);
+    invalidateCached(calendarId); masterCache.clear();
 }
 
 /* ===== 할 일 (칸반) ===== */
