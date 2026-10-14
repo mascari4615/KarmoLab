@@ -308,8 +308,10 @@ html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size:
 
 /* 폰에서는 달력 먼저, 설정은 접어서 아래. 7열의 날짜는 일 보기 진입점 */
 @media (max-width: 899px) {
-  html[data-site="dash"] .myd-main:has(.pl-root) { padding-inline: 0; }
-  html[data-site="dash"] .myd-main:has(.pl-root) .myd-head { margin-inline: 12px; }
+  html[data-site="dash"] .myd-main:has(.pl-root) { padding: 0 0 var(--space-2xl); }
+  html[data-site="dash"] .myd-main:has(.pl-root) .myd-head { display: none; }
+  html[data-site="dash"] .pl-root > .pl-bar { order: 1; padding: 12px; border-top: 1px solid var(--border); }
+  html[data-site="dash"] .pl-bar .btn { min-height: 44px; }
   html[data-site="dash"] .pl-body { flex-direction: column; box-shadow: none; border-inline: 0; }
   html[data-site="dash"] .pl-pane { overflow: visible; }
   html[data-site="dash"] .pl-cal-layout { flex-direction: column; height: auto; }
@@ -325,9 +327,12 @@ html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size:
   html[data-site="dash"] .pl-cal-mode,
   html[data-site="dash"] .pl-cal-item,
   html[data-site="dash"] .pl-today-item { min-height: 44px; font-size: var(--font-size-xs); }
-  html[data-site="dash"] .pl-cal-main .fc .fc-header-toolbar { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
-  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk { display: flex; justify-content: space-between; }
-  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:nth-child(2) { grid-row: 1; justify-content: center; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-header-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-bottom: 8px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk { display: flex; align-items: center; justify-content: space-between; min-width: 0; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:first-child { grid-row: 1; grid-column: 2; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:nth-child(2) { grid-row: 1; grid-column: 1; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-title { font-size: var(--font-size-sm); line-height: 20px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:last-child { grid-column: 1 / -1; }
   html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:last-child .fc-button-group { display: flex; width: 100%; }
   html[data-site="dash"] .pl-cal-main .fc .fc-button { min-width: 44px; min-height: 44px; padding: 8px 12px; font-size: var(--font-size-xs); white-space: nowrap; }
   html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:last-child .fc-button { flex: 1; }
