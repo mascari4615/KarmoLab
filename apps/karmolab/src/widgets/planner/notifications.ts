@@ -71,12 +71,13 @@ export function mountNotifications(ctx: DashPanelCtx): void {
         const localEvents = withLinkedEvents(listEvents('이 브라우저', from, to)).filter(e => Date.parse(e.end.length === 10 ? e.end + 'T00:00:00' : e.end) > +from && Date.parse(e.start.length === 10 ? e.start + 'T00:00:00' : e.start) < +to).map(e => ({ id: e.id, title: e.title, start: e.start, end: e.end, allDay: e.allDay }));
         const tasks = listTasks();
         paint(await call('POST', { ...(refreshToken ? { refreshToken } : {}), localEvents, localTasks: [...tasks.todo, ...tasks.inProgress], localThrough: to.toISOString(), preview }));
+        if (preview && !disposed) status.textContent += ', 디코 안내 전송됨';
     }
     async function run(action: () => Promise<void>): Promise<void> {
         if (busy || disposed) return;
         busy = true; buttons().forEach(b => { b.disabled = true; }); status.textContent = '갱신 중';
         try { await action(); }
-        catch (e) { if (!disposed) status.textContent = (e as Error).message; }
+        catch (e) { if (!disposed) { const message = (e as Error)?.message || '알림 갱신 실패'; status.textContent = /failed to fetch|NetworkError|Load failed/i.test(message) ? '알림 서버에 연결할 수 없음, 잠시 뒤 지금 갱신' : message; } }
         finally { busy = false; if (!disposed) buttons().forEach(b => { b.disabled = false; }); if (pendingSync && !disposed) { pendingSync = false; void run(() => sync()); } }
     }
     box.querySelector('.pl-notify-connect')!.addEventListener('click', () => { void run(() => sync(true, true)); });

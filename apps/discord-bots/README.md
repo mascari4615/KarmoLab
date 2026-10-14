@@ -36,6 +36,7 @@ npm -w apps/karmolab-bot run start
 - `/dash/notifications`: GitHub 본인 인증. GET 상태, POST 로컬 항목 동기화와 수동 전송, DELETE 구글 연결 해제.
 - 연결과 중복 방지 파일은 봇 data 안에만 저장, Git 제외. 응답에 갱신 토큰 제외.
 - 브라우저 로컬 항목은 플래너를 열 때와 수정 시 동기화. 24시간 넘은 저장본은 경과 표시. 새 작품 감시 목록은 별도 갱신 필요.
+- 수동 안내 전송은 성공 표시, 네트워크 오류는 지금 갱신 안내.
 - 검사: `npx vitest run src/services/personal-notifications.test.ts src/bot/personal-notifications-api.test.ts` (봇 앱 폴더).
 
 ## 커맨드 배포
