@@ -27,9 +27,12 @@ const results = [];
 try {
   for (const width of [1440, 390, 320]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width < 500 });
+    await context.route('https://ac.arca.live/preview-test.svg', (route) => route.fulfill({
+      contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#333"/><text x="80" y="300" fill="white" font-size="48">Thumbnail size fixture</text></svg>',
+    }));
     await context.addInitScript(({ key, rows }) => {
       globalThis.chrome = {
-        runtime: { sendMessage: async (msg) => msg.type === "arca.embed.read" ? { ok: true, embed: { image: "", description: "공개 썸네일 없음" } } : ({ ok: true, at: Date.now(), rows }) },
+        runtime: { sendMessage: async (msg) => msg.type === "arca.embed.read" ? { ok: true, embed: { image: "https://ac.arca.live/preview-test.svg" } } : ({ ok: true, at: Date.now(), rows }) },
         storage: { local: { get: async () => ({ likelist: { arca: { [key]: { name: key.split("#")[0] } } }, karmoLikedProfiles: {} }), set: async () => {} }, onChanged: { addListener() {} } },
       };
     }, fixture);
@@ -43,7 +46,15 @@ try {
     const rowHeight = await page.locator("#posts li").first().evaluate((el) => el.getBoundingClientRect().height);
     assert.ok(rowHeight <= 45, `single row height ${rowHeight}`);
     await page.locator(".refs-title").first().focus();
-    await page.waitForFunction(() => !document.querySelector(".article-preview").hidden && document.querySelector(".article-preview-message").textContent.includes("썸네일"));
+    await page.waitForFunction(() => !document.querySelector(".article-preview").hidden && document.querySelector(".article-preview-image").naturalWidth > 0);
+    const previewSize = await page.locator('.article-preview').first().evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { width: r.width, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    });
+    assert.equal(previewSize.width, Math.min(560, width - 24));
+    assert.ok(previewSize.left >= 12 && previewSize.right <= width - 12);
+    assert.ok(previewSize.top >= 12 && previewSize.bottom <= 888);
+    await page.screenshot({ path: path.join(out, `large-preview-test-${width}.png`), fullPage: true });
     await page.keyboard.press("Escape");
     if (width < 500) {
       await page.locator('.refs-preview-button').first().tap();
@@ -65,7 +76,7 @@ try {
     await page.waitForFunction(() => !document.getElementById("refresh").disabled);
     await page.screenshot({ path: path.join(out, `page-${width}.png`), fullPage: true });
     assert.deepEqual(errors, []);
-    results.push({ width, posts: fixture.rows.length, rowHeight, embedFocus: true, overflow: false, keyboard: true, touch: width < 500 });
+    results.push({ width, posts: fixture.rows.length, rowHeight, previewWidth: previewSize.width, embedFocus: true, overflow: false, keyboard: true, touch: width < 500 });
     await context.close();
   }
   console.log(JSON.stringify(results));
