@@ -39,3 +39,50 @@ test('실제 Embed 분기: 외부 글, 비팔로우 작성자 거부', async () 
   assert.equal((await call('b', 'https://arca.live/b/x/1')).ok, false);
   assert.equal((await call('a', 'https://arca.live/b/x/1')).ok, true);
 });
+
+test('Embed: DOM 준비 즉시 읽기, 리소스 완료와 3초 대기 제외', async () => {
+  const url = 'https://arca.live/b/example/1';
+  let polls = 0;
+  let now = 0;
+  let closed = false;
+  const ctx = { Date: { now: () => now }, Promise,
+    location: { href: 'about:blank' }, document: { readyState: 'loading' },
+    setTimeout: (resolve, ms) => { now += ms; resolve(); },
+    within: (_ms, _label, promise) => promise,
+    openWorkTab: async () => ({ id: 7 }), closeWorkTab: async () => { closed = true; },
+    waitLoaded: () => { throw new Error('resource-complete wait must not run'); },
+  };
+  ctx.chrome = { scripting: { executeScript: async (options) => {
+    assert.equal(options.injectImmediately, true);
+    if (options.files) return [];
+    if (options.args[0] === url) {
+      polls++;
+      if (polls >= 2) ctx.location.href = url;
+      if (polls >= 3) ctx.document.readyState = 'interactive';
+      return [{ result: options.func(url) }];
+    }
+    return [{ result: { author: 'a', image: 'https://ac.arca.live/a.webp' } }];
+  } } };
+  vm.createContext(ctx);
+  const code = read('background.js');
+  vm.runInContext(code.slice(code.indexOf('async function runInTab('), code.indexOf('async function youtubeRemove(')), ctx);
+  assert.equal((await ctx.runInTab(url, 'arca-embed.js', 'readArcaEmbed', undefined, 'article-dom')).author, 'a');
+  assert.equal(ctx.document.readyState, 'interactive');
+  assert.equal(now, 200);
+  assert.equal(closed, true);
+});
+
+test('Embed: 잘못된 페이지 DOM은 읽지 않고 시간 초과 뒤 탭 회수', async () => {
+  let now = 0;
+  let closed = false;
+  const ctx = { Date: { now: () => now }, Promise, setTimeout: (resolve, ms) => { now += ms; resolve(); },
+    within: (_ms, _label, promise) => promise,
+    openWorkTab: async () => ({ id: 7 }), closeWorkTab: async () => { closed = true; },
+    chrome: { scripting: { executeScript: async () => [{ result: false }] } },
+  };
+  vm.createContext(ctx);
+  const code = read('background.js');
+  vm.runInContext(code.slice(code.indexOf('async function runInTab('), code.indexOf('async function youtubeRemove(')), ctx);
+  await assert.rejects(ctx.runInTab('https://arca.live/b/example/1', 'arca-embed.js', 'readArcaEmbed', undefined, 'article-dom'), /DOM 준비 시간 초과/);
+  assert.equal(closed, true);
+});

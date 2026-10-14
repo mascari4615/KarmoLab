@@ -98,6 +98,17 @@ var KarmoArticleList = (() => {
     const escape = (event) => {
       if (event.key === "Escape") hide();
     };
+    const positionPreview = () => {
+      const rect = title.getBoundingClientRect();
+      const view = doc.defaultView;
+      const width = view?.innerWidth || 320;
+      const height = view?.innerHeight || 600;
+      const size = preview.getBoundingClientRect();
+      const below = rect.bottom + 6;
+      const top = below + size.height <= height - 12 ? below : rect.top - size.height - 6;
+      preview.style.left = `${Math.max(12, Math.min(rect.left, width - size.width - 12))}px`;
+      preview.style.top = `${Math.max(12, Math.min(top, height - size.height - 12))}px`;
+    };
     const show = async () => {
       clearTimeout(hideTimer);
       if (!onPreview || box.dataset.previewOpen === "1") return;
@@ -111,9 +122,7 @@ var KarmoArticleList = (() => {
       preview.hidden = false;
       image.hidden = true;
       setText(message, "\uC378\uB124\uC77C \uD655\uC778 \uC911");
-      const rect = title.getBoundingClientRect();
-      preview.style.left = `${Math.max(8, Math.min(rect.left, (doc.defaultView?.innerWidth || 320) - 288))}px`;
-      preview.style.top = `${Math.max(8, Math.min(rect.bottom + 6, (doc.defaultView?.innerHeight || 600) - 230))}px`;
+      positionPreview();
       try {
         const result = await onPreview(box.articlePost);
         if (request !== seq) return;
@@ -123,11 +132,15 @@ var KarmoArticleList = (() => {
             image.hidden = true;
             setText(message, "\uC378\uB124\uC77C\uC744 \uD45C\uC2DC\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4");
           };
-          image.onload = () => setText(message, "");
+          image.onload = () => {
+            setText(message, "");
+            positionPreview();
+          };
           image.src = src;
           image.hidden = false;
           setText(message, result?.description || "");
         } else setText(message, result?.error || "\uACF5\uAC1C \uC378\uB124\uC77C \uC5C6\uC74C");
+        positionPreview();
       } catch (error) {
         if (request === seq) setText(message, `\uC378\uB124\uC77C \uC77D\uAE30 \uC2E4\uD328: ${error.message}`);
       }

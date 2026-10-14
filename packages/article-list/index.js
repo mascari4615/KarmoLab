@@ -52,6 +52,17 @@ export function createArticleRow(post, { document: doc = globalThis.document, ac
   let pinned = false;
   const outside = (event) => { if (!box.contains(event.target)) hide(); };
   const escape = (event) => { if (event.key === 'Escape') hide(); };
+  const positionPreview = () => {
+    const rect = title.getBoundingClientRect();
+    const view = doc.defaultView;
+    const width = view?.innerWidth || 320;
+    const height = view?.innerHeight || 600;
+    const size = preview.getBoundingClientRect();
+    const below = rect.bottom + 6;
+    const top = below + size.height <= height - 12 ? below : rect.top - size.height - 6;
+    preview.style.left = `${Math.max(12, Math.min(rect.left, width - size.width - 12))}px`;
+    preview.style.top = `${Math.max(12, Math.min(top, height - size.height - 12))}px`;
+  };
   const show = async () => {
     clearTimeout(hideTimer);
     if (!onPreview || box.dataset.previewOpen === '1') return;
@@ -64,19 +75,18 @@ export function createArticleRow(post, { document: doc = globalThis.document, ac
     const seq = ++request;
     preview.hidden = false; image.hidden = true;
     setText(message, '썸네일 확인 중');
-    const rect = title.getBoundingClientRect();
-    preview.style.left = `${Math.max(8, Math.min(rect.left, (doc.defaultView?.innerWidth || 320) - 288))}px`;
-    preview.style.top = `${Math.max(8, Math.min(rect.bottom + 6, (doc.defaultView?.innerHeight || 600) - 230))}px`;
+    positionPreview();
     try {
       const result = await onPreview(box.articlePost);
       if (request !== seq) return;
       const src = safeLink(result?.image, doc.baseURI);
       if (src) {
         image.onerror = () => { image.hidden = true; setText(message, '썸네일을 표시할 수 없습니다'); };
-        image.onload = () => setText(message, '');
+        image.onload = () => { setText(message, ''); positionPreview(); };
         image.src = src; image.hidden = false;
         setText(message, result?.description || '');
       } else setText(message, result?.error || '공개 썸네일 없음');
+      positionPreview();
     } catch (error) { if (request === seq) setText(message, `썸네일 읽기 실패: ${error.message}`); }
   };
   const hide = () => {

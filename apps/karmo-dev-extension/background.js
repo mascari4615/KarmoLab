@@ -322,11 +322,27 @@ async function stepInTab(url, file, fnName, maxSteps) {
  * @param {string} fnName 그 파일이 전역에 깐 함수 이름
  * @param {string} [world] "MAIN" 이면 페이지와 같은 세계. fetch 를 가로채야 할 때만
  */
-async function runInTab(url, file, fnName, world) {
+async function runInTab(url, file, fnName, world, ready = 'loaded') {
   const tab = await openWorkTab(url);
   try {
-    await waitLoaded(tab.id);
+    if (ready === 'article-dom') {
+      const deadline = Date.now() + 15000;
+      let found = false;
+      while (Date.now() < deadline) {
+        try {
+          const [out] = await within(2000, 'embed-dom', chrome.scripting.executeScript({
+            target: { tabId: tab.id }, injectImmediately: true,
+            func: (expected) => location.href === expected && document.readyState !== 'loading',
+            args: [url],
+          }));
+          if (out?.result) { found = true; break; }
+        } catch { /* 초기 빈 문서 또는 이동 중, 다음 DOM 확인 */ }
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      if (!found) throw new Error('글 DOM 준비 시간 초과');
+    } else await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id } };
+    if (ready === 'article-dom') where.injectImmediately = true;
     if (world) where.world = world;
     await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: [file] }));
     const [out] = await within(60000, "call", chrome.scripting.executeScript({
@@ -878,7 +894,7 @@ function readFollowEmbed(url, key) {
   if (hit && Date.now() - hit.at < 10 * 60 * 1000) return Promise.resolve(hit.embed);
   if (embedPending.has(cacheKey)) return embedPending.get(cacheKey);
   const run = embedTail.then(async () => {
-    const embed = await runInTab(url, 'arca-embed.js', 'readArcaEmbed');
+    const embed = await runInTab(url, 'arca-embed.js', 'readArcaEmbed', undefined, 'article-dom');
     const numbered = /#(\d+)$/.exec(key);
     const actualNumber = /#(\d+)$/.exec(embed?.author || '');
     if (numbered ? numbered[1] !== actualNumber?.[1] : embed?.author !== key) throw new Error('팔로우 작성자의 글이 아닙니다.');
