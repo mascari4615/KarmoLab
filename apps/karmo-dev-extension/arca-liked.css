@@ -18,13 +18,11 @@ label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
 #status { color: var(--text); }
 .scope { font-size: 13px; margin: 5px 0 24px; }
 #posts { padding: 0; margin: 0; list-style: none; background: var(--surface); border-top: 1px solid var(--line); }
-#posts li { padding: 18px 20px; border-bottom: 1px solid var(--line); }
-#posts li:hover { background: var(--tint); }
-.post-title { display: block; font-size: 17px; font-weight: 600; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
-.post-title:hover { text-decoration: underline; }
-.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-top: 7px; font-size: 13px; color: var(--muted); }
-.meta .writer { color: var(--accent); }
-time { font-variant-numeric: tabular-nums; margin-left: auto; }
+#posts { --fg: var(--text); --dim: var(--muted); --panel: var(--surface); --hover: var(--tint); --refs-columns: minmax(0, 1fr) 110px 140px 130px; }
+#posts .refs-head { grid-template-areas: 'title author channel date'; min-height: 38px; padding: 2px 10px; background: var(--surface); }
+#posts .refs-chev, #posts .refs-post-id, #posts .refs-count, #posts .refs-row-actions { display: none; }
+#posts .refs-head:hover { background: var(--tint); }
+#posts .writer { color: var(--accent); text-decoration: none; }
 #empty { padding: 40px 0; border-top: 1px solid var(--line); }
 h2 { font-size: 20px; margin: 0 0 8px; }
 #failures { margin: 0 0 20px; padding: 16px; background: var(--tint); overflow-wrap: anywhere; }
@@ -41,6 +39,8 @@ html { scrollbar-color: var(--muted) var(--bg); }
   header button { width: 100%; margin-top: 18px; }
   .filters { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .settings { justify-self: start; }
-  #posts li { padding: 16px 12px; }
-  time { margin-left: 0; width: 100%; }
+  #posts { --refs-columns: minmax(0, 1fr) 76px; }
+  #posts .refs-head { grid-template-areas: 'title author'; min-height: 44px; padding: 2px 6px; }
+  #posts .refs-head .refs-post-by { display: block; }
+  #posts .article-channel, #posts .refs-post-date { display: none; }
 }

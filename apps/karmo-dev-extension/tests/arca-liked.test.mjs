@@ -13,6 +13,7 @@ const profile = `<div class="user-body"><h5>최근 작성글</h5>${row("one", 10
 function dom(html = profile) {
   const d = new JSDOM(html, { runScripts: "outside-only", url: "https://arca.live/u/@test" });
   d.window.eval(source("arca-profile.js"));
+  d.window.eval(source("vendor/article-list.js"));
   return d;
 }
 
@@ -76,11 +77,11 @@ test("화면: 실제 글 제목 안전 출력, 검색, 좋아요 해제, 갱신 
   const { d, change } = await ui();
   const doc = d.window.document;
   assert.equal(doc.querySelectorAll("#posts li").length, 1);
-  assert.match(doc.querySelector(".post-title").textContent, /<script>/);
+  assert.match(doc.querySelector(".refs-title").textContent, /<script>/);
   assert.doesNotMatch(doc.getElementById("count").textContent, /날짜 정보 없음/);
-  doc.querySelector(".post-title").focus();
+  doc.querySelector(".refs-title").focus();
   change({ likelist: { newValue: { arca: { a: { name: "작성자" } } } } }, "local");
-  assert.equal(doc.activeElement.className, "post-title");
+  assert.equal(doc.activeElement.classList.contains("refs-title"), true);
   assert.equal(doc.activeElement.getAttribute("href"), "https://arca.live/b/one/10");
   doc.getElementById("search").value = "없는제목";
   doc.getElementById("search").dispatchEvent(new d.window.Event("input"));

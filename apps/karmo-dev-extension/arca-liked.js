@@ -3,6 +3,18 @@
   const CACHE = "karmoLikedProfiles";
   const el = (id) => document.getElementById(id);
   const api = globalThis.KarmoProfile;
+  const articleList = globalThis.KarmoArticleList;
+  const embedRequests = new Map();
+  async function preview(post) {
+    if (!embedRequests.has(post.url)) {
+      const request = chrome.runtime.sendMessage({ type: "arca.embed.read", key: post.authorKey, url: post.url }).then((result) => {
+        if (!result?.ok) { embedRequests.delete(post.url); return { error: result?.error || "썸네일 응답 없음" }; }
+        return result.embed;
+      }).catch((error) => { embedRequests.delete(post.url); throw error; });
+      embedRequests.set(post.url, request);
+    }
+    return embedRequests.get(post.url);
+  }
   let likes = {};
   let profiles = {};
   let busy = false;
@@ -21,46 +33,14 @@
   }
 
   function render() {
-    const active = document.activeElement;
-    const focusedHref = active.closest?.("#posts li")?.dataset.href;
-    const focusedClass = active.classList.contains("writer") ? "writer" : "post-title";
-    let restoreFocus = null;
     const keys = Object.keys(likes);
     const rows = api.merge(profiles, likes);
     const selected = el("author").value;
     const query = el("search").value.trim().toLocaleLowerCase();
     const visible = rows.filter((r) => (!selected || r.key === selected) && (!query || r.title.toLocaleLowerCase().includes(query)));
-    const fragment = document.createDocumentFragment();
-    for (const r of visible) {
-      const item = document.createElement("li");
-      item.dataset.href = r.href;
-      const title = document.createElement("a");
-      title.className = "post-title";
-      title.textContent = r.title || "제목 없음";
-      title.href = r.href;
-      title.target = "_blank";
-      title.rel = "noopener noreferrer";
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      const writer = document.createElement("a");
-      writer.className = "writer";
-      writer.textContent = likes[r.key].name || r.key;
-      writer.href = api.profileUrl(r.key);
-      writer.title = r.key;
-      writer.target = "_blank";
-      writer.rel = "noopener noreferrer";
-      const channel = document.createElement("span");
-      channel.textContent = r.channelName;
-      const time = document.createElement("time");
-      time.textContent = date(r.time);
-      if (Number.isFinite(Date.parse(r.time))) time.dateTime = r.time;
-      meta.append(writer, channel, time);
-      item.append(title, meta);
-      if (focusedHref === r.href) restoreFocus = focusedClass === "writer" ? writer : title;
-      fragment.append(item);
-    }
-    el("posts").replaceChildren(fragment);
-    restoreFocus?.focus({ preventScroll: true });
+    const posts = visible.map((r) => ({ id: r.id, title: r.title, url: r.href, author: likes[r.key].name || r.key,
+      authorKey: r.key, authorUrl: api.profileUrl(r.key), channel: r.channelName, date: r.time, dateText: date(r.time) }));
+    articleList.reconcileArticles(el("posts"), posts, (post) => articleList.createArticleRow(post, { tag: "li", onPreview: preview }));
     el("posts").setAttribute("aria-busy", String(busy));
     const fetched = keys.filter((key) => profiles[key]?.at).length;
     el("status").textContent = storageError || (busy ? `작성자 ${completed}/${total}명 확인 중, 현재 ${rows.length}개 글` : `팔로우 ${keys.length}명, 확인 ${fetched}명, 최근 글 ${rows.length}개`);

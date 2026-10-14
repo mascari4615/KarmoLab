@@ -26,7 +26,7 @@
 `Bookmarks` JSON 파일을 직접 고치는 방법은 **동기화가 되살린다** (2026-08-28 실측: 3건 삭제 → 새 id 로 부활).
 확장 API 삭제는 동기화에도 그대로 전파되므로 이 경로를 써라.
 
-## 아카라이브 팔로우 글 모아보기 (v0.31.1)
+## 아카라이브 팔로우 글 모아보기 (v0.32.0)
 
 확장 팝업 **팔로우 글 모아보기**, 설정의 **아카라이브 → 차단, 팔로우 목록**, 또는 아카라이브 페이지 상단 버튼에서 전용 탭 열기.
 
@@ -36,6 +36,8 @@
 - 첫 방문과 10분 지난 캐시는 자동 수집, 수동 최신 글 불러오기. 수집 실패는 유저별 표시와 이전 글 유지. 팔로우 해제 시 즉시 제외.
 - 프로필당 뒤쪽 탭 1개, 페이지당 동시 2개, 읽은 뒤 닫기. `arca.liked.read`는 저장된 팔로우 키만 허용. `arca.liked.open`은 확장 내부 호출만.
 - 갱신 중 글 링크의 키보드 포커스 유지. 수집 탭 장부 갱신 직렬화, 등록 저장 실패 시 생성한 탭 회수.
+- 글 행과 갱신, CSS, 호버와 포커스 썸네일은 `packages/article-list` SSOT. 생성된 `vendor/article-list.js/css` 직접 수정 금지. `node packages/article-list/build.mjs --check`로 두 소비자 확인.
+- 한 줄 글 목록. 제목 호버나 키보드 포커스에서 Embed 썸네일, 10분 캐시. 공개 썸네일 없음과 읽기 실패 표시. 글 작성자와 팔로우 계정 번호 대조, 수집 탭 직렬 처리와 회수.
 - 기능 검사: `node --test apps/karmo-dev-extension/tests/arca-liked.test.mjs` (repo 루트, KarmoLab 의 jsdom 설치 필요).
 - 브라우저 검사: `node apps/karmo-dev-extension/tests/arca-liked-browser.mjs <memo reference 자료 폴더>` (프로필 fixture, Edge, Playwright 필요).
 
