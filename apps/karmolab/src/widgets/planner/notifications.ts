@@ -28,6 +28,9 @@ export function mountNotifications(ctx: DashPanelCtx, { visible = true } = {}): 
     const style = document.createElement('style');
     style.textContent = `.pl-notifications{flex-shrink:0;border-top:1px solid var(--border);font-size:var(--font-size-sm);color:var(--text-primary)}.pl-notifications summary{padding:12px 16px;cursor:pointer;min-height:44px}.pl-notify-count{font-size:var(--font-size-xs);color:var(--text-secondary)}.pl-notify-body{padding:0 16px 16px;max-height:50vh;overflow:auto}.pl-notify-body p{color:var(--text-secondary);line-height:1.6}.pl-notify-actions{display:flex;flex-wrap:wrap;gap:8px}.pl-notify-actions button{min-height:44px}.pl-notify-actions [hidden]{display:none}.pl-notify-report{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px}.pl-notify-report h3{font-size:var(--font-size-sm);margin:12px 0}.pl-notify-report ul{padding-left:20px;margin:0}.pl-notify-report li{margin:8px 0;overflow-wrap:anywhere}.pl-notify-report a{color:var(--accent)}.pl-notify-warning{color:var(--text-primary)!important}`;
     box.appendChild(style);
+    const homeStyle = document.createElement('style');
+    homeStyle.textContent = '.mydh>.pl-notifications{background:var(--dash-paper,var(--bg-secondary));margin-top:var(--space-md);border:1px solid var(--border)}';
+    box.appendChild(homeStyle);
     if (visible) ctx.root.appendChild(box);
     let disposed = false, busy = false, connected = false, pendingSync = false;
     const status = box.querySelector<HTMLElement>('.pl-notify-status')!;

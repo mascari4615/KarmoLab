@@ -608,7 +608,9 @@ export function buildCalendarView(
         const colors = wrap.querySelector<HTMLElement>('.pl-event-colors')!;
         colors.addEventListener('change', (e) => { selectedColor = (e.target as HTMLInputElement).value; });
         wrap.querySelector<HTMLSelectElement>('[name="event-calendar"]')?.addEventListener('change', (e) => {
-            const local = (e.target as HTMLSelectElement).value === LOCAL_CALENDAR_ID;
+            const id = (e.target as HTMLSelectElement).value;
+            const local = id === LOCAL_CALENDAR_ID;
+            colors.querySelector<HTMLElement>('.pl-color-option span')?.style.setProperty('--pl-color', calendars.find(cal => cal.id === id)?.backgroundColor || (local ? LOCAL_COLOR : '#4285f4'));
             for (const input of colors.querySelectorAll<HTMLInputElement>('input')) {
                 const id = Object.keys(EVENT_COLORS).find(key => key === input.value || EVENT_COLORS[key] === input.value);
                 input.value = id ? local ? EVENT_COLORS[id] : id : '';
