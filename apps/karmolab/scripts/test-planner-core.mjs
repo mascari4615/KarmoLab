@@ -542,6 +542,16 @@ const R = await load('src/widgets/planner/recurrence.ts', 'recurrence');
 }
 
 process.stdout.write('\n');
+{
+  const anime = await load('src/widgets/planner/anime-calendar.ts', 'anime');
+  const source = [{ id: 1, title: '내 작품', publishedAt: '2026-10-14T01:00:00+09:00', weekdays: ['수요일'] }];
+  const events = anime.animeEvents(new Date('2026-10-01T00:00:00+09:00'), new Date('2026-10-29T00:00:00+09:00'), source, Date.parse('2026-10-14T09:00:00+09:00'));
+  eq(events.map(e => e.start).join(), '2026-10-14,2026-10-21,2026-10-28', '과거 편성 추측 제외, 실제 업로드와 다음 편성');
+  eq(events[0].title, '업로드: 내 작품', '실제 업로드 구분');
+  eq(events[1].title, '편성 예정: 내 작품', '요일 예정 구분');
+  eq(events[0].end, '2026-10-15', '업로드 종일 끝 제외');
+  eq(anime.animeEvents(new Date('2026-10-01'), new Date('2026-10-29'), [{ ...source[0], publishedAt: 'invalid' }]).length, 0, '잘못된 업로드 날짜 제외');
+}
 if (failures.length) {
   console.error(`\n[test-planner-core] ${failures.length}건 실패:`);
   for (const f of failures) console.error('  - ' + f);

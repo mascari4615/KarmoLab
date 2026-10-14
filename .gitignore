@@ -248,3 +248,8 @@ apps/files/.upload-*.log
 # 개발 서버 로그. 레인마다 생기고 커밋할 것이 아니다
 dev.log
 apps/discord-bots/apps/karmolab-bot/data/codex-reset-browser/
+# 개인 알림 연결과 전송 상태
+/apps/discord-bots/apps/karmolab-bot/data/personal-notifications-connection.json
+/apps/discord-bots/apps/karmolab-bot/data/personal-notifications-connection.json.tmp
+/apps/discord-bots/apps/karmolab-bot/data/personal-notifications-state.json
+/apps/discord-bots/apps/karmolab-bot/data/personal-notifications-state.json.tmp

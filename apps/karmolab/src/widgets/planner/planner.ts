@@ -19,6 +19,7 @@ import { toast } from './toast';
 import { t, loadNamespace } from '../../lib/i18n';
 import { dashRegistry } from '../mydash/kit';
 import type { DashPanelCtx } from '../mydash/kit';
+import { mountNotifications } from './notifications';
 import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken, storedToken } from './gauth';
 import type { CalendarViewHandle } from './calendar-view';
 import { loadCalendarView } from './calendar-loader';
@@ -462,6 +463,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                     return [];
                 }
             });
+            mountNotifications(ctx);
         },
     });
 })();

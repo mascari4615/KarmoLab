@@ -40,6 +40,7 @@ function read<T>(key: string): T[] {
 function write<T>(key: string, items: T[]): void {
     try {
         localStorage.setItem(key, JSON.stringify(items));
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('planner-local-change'));
     } catch {
         /* 저장 못 해도 이번 화면은 돌아야 한다 */
     }

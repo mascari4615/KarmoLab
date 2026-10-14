@@ -82,6 +82,10 @@ function storedRefresh(): string | null {
     }
 }
 
+export function notificationRefreshToken(): string | null {
+    return storedRefresh();
+}
+
 function storeToken(token: string, expiresInSec: number): void {
     try {
         const data: StoredToken = { access_token: token, expires_at: Date.now() + expiresInSec * 1000 };

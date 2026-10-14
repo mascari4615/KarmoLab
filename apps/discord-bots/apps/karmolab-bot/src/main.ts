@@ -95,6 +95,9 @@ import { startWeeklyWrapped, stopWeeklyWrapped } from './services/notifiers/week
 import { startNewsNotifier, stopNewsNotifier } from './services/notifiers/news';
 import { startCodexResetNotifier, stopCodexResetNotifier } from './services/notifiers/codex-reset';
 import { startBrainResurface, stopBrainResurface } from './services/notifiers/brain-resurface';
+import { PersonalNotifications } from './services/personal-notifications';
+import { registerPersonalNotifications } from './bot/personal-notifications-api';
+import { channelIdFor } from './services/channel-provision';
 
 const client = new Client({
   intents: [
@@ -375,6 +378,14 @@ client.on('messageCreate', async (message) => {
 let agentBusSubscription: { stop: () => void } | null = null;
 
 const app = createGithubWebhookApp(client, gameData);
+const personalNotifications = new PersonalNotifications(memoRepoPath, async (content) => {
+  const id = channelIdFor('ops-report');
+  if (!id) throw new Error('notification_channel_missing');
+  const channel = await client.channels.fetch(id);
+  if (!channel?.isTextBased() || !('send' in channel)) throw new Error('notification_channel_unavailable');
+  await channel.send({ content, allowedMentions: { parse: [] } });
+});
+registerPersonalNotifications(app, personalNotifications);
 mountLocalWebhook(app, client);
 // TASK-WM-201. 폰(WM Android)이 밀어 넣는 실행 로그 수신 + 웹 뷰어 + tail.
 mountDeviceLog(app, client);
@@ -562,6 +573,7 @@ client.once('clientReady', async () => {
 
   startPresenceRotation(client);
   startUnityFreeNotifier(client);
+  personalNotifications.start();
   startCodexResetNotifier(client);
   // TASK-YB-021: outbound heartbeat (push 모델, 자체 구현. 제3자 의존 0).
   // 봇이 memo orphan 브랜치에 시각 기록 → github.io Actions watcher 가 신선도
@@ -795,6 +807,7 @@ async function gracefulShutdown(reason: string): Promise<void> {
   stopCharacterStateSnapshot();
   stopMemoSync();
   stopUnityFreeNotifier();
+  personalNotifications.stop();
   stopNewsNotifier();
   await stopCodexResetNotifier();
   stopWeeklyWrapped();
