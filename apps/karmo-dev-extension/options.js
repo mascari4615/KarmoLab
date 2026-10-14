@@ -66,7 +66,7 @@ input.addEventListener("keydown", (e) => {
 const SITE = "arca";
 const D = globalThis.KARMO_BLOCK_DEFAULTS;
 const KEYS = { block: "blocklist", like: "likelist" };
-const LABEL = { block: "차단", like: "좋아요" };
+const LABEL = { block: "차단", like: "팔로우" };
 let state = { settings: { ...D }, lists: { block: {}, like: {} } };
 
 function loadAll(cb) {
@@ -253,7 +253,7 @@ el("paletteReset").addEventListener("click", () => patch({ palette: [...D.palett
 function renderSaveState() {
   chrome.storage.local.get({ [UL_STATE]: null }, (items) => {
     const s = items[UL_STATE];
-    el("saveState").textContent = !s ? "아직 저장 안 함" : s.error ? `실패: ${s.error}` : `${new Date(s.at).toLocaleString()} 저장, 차단 ${s.block}명, 좋아요 ${s.like}명`;
+    el("saveState").textContent = !s ? "아직 저장 안 함" : s.error ? `실패: ${s.error}` : `${new Date(s.at).toLocaleString()} 저장, 차단 ${s.block}명, 팔로우 ${s.like}명`;
   });
 }
 el("listSave").addEventListener("click", async () => {

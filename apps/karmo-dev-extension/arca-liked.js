@@ -1,4 +1,4 @@
-/* 좋아요 정본은 likelist.arca, 프로필 결과만 별도 캐시 */
+/* 팔로우 정본은 기존 likelist.arca, 프로필 결과만 별도 캐시 */
 (() => {
   const CACHE = "karmoLikedProfiles";
   const el = (id) => document.getElementById(id);
@@ -63,7 +63,7 @@
     restoreFocus?.focus({ preventScroll: true });
     el("posts").setAttribute("aria-busy", String(busy));
     const fetched = keys.filter((key) => profiles[key]?.at).length;
-    el("status").textContent = storageError || (busy ? `작성자 ${completed}/${total}명 확인 중, 현재 ${rows.length}개 글` : `좋아요 ${keys.length}명, 확인 ${fetched}명, 최근 글 ${rows.length}개`);
+    el("status").textContent = storageError || (busy ? `작성자 ${completed}/${total}명 확인 중, 현재 ${rows.length}개 글` : `팔로우 ${keys.length}명, 확인 ${fetched}명, 최근 글 ${rows.length}개`);
     const timestamps = keys.map((key) => profiles[key]?.at || 0).filter(Boolean);
     el("count").textContent = `${visible.length}개 표시${timestamps.length ? `, 마지막 수집 ${date(Math.max(...timestamps))}` : ""}`;
     const errors = keys.filter((key) => profiles[key]?.error);
@@ -81,8 +81,8 @@
     }
     el("empty").hidden = visible.length > 0 || busy;
     if (!keys.length) {
-      el("emptyTitle").textContent = "아직 좋아요한 작성자가 없습니다";
-      el("emptyText").textContent = "아카라이브 글의 작성자 옆 좋아요 버튼으로 추가한 뒤 이 페이지로 돌아오세요.";
+      el("emptyTitle").textContent = "아직 팔로우한 작성자가 없습니다";
+      el("emptyText").textContent = "아카라이브 글의 작성자 옆 팔로우 버튼으로 추가한 뒤 이 페이지로 돌아오세요.";
     } else if (!rows.length) {
       el("emptyTitle").textContent = "아직 표시할 글이 없습니다";
       el("emptyText").textContent = errors.length ? "불러오지 못한 작성자를 확인하고 다시 시도하세요." : "최신 글 불러오기를 누르세요. 공개된 최근 작성글이 없는 유저는 글이 표시되지 않습니다.";
@@ -146,5 +146,5 @@
     renderAuthors();
     render();
     if (Object.keys(likes).some((key) => !profiles[key]?.at || Date.now() - profiles[key].at > 10 * 60 * 1000)) void refresh();
-  }).catch((error) => { el("status").textContent = `좋아요 목록 읽기 실패: ${error.message}. 페이지를 새로고침하세요.`; });
+  }).catch((error) => { el("status").textContent = `팔로우 목록 읽기 실패: ${error.message}. 페이지를 새로고침하세요.`; });
 })();

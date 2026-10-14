@@ -134,7 +134,7 @@
     const liked = keyed.filter((r) => likes[r.key]).sort((a, b) => b.id - a.id).slice(0, 10);
     sections.push({
       id: "liked",
-      title: `좋아요 유저 최근 글 (${liked.length})`,
+      title: `팔로우 유저 최근 글 (${liked.length})`,
       items: liked.map((r) => ({
         label: `${r.nick}: ${r.title}`,
         href: abs(r.href),
@@ -152,7 +152,7 @@
         label: (likes[key] ? "♥ " : "") + v.name,
         tag: `${v.n}건`,
         actions: [
-          ...(likes[key] ? [] : [{ text: "♥", title: "좋아요", fn: () => api.like(key, v.name) }]),
+          ...(likes[key] ? [] : [{ text: "♥", title: "팔로우", fn: () => api.like(key, v.name) }]),
           ...(blocked[key] ? [] : [{ text: "×", title: "차단", fn: () => api.block(key, v.name) }]),
         ],
       })),
@@ -182,12 +182,12 @@
     });
     sections.push({
       id: "good",
-      title: "좋아요 후보 (자주 여는 유저)",
+      title: "팔로우 후보 (자주 여는 유저)",
       items: good.map(([key, u]) => ({
         label: u.name,
         tag: `${u.seen}건 중 ${u.opened}`,
         tagClass: "good",
-        actions: [{ text: "♥", title: "좋아요", fn: () => api.like(key, u.name) }],
+        actions: [{ text: "♥", title: "팔로우", fn: () => api.like(key, u.name) }],
       })),
     });
     api.setSections(sections);

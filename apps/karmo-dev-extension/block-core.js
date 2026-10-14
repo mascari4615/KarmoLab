@@ -194,10 +194,11 @@
             });
             return b;
           };
-          w.append(mk("like", "♥", `${name} 좋아요`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key] ? unblock(key) : setBlock(key, name))));
+          w.append(mk("like", "♥", `${name} 팔로우`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key] ? unblock(key) : setBlock(key, name))));
           anchor.after(w);
         }
         w.querySelector(".like").classList.toggle("on", !!likeMap[key]);
+        w.querySelector(".like").title = `${name} ${likeMap[key] ? "팔로우 해제" : "팔로우"}`;
         const x = w.querySelector(".x");
         x.classList.toggle("on", !!blockMap[key]);
         x.title = blockMap[key] ? `${name} 차단 해제` : `${name} 차단`;

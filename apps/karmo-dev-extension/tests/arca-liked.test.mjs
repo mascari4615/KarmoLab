@@ -87,7 +87,7 @@ test("화면: 실제 글 제목 안전 출력, 검색, 좋아요 해제, 갱신 
   assert.equal(doc.querySelectorAll("#posts li").length, 0);
   assert.match(doc.getElementById("emptyTitle").textContent, /조건/);
   change({ likelist: { newValue: { arca: {} } } }, "local");
-  assert.match(doc.getElementById("emptyTitle").textContent, /아직 좋아요/);
+  assert.match(doc.getElementById("emptyTitle").textContent, /아직 팔로우/);
   d.window.close();
 });
 

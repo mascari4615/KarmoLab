@@ -6,7 +6,7 @@
   button.id = "karmo-liked-open";
   button.type = "button";
   button.className = "btn btn-secondary";
-  button.textContent = "좋아요 글 모아보기";
+  button.textContent = "팔로우 글 모아보기";
   button.style.cssText = "margin:12px 0;min-height:44px";
   button.addEventListener("click", async () => {
     try {

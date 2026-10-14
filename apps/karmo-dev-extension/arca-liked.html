@@ -3,25 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>좋아요 글 모아보기, KarmoDevExtension</title>
+    <title>팔로우 글 모아보기, KarmoDevExtension</title>
     <link rel="stylesheet" href="arca-liked.css" />
   </head>
   <body>
     <main>
       <header>
-        <div><h1>좋아요 글 모아보기</h1><p>좋아요한 작성자의 최근 글을 채널 구분 없이 모았습니다.</p></div>
+        <div><h1>팔로우 글 모아보기</h1><p>팔로우한 작성자의 최근 글을 채널 구분 없이 모았습니다.</p></div>
         <button id="refresh" type="button">최신 글 불러오기</button>
       </header>
       <div class="filters">
         <label>제목 검색<input id="search" type="search" placeholder="찾고 싶은 글 제목" /></label>
         <label>작성자<select id="author"><option value="">전체 작성자</option></select></label>
-        <a class="settings" href="options.html#arca">좋아요 목록 관리</a>
+        <a class="settings" href="options.html#arca">팔로우 목록 관리</a>
       </div>
-      <p id="status" role="status" aria-live="polite">좋아요 목록을 읽는 중</p>
+      <p id="status" role="status" aria-live="polite">팔로우 목록을 읽는 중</p>
       <p class="scope">작성자 프로필에 공개된 최근 글만 표시합니다. 비공개, 삭제, 접근 제한 글은 가져올 수 없습니다.</p>
       <section id="failures" hidden aria-label="불러오지 못한 작성자"></section>
       <section id="empty" hidden><h2 id="emptyTitle"></h2><p id="emptyText"></p></section>
-      <ol id="posts" aria-label="좋아요 작성자 글" aria-busy="false"></ol>
+      <ol id="posts" aria-label="팔로우 작성자 글" aria-busy="false"></ol>
       <footer><span id="count"></span><a href="https://arca.live" target="_blank" rel="noopener noreferrer">아카라이브 열기</a></footer>
     </main>
     <script src="arca-profile.js"></script>

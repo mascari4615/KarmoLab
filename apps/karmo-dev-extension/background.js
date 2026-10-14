@@ -889,7 +889,7 @@ function dispatchExt(msg, sender, sendResponse) {
       if (msg?.type === "arca.liked.read") {
         const key = String(msg.key || "");
         const likes = (await chrome.storage.local.get({ likelist: {} })).likelist.arca || {};
-        if (!Object.hasOwn(likes, key)) throw new Error("좋아요 목록에서 해제된 작성자입니다.");
+        if (!Object.hasOwn(likes, key)) throw new Error("팔로우 목록에서 해제된 작성자입니다.");
         const match = /^(.+)#(\d+)$/.exec(key);
         const url = `https://arca.live/u/@${encodeURIComponent(match ? match[1] : key)}${match ? `/${match[2]}` : ""}`;
         const tab = await openWorkTab(url);
@@ -903,7 +903,7 @@ function dispatchExt(msg, sender, sendResponse) {
               const numbered = /#\d+$/.test(k);
               const actual = decodeURIComponent(location.pathname);
               if (numbered ? actual.split("/").at(-1) !== expected.pathname.split("/").at(-1) : actual !== decodeURIComponent(expected.pathname)) {
-                throw new Error("작성자 프로필 주소가 바뀌었습니다. 좋아요 목록의 작성자를 확인하세요.");
+                throw new Error("작성자 프로필 주소가 바뀌었습니다. 팔로우 목록의 작성자를 확인하세요.");
               }
               return globalThis.KarmoProfile.parse(document, k);
             },
