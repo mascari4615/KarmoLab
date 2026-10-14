@@ -16,10 +16,12 @@ import './widgets/planner/planner';
 import './widgets/mydash/shell';
 /* 메뉴 버튼이 여는 판. lab 과 같은 ESC 메뉴에 칸만 대시보드 방으로 (shell.ts setMenuCells) */
 import './lib/esc-menu';
+import { desktopConnect } from './widgets/mydash/desktop-connect';
 
 const mount = document.getElementById('dash');
 const api = (window as unknown as { KarmoDashShell?: { render: (el: HTMLElement) => void } }).KarmoDashShell;
-if (mount && api) api.render(mount);
+if (mount && desktopConnect(mount)) { /* 기본 브라우저에서 명시적으로 연결 전달 */ }
+else if (mount && api) api.render(mount);
 else if (mount) mount.textContent = '대시보드를 불러오지 못했습니다.';
 
 export {};

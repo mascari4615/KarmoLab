@@ -1,0 +1,28 @@
+[package]
+name = "karmo-dash"
+version = "0.1.0"
+description = "KarmoDash desktop calendar and personal dashboard"
+authors = ["mascari4615"]
+edition = "2021"
+
+[lib]
+name = "karmo_dash_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.6", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = "2"
+serde_json = "1"
+url = "2"
+uuid = { version = "1", features = ["v4"] }
+open = "5"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
+opt-level = 3

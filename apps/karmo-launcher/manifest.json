@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-09-25",
+  "updated": "2026-10-14",
   "apps": [
     {
       "id": "karmolab",
@@ -26,10 +26,15 @@
     },
     {
       "id": "dash",
-      "name": "Dash",
-      "kind": "web",
-      "summary": "개인 대시보드. 데스크톱 앱은 준비 중이라 지금은 브라우저로 연다",
-      "open": "https://dash.mascari4615.com/",
+      "name": "KarmoDash",
+      "kind": "tauri",
+      "summary": "캘린더, 오늘 할 일, 다음 일정과 애니 업로드 안내",
+      "source": {
+        "type": "tauri-latest",
+        "url": "https://github.com/mascari4615/KarmoLab/releases/download/dash-updater/latest.json",
+        "platform": "windows-x86_64-nsis"
+      },
+      "install": { "format": "nsis", "args": ["/S"], "registry": "KarmoDash" },
       "art": {
         "bg": "sky-village",
         "icon": "dash"

@@ -1,0 +1,36 @@
+name: KarmoDash Release
+
+concurrency:
+  group: karmo-dash-release
+  cancel-in-progress: false
+
+# trigger-audit: self-exempt. 릴리스 정의 수정만으로 추가 버전 생성 제외
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/karmo-dash/**'
+      - '!apps/karmo-dash/README.md'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/tauri-app-release.yml
+    secrets: inherit
+    with:
+      app_dir: apps/karmo-dash
+      crate: karmo-dash
+      tag_prefix: dash-v
+      updater_tag: dash-updater
+      release_name: KarmoDash
+  catalog:
+    needs: release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/launcher-catalog-put.yml
+    secrets: inherit
+    with:
+      app_id: dash
+      release_tag: ${{ needs.release.outputs.tag }}

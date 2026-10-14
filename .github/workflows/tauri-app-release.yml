@@ -2,7 +2,7 @@ name: Tauri app release (공용)
 
 # 모노레포의 Tauri 앱 (런처, 나중에 Dash) 이 같이 쓰는 릴리스 판. 부르는 쪽은 앱 폴더와 이름만 넘긴다.
 # 맨 위는 런처 (사용자 2026-09-25 "최상위가 런처가 된 거 아닌지"). 앱 업데이트는 런처가 목록을 보고 맡고,
-# 자체 업데이트는 런처만. updater_tag 는 런처만 넘긴다 (빈 값이면 그 단계를 건너뜀)
+# 자체 업데이트는 런처만. updater_tag 는 앱별 목록 예비 주소로도 사용, 빈 값이면 생략
 #
 # 런처 자체 업데이트 주소는 고정 태그 하나 (`launcher-updater` 릴리스의 latest.json).
 # 저장소의 releases/latest 는 KarmoLab 이 옛 판부터 기대는 자리라, 여기서 만드는 릴리스는
@@ -11,6 +11,10 @@ name: Tauri app release (공용)
 # trigger-audit: self-exempt. workflow_call 전용이라 스스로는 안 돈다.
 on:
   workflow_call:
+    outputs:
+      tag:
+        description: '발행된 앱 릴리스 태그'
+        value: ${{ jobs.publish.outputs.tag }}
     inputs:
       app_dir:
         description: '앱 폴더 (예 apps/karmo-launcher)'
@@ -25,7 +29,7 @@ on:
         required: true
         type: string
       updater_tag:
-        description: 'latest.json 을 올리는 고정 태그 (런처만 launcher-updater. 다른 앱은 빈 값)'
+        description: 'latest.json 고정 태그 (런처 자체 업데이트 또는 앱 목록의 예비 주소)'
         required: false
         default: ''
         type: string
@@ -36,6 +40,8 @@ on:
 
 jobs:
   publish:
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     permissions:
       contents: write
     runs-on: windows-latest
@@ -95,6 +101,11 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: ${{ inputs.app_dir }}/package-lock.json
+
+      - name: Release tag output
+        id: version
+        shell: bash
+        run: echo "tag=${{ inputs.tag_prefix }}${VERSION}" >> "$GITHUB_OUTPUT"
 
       - uses: dtolnay/rust-toolchain@stable
 
