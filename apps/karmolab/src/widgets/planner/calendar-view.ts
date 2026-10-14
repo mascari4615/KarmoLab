@@ -523,6 +523,9 @@ export function buildCalendarView(
         const editableCalendars = calendars.filter((cal) => cal.id !== AI_CALENDAR_ID && !isHolidayCalendar(cal.id));
 
         const googleInstance = !!ev?.extendedProps.recurringEventId;
+        const inheritedLinks = parseLinks(ev?.extendedProps.seriesLinks);
+        const commonLinks = localRepeat || googleInstance ? inheritedLinks.length || ev?.extendedProps.commonLinks ? inheritedLinks : parseLinks(ev?.extendedProps.linkedEvents) : parseLinks(ev?.extendedProps.linkedEvents);
+        const linkedAllDay = (): boolean => (localRepeat || googleInstance) && scope?.value !== 'series' && ev?.extendedProps.seriesStart ? (ev.extendedProps.seriesStart as string).length === 10 : allDayBox.checked;
         const wrap = document.createElement('dialog');
         wrap.className = 'pl-modal-overlay';
         wrap.setAttribute('aria-labelledby', modalTitleId);
@@ -571,9 +574,9 @@ export function buildCalendarView(
                         <p class="pl-repeat-note pl-holiday-hint" hidden>${esc(t('planner.repeatHolidayHint').replace('{from}', String(HOLIDAY_YEARS[0])).replace('{to}', String(HOLIDAY_YEARS[HOLIDAY_YEARS.length - 1])))}</p>
                     </div>
                     </div>
-                    <details class="pl-linked-settings" ${parseLinks(ev?.extendedProps.linkedEvents).length ? 'open' : ''}><summary>${esc(t('planner.groupLinks'))}</summary>
+                    <details class="pl-linked-settings" ${commonLinks.length ? 'open' : ''}><summary>${esc(t('planner.groupLinks'))}</summary>
                         <p class="pl-repeat-note">${esc(t('planner.groupHint'))}</p>
-                        ${(['before', 'after'] as const).map(side => { const link = parseLinks(ev?.extendedProps.linkedEvents).find(x => x.side === side); return `<fieldset class="pl-link-row" data-side="${side}"><legend><label class="pl-check"><input type="checkbox" name="link-${side}" ${link ? 'checked' : ''}><span>${esc(t(side === 'before' ? 'planner.groupBefore' : 'planner.groupAfter'))}</span></label></legend>
+                        ${(['before', 'after'] as const).map(side => { const link = commonLinks.find(x => x.side === side); return `<fieldset class="pl-link-row" data-side="${side}"><legend><label class="pl-check"><input type="checkbox" name="link-${side}" ${link ? 'checked' : ''}><span>${esc(t(side === 'before' ? 'planner.groupBefore' : 'planner.groupAfter'))}</span></label></legend>
                             <label class="pl-field"><span class="pl-label">${esc(t('planner.t19'))}</span><input class="pl-input" name="link-${side}-title" maxlength="100" required value="${esc(link?.title || t(side === 'before' ? 'planner.groupCommuteIn' : 'planner.groupCommuteOut'))}"></label>
                             <div class="pl-link-times"><label class="pl-field"><span class="pl-label">${esc(t('planner.groupMinutes'))}</span><input class="pl-input" type="number" name="link-${side}-minutes" required min="1" max="1440" step="1" value="${link?.minutes ?? 30}"></label><label class="pl-field"><span class="pl-label">${esc(t('planner.groupGap'))}</span><input class="pl-input" type="number" name="link-${side}-gap" required min="0" max="1440" step="1" value="${link?.gap ?? 0}"></label></div></fieldset>`; }).join('')}
                         <p class="pl-repeat-note pl-linked-allday" hidden>${esc(t('planner.groupTimedOnly'))}</p>
@@ -642,10 +645,10 @@ export function buildCalendarView(
         const syncLinked = (): void => {
             for (const side of ['before', 'after']) {
                 const box = wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!;
-                box.disabled = allDayBox.checked;
-                wrap.querySelectorAll<HTMLInputElement>(`.pl-link-row[data-side="${side}"] .pl-input`).forEach(input => { input.disabled = allDayBox.checked || !box.checked; });
+                box.disabled = linkedAllDay() || (googleInstance && !ev?.extendedProps.seriesStart);
+                wrap.querySelectorAll<HTMLInputElement>(`.pl-link-row[data-side="${side}"] .pl-input`).forEach(input => { input.disabled = box.disabled || !box.checked; });
             }
-            wrap.querySelector<HTMLElement>('.pl-linked-allday')!.hidden = !allDayBox.checked;
+            wrap.querySelector<HTMLElement>('.pl-linked-allday')!.hidden = !linkedAllDay();
         };
         allDayBox.addEventListener('change', syncLinked);
         wrap.querySelectorAll<HTMLInputElement>('.pl-link-row [type="checkbox"]').forEach(box => box.addEventListener('change', syncLinked));
@@ -661,14 +664,6 @@ export function buildCalendarView(
             wrap.querySelector<HTMLInputElement>('[name="event-start"]')!.value = localInputValue(at);
             wrap.querySelector<HTMLInputElement>('[name="event-start-date"]')!.value = ymd(at);
             wrap.querySelector<HTMLInputElement>('[name="event-end"]')!.value = localInputValue(finish);
-            const links = parseLinks(whole ? ev!.extendedProps.seriesLinks : ev!.extendedProps.linkedEvents);
-            for (const side of ['before', 'after'] as const) {
-                const link = links.find(x => x.side === side);
-                wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked = !!link;
-                wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!.value = link?.title || t(side === 'before' ? 'planner.groupCommuteIn' : 'planner.groupCommuteOut');
-                wrap.querySelector<HTMLInputElement>(`[name="link-${side}-minutes"]`)!.value = String(link?.minutes ?? 30);
-                wrap.querySelector<HTMLInputElement>(`[name="link-${side}-gap"]`)!.value = String(link?.gap ?? 0);
-            }
             const exceptions = wrap.querySelector<HTMLElement>('.pl-exceptions'); if (exceptions) exceptions.hidden = !whole;
             wrap.querySelector<HTMLElement>('.pl-scope-note')!.textContent = t(whole ? 'planner.groupSeriesHint' : 'planner.groupDayHint');
             syncAllDay(); syncRepeat(); syncLinked();
@@ -749,7 +744,7 @@ export function buildCalendarView(
             const submit = wrap.querySelector<HTMLButtonElement>('[type="submit"]')!;
             submit.disabled = true;
             form.setAttribute('aria-busy', 'true');
-            const links: LinkedEvent[] = isAllDay ? [] : (['before', 'after'] as const).filter(side => wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked).map(side => ({ side, title: wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!.value.trim(), minutes: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-minutes"]`)!.value), gap: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-gap"]`)!.value) }));
+            const links: LinkedEvent[] = linkedAllDay() ? [] : (['before', 'after'] as const).filter(side => wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked).map(side => ({ side, title: wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!.value.trim(), minutes: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-minutes"]`)!.value), gap: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-gap"]`)!.value) }));
             const ok = await save(title, start, end, isAllDay, calId, ev, repeat, links, scope?.value === 'day');
             if (modalEl !== wrap) return;
             if (ok) closeModal(true);
@@ -785,15 +780,17 @@ export function buildCalendarView(
                         ...(title !== ev.extendedProps.seriesTitle ? { title } : {}),
                         ...(allDay !== ((ev.extendedProps.seriesStart as string).length === 10) ? { allDay } : {}),
                         ...(times.start !== ev.extendedProps.occurrenceStart ? { start: times.start } : {}),
-                        ...(times.end !== ev.extendedProps.occurrenceEnd ? { end: times.end } : {}),
-                        ...(JSON.stringify(linkedEvents) !== JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)) ? { linkedEvents } : {})
+                        ...(times.end !== ev.extendedProps.occurrenceEnd ? { end: times.end } : {})
                     };
                     updateOccurrence(ev.extendedProps.localSeriesId as string, ev.extendedProps.occurrenceDate as string, Object.keys(patch).length ? patch : null);
+                    updateLocalEvent(ev.extendedProps.localSeriesId as string, { linkedEvents });
                 }
                 else updateLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id, { title, allDay, repeat, linkedEvents, ...(repeat === null ? { exceptions: {} } : {}), ...stored(start, end, allDay) });
             } else if (ev) {
                 const id = !single && ev.extendedProps.recurringEventId ? ev.extendedProps.recurringEventId as string : ev.extendedProps.googleId as string;
-                const links = single && ev.extendedProps.recurringEventId && JSON.stringify(linkedEvents) === JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)) ? ev.extendedProps.linksOverride ? null : undefined : linkedEvents;
+                const grouped = !!ev.extendedProps.recurringEventId;
+                if (grouped && !ev.extendedProps.seriesStart) throw new Error('Group metadata unavailable');
+                const links = single && grouped ? undefined : linkedEvents;
                 const omit: Array<'summary' | 'start' | 'end'> = [];
                 const recurrence = !single && ev.extendedProps.recurringEventId && ev.extendedProps.seriesStart ? shiftExDates(ev.extendedProps.seriesRecurrence as string[] | undefined, new Date(ev.extendedProps.seriesStart as string), start) : undefined;
                 if (single) {
@@ -801,11 +798,14 @@ export function buildCalendarView(
                     if (allDay === ev.allDay && +start === +(ev.start || NaN)) omit.push('start');
                     if (allDay === ev.allDay && +end === +(ev.end || NaN)) omit.push('end');
                 }
-                await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, repeat, linkedEvents: links, recurrence }, omit));
+                if (single && grouped && (!ev.extendedProps.commonLinks || JSON.stringify(linkedEvents) !== JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)))) {
+                    await withToken(token!, (tok) => patchEvent(tok, calId, ev.extendedProps.recurringEventId as string, { linkedEvents, commonLinks: true, start, end, allDay }, ['summary', 'start', 'end']));
+                }
+                if (!single || omit.length !== 3) await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, repeat, linkedEvents: links, commonLinks: true, recurrence }, omit));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
                 createLocalEvent({ title, allDay, repeat, linkedEvents, ...stored(start, end, allDay) });
             } else {
-                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, repeat, linkedEvents }));
+                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, repeat, linkedEvents, commonLinks: true }));
             }
             if (lastRange) await reload(lastRange.start, lastRange.end);
             return true;

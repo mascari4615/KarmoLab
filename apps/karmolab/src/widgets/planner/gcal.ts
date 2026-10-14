@@ -83,6 +83,7 @@ export interface FcEvent {
         occurrenceStart?: string;
         occurrenceEnd?: string;
         linksOverride?: boolean;
+        commonLinks?: boolean;
         exceptions?: Record<string, { cancelled?: boolean; title?: string; start?: string; end?: string }>;
     };
 }
@@ -146,6 +147,7 @@ export interface EventDraft {
     allDay: boolean;
     repeat?: RepeatRule | null;
     linkedEvents?: LinkedEvent[] | null;
+    commonLinks?: boolean;
     recurrence?: string[];
 }
 
@@ -155,6 +157,7 @@ export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
     const body: Record<string, unknown> = {};
     if (draft.title) body.summary = draft.title;
     if (draft.linkedEvents !== undefined) body.extendedProperties = { private: { karmoLinks: draft.linkedEvents === null ? null : JSON.stringify(parseLinks(draft.linkedEvents)) } };
+    if (draft.commonLinks && draft.linkedEvents !== undefined) (body.extendedProperties as { private: Record<string, unknown> }).private.karmoLinksScope = 'group';
     if (draft.allDay) {
         const startYmd = ymd(start);
         const endYmd = ymd(end);
@@ -198,7 +201,8 @@ export async function hydrateGroups(token: string, events: FcEvent[]): Promise<F
         const entry = loadCached(calendarId)?.items[googleId];
         const own = entry?.extendedProperties?.private?.karmoLinks;
         const links = parseLinks(master.extendedProperties?.private?.karmoLinks);
-        return { ...event, extendedProps: { ...event.extendedProps, seriesStart: master.start.dateTime || master.start.date, seriesEnd: master.end.dateTime || master.end.date, seriesTitle: master.summary || event.title, seriesLinks: links, seriesRecurrence: master.recurrence, linkedEvents: own == null ? links : parseLinks(own) } };
+        const commonLinks = master.extendedProperties?.private?.karmoLinksScope === 'group';
+        return { ...event, extendedProps: { ...event.extendedProps, commonLinks, seriesStart: master.start.dateTime || master.start.date, seriesEnd: master.end.dateTime || master.end.date, seriesTitle: master.summary || event.title, seriesLinks: links, seriesRecurrence: master.recurrence, linkedEvents: commonLinks || own == null ? links : parseLinks(own) } };
     }));
 }
 

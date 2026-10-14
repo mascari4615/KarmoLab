@@ -67,6 +67,7 @@ export interface LocalEventInput {
 /** 저장된 것 → 달력이 쓰는 모양. 구글에서 온 것과 **구분이 안 가게** 같은 틀로 낸다. */
 export function toFcEvent(stored: LocalEventInput & { id: string }, calendarName: string): FcEvent {
     const color = stored.color || LOCAL_COLOR;
+    const links = stored.linkedEvents ?? Object.entries(stored.exceptions || {}).sort(([a], [b]) => a.localeCompare(b)).find(([, exception]) => exception.linkedEvents?.length)?.[1].linkedEvents;
     return {
         id: stored.id,
         title: stored.title,
@@ -80,8 +81,8 @@ export function toFcEvent(stored: LocalEventInput & { id: string }, calendarName
             calendarName,
             googleId: stored.id,
             htmlLink: '',
-            linkedEvents: stored.linkedEvents,
-            ...(stored.repeat ? { localSeriesId: stored.id, repeatRule: stored.repeat, seriesStart: stored.start, seriesEnd: stored.end, seriesTitle: stored.title, seriesLinks: stored.linkedEvents, exceptions: stored.exceptions } : {})
+            linkedEvents: links,
+            ...(stored.repeat ? { localSeriesId: stored.id, repeatRule: stored.repeat, seriesStart: stored.start, seriesEnd: stored.end, seriesTitle: stored.title, seriesLinks: links, exceptions: stored.exceptions } : {})
         },
         ...(stored.repeat ? { startEditable: false, durationEditable: false } : {})
     };
@@ -107,7 +108,7 @@ export function listEvents(calendarName: string, from?: Date, to?: Date): FcEven
             start: e.allDay ? `${item.start.getFullYear()}-${String(item.start.getMonth() + 1).padStart(2, '0')}-${String(item.start.getDate()).padStart(2, '0')}` : item.start.toISOString(),
             end: e.allDay ? `${item.end.getFullYear()}-${String(item.end.getMonth() + 1).padStart(2, '0')}-${String(item.end.getDate()).padStart(2, '0')}` : item.end.toISOString(),
             ...exception,
-            extendedProps: { ...event.extendedProps, occurrenceDate: date, occurrenceStart: e.allDay ? key(item.start) : item.start.toISOString(), occurrenceEnd: e.allDay ? key(item.end) : item.end.toISOString(), linkedEvents: exception?.linkedEvents ?? e.linkedEvents, occurrenceChanged: !!exception }
+            extendedProps: { ...event.extendedProps, occurrenceDate: date, occurrenceStart: e.allDay ? key(item.start) : item.start.toISOString(), occurrenceEnd: e.allDay ? key(item.end) : item.end.toISOString(), occurrenceChanged: !!exception }
             };
             return new Date(result.end.length === 10 ? `${result.end}T00:00:00` : result.end) > from && new Date(result.start.length === 10 ? `${result.start}T00:00:00` : result.start) < to ? [result] : [];
         });
@@ -127,6 +128,15 @@ export function updateEvent(id: string, patch: Partial<LocalEventInput>): void {
     const at = items.findIndex((e) => e.id === id);
     if (at < 0) return;
     items[at] = { ...items[at], ...patch };
+    if (patch.linkedEvents !== undefined && items[at].exceptions) {
+        const exceptions = { ...items[at].exceptions };
+        for (const [date, exception] of Object.entries(exceptions)) {
+            const { linkedEvents: _legacyLinks, ...rest } = exception;
+            if (Object.keys(rest).length) exceptions[date] = rest;
+            else delete exceptions[date];
+        }
+        items[at].exceptions = exceptions;
+    }
     write(EVENTS_KEY, items);
 }
 
