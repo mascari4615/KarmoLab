@@ -55,11 +55,13 @@ export function mountNotifications(ctx: DashPanelCtx): void {
         const list = (rows: string[]): string => `<ul>${rows.length ? rows.slice(0, 50).map(row => '<li>' + row + '</li>').join('') : '<li>없음</li>'}</ul>`;
         const event = (e: AgendaEvent): string => `${esc(e.allDay ? e.start + ' 종일' : when(e.start))} ${esc(e.title)}`;
         box.querySelector<HTMLElement>('.pl-notify-report')!.innerHTML = `${report.errors.length ? '<p class="pl-notify-warning">확인 필요: ' + report.errors.map(esc).join(', ') + '</p>' : ''}
-            <section><h3>오늘 할 일과 마감</h3>${list(tasks.map(t => esc(t.title) + (t.due ? ' · 마감 ' + esc(t.due.slice(0, 10)) : '')))}</section>
+            <section><h3>오늘 할 일과 마감</h3>${list(tasks.map(t => esc(t.title || '제목 없는 할 일') + (t.due ? ' · 마감 ' + esc(t.due.slice(0, 10)) : '')))}</section>
             <section><h3>오늘 일정</h3>${list(today.map(event))}<h3>다음 7일</h3>${list([...next.map(event), ...nextTasks.map(t => esc(t.due!.slice(0, 10)) + ' 마감 ' + esc(t.title))])}<a href="#planner">캘린더 보기</a></section>
             <section><h3>찜과 시청 작품 업로드</h3>${list(report.anime.map(a => `<a href="https://laftel.net/item/${a.id}" target="_blank" rel="noopener">${esc(a.title)}</a> · 최근 ${esc(when(a.publishedAt))}<br>${esc(a.weekdays.join(', '))} 업로드`))}<p>${report.settings.animeIds.length}작품 기준 · 요일은 편성 안내, 실제 업로드 알림은 공개된 새 에피소드 기준</p></section>`;
     }
     async function sync(connect = false, preview = false): Promise<void> {
+        let deviceId = localStorage.getItem('planner.notifications.device');
+        if (!deviceId) { deviceId = crypto.randomUUID(); localStorage.setItem('planner.notifications.device', deviceId); }
         const from = new Date(); from.setHours(0, 0, 0, 0);
         const to = new Date(from); to.setDate(to.getDate() + 60);
         let refreshToken: string | undefined;
@@ -70,7 +72,7 @@ export function mountNotifications(ctx: DashPanelCtx): void {
         }
         const localEvents = withLinkedEvents(listEvents('이 브라우저', from, to)).filter(e => Date.parse(e.end.length === 10 ? e.end + 'T00:00:00' : e.end) > +from && Date.parse(e.start.length === 10 ? e.start + 'T00:00:00' : e.start) < +to).map(e => ({ id: e.id, title: e.title, start: e.start, end: e.end, allDay: e.allDay }));
         const tasks = listTasks();
-        paint(await call('POST', { ...(refreshToken ? { refreshToken } : {}), localEvents, localTasks: [...tasks.todo, ...tasks.inProgress], localThrough: to.toISOString(), preview }));
+        paint(await call('POST', { deviceId, ...(refreshToken ? { refreshToken } : {}), localEvents, localTasks: [...tasks.todo, ...tasks.inProgress], localThrough: to.toISOString(), preview }));
         if (preview && !disposed) status.textContent += ', 디코 안내 전송됨';
     }
     async function run(action: () => Promise<void>): Promise<void> {

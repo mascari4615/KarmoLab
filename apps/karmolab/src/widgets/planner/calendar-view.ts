@@ -1021,7 +1021,7 @@ export function buildCalendarView(
     })();
 
     const animeChanged = (): void => {
-        if (!destroyed && lastRange) setEvents([...allEvents.filter(e => e.extendedProps.calendarId !== ANIME_CALENDAR_ID), ...animeEvents(lastRange.start, lastRange.end)]);
+        if (!destroyed && lastRange) setEvents([...allEvents.filter(e => e.extendedProps.calendarId !== ANIME_CALENDAR_ID && !e.extendedProps.parentEventId), ...animeEvents(lastRange.start, lastRange.end)]);
     };
     window.addEventListener(ANIME_CHANGED, animeChanged);
     return {

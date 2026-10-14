@@ -6,7 +6,8 @@ export interface AgendaEvent { id: string; title: string; start: string; end: st
 export interface AgendaTask { id: string; title: string; due?: string; status?: string }
 export interface AnimeUpdate { id: number; title: string; publishedAt: string; weekdays: string[] }
 export interface NotificationSettings { enabled: boolean; hour: number; minute: number; reminderMinutes: number; animeIds: number[] }
-interface SavedConnection { refreshToken?: string; localEvents: AgendaEvent[]; localTasks: AgendaTask[]; localUpdatedAt?: string; localThrough?: string }
+interface LocalSnapshot { localEvents: AgendaEvent[]; localTasks: AgendaTask[]; localUpdatedAt?: string; localThrough?: string }
+interface SavedConnection { refreshToken?: string; snapshots: Record<string, LocalSnapshot> }
 interface SavedState { daily?: string; reminders: Record<string, string>; episodes: Record<string, string>; lastSentAt?: string }
 export interface AgendaReport {
   collectedAt: string; connected: boolean; settings: NotificationSettings; localUpdatedAt?: string;
@@ -75,21 +76,32 @@ export class PersonalNotifications {
   constructor(private readonly memoRoot: string, private readonly send: (text: string) => Promise<void>, private readonly dataRoot = path.join(PKG_ROOT, 'data'), private readonly request: typeof fetch = fetch) {
     this.connectionFile = path.join(dataRoot, 'personal-notifications-connection.json');
     this.stateFile = path.join(dataRoot, 'personal-notifications-state.json');
-    this.connection = { localEvents: [], localTasks: [] };
+    this.connection = { snapshots: {} };
     this.state = { reminders: {}, episodes: {} };
     try {
-      this.connection = readJson(this.connectionFile, this.connection);
+      const saved = readJson<SavedConnection & Partial<LocalSnapshot>>(this.connectionFile, this.connection);
+      this.connection = { refreshToken: saved.refreshToken, snapshots: saved.snapshots || (Array.isArray(saved.localEvents) && Array.isArray(saved.localTasks) ? { legacy: { localEvents: saved.localEvents, localTasks: saved.localTasks, localUpdatedAt: saved.localUpdatedAt, localThrough: saved.localThrough } } : {}) };
       this.state = readJson(this.stateFile, this.state);
-      if (!Array.isArray(this.connection.localEvents) || !Array.isArray(this.connection.localTasks) || !this.state.reminders || !this.state.episodes) throw new Error('invalid_saved_state');
+      if (Object.values(this.connection.snapshots).some(s => !Array.isArray(s.localEvents) || !Array.isArray(s.localTasks)) || !this.state.reminders || !this.state.episodes) throw new Error('invalid_saved_state');
     } catch { this.storageError = true; console.warn('[PersonalNotifications] 저장본 손상, 개인 알림 중단'); }
   }
   settings(): NotificationSettings {
     const raw = readJson<Partial<NotificationSettings> & { recentIds?: number[] }>(path.join(this.memoRoot, 'data/personal-notifications/settings.json'), {});
     return { enabled: raw.enabled === true, hour: raw.hour ?? 9, minute: raw.minute ?? 0, reminderMinutes: raw.reminderMinutes ?? 30, animeIds: [...new Set([...(Array.isArray(raw.animeIds) ? raw.animeIds : []), ...(Array.isArray(raw.recentIds) ? raw.recentIds : [])])].filter(id => Number.isInteger(id) && id > 0) };
   }
-  updateConnection(input: Partial<SavedConnection>): void {
+  updateConnection(input: Partial<LocalSnapshot> & { refreshToken?: string; deviceId?: string }): void {
     this.connectionVersion++;
-    this.connection = { ...this.connection, ...input };
+    if ('refreshToken' in input) this.connection.refreshToken = input.refreshToken;
+    if ('localEvents' in input || 'localTasks' in input || 'localUpdatedAt' in input) {
+      const id = input.deviceId || 'legacy';
+      const legacy = this.connection.snapshots.legacy;
+      if (id !== 'legacy' && legacy) {
+        const incoming = new Set([...(input.localEvents || []), ...(input.localTasks || [])].map(item => item.id));
+        if (![...legacy.localEvents, ...legacy.localTasks].length || [...legacy.localEvents, ...legacy.localTasks].some(item => incoming.has(item.id))) delete this.connection.snapshots.legacy;
+      }
+      const { deviceId: _device, refreshToken: _token, ...snapshot } = input;
+      this.connection.snapshots[id] = { localEvents: [], localTasks: [], ...this.connection.snapshots[id], ...snapshot };
+    }
     saveJson(this.connectionFile, this.connection);
     this.access = null;
     this.lastCollection = 0;
@@ -98,7 +110,7 @@ export class PersonalNotifications {
   disconnect(): void { this.updateConnection({ refreshToken: undefined }); }
   status(): AgendaReport {
     if (this.storageError) return { collectedAt: new Date().toISOString(), connected: false, settings: this.settings(), errors: ['알림 저장본 손상, 운영 확인 필요'], events: [], tasks: [], anime: [] };
-    return this.report ?? { collectedAt: '', connected: !!this.connection.refreshToken, settings: this.settings(), localUpdatedAt: this.connection.localUpdatedAt, errors: ['아직 수집 전'], events: [], tasks: [], anime: [] };
+    return this.report ?? { collectedAt: '', connected: !!this.connection.refreshToken, settings: this.settings(), errors: ['아직 수집 전'], events: [], tasks: [], anime: [] };
   }
   private async json(url: string, headers: Record<string, string> = {}): Promise<any> {
     const res = await this.request(url, { headers, signal: AbortSignal.timeout(15_000) });
@@ -135,10 +147,16 @@ export class PersonalNotifications {
     if (this.storageError) throw new Error('notification_storage_invalid');
     const version = this.connectionVersion;
     const settings = this.settings();
-    const report: AgendaReport = { collectedAt: new Date(now).toISOString(), connected: !!this.connection.refreshToken, settings, localUpdatedAt: this.connection.localUpdatedAt, errors: [], events: [...this.connection.localEvents], tasks: [...this.connection.localTasks], anime: [], lastSentAt: this.state.lastSentAt };
-    if (!this.connection.localUpdatedAt) report.errors.push('로컬 할 일과 일정 동기화 필요');
-    else if (now - Date.parse(this.connection.localUpdatedAt) > DAY) report.errors.push('로컬 저장본 24시간 이상 경과');
-    if (this.connection.localThrough && eventTime(this.connection.localThrough) <= now) { report.events = []; report.errors.push('로컬 반복 일정 수집 범위 만료'); }
+    const snapshots = Object.values(this.connection.snapshots).sort((a, b) => Date.parse(a.localUpdatedAt || '1970-01-01') - Date.parse(b.localUpdatedAt || '1970-01-01'));
+    const events = new Map<string, AgendaEvent>(), tasks = new Map<string, AgendaTask>(), errors = new Set<string>();
+    if (!snapshots.length) errors.add('로컬 할 일과 일정 동기화 필요');
+    for (const snapshot of snapshots) {
+      if (!snapshot.localUpdatedAt || now - Date.parse(snapshot.localUpdatedAt) > DAY) errors.add('로컬 저장본 24시간 이상 경과');
+      if (snapshot.localThrough && eventTime(snapshot.localThrough) <= now) errors.add('로컬 반복 일정 수집 범위 만료');
+      else snapshot.localEvents.forEach(e => events.set(e.id, e));
+      snapshot.localTasks.forEach(t => tasks.set(t.id, t));
+    }
+    const report: AgendaReport = { collectedAt: new Date(now).toISOString(), connected: !!this.connection.refreshToken, settings, localUpdatedAt: snapshots[0]?.localUpdatedAt, errors: [...errors], events: [...events.values()], tasks: [...tasks.values()], anime: [], lastSentAt: this.state.lastSentAt };
     try {
       const token = await this.googleToken();
       const calendars = await this.pages('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250', token);
@@ -178,7 +196,7 @@ export class PersonalNotifications {
     try {
       if (!this.settings().enabled && !preview) return;
       if (this.storageError) return;
-      if (!this.connection.refreshToken && !this.connection.localUpdatedAt && !preview) return;
+      if (!this.connection.refreshToken && !Object.values(this.connection.snapshots).some(s => s.localUpdatedAt) && !preview) return;
       const report = !this.report || now - this.lastCollection >= 5 * MINUTE || preview ? await this.collect(now) : this.report;
       const date = kstDate(now), local = new Date(now + 9 * 60 * MINUTE);
       const dueDaily = local.getUTCHours() * 60 + local.getUTCMinutes() >= report.settings.hour * 60 + report.settings.minute;

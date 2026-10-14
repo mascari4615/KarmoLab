@@ -81,4 +81,23 @@ describe('개인 안내', () => {
     expect(next.status().errors).toContain('알림 저장본 손상, 운영 확인 필요');
     await next.tick(now); expect(x.send).not.toHaveBeenCalled();
   });
+  it('폰의 빈 목록은 PC 목록 보존, PC 삭제는 해당 목록만 반영', async () => {
+    const x = setup();
+    x.service.updateConnection({ deviceId: 'desktop', localEvents: [fixture().events[2]], localTasks: [{ id: 'local-task', title: 'PC 할 일' }], localUpdatedAt: new Date(now).toISOString(), localThrough: '2026-12-01' });
+    x.service.updateConnection({ deviceId: 'phone', localEvents: [], localTasks: [], localUpdatedAt: new Date(now).toISOString(), localThrough: '2026-12-01' });
+    let report = await x.service.collect(now);
+    expect(report.events.some(e => e.id === 'soon')).toBe(true); expect(report.tasks.some(t => t.id === 'local-task')).toBe(true);
+    x.service.updateConnection({ deviceId: 'desktop', localEvents: [], localTasks: [] });
+    report = await x.service.collect(now);
+    expect(report.events.some(e => e.id === 'soon')).toBe(false); expect(report.tasks.some(t => t.id === 'local-task')).toBe(false);
+  });
+  it('옛 저장본은 같은 원본을 가진 기기 첫 동기화에 이관, 중복 원본 제외', async () => {
+    const x = setup();
+    fs.writeFileSync(path.join(x.root, 'runtime/personal-notifications-connection.json'), JSON.stringify({ refreshToken: 'fixture-refresh-token', localEvents: [fixture().events[2]], localTasks: [], localUpdatedAt: new Date(now).toISOString(), localThrough: '2026-12-01' }));
+    const migrated = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch);
+    migrated.updateConnection({ deviceId: 'desktop', localEvents: [fixture().events[2]], localTasks: [], localUpdatedAt: new Date(now).toISOString(), localThrough: '2026-12-01' });
+    const saved = JSON.parse(fs.readFileSync(path.join(x.root, 'runtime/personal-notifications-connection.json'), 'utf8'));
+    expect(Object.keys(saved.snapshots)).toEqual(['desktop']); expect(saved.localEvents).toBeUndefined();
+    expect((await migrated.collect(now)).events.filter(e => e.id === 'soon')).toHaveLength(1);
+  });
 });

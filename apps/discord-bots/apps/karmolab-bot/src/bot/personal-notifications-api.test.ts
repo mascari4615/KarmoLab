@@ -6,6 +6,7 @@ import { registerPersonalNotifications } from './personal-notifications-api';
 import type { PersonalNotifications } from '../services/personal-notifications';
 
 const servers: http.Server[] = [];
+const deviceId = '11111111-1111-4111-8111-111111111111';
 afterEach(async () => { await Promise.all(servers.splice(0).map(server => new Promise<void>(resolve => server.close(() => resolve())))); });
 async function setup(login = 'mascari4615') {
   const report = { collectedAt: '2026-10-14T00:00:00Z', connected: true, errors: [], events: [], tasks: [], anime: [] };
@@ -35,16 +36,16 @@ describe('개인 알림 API 인증과 저장', () => {
   });
   it('깨진 일정과 토큰으로 저장 전 상태 유지', async () => {
     const x = await setup();
-    expect((await x.call('POST', { localEvents: [{ id: 'one', title: 'bad', start: 'not-a-date' }], localTasks: [], localThrough: '2026-12-01', refreshToken: 'fixture-token' })).status).toBe(400);
+    expect((await x.call('POST', { deviceId, localEvents: [{ id: 'one', title: 'bad', start: 'not-a-date' }], localTasks: [], localThrough: '2026-12-01', refreshToken: 'fixture-token' })).status).toBe(400);
     expect(x.service.updateConnection).not.toHaveBeenCalled();
   });
   it('허용된 연결 저장, 응답에 토큰 제외, 요청한 시험 전송만 실행', async () => {
-    const x = await setup(); const response = await x.call('POST', { localEvents: [], localTasks: [], localThrough: '2026-12-01', refreshToken: 'fixture-secret-token', preview: true });
+    const x = await setup(); const response = await x.call('POST', { deviceId, localEvents: [], localTasks: [], localThrough: '2026-12-01', refreshToken: 'fixture-secret-token', preview: true });
     expect(response.status).toBe(200); expect(JSON.stringify(response.body)).not.toContain('fixture-secret-token');
     expect(x.service.updateConnection.mock.calls[0][0].refreshToken).toBe('fixture-secret-token'); expect(x.service.tick).toHaveBeenCalledOnce();
   });
   it('일반 동기화는 시험 전송하지 않음, 구글 연결 해제', async () => {
-    const x = await setup(); expect((await x.call('POST', { localEvents: [], localTasks: [], localThrough: '2026-12-01' })).status).toBe(200);
+    const x = await setup(); expect((await x.call('POST', { deviceId, localEvents: [], localTasks: [], localThrough: '2026-12-01' })).status).toBe(200);
     expect(x.service.tick).not.toHaveBeenCalled(); expect((await x.call('DELETE')).status).toBe(200); expect(x.service.disconnect).toHaveBeenCalledOnce();
   });
 });

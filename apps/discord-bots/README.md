@@ -37,6 +37,7 @@ npm -w apps/karmolab-bot run start
 - 연결과 중복 방지 파일은 봇 data 안에만 저장, Git 제외. 응답에 갱신 토큰 제외.
 - 브라우저 로컬 항목은 플래너를 열 때와 수정 시 동기화. 24시간 넘은 저장본은 경과 표시. 새 작품 감시 목록은 별도 갱신 필요.
 - 수동 안내 전송은 성공 표시, 네트워크 오류는 지금 갱신 안내.
+- 로컬 저장본은 기기별 보관, 다른 기기의 빈 목록으로 덮어쓰기 제외. 옛 저장본은 같은 항목 ID의 첫 동기화에 이관.
 - 검사: `npx vitest run src/services/personal-notifications.test.ts src/bot/personal-notifications-api.test.ts` (봇 앱 폴더).
 
 ## 커맨드 배포

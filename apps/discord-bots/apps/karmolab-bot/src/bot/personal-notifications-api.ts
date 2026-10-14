@@ -29,12 +29,14 @@ export function registerPersonalNotifications(app: Express, service: PersonalNot
   });
   app.post(PATH, async (req, res) => {
     const body = req.body;
+    if (!body || typeof body.deviceId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(body.deviceId)) { res.status(400).json({ error: 'device_id_required_reload' }); return; }
     if (!body || !Array.isArray(body.localEvents) || !Array.isArray(body.localTasks) || body.localEvents.length > 500 || body.localTasks.length > 1000) { res.status(400).json({ error: 'invalid_snapshot' }); return; }
     const validString = (value: unknown, max = 500): value is string => typeof value === 'string' && value.length <= max;
     const dateString = (value: unknown): value is string => typeof value === 'string' && value.length <= 40 && /^\d{4}-\d{2}-\d{2}(?:T.+)?$/.test(value) && Number.isFinite(Date.parse(value));
     if (body.localEvents.some((e: AgendaEvent) => !e || !validString(e.id) || !validString(e.title) || !dateString(e.start) || !dateString(e.end) || typeof e.allDay !== 'boolean') || body.localTasks.some((t: AgendaTask) => !t || !validString(t.id) || !validString(t.title) || (t.due !== undefined && !dateString(t.due))) || !dateString(body.localThrough) || (body.refreshToken !== undefined && (!validString(body.refreshToken, 2048) || body.refreshToken.length < 10))) { res.status(400).json({ error: 'invalid_snapshot' }); return; }
     try {
       service.updateConnection({
+        deviceId: body.deviceId,
         ...(body.refreshToken ? { refreshToken: body.refreshToken } : {}),
         localEvents: body.localEvents.map((e: AgendaEvent) => ({ id: e.id, title: e.title, start: e.start, end: e.end, allDay: e.allDay, source: '이 브라우저' })),
         localTasks: body.localTasks.map((t: AgendaTask) => ({ id: t.id, title: t.title, due: t.due, status: t.status })),
