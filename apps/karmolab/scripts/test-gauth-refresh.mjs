@@ -42,6 +42,7 @@ globalThis.localStorage = {
   clear: () => box.clear(),
 };
 globalThis.window = globalThis;
+globalThis.__KARMOLAB_GOOGLE_CLIENT_ID__ = 'fixture-client';
 
 const G = await load('src/widgets/planner/gauth.ts');
 
@@ -82,6 +83,18 @@ const G = await load('src/widgets/planner/gauth.ts');
     throw new Error('부르면 안 됨');
   };
   check('토큰 없으면 null, 요청 0', (await G.ensureToken()) === null && n === 0);
+}
+
+{
+  box.clear();
+  globalThis.KarmoDashDesktop = true;
+  let error;
+  try { await G.requestToken(); } catch (e) { error = e; }
+  check('PC 새 구글 연결은 브라우저 메뉴 안내', error?.message === 'desktop-browser-connect');
+  box.set('karmolab_google_refresh', 'rt-desktop');
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ access_token: 'desktop-fresh', expires_in: 3600 }) });
+  check('PC에서 가져온 연결은 팝업 없이 갱신', await G.requestToken() === 'desktop-fresh');
+  delete globalThis.KarmoDashDesktop;
 }
 
 console.log(failed ? '[gauth] ' + failed + '개 어긋남' : '[gauth] 통과');

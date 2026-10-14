@@ -424,8 +424,10 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                 void (async () => {
                     try {
                         token = await requestToken();
-                    } catch {
-                        toast(t('planner.t06'), 'error');
+                    } catch (error) {
+                        toast(error instanceof Error && error.message === 'desktop-browser-connect'
+                            ? '앱 메뉴의 브라우저 연결 가져오기를 누르세요. 구글 로그인은 기본 브라우저에서 진행합니다.'
+                            : t('planner.t06'), 'error');
                         return;
                     }
                     if (token && !disposed) render();

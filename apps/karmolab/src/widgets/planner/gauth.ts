@@ -230,6 +230,10 @@ export async function requestToken(): Promise<string | null> {
     const existing = await ensureToken();
     if (existing) return existing;
 
+    if ((window as Window & { KarmoDashDesktop?: boolean }).KarmoDashDesktop) {
+        throw new Error('desktop-browser-connect');
+    }
+
     await loadGis();
     const oauth2 = gis()?.accounts.oauth2;
     if (!oauth2) throw new Error('gsi-unavailable');
