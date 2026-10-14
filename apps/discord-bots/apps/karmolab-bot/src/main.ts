@@ -97,6 +97,7 @@ import { startCodexResetNotifier, stopCodexResetNotifier } from './services/noti
 import { startBrainResurface, stopBrainResurface } from './services/notifiers/brain-resurface';
 import { PersonalNotifications } from './services/personal-notifications';
 import { registerPersonalNotifications } from './bot/personal-notifications-api';
+import { collectDiscordChannels, registerDiscordChannels } from './bot/discord-channels-api';
 import { channelIdFor } from './services/channel-provision';
 
 const client = new Client({
@@ -386,6 +387,7 @@ const personalNotifications = new PersonalNotifications(memoRepoPath, async (con
   await channel.send({ content, allowedMentions: { parse: [] } });
 });
 registerPersonalNotifications(app, personalNotifications);
+registerDiscordChannels(app, () => collectDiscordChannels(client));
 mountLocalWebhook(app, client);
 // TASK-WM-201. 폰(WM Android)이 밀어 넣는 실행 로그 수신 + 웹 뷰어 + tail.
 mountDeviceLog(app, client);
