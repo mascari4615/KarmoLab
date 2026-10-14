@@ -815,6 +815,7 @@ export function buildCalendarView(
             } else if (ev) {
                 const id = !single && ev.extendedProps.recurringEventId ? ev.extendedProps.recurringEventId as string : ev.extendedProps.googleId as string;
                 const grouped = !!ev.extendedProps.recurringEventId;
+                const previousColor = String(!single && grouped ? ev.extendedProps.seriesColor || '' : ev.extendedProps.colorId || '');
                 if (grouped && !ev.extendedProps.seriesStart) throw new Error('Group metadata unavailable');
                 const links = single && grouped ? undefined : linkedEvents;
                 const omit: Array<'summary' | 'start' | 'end'> = [];
@@ -827,7 +828,7 @@ export function buildCalendarView(
                 if (single && grouped && (!ev.extendedProps.commonLinks || JSON.stringify(linkedEvents) !== JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)))) {
                     await withToken(token!, (tok) => patchEvent(tok, calId, ev.extendedProps.recurringEventId as string, { linkedEvents, commonLinks: true, start, end, allDay }, ['summary', 'start', 'end']));
                 }
-                if (!single || omit.length !== 3 || color !== ev.extendedProps.colorId) await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, colorId: color, repeat, linkedEvents: links, commonLinks: true, recurrence }, omit));
+                if (!single || omit.length !== 3 || color !== previousColor) await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, colorId: color === previousColor ? undefined : color, repeat, linkedEvents: links, commonLinks: true, recurrence }, omit));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
                 createLocalEvent({ title, allDay, color, repeat, linkedEvents, ...stored(start, end, allDay) });
             } else {
