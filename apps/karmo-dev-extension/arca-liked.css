@@ -42,5 +42,6 @@ html { scrollbar-color: var(--muted) var(--bg); }
   #posts { --refs-columns: minmax(0, 1fr) 76px; }
   #posts .refs-head { grid-template-areas: 'title author'; min-height: 44px; padding: 2px 6px; }
   #posts .refs-head .refs-post-by { display: block; }
+  #posts .refs-preview-button { min-height: 40px; width: 40px; }
   #posts .article-channel, #posts .refs-post-date { display: none; }
 }

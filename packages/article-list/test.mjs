@@ -17,7 +17,7 @@ test('공용 행: 안전한 글자, 기존 행동 슬롯, 키보드 포커스 �
   assert.equal(doc.activeElement, title);
   assert.equal(list.querySelector('.refs-title'), title);
   assert.equal(title.textContent, '새 제목');
-  assert.equal(list.querySelector('button'), action);
+  assert.equal(list.querySelector('.refs-row-actions button'), action);
   assert.equal(list.querySelector('script'), null);
   updateArticleRow(list.firstChild, { ...post, url: 'javascript:alert(1)' });
   assert.notEqual(title.getAttribute('href'), 'javascript:alert(1)');
@@ -33,10 +33,28 @@ test('공용 썸네일: 포커스 시 요청, 사라진 팝업의 늦은 응답 
   title.focus();
   assert.equal(el.querySelector('.article-preview').hidden, false);
   title.blur();
+  await new Promise((r) => setTimeout(r, 170));
   resolve({ image: 'https://ac.arca.live/safe-example.webp' });
   await Promise.resolve();
   assert.equal(el.querySelector('.article-preview').hidden, true);
   assert.equal(el.querySelector('img').hasAttribute('src'), false);
+  dom.window.close();
+});
+
+test('썸네일: 명시적 버튼으로 고정, 포인터 진입 유지, Escape 닫기', async () => {
+  const dom = new JSDOM('<main></main>', { url: 'http://localhost/' });
+  const el = createArticleRow(post, { document: dom.window.document, onPreview: async () => ({ image: '', description: '' }) });
+  dom.window.document.querySelector('main').append(el);
+  const button = el.querySelector('.refs-preview-button');
+  button.click();
+  await Promise.resolve();
+  assert.equal(button.getAttribute('aria-expanded'), 'true');
+  el.querySelector('.refs-title').dispatchEvent(new dom.window.Event('pointerleave'));
+  el.querySelector('.article-preview').dispatchEvent(new dom.window.Event('pointerenter'));
+  await new Promise((r) => setTimeout(r, 170));
+  assert.equal(el.querySelector('.article-preview').hidden, false);
+  dom.window.document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape' }));
+  assert.equal(el.querySelector('.article-preview').hidden, true);
   dom.window.close();
 });
 

@@ -34,6 +34,8 @@ var KarmoArticleList = (() => {
     el.className = cls;
     return el;
   };
+  var activePreviews = /* @__PURE__ */ new WeakMap();
+  var previewId = 0;
   var safeLink = (value, base) => {
     if (typeof value !== "string" || !value.trim()) return "";
     try {
@@ -55,7 +57,13 @@ var KarmoArticleList = (() => {
     title.rel = "noopener noreferrer";
     title.addEventListener("click", (event) => event.stopPropagation());
     const tags = node(doc, "span", "refs-tags");
-    wrap.append(title, tags);
+    const previewButton = node(doc, "button", "refs-preview-button");
+    previewButton.type = "button";
+    previewButton.title = "\uC378\uB124\uC77C \uBCF4\uAE30";
+    previewButton.setAttribute("aria-label", "\uAE00 \uC378\uB124\uC77C \uBCF4\uAE30");
+    previewButton.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>';
+    previewButton.hidden = !onPreview;
+    wrap.append(title, previewButton, tags);
     const author = node(doc, "a", "dim refs-post-by writer");
     author.target = "_blank";
     author.rel = "noopener noreferrer";
@@ -70,7 +78,10 @@ var KarmoArticleList = (() => {
     if (body) box.append(body);
     const preview = node(doc, "div", "article-preview");
     preview.hidden = true;
-    preview.setAttribute("role", "status");
+    preview.id = `article-preview-${++previewId}`;
+    preview.setAttribute("role", "tooltip");
+    previewButton.setAttribute("aria-controls", preview.id);
+    previewButton.setAttribute("aria-expanded", "false");
     const image = node(doc, "img", "article-preview-image");
     image.alt = "";
     image.referrerPolicy = "no-referrer";
@@ -79,9 +90,23 @@ var KarmoArticleList = (() => {
     box.append(preview);
     let request = 0;
     let previewTimer = null;
+    let hideTimer = null;
+    let pinned = false;
+    const outside = (event) => {
+      if (!box.contains(event.target)) hide();
+    };
+    const escape = (event) => {
+      if (event.key === "Escape") hide();
+    };
     const show = async () => {
+      clearTimeout(hideTimer);
       if (!onPreview || box.dataset.previewOpen === "1") return;
+      activePreviews.get(doc)?.();
+      activePreviews.set(doc, hide);
       box.dataset.previewOpen = "1";
+      previewButton.setAttribute("aria-expanded", "true");
+      doc.addEventListener("pointerdown", outside);
+      doc.addEventListener("keydown", escape);
       const seq = ++request;
       preview.hidden = false;
       image.hidden = true;
@@ -109,20 +134,47 @@ var KarmoArticleList = (() => {
     };
     const hide = () => {
       clearTimeout(previewTimer);
+      clearTimeout(hideTimer);
       request++;
+      pinned = false;
       box.dataset.previewOpen = "";
       preview.hidden = true;
+      previewButton.setAttribute("aria-expanded", "false");
+      doc.removeEventListener("pointerdown", outside);
+      doc.removeEventListener("keydown", escape);
+      if (activePreviews.get(doc) === hide) activePreviews.delete(doc);
+    };
+    const leave = () => {
+      if (!pinned) {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(hide, 150);
+      }
     };
     title.addEventListener("pointerenter", () => {
       clearTimeout(previewTimer);
       previewTimer = setTimeout(show, 160);
     });
-    title.addEventListener("pointerleave", hide);
+    title.addEventListener("pointerleave", () => {
+      clearTimeout(previewTimer);
+      leave();
+    });
     title.addEventListener("focus", show);
-    title.addEventListener("blur", hide);
+    title.addEventListener("blur", leave);
     title.addEventListener("keydown", (event) => {
       if (event.key === "Escape") hide();
     });
+    preview.addEventListener("pointerenter", () => clearTimeout(hideTimer));
+    preview.addEventListener("pointerleave", leave);
+    previewButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (pinned && !preview.hidden) hide();
+      else {
+        pinned = true;
+        clearTimeout(hideTimer);
+        void show();
+      }
+    });
+    box.disposeArticlePreview = hide;
     updateArticleRow(box, post);
     return box;
   }
@@ -181,7 +233,10 @@ var KarmoArticleList = (() => {
       if (next !== el) list.insertBefore(el, next);
       prev = el;
     }
-    for (const el of old.values()) el.remove();
+    for (const el of old.values()) {
+      el.disposeArticlePreview?.();
+      el.remove();
+    }
   }
   return __toCommonJS(index_exports);
 })();

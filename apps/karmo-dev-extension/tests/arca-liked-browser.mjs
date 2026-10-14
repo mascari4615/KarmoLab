@@ -45,6 +45,12 @@ try {
     await page.locator(".refs-title").first().focus();
     await page.waitForFunction(() => !document.querySelector(".article-preview").hidden && document.querySelector(".article-preview-message").textContent.includes("썸네일"));
     await page.keyboard.press("Escape");
+    if (width < 500) {
+      await page.locator('.refs-preview-button').first().tap();
+      assert.equal(await page.locator('.article-preview').first().isVisible(), true);
+      await page.locator('.refs-preview-button').first().tap();
+      assert.equal(await page.locator('.article-preview').first().isVisible(), false);
+    }
     await page.locator("body").click({ position: { x: 1, y: 1 } });
     await page.keyboard.press("Tab");
     assert.equal(await page.evaluate(() => document.activeElement.id), "refresh");
