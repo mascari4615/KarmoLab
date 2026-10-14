@@ -1,3 +1,10 @@
 {
-  "media.err.mp3": "MP3 압축기를 불러오지 못했습니다"
+  "media.err.mp3": "MP3 압축기를 불러오지 못했습니다",
+  "media.viewer.title": "미디어 크게 보기",
+  "media.viewer.zoom": "확대",
+  "media.viewer.fit": "화면 맞춤",
+  "media.viewer.close": "닫기",
+  "media.viewer.previous": "이전",
+  "media.viewer.next": "다음",
+  "media.viewer.error": "미디어를 불러오지 못했습니다. 닫고 다시 열어 주세요."
 }

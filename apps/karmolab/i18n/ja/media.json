@@ -1,3 +1,10 @@
 {
-  "media.err.mp3": "MP3 の圧縮器を読み込めませんでした"
+  "media.err.mp3": "MP3 の圧縮器を読み込めませんでした",
+  "media.viewer.title": "メディアを大きく表示",
+  "media.viewer.zoom": "拡大",
+  "media.viewer.fit": "画面に合わせる",
+  "media.viewer.close": "閉じる",
+  "media.viewer.previous": "前へ",
+  "media.viewer.next": "次へ",
+  "media.viewer.error": "読み込めませんでした。閉じて再度開いてください。"
 }

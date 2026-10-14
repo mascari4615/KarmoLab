@@ -1,3 +1,10 @@
 {
-  "media.err.mp3": "The MP3 encoder could not be loaded"
+  "media.err.mp3": "The MP3 encoder could not be loaded",
+  "media.viewer.title": "Open media viewer",
+  "media.viewer.zoom": "Zoom",
+  "media.viewer.fit": "Fit",
+  "media.viewer.close": "Close",
+  "media.viewer.previous": "Previous",
+  "media.viewer.next": "Next",
+  "media.viewer.error": "Media could not be loaded. Close and try again."
 }

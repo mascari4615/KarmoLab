@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {nextItem,mediaPosition,createMediaSurface} from './index.js';
+const list=[{id:'a'},{id:'b'},{id:'c'}];
+assert.equal(nextItem([], 'a',1),null);
+assert.equal(nextItem(list,'a',-1),list[0]);
+assert.equal(nextItem(list,'a',-1,{boundary:'stop'}),null);
+assert.equal(nextItem(list,'b',1),list[2]);
+assert.equal(nextItem(list,'missing',-1),list[2]);
+assert.equal(nextItem(list,'a',1,{focused:'b'}),list[2]);
+assert.deepEqual(mediaPosition(list,'b'),{index:1,total:3,previous:true,next:true});
+assert.deepEqual(mediaPosition([], 'x'),{index:-1,total:0,previous:false,next:false});
+class Media extends EventTarget { hidden=false;src='';removeAttribute(name){this[name]='';}pause(){this.paused=true;}load(){}play(){this.paused=false;return Promise.resolve();} }
+const image=new Media(),video=new Media(),errors=[];
+const surface=createMediaSurface({image,video,onError:item=>errors.push(item.id)});
+surface.show({id:'first',kind:'image',src:'first.png'});
+surface.show({id:'second',kind:'video',src:'second.mp4'});
+image.dispatchEvent(new Event('error'));assert.deepEqual(errors,[]);
+assert.equal(image.hidden,true);assert.equal(video.hidden,false);assert.equal(video.src,'second.mp4');
+video.dispatchEvent(new Event('error'));assert.deepEqual(errors,['second']);
+surface.clear();assert.equal(video.paused,true);assert.equal(video.src,'');assert.equal(image.src,'');
+video.dispatchEvent(new Event('error'));assert.deepEqual(errors,['second']);
+console.log('PASS navigation, boundaries, filtered focus, media lifecycle, stale errors, disposal');

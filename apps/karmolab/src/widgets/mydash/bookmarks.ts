@@ -34,6 +34,7 @@
 import { dashRegistry, esc, safeLinkUrl } from './kit';
 import type { DashPanelCtx, DashRepoWrite } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
+import { createMediaViewer, nextItem, type MediaItem } from '../../../../../packages/media-browser/index.js';
 
 (function (): void {
   'use strict';
@@ -269,6 +270,10 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-ptitle{color:var(--text-primary);font-weight:600}',
       '.bm-tw{white-space:pre-wrap;word-break:break-word;color:var(--text-primary);font-size:var(--bm-body);line-height:var(--bm-body-lh)}',
       '.bm-pic{width:100%;max-width:100%;border-radius:var(--bm-pic-radius);display:block}',
+      '.bm-view-open{display:block;position:relative;width:100%;min-height:var(--bm-tap);padding:0;border:0;background:transparent;color:inherit;cursor:zoom-in}',
+      '.bm-view-open:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
+      '.bm-tile .bm-view-open.is-unavailable{min-height:calc(var(--bm-tap) * 3)}',
+      '.bm-view-open.is-unavailable::after{content:attr(data-error);display:block;padding:var(--space-sm);font:inherit}',
       '.bm-video{background:var(--bg-tertiary)}',
       '.bm-yt{width:100%;aspect-ratio:16/9;border:0;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
       '.bm-sheet-title{font-size:var(--font-size-title);font-weight:600;line-height:1.3}',
@@ -464,7 +469,7 @@ import { t, loadNamespace } from '../../lib/i18n';
    * 검색도 이 문자열 대상 (보이는 글자로 못 찾는 것 방지).
    */
   /** 트위터 그림 주소에 크기 표식. 목록은 small, 옆판은 medium. 다른 곳 그림은 그대로 */
-  function picUrl(url: string, size: 'small' | 'medium'): string {
+  function picUrl(url: string, size: 'small' | 'medium' | 'orig'): string {
     const clean = text(url).trim();
     if (!clean) return '';
     if (/^https:\/\/pbs\.twimg\.com\//.test(clean)) return clean + (clean.indexOf('?') >= 0 ? '&' : '?') + 'name=' + size;
@@ -480,6 +485,20 @@ import { t, loadNamespace } from '../../lib/i18n';
 
   function mediaOf(it: Item): Media | null {
     return it.media && typeof it.media === 'object' ? it.media : null;
+  }
+
+  function mediaItems(it: Item): MediaItem[] {
+    const media = mediaOf(it);
+    if (!media || media.deleted) return [];
+    const title = text(it.label) || text(media.title) || text(media.text) || text(it.id);
+    const photos = media.photos || (media.image ? [{ url: media.image }] : []);
+    const images: MediaItem[] = photos.flatMap((photo, index) => {
+      const src = safeLinkUrl(picUrl(text(photo.url), 'orig'));
+      return src ? [{ id: text(it.id) + '::image:' + index, kind: 'image', src, title }] : [];
+    });
+    const video = safeLinkUrl(media.video?.src);
+    if (video) images.push({ id: text(it.id) + '::video', kind: 'video', src: video, title, poster: safeLinkUrl(media.video?.poster) || undefined });
+    return images;
   }
 
   /** 목록 줄 썸네일 주소. 트윗 첫 장, 영상 포스터, 페이지 대표 그림 순 */
@@ -956,12 +975,24 @@ import { t, loadNamespace } from '../../lib/i18n';
     }
 
     await loadEvents();
+    await loadNamespace('media');
+    const mediaViewer = createMediaViewer({ labels: {
+      title: t('media.viewer.title'), zoom: t('media.viewer.zoom'), fit: t('media.viewer.fit'),
+      close: t('media.viewer.close'), previous: t('media.viewer.previous'), next: t('media.viewer.next'), error: t('media.viewer.error')
+    } });
+    ctx.onDispose(() => mediaViewer.dispose());
 
     /* ── 뼈대 ── */
     const wrap = document.createElement('div');
     wrap.className = 'bm';
     root.textContent = '';
     root.appendChild(wrap);
+    wrap.addEventListener('error', event => {
+      const image = event.target;
+      if (!(image instanceof HTMLImageElement) || !image.parentElement?.classList.contains('bm-view-open')) return;
+      image.parentElement.classList.add('is-unavailable');
+      image.parentElement.dataset.error = t('media.viewer.error');
+    }, true);
 
     /**
      * 지금 판정 대기인가.
@@ -1587,7 +1618,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       if (pic) {
         const ratio = pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
         parts.push(
-          '<div class="bm-card-pic"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '>' +
+          '<div class="bm-card-pic"><button type="button" class="bm-view-open" data-act="media" data-id="' + esc(text(it.id)) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '></button>' +
           (pic.more > 0 ? '<span class="bm-card-more">+' + pic.more + '</span>' : '') + '</div>'
         );
       }
@@ -1635,7 +1666,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       return (
         '<figure class="' + cls + '" data-row="' + esc(id) + '"' + tapAct(id) + '>' + selMark(id) +
         (pic
-          ? '<img src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '>'
+          ? '<button type="button" class="bm-view-open" data-act="media" data-id="' + esc(id) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '></button>'
           : '<div class="bm-tile-text">' + esc(head) + '</div>') +
         '<figcaption>' +
         (pic && head ? '<div class="bm-tile-cap">' + esc(head) + '</div>' : '') +
@@ -2002,9 +2033,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     function moveCur(delta: number): void {
       const ids = visibleRowIds();
       if (!ids.length) return;
-      const at = ids.indexOf(curId);
-      const next = at < 0 ? (delta > 0 ? 0 : ids.length - 1) : Math.min(ids.length - 1, Math.max(0, at + delta));
-      const id = ids[next];
+      const id = nextItem(ids, curId, delta, { key: id => id });
+      if (!id) return;
       openSheet(id);
       const row = listEl.querySelector('[data-row="' + id + '"]') as HTMLElement | null;
       if (row && typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
@@ -2058,18 +2088,18 @@ import { t, loadNamespace } from '../../lib/i18n';
           const who = m.who ? [text(m.who.name), m.who.handle ? '@' + text(m.who.handle) : ''].filter(Boolean).join(' ') : '';
           if (who) body.push('<div class="bm-who">' + esc(who) + '</div>');
           if (text(m.text).trim()) body.push('<div class="bm-tw">' + esc(text(m.text).trim()) + '</div>');
-          for (const ph of m.photos || []) {
+          for (const [index, ph] of (m.photos || []).entries()) {
             const u = picUrl(text(ph.url), 'medium');
             if (!u) continue;
             const ratio = ph.w && ph.h ? ' style="aspect-ratio:' + Number(ph.w) + '/' + Number(ph.h) + '"' : '';
-            body.push('<img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(u) + '" alt="" loading="lazy" decoding="async"' + ratio + '>');
+            body.push('<button type="button" class="bm-view-open" data-act="media" data-id="' + esc(text(it.id)) + '" data-media-key="' + esc(text(it.id) + '::image:' + index) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(u) + '" alt="" loading="lazy" decoding="async"' + ratio + '></button>');
           }
           if (m.video && m.video.src) {
             /* 영상 미리보기 (사용자 2026-09-19). mp4 를 그 자리에서 튼다. 소리는 눌러야. referer 있으면 video.twimg.com 이 403 (curl 실측) */
             const ratio = m.video.w && m.video.h ? ' style="aspect-ratio:' + Number(m.video.w) + '/' + Number(m.video.h) + '"' : '';
             body.push(
               '<video class="bm-pic bm-video" controls preload="metadata" playsinline poster="' +
-              esc(picUrl(text(m.video.poster), 'medium')) + '" src="' + esc(text(m.video.src)) + '"' + ratio + '></video>'
+              esc(picUrl(text(m.video.poster), 'medium')) + '" src="' + esc(text(m.video.src)) + '"' + ratio + '></video><button type="button" class="btn btn-ghost" data-act="media" data-id="' + esc(text(it.id)) + '" data-media-key="' + esc(text(it.id) + '::video') + '">' + esc(t('media.viewer.title')) + '</button>'
             );
           } else if (m.video && m.video.poster) {
             body.push(
@@ -2094,7 +2124,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         if (m.site) body.push('<div class="bm-who">' + esc(text(m.site)) + '</div>');
         if (text(m.description).trim()) body.push('<div class="bm-tw">' + esc(text(m.description).trim()) + '</div>');
         const img = m.image ? safeLinkUrl(m.image) : '';
-        if (img) body.push('<img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">');
+        if (img) body.push('<button type="button" class="bm-view-open" data-act="media" data-id="' + esc(text(it.id)) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(img) + '" alt="" loading="lazy" decoding="async"></button>');
       }
       if (url) {
         body.push(
@@ -2710,6 +2740,15 @@ import { t, loadNamespace } from '../../lib/i18n';
       const el = target.closest('[data-axis],[data-act],[data-pick]') as HTMLElement | null;
       if (!el) return;
       const act = el.getAttribute('data-act');
+      if (act === 'media') {
+        const id = el.getAttribute('data-id') || '';
+        if (selectMode) { togglePick(id); syncPicks(); return; }
+        const media = items.filter(matches).sort(byRecent).flatMap(mediaItems);
+        const key = el.getAttribute('data-media-key');
+        const first = key ? media.find(item => item.id === key) : media.find(item => item.id.startsWith(id + '::'));
+        if (first) mediaViewer.open(media, first.id, el);
+        return;
+      }
 
       if (act === 'more') {
         shown += PAGE;
