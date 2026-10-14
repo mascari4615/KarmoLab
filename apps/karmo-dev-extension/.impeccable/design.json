@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T11:41:28.918499+00:00",
+  "generatedAt": "2026-10-14T12:24:44.739760+00:00",
   "title": "Design System: KarmoDevExtension",
   "extensions": {
     "colorMeta": {
@@ -322,17 +322,13 @@
         "displayName": "Body",
         "purpose": "Feed descriptions and controls."
       },
-      "post-title": {
-        "displayName": "Post title",
-        "purpose": "Primary row link."
-      },
       "label": {
         "displayName": "Field label",
         "purpose": "Search and author field labels."
       },
       "metadata": {
         "displayName": "Metadata",
-        "purpose": "Writer, channel, date, scope, and footer."
+        "purpose": "Host scope text and footer; shared row metadata is owned by packages/article-list."
       }
     },
     "shadows": [],
@@ -348,9 +344,20 @@
       "arca-liked.css",
       "arca-liked.html",
       "arca-liked.js",
-      "options.html"
+      "options.html",
+      "../../packages/article-list/index.js",
+      "../../packages/article-list/article-list.css"
     ],
-    "rasterProvenance": "No raster images ship on the documented surface. Review screenshots are evidence only."
+    "rasterProvenance": "No raster images are bundled for this surface. Embed metadata supplies remote article thumbnails; review screenshots are evidence only.",
+    "sharedArticleList": {
+      "source": "../../packages/article-list/index.js",
+      "stylesheet": "../../packages/article-list/article-list.css",
+      "generatedCopies": [
+        "vendor/article-list.js",
+        "vendor/article-list.css"
+      ],
+      "ownership": "Canonical module owns row structure, row typography, keyed updates, and preview behavior. Host owns theme aliases, visible columns, and responsive row sizing. No normative row tokens or copied row snippets in this sidecar."
+    }
   },
   "components": [
     {
@@ -374,16 +381,8 @@
       "kind": "input",
       "refersTo": "select-author",
       "description": "Labeled native feed field.",
-      "html": "<label class=\"ds-author-label\">작성자<select class=\"ds-author\"><option>전체 작성자</option><option>좋아요 작성자</option></select></label>",
+      "html": "<label class=\"ds-author-label\">작성자<select class=\"ds-author\"><option>전체 작성자</option><option>팔로우 작성자</option></select></label>",
       "css": ".ds-author-label { display: grid; gap: 6px; font: 600 14px/1.55 system-ui, sans-serif; color: var(--text, #252936); } .ds-author {font: 600 14px/1.55 system-ui, sans-serif; min-height: 44px; border: 1px solid var(--line, #dce0e7); border-radius: 6px; padding: 9px 12px;width: 100%; min-width: 0; box-sizing: border-box; background: var(--surface, #fff); color: var(--text, #252936); caret-color: var(--accent, #a92857); }.ds-author:focus-visible { outline: 3px solid var(--accent, #a92857); outline-offset: 3px; } @media (prefers-color-scheme: dark) { .ds-author-label, .ds-author { color: var(--text, #eceef3); } .ds-author { background: var(--surface, #282d38); border-color: var(--line, #444b5e); caret-color: var(--accent, #f19cba); } .ds-author:focus-visible { outline-color: var(--accent, #f19cba); } .ds-search::placeholder { color: var(--muted, #b4bbcd); } }"
-    },
-    {
-      "name": "Post row",
-      "kind": "custom",
-      "refersTo": "post-row",
-      "description": "Title-led feed row with author, channel, and date.",
-      "html": "<article class=\"ds-post\"><a class=\"ds-title\" href=\"https://arca.live\" target=\"_blank\" rel=\"noopener noreferrer\">좋아요 작성자의 최근 글</a><div class=\"ds-meta\"><a class=\"ds-writer\" href=\"https://arca.live\" target=\"_blank\" rel=\"noopener noreferrer\">작성자</a><span>채널</span><time>2026. 10. 14.</time></div></article>",
-      "css": ".ds-post { font: 16px/1.55 system-ui, sans-serif; padding: 18px 20px; background: var(--surface, #fff); border-bottom: 1px solid var(--line, #dce0e7); } .ds-post:hover { background: var(--tint, #f9edf2); } .ds-title { display: block; font-size: 17px; font-weight: 600; color: var(--text, #252936); text-decoration: none; overflow-wrap: anywhere; } .ds-title:hover { text-decoration: underline; } .ds-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-top: 7px; font-size: 13px; color: var(--muted, #596174); } .ds-writer { color: var(--accent, #a92857); text-underline-offset: 3px; } .ds-meta time { font-variant-numeric: tabular-nums; margin-left: auto; } .ds-post a:focus-visible { outline: 3px solid var(--accent, #a92857); outline-offset: 3px; } @media (prefers-color-scheme: dark) { .ds-post { background: var(--surface, #282d38); border-color: var(--line, #444b5e); } .ds-post:hover { background: var(--tint, #3c2d3a); } .ds-title { color: var(--text, #eceef3); } .ds-meta { color: var(--muted, #b4bbcd); } .ds-writer { color: var(--accent, #f19cba); } .ds-post a:focus-visible { outline-color: var(--accent, #f19cba); } } @media (max-width: 640px) { .ds-post { padding: 16px 12px; } .ds-meta time { margin-left: 0; width: 100%; } }"
     },
     {
       "name": "Author failure notice",
@@ -404,23 +403,24 @@
   ],
   "narrative": {
     "northStar": "System-ui extension and reading list",
-    "overview": "The incumbent interface uses the system font, simple controls, and a title-led list. Visual emphasis supports reading and operating the extension. The liked-feed surface adds a restrained pink accent and system theme response to this existing vocabulary.\n\nThis document records `arca-liked.css`, `arca-liked.html`, `arca-liked.js`, and the related settings patterns in `options.html`. The feed palette and control sizing are scoped to that surface: settings retain their native controls and blue selected-tab indicator. No new shared theme or component library is implied.",
+    "overview": "The incumbent interface uses the system font, simple controls, and a title-led list. Visual emphasis supports reading and operating the extension. The follow-feed surface adds a restrained pink accent and system theme response to this existing vocabulary.\n\nThis document records the host styling in `arca-liked.css`, the follow-feed behavior in `arca-liked.html` and `arca-liked.js`, and related settings patterns in `options.html`. Row structure, title styling, reconciliation, and thumbnail interaction belong to the shared [article-list module](../../packages/article-list/index.js) and its [canonical stylesheet](../../packages/article-list/article-list.css), also used by KarmoAI. Extension `vendor/article-list.*` files are generated copies. Host palette, columns, and control sizing stay local; settings retain native controls and the blue selected-tab indicator. Row tokens and preview snippets are intentionally not duplicated here.",
     "keyCharacteristics": [
       "System typography and explicit text labels.",
       "Flat neutral surfaces with row separators.",
       "Pink feed actions and writer links; blue settings selection.",
-      "A single responsive list with visible progress and failure context."
+      "Compact one-line rows with accessible thumbnail previews and visible progress and failure context."
     ],
     "rules": [],
     "dos": [
       "Do preserve system typography, native controls, and the current distinction between feed and settings styling.",
       "Do keep post titles primary and author, channel, and date secondary.",
-      "Do preserve visible keyboard focus, wrapping metadata, and the implemented system-theme response.",
+      "Do preserve visible keyboard focus, one-line title/author rows, thumbnail dismissal, and the implemented system-theme response.",
       "Do express loading, empty results, and author failures with specific text and the current simple containers."
     ],
     "donts": [
       "Don't apply the feed's pink palette to all settings or treat its mobile breakpoint as a global extension rule.",
       "Don't turn list rows into elevated cards or introduce ornamental imagery, custom fonts, or motion absent from the source.",
+      "Don't fork canonical row markup, row typography, or preview behavior into extension-local implementations.",
       "Don't imply that color alone communicates loading, selection, or failure."
     ]
   }
