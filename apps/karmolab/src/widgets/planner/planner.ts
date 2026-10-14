@@ -156,7 +156,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-repeat-note { margin: 0; font-size: var(--font-size-xs); color: var(--text-secondary); }
         .pl-repeat-config, .pl-linked-settings[open] { display: grid; gap: 12px; }
         .pl-linked-settings { border-top: 1px solid var(--border); padding-top: 8px; }
-        .pl-linked-settings summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: var(--font-weight-medium); }
+        .pl-linked-settings summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
         .pl-link-row { min-width: 0; border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
         .pl-link-times { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
         .pl-exceptions { display: grid; gap: 8px; }
