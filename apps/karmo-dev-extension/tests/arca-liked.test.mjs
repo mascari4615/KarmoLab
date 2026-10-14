@@ -78,6 +78,10 @@ test("화면: 실제 글 제목 안전 출력, 검색, 좋아요 해제, 갱신 
   assert.equal(doc.querySelectorAll("#posts li").length, 1);
   assert.match(doc.querySelector(".post-title").textContent, /<script>/);
   assert.doesNotMatch(doc.getElementById("count").textContent, /날짜 정보 없음/);
+  doc.querySelector(".post-title").focus();
+  change({ likelist: { newValue: { arca: { a: { name: "작성자" } } } } }, "local");
+  assert.equal(doc.activeElement.className, "post-title");
+  assert.equal(doc.activeElement.getAttribute("href"), "https://arca.live/b/one/10");
   doc.getElementById("search").value = "없는제목";
   doc.getElementById("search").dispatchEvent(new d.window.Event("input"));
   assert.equal(doc.querySelectorAll("#posts li").length, 0);
@@ -126,4 +130,31 @@ test("실제 background 분기: 좋아요 키 검증, 성공과 실패 모두 �
   reject = true;
   assert.equal((await call("a#42")).ok, false);
   assert.equal(removed, 2);
+});
+
+test("동시 수집 탭: 등록과 해제 직렬화, 저장 실패 시 탭 회수", async () => {
+  let ids = [];
+  let seq = 0;
+  let failSave = false;
+  const removed = [];
+  const ctx = { chrome: {
+    tabs: { create: async () => ({ id: ++seq }), remove: async (id) => removed.push(id) },
+    storage: { local: {
+      get: async () => { const snapshot = [...ids]; await new Promise((resolve) => setTimeout(resolve, 5)); return { "karmo.openTabs": snapshot }; },
+      set: async (data) => { if (failSave) throw new Error("quota"); ids = [...data["karmo.openTabs"]]; },
+    } },
+  } };
+  vm.createContext(ctx);
+  const code = source("background.js");
+  vm.runInContext(code.slice(code.indexOf('const OPEN_TABS_KEY'), code.indexOf('/** 워커가 다시 뜰')), ctx);
+  await Promise.all([ctx.openWorkTab("a"), ctx.openWorkTab("b")]);
+  assert.deepEqual(ids, [1, 2]);
+  await Promise.all([ctx.closeWorkTab(1), ctx.openWorkTab("c")]);
+  assert.deepEqual(ids, [2, 3]);
+  await ctx.closeWorkTab(2);
+  await ctx.closeWorkTab(3);
+  assert.deepEqual(ids, []);
+  failSave = true;
+  await assert.rejects(ctx.openWorkTab("d"), /quota/);
+  assert.deepEqual(removed, [1, 2, 3, 4]);
 });

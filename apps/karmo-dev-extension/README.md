@@ -35,6 +35,7 @@
 - 제목 검색, 작성자 필터, 원문과 프로필 새 탭 열기. 계정 번호 보존.
 - 첫 방문과 10분 지난 캐시는 자동 수집, 수동 최신 글 불러오기. 수집 실패는 유저별 표시와 이전 글 유지. 좋아요 해제 시 즉시 제외.
 - 프로필당 뒤쪽 탭 1개, 페이지당 동시 2개, 읽은 뒤 닫기. `arca.liked.read`는 저장된 좋아요 키만 허용. `arca.liked.open`은 확장 내부 호출만.
+- 갱신 중 글 링크의 키보드 포커스 유지. 수집 탭 장부 갱신 직렬화, 등록 저장 실패 시 생성한 탭 회수.
 - 기능 검사: `node --test apps/karmo-dev-extension/tests/arca-liked.test.mjs` (repo 루트, KarmoLab 의 jsdom 설치 필요).
 - 브라우저 검사: `node apps/karmo-dev-extension/tests/arca-liked-browser.mjs <memo reference 자료 폴더>` (프로필 fixture, Edge, Playwright 필요).
 

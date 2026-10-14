@@ -21,6 +21,10 @@
   }
 
   function render() {
+    const active = document.activeElement;
+    const focusedHref = active.closest?.("#posts li")?.dataset.href;
+    const focusedClass = active.classList.contains("writer") ? "writer" : "post-title";
+    let restoreFocus = null;
     const keys = Object.keys(likes);
     const rows = api.merge(profiles, likes);
     const selected = el("author").value;
@@ -29,6 +33,7 @@
     const fragment = document.createDocumentFragment();
     for (const r of visible) {
       const item = document.createElement("li");
+      item.dataset.href = r.href;
       const title = document.createElement("a");
       title.className = "post-title";
       title.textContent = r.title || "제목 없음";
@@ -51,9 +56,11 @@
       if (Number.isFinite(Date.parse(r.time))) time.dateTime = r.time;
       meta.append(writer, channel, time);
       item.append(title, meta);
+      if (focusedHref === r.href) restoreFocus = focusedClass === "writer" ? writer : title;
       fragment.append(item);
     }
     el("posts").replaceChildren(fragment);
+    restoreFocus?.focus({ preventScroll: true });
     el("posts").setAttribute("aria-busy", String(busy));
     const fetched = keys.filter((key) => profiles[key]?.at).length;
     el("status").textContent = storageError || (busy ? `작성자 ${completed}/${total}명 확인 중, 현재 ${rows.length}개 글` : `좋아요 ${keys.length}명, 확인 ${fetched}명, 최근 글 ${rows.length}개`);

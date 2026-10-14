@@ -210,28 +210,43 @@ function readyArgs(msg) {
 
 /** 이 확장이 연 수집 탭 id. 워커가 죽으면 finally 가 안 돌아 탭이 남는다 (2026-09-22 치지직, X 탭 실측) */
 const OPEN_TABS_KEY = "karmo.openTabs";
+let workTabTracking = Promise.resolve();
+
+/* 동시 프로필 수집의 탭 장부 덮어쓰기 방지 */
+function updateWorkTabs(change) {
+  const next = workTabTracking.then(async () => {
+    const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
+    await chrome.storage.local.set({ [OPEN_TABS_KEY]: await change(cur) });
+  });
+  workTabTracking = next.catch(() => {});
+  return next;
+}
 
 async function openWorkTab(url) {
   const tab = await chrome.tabs.create({ url, active: false });
-  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
-  await chrome.storage.local.set({ [OPEN_TABS_KEY]: [...cur, tab.id] });
+  try {
+    await updateWorkTabs((cur) => [...cur, tab.id]);
+  } catch (error) {
+    await chrome.tabs.remove(tab.id).catch(() => {});
+    throw error;
+  }
   return tab;
 }
 
 async function closeWorkTab(tabId) {
   try { await chrome.tabs.remove(tabId); } catch { /* 이미 닫혔으면 무시 */ }
-  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
-  await chrome.storage.local.set({ [OPEN_TABS_KEY]: cur.filter((id) => id !== tabId) });
+  await updateWorkTabs((cur) => cur.filter((id) => id !== tabId));
 }
 
 /** 워커가 다시 뜰 때 지난 실행이 남긴 탭을 닫는다. 사용자가 직접 연 탭은 목록에 없어 안 건드린다 */
 async function reapOrphanTabs() {
-  const cur = (await chrome.storage.local.get(OPEN_TABS_KEY))[OPEN_TABS_KEY] || [];
   let closed = 0;
-  for (const id of cur) {
-    try { await chrome.tabs.remove(id); closed += 1; } catch { /* 이미 없음 */ }
-  }
-  if (cur.length) await chrome.storage.local.set({ [OPEN_TABS_KEY]: [] });
+  await updateWorkTabs(async (cur) => {
+    for (const id of cur) {
+      try { await chrome.tabs.remove(id); closed += 1; } catch { /* 이미 없음 */ }
+    }
+    return [];
+  });
   if (closed) await note("reap", `고아 탭 ${closed}개 닫음`);
   return closed;
 }
