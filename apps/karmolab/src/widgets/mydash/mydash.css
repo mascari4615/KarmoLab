@@ -133,6 +133,14 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
 .myd-body {
   min-height: 0;
 }
+.myd-main:has(.bm) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.myd-main:has(.bm) .myd-head { flex: 0 0 auto; }
+.myd-main:has(.bm) .myd-body { flex: 1; min-height: 0; }
+.myd-body > div:has(> .bm) { height: 100%; min-height: 0; }
 
 /* ── 카드와 버튼. 로그인 화면과 안내가 쓴다 ─────────────── */
 .myd-card {

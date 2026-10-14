@@ -209,7 +209,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       /* 크기는 레퍼런스 실측 (2026-09-19, notes/mydash/mvp5-design-2026-09-19.md). 본문 15, 메타 13, 캡션 14,
          그림 모서리 16, 격자 열 236 간격 16. 스킨 토큰에 없는 값은 이 패널 변수로 한 곳에만 */
       '.bm{--bm-tap:44px;--bm-body:15px;--bm-body-lh:22px;--bm-meta:13px;--bm-cap:14px;--bm-pic-radius:16px;',
-      '--bm-col:236px;--bm-gap:16px;display:flex;flex-direction:column;gap:var(--space-md)}',
+      '--bm-col:236px;--bm-gap:16px;display:flex;flex-direction:column;gap:var(--space-md);height:100%;min-height:0}',
       '.bm-head-acts{flex-wrap:nowrap}',
       '.bm-q{flex:1;min-width:0;min-height:var(--bm-tap);padding:0 var(--space-md);border:1px solid var(--border);',
       'border-radius:var(--radius-pill);background:var(--bg-secondary);color:var(--text-primary);font:inherit;font-size:var(--bm-body)}',
@@ -331,7 +331,11 @@ import { t, loadNamespace } from '../../lib/i18n';
       '.bm-filters{display:flex;flex-direction:column;gap:var(--space-md)}',
       '.bm-filters[hidden]{display:none}',
       '.bm-head-acts .btn[aria-expanded="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
-      '.bm-main{display:flex;flex-direction:column;gap:var(--space-md);min-width:0}',
+      '.bm-main{display:flex;flex-direction:column;gap:var(--space-md);min-width:0;min-height:0;height:100%}',
+      '.bm-main>div:not(.bm-scroll){flex-shrink:0}',
+      '.bm-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:var(--space-md)}',
+      '.bm-scroll>div{flex-shrink:0}',
+      '.bm-filters{max-height:35dvh;overflow-y:auto;overscroll-behavior:contain}',
       '.bm-row.is-cur{background:var(--bg-tertiary)}',
       '.bm-keys{font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
       '.bm-keys kbd{font-family:inherit;padding:0 var(--space-xs);border:1px solid var(--border);border-radius:var(--radius-sm)}',
@@ -1136,12 +1140,14 @@ import { t, loadNamespace } from '../../lib/i18n';
       '<div class="bm-nums">' + numHtml.join('') + '</div>' +
       '<div class="bm-groups">' + groupHtml + '</div>' +
       '</div>' +
+      '<div class="bm-scroll" tabindex="0" aria-label="' + esc(t('mydash.bm.title', undefined, '북마크')) + '">' +
       '<div class="bm-revisit" data-revisit="1"></div>' +
       '<div class="tool-status" data-count="1"></div>' +
       '<div class="tool-list bm-list" data-list="1"></div>' +
       '<div class="tool-actions" data-more="1">' +
       '<button type="button" class="btn btn-ghost" data-act="more"></button></div>' +
       '<div class="bm-judge" data-judge="1" hidden></div>' +
+      '</div>' +
       '<div class="bm-bar" data-bar="1" hidden></div>' +
       '</div>' +
       '<div class="bm-sheet" data-sheet="1" hidden></div>';
@@ -3056,6 +3062,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       resetDone();
       shown = PAGE;
       paint();
+      wrap.querySelector('.bm-scroll')!.scrollTop = 0;
     });
 
     paintRevisit();
