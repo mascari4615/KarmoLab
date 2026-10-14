@@ -536,6 +536,7 @@ export function buildCalendarView(
                     <button type="button" class="pl-modal-x" aria-label="${esc(t('planner.t18'))}">✕</button>
                 </div>
                 <form class="pl-modal-body">
+                    <div class="pl-modal-fields">
                     ${localRepeat || googleInstance ? `<label class="pl-field"><span class="pl-label">${esc(t('planner.groupScope'))}</span><select class="pl-input" name="event-scope"><option value="day">${esc(t('planner.groupDay'))}</option>${ev?.extendedProps.seriesStart ? `<option value="series">${esc(t('planner.groupSeries'))}</option>` : ''}</select></label>` : ''}
                     <label class="pl-field"><span class="pl-label">${esc(t('planner.t19'))}</span><input type="text" name="event-title" class="pl-input pl-modal-name" required value="${esc(ev?.title ?? '')}"></label>
                     ${
@@ -583,10 +584,13 @@ export function buildCalendarView(
                     </details>
                     ${localRepeat ? `<section class="pl-exceptions" hidden><h4 class="pl-label">${esc(t('planner.groupExceptions'))}</h4>${Object.entries(ev!.extendedProps.exceptions || {}).map(([date, change]) => `<div class="pl-exception-row"><span>${esc(date)} ${esc(t((change as { cancelled?: boolean }).cancelled ? 'planner.groupSkipped' : 'planner.groupChanged'))}</span><button type="button" class="btn btn-ghost" data-restore="${esc(date)}">${esc(t('planner.groupRestore'))}</button></div>`).join('') || `<p class="pl-repeat-note">${esc(t('planner.groupNoExceptions'))}</p>`}</section>` : ''}
                     ${localRepeat || googleInstance ? `<p class="pl-repeat-note pl-scope-note">${esc(t('planner.groupDayHint'))}</p>` : ''}
+                    </div>
+                    <div class="pl-modal-footer">
                     <p class="pl-form-error" role="alert" hidden></p>
                     <div class="pl-modal-actions">
                         <button type="button" class="btn btn-ghost pl-modal-cancel">${esc(t('planner.t30'))}</button>
                         <button type="submit" class="btn btn-accent">${esc(t('planner.t31'))}</button>
+                    </div>
                     </div>
                 </form>
             </div>`;

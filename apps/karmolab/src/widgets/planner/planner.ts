@@ -134,13 +134,15 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-cal-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* 창 */
-        .pl-modal-overlay { position: fixed; inset: 0; margin: auto; padding: 0; width: min(520px, calc(100% - 24px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--text-primary); background: var(--dash-paper, var(--bg-secondary)); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+        .pl-modal-overlay { position: fixed; inset: 0; margin: auto; padding: 0; width: min(520px, calc(100% - 24px)); max-height: calc(100dvh - 32px); overflow: hidden; color: var(--text-primary); background: var(--dash-paper, var(--bg-secondary)); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
         .pl-modal-overlay::backdrop { background: rgba(0,0,0,.45); }
-        .pl-modal { width: 100%; background: inherit; }
-        .pl-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+        .pl-modal { width: 100%; max-height: calc(100dvh - 34px); display: flex; flex-direction: column; background: inherit; }
+        .pl-modal-head { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid var(--border); }
         .pl-modal-title { margin: 0; font-size: var(--font-size-md); color: var(--text-primary); }
         .pl-modal-x { border: none; background: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-xs); min-width: 44px; min-height: 44px; }
-        .pl-modal-body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+        .pl-modal-body { min-height: 0; display: flex; flex-direction: column; }
+        .pl-modal-fields { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px; padding: 16px; scroll-padding-block: 16px; }
+        .pl-modal-footer { flex: 0 0 auto; display: grid; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
         .pl-modal-name { font-size: var(--font-size-md); }
         .pl-times { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
         .pl-modal .pl-field, .pl-modal .pl-input { min-width: 0; max-width: 100%; }
@@ -169,6 +171,15 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-times[data-allday="1"] .pl-start-time, .pl-times[data-allday="1"] .pl-end-field { display: none; }
         .pl-times[data-allday="0"] .pl-start-date { display: none; }
         .pl-modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        @media (max-width: 600px) {
+            .pl-modal-overlay { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-radius: 0; }
+            .pl-modal { height: 100%; max-height: 100dvh; }
+            .pl-modal-head { padding-top: max(8px, env(safe-area-inset-top)); }
+            .pl-modal-body { flex: 1; }
+            .pl-modal-fields { flex: 1; }
+            .pl-modal-footer { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+            .pl-modal-actions .btn { flex: 1; }
+        }
 
         /* 일정 풍선 */
         .pl-pop { position: absolute; z-index: 45; width: 260px; padding: 12px 14px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 8px 28px rgba(0,0,0,.25); }
