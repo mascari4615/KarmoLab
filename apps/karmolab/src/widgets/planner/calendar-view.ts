@@ -610,7 +610,7 @@ export function buildCalendarView(
         wrap.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 const targets = [...wrap.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]')].filter((el) => !el.matches(':disabled') && el.getClientRects().length > 0);
-                const first = targets[0], last = targets.at(-1);
+                const first = targets[0], last = targets[targets.length - 1];
                 if (e.shiftKey && document.activeElement === first && last) { e.preventDefault(); last.focus(); }
                 else if (!e.shiftKey && document.activeElement === last && first) { e.preventDefault(); first.focus(); }
                 return;
