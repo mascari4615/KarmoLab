@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T11:41:28.918499+00:00",
+  "title": "Design System: KarmoDevExtension",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Bg",
+        "tonalRamp": [
+          "oklch(15% 0.0029 264.54)",
+          "oklch(26% 0.0029 264.54)",
+          "oklch(38% 0.0029 264.54)",
+          "oklch(49% 0.0029 264.54)",
+          "oklch(61% 0.0029 264.54)",
+          "oklch(72% 0.0029 264.54)",
+          "oklch(84% 0.0029 264.54)",
+          "oklch(95% 0.0029 264.54)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "tonalRamp": [
+          "oklch(15% 0.0246 271.43)",
+          "oklch(26% 0.0246 271.43)",
+          "oklch(38% 0.0246 271.43)",
+          "oklch(49% 0.0246 271.43)",
+          "oklch(61% 0.0246 271.43)",
+          "oklch(72% 0.0246 271.43)",
+          "oklch(84% 0.0246 271.43)",
+          "oklch(95% 0.0246 271.43)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.0321 267.21)",
+          "oklch(26% 0.0321 267.21)",
+          "oklch(38% 0.0321 267.21)",
+          "oklch(49% 0.0321 267.21)",
+          "oklch(61% 0.0321 267.21)",
+          "oklch(72% 0.0321 267.21)",
+          "oklch(84% 0.0321 267.21)",
+          "oklch(95% 0.0321 267.21)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15% 0.0105 261.79)",
+          "oklch(26% 0.0105 261.79)",
+          "oklch(38% 0.0105 261.79)",
+          "oklch(49% 0.0105 261.79)",
+          "oklch(61% 0.0105 261.79)",
+          "oklch(72% 0.0105 261.79)",
+          "oklch(84% 0.0105 261.79)",
+          "oklch(95% 0.0105 261.79)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Accent",
+        "tonalRamp": [
+          "oklch(15% 0.1675 3.97)",
+          "oklch(26% 0.1675 3.97)",
+          "oklch(38% 0.1675 3.97)",
+          "oklch(49% 0.1675 3.97)",
+          "oklch(61% 0.1675 3.97)",
+          "oklch(72% 0.1675 3.97)",
+          "oklch(84% 0.1675 3.97)",
+          "oklch(95% 0.1675 3.97)"
+        ]
+      },
+      "tint": {
+        "role": "neutral",
+        "displayName": "Tint",
+        "tonalRamp": [
+          "oklch(15% 0.0145 350.09)",
+          "oklch(26% 0.0145 350.09)",
+          "oklch(38% 0.0145 350.09)",
+          "oklch(49% 0.0145 350.09)",
+          "oklch(61% 0.0145 350.09)",
+          "oklch(72% 0.0145 350.09)",
+          "oklch(84% 0.0145 350.09)",
+          "oklch(95% 0.0145 350.09)"
+        ]
+      },
+      "dark-bg": {
+        "role": "neutral",
+        "displayName": "Dark Bg",
+        "tonalRamp": [
+          "oklch(15% 0.0175 270.65)",
+          "oklch(26% 0.0175 270.65)",
+          "oklch(38% 0.0175 270.65)",
+          "oklch(49% 0.0175 270.65)",
+          "oklch(61% 0.0175 270.65)",
+          "oklch(72% 0.0175 270.65)",
+          "oklch(84% 0.0175 270.65)",
+          "oklch(95% 0.0175 270.65)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0213 265.87)",
+          "oklch(26% 0.0213 265.87)",
+          "oklch(38% 0.0213 265.87)",
+          "oklch(49% 0.0213 265.87)",
+          "oklch(61% 0.0213 265.87)",
+          "oklch(72% 0.0213 265.87)",
+          "oklch(84% 0.0213 265.87)",
+          "oklch(95% 0.0213 265.87)"
+        ]
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "Dark Text",
+        "tonalRamp": [
+          "oklch(15% 0.0070 268.55)",
+          "oklch(26% 0.0070 268.55)",
+          "oklch(38% 0.0070 268.55)",
+          "oklch(49% 0.0070 268.55)",
+          "oklch(61% 0.0070 268.55)",
+          "oklch(72% 0.0070 268.55)",
+          "oklch(84% 0.0070 268.55)",
+          "oklch(95% 0.0070 268.55)"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Dark Muted",
+        "tonalRamp": [
+          "oklch(15% 0.0266 268.78)",
+          "oklch(26% 0.0266 268.78)",
+          "oklch(38% 0.0266 268.78)",
+          "oklch(49% 0.0266 268.78)",
+          "oklch(61% 0.0266 268.78)",
+          "oklch(72% 0.0266 268.78)",
+          "oklch(84% 0.0266 268.78)",
+          "oklch(95% 0.0266 268.78)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "Dark Line",
+        "tonalRamp": [
+          "oklch(15% 0.0331 269.10)",
+          "oklch(26% 0.0331 269.10)",
+          "oklch(38% 0.0331 269.10)",
+          "oklch(49% 0.0331 269.10)",
+          "oklch(61% 0.0331 269.10)",
+          "oklch(72% 0.0331 269.10)",
+          "oklch(84% 0.0331 269.10)",
+          "oklch(95% 0.0331 269.10)"
+        ]
+      },
+      "dark-accent": {
+        "role": "primary",
+        "displayName": "Dark Accent",
+        "tonalRamp": [
+          "oklch(15% 0.1074 357.11)",
+          "oklch(26% 0.1074 357.11)",
+          "oklch(38% 0.1074 357.11)",
+          "oklch(49% 0.1074 357.11)",
+          "oklch(61% 0.1074 357.11)",
+          "oklch(72% 0.1074 357.11)",
+          "oklch(84% 0.1074 357.11)",
+          "oklch(95% 0.1074 357.11)"
+        ]
+      },
+      "dark-tint": {
+        "role": "neutral",
+        "displayName": "Dark Tint",
+        "tonalRamp": [
+          "oklch(15% 0.0308 330.81)",
+          "oklch(26% 0.0308 330.81)",
+          "oklch(38% 0.0308 330.81)",
+          "oklch(49% 0.0308 330.81)",
+          "oklch(61% 0.0308 330.81)",
+          "oklch(72% 0.0308 330.81)",
+          "oklch(84% 0.0308 330.81)",
+          "oklch(95% 0.0308 330.81)"
+        ]
+      },
+      "settings-secondary": {
+        "role": "neutral",
+        "displayName": "Settings Secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "settings-border": {
+        "role": "neutral",
+        "displayName": "Settings Border",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "settings-hint": {
+        "role": "neutral",
+        "displayName": "Settings Hint",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "settings-tab": {
+        "role": "neutral",
+        "displayName": "Settings Tab",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "settings-active": {
+        "role": "primary",
+        "displayName": "Settings Active",
+        "tonalRamp": [
+          "oklch(15% 0.1591 251.26)",
+          "oklch(26% 0.1591 251.26)",
+          "oklch(38% 0.1591 251.26)",
+          "oklch(49% 0.1591 251.26)",
+          "oklch(61% 0.1591 251.26)",
+          "oklch(72% 0.1591 251.26)",
+          "oklch(84% 0.1591 251.26)",
+          "oklch(95% 0.1591 251.26)"
+        ]
+      },
+      "settings-active-text": {
+        "role": "neutral",
+        "displayName": "Settings Active Text",
+        "tonalRamp": [
+          "oklch(15% 0.0000 0.00)",
+          "oklch(26% 0.0000 0.00)",
+          "oklch(38% 0.0000 0.00)",
+          "oklch(49% 0.0000 0.00)",
+          "oklch(61% 0.0000 0.00)",
+          "oklch(72% 0.0000 0.00)",
+          "oklch(84% 0.0000 0.00)",
+          "oklch(95% 0.0000 0.00)"
+        ]
+      },
+      "settings-success": {
+        "role": "neutral",
+        "displayName": "Settings Success",
+        "tonalRamp": [
+          "oklch(15% 0.2176 142.50)",
+          "oklch(26% 0.2176 142.50)",
+          "oklch(38% 0.2176 142.50)",
+          "oklch(49% 0.2176 142.50)",
+          "oklch(61% 0.2176 142.50)",
+          "oklch(72% 0.2176 142.50)",
+          "oklch(84% 0.2176 142.50)",
+          "oklch(95% 0.2176 142.50)"
+        ]
+      },
+      "settings-fieldset-border": {
+        "role": "neutral",
+        "displayName": "Settings Fieldset Border",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Page heading",
+        "purpose": "Responsive feed title."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Feed descriptions and controls."
+      },
+      "post-title": {
+        "displayName": "Post title",
+        "purpose": "Primary row link."
+      },
+      "label": {
+        "displayName": "Field label",
+        "purpose": "Search and author field labels."
+      },
+      "metadata": {
+        "displayName": "Metadata",
+        "purpose": "Writer, channel, date, scope, and footer."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "feed-mobile",
+        "value": "640px"
+      }
+    ],
+    "tonalRampPurpose": "Derived display previews only; these OKLCH ramps are not source CSS tokens. Actual light/dark values remain in DESIGN.md frontmatter.",
+    "sourceFiles": [
+      "arca-liked.css",
+      "arca-liked.html",
+      "arca-liked.js",
+      "options.html"
+    ],
+    "rasterProvenance": "No raster images ship on the documented surface. Review screenshots are evidence only."
+  },
+  "components": [
+    {
+      "name": "Refresh button",
+      "kind": "button",
+      "refersTo": "button-refresh",
+      "description": "Feed refresh action with hover, focus, and loading state.",
+      "html": "<button class=\"ds-refresh\" type=\"button\">최신 글 불러오기</button>",
+      "css": ".ds-refresh {font: 16px/1.55 system-ui, sans-serif; min-height: 44px; border: 1px solid var(--line, #dce0e7); border-radius: 6px; padding: 9px 12px;background: var(--accent, #a92857); color: #fff; border-color: var(--accent, #a92857); cursor: pointer; white-space: nowrap; } .ds-refresh:hover { filter: brightness(1.1); } .ds-refresh:disabled { opacity: .65; cursor: wait; } .ds-refresh:focus-visible { outline: 3px solid var(--accent, #a92857); outline-offset: 3px; } @media (prefers-color-scheme: dark) { .ds-refresh { background: var(--accent, #f19cba); border-color: var(--accent, #f19cba); color: #252936; } .ds-refresh:focus-visible { outline-color: var(--accent, #f19cba); } }"
+    },
+    {
+      "name": "Title search",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Labeled native feed field.",
+      "html": "<label class=\"ds-search-label\">제목 검색<input class=\"ds-search\" type=\"search\" placeholder=\"찾고 싶은 글 제목\"></label>",
+      "css": ".ds-search-label { display: grid; gap: 6px; font: 600 14px/1.55 system-ui, sans-serif; color: var(--text, #252936); } .ds-search {font: 600 14px/1.55 system-ui, sans-serif; min-height: 44px; border: 1px solid var(--line, #dce0e7); border-radius: 6px; padding: 9px 12px;width: 100%; min-width: 0; box-sizing: border-box; background: var(--surface, #fff); color: var(--text, #252936); caret-color: var(--accent, #a92857); }.ds-search:focus-visible { outline: 3px solid var(--accent, #a92857); outline-offset: 3px; }.ds-search::placeholder { color: var(--muted, #596174); } @media (prefers-color-scheme: dark) { .ds-search-label, .ds-search { color: var(--text, #eceef3); } .ds-search { background: var(--surface, #282d38); border-color: var(--line, #444b5e); caret-color: var(--accent, #f19cba); } .ds-search:focus-visible { outline-color: var(--accent, #f19cba); } .ds-search::placeholder { color: var(--muted, #b4bbcd); } }"
+    },
+    {
+      "name": "Author select",
+      "kind": "input",
+      "refersTo": "select-author",
+      "description": "Labeled native feed field.",
+      "html": "<label class=\"ds-author-label\">작성자<select class=\"ds-author\"><option>전체 작성자</option><option>좋아요 작성자</option></select></label>",
+      "css": ".ds-author-label { display: grid; gap: 6px; font: 600 14px/1.55 system-ui, sans-serif; color: var(--text, #252936); } .ds-author {font: 600 14px/1.55 system-ui, sans-serif; min-height: 44px; border: 1px solid var(--line, #dce0e7); border-radius: 6px; padding: 9px 12px;width: 100%; min-width: 0; box-sizing: border-box; background: var(--surface, #fff); color: var(--text, #252936); caret-color: var(--accent, #a92857); }.ds-author:focus-visible { outline: 3px solid var(--accent, #a92857); outline-offset: 3px; } @media (prefers-color-scheme: dark) { .ds-author-label, .ds-author { color: var(--text, #eceef3); } .ds-author { background: var(--surface, #282d38); border-color: var(--line, #444b5e); caret-color: var(--accent, #f19cba); } .ds-author:focus-visible { outline-color: var(--accent, #f19cba); } .ds-search::placeholder { color: var(--muted, #b4bbcd); } }"
+    },
+    {
+      "name": "Post row",
+      "kind": "custom",
+      "refersTo": "post-row",
+      "description": "Title-led feed row with author, channel, and date.",
+      "html": "<article class=\"ds-post\"><a class=\"ds-title\" href=\"https://arca.live\" target=\"_blank\" rel=\"noopener noreferrer\">좋아요 작성자의 최근 글</a><div class=\"ds-meta\"><a class=\"ds-writer\" href=\"https://arca.live\" target=\"_blank\" rel=\"noopener noreferrer\">작성자</a><span>채널</span><time>2026. 10. 14.</time></div></article>",
+      "css": ".ds-post { font: 16px/1.55 system-ui, sans-serif; padding: 18px 20px; background: var(--surface, #fff); border-bottom: 1px solid var(--line, #dce0e7); } .ds-post:hover { background: var(--tint, #f9edf2); } .ds-title { display: block; font-size: 17px; font-weight: 600; color: var(--text, #252936); text-decoration: none; overflow-wrap: anywhere; } .ds-title:hover { text-decoration: underline; } .ds-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-top: 7px; font-size: 13px; color: var(--muted, #596174); } .ds-writer { color: var(--accent, #a92857); text-underline-offset: 3px; } .ds-meta time { font-variant-numeric: tabular-nums; margin-left: auto; } .ds-post a:focus-visible { outline: 3px solid var(--accent, #a92857); outline-offset: 3px; } @media (prefers-color-scheme: dark) { .ds-post { background: var(--surface, #282d38); border-color: var(--line, #444b5e); } .ds-post:hover { background: var(--tint, #3c2d3a); } .ds-title { color: var(--text, #eceef3); } .ds-meta { color: var(--muted, #b4bbcd); } .ds-writer { color: var(--accent, #f19cba); } .ds-post a:focus-visible { outline-color: var(--accent, #f19cba); } } @media (max-width: 640px) { .ds-post { padding: 16px 12px; } .ds-meta time { margin-left: 0; width: 100%; } }"
+    },
+    {
+      "name": "Author failure notice",
+      "kind": "custom",
+      "refersTo": "failure-notice",
+      "description": "Plain tinted notice preserving author-specific failure context.",
+      "html": "<section class=\"ds-failure\" aria-label=\"불러오지 못한 작성자\"><strong>1명 불러오기 실패, 다시 불러오면 재시도합니다.</strong><p>작성자: 불러오기 실패 (이전 글 유지)</p></section>",
+      "css": ".ds-failure { font: 16px/1.55 system-ui, sans-serif; padding: 16px; background: var(--tint, #f9edf2); color: var(--text, #252936); overflow-wrap: anywhere; } .ds-failure p { margin: 8px 0 0; font-size: 14px; } @media (prefers-color-scheme: dark) { .ds-failure { background: var(--tint, #3c2d3a); color: var(--text, #eceef3); } }"
+    },
+    {
+      "name": "Settings tabs",
+      "kind": "nav",
+      "refersTo": "settings-tabs",
+      "description": "Existing settings navigation with blue selected underline.",
+      "html": "<nav class=\"ds-tabs\"><button type=\"button\">일반</button><button type=\"button\" class=\"ds-tab-on\">아카라이브</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: .25rem; border-bottom: 2px solid #ccc; margin: 1rem 0 1.25rem; font-family: system-ui, sans-serif; } .ds-tabs button { font: 1rem system-ui, sans-serif; cursor: pointer; border: 0; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; padding: .5rem 1rem; color: #555; } .ds-tabs button.ds-tab-on { border-bottom-color: #1c7ed6; color: #000; font-weight: 600; } .ds-tabs button:focus-visible { outline: auto; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "System-ui extension and reading list",
+    "overview": "The incumbent interface uses the system font, simple controls, and a title-led list. Visual emphasis supports reading and operating the extension. The liked-feed surface adds a restrained pink accent and system theme response to this existing vocabulary.\n\nThis document records `arca-liked.css`, `arca-liked.html`, `arca-liked.js`, and the related settings patterns in `options.html`. The feed palette and control sizing are scoped to that surface: settings retain their native controls and blue selected-tab indicator. No new shared theme or component library is implied.",
+    "keyCharacteristics": [
+      "System typography and explicit text labels.",
+      "Flat neutral surfaces with row separators.",
+      "Pink feed actions and writer links; blue settings selection.",
+      "A single responsive list with visible progress and failure context."
+    ],
+    "rules": [],
+    "dos": [
+      "Do preserve system typography, native controls, and the current distinction between feed and settings styling.",
+      "Do keep post titles primary and author, channel, and date secondary.",
+      "Do preserve visible keyboard focus, wrapping metadata, and the implemented system-theme response.",
+      "Do express loading, empty results, and author failures with specific text and the current simple containers."
+    ],
+    "donts": [
+      "Don't apply the feed's pink palette to all settings or treat its mobile breakpoint as a global extension rule.",
+      "Don't turn list rows into elevated cards or introduce ornamental imagery, custom fonts, or motion absent from the source.",
+      "Don't imply that color alone communicates loading, selection, or failure."
+    ]
+  }
+}
