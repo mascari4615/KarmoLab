@@ -274,6 +274,15 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         Object.assign(container.style, { height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0', padding: '0' });
         container.innerHTML = `<div class="pl-root"></div>`;
         const root = container.querySelector<HTMLElement>('.pl-root')!;
+        const mobileHeader = window.matchMedia('(max-width: 899px)');
+        const placeConnection = (): void => {
+            const bar = root.querySelector<HTMLElement>('.pl-bar');
+            if (!bar) return;
+            if (mobileHeader.matches) root.appendChild(bar);
+            else root.prepend(bar);
+        };
+        mobileHeader.addEventListener('change', placeConnection);
+        onDispose(() => mobileHeader.removeEventListener('change', placeConnection));
 
         let token: string | null = storedToken();
         let side: SideId | null = savedSide();
@@ -364,6 +373,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                 </div>`;
 
             const paneEl = root.querySelector<HTMLElement>('.pl-pane')!;
+            placeConnection();
             mountCalendar(paneEl);
             openSide(side);
 
