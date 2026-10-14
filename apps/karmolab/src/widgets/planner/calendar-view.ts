@@ -33,7 +33,7 @@ import {
 import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { withToken } from './gauth';
-import type { RepeatRule } from './recurrence';
+import { repeatWindow, type RepeatRule } from './recurrence';
 
 import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -551,6 +551,7 @@ export function buildCalendarView(
                             <option value="weekly" ${localRepeat?.frequency === 'weekly' ? 'selected' : ''}>${esc(t('planner.repeatWeekly'))}</option>
                         </select>
                     </label>
+                    <label class="pl-field pl-repeat-start" hidden><span class="pl-label">${esc(t('planner.repeatStart'))}</span><input type="date" name="event-repeat-start" class="pl-input" required value="${esc(localRepeat?.startDate ?? ymd(startDate))}"></label>
                     <fieldset class="pl-repeat-days" hidden><legend class="pl-label">${esc(t('planner.repeatDays'))}</legend>
                         ${Array.from({ length: 7 }, (_, d) => `<label class="pl-repeat-day"><input type="checkbox" name="event-repeat-day" value="${d}" ${(localRepeat?.days ?? [startDate.getDay()]).includes(d) ? 'checked' : ''}><span>${esc(new Date(2026, 0, 4 + d).toLocaleDateString(document.documentElement.lang || 'ko', { weekday: 'short' }))}</span></label>`).join('')}
                     </fieldset>
@@ -585,20 +586,28 @@ export function buildCalendarView(
         allDayBox.addEventListener('change', syncAllDay);
         syncAllDay();
         const repeatSelect = wrap.querySelector<HTMLSelectElement>('[name="event-repeat"]')!;
+        const repeatStartField = wrap.querySelector<HTMLElement>('.pl-repeat-start')!;
+        const repeatStartInput = wrap.querySelector<HTMLInputElement>('[name="event-repeat-start"]')!;
+        let repeatStartTouched = !!localRepeat?.startDate;
         const repeatDays = wrap.querySelector<HTMLFieldSetElement>('.pl-repeat-days')!;
         const repeatOptions = wrap.querySelector<HTMLElement>('.pl-repeat-options')!;
         const syncRepeat = (): void => {
             repeatDays.hidden = repeatSelect.value !== 'weekly';
             repeatDays.disabled = repeatDays.hidden;
+            repeatStartField.hidden = repeatSelect.value === 'none';
+            repeatStartInput.disabled = repeatStartField.hidden;
+            wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!.min = repeatStartInput.value;
             repeatOptions.hidden = repeatSelect.value === 'none';
             repeatOptions.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.disabled = repeatOptions.hidden; });
             wrap.querySelector<HTMLElement>('.pl-repeat-interval-label')!.textContent = t(repeatSelect.value === 'weekly' ? 'planner.repeatWeekInterval' : 'planner.repeatDayInterval');
         };
         repeatSelect.addEventListener('change', syncRepeat);
         syncRepeat();
-        wrap.addEventListener('input', () => {
+        wrap.addEventListener('input', (e) => {
             wrap.querySelectorAll<HTMLInputElement>('input').forEach((input) => input.setCustomValidity(''));
-            wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!.min = wrap.querySelector<HTMLInputElement>(allDayBox.checked ? '[name="event-start-date"]' : '[name="event-start"]')!.value.slice(0, 10);
+            if (e.target === repeatStartInput) repeatStartTouched = true;
+            if (!repeatStartTouched) repeatStartInput.value = wrap.querySelector<HTMLInputElement>(allDayBox.checked ? '[name="event-start-date"]' : '[name="event-start"]')!.value.slice(0, 10);
+            wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!.min = repeatStartInput.value;
         });
         wrap.addEventListener('cancel', (e) => { e.preventDefault(); closeModal(true); });
 
@@ -649,13 +658,14 @@ export function buildCalendarView(
             let repeat: RepeatRule | null | undefined = googleInstance ? undefined : null;
             if (!googleInstance && repeatSelect.value !== 'none') {
                 const days = [...repeatDays.querySelectorAll<HTMLInputElement>('input:checked')].map((input) => Number(input.value));
-                if (repeatSelect.value === 'weekly' && !days.includes(start.getDay())) {
+                if (repeatSelect.value === 'weekly' && !days.length) {
                     const input = repeatDays.querySelector<HTMLInputElement>('input')!;
-                    input.setCustomValidity(t('planner.repeatStartDay')); input.reportValidity(); return;
+                    input.setCustomValidity(t('planner.repeatDaysRequired')); input.reportValidity(); return;
                 }
                 const until = wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!;
-                if (until.value && until.value < ymd(start)) { until.setCustomValidity(t('planner.repeatDateInvalid')); until.reportValidity(); return; }
-                repeat = { frequency: repeatSelect.value as RepeatRule['frequency'], days, interval: Number(wrap.querySelector<HTMLInputElement>('[name="event-repeat-interval"]')!.value), ...(until.value ? { until: until.value } : {}) };
+                repeat = { frequency: repeatSelect.value as RepeatRule['frequency'], days, startDate: repeatStartInput.value, interval: Number(wrap.querySelector<HTMLInputElement>('[name="event-repeat-interval"]')!.value), ...(until.value ? { until: until.value } : {}) };
+                const first = repeatWindow(start, end, repeat).start;
+                if (!Number.isFinite(+first) || (until.value && until.value < ymd(first))) { until.setCustomValidity(t('planner.repeatDateInvalid')); until.reportValidity(); return; }
             }
             const submit = wrap.querySelector<HTMLButtonElement>('[type="submit"]')!;
             submit.disabled = true;

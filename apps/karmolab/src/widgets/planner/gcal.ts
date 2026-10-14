@@ -13,7 +13,7 @@
  */
 
 import { covers, eventsIn, loadCached, mergeDelta, mergeFull, saveCached, syncStamp } from './event-cache';
-import { toRRule, type RepeatRule } from './recurrence';
+import { repeatWindow, toRRule, type RepeatRule } from './recurrence';
 
 const CAL_API = 'https://www.googleapis.com/calendar/v3';
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
@@ -132,17 +132,18 @@ export interface EventDraft {
 
 /** 구글에 보낼 모양. 종일이면 날짜만, 아니면 시각까지. 끝은 양쪽 다 다음이다. */
 export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
+    const { start, end } = draft.repeat ? repeatWindow(draft.start, draft.end, draft.repeat) : draft;
     const body: Record<string, unknown> = {};
     if (draft.title) body.summary = draft.title;
     if (draft.allDay) {
-        const startYmd = ymd(draft.start);
-        const endYmd = ymd(draft.end);
+        const startYmd = ymd(start);
+        const endYmd = ymd(end);
         body.start = { date: startYmd };
         /* 끝이 시작과 같거나 앞이면 하루짜리로 본다. 구글은 end > start 를 요구한다 */
         body.end = { date: endYmd > startYmd ? endYmd : nextDay(startYmd) };
     } else {
-        body.start = { dateTime: draft.start.toISOString() };
-        body.end = { dateTime: draft.end.toISOString() };
+        body.start = { dateTime: start.toISOString() };
+        body.end = { dateTime: end.toISOString() };
     }
     if (draft.repeat !== undefined) {
         body.recurrence = draft.repeat ? [toRRule(draft.repeat, draft.allDay)] : [];

@@ -395,6 +395,30 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
 const R = await load('src/widgets/planner/recurrence.ts', 'recurrence');
 {
   const start = new Date(2026, 9, 14, 10), end = new Date(2026, 9, 14, 11);
+  const rule = { frequency: 'weekly', interval: 1, days: [1, 3], startDate: '2026-09-01', until: '2026-09-30' };
+  const first = R.repeatWindow(start, end, rule);
+  eq(P.ymd(first.start), '2026-09-02', '반복 시작일 이후 선택 요일 첫 회차');
+  check(first.start.getHours() === 10 && first.end.getHours() === 11, '과거 반복 시작에도 일정 시간과 길이 유지');
+  eq(P.ymd(start), '2026-10-14', '원본 일정 날짜 미변경');
+  const list = R.occurrences(start, end, rule, new Date(2026, 8, 1), new Date(2026, 9, 1));
+  eq(list.map(x => P.ymd(x.start)).join(), '2026-09-02,2026-09-07,2026-09-09,2026-09-14,2026-09-16,2026-09-21,2026-09-23,2026-09-28,2026-09-30', '원본 일정 날짜 이전의 반복9회');
+  eq(P.ymd(R.repeatWindow(start, end, { ...rule, startDate: '2026-10-15', interval: 2, days: [1] }).start), '2026-10-26', '선택 요일 지난 격주 시작은 다음 유효 주');
+  const night = R.repeatWindow(new Date(2026,9,14,23),new Date(2026,9,15,1),{...rule,frequency:'daily'});
+  eq(`${P.ymd(night.start)} ${night.start.getHours()}/${P.ymd(night.end)} ${night.end.getHours()}`, '2026-09-01 23/2026-09-02 1', '과거 반복 밤샘 길이 유지');
+  const payload = P.toGooglePayload({ title: '과거 시작', start, end, allDay: false, repeat: rule });
+  eq(payload.start.dateTime,first.start.toISOString(),'구글 첫 실제 회차 DTSTART');
+  eq(payload.end.dateTime,first.end.toISOString(),'구글 첫 실제 회차 DTEND');
+  const local = await load('src/widgets/planner/local-store.ts','repeat-boundary-local');
+  localStorage.removeItem('karmolab_planner_events');
+  const id = local.createEvent({title:'과거 반복',start:start.toISOString(),end:end.toISOString(),allDay:false,repeat:rule});
+  const reread = await load('src/widgets/planner/local-store.ts','repeat-boundary-reload');
+  const events = reread.listEvents('내 일정',new Date(2026,8,1),new Date(2026,9,1));
+  eq(events.length,9,'재읽기 후 과거 반복9회');
+  check(events.every(e=>e.extendedProps.repeatRule.startDate==='2026-09-01'&&e.extendedProps.seriesStart===start.toISOString()),'반복 시작일과 원본 일정 날짜 별도 보존');
+  local.deleteEvent(id);
+}
+{
+  const start = new Date(2026, 9, 14, 10), end = new Date(2026, 9, 14, 11);
   const weekly = { frequency: 'weekly', interval: 1, days: [1, 3], until: '2026-10-26' };
   const list = R.occurrences(start, end, weekly, new Date(2026, 9, 1), new Date(2026, 10, 1));
   eq(list.map(x => P.ymd(x.start)).join(), '2026-10-14,2026-10-19,2026-10-21,2026-10-26', '요일과 종료일 포함, 시작 전 회차 없음');
