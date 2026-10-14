@@ -209,6 +209,8 @@ html[data-site="dash"] .pl-body {
 }
 html[data-site="dash"] .pl-bar-right { color: var(--text-primary); }
 html[data-site="dash"] .pl-cal-layout { gap: 0; }
+html[data-site="dash"] .pl-cal-settings > summary { display: none; }
+html[data-site="dash"] .pl-cal-settings-body { display: flex; flex-direction: column; gap: 14px; }
 /* 왼쪽 판은 짙은 판 (시안 Q2, 2026-09-25, refcal 005 032). 판 안에서만 글자와 선 토큰을 뒤집음 */
 html[data-site="dash"] { --pl-side: #172033; --pl-side2: #26314a; --pl-side-ink: #e9edf4; --pl-side-ink2: #8e98ab; --pl-fill: 30%; --pl-on: #fff; --radius-pl-ev: 4px; }
 html[data-site="dash"][data-theme="dark"] { --pl-side: #0a0d13; --pl-side2: #1a212d; --pl-side-ink: #e9edf4; --pl-side-ink2: #7c869a; --pl-fill: 34%; }
@@ -303,6 +305,45 @@ html[data-site="dash"] .pl-cal-main .fc .fc-scroller { scrollbar-width: thin; sc
 /* 주 보기 일정 글씨 */
 html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-time { font-size: var(--font-size-3xs); }
 html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size: var(--font-size-xs); }
+
+/* 폰에서는 달력 먼저, 설정은 접어서 아래. 7열의 날짜는 일 보기 진입점 */
+@media (max-width: 899px) {
+  html[data-site="dash"] .myd-main:has(.pl-root) { padding-inline: 0; }
+  html[data-site="dash"] .myd-main:has(.pl-root) .myd-head { margin-inline: 12px; }
+  html[data-site="dash"] .pl-body { flex-direction: column; box-shadow: none; border-inline: 0; }
+  html[data-site="dash"] .pl-pane { overflow: visible; }
+  html[data-site="dash"] .pl-cal-layout { flex-direction: column; height: auto; }
+  html[data-site="dash"] .pl-cal-main { order: -1; flex: none; padding: 12px 4px 0; min-height: 620px; }
+  html[data-site="dash"] .pl-cal-mount { height: max(620px, 78svh); min-height: 620px; }
+  html[data-site="dash"] .pl-cal-side { width: 100%; flex-direction: column; padding: 12px; gap: 12px; overflow: visible; }
+  html[data-site="dash"] .pl-cal-create { min-height: 44px; font-size: 16px; }
+  html[data-site="dash"] .pl-cal-settings { width: 100%; }
+  html[data-site="dash"] .pl-cal-settings > summary { display: list-item; min-height: 44px; padding: 10px 4px; cursor: pointer; font-size: 16px; }
+  html[data-site="dash"] .pl-cal-settings:not([open]) > .pl-cal-settings-body { display: none; }
+  html[data-site="dash"] .pl-cal-settings-body { padding-top: 12px; }
+  html[data-site="dash"] .pl-mini-day,
+  html[data-site="dash"] .pl-cal-mode,
+  html[data-site="dash"] .pl-cal-item,
+  html[data-site="dash"] .pl-today-item { min-height: 44px; font-size: 14px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-header-toolbar { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk { display: flex; justify-content: space-between; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:nth-child(2) { grid-row: 1; justify-content: center; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:last-child .fc-button-group { display: flex; width: 100%; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-button { min-width: 44px; min-height: 44px; padding: 8px 12px; font-size: 14px; white-space: nowrap; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-toolbar-chunk:last-child .fc-button { flex: 1; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-daygrid-day-number { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 4px 0; font-size: 16px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { margin: 0; padding: 4px 0; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-event { font-size: 13px; line-height: 22px; min-height: 24px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event { flex-wrap: wrap; padding: 2px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-dot-event .fc-event-time { display: none; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-daygrid-more-link { display: block; min-height: 44px; padding: 10px 2px; font-size: 13px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-list-event td { padding-block: 14px; font-size: 16px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-timegrid-slot { height: 32px; }
+  html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size: 14px; }
+  html[data-site="dash"] .pl-rail { order: 1; width: 100%; flex-direction: row; border-left: 0; border-top: 1px solid var(--border); }
+  html[data-site="dash"] .pl-rail-btn { flex: 1; font-size: 14px; }
+  html[data-site="dash"] .pl-drawer { order: 2; width: 100%; border-left: 0; max-height: 70svh; }
+}
 
 /* 패널 변수 중 둥글기. 그림 모서리도 0 */
 html[data-site="dash"] .bm { --bm-pic-radius: 0; }

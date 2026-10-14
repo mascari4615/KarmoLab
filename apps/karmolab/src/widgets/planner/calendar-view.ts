@@ -125,6 +125,9 @@ export function buildCalendarView(
         <div class="pl-cal-layout">
             <div class="pl-cal-side">
                 <button type="button" class="btn btn-accent pl-cal-create">${esc(t('planner.t10'))}</button>
+                <details class="pl-cal-settings" open>
+                <summary>${esc(t('planner.calendarSettings'))}</summary>
+                <div class="pl-cal-settings-body">
                 <div class="pl-mini"></div>
                 <div class="pl-cal-modes" role="group" aria-label="${esc(t('planner.t94'))}">
                     <button type="button" class="pl-cal-mode" data-mode="all">${esc(t('planner.t95'))}</button>
@@ -134,6 +137,8 @@ export function buildCalendarView(
                 <div class="pl-today" hidden></div>
                 <div class="pl-cal-list"></div>
                 <div class="pl-cal-hint" hidden></div>
+                </div>
+                </details>
             </div>
             <div class="pl-cal-main">
                 <div class="pl-cal-loading" hidden>${esc(t('planner.t11'))}</div>
@@ -146,6 +151,11 @@ export function buildCalendarView(
     const sideToday = container.querySelector<HTMLElement>('.pl-today')!;
     const mount = container.querySelector<HTMLElement>('.pl-cal-mount')!;
     const loading = container.querySelector<HTMLElement>('.pl-cal-loading')!;
+    const settings = container.querySelector<HTMLDetailsElement>('.pl-cal-settings')!;
+    const mobile = window.matchMedia('(max-width: 899px)');
+    settings.open = !mobile.matches;
+    const adaptSettings = (): void => { settings.open = !mobile.matches; };
+    mobile.addEventListener('change', adaptSettings);
 
     /** 목록의 첫 줄은 늘 이 브라우저 캘린더다 (구글은 그 뒤에 붙는다) */
     const localCalendar = (): GoogleCalendar => ({
@@ -194,6 +204,9 @@ export function buildCalendarView(
         /* 달마다 필요한 주만 (5주면 5줄). 6줄 고정이면 칸이 낮아져 일정이 "+N 개" 뒤로 숨음 (2026-09-25 사용자 "일정 하나도 안 보이고") */
         fixedWeekCount: false,
         selectable: true,
+        dateClick: (info) => {
+            if (mobile.matches && info.view.type === 'dayGridMonth') calendar.changeView('timeGridDay', info.date);
+        },
         editable: true,
         eventStartEditable: true,
         eventDurationEditable: true,
@@ -226,6 +239,19 @@ export function buildCalendarView(
         /* 날짜 칸마다 일기 단추 하나. 쓴 날은 켜져 있고, 안 쓴 날은 마우스를 올려야 보인다 . 
            빈 날마다 표식이 켜져 있으면 쓴 날이 눈에 안 들어온다. */
         dayCellDidMount: (info) => {
+            if (mobile.matches && info.view.type === 'dayGridMonth') {
+                const day = info.el.querySelector<HTMLElement>('.fc-daygrid-day-number');
+                if (day) {
+                    day.tabIndex = 0;
+                    day.setAttribute('role', 'button');
+                    day.setAttribute('aria-label', `${ymd(info.date)} ${t('planner.daySchedule')}`);
+                    day.addEventListener('keydown', (e) => {
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        e.preventDefault();
+                        calendar.changeView('timeGridDay', info.date);
+                    });
+                }
+            }
             if (!onOpenDiary) return;
             const date = ymd(info.date);
             const written = diaryDates().has(date);
@@ -793,6 +819,7 @@ export function buildCalendarView(
     return {
         destroy: () => {
             destroyed = true;
+            mobile.removeEventListener('change', adaptSettings);
             resize.disconnect();
             closePopover();
             closeModal();
