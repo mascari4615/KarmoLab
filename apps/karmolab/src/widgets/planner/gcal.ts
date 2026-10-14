@@ -48,6 +48,7 @@ export interface GoogleEvent {
     status?: string;
     recurringEventId?: string;
     extendedProperties?: { private?: Record<string, string> };
+    recurrence?: string[];
 }
 
 /** FullCalendar 가 먹는 모양 */
@@ -73,6 +74,7 @@ export interface FcEvent {
         seriesEnd?: string;
         seriesTitle?: string;
         seriesLinks?: LinkedEvent[];
+        seriesRecurrence?: string[];
         linkedEvents?: LinkedEvent[];
         parentEventId?: string;
         parentTitle?: string;
@@ -126,7 +128,7 @@ export function toFcEvent(item: GoogleEvent, cal: GoogleCalendar): FcEvent {
             googleId: item.id,
             htmlLink: item.htmlLink || '',
             linkedEvents: parseLinks(item.extendedProperties?.private?.karmoLinks),
-            linksOverride: item.extendedProperties?.private?.karmoLinks !== undefined,
+            linksOverride: typeof item.extendedProperties?.private?.karmoLinks === 'string',
             ...(item.recurringEventId ? { recurringEventId: item.recurringEventId } : {})
         }
     };
@@ -144,6 +146,7 @@ export interface EventDraft {
     allDay: boolean;
     repeat?: RepeatRule | null;
     linkedEvents?: LinkedEvent[] | null;
+    recurrence?: string[];
 }
 
 /** 구글에 보낼 모양. 종일이면 날짜만, 아니면 시각까지. 끝은 양쪽 다 다음이다. */
@@ -170,6 +173,7 @@ export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
             (body.end as Record<string, string>).timeZone = timeZone;
         }
     }
+    if (draft.recurrence) body.recurrence = draft.recurrence;
     return body;
 }
 
@@ -194,7 +198,7 @@ export async function hydrateGroups(token: string, events: FcEvent[]): Promise<F
         const entry = loadCached(calendarId)?.items[googleId];
         const own = entry?.extendedProperties?.private?.karmoLinks;
         const links = parseLinks(master.extendedProperties?.private?.karmoLinks);
-        return { ...event, extendedProps: { ...event.extendedProps, seriesStart: master.start.dateTime || master.start.date, seriesEnd: master.end.dateTime || master.end.date, seriesTitle: master.summary || event.title, seriesLinks: links, linkedEvents: own === undefined ? links : parseLinks(own) } };
+        return { ...event, extendedProps: { ...event.extendedProps, seriesStart: master.start.dateTime || master.start.date, seriesEnd: master.end.dateTime || master.end.date, seriesTitle: master.summary || event.title, seriesLinks: links, seriesRecurrence: master.recurrence, linkedEvents: own == null ? links : parseLinks(own) } };
     }));
 }
 

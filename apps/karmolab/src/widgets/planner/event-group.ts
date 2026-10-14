@@ -7,6 +7,26 @@ export interface LinkedEvent {
     gap: number;
 }
 
+export function shiftExDates(lines: string[] | undefined, previous: Date, next: Date): string[] | undefined {
+    if (!lines || previous.getHours() === next.getHours() && previous.getMinutes() === next.getMinutes()) return undefined;
+    let changed = false;
+    const shifted = lines.map(line => {
+        if (!line.startsWith('EXDATE:')) {
+            if (line.startsWith('EXDATE') && !line.startsWith('EXDATE;VALUE=DATE:')) throw new Error('Unsupported EXDATE timezone');
+            return line;
+        }
+        const values = line.slice(7).split(',').map(value => {
+            const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(value);
+            if (!m) throw new Error('Unsupported EXDATE format');
+            const at = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]));
+            at.setHours(next.getHours(), next.getMinutes(), next.getSeconds(), 0);
+            return at.toISOString().replace(/[-:]/g, '').replace('.000', '');
+        });
+        changed = true; return `EXDATE:${values.join(',')}`;
+    });
+    return changed ? shifted : undefined;
+}
+
 export function parseLinks(value: unknown): LinkedEvent[] {
     try {
         const items: unknown = typeof value === 'string' ? JSON.parse(value) : value;

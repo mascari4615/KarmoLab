@@ -36,7 +36,7 @@ import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { withToken } from './gauth';
 import { HOLIDAY_YEARS, holidayRangeSupported, repeatWindow, type RepeatRule } from './recurrence';
-import { parseLinks, withLinkedEvents, type LinkedEvent } from './event-group';
+import { parseLinks, shiftExDates, withLinkedEvents, type LinkedEvent } from './event-group';
 
 import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -656,6 +656,7 @@ export function buildCalendarView(
             const at = whole ? seriesDate(ev!.extendedProps.seriesStart as string) : ev!.start!;
             const finish = whole ? seriesDate(ev!.extendedProps.seriesEnd as string) : ev!.end ?? addHours(at, 1);
             allDayBox.checked = whole ? (ev!.extendedProps.seriesStart as string).length === 10 : ev!.allDay;
+            allDayBox.disabled = googleInstance && whole;
             wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.value = whole ? ev!.extendedProps.seriesTitle as string || ev!.title : ev!.title;
             wrap.querySelector<HTMLInputElement>('[name="event-start"]')!.value = localInputValue(at);
             wrap.querySelector<HTMLInputElement>('[name="event-start-date"]')!.value = ymd(at);
@@ -794,12 +795,13 @@ export function buildCalendarView(
                 const id = !single && ev.extendedProps.recurringEventId ? ev.extendedProps.recurringEventId as string : ev.extendedProps.googleId as string;
                 const links = single && ev.extendedProps.recurringEventId && JSON.stringify(linkedEvents) === JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)) ? ev.extendedProps.linksOverride ? null : undefined : linkedEvents;
                 const omit: Array<'summary' | 'start' | 'end'> = [];
+                const recurrence = !single && ev.extendedProps.recurringEventId && ev.extendedProps.seriesStart ? shiftExDates(ev.extendedProps.seriesRecurrence as string[] | undefined, new Date(ev.extendedProps.seriesStart as string), start) : undefined;
                 if (single) {
                     if (title === ev.title) omit.push('summary');
                     if (allDay === ev.allDay && +start === +(ev.start || NaN)) omit.push('start');
                     if (allDay === ev.allDay && +end === +(ev.end || NaN)) omit.push('end');
                 }
-                await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, repeat, linkedEvents: links }, omit));
+                await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, repeat, linkedEvents: links, recurrence }, omit));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
                 createLocalEvent({ title, allDay, repeat, linkedEvents, ...stored(start, end, allDay) });
             } else {
