@@ -33,7 +33,7 @@ import {
 import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { withToken } from './gauth';
-import { repeatWindow, type RepeatRule } from './recurrence';
+import { HOLIDAY_YEARS, holidayRangeSupported, repeatWindow, type RepeatRule } from './recurrence';
 
 import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -557,7 +557,9 @@ export function buildCalendarView(
                     </fieldset>
                     <div class="pl-repeat-options" hidden>
                         <label class="pl-field"><span class="pl-label pl-repeat-interval-label"></span><input type="number" name="event-repeat-interval" class="pl-input" required min="1" max="52" step="1" value="${localRepeat?.interval ?? 1}"></label>
-                        <label class="pl-field"><span class="pl-label">${esc(t('planner.repeatUntil'))}</span><input type="date" name="event-repeat-until" class="pl-input" min="${ymd(startDate)}" value="${esc(localRepeat?.until ?? '')}"></label>
+                        <label class="pl-field"><span class="pl-label pl-repeat-until-label">${esc(t('planner.repeatUntil'))}</span><input type="date" name="event-repeat-until" class="pl-input" min="${ymd(startDate)}" value="${esc(localRepeat?.until ?? '')}"></label>
+                        <label class="pl-check"><input type="checkbox" name="event-repeat-exclude-holidays" ${localRepeat?.excludeHolidays ? 'checked' : ''}><span>${esc(t('planner.repeatExcludeHolidays'))}</span></label>
+                        <p class="pl-repeat-note pl-holiday-hint" hidden>${esc(t('planner.repeatHolidayHint').replace('{from}', String(HOLIDAY_YEARS[0])).replace('{to}', String(HOLIDAY_YEARS[HOLIDAY_YEARS.length - 1])))}</p>
                     </div>
                     ${localRepeat ? `<p class="pl-repeat-note">${esc(t('planner.repeatSeriesEdit'))}</p>` : googleInstance ? `<p class="pl-repeat-note">${esc(t('planner.repeatInstanceEdit'))}</p>` : ''}
                     <p class="pl-form-error" role="alert" hidden></p>
@@ -591,6 +593,16 @@ export function buildCalendarView(
         let repeatStartTouched = !!localRepeat?.startDate;
         const repeatDays = wrap.querySelector<HTMLFieldSetElement>('.pl-repeat-days')!;
         const repeatOptions = wrap.querySelector<HTMLElement>('.pl-repeat-options')!;
+        const excludeHolidays = wrap.querySelector<HTMLInputElement>('[name="event-repeat-exclude-holidays"]')!;
+        const repeatUntil = wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!;
+        const syncHoliday = (): void => {
+            const excluding = !repeatOptions.hidden && excludeHolidays.checked;
+            repeatUntil.required = excluding;
+            wrap.querySelector<HTMLElement>('.pl-holiday-hint')!.hidden = !excluding;
+            wrap.querySelector<HTMLElement>('.pl-repeat-until-label')!.textContent = t(excluding ? 'planner.repeatUntilRequired' : 'planner.repeatUntil');
+            repeatStartInput.min = excluding ? `${HOLIDAY_YEARS[0]}-01-01` : '';
+            repeatStartInput.max = repeatUntil.max = excluding ? `${HOLIDAY_YEARS[HOLIDAY_YEARS.length - 1]}-12-31` : '';
+        };
         const syncRepeat = (): void => {
             repeatDays.hidden = repeatSelect.value !== 'weekly';
             repeatDays.disabled = repeatDays.hidden;
@@ -599,9 +611,11 @@ export function buildCalendarView(
             wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!.min = repeatStartInput.value;
             repeatOptions.hidden = repeatSelect.value === 'none';
             repeatOptions.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.disabled = repeatOptions.hidden; });
+            syncHoliday();
             wrap.querySelector<HTMLElement>('.pl-repeat-interval-label')!.textContent = t(repeatSelect.value === 'weekly' ? 'planner.repeatWeekInterval' : 'planner.repeatDayInterval');
         };
         repeatSelect.addEventListener('change', syncRepeat);
+        excludeHolidays.addEventListener('change', syncHoliday);
         syncRepeat();
         wrap.addEventListener('input', (e) => {
             wrap.querySelectorAll<HTMLInputElement>('input').forEach((input) => input.setCustomValidity(''));
@@ -663,7 +677,8 @@ export function buildCalendarView(
                     input.setCustomValidity(t('planner.repeatDaysRequired')); input.reportValidity(); return;
                 }
                 const until = wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!;
-                repeat = { frequency: repeatSelect.value as RepeatRule['frequency'], days, startDate: repeatStartInput.value, interval: Number(wrap.querySelector<HTMLInputElement>('[name="event-repeat-interval"]')!.value), ...(until.value ? { until: until.value } : {}) };
+                repeat = { frequency: repeatSelect.value as RepeatRule['frequency'], days, startDate: repeatStartInput.value, interval: Number(wrap.querySelector<HTMLInputElement>('[name="event-repeat-interval"]')!.value), ...(until.value ? { until: until.value } : {}), ...(excludeHolidays.checked ? { excludeHolidays: true } : {}) };
+                if (repeat.excludeHolidays && !holidayRangeSupported(start, repeat)) { until.setCustomValidity(t('planner.repeatHolidayRange')); until.reportValidity(); return; }
                 const first = repeatWindow(start, end, repeat).start;
                 if (!Number.isFinite(+first) || (until.value && until.value < ymd(first))) { until.setCustomValidity(t('planner.repeatDateInvalid')); until.reportValidity(); return; }
             }

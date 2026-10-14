@@ -394,6 +394,36 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
 
 const R = await load('src/widgets/planner/recurrence.ts', 'recurrence');
 {
+  const start=new Date(2026,8,21,10),end=new Date(2026,8,21,11);
+  const rule={frequency:'daily',interval:1,days:[],startDate:'2026-09-21',until:'2026-09-27',excludeHolidays:true};
+  const range=[new Date(2026,8,21),new Date(2026,8,28)];
+  const kept=R.occurrences(start,end,rule,...range);
+  eq(kept.map(e=>P.ymd(e.start)).join(),'2026-09-21,2026-09-22,2026-09-23,2026-09-27','추석3일 제외, 일요일 유지');
+  eq(R.occurrences(start,end,{...rule,excludeHolidays:false},...range).length,7,'공휴일 제외 해제 후7회');
+  const timed=P.toGooglePayload({title:'휴일 제외',start,end,allDay:false,repeat:rule});
+  const stamp=d=>new Date(2026,8,d,10).toISOString().replace(/[-:]/g,'').replace('.000','');
+  eq(timed.recurrence[1],`EXDATE:${[24,25,26].map(stamp).join(',')}`,'구글 실제 공휴일 회차 시각 제외');
+  const allDay=P.toGooglePayload({title:'첫회차 휴일',start:new Date(2026,9,3),end:new Date(2026,9,3),allDay:true,repeat:{...rule,startDate:'2026-10-03',until:'2026-10-06'}});
+  eq(allDay.recurrence[1],'EXDATE;VALUE=DATE:20261003,20261005','종일 첫 회차와 대체공휴일 제외');
+  eq(allDay.start.date,'2026-10-03','휴일이어도 반복 앵커 유지');
+  const fortnight=R.occurrences(new Date(2026,9,3,10),new Date(2026,9,3,11),{...rule,frequency:'weekly',days:[6],interval:2,startDate:'2026-10-03',until:'2026-10-31'},new Date(2026,9,1),new Date(2026,10,1));
+  eq(fortnight.map(e=>P.ymd(e.start)).join(),'2026-10-17,2026-10-31','휴일 건너뛰어도 격주 간격 유지');
+  const local=await load('src/widgets/planner/local-store.ts','holiday-local');localStorage.removeItem('karmolab_planner_events');
+  const id=local.createEvent({title:'휴일 제외',start:start.toISOString(),end:end.toISOString(),allDay:false,repeat:rule});
+  const reloaded=await load('src/widgets/planner/local-store.ts','holiday-local-reload');
+  eq(reloaded.listEvents('내 일정',...range).length,4,'재읽기 후 공휴일 제외 유지');
+  local.updateEvent(id,{repeat:{...rule,excludeHolidays:false}});eq(local.listEvents('내 일정',...range).length,7,'저장된 제외 해제');local.deleteEvent(id);
+  check(!R.holidayRangeSupported(start,{...rule,until:undefined}),'제외 무기한 범위 거부');
+  check(!R.holidayRangeSupported(start,{...rule,until:'2028-01-01'}),'제외 미지원 미래 거부');
+  check(!R.holidayRangeSupported(start,{...rule,startDate:'2023-12-31'}),'제외 미지원 과거 거부');
+  let rejected=false;try{P.toGooglePayload({title:'잘못된 범위',start,end,allDay:false,repeat:{...rule,until:undefined}});}catch{rejected=true;}check(rejected,'잘못된 범위 Google 전송 차단');
+  const H=await load('src/lib/holidays.ts','holiday-table');
+  check(H.holidayKeys('KR',2024).has('2024-5-6'),'2024 어린이날 대체');
+  check(H.holidayKeys('KR',2025).has('2025-6-3'),'2025 대통령선거');
+  check(['2026-5-1','2026-6-3','2026-7-17'].every(d=>H.holidayKeys('KR',2026).has(d)),'2026 노동절 선거 제헌절');
+  check(['2027-5-3','2027-7-19','2027-8-16','2027-10-4','2027-10-11','2027-12-27'].every(d=>H.holidayKeys('KR',2027).has(d)),'2027 대체공휴일6개');
+}
+{
   const start = new Date(2026, 9, 14, 10), end = new Date(2026, 9, 14, 11);
   const rule = { frequency: 'weekly', interval: 1, days: [1, 3], startDate: '2026-09-01', until: '2026-09-30' };
   const first = R.repeatWindow(start, end, rule);

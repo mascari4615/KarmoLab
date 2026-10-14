@@ -49,6 +49,8 @@ const HOLIDAY_KO: Record<string, string> = {
   // 한국
   krMarchFirst: '삼일절',
   krChildren: '어린이날',
+  krLabor: '노동절',
+  krConstitution: '제헌절',
   krMemorial: '현충일',
   krLiberation: '광복절',
   krFoundation: '개천절',

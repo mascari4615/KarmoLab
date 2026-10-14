@@ -13,7 +13,7 @@
  */
 
 import { covers, eventsIn, loadCached, mergeDelta, mergeFull, saveCached, syncStamp } from './event-cache';
-import { repeatWindow, toRRule, type RepeatRule } from './recurrence';
+import { recurrenceLines, repeatWindow, type RepeatRule } from './recurrence';
 
 const CAL_API = 'https://www.googleapis.com/calendar/v3';
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
@@ -146,7 +146,7 @@ export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
         body.end = { dateTime: end.toISOString() };
     }
     if (draft.repeat !== undefined) {
-        body.recurrence = draft.repeat ? [toRRule(draft.repeat, draft.allDay)] : [];
+        body.recurrence = draft.repeat ? recurrenceLines(draft.start, draft.end, draft.repeat, draft.allDay) : [];
         if (draft.repeat) {
             const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             (body.start as Record<string, string>).timeZone = timeZone;

@@ -48,16 +48,20 @@ function nthWeekday(year: number, month: number, weekday: number, nth: number): 
  * 표에 없으면 그해 영업일이 하루씩 틀어진다. 실제로 빠져 있었다. */
 const KR_DATED: Array<[number, number, number, string]> = [
   [2024, 2, 9, 'seollalEve'], [2024, 2, 10, 'seollal'], [2024, 2, 11, 'seollalEve'], [2024, 2, 12, 'substitute'],
-  [2024, 4, 10, 'election'], [2024, 5, 15, 'buddha'],
+  [2024, 4, 10, 'election'], [2024, 5, 6, 'substitute'], [2024, 5, 15, 'buddha'],
   [2024, 9, 16, 'chuseokEve'], [2024, 9, 17, 'chuseok'], [2024, 9, 18, 'chuseokEve'],
   [2025, 1, 27, 'temporary'], [2025, 1, 28, 'seollalEve'], [2025, 1, 29, 'seollal'], [2025, 1, 30, 'seollalEve'],
   [2025, 3, 3, 'substitute'], [2025, 5, 5, 'buddha'], [2025, 5, 6, 'substitute'],
+  [2025, 6, 3, 'election'],
   [2025, 10, 5, 'chuseokEve'], [2025, 10, 6, 'chuseok'], [2025, 10, 7, 'chuseokEve'], [2025, 10, 8, 'substitute'],
   [2026, 2, 16, 'seollalEve'], [2026, 2, 17, 'seollal'], [2026, 2, 18, 'seollalEve'], [2026, 3, 2, 'substitute'],
   [2026, 5, 24, 'buddha'], [2026, 5, 25, 'substitute'], [2026, 8, 17, 'substitute'],
+  [2026, 5, 1, 'krLabor'], [2026, 6, 3, 'election'], [2026, 7, 17, 'krConstitution'],
   [2026, 9, 24, 'chuseokEve'], [2026, 9, 25, 'chuseok'], [2026, 9, 26, 'chuseokEve'], [2026, 10, 5, 'substitute'],
   [2027, 2, 6, 'seollalEve'], [2027, 2, 7, 'seollal'], [2027, 2, 8, 'seollalEve'], [2027, 2, 9, 'substitute'],
   [2027, 5, 13, 'buddha'],
+  [2027, 5, 1, 'krLabor'], [2027, 5, 3, 'substitute'], [2027, 7, 17, 'krConstitution'], [2027, 7, 19, 'substitute'],
+  [2027, 8, 16, 'substitute'], [2027, 10, 4, 'substitute'], [2027, 10, 11, 'substitute'], [2027, 12, 27, 'substitute'],
   [2027, 9, 14, 'chuseokEve'], [2027, 9, 15, 'chuseok'], [2027, 9, 16, 'chuseokEve']
 ];
 
