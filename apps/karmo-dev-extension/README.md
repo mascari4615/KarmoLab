@@ -26,6 +26,18 @@
 `Bookmarks` JSON 파일을 직접 고치는 방법은 **동기화가 되살린다** (2026-08-28 실측: 3건 삭제 → 새 id 로 부활).
 확장 API 삭제는 동기화에도 그대로 전파되므로 이 경로를 써라.
 
+## 아카라이브 좋아요 글 모아보기 (v0.31.0)
+
+확장 팝업 **좋아요 글 모아보기**, 설정의 **아카라이브 → 차단, 좋아요 목록**, 또는 아카라이브 페이지 상단 버튼에서 전용 탭 열기.
+
+- 기존 `likelist.arca` 작성자 기준. 채널 등록 없이 모든 채널의 최근 작성글 병합, 최신순.
+- 작성자 프로필이 공개하는 최근 글 범위. 전체 과거 글과 최근 댓글 제외.
+- 제목 검색, 작성자 필터, 원문과 프로필 새 탭 열기. 계정 번호 보존.
+- 첫 방문과 10분 지난 캐시는 자동 수집, 수동 최신 글 불러오기. 수집 실패는 유저별 표시와 이전 글 유지. 좋아요 해제 시 즉시 제외.
+- 프로필당 뒤쪽 탭 1개, 페이지당 동시 2개, 읽은 뒤 닫기. `arca.liked.read`는 저장된 좋아요 키만 허용. `arca.liked.open`은 확장 내부 호출만.
+- 기능 검사: `node --test apps/karmo-dev-extension/tests/arca-liked.test.mjs` (repo 루트, KarmoLab 의 jsdom 설치 필요).
+- 브라우저 검사: `node apps/karmo-dev-extension/tests/arca-liked-browser.mjs <memo reference 자료 폴더>` (프로필 fixture, Edge, Playwright 필요).
+
 ## 원격 호출 (externally_connectable)
 
 허용 도메인(`blog`, `127.0.0.1`, `localhost`) 페이지에서:

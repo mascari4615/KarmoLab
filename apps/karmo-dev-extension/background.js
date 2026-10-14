@@ -494,7 +494,7 @@ async function jobTick() {
  * 워커가 30초 무활동 종료에 걸리지 않게 함. 한 바퀴는 `QUEUE_TICK_MS` 까지, 다음 알람이 이어받음. 수신기가 없으면 한 번 묻고 끝
  */
 const QUEUE_BASE = "http://127.0.0.1:17378";
-const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read", "youtube.list", "youtube.remove", "x.bookmarks", "x.bookmarksRemove"];
+const QUEUE_TYPES = ["ext.version", "page.text", "arca.liked.read", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read", "youtube.list", "youtube.remove", "x.bookmarks", "x.bookmarksRemove"];
 // youtube.remove 는 상태를 바꾸지만 큐 (127.0.0.1 수신기) 로만 받음. bridge 주소 허용 목록에는 없음
 // 정리가 memo 에 push 된 것만 넘기는 판단은 부르는 쪽 (memo scripts/youtube, 사용자 2026-10-07 "정리 한 번 한거는 지우기")
 const QUEUE_PARALLEL = 5;
@@ -854,10 +854,53 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   return true; // 비동기 응답
 });
 
+/* 확장 페이지와 아카라이브 콘텐츠 스크립트 전용 입구 */
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return false;
+  if (msg?.type === "arca.liked.open") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("arca-liked.html") }).then(() => sendResponse({ ok: true }),
+      (error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+  if (msg?.type !== "arca.liked.read") return false;
+  dispatchExt(msg, sender, sendResponse);
+  return true;
+});
+
 /** 메시지 한 건 처리. bridge 탭 (onMessageExternal) 과 할 일 큐 (queueTick) 가 같이 쓴다 */
 function dispatchExt(msg, sender, sendResponse) {
   (async () => {
     try {
+      if (msg?.type === "arca.liked.read") {
+        const key = String(msg.key || "");
+        const likes = (await chrome.storage.local.get({ likelist: {} })).likelist.arca || {};
+        if (!Object.hasOwn(likes, key)) throw new Error("좋아요 목록에서 해제된 작성자입니다.");
+        const match = /^(.+)#(\d+)$/.exec(key);
+        const url = `https://arca.live/u/@${encodeURIComponent(match ? match[1] : key)}${match ? `/${match[2]}` : ""}`;
+        const tab = await openWorkTab(url);
+        try {
+          await waitReady(tab.id, ".user-body h5", 20000);
+          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["arca-profile.js"] });
+          const [result] = await within(10000, "profile", chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (k) => {
+              const expected = new URL(globalThis.KarmoProfile.profileUrl(k));
+              const numbered = /#\d+$/.test(k);
+              const actual = decodeURIComponent(location.pathname);
+              if (numbered ? actual.split("/").at(-1) !== expected.pathname.split("/").at(-1) : actual !== decodeURIComponent(expected.pathname)) {
+                throw new Error("작성자 프로필 주소가 바뀌었습니다. 좋아요 목록의 작성자를 확인하세요.");
+              }
+              return globalThis.KarmoProfile.parse(document, k);
+            },
+            args: [key],
+          }));
+          if (!Array.isArray(result?.result)) throw new Error("프로필 결과를 받지 못했습니다.");
+          sendResponse({ ok: true, rows: result.result, at: Date.now() });
+        } finally {
+          await closeWorkTab(tab.id);
+        }
+        return;
+      }
       if (msg?.type === "page.text") {
         if (msg.ready && msg.url) { const a = readyArgs(msg); await waitPatternReady(msg.url, a.selector, a.capMs); }
         sendResponse({ ok: true, tabs: await readOpenTabs(msg.url, msg.maxChars, msg.links, msg.close, msg.images, msg.html) });
