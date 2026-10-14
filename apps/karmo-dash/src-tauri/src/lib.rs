@@ -46,7 +46,7 @@ fn connect(app: AppHandle) {
                     return Err("앱 화면 출처 오류".into());
                 }
                 let json = serde_json::to_string(&data).map_err(|e| e.to_string())?;
-                window.eval(&format!("for(const [k,v] of Object.entries({json})) localStorage.setItem(k,v); location.href='/#planner';")).map_err(|e| e.to_string())?;
+                window.eval(&format!("for(const [k,v] of Object.entries({json})) localStorage.setItem(k,v); location.hash='#planner'; location.reload();")).map_err(|e| e.to_string())?;
                 show(&app);
                 Ok(())
             })
@@ -91,8 +91,7 @@ pub fn run() {
                 "connect" => connect(app.clone()),
                 "reload" => {
                     if let Some(window) = app.get_webview_window("main") {
-                        let _ = window
-                            .navigate(format!("{}/#planner", handoff::ORIGIN).parse().unwrap());
+                        let _ = window.eval("location.hash='#planner'; location.reload();");
                     }
                 }
                 "browser" => {
