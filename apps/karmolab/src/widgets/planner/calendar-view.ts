@@ -33,6 +33,7 @@ import {
 import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { withToken } from './gauth';
+import type { RepeatRule } from './recurrence';
 
 import { Calendar, type CalendarOptions, type EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -293,7 +294,7 @@ export function buildCalendarView(
     async function reload(start: Date, end: Date): Promise<void> {
         lastRange = { start, end };
         /* 이 브라우저 것은 늘 있다. 구글은 연동돼 있을 때만 얹는다. */
-        const own = (): FcEvent[] => [...listLocalEvents(t('planner.t50')), ...toAiEvents(followups)];
+        const own = (): FcEvent[] => [...listLocalEvents(t('planner.t50'), start, end), ...toAiEvents(followups)];
         if (!token) {
             setEvents(own());
             return;
@@ -325,7 +326,7 @@ export function buildCalendarView(
     }
 
     /* 달력에는 바뀐 일정만 넣고 뺀다. 통째로 지우고 다시 그리면 저장본과 구글 판이 같아도 깜빡인다 */
-    const sigOf = (ev: FcEvent): string => JSON.stringify([ev.title, ev.start, ev.end, ev.allDay, ev.backgroundColor]);
+    const sigOf = (ev: FcEvent): string => JSON.stringify([ev.title, ev.start, ev.end, ev.allDay, ev.backgroundColor, ev.extendedProps.repeatRule]);
     function applyEvents(): void {
         const want = new Map(visible().map((ev) => [ev.id, ev]));
         calendar.batchRendering(() => {
@@ -486,12 +487,13 @@ export function buildCalendarView(
 
     /* ===== 만들기, 고치기 창 ===== */
 
-    let modalEl: HTMLElement | null = null;
+    let modalEl: HTMLDialogElement | null = null;
     /* 창을 열기 전 초점 자리. 닫으면 돌려줌 */
     let modalOpener: HTMLElement | null = null;
     const modalTitleId = `pl-modal-title-${Math.random().toString(36).slice(2, 8)}`;
 
     function closeModal(restore = false): void {
+        modalEl?.close();
         modalEl?.remove();
         modalEl = null;
         const back = modalOpener;
@@ -504,39 +506,60 @@ export function buildCalendarView(
         closeModal();
         modalOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         const ev = draft.event;
-        const startDate = ev ? ev.start ?? draft.start : draft.start;
-        const endDate = ev ? ev.end ?? addHours(startDate, 1) : draft.end;
+        const localRepeat = ev?.extendedProps.repeatRule as RepeatRule | undefined;
+        const seriesDate = (value: string): Date => new Date(value.length === 10 ? `${value}T00:00:00` : value);
+        const startDate = localRepeat ? seriesDate(ev!.extendedProps.seriesStart as string) : ev ? ev.start ?? draft.start : draft.start;
+        const endDate = localRepeat ? seriesDate(ev!.extendedProps.seriesEnd as string) : ev ? ev.end ?? addHours(startDate, 1) : draft.end;
         const allDay = ev ? ev.allDay : draft.allDay;
         const currentCal = (ev?.extendedProps.calendarId as string) || calendars[0]?.id || 'primary';
+        const editableCalendars = calendars.filter((cal) => cal.id !== AI_CALENDAR_ID && !isHolidayCalendar(cal.id));
 
-        const wrap = document.createElement('div');
+        const googleInstance = !!ev?.extendedProps.recurringEventId;
+        const wrap = document.createElement('dialog');
         wrap.className = 'pl-modal-overlay';
+        wrap.setAttribute('aria-labelledby', modalTitleId);
         wrap.innerHTML = `
-            <div class="pl-modal" role="dialog" aria-modal="true" aria-labelledby="${modalTitleId}">
+            <div class="pl-modal">
                 <div class="pl-modal-head">
                     <h3 class="pl-modal-title" id="${modalTitleId}">${esc(ev ? t('planner.t16') : t('planner.t17'))}</h3>
                     <button type="button" class="pl-modal-x" aria-label="${esc(t('planner.t18'))}">✕</button>
                 </div>
                 <form class="pl-modal-body">
-                    <input type="text" name="event-title" class="pl-input pl-modal-name" placeholder="${esc(t('planner.t19'))}" value="${esc(ev?.title ?? '')}">
+                    <label class="pl-field"><span class="pl-label">${esc(t('planner.t19'))}</span><input type="text" name="event-title" class="pl-input pl-modal-name" required value="${esc(ev?.title ?? '')}"></label>
                     ${
-                        calendars.length > 1 && !ev
+                        editableCalendars.length > 1 && !ev
                             ? `<label class="pl-field"><span class="pl-label">${esc(t('planner.t15'))}</span>
                                  <select name="event-calendar" class="pl-input">
-                                   ${calendars.map((c) => `<option value="${esc(c.id)}"${c.id === currentCal ? ' selected' : ''}>${esc(c.summary)}</option>`).join('')}
+                                   ${editableCalendars.map((c) => `<option value="${esc(c.id)}"${c.id === currentCal ? ' selected' : ''}>${esc(c.summary)}</option>`).join('')}
                                  </select></label>`
                             : ''
                     }
                     <label class="pl-check"><input type="checkbox" name="event-allday" ${allDay ? 'checked' : ''}><span>${esc(t('planner.t27'))}</span></label>
                     <div class="pl-times" data-allday="${allDay ? '1' : '0'}">
-                        <label class="pl-field"><span class="pl-label">${esc(t('planner.t28'))}</span>
-                            <input type="datetime-local" name="event-start" class="pl-input pl-start-time" value="${localInputValue(startDate)}">
-                            <input type="date" name="event-start-date" class="pl-input pl-start-date" value="${ymd(startDate)}">
+                        <label class="pl-field pl-start-field"><span class="pl-label">${esc(t('planner.t28'))}</span>
+                            <input id="${modalTitleId}-start-time" type="datetime-local" name="event-start" class="pl-input pl-start-time" value="${localInputValue(startDate)}">
+                            <input id="${modalTitleId}-start-date" type="date" name="event-start-date" class="pl-input pl-start-date" value="${ymd(startDate)}">
                         </label>
                         <label class="pl-field pl-end-field"><span class="pl-label">${esc(t('planner.t29'))}</span>
                             <input type="datetime-local" name="event-end" class="pl-input pl-end-time" value="${localInputValue(endDate)}">
                         </label>
                     </div>
+                    <label class="pl-field"><span class="pl-label">${esc(t('planner.repeat'))}</span>
+                        <select class="pl-input" name="event-repeat" ${googleInstance ? 'disabled' : ''}>
+                            <option value="none">${esc(t(googleInstance ? 'planner.repeatExisting' : 'planner.repeatNone'))}</option>
+                            <option value="daily" ${localRepeat?.frequency === 'daily' ? 'selected' : ''}>${esc(t('planner.repeatDaily'))}</option>
+                            <option value="weekly" ${localRepeat?.frequency === 'weekly' ? 'selected' : ''}>${esc(t('planner.repeatWeekly'))}</option>
+                        </select>
+                    </label>
+                    <fieldset class="pl-repeat-days" hidden><legend class="pl-label">${esc(t('planner.repeatDays'))}</legend>
+                        ${Array.from({ length: 7 }, (_, d) => `<label class="pl-repeat-day"><input type="checkbox" name="event-repeat-day" value="${d}" ${(localRepeat?.days ?? [startDate.getDay()]).includes(d) ? 'checked' : ''}><span>${esc(new Date(2026, 0, 4 + d).toLocaleDateString(document.documentElement.lang || 'ko', { weekday: 'short' }))}</span></label>`).join('')}
+                    </fieldset>
+                    <div class="pl-repeat-options" hidden>
+                        <label class="pl-field"><span class="pl-label pl-repeat-interval-label"></span><input type="number" name="event-repeat-interval" class="pl-input" required min="1" max="52" step="1" value="${localRepeat?.interval ?? 1}"></label>
+                        <label class="pl-field"><span class="pl-label">${esc(t('planner.repeatUntil'))}</span><input type="date" name="event-repeat-until" class="pl-input" min="${ymd(startDate)}" value="${esc(localRepeat?.until ?? '')}"></label>
+                    </div>
+                    ${localRepeat ? `<p class="pl-repeat-note">${esc(t('planner.repeatSeriesEdit'))}</p>` : googleInstance ? `<p class="pl-repeat-note">${esc(t('planner.repeatInstanceEdit'))}</p>` : ''}
+                    <p class="pl-form-error" role="alert" hidden></p>
                     <div class="pl-modal-actions">
                         <button type="button" class="btn btn-ghost pl-modal-cancel">${esc(t('planner.t30'))}</button>
                         <button type="submit" class="btn btn-accent">${esc(t('planner.t31'))}</button>
@@ -545,15 +568,39 @@ export function buildCalendarView(
             </div>`;
         container.appendChild(wrap);
         modalEl = wrap;
+        wrap.showModal();
 
         const form = wrap.querySelector('form')!;
         const allDayBox = wrap.querySelector<HTMLInputElement>('[name="event-allday"]')!;
         const times = wrap.querySelector<HTMLElement>('.pl-times')!;
         const syncAllDay = (): void => {
             times.dataset.allday = allDayBox.checked ? '1' : '0';
+            times.querySelectorAll<HTMLInputElement>('.pl-start-time, .pl-end-time').forEach((input) => { input.disabled = allDayBox.checked; });
+            const dateInput = times.querySelector<HTMLInputElement>('.pl-start-date')!;
+            dateInput.disabled = !allDayBox.checked;
+            dateInput.required = allDayBox.checked;
+            times.querySelector<HTMLLabelElement>('.pl-start-field')!.htmlFor = allDayBox.checked ? dateInput.id : `${modalTitleId}-start-time`;
+            times.querySelector<HTMLInputElement>('.pl-start-time')!.required = !allDayBox.checked;
         };
         allDayBox.addEventListener('change', syncAllDay);
         syncAllDay();
+        const repeatSelect = wrap.querySelector<HTMLSelectElement>('[name="event-repeat"]')!;
+        const repeatDays = wrap.querySelector<HTMLFieldSetElement>('.pl-repeat-days')!;
+        const repeatOptions = wrap.querySelector<HTMLElement>('.pl-repeat-options')!;
+        const syncRepeat = (): void => {
+            repeatDays.hidden = repeatSelect.value !== 'weekly';
+            repeatDays.disabled = repeatDays.hidden;
+            repeatOptions.hidden = repeatSelect.value === 'none';
+            repeatOptions.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.disabled = repeatOptions.hidden; });
+            wrap.querySelector<HTMLElement>('.pl-repeat-interval-label')!.textContent = t(repeatSelect.value === 'weekly' ? 'planner.repeatWeekInterval' : 'planner.repeatDayInterval');
+        };
+        repeatSelect.addEventListener('change', syncRepeat);
+        syncRepeat();
+        wrap.addEventListener('input', () => {
+            wrap.querySelectorAll<HTMLInputElement>('input').forEach((input) => input.setCustomValidity(''));
+            wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!.min = wrap.querySelector<HTMLInputElement>(allDayBox.checked ? '[name="event-start-date"]' : '[name="event-start"]')!.value.slice(0, 10);
+        });
+        wrap.addEventListener('cancel', (e) => { e.preventDefault(); closeModal(true); });
 
         wrap.querySelector('.pl-modal-x')!.addEventListener('click', () => closeModal(true));
         wrap.querySelector('.pl-modal-cancel')!.addEventListener('click', () => closeModal(true));
@@ -561,6 +608,13 @@ export function buildCalendarView(
             if (e.target === wrap) closeModal(true);
         });
         wrap.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const targets = [...wrap.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]')].filter((el) => !el.matches(':disabled') && el.getClientRects().length > 0);
+                const first = targets[0], last = targets.at(-1);
+                if (e.shiftKey && document.activeElement === first && last) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last && first) { e.preventDefault(); first.focus(); }
+                return;
+            }
             if (e.key !== 'Escape') return;
             /* ESC 메뉴가 같이 열리지 않게 */
             e.preventDefault();
@@ -569,7 +623,7 @@ export function buildCalendarView(
         });
         wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.focus();
 
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const title = wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.value.trim();
             if (!title) return;
@@ -588,8 +642,28 @@ export function buildCalendarView(
             }
             const calId =
                 (wrap.querySelector<HTMLSelectElement>('[name="event-calendar"]')?.value as string) || currentCal;
-            closeModal(true);
-            void save(title, start, end, isAllDay, calId, ev);
+            if (!Number.isFinite(+start) || !Number.isFinite(+end)) {
+                const input = wrap.querySelector<HTMLInputElement>(isAllDay ? '[name="event-start-date"]' : '[name="event-start"]')!;
+                input.setCustomValidity(t('planner.repeatDateInvalid')); input.reportValidity(); return;
+            }
+            let repeat: RepeatRule | null | undefined = googleInstance ? undefined : null;
+            if (!googleInstance && repeatSelect.value !== 'none') {
+                const days = [...repeatDays.querySelectorAll<HTMLInputElement>('input:checked')].map((input) => Number(input.value));
+                if (repeatSelect.value === 'weekly' && !days.includes(start.getDay())) {
+                    const input = repeatDays.querySelector<HTMLInputElement>('input')!;
+                    input.setCustomValidity(t('planner.repeatStartDay')); input.reportValidity(); return;
+                }
+                const until = wrap.querySelector<HTMLInputElement>('[name="event-repeat-until"]')!;
+                if (until.value && until.value < ymd(start)) { until.setCustomValidity(t('planner.repeatDateInvalid')); until.reportValidity(); return; }
+                repeat = { frequency: repeatSelect.value as RepeatRule['frequency'], days, interval: Number(wrap.querySelector<HTMLInputElement>('[name="event-repeat-interval"]')!.value), ...(until.value ? { until: until.value } : {}) };
+            }
+            const submit = wrap.querySelector<HTMLButtonElement>('[type="submit"]')!;
+            submit.disabled = true;
+            form.setAttribute('aria-busy', 'true');
+            const ok = await save(title, start, end, isAllDay, calId, ev, repeat);
+            if (modalEl !== wrap) return;
+            if (ok) closeModal(true);
+            else { const error = wrap.querySelector<HTMLElement>('.pl-form-error')!; error.hidden = false; error.textContent = t('planner.t32'); submit.disabled = false; form.removeAttribute('aria-busy'); }
         });
     }
 
@@ -607,22 +681,25 @@ export function buildCalendarView(
         end: Date,
         allDay: boolean,
         calId: string,
-        ev?: EventApi
-    ): Promise<void> {
+        ev?: EventApi,
+        repeat?: RepeatRule | null
+    ): Promise<boolean> {
         try {
             /* 어디에 쓸지는 **id 앞머리**가 정한다. 이 브라우저 것과 구글 것이 한 화면에 섞여 있다 */
             if (ev && isLocal(ev.id)) {
-                updateLocalEvent(ev.id, { title, allDay, ...stored(start, end, allDay) });
+                updateLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id, { title, allDay, repeat, ...stored(start, end, allDay) });
             } else if (ev) {
-                await withToken(token!, (tok) => patchEvent(tok, calId, ev.extendedProps.googleId as string, { title, start, end, allDay }));
+                await withToken(token!, (tok) => patchEvent(tok, calId, ev.extendedProps.googleId as string, { title, start, end, allDay, repeat }));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
-                createLocalEvent({ title, allDay, ...stored(start, end, allDay) });
+                createLocalEvent({ title, allDay, repeat, ...stored(start, end, allDay) });
             } else {
-                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay }));
+                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, repeat }));
             }
             if (lastRange) await reload(lastRange.start, lastRange.end);
+            return true;
         } catch {
             toast(t('planner.t32'), 'error');
+            return false;
         }
     }
 
@@ -733,10 +810,11 @@ export function buildCalendarView(
     }
 
     async function remove(ev: EventApi): Promise<void> {
-        if (!confirm(t('planner.t34', { title: ev.title }))) return;
+        if (!confirm(t(ev.extendedProps.localSeriesId ? 'planner.repeatSeriesDelete' : 'planner.t34', { title: ev.title }))) return;
         try {
-            if (isLocal(ev.id)) deleteLocalEvent(ev.id);
+            if (isLocal(ev.id)) deleteLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id);
             else await withToken(token!, (tok) => deleteEvent(tok, ev.extendedProps.calendarId as string, ev.extendedProps.googleId as string));
+            if (ev.extendedProps.localSeriesId && lastRange) { await reload(lastRange.start, lastRange.end); return; }
             ev.remove();
             allEvents = allEvents.filter((e) => e.extendedProps.googleId !== ev.extendedProps.googleId);
             renderMini();

@@ -12,6 +12,7 @@
  * 일기를 얹든, 화면은 그대로다.
  */
 import type { FcEvent, GoogleTask, KanbanColumn } from './gcal';
+import { occurrences, type RepeatRule } from './recurrence';
 
 export const LOCAL_PREFIX = 'local__';
 export const LOCAL_CALENDAR_ID = 'local';
@@ -57,6 +58,7 @@ export interface LocalEventInput {
     end: string;
     allDay: boolean;
     color?: string;
+    repeat?: RepeatRule | null;
 }
 
 /** 저장된 것 → 달력이 쓰는 모양. 구글에서 온 것과 **구분이 안 가게** 같은 틀로 낸다. */
@@ -74,13 +76,24 @@ export function toFcEvent(stored: LocalEventInput & { id: string }, calendarName
             calendarId: LOCAL_CALENDAR_ID,
             calendarName,
             googleId: stored.id,
-            htmlLink: ''
-        }
+            htmlLink: '',
+            ...(stored.repeat ? { localSeriesId: stored.id, repeatRule: stored.repeat, seriesStart: stored.start, seriesEnd: stored.end } : {})
+        },
+        ...(stored.repeat ? { startEditable: false, durationEditable: false } : {})
     };
 }
 
-export function listEvents(calendarName: string): FcEvent[] {
-    return read<LocalEventInput & { id: string }>(EVENTS_KEY).map((e) => toFcEvent(e, calendarName));
+export function listEvents(calendarName: string, from?: Date, to?: Date): FcEvent[] {
+    return read<LocalEventInput & { id: string }>(EVENTS_KEY).flatMap((e) => {
+        const event = toFcEvent(e, calendarName);
+        if (!e.repeat || !from || !to) return [event];
+        return occurrences(new Date(e.allDay ? `${e.start}T00:00:00` : e.start), new Date(e.allDay ? `${e.end}T00:00:00` : e.end), e.repeat, from, to).map((item) => ({
+            ...event,
+            id: `${e.id}::${item.start.getFullYear()}-${item.start.getMonth() + 1}-${item.start.getDate()}`,
+            start: e.allDay ? `${item.start.getFullYear()}-${String(item.start.getMonth() + 1).padStart(2, '0')}-${String(item.start.getDate()).padStart(2, '0')}` : item.start.toISOString(),
+            end: e.allDay ? `${item.end.getFullYear()}-${String(item.end.getMonth() + 1).padStart(2, '0')}-${String(item.end.getDate()).padStart(2, '0')}` : item.end.toISOString()
+        }));
+    });
 }
 
 export function createEvent(input: LocalEventInput): string {

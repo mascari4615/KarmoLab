@@ -134,14 +134,28 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-cal-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* 창 */
-        .pl-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 40; }
-        .pl-modal { width: min(420px, 92%); background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+        .pl-modal-overlay { position: fixed; inset: 0; margin: auto; padding: 0; width: min(520px, calc(100% - 24px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--text-primary); background: var(--dash-paper, var(--bg-secondary)); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+        .pl-modal-overlay::backdrop { background: rgba(0,0,0,.45); }
+        .pl-modal { width: 100%; background: inherit; }
         .pl-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
         .pl-modal-title { margin: 0; font-size: var(--font-size-md); color: var(--text-primary); }
-        .pl-modal-x { border: none; background: none; color: var(--text-tertiary); cursor: pointer; font-size: var(--font-size-xs); }
+        .pl-modal-x { border: none; background: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-xs); min-width: 44px; min-height: 44px; }
         .pl-modal-body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
         .pl-modal-name { font-size: var(--font-size-md); }
-        .pl-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .pl-times { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+        .pl-modal .pl-field, .pl-modal .pl-input { min-width: 0; max-width: 100%; }
+        .pl-modal .pl-input, .pl-modal .pl-check, .pl-modal .btn { min-height: 44px; }
+        .pl-repeat-days { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; border: 0; }
+        .pl-repeat-days legend { margin-bottom: 6px; }
+        .pl-repeat-options { display: grid; gap: 12px; }
+        .pl-repeat-day { position: relative; display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
+        .pl-repeat-day input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+        .pl-repeat-day:has(:checked) { background: var(--text-primary); color: var(--dash-paper, var(--bg-secondary)); }
+        .pl-repeat-day:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .pl-repeat-day:has(:disabled) { cursor: default; opacity: .6; }
+        .pl-repeat-note { margin: 0; font-size: var(--font-size-xs); color: var(--text-secondary); }
+        .pl-form-error { color: var(--error); margin: 0; }
+        .pl-modal [hidden] { display: none; }
         .pl-times[data-allday="1"] { grid-template-columns: 1fr; }
         .pl-times[data-allday="1"] .pl-start-time, .pl-times[data-allday="1"] .pl-end-field { display: none; }
         .pl-times[data-allday="0"] .pl-start-date { display: none; }
@@ -221,6 +235,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-track-stat { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: 4px; }
 
         @media (max-width: 720px) {
+            .pl-modal .pl-times { grid-template-columns: minmax(0, 1fr); }
             .pl-diary { flex-direction: column; }
             .pl-diary-side { width: 100%; max-height: 180px; }
             .pl-cal-layout { flex-direction: column; }

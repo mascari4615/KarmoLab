@@ -13,6 +13,7 @@
  */
 
 import { covers, eventsIn, loadCached, mergeDelta, mergeFull, saveCached, syncStamp } from './event-cache';
+import { toRRule, type RepeatRule } from './recurrence';
 
 const CAL_API = 'https://www.googleapis.com/calendar/v3';
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
@@ -44,6 +45,7 @@ export interface GoogleEvent {
     colorId?: string;
     /** 'cancelled' 면 지워진 일정 (바뀐 것만 받을 때 온다) */
     status?: string;
+    recurringEventId?: string;
 }
 
 /** FullCalendar 가 먹는 모양 */
@@ -55,11 +57,18 @@ export interface FcEvent {
     allDay: boolean;
     backgroundColor: string;
     borderColor: string;
+    startEditable?: boolean;
+    durationEditable?: boolean;
     extendedProps: {
         calendarId: string;
         calendarName: string;
         googleId: string;
         htmlLink: string;
+        recurringEventId?: string;
+        localSeriesId?: string;
+        repeatRule?: RepeatRule;
+        seriesStart?: string;
+        seriesEnd?: string;
     };
 }
 
@@ -102,7 +111,8 @@ export function toFcEvent(item: GoogleEvent, cal: GoogleCalendar): FcEvent {
             calendarId: cal.id,
             calendarName: cal.summary,
             googleId: item.id,
-            htmlLink: item.htmlLink || ''
+            htmlLink: item.htmlLink || '',
+            ...(item.recurringEventId ? { recurringEventId: item.recurringEventId } : {})
         }
     };
 }
@@ -117,6 +127,7 @@ export interface EventDraft {
     start: Date;
     end: Date;
     allDay: boolean;
+    repeat?: RepeatRule | null;
 }
 
 /** 구글에 보낼 모양. 종일이면 날짜만, 아니면 시각까지. 끝은 양쪽 다 다음이다. */
@@ -132,6 +143,14 @@ export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
     } else {
         body.start = { dateTime: draft.start.toISOString() };
         body.end = { dateTime: draft.end.toISOString() };
+    }
+    if (draft.repeat !== undefined) {
+        body.recurrence = draft.repeat ? [toRRule(draft.repeat, draft.allDay)] : [];
+        if (draft.repeat) {
+            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            (body.start as Record<string, string>).timeZone = timeZone;
+            (body.end as Record<string, string>).timeZone = timeZone;
+        }
     }
     return body;
 }

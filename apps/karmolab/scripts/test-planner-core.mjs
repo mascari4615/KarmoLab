@@ -392,6 +392,50 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
   eq(C.eventsIn(r, day('2026-09-21'), day('2026-09-23')).map((x) => x.id).join(), 'c', '구간 안 일정만');
 }
 
+const R = await load('src/widgets/planner/recurrence.ts', 'recurrence');
+{
+  const start = new Date(2026, 9, 14, 10), end = new Date(2026, 9, 14, 11);
+  const weekly = { frequency: 'weekly', interval: 1, days: [1, 3], until: '2026-10-26' };
+  const list = R.occurrences(start, end, weekly, new Date(2026, 9, 1), new Date(2026, 10, 1));
+  eq(list.map(x => P.ymd(x.start)).join(), '2026-10-14,2026-10-19,2026-10-21,2026-10-26', '요일과 종료일 포함, 시작 전 회차 없음');
+  check(list.every(x => x.start.getHours() === 10 && x.end.getHours() === 11), '반복 시간 유지');
+  const alternate = R.occurrences(start, end, { ...weekly, interval: 2, until: undefined }, new Date(2026, 9, 1), new Date(2026, 10, 1));
+  eq(alternate.map(x => P.ymd(x.start)).join(), '2026-10-14,2026-10-26,2026-10-28', '격주와 주 시작 일요일');
+  const daily = R.occurrences(new Date(2026,9,14),new Date(2026,9,15),{frequency:'daily',interval:1,days:[],until:'2026-10-16'},new Date(2026,9,1),new Date(2026,10,1));
+  eq(daily.length,3,'종일 매일 종료일까지3회');
+  check(daily.every(x=>x.end.getDate()===x.start.getDate()+1),'종일 끝 다음날');
+  const overnight=R.occurrences(new Date(2026,9,14,23),new Date(2026,9,15,1),{frequency:'daily',interval:1,days:[]},new Date(2026,9,15),new Date(2026,9,16));
+  eq(overnight.length,2,'전날 시작해 구간에 걸친 회차 포함');
+  const payload=P.toGooglePayload({title:'주간',start,end,allDay:false,repeat:weekly});
+  check(payload.recurrence?.[0]?.includes('FREQ=WEEKLY;INTERVAL=1;WKST=SU;BYDAY=MO,WE;UNTIL='),'구글 주간 반복 payload');
+  eq(payload.start.timeZone,Intl.DateTimeFormat().resolvedOptions().timeZone,'구글 반복 시간대 명시');
+  eq(R.toRRule({frequency:'daily',interval:2,days:[],until:'2026-10-16'},true),'RRULE:FREQ=DAILY;INTERVAL=2;UNTIL=20261016','종일 RRULE 종료일 날짜');
+  eq(P.toGooglePayload({title:'해제',start,end,allDay:false,repeat:null}).recurrence.length,0,'반복 해제 명시');
+  const instance=P.toFcEvent({id:'instance',recurringEventId:'series',start:{date:'2026-10-14'},end:{date:'2026-10-15'}},CAL);
+  eq(instance.extendedProps.recurringEventId,'series','구글 회차 구분 유지');
+}
+{
+  const local=await load('src/widgets/planner/local-store.ts','repeat-local');
+  localStorage.removeItem('karmolab_planner_events');
+  const id=local.createEvent({title:'반복',start:'2026-10-14',end:'2026-10-15',allDay:true,repeat:{frequency:'weekly',interval:1,days:[1,3],until:'2026-10-26'}});
+  const range=[new Date(2026,9,1),new Date(2026,10,1)];
+  const events=local.listEvents('내 일정',...range);
+  eq(events.length,4,'저장된 규칙 회차4개');
+  check(events.every(e=>e.extendedProps.localSeriesId===id&&!e.startEditable),'반복 원본 ID와 끌기 보호');
+  eq(new Set(events.map(e=>e.id)).size,4,'회차 ID 고유');
+  const reread=await load('src/widgets/planner/local-store.ts','repeat-reload');
+  eq(reread.listEvents('내 일정',...range).map(e=>e.id).join(),events.map(e=>e.id).join(),'다시 읽은 회차와 ID 동일');
+  local.updateEvent(id,{title:'전체 수정',repeat:null});
+  eq(local.listEvents('내 일정',...range).length,1,'반복 해제 후 원본1개');
+  local.deleteEvent(id);eq(local.listEvents('내 일정',...range).length,0,'전체 반복 삭제');
+}
+{
+  const previous=process.env.TZ;process.env.TZ='America/New_York';
+  const list=R.occurrences(new Date(2026,9,31,9),new Date(2026,9,31,10),{frequency:'daily',interval:1,days:[]},new Date(2026,9,31),new Date(2026,10,3));
+  eq(list.map(x=>x.start.toISOString()).join(),'2026-10-31T13:00:00.000Z,2026-11-01T14:00:00.000Z,2026-11-02T14:00:00.000Z','서머타임 종료 뒤 현지9시 유지');
+  if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;
+}
+
 process.stdout.write('\n');
 if (failures.length) {
   console.error(`\n[test-planner-core] ${failures.length}건 실패:`);
