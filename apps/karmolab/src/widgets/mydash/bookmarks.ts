@@ -274,6 +274,10 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       '.bm-view-open:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
       '.bm-tile .bm-view-open.is-unavailable{min-height:calc(var(--bm-tap) * 3)}',
       '.bm-view-open.is-unavailable::after{content:attr(data-error);display:block;padding:var(--space-sm);font:inherit}',
+      'html[data-site="dash"] .kmb-viewer .bm-sheet{position:static;inset:auto;width:100%;height:100%;display:block;padding:0;border:0;overflow:auto;background:var(--bg-secondary);backdrop-filter:none}',
+      '.kmb-viewer .bm-sheet .bm-scrim,.kmb-viewer .bm-sheet .bm-pic,.kmb-viewer .bm-sheet .bm-view-open,.kmb-viewer .bm-sheet .bm-keys{display:none}',
+      '.kmb-viewer .bm-sheet-card{width:100%;max-width:none;max-height:none;border:0;border-radius:0;padding:0;background:var(--bg-secondary);color:var(--text-primary)}',
+      '.kmb-viewer{color-scheme:dark}html[data-site="dash"] .kmb-details input,html[data-site="dash"] .kmb-details textarea,html[data-site="dash"] .kmb-details select{box-sizing:border-box;width:100%;min-height:44px;padding:10px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border)}',
       '.bm-video{background:var(--bg-tertiary)}',
       '.bm-yt{width:100%;aspect-ratio:16/9;border:0;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
       '.bm-sheet-title{font-size:var(--font-size-title);font-weight:600;line-height:1.3}',
@@ -976,11 +980,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
 
     await loadEvents();
     await loadNamespace('media');
-    const mediaViewer = createMediaViewer({ labels: {
-      title: t('media.viewer.title'), zoom: t('media.viewer.zoom'), fit: t('media.viewer.fit'),
-      close: t('media.viewer.close'), previous: t('media.viewer.previous'), next: t('media.viewer.next'), error: t('media.viewer.error')
-    } });
-    ctx.onDispose(() => mediaViewer.dispose());
 
     /* ── 뼈대 ── */
     const wrap = document.createElement('div');
@@ -1223,6 +1222,30 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     const judgeEl = wrap.querySelector('[data-judge]') as HTMLElement;
     const barEl = wrap.querySelector('[data-bar]') as HTMLElement;
     const sheetEl = wrap.querySelector('[data-sheet]') as HTMLElement;
+    const mediaViewer = createMediaViewer({ parent: wrap, labels: {
+      title: t('media.viewer.title'), zoom: t('media.viewer.zoom'), fit: t('media.viewer.fit'),
+      close: t('media.viewer.close'), previous: t('media.viewer.previous'), next: t('media.viewer.next'), error: t('media.viewer.error'), loading: t('media.viewer.loading'), retry: t('media.viewer.retry')
+    }, actions: { label: t('media.viewer.settings'), openByDefault: isWide, render: (item, host) => {
+      const id = item.id.slice(0, item.id.lastIndexOf('::'));
+      if (sheet?.target !== id) openSheet(id);
+      host.append(sheetEl);
+      sheetEl.querySelector('.bm-sheet-card')?.removeAttribute('role');
+      sheetEl.querySelector('.bm-sheet-card')?.removeAttribute('aria-modal');
+    } }, beforeChange: item => {
+      if (sheetSaving) return false;
+      const id = item?.id.slice(0, item.id.lastIndexOf('::'));
+      if (id === sheet?.target || !draft || !draftBase) return true;
+      const changed = !sameSet(draft.intent, draftBase.intent) || !sameSet(draft.topic, draftBase.topic) || draft.domain !== draftBase.domain || draft.priority !== draftBase.priority || draft.status !== draftBase.status || draft.note !== draftBase.note;
+      return !changed || window.confirm(t('media.viewer.unsaved'));
+    }, onClose: () => {
+      wrap.append(sheetEl); closeSheet();
+      requestAnimationFrame(() => {
+        if (mediaViewer.opened) return;
+        const target = listEl.querySelector<HTMLElement>('[data-row="' + CSS.escape(curId) + '"] .bm-view-open') || wrap.querySelector<HTMLElement>('.bm-scroll');
+        target?.focus({ preventScroll: true });
+      });
+    } });
+    ctx.onDispose(() => mediaViewer.dispose());
     const searchEl = qEl as HTMLElement;
     const headActsEl = wrap.querySelector('.bm-head-acts') as HTMLElement;
 
@@ -1287,6 +1310,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     let sheet: SheetTarget | null = null;
     let draft: ItemState | null = null;
     let draftBase: ItemState | null = null;
+    let sheetSaving = false;
     let sheetMsg = '';
     let sheetMsgBad = false;
     let showNowList = false;
@@ -1920,6 +1944,8 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     }
 
     function paint(): void {
+      const focused = document.activeElement as HTMLElement | null;
+      const focusedMedia = focused?.matches('.bm-view-open') && listEl.contains(focused) ? focused.getAttribute('data-id') : null;
       const chipEls = Array.from(wrap.querySelectorAll('.bm-groups .tool-chip')) as HTMLElement[];
       for (const b of chipEls) {
         const axis = b.getAttribute('data-axis') || '';
@@ -1987,6 +2013,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       paintChipCounts();
       paintHead();
       paintBar();
+      if (focusedMedia && !mediaViewer.opened) (listEl.querySelector<HTMLElement>('[data-row="' + CSS.escape(focusedMedia) + '"] .bm-view-open') || wrap.querySelector<HTMLElement>('.bm-scroll'))?.focus({ preventScroll: true });
     }
 
     /* ── 시트 ──
@@ -2088,20 +2115,20 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
           const who = m.who ? [text(m.who.name), m.who.handle ? '@' + text(m.who.handle) : ''].filter(Boolean).join(' ') : '';
           if (who) body.push('<div class="bm-who">' + esc(who) + '</div>');
           if (text(m.text).trim()) body.push('<div class="bm-tw">' + esc(text(m.text).trim()) + '</div>');
-          for (const [index, ph] of (m.photos || []).entries()) {
+          for (const [index, ph] of (mediaViewer.opened ? [] : m.photos || []).entries()) {
             const u = picUrl(text(ph.url), 'medium');
             if (!u) continue;
             const ratio = ph.w && ph.h ? ' style="aspect-ratio:' + Number(ph.w) + '/' + Number(ph.h) + '"' : '';
             body.push('<button type="button" class="bm-view-open" data-act="media" data-id="' + esc(text(it.id)) + '" data-media-key="' + esc(text(it.id) + '::image:' + index) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(u) + '" alt="" loading="lazy" decoding="async"' + ratio + '></button>');
           }
-          if (m.video && m.video.src) {
+          if (!mediaViewer.opened && m.video && m.video.src) {
             /* 영상 미리보기 (사용자 2026-09-19). mp4 를 그 자리에서 튼다. 소리는 눌러야. referer 있으면 video.twimg.com 이 403 (curl 실측) */
             const ratio = m.video.w && m.video.h ? ' style="aspect-ratio:' + Number(m.video.w) + '/' + Number(m.video.h) + '"' : '';
             body.push(
               '<video class="bm-pic bm-video" controls preload="metadata" playsinline poster="' +
               esc(picUrl(text(m.video.poster), 'medium')) + '" src="' + esc(text(m.video.src)) + '"' + ratio + '></video><button type="button" class="btn btn-ghost" data-act="media" data-id="' + esc(text(it.id)) + '" data-media-key="' + esc(text(it.id) + '::video') + '">' + esc(t('media.viewer.title')) + '</button>'
             );
-          } else if (m.video && m.video.poster) {
+          } else if (!mediaViewer.opened && m.video && m.video.poster) {
             body.push(
               '<img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(picUrl(text(m.video.poster), 'medium')) + '" alt="" loading="lazy">' +
               '<div class="tool-hint">' + esc(t('mydash.bm.media.video', undefined, '영상은 원문에서')) + '</div>'
@@ -2124,7 +2151,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         if (m.site) body.push('<div class="bm-who">' + esc(text(m.site)) + '</div>');
         if (text(m.description).trim()) body.push('<div class="bm-tw">' + esc(text(m.description).trim()) + '</div>');
         const img = m.image ? safeLinkUrl(m.image) : '';
-        if (img) body.push('<button type="button" class="bm-view-open" data-act="media" data-id="' + esc(text(it.id)) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(img) + '" alt="" loading="lazy" decoding="async"></button>');
+        if (img && !mediaViewer.opened) body.push('<button type="button" class="bm-view-open" data-act="media" data-id="' + esc(text(it.id)) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(img) + '" alt="" loading="lazy" decoding="async"></button>');
       }
       if (url) {
         body.push(
@@ -2293,6 +2320,10 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         esc(t('mydash.bm.sheet.save', undefined, '저장')) + '</button></div>' +
         '</div>';
       sheetEl.hidden = false;
+      if (sheetEl.closest('.kmb-details')) {
+        sheetEl.querySelector('.bm-sheet-card')?.removeAttribute('role');
+        sheetEl.querySelector('.bm-sheet-card')?.removeAttribute('aria-modal');
+      }
       const noteEl = sheetEl.querySelector('#bm-note') as HTMLInputElement | null;
       if (noteEl) {
         noteEl.addEventListener('input', () => {
@@ -2339,7 +2370,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     }
 
     async function saveSheet(): Promise<void> {
-      if (!sheet || !draft || !draftBase) return;
+      if (!sheet || !draft || !draftBase || sheetSaving) return;
       /* 승격 관문. 메모가 **이번에 사람이 바꾼 값**이어야 한다. 비어 있지 않은 것만 재면
          옛 메모가 그대로 통과해, 승격 근거를 적게 하려던 관문이 그냥 열린다. */
       if (promotingNow() && (!draft.note.trim() || draft.note === draftBase.note)) {
@@ -2369,6 +2400,11 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       }
       /* 나쁜 것이 이긴다. 권한 없음이 가장 세고, 그 다음이 시각 충돌 */
       let worst: SendResult = 'sent';
+      sheetSaving = true;
+      sheetMsg = t('media.viewer.saving'); paintSheet();
+      const controls = [...sheetEl.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>('input,textarea,select,button')].filter(control => !control.disabled);
+      controls.forEach(control => { control.disabled = true; });
+      try {
       for (const ev of evs) {
         const r = await sendEvent(ev);
         if (r === 'denied') worst = 'denied';
@@ -2382,6 +2418,10 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         paintSheet();
         return;
       }
+      if (mediaViewer.opened) {
+        const target = sheet.target;
+        openSheet(target); sheetMsg = sendWord(worst); paintSheet(); return;
+      }
       /* PC 는 저장하면 다음 줄로. 훑는 손이 저장마다 목록으로 안 돌아가게. 낱개일 때만
          (묶음은 다음 줄이 무엇인지 애매) */
       if (isWide() && !sheet.bundle) {
@@ -2393,6 +2433,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         }
       }
       closeSheet();
+      } finally { sheetSaving = false; controls.forEach(control => { control.disabled = false; }); }
     }
 
     /* ── 선택 모드 ── */
@@ -2862,6 +2903,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         return;
       }
       if (act === 'sheet-close') {
+        if (mediaViewer.opened) { mediaViewer.showActions(false); return; }
         closeSheet();
         return;
       }

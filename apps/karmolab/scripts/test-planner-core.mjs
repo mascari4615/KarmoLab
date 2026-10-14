@@ -101,7 +101,21 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
 
 /* ── 색 ── */
 {
-  eq(P.eventColor({ id: 'x', colorId: '7', start: {}, end: {} }, '#000'), '#42d692', '일정 색이 이긴다');
+  eq(P.eventColor({ id: 'x', colorId: '7', start: {}, end: {} }, '#000'), '#46d6db', '일정 전용 팔레트가 캘린더 팔레트와 분리');
+  const draft={title:'색 검사',start:new Date(2026,9,14,9),end:new Date(2026,9,14,18),allDay:false};
+  eq(P.toGooglePayload({...draft,colorId:'11'}).colorId,'11','구글 색 ID 쓰기');
+  eq(P.toGooglePayload({...draft,colorId:''}).colorId,null,'구글 기본색 복원');
+  check(!('colorId' in P.toGooglePayload(draft)),'이동 저장은 기존 색 보존');
+  const id=L.createEvent({title:'색 그룹',start:'2026-10-14T09:00:00+09:00',end:'2026-10-14T18:00:00+09:00',allDay:false,color:'#dc2127',repeat:{frequency:'daily',until:'2026-10-16'}});
+  L.updateOccurrence(id,'2026-10-15',{color:'#46d6db'});
+  const rows=L.listEvents('로컬',new Date(2026,9,14),new Date(2026,9,17)).filter(x=>x.extendedProps.localSeriesId===id);
+  eq(rows.find(x=>x.extendedProps.occurrenceDate==='2026-10-15').backgroundColor,'#46d6db','이날 색 예외');
+  eq(rows.find(x=>x.extendedProps.occurrenceDate==='2026-10-16').backgroundColor,'#dc2127','다른 회차 색 보존');
+  L.updateEvent(id,{color:'#5484ed'});
+  const changed=L.listEvents('로컬',new Date(2026,9,14),new Date(2026,9,17)).filter(x=>x.extendedProps.localSeriesId===id);
+  eq(changed.find(x=>x.extendedProps.occurrenceDate==='2026-10-15').backgroundColor,'#46d6db','전체 색 변경 뒤 하루 예외 보존');
+  eq(changed.find(x=>x.extendedProps.occurrenceDate==='2026-10-16').backgroundColor,'#5484ed','전체 색 변경');
+  L.deleteEvent(id);
   eq(P.eventColor({ id: 'x', start: {}, end: {} }, '#000'), '#000', '색 없으면 캘린더 색');
   eq(P.eventColor({ id: 'x', colorId: '999', start: {}, end: {} }, '#000'), '#000', '모르는 번호는 캘린더 색');
   eq(P.calendarColor('abc', '#fff'), '#fff', '캘린더가 준 색 우선');

@@ -59,6 +59,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-input { padding: 6px 10px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: var(--font-size-sm); }
         .pl-field { display: flex; flex-direction: column; gap: 4px; }
         .pl-label { font-size: var(--font-size-xs); color: var(--text-secondary); font-weight: 600; }
+        .pl-event-colors{border:0;padding:0;margin:0}.pl-color-options{display:flex;flex-wrap:wrap;gap:4px}.pl-color-option{position:relative;width:44px;height:44px;display:grid;place-items:center;cursor:pointer}.pl-color-option input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}.pl-color-option span:first-of-type{width:26px;height:26px;border-radius:50%;background:var(--pl-color);border:1px solid var(--border)}.pl-color-option:has(:checked) span:first-of-type{outline:2px solid var(--text-primary);outline-offset:3px}.pl-color-option:has(:focus-visible){outline:2px solid var(--accent)}.pl-color-name{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
         .pl-check { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-sm); color: var(--text-secondary); }
 
         /* 달력 */
@@ -465,7 +466,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                     return [];
                 }
             });
-            mountNotifications(ctx);
+            mountNotifications(ctx, { visible: false });
         },
     });
 })();

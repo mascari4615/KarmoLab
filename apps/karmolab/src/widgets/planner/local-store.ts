@@ -62,7 +62,7 @@ export interface LocalEventInput {
     color?: string;
     repeat?: RepeatRule | null;
     linkedEvents?: LinkedEvent[];
-    exceptions?: Record<string, { cancelled?: boolean; title?: string; start?: string; end?: string; allDay?: boolean; linkedEvents?: LinkedEvent[] }>;
+    exceptions?: Record<string, { cancelled?: boolean; title?: string; start?: string; end?: string; allDay?: boolean; color?: string; linkedEvents?: LinkedEvent[] }>;
 }
 
 /** 저장된 것 → 달력이 쓰는 모양. 구글에서 온 것과 **구분이 안 가게** 같은 틀로 낸다. */
@@ -83,7 +83,8 @@ export function toFcEvent(stored: LocalEventInput & { id: string }, calendarName
             googleId: stored.id,
             htmlLink: '',
             linkedEvents: links,
-            ...(stored.repeat ? { localSeriesId: stored.id, repeatRule: stored.repeat, seriesStart: stored.start, seriesEnd: stored.end, seriesTitle: stored.title, seriesLinks: links, exceptions: stored.exceptions } : {})
+            eventColor: stored.color || '',
+            ...(stored.repeat ? { localSeriesId: stored.id, repeatRule: stored.repeat, seriesStart: stored.start, seriesEnd: stored.end, seriesTitle: stored.title, seriesColor: stored.color || '', seriesLinks: links, exceptions: stored.exceptions } : {})
         },
         ...(stored.repeat ? { startEditable: false, durationEditable: false } : {})
     };
@@ -109,7 +110,9 @@ export function listEvents(calendarName: string, from?: Date, to?: Date): FcEven
             start: e.allDay ? `${item.start.getFullYear()}-${String(item.start.getMonth() + 1).padStart(2, '0')}-${String(item.start.getDate()).padStart(2, '0')}` : item.start.toISOString(),
             end: e.allDay ? `${item.end.getFullYear()}-${String(item.end.getMonth() + 1).padStart(2, '0')}-${String(item.end.getDate()).padStart(2, '0')}` : item.end.toISOString(),
             ...exception,
-            extendedProps: { ...event.extendedProps, occurrenceDate: date, occurrenceStart: e.allDay ? key(item.start) : item.start.toISOString(), occurrenceEnd: e.allDay ? key(item.end) : item.end.toISOString(), occurrenceChanged: !!exception }
+            backgroundColor: exception?.color || (exception?.color === '' ? LOCAL_COLOR : event.backgroundColor),
+            borderColor: exception?.color || (exception?.color === '' ? LOCAL_COLOR : event.borderColor),
+            extendedProps: { ...event.extendedProps, eventColor: exception?.color ?? e.color ?? '', occurrenceDate: date, occurrenceStart: e.allDay ? key(item.start) : item.start.toISOString(), occurrenceEnd: e.allDay ? key(item.end) : item.end.toISOString(), occurrenceChanged: !!exception }
             };
             return new Date(result.end.length === 10 ? `${result.end}T00:00:00` : result.end) > from && new Date(result.start.length === 10 ? `${result.start}T00:00:00` : result.start) < to ? [result] : [];
         });

@@ -6,5 +6,10 @@
   "media.viewer.close": "Close",
   "media.viewer.previous": "Previous",
   "media.viewer.next": "Next",
-  "media.viewer.error": "Media could not be loaded. Close and try again."
+  "media.viewer.error": "Media could not be loaded.",
+  "media.viewer.loading": "Loading media",
+  "media.viewer.retry": "Retry",
+  "media.viewer.settings": "Settings",
+  "media.viewer.unsaved": "Discard unsaved changes and move or close?",
+  "media.viewer.saving": "Saving"
 }

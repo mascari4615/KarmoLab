@@ -134,5 +134,18 @@
   "planner.t96": "Mine",
   "planner.t97": "AI",
   "planner.t98": "AI follow-up. Edit followups.json in memo to change it",
-  "planner.t99": "Create a Google calendar named 'AI' to get AI follow-ups on your phone too"
+  "planner.t99": "Create a Google calendar named 'AI' to get AI follow-ups on your phone too",
+  "planner.eventColor": "Event color",
+  "planner.colorDefault": "Calendar default",
+  "planner.color1": "Lavender",
+  "planner.color2": "Sage",
+  "planner.color3": "Grape",
+  "planner.color4": "Flamingo",
+  "planner.color5": "Banana",
+  "planner.color6": "Tangerine",
+  "planner.color7": "Peacock",
+  "planner.color8": "Graphite",
+  "planner.color9": "Blueberry",
+  "planner.color10": "Basil",
+  "planner.color11": "Tomato"
 }

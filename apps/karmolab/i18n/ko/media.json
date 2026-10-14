@@ -6,5 +6,10 @@
   "media.viewer.close": "닫기",
   "media.viewer.previous": "이전",
   "media.viewer.next": "다음",
-  "media.viewer.error": "미디어를 불러오지 못했습니다. 닫고 다시 열어 주세요."
+  "media.viewer.error": "미디어를 불러오지 못했습니다.",
+  "media.viewer.loading": "미디어 불러오는 중",
+  "media.viewer.retry": "다시 시도",
+  "media.viewer.settings": "설정",
+  "media.viewer.unsaved": "저장하지 않은 변경이 있습니다. 변경을 버리고 이동하거나 닫을까요?",
+  "media.viewer.saving": "저장 중"
 }

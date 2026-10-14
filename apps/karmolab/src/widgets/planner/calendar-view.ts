@@ -18,6 +18,7 @@ import {
     syncEvents,
     hydrateGroups,
     patchEvent,
+    EVENT_COLORS,
     ymd,
     type FcEvent,
     type GoogleCalendar
@@ -524,6 +525,7 @@ export function buildCalendarView(
         const editableCalendars = calendars.filter((cal) => cal.id !== AI_CALENDAR_ID && cal.id !== ANIME_CALENDAR_ID && !isHolidayCalendar(cal.id));
 
         const googleInstance = !!ev?.extendedProps.recurringEventId;
+        let selectedColor = String(isLocal(ev?.id || '') ? ev?.extendedProps.eventColor || '' : ev?.extendedProps.colorId || '');
         const inheritedLinks = parseLinks(ev?.extendedProps.seriesLinks);
         const commonLinks = localRepeat || googleInstance ? inheritedLinks.length || ev?.extendedProps.commonLinks ? inheritedLinks : parseLinks(ev?.extendedProps.linkedEvents) : parseLinks(ev?.extendedProps.linkedEvents);
         const linkedAllDay = (): boolean => (localRepeat || googleInstance) && scope?.value !== 'series' && ev?.extendedProps.seriesStart ? (ev.extendedProps.seriesStart as string).length === 10 : allDayBox.checked;
@@ -540,6 +542,9 @@ export function buildCalendarView(
                     <div class="pl-modal-fields">
                     ${localRepeat || googleInstance ? `<label class="pl-field"><span class="pl-label">${esc(t('planner.groupScope'))}</span><select class="pl-input" name="event-scope"><option value="day">${esc(t('planner.groupDay'))}</option>${ev?.extendedProps.seriesStart ? `<option value="series">${esc(t('planner.groupSeries'))}</option>` : ''}</select></label>` : ''}
                     <label class="pl-field"><span class="pl-label">${esc(t('planner.t19'))}</span><input type="text" name="event-title" class="pl-input pl-modal-name" required value="${esc(ev?.title ?? '')}"></label>
+                    <fieldset class="pl-event-colors"><legend class="pl-label">${esc(t('planner.eventColor'))}</legend>
+                        <div class="pl-color-options">${[['', t('planner.colorDefault')], ...Object.keys(EVENT_COLORS).map(id => [id, t('planner.color' + id)])].map(([id, name]) => { const value = currentCal === LOCAL_CALENDAR_ID || isLocal(ev?.id || '') ? EVENT_COLORS[id] || '' : id; return `<label class="pl-color-option" title="${esc(name)}"><input type="radio" name="event-color" value="${esc(value)}" ${value === selectedColor ? 'checked' : ''}><span style="--pl-color:${id ? EVENT_COLORS[id] : calendars.find(c => c.id === currentCal)?.backgroundColor || LOCAL_COLOR}"></span><span class="pl-color-name">${esc(name)}</span></label>`; }).join('')}</div>
+                    </fieldset>
                     ${
                         editableCalendars.length > 1 && !ev
                             ? `<label class="pl-field"><span class="pl-label">${esc(t('planner.t15'))}</span>
@@ -600,6 +605,16 @@ export function buildCalendarView(
         wrap.showModal();
 
         const form = wrap.querySelector('form')!;
+        const colors = wrap.querySelector<HTMLElement>('.pl-event-colors')!;
+        colors.addEventListener('change', (e) => { selectedColor = (e.target as HTMLInputElement).value; });
+        wrap.querySelector<HTMLSelectElement>('[name="event-calendar"]')?.addEventListener('change', (e) => {
+            const local = (e.target as HTMLSelectElement).value === LOCAL_CALENDAR_ID;
+            for (const input of colors.querySelectorAll<HTMLInputElement>('input')) {
+                const id = Object.keys(EVENT_COLORS).find(key => key === input.value || EVENT_COLORS[key] === input.value);
+                input.value = id ? local ? EVENT_COLORS[id] : id : '';
+                if (input.checked) selectedColor = input.value;
+            }
+        });
         const scope = wrap.querySelector<HTMLSelectElement>('[name="event-scope"]');
         const allDayBox = wrap.querySelector<HTMLInputElement>('[name="event-allday"]')!;
         const times = wrap.querySelector<HTMLElement>('.pl-times')!;
@@ -666,6 +681,8 @@ export function buildCalendarView(
             allDayBox.checked = whole ? (ev!.extendedProps.seriesStart as string).length === 10 : ev!.allDay;
             allDayBox.disabled = googleInstance && whole;
             wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.value = whole ? ev!.extendedProps.seriesTitle as string || ev!.title : ev!.title;
+            selectedColor = String(whole ? ev!.extendedProps.seriesColor || '' : isLocal(ev!.id) ? ev!.extendedProps.eventColor || '' : ev!.extendedProps.colorId || '');
+            colors.querySelectorAll<HTMLInputElement>('input').forEach(input => { input.checked = input.value === selectedColor; });
             wrap.querySelector<HTMLInputElement>('[name="event-start"]')!.value = localInputValue(at);
             wrap.querySelector<HTMLInputElement>('[name="event-start-date"]')!.value = ymd(at);
             wrap.querySelector<HTMLInputElement>('[name="event-end"]')!.value = localInputValue(finish);
@@ -750,7 +767,7 @@ export function buildCalendarView(
             submit.disabled = true;
             form.setAttribute('aria-busy', 'true');
             const links: LinkedEvent[] = linkedAllDay() ? [] : (['before', 'after'] as const).filter(side => wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked).map(side => ({ side, title: wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!.value.trim(), minutes: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-minutes"]`)!.value), gap: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-gap"]`)!.value) }));
-            const ok = await save(title, start, end, isAllDay, calId, ev, repeat, links, scope?.value === 'day');
+            const ok = await save(title, start, end, isAllDay, calId, ev, repeat, links, scope?.value === 'day', selectedColor);
             if (modalEl !== wrap) return;
             if (ok) closeModal(true);
             else { const error = wrap.querySelector<HTMLElement>('.pl-form-error')!; error.hidden = false; error.textContent = t('planner.t32'); submit.disabled = false; form.removeAttribute('aria-busy'); }
@@ -774,7 +791,8 @@ export function buildCalendarView(
         ev?: EventApi,
         repeat?: RepeatRule | null,
         linkedEvents: LinkedEvent[] = [],
-        single = false
+        single = false,
+        color = ''
     ): Promise<boolean> {
         try {
             /* 어디에 쓸지는 **id 앞머리**가 정한다. 이 브라우저 것과 구글 것이 한 화면에 섞여 있다 */
@@ -782,6 +800,7 @@ export function buildCalendarView(
                 if (single && ev.extendedProps.localSeriesId) {
                     const times = stored(start, end, allDay);
                     const patch = {
+                        ...(color !== ev.extendedProps.seriesColor ? { color } : {}),
                         ...(title !== ev.extendedProps.seriesTitle ? { title } : {}),
                         ...(allDay !== ((ev.extendedProps.seriesStart as string).length === 10) ? { allDay } : {}),
                         ...(times.start !== ev.extendedProps.occurrenceStart ? { start: times.start } : {}),
@@ -790,7 +809,7 @@ export function buildCalendarView(
                     updateOccurrence(ev.extendedProps.localSeriesId as string, ev.extendedProps.occurrenceDate as string, Object.keys(patch).length ? patch : null);
                     updateLocalEvent(ev.extendedProps.localSeriesId as string, { linkedEvents });
                 }
-                else updateLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id, { title, allDay, repeat, linkedEvents, ...(repeat === null ? { exceptions: {} } : {}), ...stored(start, end, allDay) });
+                else updateLocalEvent((ev.extendedProps.localSeriesId as string) || ev.id, { title, allDay, color, repeat, linkedEvents, ...(repeat === null ? { exceptions: {} } : {}), ...stored(start, end, allDay) });
             } else if (ev) {
                 const id = !single && ev.extendedProps.recurringEventId ? ev.extendedProps.recurringEventId as string : ev.extendedProps.googleId as string;
                 const grouped = !!ev.extendedProps.recurringEventId;
@@ -806,11 +825,11 @@ export function buildCalendarView(
                 if (single && grouped && (!ev.extendedProps.commonLinks || JSON.stringify(linkedEvents) !== JSON.stringify(parseLinks(ev.extendedProps.seriesLinks)))) {
                     await withToken(token!, (tok) => patchEvent(tok, calId, ev.extendedProps.recurringEventId as string, { linkedEvents, commonLinks: true, start, end, allDay }, ['summary', 'start', 'end']));
                 }
-                if (!single || omit.length !== 3) await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, repeat, linkedEvents: links, commonLinks: true, recurrence }, omit));
+                if (!single || omit.length !== 3 || color !== ev.extendedProps.colorId) await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, colorId: color, repeat, linkedEvents: links, commonLinks: true, recurrence }, omit));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
-                createLocalEvent({ title, allDay, repeat, linkedEvents, ...stored(start, end, allDay) });
+                createLocalEvent({ title, allDay, color, repeat, linkedEvents, ...stored(start, end, allDay) });
             } else {
-                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, repeat, linkedEvents, commonLinks: true }));
+                await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, colorId: color, repeat, linkedEvents, commonLinks: true }));
             }
             if (lastRange) await reload(lastRange.start, lastRange.end);
             return true;

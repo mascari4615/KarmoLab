@@ -19,17 +19,9 @@ import { parseLinks, type LinkedEvent } from './event-group';
 const CAL_API = 'https://www.googleapis.com/calendar/v3';
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
 
-/** 구글 색 번호 → 실제 색 (구글이 색 값을 안 주고 번호만 줄 때가 있다) */
-const GOOGLE_COLORS: Record<string, string> = {
-    '1': '#ac725e', '2': '#d06b64', '3': '#f83a22', '4': '#fa573c',
-    '5': '#ff7537', '6': '#ffad46', '7': '#42d692', '8': '#16a765',
-    '9': '#7bd148', '10': '#b3dc6c', '11': '#fbe983', '12': '#fad165',
-    '13': '#92e1c0', '14': '#9fe1e7', '15': '#9fc6e7', '16': '#4986e7',
-    '17': '#9a9cff', '18': '#b99aff', '19': '#c2c2c2', '20': '#cabdbf',
-    '21': '#cca6ac', '22': '#f691b2', '23': '#cd74e6', '24': '#a47ae2'
-};
-
 const PALETTE = ['#4285f4', '#0f9d58', '#db4437', '#f4b400', '#ab47bc', '#00acc1', '#ff7043', '#43a047'];
+/** Event palette is distinct from calendarList colors. */
+export const EVENT_COLORS: Record<string, string> = { '1': '#a4bdfc', '2': '#7ae7bf', '3': '#dbadff', '4': '#ff887c', '5': '#fbd75b', '6': '#ffb878', '7': '#46d6db', '8': '#e1e1e1', '9': '#5484ed', '10': '#51b749', '11': '#dc2127' };
 
 export interface GoogleCalendar {
     id: string;
@@ -66,6 +58,9 @@ export interface FcEvent {
         calendarId: string;
         calendarName: string;
         googleId: string;
+        colorId?: string;
+        eventColor?: string;
+        seriesColor?: string;
         htmlLink: string;
         recurringEventId?: string;
         localSeriesId?: string;
@@ -98,7 +93,7 @@ export function calendarColor(calId: string, backgroundColor?: string): string {
 
 /** 일정 하나의 색. 일정에 박힌 색이 캘린더 색을 이긴다 (구글 화면과 같은 순서) */
 export function eventColor(item: GoogleEvent, baseColor: string): string {
-    return item.colorId ? GOOGLE_COLORS[item.colorId] || baseColor : baseColor;
+    return item.colorId ? EVENT_COLORS[item.colorId] || baseColor : baseColor;
 }
 
 /** 하루짜리 종일 일정이면 구글이 end 를 안 줄 때가 있다. 그때는 다음 날로 채운다. */
@@ -127,6 +122,7 @@ export function toFcEvent(item: GoogleEvent, cal: GoogleCalendar): FcEvent {
             calendarId: cal.id,
             calendarName: cal.summary,
             googleId: item.id,
+            colorId: item.colorId || '',
             htmlLink: item.htmlLink || '',
             linkedEvents: parseLinks(item.extendedProperties?.private?.karmoLinks),
             linksOverride: typeof item.extendedProperties?.private?.karmoLinks === 'string',
@@ -141,6 +137,7 @@ export function ymd(d: Date): string {
 }
 
 export interface EventDraft {
+    colorId?: string;
     title: string;
     start: Date;
     end: Date;
@@ -155,6 +152,7 @@ export interface EventDraft {
 export function toGooglePayload(draft: EventDraft): Record<string, unknown> {
     const { start, end } = draft.repeat ? repeatWindow(draft.start, draft.end, draft.repeat) : draft;
     const body: Record<string, unknown> = {};
+    if (draft.colorId !== undefined) body.colorId = draft.colorId || null;
     if (draft.title) body.summary = draft.title;
     if (draft.linkedEvents !== undefined) body.extendedProperties = { private: { karmoLinks: draft.linkedEvents === null ? null : JSON.stringify(parseLinks(draft.linkedEvents)) } };
     if (draft.commonLinks && draft.linkedEvents !== undefined) (body.extendedProperties as { private: Record<string, unknown> }).private.karmoLinksScope = 'group';
@@ -202,7 +200,7 @@ export async function hydrateGroups(token: string, events: FcEvent[]): Promise<F
         const own = entry?.extendedProperties?.private?.karmoLinks;
         const links = parseLinks(master.extendedProperties?.private?.karmoLinks);
         const commonLinks = master.extendedProperties?.private?.karmoLinksScope === 'group';
-        return { ...event, extendedProps: { ...event.extendedProps, commonLinks, seriesStart: master.start.dateTime || master.start.date, seriesEnd: master.end.dateTime || master.end.date, seriesTitle: master.summary || event.title, seriesLinks: links, seriesRecurrence: master.recurrence, linkedEvents: commonLinks || own == null ? links : parseLinks(own) } };
+        return { ...event, extendedProps: { ...event.extendedProps, commonLinks, seriesStart: master.start.dateTime || master.start.date, seriesEnd: master.end.dateTime || master.end.date, seriesTitle: master.summary || event.title, seriesColor: master.colorId || '', seriesLinks: links, seriesRecurrence: master.recurrence, linkedEvents: commonLinks || own == null ? links : parseLinks(own) } };
     }));
 }
 

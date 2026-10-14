@@ -134,5 +134,18 @@
   "planner.t96": "自分の予定",
   "planner.t97": "AI",
   "planner.t98": "AI のフォローアップ。変更は memo の followups.json で",
-  "planner.t99": "Google カレンダーに 'AI' という名前のカレンダーを作ると、スマホにも表示されます"
+  "planner.t99": "Google カレンダーに 'AI' という名前のカレンダーを作ると、スマホにも表示されます",
+  "planner.eventColor": "予定の色",
+  "planner.colorDefault": "カレンダーの既定色",
+  "planner.color1": "ラベンダー",
+  "planner.color2": "セージ",
+  "planner.color3": "グレープ",
+  "planner.color4": "フラミンゴ",
+  "planner.color5": "バナナ",
+  "planner.color6": "タンジェリン",
+  "planner.color7": "ピーコック",
+  "planner.color8": "グラファイト",
+  "planner.color9": "ブルーベリー",
+  "planner.color10": "バジル",
+  "planner.color11": "トマト"
 }

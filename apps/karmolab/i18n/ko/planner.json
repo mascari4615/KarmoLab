@@ -134,5 +134,18 @@
   "planner.t96": "내 일정",
   "planner.t97": "AI",
   "planner.t98": "AI 후속 일정. 고치려면 memo 의 followups.json",
-  "planner.t99": "구글 캘린더에 이름이 'AI' 인 캘린더를 하나 만들면 AI 일정이 폰 캘린더에도 뜬다"
+  "planner.t99": "구글 캘린더에 이름이 'AI' 인 캘린더를 하나 만들면 AI 일정이 폰 캘린더에도 뜬다",
+  "planner.eventColor": "일정 색",
+  "planner.colorDefault": "캘린더 기본색",
+  "planner.color1": "라벤더",
+  "planner.color2": "세이지",
+  "planner.color3": "포도",
+  "planner.color4": "플라밍고",
+  "planner.color5": "바나나",
+  "planner.color6": "귤",
+  "planner.color7": "공작",
+  "planner.color8": "흑연",
+  "planner.color9": "블루베리",
+  "planner.color10": "바질",
+  "planner.color11": "토마토"
 }

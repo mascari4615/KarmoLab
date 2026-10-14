@@ -16,6 +16,7 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
 import { ensureToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents } from '../planner/gcal';
+import { mountNotifications } from '../planner/notifications';
 
 (function (): void {
   'use strict';
@@ -248,6 +249,7 @@ import { fetchCalendars, fetchEvents } from '../planner/gcal';
 
     root.className += ' mydh';
     root.innerHTML = frameHtml();
+    mountNotifications(ctx);
     root.addEventListener('click', (ev) => {
       const el = (ev.target as HTMLElement | null)?.closest('[data-open]') as HTMLElement | null;
       if (el) ctx.openItem(el.getAttribute('data-open') || '');

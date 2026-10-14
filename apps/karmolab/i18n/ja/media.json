@@ -6,5 +6,10 @@
   "media.viewer.close": "閉じる",
   "media.viewer.previous": "前へ",
   "media.viewer.next": "次へ",
-  "media.viewer.error": "読み込めませんでした。閉じて再度開いてください。"
+  "media.viewer.error": "メディアを読み込めませんでした。",
+  "media.viewer.loading": "読み込み中",
+  "media.viewer.retry": "再試行",
+  "media.viewer.settings": "設定",
+  "media.viewer.unsaved": "未保存の変更を破棄して移動または閉じますか？",
+  "media.viewer.saving": "保存中"
 }

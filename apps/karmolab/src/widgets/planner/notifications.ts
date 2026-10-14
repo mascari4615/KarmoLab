@@ -15,7 +15,7 @@ interface Report {
 }
 const when = (value: string): string => new Date(value.length === 10 ? value + 'T00:00:00+09:00' : value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-export function mountNotifications(ctx: DashPanelCtx): void {
+export function mountNotifications(ctx: DashPanelCtx, { visible = true } = {}): void {
     const box = document.createElement('details');
     box.className = 'pl-notifications';
     try { box.open = localStorage.getItem('planner.notifications.open') === '1'; } catch { /* 저장 불가 */ }
@@ -23,12 +23,12 @@ export function mountNotifications(ctx: DashPanelCtx): void {
     box.innerHTML = `<summary>오늘 안내와 디코 알림 <span class="pl-notify-count"></span></summary>
         <div class="pl-notify-body"><p class="pl-notify-status" role="status">알림 상태 확인 중</p>
         <div class="pl-notify-actions"><button type="button" class="btn btn-ghost pl-notify-connect">상시 구글 알림 연결</button><button type="button" class="btn btn-ghost pl-notify-refresh">지금 갱신</button><button type="button" class="btn btn-ghost pl-notify-test">디코로 안내 보내기</button><button type="button" class="btn btn-ghost pl-notify-disconnect" hidden>구글 알림 연결 해제</button></div>
-        <p>기존 알림 채널로 아침 요약, 일정 전 안내, 찜과 시청 작품의 새 에피소드 알림. 로컬 일정과 할 일은 이 브라우저에서 플래너를 열 때 동기화.</p>
+        <p>기존 알림 채널로 아침 요약, 일정 전 안내, 찜과 시청 작품의 새 에피소드 알림. 로컬 일정과 할 일은 이 브라우저에서 홈이나 플래너를 열 때 동기화.</p>
         <div class="pl-notify-report"></div></div>`;
     const style = document.createElement('style');
     style.textContent = `.pl-notifications{flex-shrink:0;border-top:1px solid var(--border);font-size:var(--font-size-sm);color:var(--text-primary)}.pl-notifications summary{padding:12px 16px;cursor:pointer;min-height:44px}.pl-notify-count{font-size:var(--font-size-xs);color:var(--text-secondary)}.pl-notify-body{padding:0 16px 16px;max-height:50vh;overflow:auto}.pl-notify-body p{color:var(--text-secondary);line-height:1.6}.pl-notify-actions{display:flex;flex-wrap:wrap;gap:8px}.pl-notify-actions button{min-height:44px}.pl-notify-actions [hidden]{display:none}.pl-notify-report{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px}.pl-notify-report h3{font-size:var(--font-size-sm);margin:12px 0}.pl-notify-report ul{padding-left:20px;margin:0}.pl-notify-report li{margin:8px 0;overflow-wrap:anywhere}.pl-notify-report a{color:var(--accent)}.pl-notify-warning{color:var(--text-primary)!important}`;
     box.appendChild(style);
-    ctx.root.appendChild(box);
+    if (visible) ctx.root.appendChild(box);
     let disposed = false, busy = false, connected = false, pendingSync = false;
     const status = box.querySelector<HTMLElement>('.pl-notify-status')!;
     const buttons = (): HTMLButtonElement[] => Array.from(box.querySelectorAll('button'));
