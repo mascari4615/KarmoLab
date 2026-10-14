@@ -129,7 +129,7 @@ try {
   await existing?.close();
   assert.equal(path.dirname(path.resolve(profile)), tempRoot);
   assert.ok(path.basename(profile).startsWith('karmolab-bot-edge-fixture-'));
-  // Edge 종료 직후 Windows 파일 잠금 해제 지연, 검사 프로필 안에서만 재시도
-  fs.rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  // Node 이벤트 처리 유지, Edge 종료와 Windows 잠금 해제 뒤 검사 프로필 정리
+  await fs.promises.rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }
 console.log(`PASS: ${channel || 'chromium'} 실제 DOM + 수집/판정/중복 방지/기존 Edge 연결 ${passed}건. X 네트워크/Discord 발송 없는 fixture 검사`);
