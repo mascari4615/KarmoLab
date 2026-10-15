@@ -38,6 +38,7 @@ html, body {
 .room {
   position: relative;
   height: 100%;
+  box-sizing: border-box;
   display: grid;
   /* 말풍선, 얘, 지금 뭐 하는 중, 말 걸기. **네 칸이다.**
      80회차에 지금 뭐 하는 중을 넣으면서 칸을 안 늘려서 대화창과 같은 칸에 겹쳐 놓았다
