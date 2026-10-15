@@ -1497,12 +1497,85 @@
     reportHitAreas();
   }
 
+  /* ── 중력 ──────────────────────────────────────────────────
+     full 모드에서 발이 바닥에 닿아 있게 한다. 바닥은 창 아래 끝(작업 표시줄 바로 위).
+     놓았을 때나 시작했을 때 공중이면 떨어지고, 닿으면 착지 동작을 한 번 한다.
+     주소 뒤 gravity=0 이면 끈다. */
+  const gravityEnabled = 전체화면 && new URLSearchParams(location.search).get('gravity') !== '0';
+  const GRAVITY_PX = 2600; // px/s². 눈으로 조정할 값
+  const fall = { active: false, vy: 0, left: 0, last: 0, reportedAt: 0, blockedUntil: 0 };
+  const roomEl = document.querySelector('.room');
+
+  function feetBottom() {
+    const box = body3d?.screenBox?.();
+    return box ? box.y + box.height : null;
+  }
+
+  /** 발이 닿는 바닥(화면 y). 대화창이 열려 있으면 방 아래 칸도 화면 안에 있게 올린다 */
+  function floorY(feet) {
+    const below = chatOpen ? Math.max(0, roomEl.getBoundingClientRect().bottom - feet) : 0;
+    return innerHeight - 4 - below;
+  }
+
+  function checkGravity() {
+    if (!gravityEnabled || fall.active || grabbed?.moved === true || Date.now() < fall.blockedUntil) return;
+    const feet = feetBottom();
+    if (feet === null) return;
+    const gap = floorY(feet) - feet;
+    if (gap > 10) {
+      startFall(gap);
+    } else if (gap < -10) {
+      // 바닥 밑 (대화창이 열렸을 때). 낙하가 아니라 위로 보정
+      방자리.y += gap;
+      방자리적용();
+      reportHitAreas();
+    }
+  }
+
+  function startFall(gap) {
+    stopRoam();
+    fall.active = true;
+    fall.vy = 0;
+    fall.left = gap;
+    fall.last = performance.now();
+    body3d?.setMood('falling');
+    requestAnimationFrame(fallStep);
+  }
+
+  function fallStep(now) {
+    if (!fall.active) return;
+    const dt = Math.min(0.05, (now - fall.last) / 1000);
+    fall.last = now;
+    fall.vy += GRAVITY_PX * dt;
+    const step = Math.min(fall.left, fall.vy * dt);
+    const before = 방자리.y;
+    방자리.y += step;
+    방자리적용();
+    fall.left -= step;
+    if (now - fall.reportedAt > 100) {
+      fall.reportedAt = now;
+      reportHitAreas();
+    }
+    // 화면 안 한계에 막혀 안 움직이면 끝낸다. 안 그러면 계속 떨어지려 한다
+    const stuck = Math.abs(방자리.y - before) < 0.01 && step > 0;
+    if (fall.left <= 0.5 || stuck) {
+      fall.active = false;
+      if (stuck) fall.blockedUntil = Date.now() + 3000;
+      body3d?.setMood('landing');
+      reportHitAreas();
+      return;
+    }
+    requestAnimationFrame(fallStep);
+  }
+
+  if (gravityEnabled) setInterval(checkGravity, 150);
+
   if (roamEnabled) {
     setInterval(() => {
       if (roam.active || Date.now() < roam.nextAt) return;
       // 한가할 때만. 말하고 생각하고 화면 보는 중, 마이크가 켜졌거나 대화창이 열렸거나 잡혀 있을 때는 안 걷는다.
       // 글 입력칸에 초점만 있는 'listening' 은 막지 않는다 (시작하자마자 그 상태로 남아 영영 안 걸었다)
-      if (['speaking', 'thinking', 'looking'].includes(currentMood) || listening || chatOpen || grabbed !== null || document.hidden) return;
+      if (['speaking', 'thinking', 'looking'].includes(currentMood) || listening || chatOpen || grabbed !== null || fall.active || document.hidden) return;
       startRoam();
     }, 1000);
   }

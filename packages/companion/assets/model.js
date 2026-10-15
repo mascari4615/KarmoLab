@@ -68,12 +68,18 @@ const BONE_PAIRS = {
 /** 걸을 때 몸을 옆으로 돌리는 각도(rad). 완전한 옆모습(1.57)이면 얼굴이 안 보여 3/4 로 */
 const FACING_YAW = 1.1;
 
+/** 한 번만 재생하는 동작 이름 */
+const ONCE_MOODS = new Set(['landing']);
+
 const MOOD_CLIPS = {
   idle: 'Idle_Loop',
   speaking: 'Idle_Talking_Loop',
   thinking: 'Spell_Simple_Idle_Loop',
   // 화면 걷기용. 제자리 걸음 동작, 위치 이동은 창 쪽 몫
   walking: 'Walk_Loop',
+  // 공중과 착지. 착지는 한 번만 재생
+  falling: 'Jump_Loop',
+  landing: 'Jump_Land',
   // 듣는 중은 일부러 따로 두지 않는다. 남은 동작들은 죄다 뭔가를 **들고 있는**
   // 자세라, 아무것도 안 들고 하면 보이지 않는 물건을 쥔 사람이 된다(실측 . 
   // 횃불 동작을 얹었더니 허공을 잡고 있었다). 듣는 티는 몸을 살짝 기울여서 낸다.
@@ -416,7 +422,10 @@ export async function mountModel(canvas, modelName, onFail) {
       const baked = {};
       for (const [key, clipName] of Object.entries(wanted)) {
         const clip = gltf.animations.find((a) => a.name === clipName);
-        if (clip !== undefined) baked[key] = bakeClip(clip, pairs, gltf.scene, mixer);
+        if (clip !== undefined) {
+          baked[key] = bakeClip(clip, pairs, gltf.scene, mixer);
+          baked[key].once = ONCE_MOODS.has(key);
+        }
       }
       if (baked.idle !== undefined) {
         clips = baked;
@@ -453,11 +462,20 @@ export async function mountModel(canvas, modelName, onFail) {
   let current = clips?.idle ?? null;
   let previous = null;
   let fade = 1; // 1 = 갈아타기 끝남
+  // 한 번 재생 동작의 시작 시각. 갈아탈 때 현재 시각
+  let currentStart = 0;
+  let previousStart = 0;
   function switchTo(next) {
     if (next === undefined || next === null || next === current) return;
     previous = current;
+    previousStart = currentStart;
     current = next;
+    currentStart = lastAt;
     fade = 0;
+  }
+  /** 동작 안에서 읽을 시각. 한 번 재생 동작은 끝에서 멈춘다 */
+  function clipTime(clip, startedAt, t) {
+    return clip.once ? Math.min(t - startedAt, clip.duration - clip.step) : t;
   }
 
   const state = { mood: 'idle', look: 0, speakUntil: 0, facing: 0 };
@@ -506,10 +524,15 @@ export async function mountModel(canvas, modelName, onFail) {
 
     // 구워 둔 동작을 이 판의 자세로 펴 놓는다.
     if (current !== null) {
-      readPose(current, t, poseA);
+      readPose(current, clipTime(current, currentStart, t), poseA);
+      // 한 번 재생 동작이 끝나면 대기로 복귀
+      if (current.once && t - currentStart >= current.duration) {
+        state.mood = 'idle';
+        switchTo(clips.idle);
+      }
       if (fade < 1 && previous !== null) {
         fade = Math.min(1, fade + dt / 0.35);
-        readPose(previous, t, poseB);
+        readPose(previous, clipTime(previous, previousStart, t), poseB);
         for (let i = 0; i < poseA.length; i += 1) poseA[i].slerp(poseB[i], 1 - fade);
       }
       for (let i = 0; i < pairs.length; i += 1) pairs[i].target.quaternion.copy(poseA[i]);
