@@ -14,6 +14,7 @@ import { keepReason } from '../heard';
 import type { Speech } from '../voice/edge-tts';
 import type { Body, MemoryEntry, Sensation, Sense, Utterance, Voice } from '../types';
 import { repoCopies, thisRepo } from '../workspace';
+import { watchWindows, type WindowWatcher } from './windows-watch';
 
 /**
  * 창이 서버에게 붙여 보내는 **이름들**. 한 곳에서 정한다.
@@ -162,6 +163,7 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
 
   const clients = new Set<ServerResponse>();
   let server: Server | null = null;
+  let windowWatcher: WindowWatcher | null = null;
   /** 감각을 코어로 밀어 넣는 통로. 받아쓴 말도 여기로 들어간다. */
   let senseEmit: ((sensation: Sensation) => void) | null = null;
 
@@ -346,7 +348,7 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
           res.end(JSON.stringify({ ok, current: want }));
           return;
         }
-        if (url === '/model.js' || url === '/toon.js' || url === '/face-paint.js' || url === '/say-chunks.js' || url === '/listen-gate.js' || url === '/chat-markup.js' || url === '/desk.js') {
+        if (url === '/model.js' || url === '/toon.js' || url === '/face-paint.js' || url === '/say-chunks.js' || url === '/listen-gate.js' || url === '/chat-markup.js' || url === '/desk.js' || url === '/surfaces.js') {
           serveFile(res, join(packageRoot, 'assets', url.slice(1)), 'text/javascript; charset=utf-8', log);
           return;
         }
@@ -436,6 +438,16 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
         /* 지금 어떤 상태인가. 곁눈질하는 화면(KarmoLab 위젯)이 읽어 간다.
            오늘 사고 셋(로컬 목소리, 3D 몸, 투명 창)이 전부 **조용히** 빠진 것이었다.
            기록에만 남는 상태는 아무도 안 본다. */
+        /* 화면의 창 위치. 몸이 창 윗면에 서는 데 필요. 처음 요청 때 감시기를 띄움.
+           좌표는 화면 물리 픽셀이고 앞쪽(위쪽) 창이 먼저다. */
+        if (url === '/windows') {
+          windowWatcher ??= watchWindows();
+          const seen = windowWatcher.latest();
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(JSON.stringify(seen));
+          return;
+        }
+
         if (url === '/state') {
           res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify({
@@ -812,6 +824,8 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
       clients.clear();
       server?.close();
       server = null;
+      windowWatcher?.stop();
+      windowWatcher = null;
     },
   };
 

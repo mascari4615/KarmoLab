@@ -1466,11 +1466,24 @@
   function startRoam() {
     const box = body3d?.screenBox?.();
     if (!box) return;
-    const edge = 100;
-    let target = edge + Math.random() * Math.max(1, innerWidth - edge * 2);
+    // 걸을 수 있는 범위. 바닥이면 화면 가로 전체, 창 위면 그 윗면 안쪽
+    let minX = 100;
+    let maxX = innerWidth - 100;
+    let on;
+    if (stand.id !== 'floor') {
+      on = surfaces.find((c) => c.id === stand.id && 방자리.x >= c.l - 30 && 방자리.x <= c.r + 30);
+      if (on === undefined) return;
+      minX = on.l + 40;
+      maxX = on.r - 40;
+      if (maxX - minX < 80) return;
+    }
+    let target = minX + Math.random() * Math.max(1, maxX - minX);
     const x = 방자리.x ?? innerWidth / 2;
     // 너무 가까우면 걷는 티가 안 난다. 반대쪽으로 보낸다
-    if (Math.abs(target - x) < 250) target = x < innerWidth / 2 ? innerWidth - edge : edge;
+    const minDistance = Math.min(250, (maxX - minX) / 2);
+    if (Math.abs(target - x) < minDistance) target = x < (minX + maxX) / 2 ? maxX : minX;
+    // 창 위에서는 가끔 가장자리를 넘어 걸어 내려간다
+    if (on !== undefined && Math.random() < 0.15) target = target > x ? on.r + 90 : on.l - 90;
     roam.dir = Math.sign(target - x) || 1;
     roam.target = target;
     // 뜀(30%)은 걸음과 한 바퀴 거리와 시간이 다름
@@ -1511,13 +1524,21 @@
     reportHitAreas();
   }
 
-  /* ── 중력 ──────────────────────────────────────────────────
-     full 모드에서 발이 바닥에 닿아 있게 한다. 바닥은 창 아래 끝(작업 표시줄 바로 위).
-     놓았을 때나 시작했을 때 공중이면 떨어지고, 닿으면 착지 동작을 한 번 한다.
-     주소 뒤 gravity=0 이면 끈다. */
+  /* ── 중력과 서는 면 ────────────────────────────────────────
+     full 모드에서 발이 닿는 면 위에 있음. 면은 둘. 바닥(창 아래 끝, 작업 표시줄 바로 위)과
+     다른 프로그램 창의 윗면(앞 창에 안 가린 부분). 공중이면 낙하, 닿으면 착지 동작 1회.
+     서 있던 창이 움직이면 같이 이동, 창이 사라지거나 비키면 낙하.
+     창 위치는 서버(/windows)에서 받음. 주소 뒤 gravity=0 이면 끔 */
   const gravityEnabled = 전체화면 && new URLSearchParams(location.search).get('gravity') !== '0';
   const GRAVITY_PX = 2600; // px/s². 눈으로 조정할 값
-  const fall = { active: false, vx: 0, vy: 0, floorRoomY: 0, sliding: false, last: 0, reportedAt: 0, blockedUntil: 0 };
+  const fall = { active: false, thrown: false, vx: 0, vy: 0, feet: 0, sliding: false, last: 0, reportedAt: 0, blockedUntil: 0 };
+  // 지금 서 있는 면. 바닥이면 id 가 'floor'
+  const stand = { id: 'floor', y: null };
+  let surfaces = []; // 창 윗면 토막들(페이지 좌표)
+  let surfaceMod = null;
+  import('/surfaces.js')
+    .then((m) => { surfaceMod = m; })
+    .catch((e) => tell(`창 위에 서는 규칙을 못 불렀다. 바닥만 쓴다: ${e}`));
 
   function feetBottom() {
     const box = body3d?.screenBox?.();
@@ -1529,43 +1550,124 @@
     return innerHeight - 4;
   }
 
+  /** 서버가 알려 주는 창 목록을 윗면 토막으로 바꾼다. 좌표는 화면 물리 픽셀에서 이 창 안 CSS 픽셀로 */
+  async function refreshSurfaces() {
+    if (surfaceMod === null) return;
+    try {
+      const data = await (await fetch('/windows', { cache: 'no-store' })).json();
+      const dpr = window.devicePixelRatio || 1;
+      const originX = window.screenX || 0;
+      const originY = window.screenY || 0;
+      const windows = (data.windows ?? []).map((w) => ({
+        id: w.id,
+        left: w.left / dpr - originX,
+        top: w.top / dpr - originY,
+        right: w.right / dpr - originX,
+        bottom: w.bottom / dpr - originY,
+      }));
+      const box = body3d?.screenBox?.();
+      const bodyHeight = box ? box.height : 300;
+      // 몸 키만큼 위가 남아야 서도 머리가 안 잘린다. 바닥 근처 윗면은 바닥과 구분이 안 돼 뺀다
+      surfaces = surfaceMod.standableSurfaces(windows, { minTop: bodyHeight + 16, maxBottom: floorY() - 60, minWidth: 160 });
+    } catch {
+      surfaces = [];
+    }
+  }
+
+  function supportNow(feet) {
+    if (surfaceMod === null) return { id: 'floor', y: floorY() };
+    return surfaceMod.supportAt(surfaces, floorY(), 방자리.x, feet);
+  }
+
   function checkGravity() {
     // 앉은 자세는 경계 상자가 바닥보다 20px 낮게 나온다(실측). 앉아 있는 동안은 판정하지 않는다
     if (!gravityEnabled || fall.active || act.kind === 'sit' || grabbed?.moved === true || Date.now() < fall.blockedUntil) return;
     const feet = feetBottom();
     if (feet === null) return;
-    const gap = floorY() - feet;
-    // 바닥 밑(gap 음수)은 건드리지 않는다. 자세 때문에 경계 상자가 ±20px 변해 오보정만 났다
-    if (gap > 16) startFall(gap);
+
+    // 서 있던 창 위에 계속 서 있는지. 창이 움직였으면 같이 간다
+    if (stand.id !== 'floor') {
+      const still = surfaces.find((c) => c.id === stand.id && 방자리.x >= c.l - 30 && 방자리.x <= c.r + 30);
+      if (still !== undefined) {
+        const dy = still.y - stand.y;
+        if (Math.abs(dy) > 2) {
+          방자리.y += dy;
+          stand.y = still.y;
+          방자리적용();
+          reportHitAreas();
+        }
+        return;
+      }
+      // 창이 사라졌거나 몸 밑에서 비켰다. 아래 받침을 다시 찾는다
+      stand.id = 'floor';
+      stand.y = null;
+    }
+
+    const support = supportNow(feet);
+    const gap = support.y - feet;
+    if (gap > 16) {
+      startFall(0, 0);
+    } else if (gap > -40) {
+      // 서 있다. 자세 때문에 경계 상자가 ±20px 변하므로 약간 파고든 것도 선 것으로 본다
+      stand.id = support.id;
+      stand.y = support.y;
+    }
   }
 
-  /** gap: 지금 발에서 바닥까지. vx, vy: 던졌을 때의 처음 속도(px/s, 위쪽이 음수) */
-  function startFall(gap, vx = 0, vy = 0) {
+  /** vx, vy: 처음 속도(px/s, 위쪽이 음수). thrown: 사람이 던진 것(착지하면 구른다) */
+  function startFall(vx = 0, vy = 0, thrown = false) {
     stopRoam();
+    stand.id = 'floor';
+    stand.y = null;
     fall.active = true;
+    fall.thrown = thrown;
     fall.sliding = false;
     fall.vx = vx;
     fall.vy = vy;
-    fall.floorRoomY = 방자리.y + Math.max(0, gap);
+    fall.feet = feetBottom() ?? floorY();
     fall.last = performance.now();
     body3d?.setFacing(Math.abs(vx) > 150 ? Math.sign(vx) : 0);
     body3d?.setMood('falling');
     requestAnimationFrame(fallStep);
   }
 
+  function land(surface, speedX, speedY) {
+    fall.active = false;
+    stand.id = surface.id;
+    stand.y = surface.y;
+    const fast = fall.thrown && Math.abs(speedX) > 250 && speedY > 500;
+    if (fast) {
+      // 던져졌고 빠르면 구르며 미끄러진다
+      fall.active = true;
+      fall.sliding = true;
+      body3d?.setFacing(Math.sign(speedX));
+      body3d?.setMood('rolling');
+      return;
+    }
+    body3d?.setFacing(0);
+    body3d?.setMood('landing');
+    reportHitAreas();
+  }
+
   function fallStep(now) {
     if (!fall.active) return;
     const dt = Math.min(0.05, (now - fall.last) / 1000);
     fall.last = now;
-    const beforeY = 방자리.y;
-    const beforeX = 방자리.x;
 
     if (fall.sliding) {
       // 착지 뒤 미끄러짐. 마찰로 속도가 줄고 멈추면 끝
       fall.vx *= Math.exp(-4 * dt);
       방자리.x += fall.vx * dt;
       방자리적용();
-      if (Math.abs(fall.vx) < 25) {
+      // 서 있던 창 가장자리를 벗어나면 그대로 떨어진다
+      if (stand.id !== 'floor' && !surfaces.some((c) => c.id === stand.id && 방자리.x >= c.l - 30 && 방자리.x <= c.r + 30)) {
+        fall.sliding = false;
+        fall.vy = 0;
+        fall.feet = feetBottom() ?? fall.feet;
+        stand.id = 'floor';
+        stand.y = null;
+        body3d?.setMood('falling');
+      } else if (Math.abs(fall.vx) < 25) {
         fall.active = false;
         fall.sliding = false;
         body3d?.setFacing(0);
@@ -1573,6 +1675,8 @@
         return;
       }
     } else {
+      const beforeY = 방자리.y;
+      const beforeFeet = fall.feet;
       fall.vy += GRAVITY_PX * dt;
       방자리.y += fall.vy * dt;
       방자리.x += fall.vx * dt;
@@ -1580,25 +1684,29 @@
       방자리적용();
       // 벽에 닿으면 반쯤 튕긴다
       if ((방자리.x <= 41 && fall.vx < 0) || (방자리.x >= innerWidth - 41 && fall.vx > 0)) fall.vx *= -0.5;
+      const moved = 방자리.y - beforeY;
+      fall.feet += moved;
+      // 면에 닿는 것은 내려갈 때뿐. 올라갈 때는 창 윗면을 아래에서 통과
+      let hit = null;
+      if (fall.vy > 0) {
+        hit = surfaceMod === null
+          ? (fall.feet >= floorY() ? { id: 'floor', y: floorY() } : null)
+          : surfaceMod.landingSurface(surfaces, floorY(), 방자리.x, beforeFeet, fall.feet);
+      }
       // 화면 안 한계에 막혀 안 내려가면 끝낸다. 안 그러면 계속 떨어지려 한다
-      const stuck = fall.vy > 0 && Math.abs(방자리.y - beforeY) < 0.01;
-      if (방자리.y >= fall.floorRoomY || stuck) {
-        방자리.y = Math.min(방자리.y, fall.floorRoomY);
+      const stuck = fall.vy > 0 && Math.abs(moved) < 0.01;
+      if (hit !== null) {
+        // 발이 면에 정확히 닿게 몸을 맞춘다
+        방자리.y += hit.y - fall.feet;
         방자리적용();
-        if (stuck) fall.blockedUntil = Date.now() + 3000;
-        const fast = Math.abs(fall.vx) > 250 && fall.vy > 500;
-        if (fast && !stuck) {
-          // 빠르게 던져졌으면 구르며 미끄러진다
-          fall.sliding = true;
-          body3d?.setFacing(Math.sign(fall.vx));
-          body3d?.setMood('rolling');
-        } else {
-          fall.active = false;
-          body3d?.setFacing(0);
-          body3d?.setMood('landing');
-          reportHitAreas();
-          return;
-        }
+        land(hit, fall.vx, fall.vy);
+        if (!fall.active) return;
+      } else if (stuck) {
+        fall.active = false;
+        fall.blockedUntil = Date.now() + 3000;
+        body3d?.setMood('landing');
+        reportHitAreas();
+        return;
       }
     }
     if (now - fall.reportedAt > 100) {
@@ -1608,6 +1716,7 @@
     requestAnimationFrame(fallStep);
   }
 
+  if (gravityEnabled) setInterval(refreshSurfaces, 300);
   if (gravityEnabled) setInterval(checkGravity, 150);
 
   /* ── 한가할 때 변주 ─────────────────────────────────────────
@@ -1640,7 +1749,21 @@
     roam.nextAt = Date.now() + 8000 + Math.random() * 14000;
   }
 
+  /** 더 높은 창 윗면으로 뛰어오른다. 갈 만한 면이 없으면 false */
+  function startJump() {
+    if (surfaceMod === null) return false;
+    const feet = feetBottom();
+    if (feet === null) return false;
+    const options = surfaceMod.jumpTargets(surfaces, 방자리.x, feet, stand.id);
+    if (options.length === 0) return false;
+    const pick = options[Math.floor(Math.random() * options.length)];
+    const jump = surfaceMod.jumpVelocity(pick.rise, pick.landX - 방자리.x, GRAVITY_PX);
+    startFall(jump.vx, jump.vy, false);
+    return true;
+  }
+
   function pickActivity() {
+    if (gravityEnabled && Math.random() < 0.4 && startJump()) return;
     const r = Math.random();
     if (r < 0.5) startRoam();
     else if (r < 0.8) startSit();
@@ -1690,6 +1813,9 @@
     if (grabbed.moved === false) {
       if (Math.abs(e.clientX - grabbed.x) + Math.abs(e.clientY - grabbed.y) < 4) return;
       grabbed.moved = true;
+      // 잡아 끌면 서 있던 면에서 떨어진 것. 놓으면 새로 받침을 찾는다
+      stand.id = 'floor';
+      stand.y = null;
       document.body.classList.add('dragging');
       // 화면 전체로 편 창에서는 **창을 끌지 않는다.** 창은 화면을 다 덮고 있으니
       // 끌어봐야 갈 데가 없다. 대신 얘가 화면 안에서 옮겨 다닌다.
@@ -1733,9 +1859,7 @@
       const vx = clampSpeed((last[1] - first[1]) / span);
       const vy = clampSpeed((last[2] - first[2]) / span);
       if (Math.hypot(vx, vy) > 350 && performance.now() - last[0] < 80) {
-        const feet = feetBottom();
-        const gap = feet === null ? 0 : floorY() - feet;
-        startFall(gap, vx, vy);
+        startFall(vx, vy, true);
         return;
       }
     }
