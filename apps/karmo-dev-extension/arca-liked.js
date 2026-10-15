@@ -5,9 +5,21 @@
   const api = globalThis.KarmoProfile;
   const articleList = globalThis.KarmoArticleList;
   const embedRequests = new Map();
+  const embedQueue = [];
+  let embedActive = 0;
+  function drainEmbeds() {
+    while (embedActive < 2 && embedQueue.length) {
+      const job = embedQueue.shift();
+      embedActive++;
+      chrome.runtime.sendMessage(job.message).then(job.resolve, job.reject).finally(() => { embedActive--; drainEmbeds(); });
+    }
+  }
   async function preview(post) {
     if (!embedRequests.has(post.url)) {
-      const request = chrome.runtime.sendMessage({ type: "arca.embed.read", key: post.authorKey, url: post.url }).then((result) => {
+      const request = new Promise((resolve, reject) => {
+        embedQueue.push({ message: { type: "arca.embed.read", key: post.authorKey, url: post.url }, resolve, reject });
+        drainEmbeds();
+      }).then((result) => {
         if (!result?.ok) { embedRequests.delete(post.url); return { error: result?.error || "썸네일 응답 없음" }; }
         return result.embed;
       }).catch((error) => { embedRequests.delete(post.url); throw error; });
@@ -21,6 +33,18 @@
   let completed = 0;
   let total = 0;
   let storageError = "";
+  let view = "list";
+  function applyView() {
+    articleList.setArticleView(el("posts"), view);
+    el("postLayout").dataset.view = view;
+    el("viewList").setAttribute("aria-pressed", String(view === "list"));
+    el("viewCards").setAttribute("aria-pressed", String(view === "cards"));
+  }
+  async function changeView(next) {
+    view = next; applyView();
+    try { await chrome.storage.local.set({ karmoLikedView: view }); }
+    catch { el("status").textContent = "보기 방식 저장 실패, 현재 탭에서만 적용"; }
+  }
   const date = (value) => Number.isFinite(new Date(value).getTime()) ? new Date(value).toLocaleString("ko-KR") : "날짜 정보 없음";
 
   function renderAuthors() {
@@ -40,7 +64,8 @@
     const visible = rows.filter((r) => (!selected || r.key === selected) && (!query || r.title.toLocaleLowerCase().includes(query)));
     const posts = visible.map((r) => ({ id: r.id, title: r.title, url: r.href, author: likes[r.key].name || r.key,
       authorKey: r.key, authorUrl: api.profileUrl(r.key), channel: r.channelName, date: r.time, dateText: date(r.time) }));
-    articleList.reconcileArticles(el("posts"), posts, (post) => articleList.createArticleRow(post, { tag: "li", onPreview: preview }));
+    articleList.reconcileArticles(el("posts"), posts, (post) => articleList.createArticleRow(post, { tag: "li", onPreview: preview, previewHost: el("previewRail"), thumbnail: true }));
+    applyView();
     el("posts").setAttribute("aria-busy", String(busy));
     const fetched = keys.filter((key) => profiles[key]?.at).length;
     el("status").textContent = storageError || (busy ? `작성자 ${completed}/${total}명 확인 중, 현재 ${rows.length}개 글` : `팔로우 ${keys.length}명, 확인 ${fetched}명, 최근 글 ${rows.length}개`);
@@ -113,6 +138,8 @@
   el("refresh").addEventListener("click", refresh);
   el("search").addEventListener("input", render);
   el("author").addEventListener("change", render);
+  el("viewList").addEventListener("click", () => void changeView("list"));
+  el("viewCards").addEventListener("click", () => void changeView("cards"));
   chrome.storage.onChanged.addListener((change, area) => {
     if (area === "local" && change.likelist) {
       likes = change.likelist.newValue?.arca || {};
@@ -120,9 +147,10 @@
       render();
     }
   });
-  chrome.storage.local.get({ likelist: {}, [CACHE]: {} }).then((got) => {
+  chrome.storage.local.get({ likelist: {}, [CACHE]: {}, karmoLikedView: "list" }).then((got) => {
     likes = got.likelist.arca || {};
     profiles = got[CACHE] || {};
+    view = got.karmoLikedView === "cards" ? "cards" : "list";
     renderAuthors();
     render();
     if (Object.keys(likes).some((key) => !profiles[key]?.at || Date.now() - profiles[key].at > 10 * 60 * 1000)) void refresh();

@@ -41,7 +41,7 @@ test('공용 썸네일: 포커스 시 요청, 사라진 팝업의 늦은 응답 
   dom.window.close();
 });
 
-test('썸네일: 명시적 버튼으로 고정, 포인터 진입 유지, Escape 닫기', async () => {
+test('썸네일: 명시적 버튼으로 고정, 제목 이탈 유지, Escape 닫기', async () => {
   const dom = new JSDOM('<main></main>', { url: 'http://localhost/' });
   const el = createArticleRow(post, { document: dom.window.document, onPreview: async () => ({ image: '', description: '' }) });
   dom.window.document.querySelector('main').append(el);
@@ -69,4 +69,17 @@ test('공용 썸네일: 빈 결과와 읽기 실패 표시, 위험 프로토콜 
     assert.match(el.querySelector('.article-preview-message').textContent, /썸네일 없음|접근 제한/);
     dom.window.close();
   }
+});
+
+test('호버 미리보기: 제목을 벗어나면 즉시 닫기, 팝업 진입으로 유지 금지', async () => {
+  const dom = new JSDOM('<main></main>', { url: 'http://localhost/' });
+  const doc = dom.window.document;
+  const el = createArticleRow(post, { document: doc, onPreview: async () => ({ image: '' }) });
+  doc.querySelector('main').append(el);
+  el.querySelector('.refs-title').focus();
+  await Promise.resolve();
+  el.querySelector('.refs-title').dispatchEvent(new dom.window.Event('pointerleave'));
+  el.querySelector('.article-preview').dispatchEvent(new dom.window.Event('pointerenter'));
+  assert.equal(el.querySelector('.article-preview').hidden, true);
+  dom.window.close();
 });

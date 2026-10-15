@@ -120,7 +120,7 @@ Settings use the same font stack with native heading and control defaults where 
 
 ## Layout
 
-The feed has one centered container with a maximum width of (1080px), including its padding. Desktop padding is (40px 28px). Its header places title and refresh action on opposite sides, with a (24px) gap. Filters use a flexible search field, an author field between (160px) and (240px), and a utility link, with a (16px) gap. The host maps shared row columns to title, author, channel, and date, with fixed trailing widths of (110px), (140px), and (130px). Title and author stay on the same line. The row head minimum is (38px), yielding a nominal (39px) row including its divider.
+The feed has one centered container with a maximum width of (1600px), including its padding. Desktop padding is (40px 28px). Its header places title and refresh action on opposite sides, with a (24px) gap. Filters use a flexible search field, an author field between (160px) and (240px), and a utility link, with a (16px) gap. The host maps shared row columns to title, author, channel, and date, with fixed trailing widths of (110px), (140px), and (130px). Title and author stay on the same line. The row head minimum is (38px), yielding a nominal (39px) row including its divider. At widths of (1100px) and above, list mode reserves a (300px to 400px) preview rail with a (24px) gap. Below that width, the preview takes space beneath its source row, leaving later rows unobscured.
 
 At a maximum viewport width of (640px), the container uses (24px 16px) padding, the header stacks, refresh becomes full width, and filters become one column with a (12px) gap. Rows keep title and author on one line, using a flexible title column and (76px) author column. Channel and date are hidden. The head minimum is (44px), yielding a nominal (45px) row including its divider, with (2px 6px) padding and a (40px) thumbnail button target. Titles truncate with ellipsis and expose their full text through the link title attribute; error details wrap.
 
@@ -128,7 +128,7 @@ Settings retain a maximum body width of (46rem), (2rem) vertical margin, and (1r
 
 ## Elevation & Depth
 
-These surfaces have no custom shadows. The feed uses tonal surfaces, single-pixel separators, and hover tint. Settings use fieldset and tab borders. Hover, focus, and disabled styles change immediately; the source defines no transitions or animated movement. The shared thumbnail preview is a fixed, bordered overlay, without a shadow. Its hover delay and retained pointer state are interaction behavior, not decorative animation.
+These surfaces have no custom shadows. The feed uses tonal surfaces, single-pixel separators, and hover tint. Settings use fieldset and tab borders. Hover, focus, and disabled styles change immediately. Feed previews occupy a reserved rail or inline row space, with pointer input passing through them.
 
 ## Shapes
 
@@ -156,7 +156,11 @@ The host mounts canonical shared rows in an ordered list with a surface backgrou
 
 ### Thumbnail Preview
 
-The shared module opens a preview on title hover or keyboard focus. Its named thumbnail button supports click, keyboard activation, and touch, exposes `aria-controls` and `aria-expanded`, and can pin or toggle the preview. Moving the pointer from the title into the preview retains it; outside pointer interaction and Escape dismiss it. Only one preview is open per document. The overlay shows loading, public image, missing-thumbnail, and failure text states. The extension supplies metadata through the installed Embed MCP adapter; thumbnails are remote article content, not bundled decorative assets. The shared module remains authoritative for overlay dimensions, placement, pointer delays, and image sizing. Preview width is 560px with a 24px viewport margin on small screens. Images use up to 60vh, capped at 560px, and placement recalculates after loading. Embed reads begin when the target article DOM is ready, without waiting for every image or a fixed delay.
+The shared module opens a preview on title hover or keyboard focus. Unpinned previews close immediately on pointer leave or blur and never receive pointer input. The named thumbnail button supports click, keyboard activation, and touch, exposes `aria-controls` and `aria-expanded`, and can pin or toggle the preview. Outside pointer interaction and Escape dismiss pinned previews. Only one preview is open per document. Loading, public image, missing-thumbnail, and failure states remain explicit. The host supplies the preview rail and Embed metadata; the shared module owns placement and sizing. Images use up to 60vh, capped at 560px. Layout updates after image loading and viewport changes.
+
+### Card View
+
+The list/card button group uses `aria-pressed`, visible text, and the existing accent for selection. Selection persists in extension storage. Cards use canonical shared row nodes, a (4:3) image area with `object-fit: contain`, two-line titles, and author, channel, and date. The grid uses a (260px) minimum column width and (20px) gaps, collapsing to one column on phones. Visible cards and a (100px) viewport margin request metadata, with at most two host requests in flight. Missing thumbnails and request or image failures show text. Card mode does not open redundant hover previews.
 
 ### Status, Empty State, and Failure Notice
 

@@ -22,7 +22,14 @@
       <p class="scope">작성자 프로필에 공개된 최근 글만 표시합니다. 비공개, 삭제, 접근 제한 글은 가져올 수 없습니다.</p>
       <section id="failures" hidden aria-label="불러오지 못한 작성자"></section>
       <section id="empty" hidden><h2 id="emptyTitle"></h2><p id="emptyText"></p></section>
-      <ol id="posts" aria-label="팔로우 작성자 글" aria-busy="false"></ol>
+      <div class="view-controls" role="group" aria-label="글 보기 방식">
+        <button id="viewList" type="button" aria-pressed="true">목록</button>
+        <button id="viewCards" type="button" aria-pressed="false">카드</button>
+      </div>
+      <div id="postLayout" class="posts-layout">
+        <ol id="posts" aria-label="팔로우 작성자 글" aria-busy="false"></ol>
+        <aside id="previewRail" aria-label="글 미리보기"></aside>
+      </div>
       <footer><span id="count"></span><a href="https://arca.live" target="_blank" rel="noopener noreferrer">아카라이브 열기</a></footer>
     </main>
     <script src="arca-profile.js"></script>
