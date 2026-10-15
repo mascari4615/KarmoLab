@@ -78,7 +78,7 @@
 
   <div class="room">
     <!-- 얘가 하는 말 -->
-    <div class="bubble" id="bubble"></div>
+    <div class="bubble" id="bubble"><div class="bubble-text" id="bubbleText"></div></div>
 
     <!-- 얘 -->
     <div class="stage">
@@ -242,6 +242,10 @@
 
   const cube = document.getElementById('cube');
   const bubble = document.getElementById('bubble');
+  // 글은 안쪽 요소에 쓰고 스크롤도 거기서. 넘칠 때만 위쪽 흐림(.more)
+  const bubbleText = document.getElementById('bubbleText');
+  new MutationObserver(() => bubbleText.classList.toggle('more', bubbleText.scrollHeight > bubbleText.clientHeight + 1))
+    .observe(bubbleText, { childList: true, characterData: true, subtree: true });
   const status = document.getElementById('status');
   const form = document.getElementById('form');
   const text = document.getElementById('text');
@@ -633,11 +637,11 @@
       새말(); // 새 대답이 흘러나오기 시작했다. 앞 대답의 남은 문장은 버린다
     }
     fillWhat(streamLine.querySelector('.what'), soFar);
-    bubble.textContent = soFar;
+    bubbleText.textContent = soFar;
     bubble.classList.add('on');
     // **새로 나온 글자를 따라간다.** 안 그러면 말풍선이 첫 줄에 멈춰 있고 뒷말은
     // 잘린 채로 안 보인다. 막대를 숨겨 놔서 잘린 줄도 몰랐다.
-    bubble.scrollTop = bubble.scrollHeight;
+    bubbleText.scrollTop = bubbleText.scrollHeight;
     setState('speaking', '말하는 중');
     const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 160;
     if (nearBottom) log.scrollTop = log.scrollHeight;
@@ -659,9 +663,9 @@
     bubble.classList.toggle('aside', aside === true);
     // 무슨 말을 했는지는 남아야 하므로, 말할 때 대화가 저절로 열렸다가 조용히 접힌다.
     openChatFor(16);
-    bubble.textContent = message;
+    bubbleText.textContent = message;
     bubble.classList.add('on');
-    bubble.scrollTop = bubble.scrollHeight;
+    bubbleText.scrollTop = bubbleText.scrollHeight;
     setState('speaking', '말하는 중');
     // 흘러나오는 동안 이미 읽은 부분은 다시 읽지 않는다.
     const rest = message.slice(spokenUpTo).trim();
@@ -742,7 +746,7 @@
       // 여기서 가른다.
       if (player.paused === false) return;
       // 답이 늦을 때 나는 뜸. 말풍선에 흐리게 띄우고 바로 소리 낸다. 대화엔 안 남긴다.
-      bubble.textContent = data.text;
+      bubbleText.textContent = data.text;
       bubble.classList.add('on', 'aside');
       setState('thinking', '');
       speakAloud(data.text, false);

@@ -44,8 +44,8 @@ html, body {
      80회차에 지금 뭐 하는 중을 넣으면서 칸을 안 늘려서 대화창과 같은 칸에 겹쳐 놓았다
      (둘 다 grid-row: 3). 화면이 이상해 보인 게 그것이다. */
   /* 1fr 은 몸 캔버스 최소 높이가 자리를 독점. 말풍선 줄 24px 로 눌려 윗부분 잘림 (2026-10-15 실측).
-     minmax(0, 1fr) 은 말풍선이 먼저 자리를 받음 */
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+     minmax(0,1fr) 은 말풍선이 먼저 자리를 받음 */
+  grid-template-rows: auto minmax(0,1fr) auto auto;
   justify-items: center;
   align-items: center;
   padding: 6px 10px 10px;
@@ -58,28 +58,35 @@ html, body {
   grid-row: 1;
   position: relative;
   max-width: 94%;
-  /* 말이 길면 잘렸다. 자리를 넓히고, 넘칠 땐 넘친다는 걸 **보이게** 한다 . 
-     막대를 숨겨 놔서 잘린 줄도 모르고 지나갔다. 위쪽이 흐려지면 더 있다가 읽힌다. */
-  max-height: 46vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
-  padding: 11px 14px;
+  padding: 0;
   border-radius: 14px;
   border: 1px solid var(--edge);
   background: var(--panel);
   backdrop-filter: blur(8px);
   font-size: 14px;
   line-height: 1.65;
-  white-space: pre-wrap;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 200ms ease, transform 200ms cubic-bezier(0.2, 1.2, 0.4, 1);
   pointer-events: none;
+}
+/* 스크롤은 안쪽 요소가 맡는다. 꼬리(::after)가 스크롤 영역을 넘치면 항상 아래로 밀려 윗부분이 잘렸다 (2026-10-15 실측) */
+.bubble-text {
+  /* 넘치면 위쪽 흐림(.more)으로 더 있음을 보임 */
+  max-height: 46vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 11px 14px;
+  border-radius: 13px;
+  white-space: pre-wrap;
   scrollbar-width: none;
 }
-.bubble::-webkit-scrollbar { display: none; }
+.bubble-text::-webkit-scrollbar { display: none; }
+/* 넘칠 때만 위쪽 흐림. face.html 의 MutationObserver 가 붙임 */
+.bubble-text.more {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+}
 .bubble.on { opacity: 1; transform: translateY(0); }
 .bubble::after {
   content: "";
@@ -370,7 +377,8 @@ body.full .room {
   transform: translate(-50%, 0);
 }
 /* 화면이 넓어졌으니 말풍선도 넉넉히. 이제 잘릴 일이 거의 없다. */
-body.full .bubble { max-height: 40vh; max-width: 420px; }
+body.full .bubble { max-width: 420px; }
+body.full .bubble-text { max-height: 40vh; }
 /* 끌고 다니는 동안엔 부드럽게 따라오지 않는다. 손이 끄는 느낌이 뭉개진다. */
 body.full.dragging .room { transition: none; }
 
