@@ -261,8 +261,9 @@ export async function mountModel(canvas, modelName, onFail) {
   try {
     // `preserveDrawingBuffer` = 그린 그림을 한 판 뒤에도 읽을 수 있게 둔다. 창이 스스로
     // 제 모습을 찍어 낼 수 있어야 자세가 이상하다를 사람 눈 없이도 확인한다.
-    // 실험 옵션(성능 측정). 주소에 preserve 값 0 을 주면 그린 뒤 버퍼를 유지하지 않음
-    const keepBuffer = new URLSearchParams(location.search).get('preserve') !== '0';
+    // 그린 뒤 버퍼 유지는 매 프레임 복사 비용 발생(실측 CPU 92%에서 43%). 기본 끔
+    // 몸 촬영이 필요하면 주소에 preserve 값 1
+    const keepBuffer = new URLSearchParams(location.search).get('preserve') === '1';
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: keepBuffer });
   } catch (e) {
     onFail?.(e);
@@ -576,7 +577,8 @@ export async function mountModel(canvas, modelName, onFail) {
 
   // 성능 계측과 실험 옵션. fps 값은 그리기 상한, norender 값 1 은 그리기 생략
   const query = new URLSearchParams(location.search);
-  const fpsCap = Number(query.get('fps') ?? '0');
+  // 동작 묶음이 30프레임으로 구워져 60프레임으로 그려도 새 자세 없음. 기본 30 (실측 CPU 92%에서 28%)
+  const fpsCap = Number(query.get('fps') ?? '30');
   const skipRender = query.get('norender') === '1';
   const perf = { cost: 0, frames: 0, skipped: 0 };
   canvas.__perf = perf;
