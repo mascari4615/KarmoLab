@@ -371,13 +371,42 @@ body.full .room {
      보이는 건 하나도 안 달라진다. 몸을 키우면 이 상자에 걸려 잘린다(실측). 몸 크기를
      그대로 따라간다. */
   width: var(--방폭, 420px);
-  height: var(--방높이, 620px);
+  height: var(--방높이, 372px);
   padding: 0;
+  /* 방은 몸(stage) 하나만 담는다. 말풍선, 상태 칩, 대화창은 아래에서 몸 둘레에 띄운다 */
+  grid-template-rows: minmax(0,1fr);
   /* 화면 끝에 붙어도 안 잘리게, 자리를 잡는 기준을 몸 쪽으로 둔다. */
   transform: translate(-50%, 0);
 }
-/* 화면이 넓어졌으니 말풍선도 넉넉히. 이제 잘릴 일이 거의 없다. */
-body.full .bubble { max-width: 420px; }
+/* 전체 화면 모드의 겉붙이. 방 크기와 바닥 판정에서 제외
+   원인: 방 안 칸 차지. 대화창이 닫혀도 235px 차지, 열면 몸이 뜨고 말풍선 길이에 몸이 줆 (2026-10-15 실측) */
+body.full .stage { grid-row: 1; }
+body.full .bubble {
+  position: absolute;
+  grid-row: auto;
+  left: 50%;
+  bottom: calc(100% - 36px); /* 머리 위. 숫자는 눈으로 조정 */
+  width: max-content;
+  max-width: min(420px, 90vw);
+  transform: translate(-50%, 6px);
+}
+body.full .bubble.on { transform: translate(-50%, 0); }
+/* 대화창은 몸 옆, 상태 칩은 반대쪽 발 옆. 화면 오른쪽 끝에서는 좌우를 바꾼다 (.talk-left) */
+body.full .talk {
+  position: absolute;
+  grid-row: auto;
+  width: 300px;
+  left: calc(50% + var(--방폭, 420px) * 0.3);
+  bottom: 28px; /* 방 아래 끝이 바닥선보다 조금 아래라 올림 */
+}
+body.full.talk-left .talk { left: auto; right: calc(50% + var(--방폭, 420px) * 0.3); }
+body.full .doing {
+  position: absolute;
+  grid-row: auto;
+  right: calc(50% + var(--방폭, 420px) * 0.3);
+  bottom: 30px;
+}
+body.full.talk-left .doing { right: auto; left: calc(50% + var(--방폭, 420px) * 0.3); }
 body.full .bubble-text { max-height: 40vh; }
 /* 끌고 다니는 동안엔 부드럽게 따라오지 않는다. 손이 끄는 느낌이 뭉개진다. */
 body.full.dragging .room { transition: none; }
