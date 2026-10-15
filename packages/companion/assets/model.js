@@ -256,6 +256,35 @@ function bakeClip(clip, pairs, sourceRoot, mixer, fps = 30, extra = {}) {
   return { name: clip.name, frames, step, duration: clip.duration, values, widest, drops };
 }
 
+/**
+ * 모든 스킨 메시를 뼈 행렬이 실제로 움직이는 스켈레톤 하나에 묶음
+ *
+ * 이 모델은 메시 여섯 개가 각자 스켈레톤(뼈 184개)을 따로 가져서 매 프레임 같은 뼈 행렬을
+ * 여섯 번 계산하고 뼈 텍스처를 여섯 번 업로드. 역행렬과 바인드 행렬이 동일하므로 스켈레톤 하나를
+ * 공유하면 결과는 같고 비용만 감소(화면 차이 0.274, 같은 설정끼리 소음 0.499, 2026-10-15 실측).
+ * 포즈를 먹이는 뼈를 모두 가진 스켈레톤이 없으면(뼈 객체가 갈라진 경우) 건드리지 않음.
+ * 주소에 shareskel 값 0 을 주면 끔(비교용).
+ */
+function shareSkeleton(model, pairs) {
+  if (new URLSearchParams(location.search).get('shareskel') === '0' || pairs.length === 0) return;
+  const skinned = [];
+  model.traverse((node) => { if (node.isSkinnedMesh === true) skinned.push(node); });
+  const shared = skinned.map((m) => m.skeleton).find((sk) => pairs.every((p) => sk.bones.includes(p.target)));
+  if (shared === undefined) {
+    console.warn('[3D] 포즈를 먹이는 뼈를 모두 가진 스켈레톤이 없어 스켈레톤을 합치지 않는다');
+    return;
+  }
+  let moved = 0;
+  for (const mesh of skinned) {
+    if (mesh.skeleton === shared) continue;
+    const sameCount = mesh.skeleton.bones.length === shared.bones.length;
+    if (!sameCount) continue;
+    mesh.bind(shared, mesh.bindMatrix);
+    moved += 1;
+  }
+  console.log(`[3D] 스켈레톤을 합쳤다. 메시 ${skinned.length}개 중 ${moved}개를 하나에 묶음`);
+}
+
 export async function mountModel(canvas, modelName, onFail) {
   let renderer;
   try {
@@ -453,6 +482,7 @@ export async function mountModel(canvas, modelName, onFail) {
   if (new URLSearchParams(location.search).get('anim') !== '0') try {
     const gltf = await new GLTFLoader().loadAsync('/anim/cc0-animations.glb');
     pairs = pairBones(model, gltf.scene);
+    shareSkeleton(model, pairs);
     console.log(`[3D] 짝지은 뼈 ${pairs.length}/${Object.keys(BONE_PAIRS).length}:`,
       pairs.map((p) => `${p.source.name}→${p.target.name}`).join(' '));
 
@@ -703,6 +733,8 @@ export async function mountModel(canvas, modelName, onFail) {
     if (!skipRender) renderer.render(scene, camera);
     perf.cost += performance.now() - startedAt;
     perf.frames += 1;
+    perf.calls = renderer.info.render.calls; // 마지막 그리기의 호출 수 (계측용)
+    perf.triangles = renderer.info.render.triangles;
   });
 
   /**

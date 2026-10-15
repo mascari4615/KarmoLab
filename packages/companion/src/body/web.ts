@@ -392,6 +392,11 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
             res.writeHead(403).end();
             return;
           }
+          // 모델이 옛 경로의 그림 파일을 가리키는 경우가 있음(tex_char.001.png). 없으면 조용히 404, 몸 만들 때마다 기록이 쌓이지 않게
+          if (existsSync(sibling) === false) {
+            res.writeHead(404).end();
+            return;
+          }
           serveFile(res, sibling, sibling.toLowerCase().endsWith('.png') ? 'image/png' : 'application/octet-stream', log);
           return;
         }
