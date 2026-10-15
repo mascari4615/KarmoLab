@@ -1737,6 +1737,30 @@
 
   if (gravityEnabled) setInterval(refreshSurfaces, 300);
 
+  // 성능 계측(주소 뒤 perf 값 1). 10초마다 프레임 수와 1회 소요 시간 기록
+  if (new URLSearchParams(location.search).get('perf') === '1') {
+    let lastAt = performance.now();
+    const lastFrames = new Map();
+    setInterval(() => {
+      const now = performance.now();
+      const seconds = (now - lastAt) / 1000;
+      lastAt = now;
+      const rows = [];
+      let index = 0;
+      for (const canvasEl of document.querySelectorAll('canvas.body3d, #body3d')) {
+        const perf = canvasEl.__perf;
+        if (perf === undefined) continue;
+        const before = lastFrames.get(canvasEl) ?? { frames: 0, cost: 0 };
+        const frames = perf.frames - before.frames;
+        const cost = perf.cost - before.cost;
+        lastFrames.set(canvasEl, { frames: perf.frames, cost: perf.cost });
+        rows.push(`${index === 0 ? '본체' : `분신${index}`} ${(frames / seconds).toFixed(1)}fps 한 번 ${(cost / Math.max(1, frames)).toFixed(2)}ms`);
+        index += 1;
+      }
+      tell(`[perf] ${rows.join(' / ')}`);
+    }, 10000);
+  }
+
   /* ── 분신 ─────────────────────────────────────────────────
      주소 뒤 pets=N 이면 같은 몸 N 마리를 더 띄운다. 분신은 말과 기억 없이 혼자 움직이고
      (걷기, 앉기, 춤, 뛰기, 창 위 서기, 던지기), 본체만 말한다. full 모드 전용 */

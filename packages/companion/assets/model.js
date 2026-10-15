@@ -261,7 +261,9 @@ export async function mountModel(canvas, modelName, onFail) {
   try {
     // `preserveDrawingBuffer` = 그린 그림을 한 판 뒤에도 읽을 수 있게 둔다. 창이 스스로
     // 제 모습을 찍어 낼 수 있어야 자세가 이상하다를 사람 눈 없이도 확인한다.
-    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
+    // 실험 옵션(성능 측정). 주소에 preserve 값 0 을 주면 그린 뒤 버퍼를 유지하지 않음
+    const keepBuffer = new URLSearchParams(location.search).get('preserve') !== '0';
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: keepBuffer });
   } catch (e) {
     onFail?.(e);
     return null;
@@ -572,7 +574,21 @@ export async function mountModel(canvas, modelName, onFail) {
   resize();
   new ResizeObserver(resize).observe(canvas);
 
-  renderer.setAnimationLoop(() => {
+  // 성능 계측과 실험 옵션. fps 값은 그리기 상한, norender 값 1 은 그리기 생략
+  const query = new URLSearchParams(location.search);
+  const fpsCap = Number(query.get('fps') ?? '0');
+  const skipRender = query.get('norender') === '1';
+  const perf = { cost: 0, frames: 0, skipped: 0 };
+  canvas.__perf = perf;
+  let lastDraw = -1e9;
+
+  renderer.setAnimationLoop((time) => {
+    if (fpsCap > 0 && time - lastDraw < 1000 / fpsCap - 2) {
+      perf.skipped += 1;
+      return;
+    }
+    lastDraw = time;
+    const startedAt = performance.now();
     // 시간은 한 번만 물어본다. 흐른 시간을 따로 물어보면 **0 이 돌아온다**. 앞서
     // 물어본 그 순간에 시계가 이미 정산돼 버리기 때문이다. 그걸 모르고 쓰면 동작을
     // 갈아타는 중간값이 영원히 안 움직여, 기분이 바뀌어도 자세가 그대로다(실측).
@@ -678,7 +694,9 @@ export async function mountModel(canvas, modelName, onFail) {
       face.setMouth(talking ? 0.35 + 0.45 * Math.abs(Math.sin(t * 11)) : 0);
     }
 
-    renderer.render(scene, camera);
+    if (!skipRender) renderer.render(scene, camera);
+    perf.cost += performance.now() - startedAt;
+    perf.frames += 1;
   });
 
   /**
