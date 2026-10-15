@@ -69,7 +69,27 @@ const BONE_PAIRS = {
 const FACING_YAW = 1.1;
 
 /** 한 번만 재생하는 동작 이름 */
-const ONCE_MOODS = new Set(['landing']);
+const ONCE_MOODS = new Set(['landing', 'sitEnter', 'sitExit']);
+
+/** 한 번 재생이 끝나면 이어질 기분 */
+const NEXT_MOOD = { landing: 'idle', sitEnter: 'sitting', sitExit: 'idle' };
+
+/** 엉덩이 하강이 있는 동작. 몸 하강과 다리 배율을 올림 */
+const SIT_MOODS = new Set(['sitEnter', 'sitting', 'sitExit']);
+
+/** 엉덩이 하강량 배율. 1 이면 발이 바닥을 뚫음. 0.5~0.6 에서 발이 바닥에 맞음(옆모습 실측) */
+const SIT_DROP_SCALE = 0.6;
+
+/** 앉을 때 다리 배율. 걸을 때(0.12)로는 무릎이 안 굽는다 */
+const SIT_STRENGTHS = {
+  'DEF-hips': 0.9,
+  'DEF-thighL': 0.9,
+  'DEF-thighR': 0.9,
+  'DEF-shinL': 0.9,
+  'DEF-shinR': 0.9,
+  'DEF-footL': 0.6,
+  'DEF-footR': 0.6,
+};
 
 const MOOD_CLIPS = {
   idle: 'Idle_Loop',
@@ -80,6 +100,12 @@ const MOOD_CLIPS = {
   // 공중과 착지. 착지는 한 번만 재생
   falling: 'Jump_Loop',
   landing: 'Jump_Land',
+  // 한가할 때 변주. 앉기는 들어가기, 앉아 있기, 일어나기 셋
+  sitEnter: 'Sitting_Enter',
+  sitting: 'Sitting_Idle_Loop',
+  sitExit: 'Sitting_Exit',
+  dancing: 'Dance_Loop',
+  jogging: 'Jog_Fwd_Loop',
   // 듣는 중은 일부러 따로 두지 않는다. 남은 동작들은 죄다 뭔가를 **들고 있는**
   // 자세라, 아무것도 안 들고 하면 보이지 않는 물건을 쥔 사람이 된다(실측 . 
   // 횃불 동작을 얹었더니 허공을 잡고 있었다). 듣는 티는 몸을 살짝 기울여서 낸다.
@@ -128,6 +154,7 @@ function pairBones(model, sourceRoot) {
     if (source === undefined || target === undefined) continue;
     if (skipped.has(sourceName)) continue;
     pairs.push({
+      name: sourceName,
       source,
       target,
       strength,
@@ -151,10 +178,13 @@ function pairBones(model, sourceRoot) {
  *
  * 굽는 건 창을 열 때 한 번뿐이라, 매 판에는 적어 둔 각을 사이사이 이어 쓰기만 한다.
  */
-function bakeClip(clip, pairs, sourceRoot, mixer, fps = 30) {
+function bakeClip(clip, pairs, sourceRoot, mixer, fps = 30, extra = {}) {
   const frames = Math.max(2, Math.round(clip.duration * fps));
   const step = clip.duration / (frames - 1);
   const values = pairs.map(() => new Float32Array(frames * 4));
+  // 기준 자세 대비 엉덩이 하강량(이 몸의 세계 단위). 앉는 동작만
+  const hipsIndex = extra.drop === undefined ? -1 : pairs.findIndex((x) => x.name === 'DEF-hips');
+  const drops = hipsIndex >= 0 ? new Float32Array(frames) : null;
 
   const action = mixer.clipAction(clip);
   mixer.stopAllAction();
@@ -172,8 +202,10 @@ function bakeClip(clip, pairs, sourceRoot, mixer, fps = 30) {
     sourceRoot.updateMatrixWorld(true);
 
     for (let i = 0; i < pairs.length; i += 1) {
-      const { source, target, strength, sourceRestInverse, targetRest } = pairs[i];
+      const { name, source, target, sourceRestInverse, targetRest } = pairs[i];
+      const strength = extra.strengths?.[name] ?? pairs[i].strength;
       source.matrixWorld.decompose(pos, sourceWorld, scl);
+      if (i === hipsIndex) drops[frame] = Math.max(0, extra.drop.restHipsY - pos.y) * extra.drop.ratio;
 
       // 저쪽이 기준 자세에서 돌아간 만큼(세계 기준) → 이쪽 기준 자세 위에 얹는다
       wanted.copy(sourceWorld).multiply(sourceRestInverse).multiply(targetRest);
@@ -215,7 +247,7 @@ function bakeClip(clip, pairs, sourceRoot, mixer, fps = 30) {
     widest = Math.max(widest, 2 * Math.acos(Math.min(1, Math.abs(a.dot(b)))) * 180 / Math.PI);
   }
 
-  return { name: clip.name, frames, step, duration: clip.duration, values, widest };
+  return { name: clip.name, frames, step, duration: clip.duration, values, widest, drops };
 }
 
 export async function mountModel(canvas, modelName, onFail) {
@@ -419,13 +451,31 @@ export async function mountModel(canvas, modelName, onFail) {
       // 한 편만 따로 보고 싶을 때: `?clip=Dance_Loop`
       const only = new URLSearchParams(location.search).get('clip');
       if (only !== null) wanted.idle = only;
+      // 앉을 때 엉덩이 하강량의 기준. 서 있는 동작 첫 프레임의 엉덩이 높이와
+      // 두 몸의 엉덩이 높이 비(이 몸의 세계 단위로 바꾸는 배율)
+      const hipsPair = pairs.find((x) => x.name === 'DEF-hips');
+      let dropBase = null;
+      const standing = gltf.animations.find((a) => a.name === MOOD_CLIPS.idle);
+      if (hipsPair !== undefined && standing !== undefined) {
+        mixer.stopAllAction();
+        mixer.clipAction(standing).reset().play();
+        mixer.setTime(0);
+        gltf.scene.updateMatrixWorld(true);
+        const sourceHipsY = new THREE.Vector3().setFromMatrixPosition(hipsPair.source.matrixWorld).y;
+        mixer.stopAllAction();
+        mixer.uncacheAction(standing);
+        model.updateMatrixWorld(true);
+        const floor = new THREE.Box3().setFromObject(model).min.y;
+        const targetHipsY = new THREE.Vector3().setFromMatrixPosition(hipsPair.target.matrixWorld).y - floor;
+        if (sourceHipsY > 0 && targetHipsY > 0) dropBase = { restHipsY: sourceHipsY, ratio: (targetHipsY / sourceHipsY) * SIT_DROP_SCALE };
+      }
       const baked = {};
       for (const [key, clipName] of Object.entries(wanted)) {
         const clip = gltf.animations.find((a) => a.name === clipName);
-        if (clip !== undefined) {
-          baked[key] = bakeClip(clip, pairs, gltf.scene, mixer);
-          baked[key].once = ONCE_MOODS.has(key);
-        }
+        if (clip === undefined) continue;
+        const sit = SIT_MOODS.has(key) && dropBase !== null;
+        baked[key] = bakeClip(clip, pairs, gltf.scene, mixer, 30, sit ? { strengths: SIT_STRENGTHS, drop: dropBase } : {});
+        baked[key].once = ONCE_MOODS.has(key);
       }
       if (baked.idle !== undefined) {
         clips = baked;
@@ -444,6 +494,16 @@ export async function mountModel(canvas, modelName, onFail) {
   const poseA = pairs.map(() => new THREE.Quaternion());
   const poseB = pairs.map(() => new THREE.Quaternion());
   const between = new THREE.Quaternion();
+
+  /** 엉덩이가 내려간 만큼(세계 단위). 앉는 동작이 아니면 0 */
+  function readDrop(clip, time) {
+    if (clip.drops === null || clip.drops === undefined) return 0;
+    const wrapped = ((time % clip.duration) + clip.duration) % clip.duration;
+    const x = wrapped / clip.step;
+    const i0 = Math.min(clip.frames - 1, Math.floor(x));
+    const i1 = Math.min(clip.frames - 1, i0 + 1);
+    return clip.drops[i0] + (clip.drops[i1] - clip.drops[i0]) * (x - i0);
+  }
 
   function readPose(clip, time, into) {
     const wrapped = ((time % clip.duration) + clip.duration) % clip.duration;
@@ -478,7 +538,7 @@ export async function mountModel(canvas, modelName, onFail) {
     return clip.once ? Math.min(t - startedAt, clip.duration - clip.step) : t;
   }
 
-  const state = { mood: 'idle', look: 0, speakUntil: 0, facing: 0 };
+  const state = { mood: 'idle', look: 0, speakUntil: 0, facing: 0, drop: 0 };
   const clock = new THREE.Clock();
 
   // 눈 깜빡임. 사람은 3~5초에 한 번 깜빡인다. 일정한 간격으로 깜빡이면 기계처럼
@@ -527,20 +587,23 @@ export async function mountModel(canvas, modelName, onFail) {
       readPose(current, clipTime(current, currentStart, t), poseA);
       // 한 번 재생 동작이 끝나면 대기로 복귀
       if (current.once && t - currentStart >= current.duration) {
-        state.mood = 'idle';
-        switchTo(clips.idle);
+        state.mood = NEXT_MOOD[state.mood] ?? 'idle';
+        switchTo(clips[state.mood] ?? clips.idle);
       }
+      let dropNow = readDrop(current, clipTime(current, currentStart, t));
       if (fade < 1 && previous !== null) {
         fade = Math.min(1, fade + dt / 0.35);
         readPose(previous, clipTime(previous, previousStart, t), poseB);
         for (let i = 0; i < poseA.length; i += 1) poseA[i].slerp(poseB[i], 1 - fade);
+        dropNow = readDrop(previous, clipTime(previous, previousStart, t)) * (1 - fade) + dropNow * fade;
       }
+      state.drop = dropNow;
       for (let i = 0; i < pairs.length; i += 1) pairs[i].target.quaternion.copy(poseA[i]);
     }
 
     // 숨. 늘 있다. 멈춰 있으면 물건처럼 보인다.
     const breath = Math.sin(t * 1.7) * 0.012;
-    pivot.position.y = breath;
+    pivot.position.y = breath - state.drop;
     pivot.scale.setScalar(1 + breath * 0.35);
 
     // 커서 쪽으로 아주 조금 몸을 돌린다. 크게 돌리면 인형처럼 보인다.

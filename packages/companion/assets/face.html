@@ -176,6 +176,8 @@
   // 화면 걷기 상태 (full 모드). setState 가 먼저 돌 수 있어 여기서 미리 잡아 둔다
   const roam = { active: false, dir: 0, target: 0, speed: 0, last: 0, nextAt: Date.now() + 5000, reportedAt: 0 };
   let currentMood = '';
+  // 한가할 때 하는 일(앉아 졸기, 춤). null 이면 안 하는 중
+  const act = { kind: null, until: 0 };
 
   const 방자리 = {
     x: Number(localStorage.getItem('companion.roomX') ?? '0') || null,
@@ -588,9 +590,13 @@
 
   function setState(state, 말) {
     // 걷는 중 상태 표시(빈 상태)는 걸음을 안 끊는다. 말하기, 듣기 같은 일이면 멈춘다
-    if (roam.active && state !== '') stopRoam();
+    const busy = roam.active || act.kind !== null;
+    if (busy && state !== '') {
+      stopRoam();
+      endActivity();
+    }
     currentMood = state;
-    if (!(roam.active && state === '')) body3d?.setMood(state);
+    if (!(busy && state === '')) body3d?.setMood(state);
     그리기(하는일아이콘[state] ?? ', ', 말 ?? '');
   }
 
@@ -1451,6 +1457,8 @@
      방 위치(--방x)를 옮긴다. 주소 뒤에 roam=0 이면 끈다. */
   const roamEnabled = 전체화면 && new URLSearchParams(location.search).get('roam') !== '0';
   const WALK_CYCLE_SEC = 1.33; // Walk_Loop 한 바퀴
+  const JOG_CYCLE_SEC = 0.93; // Jog_Fwd_Loop 한 바퀴
+  const JOG_STRIDE_PER_HEIGHT = 1.1; // 뜀은 한 바퀴에 더 나아감 (눈으로 조정)
   const STRIDE_PER_HEIGHT = 0.8; // 한 바퀴에 몸 키의 이만큼 나아가야 발이 안 미끄러짐 (눈으로 조정)
 
   function startRoam() {
@@ -1463,11 +1471,15 @@
     if (Math.abs(target - x) < 250) target = x < innerWidth / 2 ? innerWidth - edge : edge;
     roam.dir = Math.sign(target - x) || 1;
     roam.target = target;
-    roam.speed = (STRIDE_PER_HEIGHT * box.height) / WALK_CYCLE_SEC;
+    // 뜀(30%)은 걸음과 한 바퀴 거리와 시간이 다름
+    const jog = Math.random() < 0.3;
+    roam.speed = jog
+      ? (JOG_STRIDE_PER_HEIGHT * box.height) / JOG_CYCLE_SEC
+      : (STRIDE_PER_HEIGHT * box.height) / WALK_CYCLE_SEC;
     roam.active = true;
     roam.last = performance.now();
     body3d.setFacing(roam.dir);
-    body3d.setMood('walking');
+    body3d.setMood(jog ? 'jogging' : 'walking');
     requestAnimationFrame(roamStep);
   }
 
@@ -1518,13 +1530,14 @@
   }
 
   function checkGravity() {
-    if (!gravityEnabled || fall.active || grabbed?.moved === true || Date.now() < fall.blockedUntil) return;
+    // 앉은 자세는 경계 상자가 바닥보다 20px 낮게 나온다(실측). 앉아 있는 동안은 판정하지 않는다
+    if (!gravityEnabled || fall.active || act.kind === 'sit' || grabbed?.moved === true || Date.now() < fall.blockedUntil) return;
     const feet = feetBottom();
     if (feet === null) return;
     const gap = floorY(feet) - feet;
-    if (gap > 10) {
+    if (gap > 16) {
       startFall(gap);
-    } else if (gap < -10) {
+    } else if (gap < -16) {
       // 바닥 밑 (대화창이 열렸을 때). 낙하가 아니라 위로 보정
       방자리.y += gap;
       방자리적용();
@@ -1570,13 +1583,53 @@
 
   if (gravityEnabled) setInterval(checkGravity, 150);
 
+  /* ── 한가할 때 변주 ─────────────────────────────────────────
+     걷기만 하면 금방 단조롭다. 앉아서 졸거나 춤을 추는 때를 섞는다. */
+  function startSit() {
+    act.kind = 'sit';
+    act.until = Date.now() + 20000 + Math.random() * 30000;
+    body3d.setFacing(0);
+    body3d.setMood('sitEnter');
+    그리기('💤', '조는 중');
+  }
+
+  function startDance() {
+    act.kind = 'dance';
+    act.until = Date.now() + 4000 + Math.random() * 3000;
+    body3d.setFacing(0);
+    body3d.setMood('dancing');
+  }
+
+  function endActivity() {
+    if (act.kind === null) return;
+    const wasSit = act.kind === 'sit';
+    act.kind = null;
+    body3d?.setMood(wasSit ? 'sitExit' : 'idle');
+    if (wasSit) {
+      그리기(', ', '');
+      // 일어나는 동작 동안 경계 상자가 아직 낮다
+      fall.blockedUntil = Date.now() + 1500;
+    }
+    roam.nextAt = Date.now() + 8000 + Math.random() * 14000;
+  }
+
+  function pickActivity() {
+    const r = Math.random();
+    if (r < 0.5) startRoam();
+    else if (r < 0.8) startSit();
+    else startDance();
+  }
+
   if (roamEnabled) {
     setInterval(() => {
-      if (roam.active || Date.now() < roam.nextAt) return;
+      if (act.kind !== null && Date.now() >= act.until) endActivity();
+    }, 500);
+    setInterval(() => {
+      if (roam.active || act.kind !== null || Date.now() < roam.nextAt) return;
       // 한가할 때만. 말하고 생각하고 화면 보는 중, 마이크가 켜졌거나 대화창이 열렸거나 잡혀 있을 때는 안 걷는다.
       // 글 입력칸에 초점만 있는 'listening' 은 막지 않는다 (시작하자마자 그 상태로 남아 영영 안 걸었다)
       if (['speaking', 'thinking', 'looking'].includes(currentMood) || listening || chatOpen || grabbed !== null || fall.active || document.hidden) return;
-      startRoam();
+      pickActivity();
     }, 1000);
   }
 
@@ -1601,6 +1654,7 @@
     if (e.button !== 0) return;
     closeMenu();
     stopRoam();
+    endActivity();
     grabbed = { x: e.clientX, y: e.clientY, moved: false };
   });
 
