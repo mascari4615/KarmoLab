@@ -212,29 +212,29 @@
   /* 어디까지 왔을 때 소리를 낼지 정하는 규칙. 화면 안에 박아 두면 시험을 못 해서
      따로 뺐다. 언제 입을 여나는 조용히 틀리면 아무도 모르는 자리다.
      못 불러오면 예전처럼 문장 끝까지 기다린다(늦을 뿐 안 깨진다). */
-  let 읽을토막 = null;
-  let 표정떼기 = (t) => t;
+  let chunkToRead = null;
+  let stripEmoji = (t) => t;
   import('/chat-markup.js')
     .then((m) => { window.chatSegments = m.chatSegments; })
     .catch((e) => tell(`그림 가르기를 못 불렀다: ${e}`));
   import('/say-chunks.js')
-    .then((m) => { 읽을토막 = m.읽을토막; 표정떼기 = m.표정떼기; tell('말 끊는 규칙을 불렀다'); })
+    .then((m) => { chunkToRead = m.chunkToRead; stripEmoji = m.stripEmoji; tell('말 끊는 규칙을 불렀다'); })
     .catch((e) => tell(`말 끊는 규칙을 못 불렀다. 문장 끝까지 기다리게 된다: ${e}`));
 
   /** 긴 말을 읽기 좋은 토막들로. 규칙이 없으면 통째로 하나. */
   function 토막내기(message) {
     const 글 = String(message ?? '').trim();
     if (글 === '') return [];
-    if (읽을토막 === null) return [글];
+    if (chunkToRead === null) return [글];
     const 조각들 = [];
     let 남은 = 글;
     let 처음 = true;
     // 마지막 토막은 규칙상 안 떨어지므로(뒤에 남는 게 없다) 남는 것을 따로 담는다.
     while (남은.trim() !== '') {
-      const 토막 = 읽을토막(남은, { 남길것: 1, 첫토막: 처음 });
-      if (토막 === null) { 조각들.push(남은.trim()); break; }
-      조각들.push(토막.토막);
-      남은 = 남은.slice(토막.먹은길이);
+      const piece = chunkToRead(남은, { toKeep: 1, firstChunk: 처음 });
+      if (piece === null) { 조각들.push(남은.trim()); break; }
+      조각들.push(piece.chunk);
+      남은 = 남은.slice(piece.consumedLength);
       처음 = false;
     }
     return 조각들;
@@ -379,7 +379,7 @@
     if (voiceOn === false) return;
     // **얼굴 표는 소리로 읽지 않는다.** 화면 쪽은 떼고 그리는데 소리 쪽엔 떼는 자리가
     // 없어서, 얘가 대괄호 졸림 대괄호를 읽고 있었다(실측).
-    message = 표정떼기(message);
+    message = stripEmoji(message);
     if (message === '') return;
     const 내세대 = 세대;
     const job = () => (내세대 === 세대 ? playOne(message) : undefined);
@@ -646,12 +646,12 @@
        한국어는 어, 그거 나도 봤는데,처럼 쉼표가 먼저 오는 일이 잦아서, 마침표만
        기다리면 첫 소리가 통째로 늦어진다. 규칙은 따로 뺀 파일에 있다(시험 가능하게).
        못 불러왔으면 예전처럼 문장 끝까지 기다린다. 늦을 뿐 안 깨진다. */
-    const 토막 = 읽을토막 === null
+    const piece = chunkToRead === null
       ? null
-      : 읽을토막(soFar.slice(spokenUpTo), { 남길것: 1, 첫토막: spokenUpTo === 0 });
-    if (토막) {
-      spokenUpTo += 토막.먹은길이;
-      speakAloud(토막.토막, true);
+      : chunkToRead(soFar.slice(spokenUpTo), { toKeep: 1, firstChunk: spokenUpTo === 0 });
+    if (piece) {
+      spokenUpTo += piece.consumedLength;
+      speakAloud(piece.chunk, true);
     }
   }
 

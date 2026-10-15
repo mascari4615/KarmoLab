@@ -25,9 +25,9 @@ const pause = /[,;·—]/;
  * @param {string} remaining 아직 소리로 안 나간 글자들
  * @param {{endThreshold?: number, pauseThreshold?: number, toKeep?: number}} [options]
  *   - `endThreshold`: 문장이 끝났을 때 이만큼은 돼야 내보낸다. 응. 한 글자씩 나가면 어색하다.
- *   - `쉼문턱`: 쉼표에서 끊을 땐 더 길어야 한다. 짧게 끊으면 뚝뚝 끊겨 들린다.
+ *   - `pauseThreshold`: 쉼표에서 끊을 때의 최소 길이. 짧으면 뚝뚝 끊겨 들림.
  *     한국어는 글자가 빽빽해서 10자면 이미 한 마디다. 영어 기준으로 잡으면 영영 안 끊긴다.
- *   - `남길것`: 끊은 자리 뒤에 이만큼은 남아 있어야 한다. 끝에 다다라서 끊으면 얻는 게 없다.
+ *   - `toKeep`: 끊은 자리 뒤에 남아야 할 최소 길이. 끝에서 끊으면 이득 없음.
  */
 export function chunkToRead(remaining, options = {}) {
   /* **첫 토막은 더 잘게 끊는다.**
