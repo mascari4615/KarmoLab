@@ -43,7 +43,9 @@ html, body {
   /* 말풍선, 얘, 지금 뭐 하는 중, 말 걸기. **네 칸이다.**
      80회차에 지금 뭐 하는 중을 넣으면서 칸을 안 늘려서 대화창과 같은 칸에 겹쳐 놓았다
      (둘 다 grid-row: 3). 화면이 이상해 보인 게 그것이다. */
-  grid-template-rows: auto 1fr auto auto;
+  /* 1fr 은 몸 캔버스 최소 높이가 자리를 독점. 말풍선 줄 24px 로 눌려 윗부분 잘림 (2026-10-15 실측).
+     minmax(0, 1fr) 은 말풍선이 먼저 자리를 받음 */
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   justify-items: center;
   align-items: center;
   padding: 6px 10px 10px;
@@ -96,7 +98,7 @@ html, body {
 .bubble.aside { border-style: dashed; color: var(--dim); font-style: italic; }
 
 /* ── 얘 ─────────────────────────────────────────────── */
-.stage { grid-row: 2; display: grid; place-items: center; width: 100%; height: 100%; }
+.stage { grid-row: 2; display: grid; place-items: center; width: 100%; height: 100%; min-height: 0; }
 .field { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
 .body3d { width: 100%; height: 100%; display: block; }
 .body3d[hidden] { display: none; }
