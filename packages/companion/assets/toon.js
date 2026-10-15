@@ -31,12 +31,16 @@ function stepRamp(steps) {
  * @param options.steps 음영 단계 수 (적을수록 만화 같다)
  * @param options.outline 바깥선 두께. **화면 높이 대비 비율**. 0 이면 선 없음
  * @param options.outlineColor 바깥선 색
+ * @param options.keyline 바깥선 밖 밝은 테두리 두께(화면 높이 대비 비율). 0 이면 없음. 어두운 바탕에서 윤곽 보강
+ * @param options.keylineColor 밝은 테두리 색
  */
 export function applyToon(root, options = {}) {
   const steps = options.steps ?? 3;
   const outline = options.outline ?? 0.006;
   // 새까만 선은 그림에서 튄다. 몸 색을 아주 어둡게 깐 먹색이 그림처럼 앉는다.
   const outlineColor = new THREE.Color(options.outlineColor ?? 0x2b1f33);
+  const keyline = options.keyline ?? 0;
+  const keylineColor = new THREE.Color(options.keylineColor ?? 0xffffff);
   const gradient = stepRamp(steps);
 
   const outlines = [];
@@ -72,9 +76,10 @@ export function applyToon(root, options = {}) {
     // 만들어졌는지에 따라 선이 실오라기가 되거나 몸을 통째로 삼킨다. 이 모델에서는
     // 후자였고, 자세가 바뀌자 시커먼 조각이 치마 밖으로 삐져나왔다(실측). 화면 기준으로
     // 밀면 모델 크기, 카메라 거리와 무관하게 늘 같은 굵기로 보인다.
+    const makeShell = (thicknessValue, colorValue, behind) => {
     const shell = node.clone();
     shell.material = new THREE.ShaderMaterial({
-      uniforms: { thickness: { value: outline }, lineColor: { value: outlineColor } },
+      uniforms: { thickness: { value: thicknessValue }, lineColor: { value: colorValue } },
       vertexShader: `
         uniform float thickness;
         #include <common>
@@ -99,11 +104,19 @@ export function applyToon(root, options = {}) {
       `,
       side: THREE.BackSide,
     });
+    // 밝은 테두리는 더 바깥이라 먼저 그리고 깊이를 안 씀. 어두운 선이 그 위에 덮임
+    if (behind) {
+      shell.material.depthWrite = false;
+      shell.renderOrder = -1;
+    }
     // 껍데기는 원래 몸과 같은 뼈를 따라야 한다. 안 그러면 몸만 움직이고 선은 제자리다.
     if (node.isSkinnedMesh === true && shell.isSkinnedMesh === true) {
       shell.bind(node.skeleton, node.bindMatrix);
     }
     outlines.push({ shell, parent: node.parent });
+    };
+    makeShell(outline, outlineColor, false);
+    if (keyline > 0) makeShell(outline + keyline, keylineColor, true);
   });
 
   for (const { shell, parent } of outlines) parent?.add(shell);

@@ -273,8 +273,10 @@ export async function mountModel(canvas, modelName, onFail) {
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
 
   // 위에서 내려오는 빛 하나 + 아주 옅은 환경광. 방 안에 서 있는 느낌만.
-  scene.add(new THREE.HemisphereLight(0xdfefff, 0x202028, 1.5));
-  const key = new THREE.DirectionalLight(0xffffff, 1.6);
+  // 실험 옵션. 주소 뒤에 lit 값을 주면 빛 세기 일괄 배율
+  const lit = Number(new URLSearchParams(location.search).get('lit') ?? '1');
+  scene.add(new THREE.HemisphereLight(0xdfefff, 0x202028, 1.5 * lit));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6 * lit);
   key.position.set(1.4, 2.4, 1.8);
   scene.add(key);
   const rim = new THREE.DirectionalLight(0x6ee7ff, 0.7);
@@ -306,8 +308,9 @@ export async function mountModel(canvas, modelName, onFail) {
 
   // 그림처럼 칠한다. 사실적인 음영은 조명 하나만 어긋나도 인형처럼 보인다.
   try {
-    const outlineWidth = Number(new URLSearchParams(location.search).get('outline') ?? '0.006');
-    const { outlineCount } = applyToon(model, { steps: 3, outline: outlineWidth });
+    const outlineWidth = Number(new URLSearchParams(location.search).get('outline') ?? '0.007');
+    const keylineWidth = Number(new URLSearchParams(location.search).get('keyline') ?? '0.022');
+    const { outlineCount } = applyToon(model, { steps: 3, outline: outlineWidth, keyline: keylineWidth });
     console.log('[3D] 만화식으로 칠했다, 바깥선', outlineCount, '겹');
   } catch (e) {
     console.warn('[3D] 만화식 칠하기 실패. 원래 재질로 간다:', e);
