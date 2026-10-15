@@ -1787,7 +1787,8 @@
           continue;
         }
         // 화면 위에서 떨어지며 등장한다
-        const pet = new Pet({ el, body, env, x: 150 + Math.random() * Math.max(1, innerWidth - 300), y: 0 });
+        const mode = new URLSearchParams(location.search).get('petmode') ?? '';
+        const pet = new Pet({ el, body, env, x: 150 + Math.random() * Math.max(1, innerWidth - 300), y: 0, mode });
         pet.start();
         pets.push(pet);
       }

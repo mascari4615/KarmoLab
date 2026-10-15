@@ -19,7 +19,9 @@ const rand = (min, max) => min + Math.random() * (max - min);
  * @param options.y 처음 위쪽 y
  */
 export class Pet {
-  constructor({ el, body, env, x, y }) {
+  constructor({ el, body, env, x, y, mode = '' }) {
+    // 시험용 행동 고정. 값 still 은 정지, 값 walk 는 계속 걷기, 빈 값은 평소 동작
+    this.mode = mode;
     this.el = el;
     this.body = body;
     this.env = env;
@@ -310,6 +312,11 @@ export class Pet {
 
   checkActivity() {
     if (this.roam.active || this.act.kind !== null || this.fall.active || this.grabbed !== null) return;
+    if (this.mode === 'still') return;
+    if (this.mode === 'walk') {
+      this.startRoam();
+      return;
+    }
     if (Date.now() < this.roam.nextAt || document.hidden) return;
     if (Math.random() < 0.4 && this.startJump()) return;
     const r = Math.random();
