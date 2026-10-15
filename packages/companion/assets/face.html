@@ -173,6 +173,10 @@
     document.body.classList.add('page');
     import('/desk.js').then((m) => m.mountDesk()).catch((e) => tell(`방을 못 깔았다: ${e}`));
   }
+  // 화면 걷기 상태 (full 모드). setState 가 먼저 돌 수 있어 여기서 미리 잡아 둔다
+  const roam = { active: false, dir: 0, target: 0, speed: 0, last: 0, nextAt: Date.now() + 5000, reportedAt: 0 };
+  let currentMood = '';
+
   const 방자리 = {
     x: Number(localStorage.getItem('companion.roomX') ?? '0') || null,
     y: Number(localStorage.getItem('companion.roomY') ?? '0') || null,
@@ -583,7 +587,10 @@
   let body3d = null;
 
   function setState(state, 말) {
-    body3d?.setMood(state);
+    // 걷는 중 상태 표시(빈 상태)는 걸음을 안 끊는다. 말하기, 듣기 같은 일이면 멈춘다
+    if (roam.active && state !== '') stopRoam();
+    currentMood = state;
+    if (!(roam.active && state === '')) body3d?.setMood(state);
     그리기(하는일아이콘[state] ?? ', ', 말 ?? '');
   }
 
@@ -1439,6 +1446,67 @@
   }
   setInterval(reportHitAreas, 500);
 
+  /* ── 화면 걷기 ─────────────────────────────────────────────
+     full 모드에서 한가할 때 가끔 화면 바닥을 가로질러 걷는다. 동작은 제자리 걸음이라
+     방 위치(--방x)를 옮긴다. 주소 뒤에 roam=0 이면 끈다. */
+  const roamEnabled = 전체화면 && new URLSearchParams(location.search).get('roam') !== '0';
+  const WALK_CYCLE_SEC = 1.33; // Walk_Loop 한 바퀴
+  const STRIDE_PER_HEIGHT = 0.8; // 한 바퀴에 몸 키의 이만큼 나아가야 발이 안 미끄러짐 (눈으로 조정)
+
+  function startRoam() {
+    const box = body3d?.screenBox?.();
+    if (!box) return;
+    const edge = 100;
+    let target = edge + Math.random() * Math.max(1, innerWidth - edge * 2);
+    const x = 방자리.x ?? innerWidth / 2;
+    // 너무 가까우면 걷는 티가 안 난다. 반대쪽으로 보낸다
+    if (Math.abs(target - x) < 250) target = x < innerWidth / 2 ? innerWidth - edge : edge;
+    roam.dir = Math.sign(target - x) || 1;
+    roam.target = target;
+    roam.speed = (STRIDE_PER_HEIGHT * box.height) / WALK_CYCLE_SEC;
+    roam.active = true;
+    roam.last = performance.now();
+    body3d.setFacing(roam.dir);
+    body3d.setMood('walking');
+    requestAnimationFrame(roamStep);
+  }
+
+  function roamStep(now) {
+    if (!roam.active) return;
+    const dt = Math.min(0.05, (now - roam.last) / 1000);
+    roam.last = now;
+    방자리.x += roam.dir * roam.speed * dt;
+    const arrived = roam.dir > 0 ? 방자리.x >= roam.target : 방자리.x <= roam.target;
+    if (arrived) 방자리.x = roam.target;
+    방자리적용();
+    // 누를 자리가 따라와야 한다. 500ms 마다만 알리면 걷는 몸 뒤로 클릭 구멍이 남는다
+    if (now - roam.reportedAt > 100) {
+      roam.reportedAt = now;
+      reportHitAreas();
+    }
+    if (arrived) stopRoam();
+    else requestAnimationFrame(roamStep);
+  }
+
+  function stopRoam() {
+    if (!roam.active) return;
+    roam.active = false;
+    body3d?.setFacing(0);
+    body3d?.setMood('idle');
+    roam.nextAt = Date.now() + 8000 + Math.random() * 14000;
+    reportHitAreas();
+  }
+
+  if (roamEnabled) {
+    setInterval(() => {
+      if (roam.active || Date.now() < roam.nextAt) return;
+      // 한가할 때만. 말하고 생각하고 화면 보는 중, 마이크가 켜졌거나 대화창이 열렸거나 잡혀 있을 때는 안 걷는다.
+      // 글 입력칸에 초점만 있는 'listening' 은 막지 않는다 (시작하자마자 그 상태로 남아 영영 안 걸었다)
+      if (['speaking', 'thinking', 'looking'].includes(currentMood) || listening || chatOpen || grabbed !== null || document.hidden) return;
+      startRoam();
+    }, 1000);
+  }
+
   /* 소리 없이 지나간 말이 있으면 알린다. 모든 소통은 소리가 기본이라, 자막만 나간
      말은 고장이다. 조용히 지나가면 또 사람이 알려 줄 때까지 모른다. */
   let 마지막어긋남 = 0;
@@ -1459,6 +1527,7 @@
   stage?.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     closeMenu();
+    stopRoam();
     grabbed = { x: e.clientX, y: e.clientY, moved: false };
   });
 

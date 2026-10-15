@@ -105,7 +105,7 @@ function supervise() {
   const openWindow = (exe) => {
     // 서버가 먼저 서야 창이 붙는다.
     setTimeout(() => {
-      window = keepAlive('창', exe, [], { cwd: dirname(exe) }, () => {
+      window = keepAlive('창', exe, [], { cwd: dirname(exe), env: windowEnv() }, () => {
         // 창을 닫으면 뒤에서 도는 것도 같이 정리한다. 보이지 않는 것만 남겨두지 않는다.
         face.stop();
         process.exit(0);
@@ -160,6 +160,37 @@ function supervise() {
   };
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);
+}
+
+/**
+ * 창이 읽을 환경. 기본은 작은 창.
+ *
+ * `COMPANION_FULL=1`: 창을 작업 영역 전체로 펴고 화면에 `full=1` 을 건다 (화면 걷기 전제).
+ * 눌러야 하는 자리 밖은 클릭이 통과하는 창이라 평소엔 없는 것과 같음.
+ * 단 자리 보고가 실패하면 클릭을 삼킴. 그래서 켜는 건 사람이 고름.
+ * 작업 영역을 못 재면 작은 창.
+ */
+function windowEnv() {
+  if (process.env.COMPANION_FULL !== '1' || process.platform !== 'win32') return process.env;
+  try {
+    const out = execFileSync(
+      'powershell',
+      ['-NoProfile', '-Command', 'Add-Type -AssemblyName System.Windows.Forms; $w = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; "$($w.Width)x$($w.Height)"'],
+      { timeout: 15_000, windowsHide: true, encoding: 'utf8' },
+    ).trim();
+    const m = /^(\d+)x(\d+)$/.exec(out);
+    if (m === null) return process.env;
+    const port = process.env.COMPANION_PORT ?? 4620;
+    return {
+      ...process.env,
+      COMPANION_URL: `http://localhost:${port}/?full=1`,
+      COMPANION_WIDTH: m[1],
+      COMPANION_HEIGHT: m[2],
+      COMPANION_MARGIN: '0',
+    };
+  } catch {
+    return process.env;
+  }
 }
 
 /**

@@ -65,10 +65,15 @@ const BONE_PAIRS = {
  * 묶음에는 46편이 들어 있지만 여기 적은 것만 굽는다. 굽는 값이 창을 열 때 한 번씩
  * 드는 비용이라, 안 쓸 동작까지 굽지 않는다. 다른 편을 보려면 `?clip=<name>`.
  */
+/** 걸을 때 몸을 옆으로 돌리는 각도(rad). 완전한 옆모습(1.57)이면 얼굴이 안 보여 3/4 로 */
+const FACING_YAW = 1.1;
+
 const MOOD_CLIPS = {
   idle: 'Idle_Loop',
   speaking: 'Idle_Talking_Loop',
   thinking: 'Spell_Simple_Idle_Loop',
+  // 화면 걷기용. 제자리 걸음 동작, 위치 이동은 창 쪽 몫
+  walking: 'Walk_Loop',
   // 듣는 중은 일부러 따로 두지 않는다. 남은 동작들은 죄다 뭔가를 **들고 있는**
   // 자세라, 아무것도 안 들고 하면 보이지 않는 물건을 쥔 사람이 된다(실측 . 
   // 횃불 동작을 얹었더니 허공을 잡고 있었다). 듣는 티는 몸을 살짝 기울여서 낸다.
@@ -455,7 +460,7 @@ export async function mountModel(canvas, modelName, onFail) {
     fade = 0;
   }
 
-  const state = { mood: 'idle', look: 0, speakUntil: 0 };
+  const state = { mood: 'idle', look: 0, speakUntil: 0, facing: 0 };
   const clock = new THREE.Clock();
 
   // 눈 깜빡임. 사람은 3~5초에 한 번 깜빡인다. 일정한 간격으로 깜빡이면 기계처럼
@@ -516,7 +521,7 @@ export async function mountModel(canvas, modelName, onFail) {
     pivot.scale.setScalar(1 + breath * 0.35);
 
     // 커서 쪽으로 아주 조금 몸을 돌린다. 크게 돌리면 인형처럼 보인다.
-    const wantY = state.look * 0.28;
+    const wantY = state.facing !== 0 ? state.facing * FACING_YAW : state.look * 0.28;
     let extra = 0;
     if (state.mood === 'listening') extra = 0.16;
     else if (state.mood === 'thinking') extra = Math.sin(t * 3.4) * 0.10;
@@ -620,6 +625,8 @@ export async function mountModel(canvas, modelName, onFail) {
       if (clips === null) return;
       switchTo(clips[state.mood] ?? clips.idle);
     },
+    /** 걷는 방향. -1 왼쪽, 1 오른쪽, 0 정면 */
+    setFacing(dir) { state.facing = Math.sign(dir) || 0; },
     /** -1(왼쪽) ~ 1(오른쪽). */
     lookAt(x) { state.look = Math.max(-1, Math.min(1, x)); },
     /**
