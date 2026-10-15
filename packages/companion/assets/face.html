@@ -1515,7 +1515,7 @@
      주소 뒤 gravity=0 이면 끈다. */
   const gravityEnabled = 전체화면 && new URLSearchParams(location.search).get('gravity') !== '0';
   const GRAVITY_PX = 2600; // px/s². 눈으로 조정할 값
-  const fall = { active: false, vy: 0, left: 0, last: 0, reportedAt: 0, blockedUntil: 0 };
+  const fall = { active: false, vx: 0, vy: 0, floorRoomY: 0, sliding: false, last: 0, reportedAt: 0, blockedUntil: 0 };
   const roomEl = document.querySelector('.room');
 
   function feetBottom() {
@@ -1545,12 +1545,16 @@
     }
   }
 
-  function startFall(gap) {
+  /** gap: 지금 발에서 바닥까지. vx, vy: 던졌을 때의 처음 속도(px/s, 위쪽이 음수) */
+  function startFall(gap, vx = 0, vy = 0) {
     stopRoam();
     fall.active = true;
-    fall.vy = 0;
-    fall.left = gap;
+    fall.sliding = false;
+    fall.vx = vx;
+    fall.vy = vy;
+    fall.floorRoomY = 방자리.y + Math.max(0, gap);
     fall.last = performance.now();
+    body3d?.setFacing(Math.abs(vx) > 150 ? Math.sign(vx) : 0);
     body3d?.setMood('falling');
     requestAnimationFrame(fallStep);
   }
@@ -1559,24 +1563,53 @@
     if (!fall.active) return;
     const dt = Math.min(0.05, (now - fall.last) / 1000);
     fall.last = now;
-    fall.vy += GRAVITY_PX * dt;
-    const step = Math.min(fall.left, fall.vy * dt);
-    const before = 방자리.y;
-    방자리.y += step;
-    방자리적용();
-    fall.left -= step;
+    const beforeY = 방자리.y;
+    const beforeX = 방자리.x;
+
+    if (fall.sliding) {
+      // 착지 뒤 미끄러짐. 마찰로 속도가 줄고 멈추면 끝
+      fall.vx *= Math.exp(-4 * dt);
+      방자리.x += fall.vx * dt;
+      방자리적용();
+      if (Math.abs(fall.vx) < 25) {
+        fall.active = false;
+        fall.sliding = false;
+        body3d?.setFacing(0);
+        reportHitAreas();
+        return;
+      }
+    } else {
+      fall.vy += GRAVITY_PX * dt;
+      방자리.y += fall.vy * dt;
+      방자리.x += fall.vx * dt;
+      if (방자리.y <= 0 && fall.vy < 0) fall.vy = 0; // 천장
+      방자리적용();
+      // 벽에 닿으면 반쯤 튕긴다
+      if ((방자리.x <= 41 && fall.vx < 0) || (방자리.x >= innerWidth - 41 && fall.vx > 0)) fall.vx *= -0.5;
+      // 화면 안 한계에 막혀 안 내려가면 끝낸다. 안 그러면 계속 떨어지려 한다
+      const stuck = fall.vy > 0 && Math.abs(방자리.y - beforeY) < 0.01;
+      if (방자리.y >= fall.floorRoomY || stuck) {
+        방자리.y = Math.min(방자리.y, fall.floorRoomY);
+        방자리적용();
+        if (stuck) fall.blockedUntil = Date.now() + 3000;
+        const fast = Math.abs(fall.vx) > 250 && fall.vy > 500;
+        if (fast && !stuck) {
+          // 빠르게 던져졌으면 구르며 미끄러진다
+          fall.sliding = true;
+          body3d?.setFacing(Math.sign(fall.vx));
+          body3d?.setMood('rolling');
+        } else {
+          fall.active = false;
+          body3d?.setFacing(0);
+          body3d?.setMood('landing');
+          reportHitAreas();
+          return;
+        }
+      }
+    }
     if (now - fall.reportedAt > 100) {
       fall.reportedAt = now;
       reportHitAreas();
-    }
-    // 화면 안 한계에 막혀 안 움직이면 끝낸다. 안 그러면 계속 떨어지려 한다
-    const stuck = Math.abs(방자리.y - before) < 0.01 && step > 0;
-    if (fall.left <= 0.5 || stuck) {
-      fall.active = false;
-      if (stuck) fall.blockedUntil = Date.now() + 3000;
-      body3d?.setMood('landing');
-      reportHitAreas();
-      return;
     }
     requestAnimationFrame(fallStep);
   }
@@ -1676,6 +1709,10 @@
     방자리.x = grabbed.from.x + (e.clientX - grabbed.from.px);
     방자리.y = grabbed.from.y + (e.clientY - grabbed.from.py);
     방자리적용();
+    // 놓을 때 던지는 속도를 재기 위한 최근 움직임 (0.12초 분량)
+    const stamp = performance.now();
+    (grabbed.samples ??= []).push([stamp, e.clientX, e.clientY]);
+    while (grabbed.samples.length > 2 && stamp - grabbed.samples[0][0] > 120) grabbed.samples.shift();
   });
 
   /* 닿으면 반응한다. 만져도 아무 일이 없으면 그건 화면에 붙은 그림이다.
@@ -1685,6 +1722,7 @@
   const release = () => {
     if (grabbed === null) return;
     const wasClick = grabbed.moved === false;
+    const samples = grabbed.samples ?? [];
     grabbed = null;
     document.body.classList.remove('dragging');
     if (전체화면 && 방자리.x !== null) {
@@ -1692,6 +1730,25 @@
       localStorage.setItem('companion.roomY', String(Math.round(방자리.y)));
     }
     touched(wasClick ? 'poke' : 'drag');
+    // 놓을 때 속도가 있으면 던져진다
+    if (wasClick === false && gravityEnabled && samples.length >= 2) {
+      const first = samples[0];
+      const last = samples[samples.length - 1];
+      const span = Math.max(0.03, (last[0] - first[0]) / 1000);
+      const clampSpeed = (v) => Math.max(-2500, Math.min(2500, v));
+      const vx = clampSpeed((last[1] - first[1]) / span);
+      const vy = clampSpeed((last[2] - first[2]) / span);
+      if (Math.hypot(vx, vy) > 350 && performance.now() - last[0] < 80) {
+        const feet = feetBottom();
+        const gap = feet === null ? 0 : floorY(feet) - feet;
+        startFall(gap, vx, vy);
+        return;
+      }
+    }
+    // 눌렀을 때 움찔. 한가할 때만 (말하는 중이면 그 동작을 끊지 않는다)
+    if (wasClick && body3d !== null && ['', 'listening'].includes(currentMood) && !fall.active && !roam.active && act.kind === null) {
+      body3d.setMood('poked');
+    }
     if (wasClick === false) return;
     openChatFor(60);
     text.focus();

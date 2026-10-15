@@ -69,7 +69,10 @@ const BONE_PAIRS = {
 const FACING_YAW = 1.1;
 
 /** 한 번만 재생하는 동작 이름 */
-const ONCE_MOODS = new Set(['landing', 'sitEnter', 'sitExit']);
+const ONCE_MOODS = new Set(['landing', 'sitEnter', 'sitExit', 'poked', 'rolling']);
+
+/** 갈아탈 때 섞는 시간(초). 기본 0.35. 짧은 반응 동작은 빨리 */
+const FADE_IN_SEC = { poked: 0.06, rolling: 0.12, landing: 0.1 };
 
 /** 한 번 재생이 끝나면 이어질 기분 */
 const NEXT_MOOD = { landing: 'idle', sitEnter: 'sitting', sitExit: 'idle' };
@@ -106,6 +109,9 @@ const MOOD_CLIPS = {
   sitExit: 'Sitting_Exit',
   dancing: 'Dance_Loop',
   jogging: 'Jog_Fwd_Loop',
+  // 만졌을 때 움찔, 던져져 착지하면 구르기
+  poked: 'Hit_Head',
+  rolling: 'Roll',
   // 듣는 중은 일부러 따로 두지 않는다. 남은 동작들은 죄다 뭔가를 **들고 있는**
   // 자세라, 아무것도 안 들고 하면 보이지 않는 물건을 쥔 사람이 된다(실측 . 
   // 횃불 동작을 얹었더니 허공을 잡고 있었다). 듣는 티는 몸을 살짝 기울여서 낸다.
@@ -476,6 +482,7 @@ export async function mountModel(canvas, modelName, onFail) {
         const sit = SIT_MOODS.has(key) && dropBase !== null;
         baked[key] = bakeClip(clip, pairs, gltf.scene, mixer, 30, sit ? { strengths: SIT_STRENGTHS, drop: dropBase } : {});
         baked[key].once = ONCE_MOODS.has(key);
+        baked[key].fadeIn = FADE_IN_SEC[key] ?? 0.35;
       }
       if (baked.idle !== undefined) {
         clips = baked;
@@ -592,7 +599,7 @@ export async function mountModel(canvas, modelName, onFail) {
       }
       let dropNow = readDrop(current, clipTime(current, currentStart, t));
       if (fade < 1 && previous !== null) {
-        fade = Math.min(1, fade + dt / 0.35);
+        fade = Math.min(1, fade + dt / (current.fadeIn ?? 0.35));
         readPose(previous, clipTime(previous, previousStart, t), poseB);
         for (let i = 0; i < poseA.length; i += 1) poseA[i].slerp(poseB[i], 1 - fade);
         dropNow = readDrop(previous, clipTime(previous, previousStart, t)) * (1 - fade) + dropNow * fade;
