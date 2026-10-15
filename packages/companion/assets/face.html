@@ -1534,20 +1534,25 @@
   const fall = { active: false, thrown: false, vx: 0, vy: 0, feet: 0, sliding: false, last: 0, reportedAt: 0, blockedUntil: 0 };
   // 지금 서 있는 면. 바닥이면 id 가 'floor'
   const stand = { id: 'floor', y: null };
+  // 착지나 첫 설정 직후 잠깐만 발 높이를 정확히 맞춤(착지 자세와 대기 자세의 경계 상자 차이 보정)
+  let settleUntil = 0;
   let surfaces = []; // 창 윗면 토막들(페이지 좌표)
   let surfaceMod = null;
   import('/surfaces.js')
     .then((m) => { surfaceMod = m; })
     .catch((e) => tell(`창 위에 서는 규칙을 못 불렀다. 바닥만 쓴다: ${e}`));
 
+  // 경계 상자 바닥이 눈에 보이는 발 끝(흰 테두리 포함)보다 키의 약 3.9% 아래라 그만큼 올려서 잼.
+  // 실측: 두 해상도(720, 1080)에서 모두 12px(키 310px 기준) 떠 있었음
+  const FEET_BIAS = 0.039;
   function feetBottom() {
     const box = body3d?.screenBox?.();
-    return box ? box.y + box.height : null;
+    return box ? box.y + box.height * (1 - FEET_BIAS) : null;
   }
 
   /** 발이 닿는 바닥(화면 y). 창 아래 끝, 작업 표시줄 바로 위. 대화창은 몸 옆에 떠서 영향 없음 */
   function floorY() {
-    return innerHeight - 4;
+    return innerHeight - 1;
   }
 
   /** 서버가 알려 주는 창 목록을 윗면 토막으로 바꾼다. 좌표는 화면 물리 픽셀에서 이 창 안 CSS 픽셀로 */
@@ -1608,9 +1613,16 @@
     if (gap > 16) {
       startFall(0, 0);
     } else if (gap > -40) {
-      // 서 있다. 자세 때문에 경계 상자가 ±20px 변하므로 약간 파고든 것도 선 것으로 본다
+      // 서 있음. 자세 때문에 경계 상자가 ±20px 변하므로 약간 파고든 것도 선 것으로 봄
+      if (stand.id !== support.id) settleUntil = Date.now() + 2500;
       stand.id = support.id;
       stand.y = support.y;
+      // 안착 직후 한가한 자세에서만 남은 간격을 메움. 자세가 바뀔 때마다 보정하면 몸이 출렁임
+      if (Date.now() < settleUntil && currentMood === '' && act.kind === null && !roam.active && Math.abs(gap) > 2) {
+        방자리.y += gap * 0.5;
+        방자리적용();
+        reportHitAreas();
+      }
     }
   }
 
@@ -1635,6 +1647,7 @@
     fall.active = false;
     stand.id = surface.id;
     stand.y = surface.y;
+    settleUntil = Date.now() + 2500;
     const fast = fall.thrown && Math.abs(speedX) > 250 && speedY > 500;
     if (fast) {
       // 던져졌고 빠르면 구르며 미끄러진다
