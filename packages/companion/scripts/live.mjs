@@ -183,7 +183,8 @@ function windowEnv() {
     const port = process.env.COMPANION_PORT ?? 4620;
     return {
       ...process.env,
-      COMPANION_URL: `http://localhost:${port}/?full=1`,
+      // COMPANION_PETS 가 N 이면 분신 N 마리 추가 (말 없이 혼자 움직이는 같은 몸)
+      COMPANION_URL: `http://localhost:${port}/?full=1${Number(process.env.COMPANION_PETS) > 0 ? `&pets=${Number(process.env.COMPANION_PETS)}` : ''}`,
       COMPANION_WIDTH: m[1],
       COMPANION_HEIGHT: m[2],
       COMPANION_MARGIN: '0',

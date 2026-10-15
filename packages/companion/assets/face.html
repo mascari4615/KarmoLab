@@ -178,6 +178,7 @@
   let currentMood = '';
   // 한가할 때 하는 일(앉아 졸기, 춤). null 이면 안 하는 중
   const act = { kind: null, until: 0 };
+  const pets = []; // 분신들(pet.js)
 
   const 방자리 = {
     x: Number(localStorage.getItem('companion.roomX') ?? '0') || null,
@@ -1267,6 +1268,7 @@
         cube.classList.add('retired');
         // 3D 몸은 제 그림자를 발밑에 직접 깐다. 큐브 시절의 그림자를 남겨 두면 둘이 겹친다.
         document.querySelector('.shadow')?.remove();
+        void spawnPets();
       }
       else canvas.hidden = true;
     } catch (e) {
@@ -1439,6 +1441,10 @@
     // 얘 자신은 늘 눌린다. 그림판이 아니라 얘가 실제로 차지하는 자리만.
     const body = body3d?.screenBox?.();
     if (body) areas.push([body.x, body.y, body.width, body.height]);
+    for (const pet of pets) {
+      const box = pet.hitBox();
+      if (box) areas.push(box);
+    }
     if (chatOpen) add(talk);
     add(menu);
     add(sheet);
@@ -1730,6 +1736,42 @@
   }
 
   if (gravityEnabled) setInterval(refreshSurfaces, 300);
+
+  /* ── 분신 ─────────────────────────────────────────────────
+     주소 뒤 pets=N 이면 같은 몸 N 마리를 더 띄운다. 분신은 말과 기억 없이 혼자 움직이고
+     (걷기, 앉기, 춤, 뛰기, 창 위 서기, 던지기), 본체만 말한다. full 모드 전용 */
+  const petCount = Math.max(0, Math.min(6, Number(new URLSearchParams(location.search).get('pets') ?? '0') || 0));
+  async function spawnPets() {
+    if (전체화면 === false || petCount < 1 || gravityEnabled === false) return;
+    try {
+      const [{ Pet }, { mountModel }] = await Promise.all([import('/pet.js'), import('/model.js')]);
+      const env = {
+        surfaces: () => surfaces,
+        floorY,
+        width: () => innerWidth,
+        height: () => innerHeight,
+        report: reportHitAreas,
+      };
+      for (let i = 0; i < petCount; i += 1) {
+        const el = document.createElement('div');
+        el.className = 'room pet';
+        el.innerHTML = '<div class="stage"><canvas class="body3d"></canvas></div>';
+        document.body.appendChild(el);
+        const body = await mountModel(el.querySelector('canvas'), '욘', (e) => tell(`분신 몸을 못 세웠다: ${e}`));
+        if (body === null) {
+          el.remove();
+          continue;
+        }
+        // 화면 위에서 떨어지며 등장한다
+        const pet = new Pet({ el, body, env, x: 150 + Math.random() * Math.max(1, innerWidth - 300), y: 0 });
+        pet.start();
+        pets.push(pet);
+      }
+      tell(`분신 ${pets.length}마리`);
+    } catch (e) {
+      tell(`분신을 못 띄웠다: ${e && e.message ? e.message : String(e)}`);
+    }
+  }
   if (gravityEnabled) setInterval(checkGravity, 150);
 
   /* ── 한가할 때 변주 ─────────────────────────────────────────

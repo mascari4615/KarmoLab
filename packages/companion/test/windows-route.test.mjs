@@ -37,6 +37,9 @@ test('창 윗면 규칙 모듈이 서버에서 내려간다', async () => {
     const res = await fetch(`http://127.0.0.1:${port + 1}/surfaces.js`);
     assert.equal(res.status, 200, '화면이 못 불러오면 바닥만 쓰고 창 위에는 못 감');
     assert.match(await res.text(), /export function standableSurfaces/);
+    const pet = await fetch(`http://127.0.0.1:${port + 1}/pet.js`);
+    assert.equal(pet.status, 200, '분신 모듈이 안 내려가면 분신이 안 뜸');
+    assert.match(await pet.text(), /export class Pet/);
   } finally {
     body.sense.stop();
   }

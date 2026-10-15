@@ -348,7 +348,7 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
           res.end(JSON.stringify({ ok, current: want }));
           return;
         }
-        if (url === '/model.js' || url === '/toon.js' || url === '/face-paint.js' || url === '/say-chunks.js' || url === '/listen-gate.js' || url === '/chat-markup.js' || url === '/desk.js' || url === '/surfaces.js') {
+        if (url === '/model.js' || url === '/toon.js' || url === '/face-paint.js' || url === '/say-chunks.js' || url === '/listen-gate.js' || url === '/chat-markup.js' || url === '/desk.js' || url === '/surfaces.js' || url === '/pet.js') {
           serveFile(res, join(packageRoot, 'assets', url.slice(1)), 'text/javascript; charset=utf-8', log);
           return;
         }
