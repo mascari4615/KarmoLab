@@ -2,11 +2,60 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1699,
+    "commits": 1713,
     "days": 13,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-10-16",
+      "entries": [
+        {
+          "sha": "e363d071",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "authoring",
+          "text": "localize scene tools and show preview playback controls"
+        },
+        {
+          "sha": "d9060bcf",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "authoring",
+          "text": "restore scene edits and navigate exact motion keys"
+        },
+        {
+          "sha": "6a718884",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "sequence",
+          "text": "export authored scenes with reusable motion"
+        },
+        {
+          "sha": "8c4400f6",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "content",
+          "text": "compose runtime playback and editable motion tracks"
+        },
+        {
+          "sha": "3dad9ed3",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "authoring",
+          "text": "compose independent actors in shared native scenes"
+        },
+        {
+          "sha": "dca7babd",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "content",
+          "text": "register portable modules and their Unity test assemblies"
+        }
+      ],
+      "quiet": 1,
+      "more": 7
+    },
     {
       "date": "2026-09-24",
       "entries": [
@@ -464,59 +513,10 @@
           "typeLabel": "고친 것",
           "scope": "idle",
           "text": "글자를 키운 뒤 관리 열을 넘는 자리 둘"
-        },
-        {
-          "sha": "a2efef8c",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "글자를 키운 뒤 가방이 세로로 넘칠 자리를 되짚었다"
-        },
-        {
-          "sha": "80529764",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "폰에서 글자가 안 보인다. 접근성 기준에 맞춰 올린다"
-        },
-        {
-          "sha": "f5dce637",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "환생이 장비도 지운다 (economy.md 표 3, 사용자 판정 2026-09-01)"
         }
       ],
       "quiet": 6,
-      "more": 17
-    },
-    {
-      "date": "2026-08-31",
-      "entries": [
-        {
-          "sha": "0af941e6",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "장비가 인형별 (사용자 2026-08-31 판정). 착용 칸이 인형 수 x 부위 4, 편성 칸을 누르면 그 인형의 장비가 뜨고 칸을 누르면 팝업에서 고른다. 배수는 전장에 선 인형(메인 3) 것만 곱하므로 누구에게 끼우나가 선택이 된다. 옛 저장의 공용 4칸은 시작 인형 것으로 이관. Portable 760/760"
-        },
-        {
-          "sha": "57471ca5",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "장비를 인형 탭 칸에서 팝업으로 고른다 (사용자 2026-08-31: 유닛이 여럿인데 가방에서 누르는 건 기획 오류). 장비 칸 클릭 -> 그 부위 가방 아이템만 목록, 고르면 장착. 가방 칸은 보기와 합성 재료만. 실측: 머리 칸에서 팝업 열림, 줄 2개"
-        },
-        {
-          "sha": "1c97e15c",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "타격 이펙트가 안 보이던 것. 원인 셋 (알갱이 지름 0.02m 로 인형의 1/20, 적과 같은 색이라 몸에 묻힘, ParticleSystem 은 에디트 모드에서 자동 재생 안 됨). 볼트처럼 직접 날리는 조각 7개로 바꾸고 크기 0.36 흰색 55% 섞음. 맞은 적은 몸이 0.12s 하얗게 번쩍인다. 실측: 조각 7개 크기 0.355"
-        }
-      ],
-      "quiet": 2,
-      "more": 7
+      "more": 20
     }
   ]
 }
