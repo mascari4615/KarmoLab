@@ -2,59 +2,73 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1713,
-    "days": 13,
+    "commits": 1722,
+    "days": 14,
     "shown": 60
   },
   "days": [
     {
+      "date": "2026-10-18",
+      "entries": [
+        {
+          "sha": "839d5355",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "authoring",
+          "text": "add portable secondary motion and collision"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
+    {
       "date": "2026-10-16",
       "entries": [
         {
-          "sha": "e363d071",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "authoring",
-          "text": "localize scene tools and show preview playback controls"
+          "sha": "8e1b976a",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "sequence",
+          "text": "preserve authored lighting during lobby viewing"
         },
         {
-          "sha": "d9060bcf",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "authoring",
-          "text": "restore scene edits and navigate exact motion keys"
-        },
-        {
-          "sha": "6a718884",
+          "sha": "77c95ad7",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "sequence",
-          "text": "export authored scenes with reusable motion"
+          "text": "preserve limb goals through motion and playback"
         },
         {
-          "sha": "8c4400f6",
+          "sha": "4797978f",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
-          "scope": "content",
-          "text": "compose runtime playback and editable motion tracks"
+          "scope": "sequence",
+          "text": "play authored sequences from the lobby library"
         },
         {
-          "sha": "3dad9ed3",
+          "sha": "9f8695cb",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "boot",
+          "text": "use the configured root after prefab migration"
+        },
+        {
+          "sha": "c93a31e1",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "sequence",
+          "text": "fit motion when exporting parameter variants"
+        },
+        {
+          "sha": "4514a843",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "authoring",
-          "text": "compose independent actors in shared native scenes"
-        },
-        {
-          "sha": "dca7babd",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "content",
-          "text": "register portable modules and their Unity test assemblies"
+          "text": "add calibrated scene parameter controls"
         }
       ],
       "quiet": 1,
-      "more": 7
+      "more": 15
     },
     {
       "date": "2026-09-24",
@@ -506,17 +520,10 @@
           "typeLabel": "고친 것",
           "scope": "idle",
           "text": "재화 칩 글자를 본문에 맞춤. 유니티가 그린 실제 값으로 쟀다"
-        },
-        {
-          "sha": "a0e1477e",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "글자를 키운 뒤 관리 열을 넘는 자리 둘"
         }
       ],
       "quiet": 6,
-      "more": 20
+      "more": 21
     }
   ]
 }
