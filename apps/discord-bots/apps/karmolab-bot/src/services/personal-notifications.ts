@@ -116,12 +116,14 @@ export class PersonalNotifications {
   }
   disconnect(): void { this.updateConnection({ refreshToken: undefined }); }
   private homework(): AnimeEpisode[] { return Object.values(this.state.homework || {}).sort((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt) || a.key.localeCompare(b.key)); }
-  setAnimeWatched(key: string, watched: boolean, now = Date.now()): AgendaReport {
+  setAnimeWatched(key: string, watched: boolean, watchedAt?: string, now = Date.now()): AgendaReport {
     if (this.storageError) throw new Error('notification_storage_invalid');
     const episode = this.state.homework && Object.prototype.hasOwnProperty.call(this.state.homework, key) ? this.state.homework[key] : undefined;
     if (!episode) throw new Error('episode_not_found');
+    if (watchedAt !== undefined && (typeof watchedAt !== 'string' || watchedAt.length > 40 || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(watchedAt) || !Number.isFinite(Date.parse(watchedAt)) || Date.parse(watchedAt) > now || !watched)) throw new Error('invalid_watched_at');
+    if (watchedAt && new Date(watchedAt.slice(0, 10) + 'T00:00:00Z').toISOString().slice(0, 10) !== watchedAt.slice(0, 10)) throw new Error('invalid_watched_at');
     const updated: AnimeEpisode = { ...episode };
-    if (watched) updated.watchedAt = episode.watchedAt || new Date(now).toISOString();
+    if (watched) updated.watchedAt = watchedAt ? new Date(watchedAt).toISOString() : episode.watchedAt || new Date(now).toISOString();
     else delete updated.watchedAt;
     const next = { ...this.state, homework: { ...this.state.homework, [key]: updated } };
     saveJson(this.stateFile, next);

@@ -55,9 +55,13 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-anime-work h3 a { color: var(--text-primary); text-decoration: none; }
         .pl-anime-work h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
         .pl-anime-source, .pl-anime-status { margin: 0 0 8px; font-size: var(--font-size-xs); color: var(--text-secondary); line-height: 1.6; }
-        .pl-anime-row { min-height: 44px; cursor: pointer; border-bottom: 1px solid var(--border); }
-        .pl-anime-row input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent); }
-        .pl-anime-row:has(:checked) span { text-decoration: line-through; }
+        .pl-anime-episode { border-bottom: 1px solid var(--border); padding-block: 4px; }
+        .pl-anime-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; color: var(--text-secondary); }
+        .pl-anime-row button, .pl-anime-edit button { min-height: 44px; }
+        .pl-anime-watched { margin: 0 0 10px; font-size: var(--font-size-xs); color: var(--text-primary); line-height: 1.6; }
+        .pl-anime-edit { display: grid; gap: 12px; padding-block: 10px; }
+        .pl-anime-edit input { width: 100%; min-width: 0; min-height: 44px; font: inherit; }
+        .pl-anime-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .pl-anime input:focus-visible, .pl-anime a:focus-visible, .pl-anime button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .pl-rail { width: 64px; flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; padding: 12px 6px; border-left: 1px solid var(--border); }
         .pl-rail-btn { min-height: 44px; border: none; background: none; color: var(--text-secondary); font-size: var(--font-size-2xs); font-weight: 700; cursor: pointer; }

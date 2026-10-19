@@ -89,7 +89,7 @@ describe('개인 안내', () => {
   });
   it('봤음 체크는 재시작과 새 회차 수집 뒤 유지, 취소와 다른 기기 읽기', async () => {
     const x = setup(); const report = await x.service.collect(now), key = report.homework![0].key;
-    expect(x.service.setAnimeWatched(key, true, now).homework![0].watchedAt).toBe(new Date(now).toISOString());
+    expect(x.service.setAnimeWatched(key, true, undefined, now).homework![0].watchedAt).toBe(new Date(now).toISOString());
     const restarted = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch);
     expect(restarted.status().homework![0].watchedAt).toBeTruthy();
     x.setAnime('2026-10-14T09:05:00');
@@ -107,6 +107,23 @@ describe('개인 안내', () => {
       expect(() => x.service.setAnimeWatched(key, true)).toThrow('disk full');
       expect(x.service.status().homework![0].watchedAt).toBeUndefined();
     } finally { write.mockRestore(); }
+  });
+  it('실제 시청 시각 입력과 수정, 재시작과 재수집 뒤 유지', async () => {
+    const x = setup(); const key = (await x.service.collect(now)).homework![0].key;
+    const first = x.service.setAnimeWatched(key, true, '2026-10-13T21:30:00+09:00', now);
+    expect(first.homework![0].watchedAt).toBe('2026-10-13T12:30:00.000Z');
+    x.service.setAnimeWatched(key, true, '2026-10-13T22:10:00+09:00', now);
+    const restarted = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch);
+    expect((await restarted.collect(now)).homework![0].watchedAt).toBe('2026-10-13T13:10:00.000Z');
+    expect(restarted.setAnimeWatched(key, true, undefined, now).homework![0].watchedAt).toBe('2026-10-13T13:10:00.000Z');
+  });
+  it('미래와 존재하지 않는 날짜, 시간대 없는 입력은 이전 시청 기록 유지', async () => {
+    const x = setup(); const key = (await x.service.collect(now)).homework![0].key;
+    x.service.setAnimeWatched(key, true, '2026-10-13T21:30:00+09:00', now);
+    for (const value of ['2026-10-15T21:30:00+09:00', '2026-02-31T21:30:00+09:00', '2026-10-13T21:30:00', 'invalid']) {
+      expect(() => x.service.setAnimeWatched(key, true, value, now)).toThrow('invalid_watched_at');
+    }
+    expect(x.service.status().homework![0].watchedAt).toBe('2026-10-13T12:30:00.000Z');
   });
   it('손상된 시청 기록은 덮어쓰지 않고 저장 오류 표시', async () => {
     const x = setup(); await x.service.collect(now);

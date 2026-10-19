@@ -4,7 +4,9 @@ import type { NotificationHandle, NotificationReport } from './notifications';
 export interface AnimeEpisode { key: string; animeId: string; title: string; provider: 'laftel' | 'netflix'; publishedAt: string; url: string; scheduled: boolean; watchedAt?: string }
 
 export function buildAnimeHomework(container: HTMLElement, notifications: NotificationHandle): { destroy(): void } {
-    let current = notifications.report(), completed = false, busy = false, destroyed = false;
+    let current = notifications.report(), completed = false, busy = false, destroyed = false, editing: string | null = null;
+    const inputTime = (value: string): string => new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0, 16);
+    const shownTime = (value: string): string => new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     container.innerHTML = `<div class="pl-anime"><div class="pl-cal-modes" aria-label="시청 상태"><button type="button" class="pl-cal-mode" data-anime-view="pending" aria-pressed="true">미시청</button><button type="button" class="pl-cal-mode" data-anime-view="completed" aria-pressed="false">시청 완료</button></div><div class="pl-anime-list"></div><p class="pl-anime-status" role="status">불러오는 중</p><button type="button" class="btn btn-ghost btn-xs pl-anime-refresh">새로고침</button></div>`;
     const root = container.querySelector<HTMLElement>('.pl-anime')!;
     const list = root.querySelector<HTMLElement>('.pl-anime-list')!;
@@ -19,7 +21,9 @@ export function buildAnimeHomework(container: HTMLElement, notifications: Notifi
             button.setAttribute('aria-pressed', String(completed === done));
         });
         const groups = new Map<string, AnimeEpisode[]>();
-        for (const episode of episodes.filter(a => !!a.watchedAt === completed)) {
+        const visible = episodes.filter(a => !!a.watchedAt === completed);
+        if (completed) visible.sort((a, b) => Date.parse(b.watchedAt!) - Date.parse(a.watchedAt!));
+        for (const episode of visible) {
             const group = groups.get(episode.animeId) || [];
             group.push(episode); groups.set(episode.animeId, group);
         }
@@ -28,24 +32,35 @@ export function buildAnimeHomework(container: HTMLElement, notifications: Notifi
             const url = first.provider === 'netflix' ? `https://www.netflix.com/title/${encodeURIComponent(id)}` : `https://laftel.net/item/${encodeURIComponent(id)}`;
             return `<section class="pl-anime-work"><h3><a href="${url}" target="_blank" rel="noopener">${esc(first.title)}</a></h3><p class="pl-anime-source">${first.provider === 'netflix' ? '넷플릭스, 공개 일정 기준' : '라프텔'}</p>${group.map(a => {
                 const date = new Date(a.publishedAt).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' });
-                return `<label class="pl-check pl-anime-row"><input type="checkbox" data-anime-key="${esc(a.key)}" ${a.watchedAt ? 'checked' : ''} aria-label="${esc(a.title)} ${esc(date)} 회차 봤음"><span>${esc(date)} 공개분</span></label>`;
+                return `<div class="pl-anime-episode"><div class="pl-anime-row"><span>${esc(date)} 공개분</span><button type="button" class="btn btn-ghost btn-xs" data-watch-edit="${esc(a.key)}" aria-expanded="${editing === a.key}">${editing === a.key ? '닫기' : a.watchedAt ? '수정' : '시청 기록'}</button></div>${a.watchedAt ? `<p class="pl-anime-watched"><time datetime="${esc(a.watchedAt)}">${esc(shownTime(a.watchedAt))} 시청</time></p>` : ''}${editing === a.key ? `<form class="pl-anime-edit" data-watch-save="${esc(a.key)}"><label class="pl-field"><span class="pl-label">본 날짜와 시간 (한국 시각)</span><input type="datetime-local" name="watchedAt" class="pl-input" value="${inputTime(a.watchedAt || new Date().toISOString())}" max="${inputTime(new Date().toISOString())}" required></label><div class="pl-anime-edit-actions"><button type="submit" class="btn btn-accent btn-xs">저장</button><button type="button" class="btn btn-ghost btn-xs" data-watch-cancel>취소</button>${a.watchedAt ? `<button type="button" class="btn btn-ghost btn-xs" data-watch-clear="${esc(a.key)}">미시청으로</button>` : ''}</div></form>` : ''}</div>`;
             }).join('')}</section>`;
-        }).join('') || `<p class="pl-diary-empty">${completed ? '체크한 회차가 여기에 모여요.' : episodes.length ? '밀린 회차를 모두 봤어요.' : '새 회차를 확인하면 여기에 쌓여요.'}</p>`;
+        }).join('') || `<p class="pl-diary-empty">${completed ? '시청 기록을 저장하면 본 날짜와 시간이 여기에 남아요.' : episodes.length ? '밀린 회차를 모두 봤어요.' : '새 회차를 확인하면 여기에 쌓여요.'}</p>`;
     };
     const setBusy = (value: boolean): void => {
         busy = value;
         root.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button').forEach(input => { input.disabled = value; });
         root.setAttribute('aria-busy', String(value));
     };
-    const change = async (event: Event): Promise<void> => {
-        const input = event.target;
-        if (!(input instanceof HTMLInputElement) || !input.dataset.animeKey || busy) return;
-        const watched = input.checked;
-        input.checked = !watched;
+    const save = async (key: string, watched: boolean, watchedAt?: string): Promise<void> => {
+        if (busy) return;
         setBusy(true); status.textContent = '저장 중';
-        try { await notifications.setWatched(input.dataset.animeKey, watched); if (!destroyed) status.textContent = watched ? '봤음으로 저장했어요.' : '미시청으로 되돌렸어요.'; }
-        catch { if (!destroyed) status.textContent = '저장하지 못했어요. 다시 체크해 주세요.'; }
-        finally { if (!destroyed) { setBusy(false); (list.querySelector<HTMLInputElement>('input') || root.querySelector<HTMLButtonElement>('[data-anime-view]'))?.focus(); } }
+        try {
+            await notifications.setWatched(key, watched, watchedAt);
+            if (destroyed) return;
+            editing = null; completed = watched;
+            if (current) render(current);
+            status.textContent = watched ? '시청 날짜와 시간을 저장했어요. 한국 시각 기준이에요.' : '미시청으로 되돌렸어요.';
+        } catch { if (!destroyed) status.textContent = '저장하지 못했어요. 날짜와 시간을 확인하고 다시 저장해 주세요.'; }
+        finally { if (!destroyed) { setBusy(false); (list.querySelector<HTMLElement>('[data-watch-edit]') || root.querySelector<HTMLButtonElement>('[data-anime-view]'))?.focus(); } }
+    };
+    const submit = (event: Event): void => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.dataset.watchSave) return;
+        event.preventDefault();
+        if (busy || !form.reportValidity()) return;
+        const value = new FormData(form).get('watchedAt');
+        if (typeof value !== 'string' || !Number.isFinite(Date.parse(value + ':00+09:00'))) return;
+        void save(form.dataset.watchSave, true, new Date(value + ':00+09:00').toISOString());
     };
     const reload = async (): Promise<void> => {
         if (busy) return;
@@ -57,11 +72,14 @@ export function buildAnimeHomework(container: HTMLElement, notifications: Notifi
     const click = (event: Event): void => {
         const target = (event.target as HTMLElement).closest<HTMLButtonElement>('button');
         if (!target || busy) return;
-        if (target.dataset.animeView) { completed = target.dataset.animeView === 'completed'; if (current) render(current); }
+        if (target.dataset.animeView) { editing = null; completed = target.dataset.animeView === 'completed'; if (current) render(current); }
+        else if (target.dataset.watchEdit) { editing = editing === target.dataset.watchEdit ? null : target.dataset.watchEdit; if (current) render(current); root.querySelector<HTMLInputElement>('input[name="watchedAt"]')?.focus(); }
+        else if (target.hasAttribute('data-watch-cancel')) { editing = null; if (current) render(current); }
+        else if (target.dataset.watchClear) void save(target.dataset.watchClear, false);
         else if (target.classList.contains('pl-anime-refresh')) void reload();
     };
-    root.addEventListener('change', change); root.addEventListener('click', click);
-    const unsubscribe = notifications.subscribe(report => { render(report); if (!busy) status.textContent = ''; });
+    root.addEventListener('submit', submit); root.addEventListener('click', click);
+    const unsubscribe = notifications.subscribe(report => { current = report; if (!editing) render(report); if (!busy) status.textContent = ''; });
     if (!current) void reload();
-    return { destroy() { destroyed = true; unsubscribe(); root.removeEventListener('change', change); root.removeEventListener('click', click); } };
+    return { destroy() { destroyed = true; unsubscribe(); root.removeEventListener('submit', submit); root.removeEventListener('click', click); } };
 }

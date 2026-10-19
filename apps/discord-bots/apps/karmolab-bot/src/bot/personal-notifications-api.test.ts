@@ -30,10 +30,15 @@ describe('개인 알림 API 인증과 저장', () => {
     expect(x.service.setAnimeWatched).not.toHaveBeenCalled();
     expect((await x.call('POST', { key: 'episode', watched: 'true' }, undefined, '/anime')).status).toBe(400);
     expect((await x.call('POST', { key: 'episode', watched: true }, undefined, '/anime')).status).toBe(200);
-    expect(x.service.setAnimeWatched).toHaveBeenCalledWith('episode', true);
+    expect(x.service.setAnimeWatched).toHaveBeenCalledWith('episode', true, undefined);
+    expect((await x.call('POST', { key: 'episode', watched: true, watchedAt: '2026-10-13T12:30:00Z' }, undefined, '/anime')).status).toBe(200);
+    expect(x.service.setAnimeWatched).toHaveBeenLastCalledWith('episode', true, '2026-10-13T12:30:00Z');
+    expect((await x.call('POST', { key: 'episode', watched: true, watchedAt: 123 }, undefined, '/anime')).status).toBe(400);
     expect(x.service.updateConnection).not.toHaveBeenCalled(); expect(x.service.tick).not.toHaveBeenCalled();
     x.service.setAnimeWatched.mockImplementation(() => { throw new Error('episode_not_found'); });
     expect((await x.call('POST', { key: 'missing', watched: false }, undefined, '/anime')).status).toBe(404);
+    x.service.setAnimeWatched.mockImplementation(() => { throw new Error('invalid_watched_at'); });
+    expect((await x.call('POST', { key: 'episode', watched: true, watchedAt: 'future' }, undefined, '/anime')).status).toBe(400);
     x.service.setAnimeWatched.mockImplementation(() => { throw new Error('disk full'); });
     expect((await x.call('POST', { key: 'episode', watched: false }, undefined, '/anime')).status).toBe(503);
   });

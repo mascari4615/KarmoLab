@@ -19,7 +19,7 @@ export interface NotificationHandle {
     report(): NotificationReport | null;
     subscribe(listener: (report: NotificationReport) => void): () => void;
     reload(): Promise<NotificationReport>;
-    setWatched(key: string, watched: boolean): Promise<NotificationReport>;
+    setWatched(key: string, watched: boolean, watchedAt?: string): Promise<NotificationReport>;
 }
 const when = (value: string): string => new Date(value.length === 10 ? value + 'T00:00:00+09:00' : value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -134,6 +134,6 @@ export function mountNotifications(ctx: DashPanelCtx, { visible = true } = {}): 
         report: () => latest,
         subscribe(listener) { listeners.add(listener); if (latest) listener(latest); return () => listeners.delete(listener); },
         async reload() { const report = await call(); paint(report); return report; },
-        async setWatched(key, watched) { const report = await call('POST', { key, watched }, '/anime'); paint(report); return report; },
+        async setWatched(key, watched, watchedAt) { const report = await call('POST', { key, watched, ...(watchedAt ? { watchedAt } : {}) }, '/anime'); paint(report); return report; },
     };
 }

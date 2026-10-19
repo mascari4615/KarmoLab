@@ -13,8 +13,9 @@ export function registerPersonalNotifications(app: Express, service: PersonalNot
   app.post(`${PATH}/anime`, (req, res) => {
     const body = req.body;
     if (!body || typeof body.key !== 'string' || body.key.length > 200 || typeof body.watched !== 'boolean') { res.status(400).json({ error: 'invalid_episode_update' }); return; }
-    try { res.json(service.setAnimeWatched(body.key, body.watched)); }
-    catch (error) { res.status((error as Error).message === 'episode_not_found' ? 404 : 503).json({ error: 'episode_update_failed' }); }
+    if (body.watchedAt !== undefined && typeof body.watchedAt !== 'string') { res.status(400).json({ error: 'invalid_watched_at' }); return; }
+    try { res.json(service.setAnimeWatched(body.key, body.watched, body.watchedAt)); }
+    catch (error) { const reason = (error as Error).message; res.status(reason === 'episode_not_found' ? 404 : reason === 'invalid_watched_at' ? 400 : 503).json({ error: reason === 'invalid_watched_at' ? reason : 'episode_update_failed' }); }
   });
   app.post(PATH, async (req, res) => {
     const body = req.body;
