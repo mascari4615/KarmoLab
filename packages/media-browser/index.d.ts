@@ -1,4 +1,32 @@
 export interface MediaItem { id: string; kind: 'image' | 'video'; src: string; title?: string; poster?: string }
+export interface MediaListOptions<T> {
+  key?: (item: T) => string;
+  thumbnail?: (item: T) => string;
+  label?: (item: T) => string;
+  caption?: (item: T) => string;
+  selection?: 'none' | 'single' | 'multiple';
+  minItemWidth?: number;
+  aspectRatio?: number;
+  captionHeight?: number;
+  fit?: 'contain' | 'cover';
+  createImage?: () => HTMLImageElement;
+  onActivate?: (item: T) => void;
+  onSelectionChange?: (items: T[]) => void;
+  overscan?: number;
+}
+export function createMediaList<T = MediaItem>(host: HTMLElement, options?: MediaListOptions<T>): {
+  setItems(items: T[]): void;
+  setSelected(ids: Iterable<string>): void;
+  setCurrent(id: string): void;
+  selectedItems(): T[];
+  ensureVisible(id: string): void;
+  dispose(): void;
+};
+export function virtualGrid<T>(host: HTMLElement, options: {
+  key(item: T): string; create(item: T): HTMLElement; update?(element: HTMLElement, item: T): void;
+  heightOf(item: T, width: number): number; afterRender?(): void; scrollRoot?: HTMLElement;
+  overscan?: number; retain?: number; windowed?(): boolean;
+}): { set(items: T[]): void; keys(): string[]; ensureVisible(id: string): void; dispose(): void };
 export function nextItem<T>(items: T[], selected: string, direction: number, options?: { key?: (item: T) => string; focused?: string; boundary?: 'clamp' | 'stop' }): T | null;
 export function mediaPosition<T>(items: T[], selected: string, key?: (item: T) => string): { index: number; total: number; previous: boolean; next: boolean };
 export function librarySwipe(element: HTMLElement, enabled: () => boolean, step: (direction: number) => void, options?: {video?: boolean}): () => void;

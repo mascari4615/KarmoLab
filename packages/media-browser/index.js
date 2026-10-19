@@ -1,4 +1,6 @@
 export { librarySwipe, galleryZoom } from './gestures.js';
+export { virtualGrid } from './virtual-grid.js';
+export { createMediaList } from './media-list.js';
 import { librarySwipe, galleryZoom } from './gestures.js';
 
 export function nextItem(items, selected, direction, { key = item => item.id, focused = '', boundary = 'clamp' } = {}) {
