@@ -8,8 +8,10 @@ import { compactEmbed, notificationColors } from './notification-format';
 export interface AgendaEvent { id: string; title: string; start: string; end: string; allDay: boolean; source?: string }
 export interface AgendaTask { id: string; title: string; due?: string; status?: string }
 export interface AnimeUpdate { id: number | string; title: string; publishedAt: string; weekdays: string[]; provider?: 'netflix'; url?: string; releases?: string[] }
-interface NetflixTitle { id: string; title: string; releases: string[] }
-export interface AnimeEpisode { key: string; animeId: string; title: string; provider: 'laftel' | 'netflix'; publishedAt: string; url: string; scheduled: boolean; watchedAt?: string }
+interface NetflixTitle { id: string; title: string; releases: string[]; firstEpisode?: number }
+interface CatalogEpisode { id: number; number: string; title: string; publishedAt: string; available: boolean }
+interface CatalogTitle { id: number; title: string; episodes: CatalogEpisode[] }
+export interface AnimeEpisode { key: string; animeId: string; title: string; provider: 'laftel' | 'netflix'; publishedAt: string; url: string; scheduled: boolean; watchedAt?: string; episodeId?: number; episodeNumber?: string; episodeTitle?: string; archived?: boolean }
 export interface NotificationSettings { enabled: boolean; hour: number; minute: number; reminderMinutes: number; animeIds: number[] }
 interface LocalSnapshot { localEvents: AgendaEvent[]; localTasks: AgendaTask[]; localUpdatedAt?: string; localThrough?: string }
 interface SavedConnection { refreshToken?: string; snapshots: Record<string, LocalSnapshot> }
@@ -52,7 +54,7 @@ function summarySections(report: AgendaReport, now: number, limit = 5): { name: 
     { name: '애니 업로드와 공개 일정', value: lines(report.anime.flatMap(a => a.provider === 'netflix'
       ? (a.releases || []).filter(at => kstDate(Date.parse(at)) === kstDate(now)).map(at => `[넷플릭스] ${short(a.title)} ${new Date(at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} 공개 예정`)
       : Date.parse(a.publishedAt) >= now - DAY && Date.parse(a.publishedAt) <= now ? [`${short(a.title)} 새 에피소드`] : [])) },
-    { name: `안 본 애니 ${(report.homework || []).filter(a => !a.watchedAt).length}회`, value: lines((report.homework || []).filter(a => !a.watchedAt).map(a => `${short(a.title)} (${kstDate(Date.parse(a.publishedAt))} 회차${a.scheduled ? ', 공개 일정 기준' : ''})`)) },
+    { name: `안 본 애니 ${(report.homework || []).filter(a => !a.watchedAt && !a.archived).length}회`, value: lines((report.homework || []).filter(a => !a.watchedAt && !a.archived).map(a => `${short(a.title)} (${a.episodeNumber ? a.episodeNumber + '화' : kstDate(Date.parse(a.publishedAt)) + ' 공개분'}${a.scheduled ? ', 공개 일정 기준' : ''})`)) },
     ...(report.errors.length ? [{ name: '확인 필요', value: report.errors.join(', ').slice(0, 500) }] : []),
   ];
 }
@@ -87,6 +89,7 @@ export class PersonalNotifications {
   private connectionVersion = 0;
   private readonly connectionFile: string;
   private readonly stateFile: string;
+  private readonly liveEpisodes = new Map<number, { latest: string; episodes: CatalogEpisode[] }>();
   constructor(private readonly memoRoot: string, private readonly send: (text: string, embed: APIEmbed) => Promise<void>, private readonly dataRoot = path.join(PKG_ROOT, 'data'), private readonly request: typeof fetch = fetch) {
     this.connectionFile = path.join(dataRoot, 'personal-notifications-connection.json');
     this.stateFile = path.join(dataRoot, 'personal-notifications-state.json');
@@ -235,6 +238,54 @@ export class PersonalNotifications {
         if (!homework[key]) homework[key] = { key, animeId, title: anime.title, provider, publishedAt, url: anime.url || `https://laftel.net/item/${anime.id}`, scheduled: provider === 'netflix' };
       }
     }
+    try {
+      const titles = readJson<NetflixTitle[]>(path.join(this.memoRoot, 'data/personal-notifications/netflix.json'), []);
+      for (const title of titles) {
+        if (!Number.isInteger(title.firstEpisode) || title.firstEpisode! < 1) continue;
+        const releases = [...new Set(title.releases)].sort((a, b) => Date.parse(a) - Date.parse(b));
+        releases.forEach((release, index) => {
+          const key = `netflix:${title.id}|${new Date(release).toISOString()}`;
+          if (homework[key]) homework[key] = { ...homework[key], episodeNumber: String(title.firstEpisode! + index) };
+        });
+      }
+    } catch { /* 위 일정 검증에서 오류 표시 */ }
+    try {
+      const catalog = readJson<{ titles: CatalogTitle[] }>(path.join(this.memoRoot, 'data/personal-notifications/laftel-catalog.json'), { titles: [] });
+      if (!Array.isArray(catalog.titles)) throw new Error('invalid_catalog');
+      const titles = catalog.titles.filter(t => settings.animeIds.includes(t.id));
+      for (const title of titles) {
+        const active = report.anime.find(a => a.id === title.id && !a.provider);
+        let episodes = title.episodes;
+        if (!Array.isArray(episodes)) throw new Error('invalid_catalog_episodes');
+        if (active) {
+          const cached = this.liveEpisodes.get(title.id);
+          if (cached?.latest === active.publishedAt) episodes = cached.episodes;
+          else try {
+            episodes = await this.laftelEpisodes(title.id);
+            this.liveEpisodes.set(title.id, { latest: active.publishedAt, episodes });
+          } catch { report.errors.push(`${title.title} 회차 갱신 실패, 저장본 표시`); }
+        }
+        for (const episode of episodes) {
+          const at = Date.parse(publishedTime(episode.publishedAt));
+          if (!episode.available || !Number.isInteger(episode.id) || !Number.isFinite(at) || at > now) continue;
+          const animeId = `laftel:${title.id}`, publishedAt = new Date(at).toISOString();
+          const existing = Object.values(homework).find(e => e.animeId === animeId && (e.episodeId === episode.id || (!e.episodeId && e.publishedAt === publishedAt)));
+          const key = existing?.key || `${animeId}|episode:${episode.id}`;
+          const provisional = `${animeId}|${publishedAt}`;
+          if (key !== provisional && homework[provisional] && !homework[provisional].episodeId && !homework[provisional].watchedAt) delete homework[provisional];
+          homework[key] = { ...existing, key, animeId, title: title.title, provider: 'laftel', publishedAt, url: `https://laftel.net/item/${title.id}`, scheduled: false, episodeId: episode.id, episodeNumber: String(episode.number), episodeTitle: episode.title, archived: existing?.archived ?? !existing };
+        }
+      }
+    } catch { report.errors.push('라프텔 과거 회차 읽기 실패'); }
+    if (version !== this.connectionVersion) throw new Error('connection_changed_retry');
+    for (const [key, saved] of Object.entries(this.state.homework || {})) {
+      if (!homework[key]) homework[key] = saved;
+      else {
+        homework[key] = { ...homework[key] };
+        delete homework[key].watchedAt;
+        if (saved.watchedAt) homework[key].watchedAt = saved.watchedAt;
+      }
+    }
     const nextState = { ...this.state, homework };
     saveJson(this.stateFile, nextState);
     this.state = nextState;
@@ -242,6 +293,18 @@ export class PersonalNotifications {
     this.report = report;
     this.lastCollection = now;
     return report;
+  }
+  private async laftelEpisodes(id: number): Promise<CatalogEpisode[]> {
+    const episodes: CatalogEpisode[] = [];
+    for (let offset = 0; offset < 10000;) {
+      const page = await this.json(`https://api.laftel.net/api/episodes/v3/list/?item_id=${id}&sort=oldest&offset=${offset}&limit=100`);
+      if (!Array.isArray(page.results) || !Number.isInteger(page.count)) throw new Error('invalid_episode_page');
+      episodes.push(...page.results.map((e: any) => ({ id: e.id, number: String(e.episode_num), title: typeof e.subject === 'string' ? e.subject : '', publishedAt: e.published_datetime, available: e.is_viewing !== false })));
+      offset += page.results.length;
+      if (!page.next) { if (offset !== page.count) throw new Error('incomplete_episode_pages'); return episodes; }
+      if (!page.results.length) throw new Error('empty_episode_page');
+    }
+    throw new Error('episode_page_limit');
   }
   async tick(now = Date.now(), preview = false): Promise<void> {
     if (!notificationServices.enabled('personal')) return;

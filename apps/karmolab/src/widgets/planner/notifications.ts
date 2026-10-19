@@ -65,8 +65,8 @@ export function mountNotifications(ctx: DashPanelCtx, { visible = true } = {}): 
         const next = report.events.filter(e => { const at = Date.parse(e.start.length === 10 ? e.start + 'T00:00:00+09:00' : e.start); return at >= midnight + 86400000 && at < midnight + 8 * 86400000; });
         const nextTasks = report.tasks.filter(t => t.status !== 'completed' && t.due && t.due.slice(0, 10) > date && Date.parse(t.due.slice(0, 10) + 'T00:00:00+09:00') < midnight + 8 * 86400000);
         status.textContent = `${connected ? '구글 상시 알림 연결됨' : '구글 상시 알림 미연결'} · ${report.settings.enabled ? '알림 켜짐' : '알림 꺼짐'} · 매일 ${String(report.settings.hour).padStart(2, '0')}:${String(report.settings.minute).padStart(2, '0')}, ${report.settings.reminderMinutes}분 전 · ${report.collectedAt ? when(report.collectedAt) + ' 갱신' : '수집 전'}`;
-        box.querySelector<HTMLElement>('.pl-notify-count')!.textContent = `할 일 ${tasks.length} · 오늘 일정 ${today.length} · 안 본 애니 ${(report.homework || []).filter(a => !a.watchedAt).length}회`;
-        box.querySelector<HTMLElement>('.pl-notify-anime')!.textContent = `애니 숙제 ${(report.homework || []).filter(a => !a.watchedAt).length}`;
+        box.querySelector<HTMLElement>('.pl-notify-count')!.textContent = `할 일 ${tasks.length} · 오늘 일정 ${today.length} · 안 본 애니 ${(report.homework || []).filter(a => !a.watchedAt && !a.archived).length}회`;
+        box.querySelector<HTMLElement>('.pl-notify-anime')!.textContent = `애니 숙제 ${(report.homework || []).filter(a => !a.watchedAt && !a.archived).length}`;
         box.querySelector<HTMLButtonElement>('.pl-notify-connect')!.hidden = connected;
         box.querySelector<HTMLButtonElement>('.pl-notify-disconnect')!.hidden = !connected;
         const list = (rows: string[]): string => `<ul>${rows.length ? rows.slice(0, 50).map(row => '<li>' + row + '</li>').join('') : '<li>없음</li>'}</ul>`;

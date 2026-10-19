@@ -58,6 +58,77 @@ describe('개인 안내', () => {
     expect(cards.some(card => card.color === 0xec4899 && card.description.includes('새 에피소드'))).toBe(true);
     expect(cards.some(card => card.color === 0xec4899 && card.description.includes('업로드 미확인'))).toBe(true);
   });
+  const catalog = (x: ReturnType<typeof setup>): void => {
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/laftel-catalog.json'), JSON.stringify({ titles: [{ id: 1, title: '내 작품', episodes: [
+      { id: 10, number: '1', title: '첫 만남', publishedAt: '2026-10-01T20:00:00', available: true },
+      { id: 11, number: '2', title: '다시 만남', publishedAt: '2026-10-13T20:00:00', available: true },
+      { id: 12, number: '3', title: '미래 회차', publishedAt: '2026-11-01T20:00:00', available: true },
+      { id: 13, number: '특별편', title: '종료', publishedAt: '2026-10-02T20:00:00', available: false },
+    ] }] }));
+  };
+  it('과거 회차는 숙제에서 분리, 기존 날짜 키와 시청 날짜 보존, 번호와 제목 보강', async () => {
+    const x = setup(); const first = await x.service.collect(now), key = first.homework![0].key;
+    x.service.setAnimeWatched(key, true, '2026-10-13T22:00:00+09:00', now);
+    catalog(x);
+    const next = await x.service.collect(now);
+    expect(next.homework).toHaveLength(2);
+    expect(next.homework!.find(e => e.key === key)).toMatchObject({ episodeId: 11, episodeNumber: '2', episodeTitle: '다시 만남', watchedAt: '2026-10-13T13:00:00.000Z', archived: false });
+    expect(next.homework!.find(e => e.episodeId === 10)?.archived).toBe(true);
+    expect(summaryText(next, now)).toContain('안 본 애니 0회');
+    expect(next.errors).toContain('내 작품 회차 갱신 실패, 저장본 표시');
+    expect((await x.service.collect(now)).homework).toHaveLength(2);
+  });
+  it('회차 API 페이지 연결과 캐시, 재시작 뒤 시청값 보존', async () => {
+    const x = setup(); catalog(x);
+    const base = x.request.getMockImplementation()!;
+    x.request.mockImplementation(async url => {
+      const u = String(url);
+      if (u.includes('/episodes/v3/list/')) return Response.json({ count: 2, next: u.includes('offset=0&') ? 'next-page' : null, results: [u.includes('offset=0&') ? { id: 10, episode_num: '1', subject: '첫 만남', published_datetime: '2026-10-01T20:00:00', is_viewing: true } : { id: 11, episode_num: '2', subject: '다시 만남', published_datetime: '2026-10-13T20:00:00', is_viewing: true }] });
+      return base(url);
+    });
+    const first = await x.service.collect(now), key = first.homework!.find(e => e.episodeId === 11)!.key;
+    x.service.setAnimeWatched(key, true, '2026-10-13T22:00:00+09:00', now);
+    expect(first.homework).toHaveLength(2);
+    expect(x.request.mock.calls.filter(c => String(c[0]).includes('/episodes/'))).toHaveLength(2);
+    await x.service.collect(now);
+    expect(x.request.mock.calls.filter(c => String(c[0]).includes('/episodes/'))).toHaveLength(2);
+    const restarted = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch);
+    const report = await restarted.collect(now);
+    expect(report.homework!.find(e => e.key === key)?.watchedAt).toBe('2026-10-13T13:00:00.000Z');
+    expect(x.send).not.toHaveBeenCalled();
+  });
+  it('회차 수집 대기 중 저장한 시청 날짜 보존, 시각 정정의 임시 항목 중복 제외', async () => {
+    const x = setup(); catalog(x);
+    await x.service.collect(now);
+    const key = x.service.status().homework!.find(e => e.episodeId === 11)!.key;
+    x.setAnime('2026-10-13T20:01:00');
+    const base = x.request.getMockImplementation()!;
+    let release!: () => void;
+    let started!: () => void;
+    const paused = new Promise<void>(resolve => { started = resolve; });
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    x.request.mockImplementation(async url => {
+      if (String(url).includes('/episodes/v3/list/')) {
+        started(); await gate;
+        return Response.json({ count: 1, next: null, results: [{ id: 11, episode_num: '2', subject: '다시 만남', published_datetime: '2026-10-13T20:01:00', is_viewing: true }] });
+      }
+      return base(url);
+    });
+    const collection = x.service.collect(now);
+    await paused;
+    x.service.setAnimeWatched(key, true, '2026-10-13T22:00:00+09:00', now);
+    release();
+    const report = await collection;
+    expect(report.homework!.filter(e => e.episodeId === 11)).toHaveLength(1);
+    expect(report.homework!.find(e => e.key === key)).toMatchObject({ publishedAt: '2026-10-13T11:01:00.000Z', watchedAt: '2026-10-13T13:00:00.000Z' });
+    expect(report.homework!.some(e => e.key === 'laftel:1|2026-10-13T11:01:00.000Z')).toBe(false);
+  });
+  it('넷플릭스 번호는 명시된 시작 회차 기준, 기존 일정 키 유지', async () => {
+    const x = setup();
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/netflix.json'), JSON.stringify([{ id: '1', title: '공식 일정', firstEpisode: 2, releases: ['2026-10-09T17:00:00+09:00', '2026-10-02T17:00:00+09:00'] }]));
+    const report = await x.service.collect(now);
+    expect(report.homework!.filter(e => e.provider === 'netflix').map(e => e.episodeNumber)).toEqual(['2', '3']);
+  });
   const release = '2026-10-23T17:00:00+09:00';
   const netflix = (x: ReturnType<typeof setup>, releases = [release]): void => {
     fs.writeFileSync(path.join(x.root, 'data/personal-notifications/netflix.json'), JSON.stringify([{ id: '1', title: '넷플릭스 작품', releases }]));

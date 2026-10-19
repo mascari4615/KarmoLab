@@ -48,7 +48,10 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-drawer .pl-diary { flex-direction: column; }
         .pl-drawer .pl-diary-side { width: 100%; max-height: 200px; }
         .pl-anime { font-size: var(--font-size-sm); }
-        .pl-anime .pl-cal-modes { margin: 0 0 20px; }
+        .pl-anime .pl-cal-modes { margin: 0 0 20px; flex-wrap: wrap; }
+        .pl-anime select { width: 100%; min-width: 0; min-height: 44px; font: inherit; }
+        .pl-anime .pl-field { margin-bottom: 12px; }
+        .pl-anime .pl-field[hidden] { display: none; }
         .pl-anime .pl-cal-mode { min-height: 44px; }
         .pl-anime-work { margin: 0 0 24px; }
         .pl-anime-work h3 { margin: 0 0 4px; font-size: var(--font-size-sm); font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
