@@ -19,8 +19,8 @@
     },
     {
       "key": "ops-report",
-      "name": "알림",
-      "topic": "일정, 빌드, 장애, 무료 에셋, 뉴스와 저장소 변경 소식"
+      "name": "byeoru",
+      "topic": "벼루와 대화, 작업 요청과 답변, 일정과 빌드 및 운영 알림"
     },
     {
       "key": "unity-free",
