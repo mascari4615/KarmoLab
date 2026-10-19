@@ -348,6 +348,8 @@ html[data-site="dash"] .pl-cal-main .fc .fc-v-event .fc-event-title { font-size:
   html[data-site="dash"] .pl-rail { order: 1; width: 100%; flex-direction: row; border-left: 0; border-top: 1px solid var(--border); }
   html[data-site="dash"] .pl-rail-btn { flex: 1; font-size: var(--font-size-xs); }
   html[data-site="dash"] .pl-drawer { order: 2; width: 100%; border-left: 0; max-height: 70svh; }
+  html[data-site="dash"] .pl-root[data-side="anime"] .pl-rail { order: -2; }
+  html[data-site="dash"] .pl-root[data-side="anime"] .pl-drawer { order: -1; border-bottom: 1px solid var(--border); }
 }
 
 /* 패널 변수 중 둥글기. 그림 모서리도 0 */

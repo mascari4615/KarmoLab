@@ -19,7 +19,8 @@ import { toast } from './toast';
 import { t, loadNamespace } from '../../lib/i18n';
 import { dashRegistry } from '../mydash/kit';
 import type { DashPanelCtx } from '../mydash/kit';
-import { mountNotifications } from './notifications';
+import { mountNotifications, type NotificationHandle } from './notifications';
+import { buildAnimeHomework } from './anime-homework';
 import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken, storedToken } from './gauth';
 import type { CalendarViewHandle } from './calendar-view';
 import { loadCalendarView } from './calendar-loader';
@@ -46,6 +47,18 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-drawer .pl-kanban-board { grid-template-columns: 1fr; }
         .pl-drawer .pl-diary { flex-direction: column; }
         .pl-drawer .pl-diary-side { width: 100%; max-height: 200px; }
+        .pl-anime { font-size: var(--font-size-sm); }
+        .pl-anime .pl-cal-modes { margin: 0 0 20px; }
+        .pl-anime .pl-cal-mode { min-height: 44px; }
+        .pl-anime-work { margin: 0 0 24px; }
+        .pl-anime-work h3 { margin: 0 0 4px; font-size: var(--font-size-sm); font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+        .pl-anime-work h3 a { color: var(--text-primary); text-decoration: none; }
+        .pl-anime-work h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+        .pl-anime-source, .pl-anime-status { margin: 0 0 8px; font-size: var(--font-size-xs); color: var(--text-secondary); line-height: 1.6; }
+        .pl-anime-row { min-height: 44px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .pl-anime-row input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent); }
+        .pl-anime-row:has(:checked) span { text-decoration: line-through; }
+        .pl-anime input:focus-visible, .pl-anime a:focus-visible, .pl-anime button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .pl-rail { width: 64px; flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; padding: 12px 6px; border-left: 1px solid var(--border); }
         .pl-rail-btn { min-height: 44px; border: none; background: none; color: var(--text-secondary); font-size: var(--font-size-2xs); font-weight: 700; cursor: pointer; }
         .pl-rail-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
@@ -273,9 +286,10 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         }`;
 
     /* 오른쪽 세로줄에서 여는 판 (Google 캘린더의 오른쪽 할 일, Keep 자리. 사용자 2026-09-24 "구글 캘린더를 벤치마킹, 양쪽에 뭐가 있자나") */
-    type SideId = 'kanban' | 'diary' | 'streaks';
-    const SIDES: { id: SideId; key: string }[] = [
+    type SideId = 'kanban' | 'diary' | 'streaks' | 'anime';
+    const SIDES: { id: SideId; key: string; label?: string }[] = [
         { id: 'kanban', key: 'planner.t08' },
+        { id: 'anime', key: '', label: '애니' },
         { id: 'diary', key: 'planner.t93' },
         { id: 'streaks', key: 'planner.t09' },
     ];
@@ -306,7 +320,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         document.head.appendChild(el);
     }
 
-    function build(container: HTMLElement, onDispose: (fn: () => void) => void, loadFollowups?: () => Promise<Followup[]>): void {
+    function build(container: HTMLElement, onDispose: (fn: () => void) => void, notifications: NotificationHandle, loadFollowups?: () => Promise<Followup[]>): void {
         ensureStyle();
         Object.assign(container.style, { height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0', padding: '0' });
         container.innerHTML = `<div class="pl-root"></div>`;
@@ -346,6 +360,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         function openSide(next: SideId | null, diaryDate?: string): void {
             disposeSide();
             side = next;
+            root.dataset.side = side || '';
             saveSide(side);
             const drawer = root.querySelector<HTMLElement>('.pl-drawer');
             const body = root.querySelector<HTMLElement>('.pl-drawer-body');
@@ -355,10 +370,12 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
             drawer.hidden = !side;
             body.innerHTML = '';
             if (!side) return;
-            title.textContent = t(SIDES.find((s) => s.id === side)!.key);
+            title.textContent = side === 'anime' ? '애니 숙제' : t(SIDES.find((s) => s.id === side)!.key);
             if (side === 'diary') sideLive = buildDiaryView(body, diaryDate);
             else if (side === 'kanban') sideLive = buildKanbanView(body, token);
+            else if (side === 'anime') sideLive = buildAnimeHomework(body, notifications);
             else buildStreaksView(body, () => openSide('diary'));
+            if (side === 'anime' && window.matchMedia('(max-width: 899px)').matches) drawer.scrollIntoView({ block: 'start' });
         }
 
         /* 달력 번들은 처음 열 때 받음 (calendar-loader). 받는 사이 다시 그렸거나 떠났으면 버림 */
@@ -405,7 +422,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                         <div class="pl-drawer-body"></div>
                     </aside>
                     <nav class="pl-rail">
-                        ${SIDES.map((s) => `<button type="button" class="pl-rail-btn" data-side="${s.id}" aria-pressed="false">${esc(t(s.key))}</button>`).join('')}
+                        ${SIDES.map((s) => `<button type="button" class="pl-rail-btn" data-side="${s.id}" aria-pressed="false">${esc(s.label || t(s.key))}</button>`).join('')}
                     </nav>
                 </div>`;
 
@@ -457,7 +474,8 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         access: 'read',
         paths: [FOLLOWUPS_PATH],
         render: async (ctx: DashPanelCtx): Promise<void> => {
-            build(ctx.root, (fn) => ctx.onDispose(fn), async () => {
+            const notifications = mountNotifications(ctx, { visible: false });
+            build(ctx.root, (fn) => ctx.onDispose(fn), notifications, async () => {
                 /* 파일이 없거나 못 읽어도 달력은 뜬다. AI 칸만 빈다 */
                 try {
                     const data = await ctx.repo.readJson<{ items?: Followup[] }>(FOLLOWUPS_PATH);
@@ -466,7 +484,6 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                     return [];
                 }
             });
-            mountNotifications(ctx, { visible: false });
         },
     });
 })();
