@@ -1,0 +1,37 @@
+.au { --au-columns: minmax(180px, 1.5fr) minmax(100px, 1fr) 96px minmax(160px, auto); }
+.au header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.au header h2 { margin: 0; font-size: var(--font-size-lg); }
+.au header p, .au .au-notice { margin: 4px 0 12px; color: var(--text-secondary); font-size: var(--font-size-xs); }
+.au-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin: 16px 0; }
+.au-filters label { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-xs); }
+.au-filters label:first-child { flex: 1; min-width: 220px; }
+.au-filters small { margin-left: auto; }
+.au-columns, .au-line { display: grid; grid-template-columns: var(--au-columns); align-items: center; gap: 16px; }
+.au-columns { color: var(--text-secondary); font-size: var(--font-size-2xs); padding: 8px 0; border-block: 1px solid var(--border); }
+.au-row { border-bottom: 1px solid var(--border); }
+.au-line { min-height: 60px; padding-block: 4px; }
+.au-name { overflow-wrap: anywhere; min-width: 0; font-size: var(--font-size-sm); }
+.au-trigger { color: var(--text-secondary); font-size: var(--font-size-2xs); overflow-wrap: anywhere; }
+.au-state { font-size: var(--font-size-xs); }
+.au-state[data-running="true"] { color: var(--accent-ink); }
+.au-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 4px; }
+.au :is(.au-actions button, .au-detail button) { padding-inline: 8px; background: transparent; font-size: var(--font-size-2xs); }
+.au-actions button { border-color: transparent; }
+.au-detail { padding: 12px; background: var(--bg-hover); font-size: var(--font-size-xs); }
+.au-detail dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
+.au-detail dt { color: var(--text-secondary); }
+.au-detail dd { margin: 0; }
+.au-detail a { margin-left: 16px; }
+.au .au-note { margin-top: 20px; font-size: var(--font-size-2xs); color: var(--text-secondary); }
+.au .au-error { font-size: var(--font-size-xs); font-weight: bold; }
+@media (max-width: 800px) {
+  .au header { align-items: start; }
+  .au-filters { gap: 8px; }
+  .au-filters label:first-child { flex-basis: 100%; }
+  .au-columns { display: none; }
+  .au-line { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding-block: 8px; }
+  .au-name { grid-column: 1; }
+  .au-trigger { grid-column: 1; grid-row: 2; }
+  .au-state { grid-column: 2; grid-row: 1; }
+  .au-actions { grid-column: 2; grid-row: 2; }
+}
