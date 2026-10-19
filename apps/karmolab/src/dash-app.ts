@@ -6,6 +6,7 @@
  * 로그인 전에는 shell 이 로그인 버튼 하나만 (다른 화면으로 갈 길 없음)
  */
 import './widgets/mydash/home';
+import './widgets/mydash/user-presence';
 import './widgets/mydash/ai-usage';
 import './widgets/mydash/bookmarks';
 import './widgets/mydash/kakao-daily';

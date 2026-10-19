@@ -1,0 +1,15 @@
+.up-panel{padding:var(--space-lg,24px);max-width:850px;color:var(--text-primary);overflow-y:auto;height:100%;box-sizing:border-box}
+.up-panel h2,.up-panel h3{font-size:var(--font-size-title,22px);margin:0 0 16px}
+.up-panel p{line-height:1.6;overflow-wrap:anywhere}
+.up-current{padding-bottom:24px;border-bottom:1px solid var(--border)}
+.up-current .up-state{font-size:var(--font-size-display-lg,32px);font-weight:700;margin:12px 0}
+.up-source,.up-next,.up-foot,.up-panel form>p{color:var(--text-secondary)}
+.up-panel form{margin-top:32px}.up-fields,.up-actions{display:flex;flex-wrap:wrap;align-items:end;gap:12px}
+.up-fields>label{display:flex;flex-direction:column;gap:8px;flex:1;min-width:150px}
+.up-panel input[type=time],.up-panel select{box-sizing:border-box;min-height:44px;width:100%;font:inherit;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);padding:8px}
+.up-panel button{min-height:44px;font:inherit;white-space:nowrap}.up-panel :focus-visible{outline:2px solid var(--text-primary);outline-offset:3px}
+.up-enabled,.up-days label{display:flex;align-items:center;gap:8px;min-height:44px}.up-panel input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent-ink)}
+.up-rule{border:1px solid var(--border);padding:12px 16px 16px;margin:20px 0;min-width:0}.up-rule legend{padding:0 8px}
+.up-days{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}.up-message{min-height:26px}.up-foot{margin-top:32px;border-top:1px solid var(--border);padding-top:16px}
+.up-panel [hidden]{display:none}.up-panel button:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:480px){.up-panel{padding:16px}.up-fields>label{min-width:100%;flex-basis:100%}.up-fields>button{flex:1}.up-rule{padding:8px 12px 12px}}

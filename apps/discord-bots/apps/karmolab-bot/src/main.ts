@@ -5,6 +5,8 @@
 import './load-env';
 import './install-console-timestamps';
 import dns from 'node:dns';
+import path from 'node:path';
+import { PKG_ROOT } from './paths';
 import { generateDependencyReport } from '@discordjs/voice';
 import sodium from 'libsodium-wrappers';
 import { Client, GatewayIntentBits, Partials, TextChannel, type Embed, type MessageReaction, type PartialMessageReaction, type User, type PartialUser } from 'discord.js';
@@ -97,6 +99,8 @@ import { startCodexResetNotifier, stopCodexResetNotifier } from './services/noti
 import { startBrainResurface, stopBrainResurface } from './services/notifiers/brain-resurface';
 import { PersonalNotifications } from './services/personal-notifications';
 import { registerPersonalNotifications } from './bot/personal-notifications-api';
+import { registerUserPresence } from './bot/user-presence-api';
+import { UserPresence } from './services/user-presence';
 import { collectDiscordChannels, registerDiscordChannels } from './bot/discord-channels-api';
 import { channelIdFor } from './services/channel-provision';
 
@@ -387,6 +391,7 @@ const personalNotifications = new PersonalNotifications(memoRepoPath, async (con
   await channel.send({ content, allowedMentions: { parse: [] } });
 });
 registerPersonalNotifications(app, personalNotifications);
+registerUserPresence(app, new UserPresence(path.join(PKG_ROOT, 'data', 'user-presence.json')));
 registerDiscordChannels(app, () => collectDiscordChannels(client));
 mountLocalWebhook(app, client);
 // TASK-WM-201. 폰(WM Android)이 밀어 넣는 실행 로그 수신 + 웹 뷰어 + tail.

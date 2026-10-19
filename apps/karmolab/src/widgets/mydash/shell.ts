@@ -64,7 +64,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   const CONFIG_URL = '/apps/karmolab/data/mydash-config.json';
   const DEFAULT_EVENTS_BRANCH = 'karmolab-dashboard';
   /* 사람 손이 머무는 방 (판정, 목표 기록). 뒤에서 새 판이 와도 강제로 다시 안 그림 */
-  const WRITE_PANELS = ['bookmarks', 'goals'];
+  const WRITE_PANELS = ['bookmarks', 'goals', 'user-presence'];
   /* 쓰기가 403, 404 로 막혔을 때 사람이 손볼 곳. 토큰을 다시 받아도 안 풀림 */
   const PERM_MSG = 'GitHub App 권한 Contents 를 Read & write 로 바꾸고 설치 화면에서 승인';
 
@@ -906,6 +906,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         label: t('mydash.nav.now', undefined, '지금'),
         items: [
           { id: 'today', label: t('mydash.nav.home', undefined, '홈'), panel: 'home' },
+          { id: 'user-presence', label: '내 상태', panel: 'user-presence' },
         ],
       },
       {
@@ -968,6 +969,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** ESC 메뉴 칸의 아이콘 (`img/shell/menu/*.png`). 홈 카드와 같은 매핑, 나 는 소개 그림 */
   const MENU_ICONS: Record<string, string> = {
     today: 'home',
+    'user-presence': 'me',
     bookmarks: 'book',
     'kakao-daily': 'book',
     'discord-channels': 'book',
