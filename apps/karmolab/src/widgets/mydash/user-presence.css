@@ -10,6 +10,7 @@
 .up-panel button{min-height:44px;font:inherit;white-space:nowrap}.up-panel :focus-visible{outline:2px solid var(--text-primary);outline-offset:3px}
 .up-enabled,.up-days label{display:flex;align-items:center;gap:8px;min-height:44px}.up-panel input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent-ink)}
 .up-rule{border:1px solid var(--border);padding:12px 16px 16px;margin:20px 0;min-width:0}.up-rule legend{padding:0 8px}
+.up-fields>.up-midnight{flex-direction:row;align-items:center;min-height:44px}.up-overnight{color:var(--text-secondary);margin-bottom:0}.up-fields input[type=time]{font-variant-numeric:tabular-nums}
 .up-days{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}.up-message{min-height:26px}.up-foot{margin-top:32px;border-top:1px solid var(--border);padding-top:16px}
 .up-panel [hidden]{display:none}.up-panel button:disabled{opacity:.6;cursor:not-allowed}
 @media(max-width:480px){.up-panel{padding:16px}.up-fields>label{min-width:100%;flex-basis:100%}.up-fields>button{flex:1}.up-rule{padding:8px 12px 12px}}

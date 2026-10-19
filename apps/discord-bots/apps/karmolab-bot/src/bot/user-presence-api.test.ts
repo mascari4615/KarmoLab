@@ -37,4 +37,8 @@ it('round trips state, rejects stale revision and leaves invalid writes unchange
   expect((await call('POST', { action: 'schedule', revision: 1, enabled: true, rules: [{ id: 'bad', days: [], time: '25:00', state: 'work' }] })).status).toBe(400);
   expect((await call('GET')).body.current.state).toBe('work');
   expect((await call('POST', { action: 'resume', revision: 1 })).body.current.state).toBeNull();
+  const saved = await call('POST', { action: 'schedule', revision: 2, enabled: true, defaultState: 'home', rules: [{ id: 'all', days: [0, 1, 2, 3, 4, 5, 6], start: '00:00', end: '24:00', state: 'work' }] });
+  expect(saved.status).toBe(200);
+  expect(saved.body.current.state).toBe('work');
+  expect((await call('GET')).body.config.rules[0]).toMatchObject({ start: '00:00', end: '24:00' });
 });
