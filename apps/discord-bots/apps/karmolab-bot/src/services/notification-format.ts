@@ -1,9 +1,11 @@
 import type { GitHubCommit } from './digest-webhook';
 
-/** Discord already supplies sender and time; routine notices need neither an embed nor repeated metadata. */
-export function compactNotice(title: string, description: string, context = ''): string {
-  const summary = description.replace(/```[\s\S]*?```/g, '').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
-  return [`**${title.replace(/^[\p{Extended_Pictographic}\s\uFE0F]+/u, '')}**`, summary.slice(0, 260), context].filter(Boolean).join(' | ').slice(0, 600);
+export const notificationColors = { change: 0x4285f4, healthy: 0x2ecc71, attention: 0xe67e22, error: 0xe74c3c, stopped: 0x95a5a6 };
+/** One small embed: color and bold label, without author, footer or timestamp rows. */
+export function compactEmbed(title: string, description: string, color: number, context = '') {
+  const label = title.replace(/^[\p{Extended_Pictographic}\s\uFE0F]+/u, '');
+  const summary = description.replace(/```[\s\S]*?```/g, '').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim().slice(0, 260);
+  return { color, description: [`**${label}**${context ? ` (${context})` : ''}`, summary].filter(Boolean).join('\n') };
 }
 
 const backgroundSubject = /^chore\((?:heartbeat|charstate)\):/;

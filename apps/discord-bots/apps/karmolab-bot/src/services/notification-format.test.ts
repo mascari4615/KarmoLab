@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compactNotice, compactPush } from './notification-format';
+import { compactEmbed, compactPush } from './notification-format';
 
 const commit = (message: string, id = 'abcdef1234567') => ({ id, message, url: `https://github.com/owner/repo/commit/${id}`, added: [], modified: [] });
 describe('compact Discord notices', () => {
@@ -27,7 +27,7 @@ describe('compact Discord notices', () => {
     expect(content).toContain('\\[fake\\]');
   });
   it('keeps an operational summary while removing its stack block and repeated whitespace', () => {
-    const text = compactNotice('🔴 벼루 에러', '**메시지**: failure\n```\nstack\n```', 'prod/host');
-    expect(text).toBe('**벼루 에러** | 메시지: failure | prod/host');
+    const card = compactEmbed('🔴 벼루 에러', '**메시지**: failure\n```\nstack\n```', 0xe74c3c, 'prod/host');
+    expect(card).toEqual({ color: 0xe74c3c, description: '**벼루 에러** (prod/host)\n메시지: failure' });
   });
 });

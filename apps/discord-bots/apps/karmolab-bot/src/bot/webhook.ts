@@ -1,7 +1,7 @@
 import express from 'express';
 import { notificationServices } from '../services/notification-services';
-import { EmbedBuilder, Status, MessageFlags } from 'discord.js';
-import { compactNotice, compactPush } from '../services/notification-format';
+import { EmbedBuilder, Status } from 'discord.js';
+import { compactEmbed, compactPush, notificationColors } from '../services/notification-format';
 import type { Client } from 'discord.js';
 import type { GameDataService } from '../services/gamedata';
 import { getChannelsForRepo } from '../services/webhook-routes';
@@ -181,7 +181,8 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
       for (const channelId of channelIds) {
         const channel = await client.channels.fetch(channelId).catch(() => null);
         if (channel?.isSendable()) {
-          await notificationServices.deliver('github', () => channel.send({ content: content ?? compactNotice(embed.data.title ?? 'GitHub', embed.data.description ?? '', repoFullName), flags: MessageFlags.SuppressEmbeds, allowedMentions: { parse: [] } }), channelId).catch((e: unknown) =>
+          const compact = content ? { color: notificationColors.change, description: content } : compactEmbed(embed.data.title ?? 'GitHub', embed.data.description ?? '', embed.data.color ?? notificationColors.change, repoFullName);
+          await notificationServices.deliver('github', () => channel.send({ embeds: [compact], allowedMentions: { parse: [] } }), channelId).catch((e: unknown) =>
             console.error('[Webhook] 채널 전송 실패:', channelId, e instanceof Error ? e.message : String(e)),
           );
         }

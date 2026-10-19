@@ -16,8 +16,9 @@ import os from 'node:os';
 import { notificationServices } from './notification-services';
 import { channelIdFor } from './channel-provision';
 import crypto from 'node:crypto';
-import { REST, Routes, EmbedBuilder, MessageFlags } from 'discord.js';
-import { compactNotice } from './notification-format';
+import { REST, Routes, EmbedBuilder } from 'discord.js';
+import { compactEmbed, notificationColors } from './notification-format';
+import type { DeployFreshnessAlert } from './deploy-freshness';
 import { parseCommaSeparatedEnv } from '@discord-bots/common';
 
 export interface OpsReportContext {
@@ -90,10 +91,10 @@ async function sendReport(
   // 비면 핑 X (off-switch = ADMIN_IDS 비우기).
   const mentionIds = mentionAdmins ? ctx.adminMentionIds : [];
   const data = embed.toJSON();
-  const content = compactNotice(data.title ?? '벼루', data.description ?? '', data.footer?.text);
-  const body: Record<string, unknown> = { content, flags: MessageFlags.SuppressEmbeds, allowed_mentions: { parse: [] } };
+  const compact = compactEmbed(data.title ?? '벼루', data.description ?? '', data.color ?? notificationColors.attention, buildFooter(ctx));
+  const body: Record<string, unknown> = { embeds: [compact], allowed_mentions: { parse: [] } };
   if (mentionIds.length > 0) {
-    body.content = mentionIds.map((id) => `<@${id}>`).join(' ') + ' ' + content;
+    body.content = mentionIds.map((id) => `<@${id}>`).join(' ');
     body.allowed_mentions = { parse: [], users: mentionIds };
   }
   try {
@@ -110,7 +111,7 @@ export async function reportStartup(
   info: { botTag: string; guilds: number; users: number },
 ): Promise<void> {
   const embed = new EmbedBuilder()
-    .setColor(0x2ecc71)
+    .setColor(notificationColors.healthy)
     .setTitle('🟢 벼루 시작')
     .setDescription(
       [
@@ -126,7 +127,7 @@ export async function reportStartup(
 /** 봇 graceful shutdown 임베드 (회색). SIGINT/SIGTERM 직후 호출. */
 export async function reportShutdown(ctx: OpsReportContext, reason: string): Promise<void> {
   const embed = new EmbedBuilder()
-    .setColor(0x95a5a6)
+    .setColor(notificationColors.stopped)
     .setTitle('⚪ 벼루 종료')
     .setDescription(`**이유**: \`${reason}\``)
     .setFooter({ text: buildFooter(ctx) })
@@ -147,7 +148,7 @@ export async function reportError(
 
   const stackPreview = stack.split('\n').slice(0, 6).join('\n').slice(0, 1500);
   const embed = new EmbedBuilder()
-    .setColor(0xe74c3c)
+    .setColor(notificationColors.error)
     .setTitle(`🔴 벼루 에러 (${kind})`)
     .setDescription(`**메시지**: ${e.message.slice(0, 300)}\n\`\`\`\n${stackPreview}\n\`\`\``)
     .setFooter({ text: `${buildFooter(ctx)}, stack:${stackHash}` })
@@ -166,7 +167,7 @@ export async function reportHeartbeat(
   alert: { healthy: boolean; reason: string },
 ): Promise<void> {
   const embed = new EmbedBuilder()
-    .setColor(alert.healthy ? 0x2ecc71 : 0xe67e22)
+    .setColor(alert.healthy ? notificationColors.healthy : notificationColors.attention)
     .setTitle(alert.healthy ? '🟢 벼루 heartbeat 복구' : '🟠 벼루 heartbeat 실패')
     .setDescription(`**상태**: ${alert.reason.slice(0, 500)}`)
     .setFooter({ text: buildFooter(ctx) })
@@ -185,7 +186,7 @@ export async function reportCharStateSnapshot(
   alert: { healthy: boolean; reason: string },
 ): Promise<void> {
   const embed = new EmbedBuilder()
-    .setColor(alert.healthy ? 0x2ecc71 : 0xe67e22)
+    .setColor(alert.healthy ? notificationColors.healthy : notificationColors.attention)
     .setTitle(
       alert.healthy ? '🟢 벼루 캐릭터 스냅샷 복구' : '🟠 벼루 캐릭터 스냅샷 실패',
     )
@@ -210,12 +211,14 @@ export async function reportCharStateSnapshot(
  */
 export async function reportDeployFreshness(
   ctx: OpsReportContext,
-  alert: { healthy: boolean; reason: string },
+  alert: DeployFreshnessAlert,
 ): Promise<void> {
+  const state = { fresh: '최신 버전', stale: '업데이트 지연', unreachable: '조회 실패' }[alert.state];
+  const details = [state, alert.httpStatus ? `HTTP ${alert.httpStatus}` : '', alert.state === 'stale' && alert.ageMin !== null ? `${alert.ageMin}분 경과` : '', alert.state === 'stale' && alert.siteCommit && alert.headCommit ? `${alert.siteCommit.slice(0, 7)} → ${alert.headCommit.slice(0, 7)}` : '', `[배포 로그](${alert.workflowUrl})`].filter(Boolean).join(' / ');
   const embed = new EmbedBuilder()
-    .setColor(alert.healthy ? 0x2ecc71 : 0xe74c3c)
-    .setTitle(alert.healthy ? '🟢 사이트가 최신 판으로 돌아왔다' : '🔴 사이트가 옛 판이다. 배포가 안 올라간다')
-    .setDescription(`${alert.reason.slice(0, 700)}`)
+    .setColor(alert.state === 'fresh' ? notificationColors.healthy : alert.state === 'unreachable' ? notificationColors.attention : notificationColors.error)
+    .setTitle('사이트 버전')
+    .setDescription(details)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
   await sendReport(ctx, embed, { mentionAdmins: !alert.healthy });
@@ -226,7 +229,7 @@ export async function reportMemoSync(
   alert: { healthy: boolean; reason: string },
 ): Promise<void> {
   const embed = new EmbedBuilder()
-    .setColor(alert.healthy ? 0x2ecc71 : 0xe67e22)
+    .setColor(alert.healthy ? notificationColors.healthy : notificationColors.attention)
     .setTitle(
       alert.healthy ? '🟢 벼루 memo 동기 복구' : '🟠 벼루 memo 동기 실패',
     )

@@ -148,7 +148,14 @@ describe('runFreshnessTick. 실제 물어보기', () => {
       memory,
     );
     expect(v.state).toBe('stale');
-    expect(alert).toHaveBeenCalledWith(expect.objectContaining({ healthy: false }));
+    expect(alert).toHaveBeenCalledWith(expect.objectContaining({ healthy: false, state: 'stale', siteCommit: OLD, headCommit: HEAD }));
+  });
+
+  it('passes HTTP 404 as structured lookup failure rather than stale deployment', async () => {
+    const alert = vi.fn();
+    const fetchImpl = vi.fn(async (url: string) => String(url).includes('build.json') ? { ok: false, status: 404 } : { ok: true, json: async () => ({ sha: HEAD }) });
+    await runFreshnessTick({ ...base, fetchImpl: fetchImpl as never, alert }, { last: null, lastAlertAt: null });
+    expect(alert).toHaveBeenCalledWith(expect.objectContaining({ healthy: false, state: 'unreachable', httpStatus: 404 }));
   });
 
   it('캐시에 안 속게 주소에 시각을 붙인다. 파수꾼이 옛 판을 보면 파수꾼이 아니다', async () => {

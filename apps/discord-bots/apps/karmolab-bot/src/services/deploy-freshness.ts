@@ -41,6 +41,15 @@
 
 export type FreshnessState = 'fresh' | 'stale' | 'unreachable';
 
+export interface DeployFreshnessAlert {
+  healthy: boolean; reason: string; state: FreshnessState;
+  httpStatus?: number; ageMin: number | null;
+  siteCommit?: string; headCommit?: string; workflowUrl: string;
+}
+class SiteHttpError extends Error {
+  constructor(readonly status: number) { super(`HTTP ${status}`); }
+}
+
 export interface SiteBuild {
   commit: string;
   builtAt: string;
@@ -201,7 +210,7 @@ export interface DeployFreshnessDeps {
   remindMin?: number;
   fetchImpl?: typeof fetch;
   now?: () => Date;
-  alert?: (event: { healthy: boolean; reason: string }) => void;
+  alert?: (event: DeployFreshnessAlert) => void;
   logger?: Pick<Console, 'log' | 'warn' | 'error'>;
   timeoutMs?: number;
 }
@@ -236,7 +245,7 @@ async function getJson(
       headers: { 'Cache-Control': 'no-cache', ...headers },
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new SiteHttpError(res.status);
     return await res.json();
   } finally {
     clearTimeout(timer);
@@ -306,7 +315,7 @@ export async function runFreshnessTick(
     timeoutMs: number;
     token?: string;
     logger: Pick<Console, 'log' | 'warn' | 'error'>;
-    alert?: (event: { healthy: boolean; reason: string }) => void;
+    alert?: (event: DeployFreshnessAlert) => void;
   },
   memory: AlertMemory,
 ): Promise<FreshnessVerdict> {
@@ -314,6 +323,7 @@ export async function runFreshnessTick(
 
   let site: SiteBuild | null = null;
   let unreachableReason: string | undefined;
+  let httpStatus: number | undefined;
   try {
     const body = (await getJson(deps.buildUrl, fetchImpl, timeoutMs, {})) as Partial<SiteBuild>;
     if (body && typeof body.commit === 'string' && typeof body.builtAt === 'string') {
@@ -322,6 +332,7 @@ export async function runFreshnessTick(
       unreachableReason = `build.json 모양이 다르다 (${JSON.stringify(body).slice(0, 120)})`;
     }
   } catch (err) {
+    if (err instanceof SiteHttpError) httpStatus = err.status;
     unreachableReason = String(err instanceof Error ? err.message : err).slice(0, 120);
   }
 
@@ -361,7 +372,7 @@ export async function runFreshnessTick(
   memory.last = verdict.state;
   if (decision.send) {
     memory.lastAlertAt = now();
-    deps.alert?.({ healthy: decision.healthy, reason: decision.reason });
+    deps.alert?.({ healthy: decision.healthy, reason: decision.reason, state: verdict.state, httpStatus, ageMin: verdict.ageMin, siteCommit: site?.commit, headCommit: headSha ?? undefined, workflowUrl: `https://github.com/${deps.repo}/actions/workflows/${deps.workflow}` });
     logger.warn(`[DeployFreshness] ${decision.reason}`);
   } else {
     logger.log(`[DeployFreshness] ${verdict.state}. ${verdict.reason}`);
