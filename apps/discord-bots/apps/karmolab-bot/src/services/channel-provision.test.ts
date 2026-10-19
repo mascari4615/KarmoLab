@@ -17,12 +17,13 @@ import {
   isProvisioningEnabled,
   shouldProvisionGuild,
   allowedGuildIds,
+  rememberMap,
   type ChannelSpec,
   type GuildLike,
   type ChannelLike,
 } from './channel-provision';
 
-const spec = getChannelSpec();
+const spec = { ...getChannelSpec(), routes: undefined };
 const usedGuildIds: string[] = [];
 
 function newGuildId(): string {
@@ -320,6 +321,34 @@ describe('shouldProvisionGuild. 허용 길드 한정 (친구 서버 사고 방�
 });
 
 describe('channelIdFor. ON 기본, 파생 우선 / =0 시 env', () => {
+  it('prod 알림 통합: 기존 채널 보존, 재시작 후 분산 채널 생성 없음', async () => {
+    const gid = newGuildId();
+    const env = { ...PROD, KARMOLAB_BOT_ALLOWED_GUILD_IDS: gid };
+    const guild = fakeGuild(gid);
+    const before = await reconcileGuildChannels(guild, spec, env);
+    const oldNews = guild.channels.cache.find(c => c.id === before.map.news);
+    const actualSpec = getChannelSpec();
+    const first = await reconcileGuildChannels(guild, actualSpec, env);
+    rememberMap(gid, first.map, env);
+    for (const key of ['github-webhook', 'ops-report', 'unity-free', 'news', 'digest', 'wm-build', 'wm-device-log']) {
+      expect(channelIdFor(key, env)).toBe(before.map['ops-report']);
+    }
+    expect(channelIdFor('agent-team', env)).toBe(before.map['agent-team']);
+    expect(channelIdFor('arcade-smoke', env)).toBe(before.map['arcade-smoke']);
+    expect(oldNews?.id).toBe(before.map.news);
+    expect((await reconcileGuildChannels(guild, actualSpec, env)).created).toEqual([]);
+  });
+
+  it('새 prod 길드도 알림 채널 하나, dev는 독립 수신처', async () => {
+    const guild = fakeGuild(newGuildId());
+    const prod = await reconcileGuildChannels(guild, getChannelSpec(), PROD);
+    expect(prod.created).not.toContain('news');
+    expect(prod.map.news).toBe(prod.map['ops-report']);
+    const dev = await reconcileGuildChannels(guild, getChannelSpec(), DEV);
+    expect(dev.map.news).not.toBe(dev.map['ops-report']);
+    expect(dev.map.news).not.toBe(prod.map.news);
+  });
+
   it('파생 ID 없으면 env 폴백', () => {
     const env = {
       KARMOLAB_BOT_NEWS_CHANNEL_ID: '222',

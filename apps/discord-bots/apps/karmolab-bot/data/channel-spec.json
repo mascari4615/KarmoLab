@@ -1,6 +1,16 @@
 {
-  "_doc": "선언적 채널 구조 (정본. 커밋). ID 가 아니라 *원하는 구조* 만 적는다. 봇이 부팅 시 dev 길드에서 reconcile: 저장된 ID 가 살아있으면 그대로, 없으면 이름으로 기존 채널 claim, 그것도 없으면 생성. 결과 ID 는 data/provisioned-channels.<guildId>.json (런타임, gitignore) 에 파생 저장. prod 는 env *_CHANNEL_ID 가 우선이라 본 spec 영향 없음 (KARMOLAB_BOT_ENV=prod 시 프로비저닝 OFF).",
+  "_doc": "선언적 채널 구조. prod/dev 모두 기본 프로비저닝 ON, 인스턴스별 저장 ID 우선. routes의 원본 키는 별도 생성 없이 대상 채널로 통합. 기존 채널과 글 삭제 없음. 명시적 CHANNEL_PROVISION=0일 때만 env 폴백.",
   "categoryName": "KarmoLab 봇",
+  "routes": {
+    "prod": {
+      "github-webhook": "ops-report",
+      "unity-free": "ops-report",
+      "news": "ops-report",
+      "digest": "ops-report",
+      "wm-build": "ops-report",
+      "wm-device-log": "ops-report"
+    }
+  },
   "channels": [
     {
       "key": "github-webhook",
@@ -9,8 +19,8 @@
     },
     {
       "key": "ops-report",
-      "name": "ops-report",
-      "topic": "봇 운영 자기보고 (시작, 에러, 메트릭)"
+      "name": "알림",
+      "topic": "일정, 빌드, 장애, 무료 에셋, 뉴스와 저장소 변경 소식"
     },
     {
       "key": "unity-free",

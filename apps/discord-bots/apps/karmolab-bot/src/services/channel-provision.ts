@@ -11,8 +11,8 @@
  * reconcile (멱등): 저장된 ID 가 살아있으면 그대로 → 없으면 *이름으로 기존 채널 claim*
  *                   → 그것도 없으면 생성. 사용자가 채널 이름 바꿔도 저장 ID 로 추적.
  *
- * 범위 게이트 (사용자 결정 2026-05-17 "dev 서버만 먼저"): KARMOLAB_BOT_ENV==='prod' 면 OFF.
- *   prod 는 env *_CHANNEL_ID 가 그대로 우선 → 본 모듈은 prod 동작 무영향.
+ * prod/dev 기본 ON. 허용 길드만 대상, 명시적 비활성 시 env 폴백.
+ * 인스턴스별 routes로 알림 통합, 원본 채널과 과거 글 보존.
  *
  * 정합: process.md § Ops 인터페이스 사람, AI 공용 / active-sessions 보드 = live 파생 투영
  *       (유지하지 말고 파생하라) / code-style.md § Deep Modules (좁은 seam).
@@ -67,6 +67,8 @@ export interface ChannelSpecEntry {
 export interface ChannelSpec {
   categoryName: string;
   channels: ChannelSpecEntry[];
+  /** 인스턴스별 알림 통합. 값은 별도 라우팅 없는 실제 채널 키. */
+  routes?: Record<string, Record<string, string>>;
 }
 
 /** discord.js v14 GuildForumTagData 형식 (실 API 호출 시 패스). */
@@ -91,7 +93,7 @@ function entryChannelType(entry: ChannelSpecEntry): number {
   return entry.type === 'GuildForum' ? ChannelType.GuildForum : ChannelType.GuildText;
 }
 
-/** 논리 키 → 기존 env 키. prod 우선, dev 폴백 매핑의 단일 정본 (평행정의 0). */
+/** 논리 키별 env 폴백. 프로비저닝 OFF 또는 저장 ID 부재 시 사용. */
 export const ENV_KEY_BY_LOGICAL: Record<string, string> = {
   'github-webhook': 'GITHUB_WEBHOOK_CHANNEL_ID',
   'ops-report': 'KARMOLAB_BOT_OPS_REPORT_CHANNEL_ID',
@@ -116,7 +118,7 @@ export function getChannelSpec(): ChannelSpec {
             !!c && typeof c.key === 'string' && typeof c.name === 'string',
         )
       : [];
-    specCache = { categoryName: String(raw.categoryName ?? 'KarmoLab 봇'), channels };
+    specCache = { categoryName: String(raw.categoryName ?? 'KarmoLab 봇'), channels, routes: raw.routes };
   } catch (e: unknown) {
     console.warn(
       `[ChannelProvision] ${SPEC_PATH} 로드 실패. 프로비저닝 비활성:`,
@@ -128,8 +130,7 @@ export function getChannelSpec(): ChannelSpec {
 }
 
 /**
- * dev 한정 게이트. KARMOLAB_BOT_ENV==='prod' 또는 KARMOLAB_BOT_CHANNEL_PROVISION 명시 off 면 false.
- * 명시 on(KARMOLAB_BOT_CHANNEL_PROVISION=1) 이면 prod 여도 강제 활성 (수동 마이그레이션용).
+ * prod/dev 공통 게이트. KARMOLAB_BOT_CHANNEL_PROVISION 명시 off일 때만 비활성.
  */
 export function isProvisioningEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   // 기본 ON (dev, prod 무관). 사용자 기존 채팅방 안 쓰고 싶다(2026-05-17,
@@ -171,6 +172,16 @@ export function shouldProvisionGuild(
  */
 export function provisionInstanceLabel(env: NodeJS.ProcessEnv = process.env): string {
   return env.KARMOLAB_BOT_ENV?.trim().toLowerCase() || 'dev';
+}
+
+function routedKey(key: string, spec: ChannelSpec, env: NodeJS.ProcessEnv): string {
+  const routes = spec.routes?.[provisionInstanceLabel(env)] ?? {};
+  const target = routes[key];
+  if (!target) return key;
+  if (routes[target] || !spec.channels.some(channel => channel.key === target)) {
+    throw new Error(`Invalid channel route: ${key} -> ${target}`);
+  }
+  return target;
 }
 
 /** prod = 기본 카테고리명(사용자 정면), 그 외 = `<base>-<label>` (dev 분리). */
@@ -343,6 +354,7 @@ export async function reconcileGuildChannels(
   // 2) 채널. 이름 claim 을 *이 카테고리 하위로* 스코프 (다른 인스턴스의
   //    동일 이름 채널을 가로채지 않음 = prod↔dev 교차오염 차단).
   for (const entry of spec.channels) {
+    if (routedKey(entry.key, spec, env) !== entry.key) continue;
     const wantType = entryChannelType(entry);
     const stored = byId(map[entry.key]);
     if (stored && stored.type === wantType) {
@@ -388,6 +400,10 @@ export async function reconcileGuildChannels(
     created.push(entry.key);
   }
 
+  for (const entry of spec.channels) {
+    const target = routedKey(entry.key, spec, env);
+    if (target !== entry.key) map[entry.key] = map[target];
+  }
   saveProvisionedMap(guild.id, map, env);
   return { guildId: guild.id, map, created, claimed, reused };
 }
@@ -427,6 +443,7 @@ function provisionedId(key: string, env: NodeJS.ProcessEnv = process.env): strin
  *  - 프로비저닝 ON  (기본): 인스턴스(prod/dev)별 프로비저닝 ID 우선 → 없으면 env.
  */
 export function channelIdFor(key: string, env: NodeJS.ProcessEnv = process.env): string | null {
+  if (isProvisioningEnabled(env)) key = routedKey(key, getChannelSpec(), env);
   const envKey = ENV_KEY_BY_LOGICAL[key];
   const envVal = envKey ? env[envKey]?.trim() || null : null;
   if (!isProvisioningEnabled(env)) return envVal;

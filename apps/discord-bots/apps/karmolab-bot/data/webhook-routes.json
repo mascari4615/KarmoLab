@@ -1,5 +1,5 @@
 {
-	"default": ["1490334302003663058"],
+	"default": ["1505353914080297142"],
 	"routes": {},
 	"githubRepos": [
 		"mascari4615/KarmoLab",
@@ -7,8 +7,8 @@
 		"mascari4615/memo"
 	],
 	"localRoutes": {
-		"wm-compile-error": ["1490334302003663058"],
-		"wm-compile-warning": ["1490334302003663058"]
+		"wm-compile-error": ["1505353914080297142"],
+		"wm-compile-warning": ["1505353914080297142"]
 	},
-	"localDefault": ["1490334302003663058"]
+	"localDefault": ["1505353914080297142"]
 }
