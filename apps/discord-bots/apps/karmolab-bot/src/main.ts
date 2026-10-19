@@ -59,7 +59,7 @@ import { registerDailyListRoutes } from './bot/daily-list-api';
 import { startBackupLoop } from './services/karmolab-backup';
 import { makeThreadRouter, extractTaskId } from './bot/agent-thread-router';
 import { recordDecision } from './bot/agent-decisions';
-import { getDefaultChannels, hasAnyRoute } from './services/webhook-routes';
+import { hasAnyRoute } from './services/webhook-routes';
 import {
   isProvisioningEnabled,
   shouldProvisionGuild,
@@ -574,15 +574,7 @@ client.once('clientReady', async () => {
   // KarmoLab 앱(agent_team_list_tasks. memo md 를 직접 읽는다) 단일.
   // backfill / status reconciler / tag recovery / dedup 감사 전부 제거.
 
-  const greetingChannelIds = getDefaultChannels();
-  for (const channelId of greetingChannelIds) {
-    const channel = await client.channels.fetch(channelId).catch(() => null);
-    if (channel && channel.isTextBased()) {
-      const version = process.env.npm_package_version || '1.0.0';
-      const greeting = gameData.getMessage('Server_Startup_Greeting', version);
-      await notificationServices.deliver('ops', () => channel.send(greeting)).catch((e: unknown) => console.error('[Startup] 인사 메시지 전송 실패:', e instanceof Error ? e.message : String(e)));
-    }
-  }
+  // reportStartup below owns the single startup notice after initialization.
 
   startPresenceRotation(client);
   await notificationServices.bind('unity-free', { start: () => startUnityFreeNotifier(client), stop: stopUnityFreeNotifier, isRunning: unityFreeNotifierRunning });

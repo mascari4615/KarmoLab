@@ -1,6 +1,7 @@
 import express from 'express';
 import { notificationServices } from '../services/notification-services';
-import { EmbedBuilder, Status } from 'discord.js';
+import { EmbedBuilder, Status, MessageFlags } from 'discord.js';
+import { compactNotice, compactPush } from '../services/notification-format';
 import type { Client } from 'discord.js';
 import type { GameDataService } from '../services/gamedata';
 import { getChannelsForRepo } from '../services/webhook-routes';
@@ -93,6 +94,7 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
         .setColor(0x4caf50)
         .setFooter({ text: payload.repository?.full_name || '' })
         .setTimestamp();
+      let content: string | null = null;
 
       if (event === 'ping') {
         embed.setTitle(gameData.getMessage('Webhook_Ping_Title')).setDescription(gameData.getMessage('Webhook_Ping_Desc'));
@@ -112,23 +114,8 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
           return;
         }
 
-        embed.setTitle(gameData.getMessage('Webhook_Push_Title', payload.commits.length));
-        const desc = payload.commits
-          .slice(0, 5)
-          .map((c: GitHubCommit) => `- [\`${c.id.slice(0, 7)}\`](${c.url}) ${c.message}`)
-          .join('\n');
-        embed.setDescription(desc);
-
-        // TASK-WM-093 Phase F. claude-audit auto-fix push 시각 분리.
-        // 모든 commit 의 subject 첫 줄이 `chore(audit-fix):` prefix 면 회색 (자동 배경 작업 톤).
-        // 사람 손 push (default 초록 0x4caf50) 과 자동 fix push 디스코드 채널에서 즉시 구분.
-        const isAuditFixPush = payload.commits.every((c: GitHubCommit) => {
-          const firstLine = String(c.message ?? '').split('\n', 1)[0];
-          return firstLine.startsWith('chore(audit-fix):');
-        });
-        if (isAuditFixPush) {
-          embed.setColor(0x808080);
-        }
+        content = compactPush(repoFullName ?? 'GitHub', payload.commits, payload.compare);
+        if (!content) { res.sendStatus(200); return; }
       } else if (event === 'issues') {
         embed
           .setTitle(gameData.getMessage('Webhook_Issue_Title', payload.issue?.number, payload.action))
@@ -194,7 +181,7 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
       for (const channelId of channelIds) {
         const channel = await client.channels.fetch(channelId).catch(() => null);
         if (channel?.isSendable()) {
-          await notificationServices.deliver('github', () => channel.send({ embeds: [embed] })).catch((e: unknown) =>
+          await notificationServices.deliver('github', () => channel.send({ content: content ?? compactNotice(embed.data.title ?? 'GitHub', embed.data.description ?? '', repoFullName), flags: MessageFlags.SuppressEmbeds, allowedMentions: { parse: [] } }), channelId).catch((e: unknown) =>
             console.error('[Webhook] 채널 전송 실패:', channelId, e instanceof Error ? e.message : String(e)),
           );
         }

@@ -2,7 +2,7 @@
  * karmolab-bot 운영 자기보고 (ops-self-report). TASK-YB-002-D
  *
  * 봇 라이프사이클 (시작 / 종료 / 크래시) + deploy 결과를 Discord 운영 채널에
- * 임베드로 보고. 노트북 prod 머신 GUI 부재 → 데스크탑에서 봇 상태 가시성.
+ * 짧은 본문으로 보고. 노트북 prod 머신 GUI 부재 → 데스크탑에서 봇 상태 가시성.
  *
  * 환경:
  *   - DISCORD_TOKEN                  (필수. 미설정 시 봇 자체가 못 떠서 무관)
@@ -16,7 +16,8 @@ import os from 'node:os';
 import { notificationServices } from './notification-services';
 import { channelIdFor } from './channel-provision';
 import crypto from 'node:crypto';
-import { REST, Routes, EmbedBuilder } from 'discord.js';
+import { REST, Routes, EmbedBuilder, MessageFlags } from 'discord.js';
+import { compactNotice } from './notification-format';
 import { parseCommaSeparatedEnv } from '@discord-bots/common';
 
 export interface OpsReportContext {
@@ -32,7 +33,7 @@ export interface OpsReportContext {
  * ctx 로드. token 만 게이트. **채널 ID 는 여기서 동결하지 않는다.**
  * 이 함수는 모듈 로드 시(= clientReady, reconcile *전*) 호출되므로, 채널을
  * 여기서 캡처하면 프로비저닝 전 옛 env 채널로 영구 고정된다(TASK-YB-029
- * 회귀: 시작/종료/배포 알림이 옛 채널 고착). 채널은 sendEmbed 에서 매
+ * 회귀: 시작/종료/배포 알림이 옛 채널 고착). 채널은 sendReport 에서 매
  * send 시점 channelIdFor('ops-report') 로 lazy 해석 (reconcile 후 신선).
  */
 export function loadOpsReportContext(): OpsReportContext | null {
@@ -69,10 +70,10 @@ function hashStack(stack: string): string {
 }
 
 function buildFooter(ctx: OpsReportContext): string {
-  return `${ctx.env}, ${ctx.hostname}, ${ctx.gitCommit}`;
+  return [ctx.env, ctx.hostname, ctx.gitCommit !== 'unknown' ? ctx.gitCommit.slice(0, 7) : ''].filter(Boolean).join('/');
 }
 
-async function sendEmbed(
+async function sendReport(
   ctx: OpsReportContext,
   embed: EmbedBuilder,
   opts: { mentionAdmins?: boolean; timeoutMs?: number } = {},
@@ -88,10 +89,12 @@ async function sendEmbed(
   // mentionAdmins=true 면서 ADMIN_IDS 있으면 content 에 핑 + allowed_mentions 로 그 유저만 허용.
   // 비면 핑 X (off-switch = ADMIN_IDS 비우기).
   const mentionIds = mentionAdmins ? ctx.adminMentionIds : [];
-  const body: Record<string, unknown> = { embeds: [embed.toJSON()] };
+  const data = embed.toJSON();
+  const content = compactNotice(data.title ?? '벼루', data.description ?? '', data.footer?.text);
+  const body: Record<string, unknown> = { content, flags: MessageFlags.SuppressEmbeds, allowed_mentions: { parse: [] } };
   if (mentionIds.length > 0) {
-    body.content = mentionIds.map((id) => `<@${id}>`).join(' ');
-    body.allowed_mentions = { users: mentionIds };
+    body.content = mentionIds.map((id) => `<@${id}>`).join(' ') + ' ' + content;
+    body.allowed_mentions = { parse: [], users: mentionIds };
   }
   try {
     const rest = new REST({ timeout: timeoutMs }).setToken(ctx.token);
@@ -117,7 +120,7 @@ export async function reportStartup(
     )
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
-  await sendEmbed(ctx, embed);
+  await sendReport(ctx, embed);
 }
 
 /** 봇 graceful shutdown 임베드 (회색). SIGINT/SIGTERM 직후 호출. */
@@ -128,7 +131,7 @@ export async function reportShutdown(ctx: OpsReportContext, reason: string): Pro
     .setDescription(`**이유**: \`${reason}\``)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
-  await sendEmbed(ctx, embed);
+  await sendReport(ctx, embed);
 }
 
 /** 미처리 예외 임베드 (빨강). dedup 적용. 동일 stack 5분 내 1회만. */
@@ -149,7 +152,7 @@ export async function reportError(
     .setDescription(`**메시지**: ${e.message.slice(0, 300)}\n\`\`\`\n${stackPreview}\n\`\`\``)
     .setFooter({ text: `${buildFooter(ctx)}, stack:${stackHash}` })
     .setTimestamp();
-  await sendEmbed(ctx, embed, { mentionAdmins: true });
+  await sendReport(ctx, embed, { mentionAdmins: true });
 }
 
 /**
@@ -168,7 +171,7 @@ export async function reportHeartbeat(
     .setDescription(`**상태**: ${alert.reason.slice(0, 500)}`)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
-  await sendEmbed(ctx, embed, { mentionAdmins: !alert.healthy });
+  await sendReport(ctx, embed, { mentionAdmins: !alert.healthy });
 }
 
 /**
@@ -189,7 +192,7 @@ export async function reportCharStateSnapshot(
     .setDescription(`**상태**: ${alert.reason.slice(0, 500)}`)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
-  await sendEmbed(ctx, embed, { mentionAdmins: !alert.healthy });
+  await sendReport(ctx, embed, { mentionAdmins: !alert.healthy });
 }
 
 /**
@@ -215,7 +218,7 @@ export async function reportDeployFreshness(
     .setDescription(`${alert.reason.slice(0, 700)}`)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
-  await sendEmbed(ctx, embed, { mentionAdmins: !alert.healthy });
+  await sendReport(ctx, embed, { mentionAdmins: !alert.healthy });
 }
 
 export async function reportMemoSync(
@@ -230,19 +233,13 @@ export async function reportMemoSync(
     .setDescription(`**상태**: ${alert.reason.slice(0, 500)}`)
     .setFooter({ text: buildFooter(ctx) })
     .setTimestamp();
-  await sendEmbed(ctx, embed, { mentionAdmins: !alert.healthy });
+  await sendReport(ctx, embed, { mentionAdmins: !alert.healthy });
 }
 
-/** deploy 결과 임베드 (파랑). deploy-commands.ts main() 끝에 호출. */
+/** Successful command registration stays in deployment logs; startup owns the channel notice. */
 export async function reportDeploy(
   ctx: OpsReportContext,
   info: { count: number; target: string },
 ): Promise<void> {
-  const embed = new EmbedBuilder()
-    .setColor(0x3498db)
-    .setTitle('🔵 벼루 슬래시 배포')
-    .setDescription(`**${info.count}개** 커맨드 등록 → \`${info.target}\``)
-    .setFooter({ text: buildFooter(ctx) })
-    .setTimestamp();
-  await sendEmbed(ctx, embed);
+  console.log(`[SlashDeploy] ${info.count} commands, ${info.target}, ${buildFooter(ctx)}`);
 }
