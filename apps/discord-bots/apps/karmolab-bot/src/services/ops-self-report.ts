@@ -13,6 +13,7 @@
  * 모든 send 는 try/catch silent. 자기보고가 봇 자체를 죽이지 않도록.
  */
 import os from 'node:os';
+import { notificationServices } from './notification-services';
 import { channelIdFor } from './channel-provision';
 import crypto from 'node:crypto';
 import { REST, Routes, EmbedBuilder } from 'discord.js';
@@ -94,7 +95,7 @@ async function sendEmbed(
   }
   try {
     const rest = new REST({ timeout: timeoutMs }).setToken(ctx.token);
-    await rest.post(Routes.channelMessages(channelId), { body });
+    await notificationServices.deliver('ops', () => rest.post(Routes.channelMessages(channelId), { body }));
   } catch (e: unknown) {
     console.warn('[OpsReport] send 실패 (silent):', e instanceof Error ? e.message : e);
   }

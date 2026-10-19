@@ -16,6 +16,7 @@ import { EmbedBuilder } from 'discord.js';
 import type { Client } from 'discord.js';
 
 import { getLocalChannels, hasAnyLocalRoute } from '../services/webhook-routes';
+import { notificationServices } from '../services/notification-services';
 
 interface LocalEventField {
   name: string;
@@ -85,9 +86,8 @@ export async function sendLocalEvent(
   for (const channelId of channelIds) {
     const channel = await client.channels.fetch(channelId).catch(() => null);
     if (channel?.isSendable()) {
-      const ok = await channel
-        .send({ embeds: [embed] })
-        .then(() => true)
+      const source = notificationServices.has(payload.kind) ? payload.kind : 'local';
+      const ok = await notificationServices.deliver(source, () => channel.send({ embeds: [embed] }).then(() => true), channelId)
         .catch((e: unknown) => {
           console.error(
             '[LocalWebhook] 채널 전송 실패:',

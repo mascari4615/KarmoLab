@@ -11,6 +11,7 @@ import './widgets/mydash/ai-usage';
 import './widgets/mydash/bookmarks';
 import './widgets/mydash/kakao-daily';
 import './widgets/mydash/discord-channels';
+import './widgets/mydash/byeoru';
 import './widgets/mydash/machines';
 import './widgets/mydash/goals';
 /* 플래너 (캘린더, 일기, 칸반, 연속일). 2026-09-23 lab 도구에서 옮겨 옴 */

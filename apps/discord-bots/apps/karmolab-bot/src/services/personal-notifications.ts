@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { PKG_ROOT } from '../paths';
+import { notificationServices } from './notification-services';
 
 export interface AgendaEvent { id: string; title: string; start: string; end: string; allDay: boolean; source?: string }
 export interface AgendaTask { id: string; title: string; due?: string; status?: string }
@@ -236,6 +237,7 @@ export class PersonalNotifications {
     return report;
   }
   async tick(now = Date.now(), preview = false): Promise<void> {
+    if (!notificationServices.enabled('personal')) return;
     if (this.busy) { if (preview) throw new Error('notification_busy'); return; }
     this.busy = true;
     try {
@@ -282,6 +284,7 @@ export class PersonalNotifications {
       report.lastSentAt = this.state.lastSentAt;
     } finally { this.busy = false; }
   }
+  isRunning(): boolean { return this.timer != null; }
   start(): void {
     if (this.timer) return;
     const run = (): void => { void this.tick().catch(() => console.warn('[PersonalNotifications] 수집 또는 전송 실패, 다음 회차 재시도')); };

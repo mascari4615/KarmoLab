@@ -92,12 +92,14 @@ import {
   stopCharacterStateSnapshot,
 } from './services/character-state-snapshot';
 import { startMemoSync, stopMemoSync } from './services/memo-sync';
-import { startUnityFreeNotifier, stopUnityFreeNotifier } from './services/notifiers/unity-free';
+import { startUnityFreeNotifier, stopUnityFreeNotifier, unityFreeNotifierRunning } from './services/notifiers/unity-free';
 import { getServerStatsRecorder } from './services/server-stats';
-import { startWeeklyWrapped, stopWeeklyWrapped } from './services/notifiers/weekly-wrapped';
-import { startNewsNotifier, stopNewsNotifier } from './services/notifiers/news';
-import { startCodexResetNotifier, stopCodexResetNotifier } from './services/notifiers/codex-reset';
-import { startBrainResurface, stopBrainResurface } from './services/notifiers/brain-resurface';
+import { startWeeklyWrapped, stopWeeklyWrapped, weeklyWrappedRunning } from './services/notifiers/weekly-wrapped';
+import { startNewsNotifier, stopNewsNotifier, newsNotifierRunning } from './services/notifiers/news';
+import { startCodexResetNotifier, stopCodexResetNotifier, codexResetNotifierRunning, codexResetNotifierDetail } from './services/notifiers/codex-reset';
+import { notificationServices } from './services/notification-services';
+import { registerNotificationServices, collectNotificationConnections } from './bot/notification-services-api';
+import { startBrainResurface, stopBrainResurface, brainResurfaceRunning } from './services/notifiers/brain-resurface';
 import { PersonalNotifications } from './services/personal-notifications';
 import { registerPersonalNotifications } from './bot/personal-notifications-api';
 import { registerUserPresence } from './bot/user-presence-api';
@@ -389,13 +391,14 @@ const personalNotifications = new PersonalNotifications(memoRepoPath, async (con
   if (!id) throw new Error('notification_channel_missing');
   const channel = await client.channels.fetch(id);
   if (!channel?.isTextBased() || !('send' in channel)) throw new Error('notification_channel_unavailable');
-  await channel.send({ content, allowedMentions: { parse: [] } });
+  await notificationServices.deliver('personal', () => channel.send({ content, allowedMentions: { parse: [] } }));
 });
 registerPersonalNotifications(app, personalNotifications);
 const userPresence = new UserPresence(path.join(PKG_ROOT, 'data', 'user-presence.json'));
 registerUserPresence(app, userPresence);
 registerUserPresenceFeed(app, userPresence);
 registerDiscordChannels(app, () => collectDiscordChannels(client));
+registerNotificationServices(app, notificationServices, () => collectNotificationConnections(client));
 mountLocalWebhook(app, client);
 // TASK-WM-201. 폰(WM Android)이 밀어 넣는 실행 로그 수신 + 웹 뷰어 + tail.
 mountDeviceLog(app, client);
@@ -577,14 +580,14 @@ client.once('clientReady', async () => {
     if (channel && channel.isTextBased()) {
       const version = process.env.npm_package_version || '1.0.0';
       const greeting = gameData.getMessage('Server_Startup_Greeting', version);
-      await channel.send(greeting).catch((e: unknown) => console.error('[Startup] 인사 메시지 전송 실패:', e instanceof Error ? e.message : String(e)));
+      await notificationServices.deliver('ops', () => channel.send(greeting)).catch((e: unknown) => console.error('[Startup] 인사 메시지 전송 실패:', e instanceof Error ? e.message : String(e)));
     }
   }
 
   startPresenceRotation(client);
-  startUnityFreeNotifier(client);
-  personalNotifications.start();
-  startCodexResetNotifier(client);
+  await notificationServices.bind('unity-free', { start: () => startUnityFreeNotifier(client), stop: stopUnityFreeNotifier, isRunning: unityFreeNotifierRunning });
+  await notificationServices.bind('personal', { start: () => personalNotifications.start(), stop: () => personalNotifications.stop(), isRunning: () => personalNotifications.isRunning(), detail: () => personalNotifications.settings().enabled ? '플래너의 일정 설정 사용' : '플래너의 오늘 안내 설정 꺼짐' });
+  await notificationServices.bind('codex-reset', { start: explicit => startCodexResetNotifier(client, explicit), stop: stopCodexResetNotifier, isRunning: codexResetNotifierRunning, detail: codexResetNotifierDetail });
   // TASK-YB-021: outbound heartbeat (push 모델, 자체 구현. 제3자 의존 0).
   // 봇이 memo orphan 브랜치에 시각 기록 → github.io Actions watcher 가 신선도
   // 감시. 인증 = 기존 MEMO_GITHUB_PAT(digest-webhook 과 동일). egress 단절은
@@ -662,10 +665,10 @@ client.once('clientReady', async () => {
     // 흐름 예약 알림 (TASK-KL-183 B). 서버가 대신 돌지는 않는다. 때가 됐다고 알릴 뿐.
     startFlowReminder(getKarmolabAccountStore(), getKarmolabNotificationStore());
     startSpontaneous(client, characterService, getMemory, memoRepoPath ? getMood : undefined, memoRepoPath ? getSchedule : undefined, memoRepoPath ? getNews : undefined);
-    if (memoRepoPath) startNewsNotifier(client, getNews, characterService.getDefaultSlug());
+    if (memoRepoPath) await notificationServices.bind('news', { start: () => startNewsNotifier(client, getNews, characterService.getDefaultSlug()), stop: stopNewsNotifier, isRunning: newsNotifierRunning, detail: () => notificationServices.setting<string[]>('news', 'sources').length ? '선택한 출처를 주기적으로 확인' : '뉴스 출처를 선택한 뒤 시작' });
     // TASK-YB-042: 켠 서버에만 간다 (기본 꺼짐). memo 저장소와 무관하므로 조건 없이 시작.
-    startWeeklyWrapped(client);
-    if (memoRepoPath) startBrainResurface(client, memoRepoPath);
+    await notificationServices.bind('weekly-wrapped', { start: () => startWeeklyWrapped(client), stop: stopWeeklyWrapped, isRunning: weeklyWrappedRunning, detail: () => '실행과 중지는 결산을 켠 모든 서버에 적용' });
+    if (memoRepoPath) await notificationServices.bind('brain-resurface', { start: () => startBrainResurface(client, memoRepoPath), stop: stopBrainResurface, isRunning: brainResurfaceRunning });
     setBudgetReserve(buildGovernanceReserve(process.env)); // ④ 거버넌스 (KAR-018-D slice-2). 이벤트, cadence 공통 reserve seam + 전역 !kill
     // KAR-018-W: 에이전트 팀 #team-bus 실 Discord 게시 배선 (전 엔진 단일 seam).
     // sendLocalEvent = webhook-routes 정본 재사용(평행정의0). 미주입 시 trace만(graceful).

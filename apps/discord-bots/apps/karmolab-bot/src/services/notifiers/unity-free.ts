@@ -14,6 +14,7 @@ import {
 } from 'discord.js';
 import cheerio from 'cheerio';
 import { channelIdFor } from '../channel-provision';
+import { notificationServices } from '../notification-services';
 import { createStateStore } from './state-store';
 
 const PUBLISHER_SALE_URL = 'https://assetstore.unity.com/ko-KR/publisher-sale';
@@ -194,12 +195,12 @@ export async function sendPublisherSaleToChannel(
       ? `에셋 페이지(탭에서 열기): ${info.assetUrl}`
       : undefined;
   try {
-    await channel.send({ content, embeds: [embed], files });
+    await notificationServices.deliver('unity-free', () => channel.send({ content, embeds: [embed], files }));
   } catch (err: unknown) {
     if (ogAttach && files.length > 0) {
       console.warn('[UnityFree] 이미지 첨부 전송 실패(권한, 용량 등), 외부 URL 이미지로 재시도:', err);
       const fallback = buildPublisherSaleEmbed(info, false);
-      await channel.send({ content, embeds: [fallback] });
+      await notificationServices.deliver('unity-free', () => channel.send({ content, embeds: [fallback] }));
       return;
     }
     throw err;
@@ -288,7 +289,7 @@ export function startUnityFreeNotifier(client: Client): void {
     return;
   }
 
-  const intervalMin = Math.max(5, parseInt(process.env.KARMOLAB_BOT_UNITY_FREE_INTERVAL_MIN || '60', 10));
+  const intervalMin = notificationServices.setting<number>('unity-free', 'interval');
   const intervalMs = intervalMin * 60 * 1000;
 
   console.log(`[UnityFree] Unity 무료 에셋 알림 활성 (채널: ${channelId}, 간격: ${intervalMin}분)`);
@@ -305,6 +306,7 @@ export function stopUnityFreeNotifier(): void {
     timer = null;
   }
 }
+export function unityFreeNotifierRunning(): boolean { return timer != null; }
 
 /**
  * 슬래시 `/atkup unity [force]` 진입점.

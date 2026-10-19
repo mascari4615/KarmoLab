@@ -13,6 +13,7 @@
  */
 import { EmbedBuilder, type Client, type SendableChannels } from 'discord.js';
 import { channelIdFor } from '../channel-provision';
+import { notificationServices } from '../notification-services';
 import { createStateStore } from './state-store';
 import type { NewsService, NewsArticle } from '../news-service';
 import { fetchHnTopStories, buildHnEmbed } from '../sources/hacker-news';
@@ -82,7 +83,7 @@ const newsStore = createStateStore<NewsNotifierState>({
 });
 
 export async function sendNewsArticleToChannel(channel: SendableChannels, a: NewsArticle): Promise<void> {
-  await channel.send({ embeds: [buildNewsEmbed(a)] });
+  await notificationServices.deliver('news', () => channel.send({ embeds: [buildNewsEmbed(a)] }));
 }
 
 async function pollOnce(
@@ -177,7 +178,7 @@ async function pollHnOnce(
   let sent = 0;
   for (const s of fresh) {
     try {
-      await channel.send({ embeds: [buildHnEmbed(s)] });
+      await notificationServices.deliver('news', () => channel.send({ embeds: [buildHnEmbed(s)] }));
       state.sentHnKeys.push(String(s.id));
       sent++;
     } catch (err) {
@@ -224,7 +225,7 @@ async function pollGnOnce(
   let sent = 0;
   for (const s of fresh) {
     try {
-      await channel.send({ embeds: [buildGnEmbed(s)] });
+      await notificationServices.deliver('news', () => channel.send({ embeds: [buildGnEmbed(s)] }));
       state.sentGnKeys.push(s.id);
       sent++;
     } catch (err) {
@@ -272,17 +273,18 @@ export function startNewsNotifier(client: Client, getNews: (slug: string) => New
     return;
   }
 
-  const sources = parseSources(process.env.KARMOLAB_BOT_NEWS_SOURCES);
+  const sources = new Set(notificationServices.setting<string[]>('news', 'sources'));
   if (sources.size === 0) {
     console.log('[News] KARMOLAB_BOT_NEWS_SOURCES=off. 뉴스 자동 게시 비활성');
     return;
   }
-  const intervalMin = Math.max(30, parseInt(process.env.KARMOLAB_BOT_NEWS_INTERVAL_MIN || '180', 10));
+  const intervalMin = notificationServices.setting<number>('news', 'interval');
   const maxAgeHours = Math.max(1, parseInt(process.env.KARMOLAB_BOT_NEWS_MAX_AGE_HOURS || '12', 10));
   const maxPerPoll = Math.max(1, parseInt(process.env.KARMOLAB_BOT_NEWS_MAX_PER_POLL || '3', 10));
   const intervalMs = intervalMin * 60 * 1000;
 
   const tick = (): void => {
+    if (!notificationServices.enabled('news')) return;
     if (sources.has('google')) {
       let news: NewsService;
       try {
@@ -326,6 +328,7 @@ export function stopNewsNotifier(): void {
     timer = null;
   }
 }
+export function newsNotifierRunning(): boolean { return timer != null; }
 
 /**
  * 슬래시 단발 트리거. Google 키워드 뉴스 1회. KARMOLAB_BOT_NEWS_CHANNEL_ID 미설정 시 'no_channel'.

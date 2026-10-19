@@ -146,7 +146,7 @@ export interface DashPanelCtx<R extends DashRepoRead = DashRepoRead> {
   /**
    * 지금 로그인의 GitHub 토큰. 없거나 죽었으면 null, 갱신에 못 닿으면 던짐.
    * **저장소 밖으로 나가는 요청 하나만을 위한 것** (머신 방이 laptop-ops `/dash/*` 에 본인 확인으로 실음).
-   * 추가 허용: 플래너 봇 `/dash/notifications`, 디코 목록 `/dash/discord-channels`, 상태 `/dash/user-presence` 본인 확인
+   * 추가 허용: 플래너 `/dash/notifications`, 디코 `/dash/discord-channels`, `/dash/notification-services`, 상태 `/dash/user-presence` 본인 확인
    * 저장소 읽기는 `repo`. 토큰 저장과 허용 경로 밖 전송 금지
    */
   ghToken(): Promise<string | null>;

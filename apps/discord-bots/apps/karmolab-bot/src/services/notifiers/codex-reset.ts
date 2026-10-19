@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { PKG_ROOT } from '../../paths';
 import type { StateStore } from './state-store';
 import { channelIdFor } from '../channel-provision';
+import { notificationServices } from '../notification-services';
 import { DEFAULT_RESET_AUTHOR, RESET_POST_MAX_AGE_MS, classifyResetPost, formatKst, type ResetPost, type ResetSignal } from '../sources/codex-reset';
 import { closeResetBrowsers, createBrowserResetSource } from '../sources/codex-reset-browser';
 import { analyzeResetPost, resetAnalysisVersion } from '../sources/codex-reset-context';
@@ -188,13 +189,16 @@ export async function getRecentResets(force = false): Promise<{ state: ResetStat
 let timer: ReturnType<typeof setInterval> | null = null;
 let tick: Promise<void> | null = null;
 let generation = 0;
+let lastCollectionFailed = false;
 
 export async function triggerCodexResetOnce(client: Client): Promise<void> {
+  if (!notificationServices.enabled('codex-reset')) return;
   if (tick) return tick;
   const current = generation;
   tick = (async () => {
     const result = await getRecentResets();
     if (current !== generation) return;
+    lastCollectionFailed = result.stale;
     const channelId = process.env.KARMOLAB_BOT_CODEX_RESET_CHANNEL_ID?.trim() || channelIdFor('ops-report');
     if (!channelId) return;
     const channel = await client.channels.fetch(channelId);
@@ -202,29 +206,29 @@ export async function triggerCodexResetOnce(client: Client): Promise<void> {
     if (current !== generation) return;
     if (result.stale) {
       await getMonitor().reportFailure(async () => {
-        await channel.send({ embeds: [new EmbedBuilder().setTitle('Codex 초기화 소식 수집 중단').setColor(0xe67e22)
+        await notificationServices.deliver('codex-reset', () => channel.send({ embeds: [new EmbedBuilder().setTitle('Codex 초기화 소식 수집 중단').setColor(0xe67e22)
           .setDescription((result.error || 'X 수집 실패') + '\n다음 주기에 다시 확인해요. 로그인 필요 시 노트북에서 재로그인해 주세요.')
           .addFields({ name: '마지막 정상 확인', value: result.state.checkedAt ? formatKst(result.state.checkedAt) : '아직 없음' })],
-          allowedMentions: { parse: [] } });
+          allowedMentions: { parse: [] } }));
       });
       return;
     }
     const sent = await getMonitor().deliver(async signal => {
       if (current !== generation) throw new Error('초기화 알림 종료 중');
-      await channel.send({ embeds: [buildResetEmbed(signal)], allowedMentions: { parse: [] }, nonce: `cr${signal.post.id}`, enforceNonce: true });
+      await notificationServices.deliver('codex-reset', () => channel.send({ embeds: [buildResetEmbed(signal)], allowedMentions: { parse: [] }, nonce: `cr${signal.post.id}`, enforceNonce: true }));
     });
     console.log(`[CodexReset] checked=${result.state.checkedAt} sent=${sent}`);
   })();
   try { await tick; } finally { tick = null; }
 }
 
-export function startCodexResetNotifier(client: Client): void {
+export function startCodexResetNotifier(client: Client, explicit = false): void {
   void stopCodexResetNotifier();
-  if (process.env.KARMOLAB_BOT_CODEX_RESET_ENABLED !== '1') {
+  if (!explicit && process.env.KARMOLAB_BOT_CODEX_RESET_ENABLED !== '1') {
     console.log('[CodexReset] 자동 수집 비활성. /코덱스 조회 사용 가능');
     return;
   }
-  const configured = Number(process.env.KARMOLAB_BOT_CODEX_RESET_INTERVAL_MIN || 60);
+  const configured = notificationServices.setting<number>('codex-reset', 'interval');
   const minutes = Number.isFinite(configured) ? Math.min(60, Math.max(5, configured)) : 60;
   const run = () => { void triggerCodexResetOnce(client).catch(error => console.warn('[CodexReset] 알림 실패:', error instanceof Error ? error.message : 'unknown')); };
   timer = setInterval(run, minutes * 60_000);
@@ -239,3 +243,5 @@ export async function stopCodexResetNotifier(): Promise<void> {
   timer = null;
   await closeResetBrowsers();
 }
+export function codexResetNotifierRunning(): boolean { return timer != null; }
+export function codexResetNotifierDetail(): string { return lastCollectionFailed ? '최근 수집 실패. X 로그인과 연결 확인 필요' : '공식 소식을 주기적으로 확인'; }

@@ -9,6 +9,7 @@
  */
 import { EmbedBuilder, type Client, type TextBasedChannel } from 'discord.js';
 import { getServerStatsRecorder } from '../server-stats';
+import { notificationServices } from '../notification-services';
 import { buildWrappedEmbed, wrappedUrl } from '../../bot/slash/wrapped';
 
 const TICK_MS = 10 * 60 * 1000;
@@ -43,7 +44,8 @@ export async function runWeeklyWrappedTick(client: Client, now = new Date()): Pr
       const url = wrappedUrl(recorder.shareKey(guildId), 7);
       if (url) embed.addFields({ name: '🔗 웹에서 보기', value: url, inline: false });
 
-      await channel.send({ content: '지난 한 주, 이 방의 기록.', embeds: [embed] });
+      const sent = await notificationServices.deliver('weekly-wrapped', async () => { await channel.send({ content: '지난 한 주, 이 방의 기록.', embeds: [embed] }); return true; }, channelId);
+      if (!sent) continue;
       recorder.markWeeklyPosted(guildId, now);
       posted += 1;
     } catch (e) {
@@ -71,3 +73,4 @@ export function stopWeeklyWrapped(): void {
   if (timer) clearInterval(timer);
   timer = null;
 }
+export function weeklyWrappedRunning(): boolean { return timer != null; }

@@ -1,4 +1,5 @@
 import express from 'express';
+import { notificationServices } from '../services/notification-services';
 import { EmbedBuilder, Status } from 'discord.js';
 import type { Client } from 'discord.js';
 import type { GameDataService } from '../services/gamedata';
@@ -72,7 +73,7 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
             for (const channelId of channelIds) {
               const channel = await client.channels.fetch(channelId).catch(() => null);
               if (channel?.isSendable()) {
-                await channel.send({ content: r.summaryLine }).catch(() => {});
+                await notificationServices.deliver('github', () => channel.send({ content: r.summaryLine })).catch(() => {});
               }
             }
           })
@@ -193,7 +194,7 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
       for (const channelId of channelIds) {
         const channel = await client.channels.fetch(channelId).catch(() => null);
         if (channel?.isSendable()) {
-          await channel.send({ embeds: [embed] }).catch((e: unknown) =>
+          await notificationServices.deliver('github', () => channel.send({ embeds: [embed] })).catch((e: unknown) =>
             console.error('[Webhook] 채널 전송 실패:', channelId, e instanceof Error ? e.message : String(e)),
           );
         }

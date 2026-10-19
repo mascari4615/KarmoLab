@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder, type Client, type SendableChannels } from 'discord.js';
 import { channelIdFor } from '../channel-provision';
+import { notificationServices } from '../notification-services';
 import { createStateStore } from './state-store';
 
 const RESURFACE_INTERVAL_MS = 60 * 60 * 1000;    // 1h 폴링 (grace 판단)
@@ -135,7 +136,7 @@ async function pollOnce(
   const body = getBody(raw);
   const embed = buildEmbed(picked, meta, body);
 
-  await channel.send({ embeds: [embed] });
+  await notificationServices.deliver('brain-resurface', () => channel.send({ embeds: [embed] }));
 
   const now = new Date().toISOString();
   state.lastSentAt = now;
@@ -181,6 +182,7 @@ export function startBrainResurface(client: Client, memoRepoPath: string): void 
   let warnedNoChannel = false;
 
   const run = async (): Promise<void> => {
+    if (!notificationServices.enabled('brain-resurface')) return;
     const newsChannelId = channelIdFor('news');
     if (!newsChannelId) {
       console.error('[BrainResurface] news 채널 ID 없음. 회수 알림이 아무 데도 안 간다');
@@ -209,6 +211,7 @@ export function startBrainResurface(client: Client, memoRepoPath: string): void 
 export function stopBrainResurface(): void {
   if (timer) { clearInterval(timer); timer = null; }
 }
+export function brainResurfaceRunning(): boolean { return timer != null; }
 
 export async function triggerBrainResurfaceNow(client: Client, memoRepoPath: string): Promise<string> {
   const newsChannelId = channelIdFor('news');

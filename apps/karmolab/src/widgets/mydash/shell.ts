@@ -32,6 +32,7 @@ import mydashCss from './mydash.css';
 import dashCss from './dash.css';
 import kakaoDailyCss from './kakao-daily.css';
 import discordChannelsCss from './discord-channels.css';
+import byeoruCss from './byeoru.css';
 import { t, loadNamespace } from '../../lib/i18n';
 
 (function (): void {
@@ -877,7 +878,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     /* 오락실(`arcade.css`)과 같은 방식. 위젯 옆의 `.css` 를 글자로 묶어 여기서 삽입
        위젯이 지연 로드라 셸의 캐시 목록을 안 건드리고 같이 실려 온다. */
     /* dash 장은 셸 CSS 가 없어 토큰과 공용 부품을 dash.css 가 채운다 */
-    el.textContent = mydashCss + dashCss + kakaoDailyCss + discordChannelsCss;
+    el.textContent = mydashCss + dashCss + kakaoDailyCss + discordChannelsCss + byeoruCss;
     document.head.appendChild(el);
   }
 
@@ -907,6 +908,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         items: [
           { id: 'today', label: t('mydash.nav.home', undefined, '홈'), panel: 'home' },
           { id: 'user-presence', label: '내 상태', panel: 'user-presence' },
+          { id: 'byeoru', label: '벼루 관리', panel: 'byeoru' },
         ],
       },
       {
