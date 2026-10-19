@@ -4,6 +4,7 @@
  */
 import './load-env';
 import './install-console-timestamps';
+import { registerUserPresenceFeed } from './bot/user-presence-feed';
 import dns from 'node:dns';
 import path from 'node:path';
 import { PKG_ROOT } from './paths';
@@ -391,7 +392,9 @@ const personalNotifications = new PersonalNotifications(memoRepoPath, async (con
   await channel.send({ content, allowedMentions: { parse: [] } });
 });
 registerPersonalNotifications(app, personalNotifications);
-registerUserPresence(app, new UserPresence(path.join(PKG_ROOT, 'data', 'user-presence.json')));
+const userPresence = new UserPresence(path.join(PKG_ROOT, 'data', 'user-presence.json'));
+registerUserPresence(app, userPresence);
+registerUserPresenceFeed(app, userPresence);
 registerDiscordChannels(app, () => collectDiscordChannels(client));
 mountLocalWebhook(app, client);
 // TASK-WM-201. 폰(WM Android)이 밀어 넣는 실행 로그 수신 + 웹 뷰어 + tail.
