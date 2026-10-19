@@ -250,7 +250,7 @@ export class PersonalNotifications {
       }
     } catch { /* 위 일정 검증에서 오류 표시 */ }
     try {
-      const catalog = readJson<{ titles: CatalogTitle[] }>(path.join(this.memoRoot, 'data/personal-notifications/laftel-catalog.json'), { titles: [] });
+      const catalog = readJson<{ titles: CatalogTitle[] }>(path.join(this.memoRoot, 'data/personal-notifications/laftel-catalog.generated.json'), { titles: [] });
       if (!Array.isArray(catalog.titles)) throw new Error('invalid_catalog');
       const titles = catalog.titles.filter(t => settings.animeIds.includes(t.id));
       for (const title of titles) {

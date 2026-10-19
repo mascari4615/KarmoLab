@@ -59,7 +59,7 @@ describe('개인 안내', () => {
     expect(cards.some(card => card.color === 0xec4899 && card.description.includes('업로드 미확인'))).toBe(true);
   });
   const catalog = (x: ReturnType<typeof setup>): void => {
-    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/laftel-catalog.json'), JSON.stringify({ titles: [{ id: 1, title: '내 작품', episodes: [
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/laftel-catalog.generated.json'), JSON.stringify({ titles: [{ id: 1, title: '내 작품', episodes: [
       { id: 10, number: '1', title: '첫 만남', publishedAt: '2026-10-01T20:00:00', available: true },
       { id: 11, number: '2', title: '다시 만남', publishedAt: '2026-10-13T20:00:00', available: true },
       { id: 12, number: '3', title: '미래 회차', publishedAt: '2026-11-01T20:00:00', available: true },
