@@ -35,6 +35,48 @@ function setup(send = vi.fn(async () => {})): { service: PersonalNotifications; 
   return { service, send, root, request, setAnime: at => { episode = at; } };
 }
 describe('개인 안내', () => {
+  const release = '2026-10-23T17:00:00+09:00';
+  const netflix = (x: ReturnType<typeof setup>, releases = [release]): void => {
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/netflix.json'), JSON.stringify([{ id: '1', title: '넷플릭스 작품', releases }]));
+  };
+  it('넷플릭스 등록 작품과 링크, 오늘 공식 일정 요약, 업로드 확인과 구분', async () => {
+    const x = setup(); netflix(x);
+    const report = await x.service.collect(Date.parse(release) - 3600000);
+    expect(report.anime.map(a => a.id)).toEqual([1, 'netflix:1']);
+    expect(report.anime[1].url).toBe('https://www.netflix.com/title/1');
+    expect(summaryText(report, Date.parse(release) - 3600000)).toContain('[넷플릭스] 넷플릭스 작품 17:00 공개 예정');
+    expect(summaryText(report, Date.parse(release) - 3600000)).not.toContain('넷플릭스 작품 새 에피소드');
+  });
+  it('예정 시각 전 무전송, 첫 예정 시각 1회, 재시작 중복과 오래된 회차 제외', async () => {
+    const x = setup(); netflix(x, ['2026-10-16T17:00:00+09:00', release]);
+    const at = Date.parse(release);
+    await x.service.tick(at - 60000);
+    expect(x.send.mock.calls.filter(c => c[0].startsWith('[넷플릭스]'))).toHaveLength(0);
+    await x.service.tick(at);
+    expect(x.send.mock.calls.filter(c => c[0].startsWith('[넷플릭스]'))).toHaveLength(1);
+    const restarted = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch);
+    await restarted.tick(at + 60000);
+    expect(x.send.mock.calls.filter(c => c[0].startsWith('[넷플릭스]'))).toHaveLength(1);
+    await restarted.tick(at + 8 * 86400000);
+    expect(x.send.mock.calls.filter(c => c[0].startsWith('[넷플릭스]'))).toHaveLength(1);
+  });
+  it('넷플릭스 전송 실패 재시도와 구글 미연결에서도 일정 알림', async () => {
+    const x = setup(); netflix(x);
+    x.service.disconnect(); x.service.updateConnection({ localUpdatedAt: undefined });
+    x.send.mockImplementation(async text => { if (text.startsWith('[넷플릭스]')) throw new Error('offline'); });
+    await expect(x.service.tick(Date.parse(release))).rejects.toThrow('offline');
+    x.send.mockResolvedValue(undefined);
+    await x.service.tick(Date.parse(release) + 60000);
+    expect(x.send.mock.calls.filter(c => c[0].startsWith('[넷플릭스]'))).toHaveLength(2);
+    await x.service.tick(Date.parse(release) + 120000);
+    expect(x.send.mock.calls.filter(c => c[0].startsWith('[넷플릭스]'))).toHaveLength(2);
+  });
+  it('잘못된 넷플릭스 일정은 오류 표시, 기존 업로드 유지', async () => {
+    const x = setup(); netflix(x, ['invalid']);
+    const report = await x.service.collect(now);
+    expect(report.errors).toContain('넷플릭스 공개 일정 읽기 실패');
+    expect(report.anime.map(a => a.id)).toEqual([1]);
+  });
   it('한국 새벽 날짜와 종일 끝 제외, 완료한 할 일 제외', () => {
     expect(kstDate(Date.parse('2026-10-13T16:00:00Z'))).toBe('2026-10-14');
     const selection = agendaSelection(fixture(), now);

@@ -3,7 +3,7 @@ import { esc } from '../mydash/kit';
 import { ensureToken, notificationRefreshToken } from './gauth';
 import { listEvents, listTasks } from './local-store';
 import { withLinkedEvents } from './event-group';
-import { updateAnimeCalendar } from './anime-calendar';
+import { updateAnimeCalendar, type AnimeItem } from './anime-calendar';
 
 const API = 'https://bot.mascari4615.com/dash/notifications';
 interface AgendaEvent { id: string; title: string; start: string; end: string; allDay: boolean }
@@ -11,7 +11,7 @@ interface Report {
     collectedAt: string; connected: boolean; errors: string[]; lastSentAt?: string; localUpdatedAt?: string;
     settings: { enabled: boolean; hour: number; minute: number; reminderMinutes: number; animeIds: number[] };
     events: AgendaEvent[]; tasks: Array<{ id: string; title: string; due?: string; status?: string }>;
-    anime: Array<{ id: number; title: string; publishedAt: string; weekdays: string[] }>;
+    anime: AnimeItem[];
 }
 const when = (value: string): string => new Date(value.length === 10 ? value + 'T00:00:00+09:00' : value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -57,10 +57,18 @@ export function mountNotifications(ctx: DashPanelCtx, { visible = true } = {}): 
         box.querySelector<HTMLButtonElement>('.pl-notify-disconnect')!.hidden = !connected;
         const list = (rows: string[]): string => `<ul>${rows.length ? rows.slice(0, 50).map(row => '<li>' + row + '</li>').join('') : '<li>없음</li>'}</ul>`;
         const event = (e: AgendaEvent): string => `${esc(e.allDay ? e.start + ' 종일' : when(e.start))} ${esc(e.title)}`;
+        const animeRow = (a: AnimeItem): string => {
+            if (a.provider === 'netflix') {
+                const next = a.releases?.find(at => Date.parse(at) >= Date.now());
+                const id = String(a.id).replace(/^netflix:/, '');
+                return `<a href="https://www.netflix.com/title/${encodeURIComponent(id)}" target="_blank" rel="noopener">[넷플릭스] ${esc(a.title)}</a> · ${next ? esc(when(next)) + ' 공개 예정' : '등록된 공개 일정 종료'}<br>공식 일정 기준 · 실제 업로드 확인 전`;
+            }
+            return `<a href="https://laftel.net/item/${a.id}" target="_blank" rel="noopener">${esc(a.title)}</a> · 최근 ${esc(when(a.publishedAt))}<br>${esc(a.weekdays.join(', '))} 업로드`;
+        };
         box.querySelector<HTMLElement>('.pl-notify-report')!.innerHTML = `${report.errors.length ? '<p class="pl-notify-warning">확인 필요: ' + report.errors.map(esc).join(', ') + '</p>' : ''}
             <section><h3>오늘 할 일과 마감</h3>${list(tasks.map(t => esc(t.title || '제목 없는 할 일') + (t.due ? ' · 마감 ' + esc(t.due.slice(0, 10)) : '')))}</section>
             <section><h3>오늘 일정</h3>${list(today.map(event))}<h3>다음 7일</h3>${list([...next.map(event), ...nextTasks.map(t => esc(t.due!.slice(0, 10)) + ' 마감 ' + esc(t.title))])}<a href="#planner">캘린더 보기</a></section>
-            <section><h3>찜과 시청 작품 업로드</h3>${list(report.anime.map(a => `<a href="https://laftel.net/item/${a.id}" target="_blank" rel="noopener">${esc(a.title)}</a> · 최근 ${esc(when(a.publishedAt))}<br>${esc(a.weekdays.join(', '))} 업로드`))}<p>${report.settings.animeIds.length}작품 기준 · 요일은 편성 안내, 실제 업로드 알림은 공개된 새 에피소드 기준</p></section>`;
+            <section><h3>작품 업로드와 공개 일정</h3>${list(report.anime.map(animeRow))}<p>라프텔 ${report.settings.animeIds.length}작품 · 넷플릭스 ${report.anime.filter(a => a.provider === 'netflix').length}작품<br>라프텔은 새 에피소드 확인, 넷플릭스는 등록된 공식 공개 일정 안내</p></section>`;
     }
     async function sync(connect = false, preview = false): Promise<void> {
         let deviceId = localStorage.getItem('planner.notifications.device');

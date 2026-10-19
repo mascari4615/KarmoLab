@@ -565,6 +565,13 @@ process.stdout.write('\n');
   eq(events[1].title, '편성 예정: 내 작품', '요일 예정 구분');
   eq(events[0].end, '2026-10-15', '업로드 종일 끝 제외');
   eq(anime.animeEvents(new Date('2026-10-01'), new Date('2026-10-29'), [{ ...source[0], publishedAt: 'invalid' }]).length, 0, '잘못된 업로드 날짜 제외');
+  const netflix = [{ id: 'netflix:1', title: '등록 작품', publishedAt: '', weekdays: [], provider: 'netflix', url: 'https://www.netflix.com/title/1', releases: ['2026-10-23T17:00:00+09:00', '2026-10-30T17:00:00+09:00'] }];
+  const planned = anime.animeEvents(new Date('2026-10-23T17:00:00+09:00'), new Date('2026-10-30T17:00:00+09:00'), netflix);
+  eq(planned.length, 1, '넷플릭스 명시 일정과 범위 끝 제외');
+  eq(planned[0].start, '2026-10-23T17:00:00+09:00', '공식 공개 시각 유지');
+  eq(planned[0].title, '넷플릭스 공개 예정: 등록 작품', '지난 예정도 실제 업로드로 오표시 제외');
+  eq(planned[0].extendedProps.htmlLink, 'https://www.netflix.com/title/1', '넷플릭스 링크');
+  eq(anime.animeEvents(new Date('2026-11-01'), new Date('2027-01-01'), netflix).length, 0, '종료 뒤 무한 반복 제외');
 }
 if (failures.length) {
   console.error(`\n[test-planner-core] ${failures.length}건 실패:`);

@@ -4,7 +4,8 @@ import { PKG_ROOT } from '../paths';
 
 export interface AgendaEvent { id: string; title: string; start: string; end: string; allDay: boolean; source?: string }
 export interface AgendaTask { id: string; title: string; due?: string; status?: string }
-export interface AnimeUpdate { id: number; title: string; publishedAt: string; weekdays: string[] }
+export interface AnimeUpdate { id: number | string; title: string; publishedAt: string; weekdays: string[]; provider?: 'netflix'; url?: string; releases?: string[] }
+interface NetflixTitle { id: string; title: string; releases: string[] }
 export interface NotificationSettings { enabled: boolean; hour: number; minute: number; reminderMinutes: number; animeIds: number[] }
 interface LocalSnapshot { localEvents: AgendaEvent[]; localTasks: AgendaTask[]; localUpdatedAt?: string; localThrough?: string }
 interface SavedConnection { refreshToken?: string; snapshots: Record<string, LocalSnapshot> }
@@ -44,7 +45,9 @@ export function summaryText(report: AgendaReport, now: number): string {
     `오늘 할 일\n${lines(tasks.map(t => `${short(t.title)}${t.due ? ' (마감 ' + t.due.slice(0, 10) + ')' : ''}`))}`,
     `오늘 일정\n${lines(today.map(e => `${time(e)} ${short(e.title)}`))}`,
     `다음 7일\n${lines([...upcoming.map(e => `${kstDate(eventTime(e.start))} ${time(e)} ${short(e.title)}`), ...upcomingTasks.map(t => `${t.due!.slice(0, 10)} 마감 ${short(t.title)}`)])}`,
-    `애니 업로드\n${lines(report.anime.filter(a => Date.parse(a.publishedAt) >= now - DAY && Date.parse(a.publishedAt) <= now).map(a => `${short(a.title)} 새 에피소드`))}`,
+    `애니 업로드와 공개 일정\n${lines(report.anime.flatMap(a => a.provider === 'netflix'
+      ? (a.releases || []).filter(at => kstDate(Date.parse(at)) === kstDate(now)).map(at => `[넷플릭스] ${short(a.title)} ${new Date(at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} 공개 예정`)
+      : Date.parse(a.publishedAt) >= now - DAY && Date.parse(a.publishedAt) <= now ? [`${short(a.title)} 새 에피소드`] : []))}`,
     ...(report.errors.length ? ['확인 필요: ' + report.errors.join(', ')] : []),
   ].join('\n\n').slice(0, 1800);
   return body + '\n\nhttps://dash.mascari4615.com/#planner';
@@ -184,6 +187,14 @@ export class PersonalNotifications {
       if (!Array.isArray(daily)) throw new Error('응답 형식 오류');
       report.anime = daily.filter(a => settings.animeIds.includes(a.id) && !a.is_expired && a.is_episode_existed && (a.latest_published_datetime || a.latest_episode_created)).map(a => ({ id: a.id, title: a.name, publishedAt: publishedTime(a.latest_published_datetime || a.latest_episode_created), weekdays: a.distributed_air_times || [] }));
     } catch { report.errors.push('애니 업로드 수집 실패'); }
+    try {
+      const titles = readJson<NetflixTitle[]>(path.join(this.memoRoot, 'data/personal-notifications/netflix.json'), []);
+      if (!Array.isArray(titles)) throw new Error('invalid_netflix_schedule');
+      for (const title of titles) {
+        if (!/^\d+$/.test(title.id) || !title.title || !Array.isArray(title.releases) || title.releases.some(at => typeof at !== 'string' || !/(?:Z|[+-]\d\d:\d\d)$/.test(at) || !Number.isFinite(Date.parse(at)))) throw new Error('invalid_netflix_schedule');
+      }
+      report.anime.push(...titles.map(title => ({ id: `netflix:${title.id}`, title: title.title, publishedAt: '', weekdays: [], provider: 'netflix' as const, url: `https://www.netflix.com/title/${title.id}`, releases: [...new Set(title.releases)].sort((a, b) => Date.parse(a) - Date.parse(b)) })));
+    } catch { report.errors.push('넷플릭스 공개 일정 읽기 실패'); }
     report.events.sort((a, b) => eventTime(a.start) - eventTime(b.start));
     if (version !== this.connectionVersion) throw new Error('connection_changed_retry');
     this.report = report;
@@ -196,7 +207,7 @@ export class PersonalNotifications {
     try {
       if (!this.settings().enabled && !preview) return;
       if (this.storageError) return;
-      if (!this.connection.refreshToken && !Object.values(this.connection.snapshots).some(s => s.localUpdatedAt) && !preview) return;
+      if (!this.connection.refreshToken && !Object.values(this.connection.snapshots).some(s => s.localUpdatedAt) && !fs.existsSync(path.join(this.memoRoot, 'data/personal-notifications/netflix.json')) && !preview) return;
       const report = !this.report || now - this.lastCollection >= 5 * MINUTE || preview ? await this.collect(now) : this.report;
       const date = kstDate(now), local = new Date(now + 9 * 60 * MINUTE);
       const dueDaily = local.getUTCHours() * 60 + local.getUTCMinutes() >= report.settings.hour * 60 + report.settings.minute;
@@ -213,6 +224,16 @@ export class PersonalNotifications {
         saveJson(this.stateFile, this.state);
       }
       for (const anime of report.anime) {
+        if (anime.provider === 'netflix') {
+          for (const release of anime.releases || []) {
+            const at = Date.parse(release), key = `${anime.id}|${new Date(at).toISOString()}`;
+            if (at > now || at <= now - DAY || this.state.episodes[key]) continue;
+            await this.send(`[넷플릭스] ${anime.title} 새 에피소드 공개 예정 시각\n공식 일정 기준 · 실제 업로드 확인 전\n${anime.url}\nhttps://dash.mascari4615.com/#planner`);
+            this.state.episodes[key] = release;
+            saveJson(this.stateFile, this.state);
+          }
+          continue;
+        }
         const previous = this.state.episodes[anime.id];
         const at = Date.parse(anime.publishedAt);
         if (!Number.isFinite(at) || at > now) continue;
