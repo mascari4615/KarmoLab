@@ -10,20 +10,33 @@ const deviceId = '11111111-1111-4111-8111-111111111111';
 afterEach(async () => { await Promise.all(servers.splice(0).map(server => new Promise<void>(resolve => server.close(() => resolve())))); });
 async function setup(login = 'mascari4615') {
   const report = { collectedAt: '2026-10-14T00:00:00Z', connected: true, errors: [], events: [], tasks: [], anime: [] };
-  const service = { status: vi.fn(() => report), collect: vi.fn(async () => report), updateConnection: vi.fn(), disconnect: vi.fn(), tick: vi.fn(async () => {}) };
+  const service = { status: vi.fn(() => report), collect: vi.fn(async () => report), updateConnection: vi.fn(), disconnect: vi.fn(), tick: vi.fn(async () => {}), setAnimeWatched: vi.fn(() => report) };
   const request = vi.fn(async () => Response.json({ login }));
   const app = express(); app.use(express.json()); registerPersonalNotifications(app, service as unknown as PersonalNotifications, request as typeof fetch);
   const server = app.listen(0, '127.0.0.1'); servers.push(server);
   await new Promise<void>(resolve => server.on('listening', resolve));
   const port = (server.address() as AddressInfo).port;
-  const call = (method: string, body?: unknown, headers: Record<string, string> = { Authorization: 'Bearer fixture-owner' }): Promise<{ status: number; body: any }> => new Promise((resolve, reject) => {
-    const req = http.request({ hostname: '127.0.0.1', port, path: '/dash/notifications', method, headers: { 'Content-Type': 'application/json', ...headers } }, res => {
+  const call = (method: string, body?: unknown, headers: Record<string, string> = { Authorization: 'Bearer fixture-owner' }, suffix = ''): Promise<{ status: number; body: any }> => new Promise((resolve, reject) => {
+    const req = http.request({ hostname: '127.0.0.1', port, path: '/dash/notifications' + suffix, method, headers: { 'Content-Type': 'application/json', ...headers } }, res => {
       let text = ''; res.on('data', chunk => { text += chunk; }); res.on('end', () => resolve({ status: res.statusCode!, body: text ? JSON.parse(text) : null }));
     }); req.on('error', reject); if (body) req.write(JSON.stringify(body)); req.end();
   });
   return { call, service, request };
 }
 describe('개인 알림 API 인증과 저장', () => {
+  it('시청 체크는 본인 인증 뒤 단일 회차만 저장, 일정과 전송 상태 보존', async () => {
+    const x = await setup();
+    expect((await x.call('POST', { key: 'episode', watched: true }, {}, '/anime')).status).toBe(401);
+    expect(x.service.setAnimeWatched).not.toHaveBeenCalled();
+    expect((await x.call('POST', { key: 'episode', watched: 'true' }, undefined, '/anime')).status).toBe(400);
+    expect((await x.call('POST', { key: 'episode', watched: true }, undefined, '/anime')).status).toBe(200);
+    expect(x.service.setAnimeWatched).toHaveBeenCalledWith('episode', true);
+    expect(x.service.updateConnection).not.toHaveBeenCalled(); expect(x.service.tick).not.toHaveBeenCalled();
+    x.service.setAnimeWatched.mockImplementation(() => { throw new Error('episode_not_found'); });
+    expect((await x.call('POST', { key: 'missing', watched: false }, undefined, '/anime')).status).toBe(404);
+    x.service.setAnimeWatched.mockImplementation(() => { throw new Error('disk full'); });
+    expect((await x.call('POST', { key: 'episode', watched: false }, undefined, '/anime')).status).toBe(503);
+  });
   it('무인증 읽기와 저장 차단, 외부 인증 요청도 없음', async () => {
     const x = await setup(); expect((await x.call('GET', undefined, {})).status).toBe(401);
     expect((await x.call('POST', { refreshToken: 'secret' }, {})).status).toBe(401);

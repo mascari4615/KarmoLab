@@ -6,13 +6,15 @@ export interface AgendaEvent { id: string; title: string; start: string; end: st
 export interface AgendaTask { id: string; title: string; due?: string; status?: string }
 export interface AnimeUpdate { id: number | string; title: string; publishedAt: string; weekdays: string[]; provider?: 'netflix'; url?: string; releases?: string[] }
 interface NetflixTitle { id: string; title: string; releases: string[] }
+export interface AnimeEpisode { key: string; animeId: string; title: string; provider: 'laftel' | 'netflix'; publishedAt: string; url: string; scheduled: boolean; watchedAt?: string }
 export interface NotificationSettings { enabled: boolean; hour: number; minute: number; reminderMinutes: number; animeIds: number[] }
 interface LocalSnapshot { localEvents: AgendaEvent[]; localTasks: AgendaTask[]; localUpdatedAt?: string; localThrough?: string }
 interface SavedConnection { refreshToken?: string; snapshots: Record<string, LocalSnapshot> }
-interface SavedState { daily?: string; reminders: Record<string, string>; episodes: Record<string, string>; lastSentAt?: string }
+interface SavedState { daily?: string; reminders: Record<string, string>; episodes: Record<string, string>; homework?: Record<string, AnimeEpisode>; lastSentAt?: string }
 export interface AgendaReport {
   collectedAt: string; connected: boolean; settings: NotificationSettings; localUpdatedAt?: string;
   errors: string[]; events: AgendaEvent[]; tasks: AgendaTask[]; anime: AnimeUpdate[]; lastSentAt?: string;
+  homework?: AnimeEpisode[];
 }
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
@@ -48,6 +50,7 @@ export function summaryText(report: AgendaReport, now: number): string {
     `애니 업로드와 공개 일정\n${lines(report.anime.flatMap(a => a.provider === 'netflix'
       ? (a.releases || []).filter(at => kstDate(Date.parse(at)) === kstDate(now)).map(at => `[넷플릭스] ${short(a.title)} ${new Date(at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} 공개 예정`)
       : Date.parse(a.publishedAt) >= now - DAY && Date.parse(a.publishedAt) <= now ? [`${short(a.title)} 새 에피소드`] : []))}`,
+    `안 본 애니 ${(report.homework || []).filter(a => !a.watchedAt).length}회\n${lines((report.homework || []).filter(a => !a.watchedAt).map(a => `${short(a.title)} (${kstDate(Date.parse(a.publishedAt))} 회차${a.scheduled ? ', 공개 일정 기준' : ''})`))}`,
     ...(report.errors.length ? ['확인 필요: ' + report.errors.join(', ')] : []),
   ].join('\n\n').slice(0, 1800);
   return body + '\n\nhttps://dash.mascari4615.com/#planner';
@@ -86,6 +89,7 @@ export class PersonalNotifications {
       this.connection = { refreshToken: saved.refreshToken, snapshots: saved.snapshots || (Array.isArray(saved.localEvents) && Array.isArray(saved.localTasks) ? { legacy: { localEvents: saved.localEvents, localTasks: saved.localTasks, localUpdatedAt: saved.localUpdatedAt, localThrough: saved.localThrough } } : {}) };
       this.state = readJson(this.stateFile, this.state);
       if (Object.values(this.connection.snapshots).some(s => !Array.isArray(s.localEvents) || !Array.isArray(s.localTasks)) || !this.state.reminders || !this.state.episodes) throw new Error('invalid_saved_state');
+      if (this.state.homework !== undefined && (!this.state.homework || typeof this.state.homework !== 'object' || Array.isArray(this.state.homework) || Object.values(this.state.homework).some(e => !e || typeof e.key !== 'string' || typeof e.title !== 'string' || typeof e.animeId !== 'string' || !['netflix', 'laftel'].includes(e.provider) || !Number.isFinite(Date.parse(e.publishedAt))))) throw new Error('invalid_anime_homework');
     } catch { this.storageError = true; console.warn('[PersonalNotifications] 저장본 손상, 개인 알림 중단'); }
   }
   settings(): NotificationSettings {
@@ -111,9 +115,23 @@ export class PersonalNotifications {
     this.report = null;
   }
   disconnect(): void { this.updateConnection({ refreshToken: undefined }); }
+  private homework(): AnimeEpisode[] { return Object.values(this.state.homework || {}).sort((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt) || a.key.localeCompare(b.key)); }
+  setAnimeWatched(key: string, watched: boolean, now = Date.now()): AgendaReport {
+    if (this.storageError) throw new Error('notification_storage_invalid');
+    const episode = this.state.homework && Object.prototype.hasOwnProperty.call(this.state.homework, key) ? this.state.homework[key] : undefined;
+    if (!episode) throw new Error('episode_not_found');
+    const updated: AnimeEpisode = { ...episode };
+    if (watched) updated.watchedAt = episode.watchedAt || new Date(now).toISOString();
+    else delete updated.watchedAt;
+    const next = { ...this.state, homework: { ...this.state.homework, [key]: updated } };
+    saveJson(this.stateFile, next);
+    this.state = next;
+    if (this.report) this.report = { ...this.report, homework: this.homework() };
+    return this.status();
+  }
   status(): AgendaReport {
     if (this.storageError) return { collectedAt: new Date().toISOString(), connected: false, settings: this.settings(), errors: ['알림 저장본 손상, 운영 확인 필요'], events: [], tasks: [], anime: [] };
-    return this.report ?? { collectedAt: '', connected: !!this.connection.refreshToken, settings: this.settings(), errors: ['아직 수집 전'], events: [], tasks: [], anime: [] };
+    return this.report ?? { collectedAt: '', connected: !!this.connection.refreshToken, settings: this.settings(), errors: ['아직 수집 전'], events: [], tasks: [], anime: [], homework: this.homework() };
   }
   private async json(url: string, headers: Record<string, string> = {}): Promise<any> {
     const res = await this.request(url, { headers, signal: AbortSignal.timeout(15_000) });
@@ -197,6 +215,20 @@ export class PersonalNotifications {
     } catch { report.errors.push('넷플릭스 공개 일정 읽기 실패'); }
     report.events.sort((a, b) => eventTime(a.start) - eventTime(b.start));
     if (version !== this.connectionVersion) throw new Error('connection_changed_retry');
+    const homework = { ...this.state.homework };
+    for (const anime of report.anime) {
+      const provider = anime.provider || 'laftel', animeId = anime.provider === 'netflix' ? String(anime.id) : `laftel:${anime.id}`;
+      for (const release of anime.provider === 'netflix' ? anime.releases || [] : [anime.publishedAt]) {
+        const at = Date.parse(release);
+        if (!Number.isFinite(at) || at > now) continue;
+        const publishedAt = new Date(at).toISOString(), key = `${animeId}|${publishedAt}`;
+        if (!homework[key]) homework[key] = { key, animeId, title: anime.title, provider, publishedAt, url: anime.url || `https://laftel.net/item/${anime.id}`, scheduled: provider === 'netflix' };
+      }
+    }
+    const nextState = { ...this.state, homework };
+    saveJson(this.stateFile, nextState);
+    this.state = nextState;
+    report.homework = this.homework();
     this.report = report;
     this.lastCollection = now;
     return report;

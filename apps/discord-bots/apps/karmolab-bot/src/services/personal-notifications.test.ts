@@ -77,6 +77,47 @@ describe('개인 안내', () => {
     expect(report.errors).toContain('넷플릭스 공개 일정 읽기 실패');
     expect(report.anime.map(a => a.id)).toEqual([1]);
   });
+  it('등록된 지난 회차만 숙제 생성, 예정 회차 제외와 다시 수집 중복 없음', async () => {
+    const x = setup(); netflix(x, ['2026-10-16T17:00:00+09:00', release]);
+    const at = Date.parse(release) - 60000;
+    const first = await x.service.collect(at);
+    expect(first.homework).toHaveLength(2);
+    expect(first.homework?.filter(a => a.provider === 'netflix').map(a => a.publishedAt)).toEqual(['2026-10-16T08:00:00.000Z']);
+    expect(first.homework?.every(a => !a.watchedAt)).toBe(true);
+    expect((await x.service.collect(at)).homework).toHaveLength(2);
+    expect(summaryText(first, at)).toContain('안 본 애니 2회');
+  });
+  it('봤음 체크는 재시작과 새 회차 수집 뒤 유지, 취소와 다른 기기 읽기', async () => {
+    const x = setup(); const report = await x.service.collect(now), key = report.homework![0].key;
+    expect(x.service.setAnimeWatched(key, true, now).homework![0].watchedAt).toBe(new Date(now).toISOString());
+    const restarted = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch);
+    expect(restarted.status().homework![0].watchedAt).toBeTruthy();
+    x.setAnime('2026-10-14T09:05:00');
+    const next = await restarted.collect(now + 6 * 60000);
+    expect(next.homework).toHaveLength(2);
+    expect(next.homework!.find(a => a.key === key)?.watchedAt).toBeTruthy();
+    expect(next.homework!.filter(a => !a.watchedAt)).toHaveLength(1);
+    expect(restarted.setAnimeWatched(key, false).homework!.filter(a => !a.watchedAt)).toHaveLength(2);
+    expect(() => restarted.setAnimeWatched('__proto__', true)).toThrow('episode_not_found');
+  });
+  it('저장 실패는 봤음 완료로 표시하지 않음', async () => {
+    const x = setup(); const key = (await x.service.collect(now)).homework![0].key;
+    const write = vi.spyOn(fs, 'writeFileSync').mockImplementation(() => { throw new Error('disk full'); });
+    try {
+      expect(() => x.service.setAnimeWatched(key, true)).toThrow('disk full');
+      expect(x.service.status().homework![0].watchedAt).toBeUndefined();
+    } finally { write.mockRestore(); }
+  });
+  it('손상된 시청 기록은 덮어쓰지 않고 저장 오류 표시', async () => {
+    const x = setup(); await x.service.collect(now);
+    const file = path.join(x.root, 'runtime/personal-notifications-state.json');
+    const saved = { ...JSON.parse(fs.readFileSync(file, 'utf8')), homework: 'broken' };
+    fs.writeFileSync(file, JSON.stringify(saved));
+    const restarted = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch);
+    expect(restarted.status().errors).toContain('알림 저장본 손상, 운영 확인 필요');
+    expect(() => restarted.setAnimeWatched('missing', true)).toThrow('notification_storage_invalid');
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).homework).toBe('broken');
+  });
   it('한국 새벽 날짜와 종일 끝 제외, 완료한 할 일 제외', () => {
     expect(kstDate(Date.parse('2026-10-13T16:00:00Z'))).toBe('2026-10-14');
     const selection = agendaSelection(fixture(), now);
@@ -110,7 +151,7 @@ describe('개인 안내', () => {
   it('전송 거절 뒤 다음 회차 재시도, 성공 전 완료 표식 없음', async () => {
     const send = vi.fn<(_text: string) => Promise<void>>().mockRejectedValueOnce(new Error('Discord offline')).mockResolvedValue(undefined);
     const x = setup(send); await expect(x.service.tick(now)).rejects.toThrow('Discord offline');
-    expect(fs.existsSync(path.join(x.root, 'runtime/personal-notifications-state.json'))).toBe(false);
+    expect(JSON.parse(fs.readFileSync(path.join(x.root, 'runtime/personal-notifications-state.json'), 'utf8')).daily).toBeUndefined();
     await x.service.tick(now + 60000); expect(send).toHaveBeenCalledTimes(3);
   });
   it('미연결은 자동 전송 없이 대기, 해제 즉시 상태 갱신', async () => {

@@ -10,6 +10,12 @@ export function registerPersonalNotifications(app: Express, service: PersonalNot
     try { res.json(service.status().collectedAt ? service.status() : await service.collect()); }
     catch { res.status(503).json({ error: 'collection_unavailable' }); }
   });
+  app.post(`${PATH}/anime`, (req, res) => {
+    const body = req.body;
+    if (!body || typeof body.key !== 'string' || body.key.length > 200 || typeof body.watched !== 'boolean') { res.status(400).json({ error: 'invalid_episode_update' }); return; }
+    try { res.json(service.setAnimeWatched(body.key, body.watched)); }
+    catch (error) { res.status((error as Error).message === 'episode_not_found' ? 404 : 503).json({ error: 'episode_update_failed' }); }
+  });
   app.post(PATH, async (req, res) => {
     const body = req.body;
     if (!body || typeof body.deviceId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(body.deviceId)) { res.status(400).json({ error: 'device_id_required_reload' }); return; }
