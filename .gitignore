@@ -253,3 +253,5 @@ apps/discord-bots/apps/karmolab-bot/data/codex-reset-browser/
 /apps/discord-bots/apps/karmolab-bot/data/personal-notifications-connection.json.tmp
 /apps/discord-bots/apps/karmolab-bot/data/personal-notifications-state.json
 /apps/discord-bots/apps/karmolab-bot/data/personal-notifications-state.json.tmp
+/apps/discord-bots/apps/karmolab-bot/data/user-presence.json
+/apps/discord-bots/apps/karmolab-bot/data/user-presence.json.tmp
