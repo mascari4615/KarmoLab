@@ -2,7 +2,7 @@ import { dashRegistry, esc } from './kit';
 import type { DashPanelCtx } from './kit';
 import presenceCss from './user-presence.css';
 
-const LABELS: Record<string, string> = { home: '집', commute: '출근 중', work: '회사', return: '퇴근 중', away: '외출', sleep: '수면' };
+const LABELS: Record<string, string> = { home: '집', work: '회사', away: '외출', sleep: '수면' };
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 interface Rule { id: string; days: number[]; start: string; end: string; state: string }
 interface Report {

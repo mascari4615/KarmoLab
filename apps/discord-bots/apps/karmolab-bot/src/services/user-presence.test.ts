@@ -37,7 +37,7 @@ describe('manual and weekly intervals', () => {
   });
   it('allows adjacent intervals and rejects overlap including next-day spill and week wrap', () => {
     const base = config.rules[0];
-    expect(validRules([base, { id: 'after', days: [1], start: '17:00', end: '18:00', state: 'return' }])).toBe(true);
+    expect(validRules([base, { id: 'after', days: [1], start: '17:00', end: '18:00', state: 'work' }])).toBe(true);
     expect(validRules([base, { id: 'overlap', days: [1], start: '16:59', end: '18:00', state: 'away' }])).toBe(false);
     expect(validRules([{ id: 'sun', days: [0], start: '22:00', end: '09:00', state: 'sleep' }, base])).toBe(false);
     expect(validRules([{ id: 'sat', days: [6], start: '22:00', end: '09:00', state: 'sleep' }, { id: 'sun', days: [0], start: '08:00', end: '12:00', state: 'away' }])).toBe(false);
@@ -85,6 +85,35 @@ describe('manual and weekly intervals', () => {
     fs.writeFileSync(file, JSON.stringify({ version: 1, revision: 0, enabled: true, manual: null, rules: [{ id: 'one', days: [1], time: '08:00', state: 'work' }] }));
     for (let day = 18; day <= 25; day++) expect(service.status(at('2026-10-' + day + 'T07:00:00')).current.state).toBe('work');
     expect(service.status(at('2026-10-19T10:00:00')).next).toBeNull();
+  });
+  it('also merges v1 boundaries before interval migration', () => {
+    const { file, service } = store();
+    fs.writeFileSync(file, JSON.stringify({ version: 1, revision: 2, enabled: true, manual: null, rules: [
+      { id: 'out', days: [1], time: '07:00', state: 'commute' },
+      { id: 'back', days: [1], time: '17:00', state: 'return' },
+      { id: 'home', days: [1], time: '18:00', state: 'home' },
+    ] }));
+    expect(service.status(at('2026-10-19T07:30:00')).current.state).toBe('work');
+    expect(service.status(at('2026-10-19T17:30:00')).current.state).toBe('work');
+    expect(service.status(at('2026-10-19T18:00:00')).current.state).toBe('home');
+  });
+  it('merges saved commute and return states without losing intervals, overrides or revisions', () => {
+    const { file, service } = store(), now = at('2026-10-19T08:30:00');
+    const saved = { ...config, revision: 7, defaultState: 'return', manual: { state: 'commute', since: now, until: now + 60_000 }, rules: [
+      { id: 'out', days: [1], start: '07:00', end: '08:00', state: 'commute' },
+      ...config.rules,
+      { id: 'back', days: [1], start: '17:00', end: '18:00', state: 'return' },
+    ] };
+    fs.writeFileSync(file, JSON.stringify(saved));
+    const report = service.status(now);
+    expect(report.current.state).toBe('work');
+    expect(report.config).toEqual({ ...saved, defaultState: 'work', manual: { ...saved.manual, state: 'work' }, rules: saved.rules.map(rule => ({ ...rule, state: 'work' })) });
+    expect(service.status(at('2026-10-19T17:30:00')).current.state).toBe('work');
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(saved);
+    service.update({ action: 'resume', revision: 7 }, now);
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).rules.every((rule: { state: string }) => rule.state === 'work')).toBe(true);
+    expect(service.update({ action: 'manual', revision: 8, state: 'return', until: null }, now).current.state).toBe('work');
+    expect(validRules([{ ...config.rules[0], state: 'commute' }])).toBe(false);
   });
   it('invalid input and corrupt storage cannot silently overwrite state', () => {
     const { service, file } = store();

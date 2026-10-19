@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const PRESENCE_STATES = ['home', 'commute', 'work', 'return', 'away', 'sleep'] as const;
+export const PRESENCE_STATES = ['home', 'work', 'away', 'sleep'] as const;
 export type PresenceState = typeof PRESENCE_STATES[number];
 export interface PresenceRule { id: string; days: number[]; start: string; end: string; state: PresenceState }
 export interface PresenceConfig {
@@ -10,6 +10,16 @@ export interface PresenceConfig {
 }
 const DAY = 86_400_000;
 const WEEK = 7 * DAY;
+const companyState = (value: unknown): unknown => value === 'commute' || value === 'return' ? 'work' : value;
+function mergeCompanyStates(data: any): any {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
+  return { ...data,
+    ...('state' in data ? { state: companyState(data.state) } : {}),
+    ...('defaultState' in data ? { defaultState: companyState(data.defaultState) } : {}),
+    ...(Array.isArray(data.rules) ? { rules: data.rules.map((rule: any) => rule && typeof rule === 'object' ? { ...rule, state: companyState(rule.state) } : rule) } : {}),
+    ...(data.manual && typeof data.manual === 'object' ? { manual: { ...data.manual, state: companyState(data.manual.state) } } : {}),
+  };
+}
 const isState = (v: unknown): v is PresenceState => PRESENCE_STATES.includes(v as PresenceState);
 const validTime = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 const minuteOf = (time: string): number => { const [h, m] = time.split(':').map(Number); return h * 60 + m; };
@@ -92,7 +102,7 @@ export class UserPresence {
   constructor(private readonly file: string) {}
   private read(): PresenceConfig {
     if (!fs.existsSync(this.file)) return { version: 2, revision: 0, enabled: false, defaultState: null, rules: [], manual: null };
-    const saved = JSON.parse(fs.readFileSync(this.file, 'utf8'));
+    const saved = mergeCompanyStates(JSON.parse(fs.readFileSync(this.file, 'utf8')));
     const data = (saved?.version === 1 ? migrateLegacy(saved) : saved) as PresenceConfig;
     if (!data || data.version !== 2 || !Number.isSafeInteger(data.revision) || data.revision < 0 || typeof data.enabled !== 'boolean' || !(data.defaultState === null || isState(data.defaultState)) || !validRules(data.rules) || (data.manual !== null && (!data.manual || !isState(data.manual.state) || !Number.isFinite(data.manual.since) || (data.manual.until !== null && !Number.isFinite(data.manual.until))))) throw new Error('presence_storage_invalid');
     return data;
@@ -102,7 +112,7 @@ export class UserPresence {
     return { config, ...resolvePresence(config, now), evaluatedAt: now, timezone: 'Asia/Seoul' };
   }
   update(input: unknown, now = Date.now()) {
-    const body = input as Record<string, unknown> | null;
+    const body = mergeCompanyStates(input) as Record<string, unknown> | null;
     if (!body || typeof body !== 'object') throw new Error('invalid_input');
     const config = this.read();
     if (body.revision !== config.revision) throw new Error('revision_conflict');
