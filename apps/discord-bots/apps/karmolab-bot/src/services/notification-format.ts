@@ -1,6 +1,6 @@
 import type { GitHubCommit } from './digest-webhook';
 
-export const notificationColors = { change: 0x4285f4, healthy: 0x2ecc71, attention: 0xe67e22, error: 0xe74c3c, stopped: 0x95a5a6 };
+export const notificationColors = { change: 0x4285f4, healthy: 0x2ecc71, attention: 0xe67e22, error: 0xe74c3c, stopped: 0x95a5a6, schedule: 0x8b5cf6, episode: 0xec4899 };
 /** One small embed: color and bold label, without author, footer or timestamp rows. */
 export function compactEmbed(title: string, description: string, color: number, context = '') {
   const label = title.replace(/^[\p{Extended_Pictographic}\s\uFE0F]+/u, '');

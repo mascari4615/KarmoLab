@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PersonalNotifications, agendaSelection, dueReminders, kstDate, summaryText, type AgendaReport } from './personal-notifications';
+import { PersonalNotifications, agendaSelection, dueReminders, kstDate, summaryText, summaryEmbed, type AgendaReport } from './personal-notifications';
 
 const dirs: string[] = [];
 afterEach(() => { dirs.splice(0).forEach(dir => fs.rmSync(dir, { recursive: true, force: true })); });
@@ -35,6 +35,29 @@ function setup(send = vi.fn(async () => {})): { service: PersonalNotifications; 
   return { service, send, root, request, setAnime: at => { episode = at; } };
 }
 describe('개인 안내', () => {
+  it('daily embed keeps agenda fields with a visible overflow count and planner link', () => {
+    const report = fixture();
+    report.tasks = Array.from({ length: 12 }, (_, i) => ({ id: String(i), title: `할 일 ${i}` }));
+    const embed = summaryEmbed(report, now);
+    expect(embed.color).toBe(0x8b5cf6);
+    expect(embed.description).toContain('#planner');
+    expect(embed.fields?.find(field => field.name === '오늘 할 일')?.value).toContain('외 9개');
+    expect(embed.fields?.find(field => field.name === '오늘 일정')?.value).toContain('약속');
+    expect(embed).not.toHaveProperty('footer');
+  });
+  it('every send path supplies an embed, including reminders and both episode providers', async () => {
+    const send = vi.fn(async (_text: string, _embed: unknown) => {});
+    const x = setup(send);
+    await x.service.tick(now);
+    x.setAnime('2026-10-14T09:01:00');
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/netflix.json'), JSON.stringify([{ id: '1', title: '넷플릭스 작품', releases: ['2026-10-14T09:02:00+09:00'] }]));
+    await x.service.tick(now + 6 * 60000);
+    const cards = send.mock.calls.map(call => call[1] as { color: number; description: string });
+    expect(cards.some(card => card.color === 0x8b5cf6)).toBe(true);
+    expect(cards.some(card => card.color === 0xe67e22 && card.description.includes('일정 임박'))).toBe(true);
+    expect(cards.some(card => card.color === 0xec4899 && card.description.includes('새 에피소드'))).toBe(true);
+    expect(cards.some(card => card.color === 0xec4899 && card.description.includes('업로드 미확인'))).toBe(true);
+  });
   const release = '2026-10-23T17:00:00+09:00';
   const netflix = (x: ReturnType<typeof setup>, releases = [release]): void => {
     fs.writeFileSync(path.join(x.root, 'data/personal-notifications/netflix.json'), JSON.stringify([{ id: '1', title: '넷플릭스 작품', releases }]));

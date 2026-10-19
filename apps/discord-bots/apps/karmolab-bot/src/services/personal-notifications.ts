@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { PKG_ROOT } from '../paths';
 import { notificationServices } from './notification-services';
+import type { APIEmbed } from 'discord.js';
+import { compactEmbed, notificationColors } from './notification-format';
 
 export interface AgendaEvent { id: string; title: string; start: string; end: string; allDay: boolean; source?: string }
 export interface AgendaTask { id: string; title: string; due?: string; status?: string }
@@ -38,23 +40,28 @@ export function dueReminders(report: AgendaReport, sent: Record<string, string>,
   return report.events.filter(e => !e.allDay && eventTime(e.start) > now && eventTime(e.start) - now <= report.settings.reminderMinutes * MINUTE && !sent[reminderKey(e)]);
 }
 
-export function summaryText(report: AgendaReport, now: number): string {
+function summarySections(report: AgendaReport, now: number, limit = 5): { name: string; value: string }[] {
   const { today, upcoming, tasks, upcomingTasks } = agendaSelection(report, now);
   const time = (e: AgendaEvent): string => e.allDay ? '종일' : new Date(eventTime(e.start)).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false });
   const short = (title: string): string => (title || '(제목 없음)').replace(/\s+/g, ' ').slice(0, 60);
-  const lines = (items: string[]): string => items.slice(0, 5).join('\n') + (items.length > 5 ? `\n외 ${items.length - 5}개` : '') || '없음';
-  const body = [
-    `${kstDate(now)} 오늘 안내`,
-    `오늘 할 일\n${lines(tasks.map(t => `${short(t.title)}${t.due ? ' (마감 ' + t.due.slice(0, 10) + ')' : ''}`))}`,
-    `오늘 일정\n${lines(today.map(e => `${time(e)} ${short(e.title)}`))}`,
-    `다음 7일\n${lines([...upcoming.map(e => `${kstDate(eventTime(e.start))} ${time(e)} ${short(e.title)}`), ...upcomingTasks.map(t => `${t.due!.slice(0, 10)} 마감 ${short(t.title)}`)])}`,
-    `애니 업로드와 공개 일정\n${lines(report.anime.flatMap(a => a.provider === 'netflix'
+  const lines = (items: string[]): string => items.slice(0, limit).join('\n') + (items.length > limit ? `\n외 ${items.length - limit}개` : '') || '없음';
+  return [
+    { name: '오늘 할 일', value: lines(tasks.map(t => `${short(t.title)}${t.due ? ' (마감 ' + t.due.slice(0, 10) + ')' : ''}`)) },
+    { name: '오늘 일정', value: lines(today.map(e => `${time(e)} ${short(e.title)}`)) },
+    { name: '다음 7일', value: lines([...upcoming.map(e => `${kstDate(eventTime(e.start))} ${time(e)} ${short(e.title)}`), ...upcomingTasks.map(t => `${t.due!.slice(0, 10)} 마감 ${short(t.title)}`)]) },
+    { name: '애니 업로드와 공개 일정', value: lines(report.anime.flatMap(a => a.provider === 'netflix'
       ? (a.releases || []).filter(at => kstDate(Date.parse(at)) === kstDate(now)).map(at => `[넷플릭스] ${short(a.title)} ${new Date(at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} 공개 예정`)
-      : Date.parse(a.publishedAt) >= now - DAY && Date.parse(a.publishedAt) <= now ? [`${short(a.title)} 새 에피소드`] : []))}`,
-    `안 본 애니 ${(report.homework || []).filter(a => !a.watchedAt).length}회\n${lines((report.homework || []).filter(a => !a.watchedAt).map(a => `${short(a.title)} (${kstDate(Date.parse(a.publishedAt))} 회차${a.scheduled ? ', 공개 일정 기준' : ''})`))}`,
-    ...(report.errors.length ? ['확인 필요: ' + report.errors.join(', ')] : []),
-  ].join('\n\n').slice(0, 1800);
-  return body + '\n\nhttps://dash.mascari4615.com/#planner';
+      : Date.parse(a.publishedAt) >= now - DAY && Date.parse(a.publishedAt) <= now ? [`${short(a.title)} 새 에피소드`] : [])) },
+    { name: `안 본 애니 ${(report.homework || []).filter(a => !a.watchedAt).length}회`, value: lines((report.homework || []).filter(a => !a.watchedAt).map(a => `${short(a.title)} (${kstDate(Date.parse(a.publishedAt))} 회차${a.scheduled ? ', 공개 일정 기준' : ''})`)) },
+    ...(report.errors.length ? [{ name: '확인 필요', value: report.errors.join(', ').slice(0, 500) }] : []),
+  ];
+}
+export function summaryText(report: AgendaReport, now: number): string {
+  return [`${kstDate(now)} 오늘 안내`, ...summarySections(report, now).map(section => `${section.name}\n${section.value}`)].join('\n\n').slice(0, 1800) + '\n\nhttps://dash.mascari4615.com/#planner';
+}
+export function summaryEmbed(report: AgendaReport, now: number): APIEmbed {
+  const fields = summarySections(report, now, 3).filter(section => section.value !== '없음');
+  return { color: notificationColors.schedule, description: `**오늘 안내** ${kstDate(now)} / [플래너](https://dash.mascari4615.com/#planner)${fields.length ? '' : '\n일정과 할 일 없음'}`, fields };
 }
 
 function readJson<T>(file: string, fallback: T): T {
@@ -80,7 +87,7 @@ export class PersonalNotifications {
   private connectionVersion = 0;
   private readonly connectionFile: string;
   private readonly stateFile: string;
-  constructor(private readonly memoRoot: string, private readonly send: (text: string) => Promise<void>, private readonly dataRoot = path.join(PKG_ROOT, 'data'), private readonly request: typeof fetch = fetch) {
+  constructor(private readonly memoRoot: string, private readonly send: (text: string, embed: APIEmbed) => Promise<void>, private readonly dataRoot = path.join(PKG_ROOT, 'data'), private readonly request: typeof fetch = fetch) {
     this.connectionFile = path.join(dataRoot, 'personal-notifications-connection.json');
     this.stateFile = path.join(dataRoot, 'personal-notifications-state.json');
     this.connection = { snapshots: {} };
@@ -248,14 +255,15 @@ export class PersonalNotifications {
       const date = kstDate(now), local = new Date(now + 9 * 60 * MINUTE);
       const dueDaily = local.getUTCHours() * 60 + local.getUTCMinutes() >= report.settings.hour * 60 + report.settings.minute;
       if (preview || (dueDaily && this.state.daily !== date)) {
-        await this.send(summaryText(report, now));
+        await this.send(summaryText(report, now), summaryEmbed(report, now));
         this.state.daily = date;
         this.state.lastSentAt = new Date(now).toISOString();
         saveJson(this.stateFile, this.state);
       }
       if (preview) return;
       for (const event of dueReminders(report, this.state.reminders, now)) {
-        await this.send(`${Math.ceil((eventTime(event.start) - now) / MINUTE)}분 뒤 ${event.title}\nhttps://dash.mascari4615.com/#planner`);
+        const reminder = `${Math.ceil((eventTime(event.start) - now) / MINUTE)}분 뒤 ${event.title}\nhttps://dash.mascari4615.com/#planner`;
+        await this.send(reminder, compactEmbed('일정 임박', `${Math.ceil((eventTime(event.start) - now) / MINUTE)}분 전 / ${event.title.slice(0, 100)} / [플래너](https://dash.mascari4615.com/#planner)`, notificationColors.attention));
         this.state.reminders[reminderKey(event)] = new Date(now).toISOString();
         saveJson(this.stateFile, this.state);
       }
@@ -264,7 +272,7 @@ export class PersonalNotifications {
           for (const release of anime.releases || []) {
             const at = Date.parse(release), key = `${anime.id}|${new Date(at).toISOString()}`;
             if (at > now || at <= now - DAY || this.state.episodes[key]) continue;
-            await this.send(`[넷플릭스] ${anime.title} 새 에피소드 공개 예정 시각\n공식 일정 기준 · 실제 업로드 확인 전\n${anime.url}\nhttps://dash.mascari4615.com/#planner`);
+            await this.send(`[넷플릭스] ${anime.title} 새 에피소드 공개 예정 시각\n공식 일정 기준 · 실제 업로드 확인 전\n${anime.url}\nhttps://dash.mascari4615.com/#planner`, compactEmbed('작품 공개 일정', `${anime.title.slice(0, 100)} / 넷플릭스 공식 일정 / 업로드 미확인 / [작품](${anime.url})`, notificationColors.episode));
             this.state.episodes[key] = release;
             saveJson(this.stateFile, this.state);
           }
@@ -274,7 +282,7 @@ export class PersonalNotifications {
         const at = Date.parse(anime.publishedAt);
         if (!Number.isFinite(at) || at > now) continue;
         if (previous && previous !== anime.publishedAt && at > Date.parse(previous)) {
-          await this.send(`${anime.title} 새 에피소드 업로드\nhttps://laftel.net/item/${anime.id}\nhttps://dash.mascari4615.com/#planner`);
+          await this.send(`${anime.title} 새 에피소드 업로드\nhttps://laftel.net/item/${anime.id}\nhttps://dash.mascari4615.com/#planner`, compactEmbed('새 에피소드', `${anime.title.slice(0, 100)} / 라프텔 / [작품](https://laftel.net/item/${anime.id})`, notificationColors.episode));
         }
         this.state.episodes[anime.id] = anime.publishedAt;
         saveJson(this.stateFile, this.state);

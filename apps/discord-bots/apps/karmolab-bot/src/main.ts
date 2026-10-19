@@ -386,12 +386,12 @@ client.on('messageCreate', async (message) => {
 let agentBusSubscription: { stop: () => void } | null = null;
 
 const app = createGithubWebhookApp(client, gameData);
-const personalNotifications = new PersonalNotifications(memoRepoPath, async (content) => {
+const personalNotifications = new PersonalNotifications(memoRepoPath, async (_text, embed) => {
   const id = channelIdFor('ops-report');
   if (!id) throw new Error('notification_channel_missing');
   const channel = await client.channels.fetch(id);
   if (!channel?.isTextBased() || !('send' in channel)) throw new Error('notification_channel_unavailable');
-  await notificationServices.deliver('personal', () => channel.send({ content, allowedMentions: { parse: [] } }));
+  await notificationServices.deliver('personal', () => channel.send({ embeds: [embed], allowedMentions: { parse: [] } }));
 });
 registerPersonalNotifications(app, personalNotifications);
 const userPresence = new UserPresence(path.join(PKG_ROOT, 'data', 'user-presence.json'));
