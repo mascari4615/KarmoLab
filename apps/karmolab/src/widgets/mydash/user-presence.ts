@@ -24,42 +24,46 @@ const chevron = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 6 6-6
 export function renderUserPresence(ctx: DashPanelCtx): void {
   const root = ctx.root;
   root.innerHTML = `<div class="up-panel">
-    <section class="up-current" aria-labelledby="up-heading">
-      <div class="up-current-row"><div><h2 id="up-heading">지금은 <span class="up-state" aria-live="polite">확인 중</span></h2><p class="up-source"></p></div><button type="button" class="up-button up-change" aria-expanded="false" aria-controls="up-manual">상태 바꾸기</button></div>
-      <div class="up-current-foot"><p class="up-next"></p><button type="button" class="up-text-button up-resume" hidden>시간표로 돌아가기</button><button type="button" class="up-text-button up-refresh">새로고침</button></div>
-      <form class="up-manual" id="up-manual" hidden>
-        <fieldset><legend>지금 상태 선택</legend><div class="up-state-options">${Object.entries(LABELS).map(([id, label]) => `<label><input type="radio" name="state" value="${id}" required><span>${label}</span></label>`).join('')}</div></fieldset>
-        <div class="up-manual-actions"><label>유지 기간<select name="duration"><option value="60">1시간</option><option value="180">3시간</option><option value="today">오늘 자정까지</option><option value="forever">직접 해제할 때까지</option></select></label><button class="up-button up-primary" type="submit">지금 적용</button><button class="up-text-button up-manual-close" type="button">닫기</button></div>
-        <p class="up-help">선택한 기간에는 시간표보다 우선해요.</p>
-      </form>
+    <section class="up-current" aria-label="현재 상태">
+      <div class="up-current-row"><button type="button" class="up-button up-change" aria-haspopup="dialog" aria-expanded="false" aria-controls="up-manual"><span class="up-dot up-current-dot" aria-hidden="true"></span><span class="up-state" aria-live="polite">확인 중</span>${chevron}</button><p class="up-source"></p><button type="button" class="up-text-button up-refresh" aria-label="상태 새로고침" title="새로고침"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 8a6 6 0 1 0 0 5M16 3v5h-5"/></svg></button></div>
+      <p class="up-next"></p>
+      <div class="up-status-menu" id="up-manual" popover="auto" role="dialog" aria-label="상태 선택">
+        <div role="menu" aria-label="내 상태">${Object.entries(LABELS).map(([id, label]) => `<button type="button" role="menuitemradio" aria-checked="false" data-status="${id}"><span class="up-dot" data-status="${id}" aria-hidden="true"></span><span>${label}</span><svg class="up-check" viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10 4 4 8-8"/></svg></button>`).join('')}</div>
+        <div class="up-duration"><label for="up-duration">유지 시간</label><select name="duration" id="up-duration"><option value="60">1시간</option><option value="180">3시간</option><option value="today">오늘 자정까지</option><option value="forever">직접 해제할 때까지</option></select></div>
+        <p class="up-menu-error" hidden></p>
+        <div role="menu" aria-label="자동 상태"><button type="button" class="up-resume" role="menuitemradio" aria-checked="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg><span>시간표에 맡기기</span><svg class="up-check" viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10 4 4 8-8"/></svg></button></div>
+      </div>
     </section>
     <p class="up-message" role="status" hidden></p>
+    <details class="up-automation"><summary><span>자동 전환</span><span class="up-auto-summary"></span>${chevron}</summary>
     <form class="up-schedule">
-      <div class="up-section-heading"><h3>나의 시간표</h3><label class="up-enabled"><input type="checkbox" name="enabled" role="switch"><span>자동 적용</span></label></div>
-      <div class="up-default-line"><label>평소에는 <select name="defaultState" aria-label="평소 상태"><option value="">미설정</option>${options()}</select></label><span class="up-timezone">한국 시간</span></div>
+      <div class="up-section-heading"><label class="up-enabled"><input type="checkbox" name="enabled" role="switch"><span>시간표 사용</span></label><span class="up-timezone">한국 시간</span></div>
+      <div class="up-default-line"><label>기본 상태 <select name="defaultState" aria-label="기본 상태"><option value="">미설정</option>${options()}</select></label></div>
       <p class="up-help up-schedule-help">아래 시간에만 다른 상태로 바뀌어요.</p>
       <div class="up-rules"></div>
       <p class="up-empty" hidden>정해진 일과가 있다면 시간을 추가해 보세요.</p>
       <button type="button" class="up-add"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>시간 추가</button>
       <div class="up-savebar" hidden><span class="up-save-note" aria-hidden="true">저장하지 않은 변경</span><div><button type="button" class="up-text-button up-cancel">취소</button><button type="submit" class="up-button up-primary">시간표 저장</button></div></div>
     </form>
-    <p class="up-foot">PC와 폰에서 함께 사용해요. AI 작업 실행은 아직 연결 전이에요.</p>
+    </details>
   </div>`;
   const style = document.createElement('style'); style.textContent = presenceCss; root.prepend(style);
   const query = <T extends Element>(selector: string): T => root.querySelector<T>(selector)!;
   const message = query<HTMLElement>('.up-message');
-  const manualForm = query<HTMLFormElement>('.up-manual');
+  const statusMenu = query<HTMLElement>('.up-status-menu');
   const scheduleForm = query<HTMLFormElement>('.up-schedule');
   const list = query<HTMLElement>('.up-rules');
-  let report: Report | null = null, busy = false, disposed = false, dirty = false, editing = false;
+  let report: Report | null = null, busy = false, disposed = false, dirty = false, editing = false, restoreStatusFocus = false;
   const controller = new AbortController();
   const say = (text: string, error = false): void => {
     message.textContent = text; message.hidden = !text; message.classList.toggle('up-error', error);
     message.setAttribute('role', error ? 'alert' : 'status');
     query<HTMLElement>('.up-save-note').textContent = error ? text : '저장하지 않은 변경';
+    query<HTMLElement>('.up-menu-error').textContent = error ? text : '';
+    query<HTMLElement>('.up-menu-error').hidden = !error;
   };
   const updateScheduleHelp = (): void => {
-    query<HTMLElement>('.up-schedule-help').textContent = query<HTMLInputElement>('.up-enabled input').checked ? '아래 시간에만 다른 상태로 바뀌어요.' : '자동 적용이 꺼져 있어요. 평소 상태만 유지해요.';
+    query<HTMLElement>('.up-schedule-help').textContent = query<HTMLInputElement>('.up-enabled input').checked ? '구간 밖에는 기본 상태 적용' : '꺼짐, 기본 상태만 적용';
   };
   const controls = (): void => {
     root.querySelectorAll<HTMLButtonElement | HTMLInputElement | HTMLSelectElement>('button,input,select').forEach(el => { el.disabled = busy || (!report && !el.classList.contains('up-refresh')); });
@@ -118,9 +122,13 @@ export function renderUserPresence(ctx: DashPanelCtx): void {
   function paint(value: Report, form = false): void {
     report = value;
     query<HTMLElement>('.up-state').textContent = value.current.state ? LABELS[value.current.state] || '미확인' : '미설정';
-    query<HTMLElement>('.up-source').textContent = value.current.source === 'manual' ? (value.config.manual?.until ? when(value.config.manual.until) + '까지 직접 설정' : '직접 해제할 때까지 유지') : value.current.source === 'schedule' ? '시간표에 따라 자동 적용 중' : value.current.source === 'default' ? '평소 상태로 지내는 시간이에요.' : '평소 상태를 먼저 선택해 주세요.';
-    query<HTMLElement>('.up-next').textContent = value.next ? when(value.next.at) + ' → ' + (value.next.state ? LABELS[value.next.state] : '미설정') : '예정된 변경 없음';
-    query<HTMLElement>('.up-resume').hidden = value.current.source !== 'manual';
+    query<HTMLElement>('.up-source').textContent = value.current.source === 'manual' ? (value.config.manual?.until ? when(value.config.manual.until) + '까지' : '직접 해제 전까지') : value.current.source === 'unset' ? '미설정' : '자동';
+    query<HTMLElement>('.up-next').textContent = value.next ? '다음 ' + when(value.next.at) + ' → ' + (value.next.state ? LABELS[value.next.state] : '미설정') : '';
+    query<HTMLElement>('.up-current-dot').dataset.status = value.current.state || '';
+    query<HTMLButtonElement>('.up-change').setAttribute('aria-label', '현재 상태 ' + (value.current.state ? LABELS[value.current.state] : '미설정') + ', 변경');
+    statusMenu.querySelectorAll<HTMLButtonElement>('button[data-status]').forEach(button => button.setAttribute('aria-checked', String(value.current.source === 'manual' && value.current.state === button.dataset.status)));
+    query<HTMLElement>('.up-resume').setAttribute('aria-checked', String(value.current.source !== 'manual'));
+    query<HTMLElement>('.up-auto-summary').textContent = value.config.enabled ? '켜짐, ' + value.config.rules.length + '개' : '꺼짐';
     ctx.status(when(value.evaluatedAt) + ' 확인');
     if (form) {
       list.replaceChildren();
@@ -142,10 +150,15 @@ export function renderUserPresence(ctx: DashPanelCtx): void {
   }
   async function run(action: () => Promise<void>, feedback = ''): Promise<void> {
     if (busy || disposed) return;
+    const focused = document.activeElement as HTMLElement | null;
     busy = true; controls(); if (feedback) say(feedback);
     try { await action(); }
     catch (error) { if (!disposed) { say((error as Error).message || '연결 실패. 다시 시도해 주세요.', true); if (!report) query<HTMLElement>('.up-state').textContent = '확인 불가'; } }
-    finally { busy = false; if (!disposed) controls(); }
+    finally { busy = false; if (!disposed) {
+      controls();
+      if (restoreStatusFocus) { restoreStatusFocus = false; query<HTMLButtonElement>('.up-change').focus(); }
+      else if (statusMenu.matches(':popover-open') && focused && statusMenu.contains(focused)) focused.focus();
+    } }
   }
   const refresh = (explicit = false): void => { void run(async () => {
     const fresh = await request(); if (disposed) return;
@@ -162,22 +175,32 @@ export function renderUserPresence(ctx: DashPanelCtx): void {
     const row = addRule(); row.open = true; editing = true; changed();
     row.querySelector<HTMLInputElement>('[name=start]')!.focus();
   });
-  function closeManual(): void { manualForm.hidden = true; query<HTMLButtonElement>('.up-change').setAttribute('aria-expanded', 'false'); }
+  function closeManual(): void { if (statusMenu.matches(':popover-open')) statusMenu.hidePopover(); query<HTMLButtonElement>('.up-change').setAttribute('aria-expanded', 'false'); }
   query('.up-change').addEventListener('click', () => {
-    manualForm.hidden = !manualForm.hidden;
-    query<HTMLButtonElement>('.up-change').setAttribute('aria-expanded', String(!manualForm.hidden));
-    if (!manualForm.hidden && report) {
-      const state = report.current.state || report.config.defaultState || 'home';
-      const input = manualForm.querySelector<HTMLInputElement>('input[value="' + state + '"]'); if (input) { input.checked = true; input.focus(); }
-    }
+    if (statusMenu.matches(':popover-open')) { closeManual(); return; }
+    statusMenu.showPopover();
+    const rect = query<HTMLElement>('.up-change').getBoundingClientRect(), menu = statusMenu.getBoundingClientRect();
+    statusMenu.style.left = Math.max(8, Math.min(rect.left, innerWidth - menu.width - 8)) + 'px';
+    statusMenu.style.top = Math.max(8, Math.min(rect.bottom + 4, innerHeight - menu.height - 8)) + 'px';
+    query<HTMLButtonElement>('.up-change').setAttribute('aria-expanded', 'true');
+    statusMenu.querySelector<HTMLButtonElement>('[role=menuitemradio][aria-checked=true]')?.focus();
   });
-  query('.up-manual-close').addEventListener('click', () => { closeManual(); query<HTMLButtonElement>('.up-change').focus(); });
-  manualForm.addEventListener('submit', event => { event.preventDefault(); if (!report) return;
-    const data = new FormData(manualForm), duration = data.get('duration'), now = Date.now(), kst = new Date(now + 9 * 3_600_000);
+  statusMenu.addEventListener('toggle', () => query<HTMLButtonElement>('.up-change').setAttribute('aria-expanded', String(statusMenu.matches(':popover-open'))));
+  statusMenu.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); closeManual(); query<HTMLButtonElement>('.up-change').focus(); return; }
+    if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key) || (event.target as HTMLElement).tagName === 'SELECT') return;
+    event.preventDefault();
+    const items = Array.from(statusMenu.querySelectorAll<HTMLButtonElement>('[role=menuitemradio]'));
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length].focus();
+  });
+  statusMenu.querySelectorAll<HTMLButtonElement>('button[data-status]').forEach(button => button.addEventListener('click', () => {
+    if (!report) return;
+    const duration = query<HTMLSelectElement>('[name=duration]').value, now = Date.now(), kst = new Date(now + 9 * 3_600_000);
     const until = duration === 'forever' ? null : duration === 'today' ? Date.parse(kst.toISOString().slice(0, 10) + 'T00:00:00+09:00') + 86_400_000 : now + Number(duration) * 60_000;
-    void run(async () => { const fresh = await request({ action: 'manual', revision: report!.config.revision, state: data.get('state'), until }); if (!disposed) { paint(fresh); closeManual(); say('지금 상태를 바꿨어요.'); query<HTMLButtonElement>('.up-change').focus(); } }, '상태를 바꾸는 중...');
-  });
-  query('.up-resume').addEventListener('click', () => { if (!report) return; void run(async () => { const fresh = await request({ action: 'resume', revision: report!.config.revision }); if (!disposed) { paint(fresh); closeManual(); say('시간표로 돌아왔어요.'); } }); });
+    void run(async () => { const fresh = await request({ action: 'manual', revision: report!.config.revision, state: button.dataset.status, until }); if (!disposed) { paint(fresh); closeManual(); say(''); restoreStatusFocus = true; } }, '변경 중...');
+  }));
+  query('.up-resume').addEventListener('click', () => { if (!report) return; void run(async () => { const fresh = await request({ action: 'resume', revision: report!.config.revision }); if (!disposed) { paint(fresh); closeManual(); say(''); restoreStatusFocus = true; } }); });
   scheduleForm.addEventListener('submit', event => {
     event.preventDefault(); if (!report) return;
     const rows = Array.from(list.querySelectorAll<HTMLDetailsElement>('.up-rule'));
@@ -194,10 +217,12 @@ export function renderUserPresence(ctx: DashPanelCtx): void {
   });
   const onInvalid = (event: Event): void => { const row = (event.target as HTMLElement).closest<HTMLDetailsElement>('.up-rule'); if (row) row.open = true; };
   scheduleForm.addEventListener('invalid', onInvalid, true);
-  const onVisible = (): void => { if (!document.hidden && !dirty && !editing && manualForm.hidden) refresh(); };
+  const onVisible = (): void => { if (!document.hidden && !dirty && !editing && !statusMenu.matches(':popover-open')) refresh(); };
   document.addEventListener('visibilitychange', onVisible);
-  const timer = setInterval(() => { if (!document.hidden && !dirty && !editing && manualForm.hidden) refresh(); }, 30_000);
-  ctx.onDispose(() => { disposed = true; controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); });
+  const timer = setInterval(() => { if (!document.hidden && !dirty && !editing && !statusMenu.matches(':popover-open')) refresh(); }, 30_000);
+  const onScroll = (event: Event): void => { if (!(event.target instanceof Node) || !statusMenu.contains(event.target)) closeManual(); };
+  window.addEventListener('scroll', onScroll, true);
+  ctx.onDispose(() => { disposed = true; closeManual(); controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('scroll', onScroll, true); });
   controls(); refresh();
 }
 
