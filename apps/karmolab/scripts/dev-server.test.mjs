@@ -4,10 +4,25 @@ import { spawn } from 'node:child_process';
 import { get } from 'node:http';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { join, basename, dirname, resolve } from 'node:path';
 
 let server;
 let base;
+let fixtureRoot;
+const appRoot = fileURLToPath(new URL('../', import.meta.url));
 before(async () => {
+  fixtureRoot = await mkdtemp(join(appRoot, 'dev-http-test-'));
+  await mkdir(join(fixtureRoot, '.git'));
+  await mkdir(join(fixtureRoot, '.well-known'));
+  await Promise.all([
+    writeFile(join(fixtureRoot, '.env'), 'PRIVATE-FIXTURE-ONLY'),
+    writeFile(join(fixtureRoot, '.env.local'), 'PRIVATE-FIXTURE-ONLY'),
+    writeFile(join(fixtureRoot, '.git', 'HEAD'), 'PRIVATE-FIXTURE-ONLY'),
+    writeFile(join(fixtureRoot, '.npmrc'), 'PRIVATE-FIXTURE-ONLY'),
+    writeFile(join(fixtureRoot, 'public.txt'), 'PUBLIC-FIXTURE'),
+    writeFile(join(fixtureRoot, '.well-known', 'security.txt'), 'PUBLIC-FIXTURE'),
+  ]);
   server = spawn(process.execPath, [fileURLToPath(new URL('./dev.mjs', import.meta.url)), '0'], {
     env: { ...process.env, KARMOLAB_DEV_LOOPBACK: '1' }, windowsHide: true,
   });
@@ -28,6 +43,11 @@ after(async () => {
     const exited = once(server, 'exit');
     server.kill();
     await exited;
+  }
+  if (fixtureRoot) {
+    assert.equal(dirname(fixtureRoot), resolve(appRoot));
+    assert.ok(basename(fixtureRoot).startsWith('dev-http-test-'));
+    await rm(fixtureRoot, { recursive: true, force: true });
   }
 });
 
@@ -56,4 +76,21 @@ test('preserves HTML and JSON content types', async () => {
   assert.match(html.type, /^text\/html\b/);
   assert.equal(json.status, 200);
   assert.equal(json.type, 'application/json');
+});
+
+test('malformed URL encoding returns a client error and leaves the server available', async () => {
+  for (const route of ['/%ZZ', '/%E0%A4']) {
+    const response = await request(route);
+    assert.equal(response.status, 400);
+    assert.equal((await request('/apps/karmolab/index.html')).status, 200);
+  }
+});
+
+test('development previews deny private dot files while preserving public resources', async () => {
+  const prefix = '/apps/karmolab/' + basename(fixtureRoot);
+  for (const relative of ['.env', '.env.local', '.git/HEAD', '.npmrc', '%2eenv', '.git%5cHEAD']) {
+    assert.equal((await request(prefix + '/' + relative)).status, 403, relative);
+  }
+  assert.equal((await request(prefix + '/public.txt')).status, 200);
+  assert.equal((await request(prefix + '/.well-known/security.txt')).status, 200);
 });

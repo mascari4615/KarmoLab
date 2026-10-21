@@ -130,14 +130,28 @@ function resolveFile(rel) {
     path.join(REPO, 'apps/blog/_site', rel),
   ];
   for (const f of candidates) {
-    if (!f.startsWith(REPO)) continue;
+    if (!f.startsWith(REPO + path.sep)) continue;
     if (fs.existsSync(f) && !fs.statSync(f).isDirectory()) return f;
   }
   return null;
 }
 
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url, 'http://127.0.0.1');
+  let url;
+  let decodedPath;
+  try {
+    url = new URL(req.url, 'http://127.0.0.1');
+    decodedPath = decodeURIComponent(url.pathname);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end('잘못된 주소입니다.');
+    return;
+  }
+  if (decodedPath.split(/[\\/]/).some(part => part.startsWith('.') && part !== '.well-known')) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end('이 주소는 미리보기에서 열 수 없습니다.');
+    return;
+  }
   if (url.pathname === '/__dev') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive',
@@ -197,7 +211,7 @@ ${body}
     return;
   }
 
-  let rel = decodeURIComponent(url.pathname);
+  let rel = decodedPath;
   if (rel.endsWith('/')) rel += 'index.html';
   const file = resolveFile(rel);
   if (!file) {
