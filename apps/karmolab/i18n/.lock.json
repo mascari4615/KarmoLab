@@ -817,7 +817,7 @@
     "arcade.open.none": "da39a3ee5e",
     "arcade.open.card": "b217242441",
     "arcade.open.watch": "ad0c0f1dae",
-    "arcade.mine.kb": "9f56a993aa",
+    "arcade.mine.kb": "4c97b35383",
     "arcade.pong.kb": "e2768a2980",
     "arcade.ah.kb": "5a245254d5",
     "arcade.go.took": "8dc58eb008",
@@ -15070,7 +15070,12 @@
     "meok.dockRight": "9f64e22334",
     "meok.splitLeft": "b584c23dce",
     "meok.splitRight": "44341676bf",
-    "meok.splitBottom": "455d91c71b"
+    "meok.splitBottom": "455d91c71b",
+    "arcade.mine.cell": "03ca797917",
+    "arcade.mine.cell.closed": "56feb16f58",
+    "arcade.mine.cell.flag": "1755bf8c27",
+    "arcade.mine.cell.number": "4ba1b2ef76",
+    "arcade.mine.cell.empty": "b7613e6a96"
   },
   "ja": {
     "about.failed": "f11e2dbbfa",
@@ -15890,7 +15895,7 @@
     "arcade.open.none": "da39a3ee5e",
     "arcade.open.card": "b217242441",
     "arcade.open.watch": "ad0c0f1dae",
-    "arcade.mine.kb": "9f56a993aa",
+    "arcade.mine.kb": "4c97b35383",
     "arcade.pong.kb": "e2768a2980",
     "arcade.ah.kb": "5a245254d5",
     "arcade.go.took": "8dc58eb008",
@@ -30143,6 +30148,11 @@
     "meok.dockRight": "9f64e22334",
     "meok.splitLeft": "b584c23dce",
     "meok.splitRight": "44341676bf",
-    "meok.splitBottom": "455d91c71b"
+    "meok.splitBottom": "455d91c71b",
+    "arcade.mine.cell": "03ca797917",
+    "arcade.mine.cell.closed": "56feb16f58",
+    "arcade.mine.cell.flag": "1755bf8c27",
+    "arcade.mine.cell.number": "4ba1b2ef76",
+    "arcade.mine.cell.empty": "b7613e6a96"
   }
 }

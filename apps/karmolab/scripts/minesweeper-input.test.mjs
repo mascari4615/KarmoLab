@@ -112,3 +112,83 @@ test('keyboard flag and open actions stay available', t => {
   cell.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   assert.deepEqual(ui.actions, [{ cell: 0, flag: true }, { cell: 0 }]);
 });
+
+test('closed cells have unique coordinate names without revealing hidden numbers', t => {
+  const ui = screen(t);
+  const names = ui.cells.map(cell => cell.getAttribute('aria-label'));
+  assert.equal(new Set(names).size, 81);
+  assert.match(names[0], /1행 1열.*닫힘/);
+  assert.match(names[80], /9행 9열.*닫힘/);
+});
+
+test('the board exposes one tab stop and arrow keys move without taking a turn', t => {
+  const ui = screen(t);
+  assert.equal(ui.cells.filter(cell => cell.tabIndex === 0).length, 1);
+  ui.cells[0].focus();
+  for (const [key, expected] of [['ArrowRight', 1], ['ArrowDown', 10], ['ArrowLeft', 9], ['ArrowUp', 0], ['ArrowLeft', 0], ['ArrowUp', 0]]) {
+    ui.window.document.activeElement.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    assert.equal(ui.window.document.activeElement, ui.cells[expected]);
+  }
+  assert.deepEqual(ui.actions, []);
+});
+
+function redraw(ui, seen, nums = Array(81).fill(-1)) {
+  ui.window.drawFixture({ state: { w: 9, h: 9, nums, seen: [seen], dead: [false], opened: [0], clicks: [0], over: false }, seats: [{ name: 'fixture player' }] }, 0, 0);
+}
+
+test('revealed and flagged cells describe only their visible state', t => {
+  const ui = screen(t), seen = Array(81).fill(0), nums = Array(81).fill(7);
+  seen[0] = 2; seen[1] = 1; seen[2] = 1; nums[2] = 0;
+  redraw(ui, seen, nums);
+  assert.match(ui.cells[0].getAttribute('aria-label'), /깃발/);
+  assert.match(ui.cells[1].getAttribute('aria-label'), /주변 지뢰 7개/);
+  assert.match(ui.cells[2].getAttribute('aria-label'), /빈칸/);
+  assert.doesNotMatch(ui.cells[3].getAttribute('aria-label'), /7/);
+});
+
+test('opening the focused cell transfers focus and the tab stop to an available cell', t => {
+  const ui = screen(t), seen = Array(81).fill(0);
+  ui.cells[0].focus(); seen[0] = 1; seen[1] = 1;
+  redraw(ui, seen);
+  assert.equal(ui.window.document.activeElement, ui.cells[2]);
+  assert.equal(ui.cells[2].tabIndex, 0);
+  assert.equal(ui.cells.filter(cell => cell.tabIndex === 0).length, 1);
+  ui.cells[2].dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
+  assert.equal(ui.window.document.activeElement, ui.cells[2]);
+});
+
+test('board refresh does not take focus from another control', t => {
+  const ui = screen(t), outside = ui.window.document.createElement('button');
+  ui.window.document.body.append(outside); outside.focus();
+  const seen = Array(81).fill(0); seen[0] = 1;
+  redraw(ui, seen);
+  assert.equal(ui.window.document.activeElement, outside);
+  assert.equal(ui.cells[1].tabIndex, 0);
+});
+
+test('Home and End stay in the current row and skip revealed cells', t => {
+  const ui = screen(t), seen = Array(81).fill(0); seen[9] = 1; seen[17] = 1;
+  redraw(ui, seen); ui.cells[12].focus();
+  for (const [key, index] of [['Home', 10], ['End', 16]]) {
+    ui.window.document.activeElement.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    assert.equal(ui.window.document.activeElement, ui.cells[index]);
+  }
+  assert.deepEqual(ui.actions, []);
+});
+
+test('vertical navigation skips opened cells in the same column', t => {
+  const ui = screen(t), seen = Array(81).fill(0); seen[9] = 1;
+  redraw(ui, seen); ui.cells[0].focus();
+  ui.cells[0].dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+  assert.equal(ui.window.document.activeElement, ui.cells[18]);
+  assert.deepEqual(ui.actions, []);
+});
+
+test('a finished board remains one keyboard stop without active cell controls', t => {
+  const ui = screen(t); ui.cells[0].focus();
+  ui.window.drawFixture({ state: { w: 9, h: 9, nums: Array(81).fill(-1), seen: [Array(81).fill(0)], dead: [true], opened: [0], clicks: [0], over: true }, seats: [{ name: 'fixture player' }] }, 0, 0);
+  assert.equal(ui.cells.filter(cell => !cell.disabled).length, 0);
+  assert.equal(ui.cells.filter(cell => cell.tabIndex === 0).length, 0);
+  assert.equal(ui.window.document.activeElement, ui.window.document.getElementById('acMsGrid'));
+  assert.equal(ui.window.document.activeElement.tabIndex, 0);
+});

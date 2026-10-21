@@ -24,6 +24,11 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
     /* 칸은 판 크기를 안 뒤에 만든다. 초급 9x9 와 중급 16x16 이 있음 */
     let cells: HTMLButtonElement[] = [];
     let builtW = 0;
+    let tabCell = 0;
+    const setTabCell = (index: number): void => {
+      tabCell = index;
+      cells.forEach((cell, i) => { cell.tabIndex = i === index ? 0 : -1; });
+    };
     const build = (w: number, h: number): void => {
       grid.innerHTML = Array.from({ length: w * h }, (_, i) =>
         '<button class="ac-mc" data-c="' + i + '"></button>').join('');
@@ -32,6 +37,8 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
       cells = Array.from(grid.querySelectorAll<HTMLButtonElement>('.ac-mc'));
       // 자판으로 어떻게 하는지 판 옆에 적어 둠. 숨은 조작은 없는 조작
       grid.setAttribute('aria-label', t('arcade.mine.kb'));
+      grid.setAttribute('role', 'group');
+      tabCell = 0;
 
       let hold = 0;
       let pressed: HTMLButtonElement | null = null;
@@ -47,6 +54,7 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
       };
       cells.forEach((b) => {
         const c = Number(b.dataset.c);
+        b.onfocus = (): void => { setTabCell(c); };
         b.oncontextmenu = (e): void => {
           e.preventDefault();
           if (suppressContext === b) { suppressContext = null; return; }
@@ -80,6 +88,30 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
         b.onkeydown = (e: KeyboardEvent): void => {
           cancel();
           suppressContext = null;
+          if (b.disabled) return;
+          const rowStart = Math.floor(c / w) * w;
+          let target = c;
+          let step = 0;
+          let min = 0;
+          let max = cells.length - 1;
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            step = e.key === 'ArrowLeft' ? -1 : 1;
+            min = rowStart; max = rowStart + w - 1;
+            target += step;
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            step = e.key === 'ArrowUp' ? -w : w;
+            target += step;
+          } else if (e.key === 'Home' || e.key === 'End') {
+            step = e.key === 'Home' ? 1 : -1;
+            min = rowStart; max = rowStart + w - 1;
+            target = e.key === 'Home' ? min : max;
+          }
+          if (step) {
+            e.preventDefault();
+            while (target >= min && target <= max && cells[target].disabled) target += step;
+            if (target >= min && target <= max) cells[target].focus();
+            return;
+          }
           if (e.key === 'f' || e.key === 'F' || (e.key === 'Enter' && e.shiftKey)) {
             e.preventDefault();
             act({ cell: c, flag: true });
@@ -104,6 +136,7 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
       if (builtW !== s.w) { builtW = s.w; build(s.w, s.h); }
       const mine = s.seen[mySeat] ?? [];
       const dead = s.dead[mySeat];
+      const focused = cells.indexOf(document.activeElement as HTMLButtonElement);
 
       cells.forEach((b, i) => {
         const st = mine[i] ?? 0;
@@ -115,7 +148,19 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
         b.className = 'ac-mc' + (st === 1 ? ' ac-open' : '') + (st === 2 ? ' ac-flag' : '');
         b.style.color = st === 1 && n > 0 ? NUM_COLOR[n] : '';
         b.disabled = dead || s.over || st === 1;
+        const status = st === 2 ? t('arcade.mine.cell.flag') : st !== 1 ? t('arcade.mine.cell.closed') : n > 0 ? t('arcade.mine.cell.number', { n: String(n) }) : t('arcade.mine.cell.empty');
+        b.setAttribute('aria-label', t('arcade.mine.cell', { row: String(Math.floor(i / s.w) + 1), col: String(i % s.w + 1), status }));
       });
+      if (!cells[tabCell] || cells[tabCell].disabled) {
+        const next = cells.findIndex((cell, i) => i >= tabCell && !cell.disabled);
+        tabCell = next >= 0 ? next : cells.findIndex(cell => !cell.disabled);
+      }
+      setTabCell(tabCell);
+      grid.tabIndex = tabCell < 0 ? 0 : -1;
+      if (focused >= 0 && cells[focused].disabled) {
+        if (tabCell >= 0) cells[tabCell].focus();
+        else grid.focus();
+      }
 
       bar.innerHTML = v.seats
         .map((seat, i) =>
