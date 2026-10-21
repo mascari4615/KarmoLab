@@ -72,7 +72,7 @@ function human(bytes) {
  */
 export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hrefOf }) {
     const hasThumb = new Set(files.filter((f) => f.thumb).map((f) => f.path));
-    const urls = [];
+    const urls = new Set();
     let disposed = false;
     let running = 0;
     const queue = [];
@@ -118,13 +118,24 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
             if (disposed) return;
             if (!got) throw new Error('none');
             const url = URL.createObjectURL(new Blob([got.bytes], { type: thumb ? 'image/jpeg' : mimeOf(path) }));
-            urls.push(url);
+            urls.add(url);
             const img = new Image();
             img.loading = 'lazy';
             img.alt = '';
+            img.onload = () => {
+                if (disposed) return;
+                cell.classList.add('ready');
+            };
+            img.onerror = () => {
+                if (disposed) return;
+                img.remove();
+                cell.classList.remove('ready');
+                cell.classList.add('blank');
+                URL.revokeObjectURL(url);
+                urls.delete(url);
+            };
             img.src = url;
             art.replaceChildren(img);
-            cell.classList.add('ready');
         } catch {
             if (disposed) return;
             /* 아직 열람 저장에 없거나 받지 못했다. 칸은 남기고 표시만 바꾼다. */
@@ -159,7 +170,7 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
             io.disconnect();
             queue.length = 0;
             for (const url of urls) URL.revokeObjectURL(url);
-            urls.length = 0;
+            urls.clear();
         }
     };
 }

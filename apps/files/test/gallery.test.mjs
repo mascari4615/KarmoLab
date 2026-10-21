@@ -17,7 +17,7 @@ function fakeDom() {
         constructor() {
             this.dataset = {};
             this.children = [];
-            this.classList = { add: (c) => this.classes.add(c) };
+            this.classList = { add: (c) => this.classes.add(c), remove: (c) => this.classes.delete(c) };
             this.classes = new Set();
         }
         querySelector() {
@@ -57,12 +57,56 @@ function fakeDom() {
         }
     };
     const revoked = [];
-    globalThis.URL.createObjectURL = () => `blob:${revoked.length}`;
+    let created = 0;
+    globalThis.URL.createObjectURL = () => `blob:${created++}`;
     globalThis.URL.revokeObjectURL = (u) => revoked.push(u);
     globalThis.Blob = class {};
-    globalThis.Image = class {};
-    return { host: new El(), made, observed, revoked };
+    const images = [];
+    globalThis.Image = class {
+        constructor() { images.push(this); }
+        remove() { this.removed = true; }
+    };
+    return { host: new El(), made, observed, revoked, images };
 }
+
+function singleImage(dom) {
+    return mountGallery({ host: dom.host, files: [{ path: 'a.png' }], kindOf: previewKind,
+        mimeOf: () => 'image/png', hrefOf: p => '#' + p,
+        load: async () => ({ bytes: new Uint8Array([1]) }) });
+}
+
+test('이미지가 실제로 열린 뒤에만 준비 완료로 표시한다', async () => {
+    const dom = fakeDom(), gal = singleImage(dom);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(dom.made[0].classes.has('ready'), false);
+    dom.images[0].onload();
+    assert.equal(dom.made[0].classes.has('ready'), true);
+    assert.equal(dom.revoked.length, 0);
+    gal.dispose();
+    assert.equal(dom.revoked.length, 1);
+});
+
+test('디코딩 실패는 깨진 그림 대신 빈 표시로 바꾸고 blob을 한 번만 반납한다', async () => {
+    const dom = fakeDom(), gal = singleImage(dom);
+    await new Promise(resolve => setImmediate(resolve));
+    dom.images[0].onerror();
+    assert.equal(dom.made[0].classes.has('blank'), true);
+    assert.equal(dom.made[0].classes.has('ready'), false);
+    assert.equal(dom.images[0].removed, true);
+    assert.equal(dom.revoked.length, 1);
+    gal.dispose();
+    assert.equal(dom.revoked.length, 1);
+});
+
+test('떠난 뒤 늦은 이미지 디코딩 결과는 칸 상태를 바꾸지 않는다', async () => {
+    const dom = fakeDom(), gal = singleImage(dom);
+    await new Promise(resolve => setImmediate(resolve));
+    gal.dispose();
+    dom.images[0].onload(); dom.images[0].onerror();
+    assert.equal(dom.made[0].classes.has('ready'), false);
+    assert.equal(dom.made[0].classes.has('blank'), false);
+    assert.equal(dom.revoked.length, 1);
+});
 
 test('한 번에 넷까지만 받고, 뜰 때 blob 을 되돌려 준다', async () => {
     const dom = fakeDom();
