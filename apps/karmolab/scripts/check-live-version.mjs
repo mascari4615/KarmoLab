@@ -13,8 +13,10 @@
  *   EXPECTED_SHA=<커밋> node scripts/check-live-version.mjs
  *   node scripts/check-live-version.mjs            (기대값 없으면 지금 서빙 중인 판만 알려 준다)
  */
+import { liveBuildUrl, buildRevision } from './lib/live-url.mjs';
+
 const BASE = process.env.BASE || 'https://blog.mascari4615.com';
-const URL_ = `${BASE}/apps/karmolab/build.json`;
+const URL_ = liveBuildUrl(BASE);
 const expected = (process.env.EXPECTED_SHA || '').trim();
 const TRIES = Number(process.env.TRIES || 10);
 const WAIT_MS = Number(process.env.WAIT_MS || 30000);
@@ -26,7 +28,9 @@ async function read() {
   const res = await fetch(`${URL_}?t=${Date.now()}`, { cache: 'no-store' });
   if (!res.ok) return { err: `http ${res.status}` };
   try {
-    return { data: await res.json() };
+    const body = await res.json();
+    const commit = buildRevision(body);
+    return commit ? { data: { ...body, commit } } : { err: '판본 파일에 커밋이 없다' };
   } catch {
     return { err: '표식 파일이 JSON 이 아니다. 배포가 엉뚱한 것을 올렸다' };
   }
@@ -63,7 +67,7 @@ async function settle() {
       mark = now;
       since = Date.now();
     }
-    await new Promise((r) => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, Math.min(5000, SETTLE_MS)));
   }
   console.log(`[check-live-version] 배포가 계속 이어져 잠잠해지지 않는다. 지금은 재지 않는다(다음 시계 판이 잰다).`);
   return 0;

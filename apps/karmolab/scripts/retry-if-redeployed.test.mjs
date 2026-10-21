@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { liveBuildUrl, buildRevision } from './lib/live-url.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const shell = path.join(here, 'retry-if-redeployed.mjs');
@@ -29,8 +30,11 @@ const serverFile = path.join(temp, 'stamp-server.js');
 writeFileSync(
   serverFile,
   `const {createServer}=require('http');
-   const s=createServer((q,r)=>{r.writeHead(200,{'content-type':'application/json'});
-     r.end(JSON.stringify({commit:process.env.STAMP_COMMIT}));});
+   const s=createServer((q,r)=>{
+     const route=new URL(q.url,'http://localhost').pathname;
+     if(!['/build.json','/empty/build.json'].includes(route)){r.writeHead(404);r.end();return;}
+     r.writeHead(200,{'content-type':'application/json'});
+     r.end(JSON.stringify({sha:route.startsWith('/empty/')?'':process.env.STAMP_COMMIT,builtAt:'2026-10-21T00:00:00Z'}));});
    s.listen(0,'127.0.0.1',()=>console.log('port='+s.address().port));`
 );
 
@@ -84,4 +88,41 @@ test('못 돌림(2)은 옛 판이어도 그대로 2. 다시 재지 않는다', (
 test('초록은 옛 판이어도 초록. 실주소가 성하다는 건 그 자체로 사실이다', () => {
   const { code, out } = run({ sha: '999999997777777777777777777777777777aaaa', verdict: 0 });
   assert.equal(code, 0, out);
+});
+
+test('build marker helpers preserve BASE and reject missing revisions', () => {
+  assert.equal(liveBuildUrl('https://example.test/preview/'), 'https://example.test/preview/build.json');
+  assert.equal(buildRevision({ sha: servedBuild, commit: 'other' }), servedBuild);
+  assert.equal(buildRevision({ commit: servedBuild }), servedBuild);
+  for (const body of [null, {}, { sha: '' }, { sha: '  ' }, { sha: 123 }]) {
+    assert.equal(buildRevision(body), '');
+  }
+});
+
+function checkVersion({ base = url2, expected = servedBuild } = {}) {
+  const result = spawnSync(process.execPath, [path.join(here, 'check-live-version.mjs')], {
+    encoding: 'utf8',
+    timeout: 5000,
+    env: { ...process.env, BASE: base, EXPECTED_SHA: expected, TRIES: '1', SETTLE_MS: '1' },
+  });
+  return { code: result.status, out: `${result.stdout}${result.stderr}` };
+}
+
+test('version CLI reads root sha and waits for the same served revision', () => {
+  const { code, out } = checkVersion();
+  assert.equal(code, 0, out);
+  assert.match(out, /닿았다/);
+  assert.match(out, /판이 잠잠하다/);
+});
+
+test('version CLI rejects a missing revision even without an expected SHA', () => {
+  const { code, out } = checkVersion({ base: `${url2}/empty`, expected: '' });
+  assert.equal(code, 1, out);
+  assert.match(out, /커밋이 없다/);
+});
+
+test('version CLI keeps a real revision mismatch as a failure', () => {
+  const { code, out } = checkVersion({ expected: 'bbbbbbbb2222222222222222222222222222bbbb' });
+  assert.equal(code, 1, out);
+  assert.match(out, /기대한 것은/);
 });

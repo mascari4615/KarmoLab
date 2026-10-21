@@ -13,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { withoutRetired } from './lib/retired-operations.mjs';
+import { liveBuildUrl, buildRevision } from './lib/live-url.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const BASE = process.env.BASE || 'https://blog.mascari4615.com';
@@ -30,8 +31,8 @@ const ids = withoutRetired(process.argv.slice(2).length ? process.argv.slice(2) 
    앞뒤로 읽어 둔다: 도장이 바뀌었으면 사이트가 발밑에서 바뀐 것이므로 **못 쟀다(2)** 로 끝낸다. */
 const stamp2 = async () => {
   try {
-    const res = await fetch(`${BASE}/apps/karmolab/build.json`, { cache: 'no-store' });
-    return res.ok ? String((await res.json()).stamp || '') : '';
+    const res = await fetch(`${liveBuildUrl(BASE)}?t=${Date.now()}`, { cache: 'no-store' });
+    return res.ok ? buildRevision(await res.json()) : '';
   } catch {
     return '';
   }

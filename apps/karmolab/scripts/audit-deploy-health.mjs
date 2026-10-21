@@ -26,6 +26,7 @@
  * 그 역시 늘 빨간 경보가 된다.
  */
 import { execFileSync } from 'node:child_process';
+import { liveBuildUrl, buildRevision } from './lib/live-url.mjs';
 
 const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -138,10 +139,11 @@ function reasonOf(run) {
 function liveLag(repoDefaultBranch = 'origin/main') {
   let liveSha = null;
   try {
-    const raw = execFileSync('curl', ['-s', '-m', '20', 'https://blog.mascari4615.com/apps/karmolab/build.json'], {
+    const raw = execFileSync('curl', ['-fsS', '-m', '20', liveBuildUrl()], {
       encoding: 'utf8',
     });
-    liveSha = JSON.parse(raw).commit;
+    liveSha = buildRevision(JSON.parse(raw));
+    if (!liveSha) return { err: '실사이트 판에 커밋이 없다' };
   } catch {
     return { err: '실사이트 판을 못 읽었다' };
   }

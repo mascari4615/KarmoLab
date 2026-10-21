@@ -15,6 +15,15 @@ export const defaultSite = 'https://blog.mascari4615.com';
 /** 이 판이 보는 사이트 (프로토콜+호스트). */
 export const liveBase = () => process.env.BASE || defaultSite;
 
+/** 사이트 조립기가 내보낸 루트 판본 경로. */
+export const liveBuildUrl = (base = liveBase()) => base.replace(/\/+$/, '') + '/build.json';
+
+/** 조립 사이트 sha와 별도 앱 commit의 공통 판본 값. 빈 값은 조회 실패. */
+export function buildRevision(body) {
+  const value = body?.sha ?? body?.commit;
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 /**
  * 이 판이 열 장.
  * @param {string} path 사이트 안의 길 (`/` 처럼 앞에 빗금)

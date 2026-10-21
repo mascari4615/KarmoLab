@@ -15,9 +15,10 @@
  * 사용: node scripts/retry-if-redeployed.mjs npm run test:x
  */
 import { spawnSync } from 'node:child_process';
+import { liveBuildUrl, buildRevision } from './lib/live-url.mjs';
 
 const BASE = process.env.BASE || 'https://blog.mascari4615.com';
-const STAMP = `${BASE}/apps/karmolab/build.json`;
+const STAMP = liveBuildUrl(BASE);
 const argv = process.argv.slice(2);
 if (!argv.length) {
   console.error('[retry-if-redeployed] 돌릴 명령이 없다.');
@@ -29,7 +30,7 @@ async function servedCommit() {
     const res = await fetch(`${STAMP}?t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data = await res.json();
-    return data.commit || null;
+    return buildRevision(data) || null;
   } catch {
     return null;
   }

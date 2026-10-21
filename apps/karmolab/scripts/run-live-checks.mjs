@@ -17,6 +17,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { CHECKS, PREP } from './live-checks.mjs';
 import { splitIntoShards } from './lib/shard-split.mjs';
+import { liveBuildUrl, buildRevision } from './lib/live-url.mjs';
 
 const argv = process.argv.slice(2);
 const only = (() => {
@@ -165,11 +166,11 @@ if (todo.some((c) => c.live)) {
      서빙 중인 커밋이 지금 체크아웃보다 **뒤에 있으면** 그 사실을 크게 적는다. */
   try {
     const base = process.env.BASE || 'https://blog.mascari4615.com';
-    const res = await fetch(`${base}/apps/karmolab/build.json?t=${Date.now()}`, { cache: 'no-store' });
+    const res = await fetch(`${liveBuildUrl(base)}?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       /* ★ 시험용 갈아끼우기. 이 경고 자체를 재 보려면 옛 판을 서빙 중 상황을 만들 수 있어야 한다
          (갈아끼울 자리가 없는 안전장치는 영영 안 검증된 채로 남는다. commit-isolated 와 같은 규율). */
-      const served = String(process.env.LIVE_SERVED_OVERRIDE || (await res.json()).commit || '').slice(0, 8);
+      const served = String(process.env.LIVE_SERVED_OVERRIDE || buildRevision(await res.json())).slice(0, 8);
       const here = spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout?.trim().slice(0, 8) || '(모름)';
       runningCheck = served || '(모름)';
       currentLine = here;
