@@ -32,9 +32,10 @@ const REPO = path.dirname(path.dirname(here));                            // 저
 //   죽었고, 창이 최소화라 **아무도 죽은 걸 몰랐다**. 화면 보며 고치기가 안 되니 다들 공유
 //   작업 폴더로 돌아왔고, 08-08 에 만든 격리는 실제로 가동된 적이 없다(오늘 lane 을 띄워 보고 알았다).
 const PORT = Number(process.argv[2] || process.env.PORT || 8813);
+const BIND_HOST = process.env.KARMOLAB_DEV_LOOPBACK === '1' ? '127.0.0.1' : '0.0.0.0';
 
 const TYPES = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png',
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.ico': 'image/x-icon',
   '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain; charset=utf-8',
@@ -370,13 +371,15 @@ server.on('error', (e) => {
     console.error(`[dev] ${PORT} 번 자리가 안 비워진다. 다른 서버가 쓰고 있는지 봐라`);
     process.exit(1);
   }
-  setTimeout(() => server.listen(PORT, '0.0.0.0'), 250);
+  setTimeout(() => server.listen(PORT, BIND_HOST), 250);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, BIND_HOST, () => {
+  const actualPort = server.address().port;
   const lan = lanAddress();
-  console.log(`[dev] 이 컴퓨터  http://127.0.0.1:${PORT}/apps/karmolab/index.html`);
-  if (lan) console.log(`[dev] 폰에서    http://${lan}:${PORT}/apps/karmolab/index.html  (같은 와이파이)`);
+  console.log(`[dev] 이 컴퓨터  http://127.0.0.1:${actualPort}/apps/karmolab/index.html`);
+  if (BIND_HOST === '127.0.0.1') console.log('[dev] 루프백 전용: 폰 주소 표시 생략');
+  else if (lan) console.log(`[dev] 폰에서    http://${lan}:${actualPort}/apps/karmolab/index.html  (같은 와이파이)`);
   else console.log('[dev] 폰에서 볼 주소를 못 찾았다. 유선/무선이 다 꺼져 있나 확인해라');
   console.log('[dev] 스타일, 위젯은 그 자리에서 갈아 끼운다. 셸이 바뀔 때만 새로고침한다.');
 });
