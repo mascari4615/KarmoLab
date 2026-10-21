@@ -5,8 +5,9 @@ Source: the unmodified `glib 0.18.5` crate from crates.io, published from
 The upstream MIT license remains in `LICENSE`.
 
 Tauri's GTK3 dependency still requires the 0.18 API. Upgrading this one crate to
-0.20 is incompatible with that dependency tree. Both desktop workspaces therefore
-use this shared path patch until upstream moves away from the affected series.
+0.20 is incompatible with that dependency tree. KarmoLab's desktop workspace,
+KarmoLauncher and KarmoDash therefore use this shared path patch until upstream
+moves away from the affected series.
 
 The only source change is the official fix in
 [gtk-rs/gtk-rs-core#1343](https://github.com/gtk-rs/gtk-rs-core/pull/1343),
