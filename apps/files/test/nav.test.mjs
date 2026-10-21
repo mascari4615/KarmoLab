@@ -10,7 +10,7 @@ const APP = join(dirname(dirname(fileURLToPath(import.meta.url))), 'app.mjs');
 
 test('웹에서도 카모랩으로 돌아가는 링크를 그린다', async () => {
   const source = await readFile(APP, 'utf8');
-  assert.match(source, /const KARMOLAB_WEB_URL = 'https:\/\/blog\.mascari4615\.com\/karmolab\/'/);
+  assert.match(source, /const KARMOLAB_WEB_URL = 'https:\/\/lab\.mascari4615\.com\/'/);
   const web = /if \(!isDesktop\(\)\) \{\s*el\.innerHTML = '<a class="go" id="nav-back" href="' \+ KARMOLAB_WEB_URL \+ '">← KarmoLab<\/a>';\s*return;/;
   assert.match(source, web);
 });

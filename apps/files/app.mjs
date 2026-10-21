@@ -370,7 +370,7 @@ function isDesktop() {
 }
 
 // 카모랩 복귀 주소. 앱은 Tauri 가 전환 직전 주소를 기억, 웹은 정본 주소
-const KARMOLAB_WEB_URL = 'https://blog.mascari4615.com/karmolab/';
+const KARMOLAB_WEB_URL = 'https://lab.mascari4615.com/';
 
 // 데스크톱: 이 화면이 카모랩 창을 갈아탄 자리. 돌아갈 길 + 따로 띄울 길
 // 웹, 폰: 돌아갈 길만 (2026-09-03). 카모랩 계정 메뉴가 웹에서도 여기로 보냄
