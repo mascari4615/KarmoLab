@@ -114,11 +114,13 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
           }
           if (e.key === 'f' || e.key === 'F' || (e.key === 'Enter' && e.shiftKey)) {
             e.preventDefault();
+            if (e.repeat) return;
             act({ cell: c, flag: true });
             return;
           }
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
+            if (e.repeat) return;
             act({ cell: c });
           }
         };

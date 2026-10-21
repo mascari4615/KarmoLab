@@ -192,3 +192,16 @@ test('a finished board remains one keyboard stop without active cell controls', 
   assert.equal(ui.window.document.activeElement, ui.window.document.getElementById('acMsGrid'));
   assert.equal(ui.window.document.activeElement.tabIndex, 0);
 });
+
+test('holding an action key cannot act again after focus advances', t => {
+  const ui = screen(t), seen = Array(81).fill(0);
+  ui.cells[0].focus();
+  ui.cells[0].dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  seen[0] = 1; redraw(ui, seen);
+  for (const key of ['Enter', ' ', 'f', 'F']) {
+    ui.window.document.activeElement.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key, repeat: true, bubbles: true, cancelable: true }));
+  }
+  assert.deepEqual(ui.actions, [{ cell: 0 }]);
+  ui.window.document.activeElement.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'ArrowRight', repeat: true, bubbles: true, cancelable: true }));
+  assert.equal(ui.window.document.activeElement, ui.cells[2]);
+});
