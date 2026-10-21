@@ -38,6 +38,7 @@ import { hanaBackTexture, hanaFaceTexture } from './hana';
 import { suitOf } from './deck';
 import { buildCasinoTable, chipStack, type CasinoTable } from './card-table';
 import { dealStaggerMs, spreadRow, wrappedColumns } from './card-layout';
+import { cardPickPoint } from './card-pick';
 
 /** 카드 한 장의 3D 치수 */
 const CARD_W = 0.82;
@@ -1214,9 +1215,9 @@ export function mountCardStage(host: HTMLElement, opts: CardStageOpts = {}): Car
       dealSpan: Math.round(lastDealSpan),
       celebrations: celebrationCount,
       glows: canGroup.children.length,
-      pickables: [...picks.entries()].map(([mesh, id]) => {
-        const p = mesh.position.clone().project(camera);
-        return { id, x: Math.round(rect.left + ((p.x + 1) / 2) * w), y: Math.round(rect.top + ((1 - p.y) / 2) * h) };
+      pickables: [...picks.entries()].flatMap(([mesh, id]) => {
+        const point = cardPickPoint(mesh, holder.children as Mesh[], camera, rect);
+        return point ? [{ id, ...point }] : [];
       })
     };
   };

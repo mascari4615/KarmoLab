@@ -110,8 +110,11 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
         const spot = spots[tried % spots.length];
         tried += 1;
         last = `집을 것 ${spots.length}장, ${tried}번째 (${spot.x},${spot.y}), 판 ${JSON.stringify(now?.canvasRect)}`;
+        const onCanvas = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName === 'CANVAS', spot);
+        if (!onCanvas) { last += ', 화면 UI에 가려짐'; continue; }
         await page.mouse.click(spot.x, spot.y);
-        selected = await page.waitForSelector('#acPrActs .ac-on', { timeout: 3000 }).then(() => true).catch(() => false);
+        selected = await page.waitForFunction(rank => document.querySelector('#acPrActs .ac-on')?.getAttribute('data-n') === rank,
+          spot.id.split(':')[1], { timeout: 3000 }).then(() => true).catch(() => false);
       }
       check('president: 상 위 카드를 직접 눌러 고른다', selected, last);
     }
