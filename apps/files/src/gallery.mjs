@@ -18,6 +18,8 @@
  * 열람 저장에는 그림, 글만 올라가므로(mirror-policy) **빈 칸은 고장이 아니다**.
  */
 
+import { escapeHtml as esc } from './html.mjs';
+
 const LIMIT = 4;
 
 /**
@@ -78,7 +80,6 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
         .map((f) => {
             const name = f.path.split('/').pop();
             const kind = kindOf(f.path);
-            const esc = (v) => String(v).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
             /* 그림 아니면 갈래 글자와 크기 미리 박기. 그림이면 비워 두고 `fill` 이 채움 */
             const art =
                 kind === 'image' || f.thumb
@@ -86,8 +87,8 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
                     : `<span class="frame-art"><span class="frame-face">${FACE[kind] ?? FACE.file}` +
                       `<i>${esc(human(f.size))}</i></span></span>`;
             return (
-                `<a class="frame" href="${hrefOf(f.path)}" data-path="${encodeURIComponent(f.path)}"` +
-                ` data-kind="${kind}" title="${name.replace(/"/g, '&quot;')}">` +
+                `<a class="frame" href="${esc(hrefOf(f.path))}" data-path="${encodeURIComponent(f.path)}"` +
+                ` data-kind="${kind}" title="${esc(name)}">` +
                 art +
                 `<span class="frame-cap">${esc(name)}</span></a>`
             );

@@ -160,6 +160,10 @@ test('completed PC upload cannot schedule an old folder refresh after switching 
 const store = memoryStore();
 const vault = await createVault(store, 'fixture-only', { iterations: 8000 });
 const vaultEntry = await putFile(vault, 'a.txt', new TextEncoder().encode('CLOUD-FILE-A'));
+const quotedName = 'report" data-fixture-injected="yes & <한글>.txt';
+await putFile(vault, quotedName, new TextEncoder().encode('QUOTED-FILE'));
+const entityName = 'photo &quot; literal.png';
+await putFile(vault, entityName, new Uint8Array([1, 2, 3]));
 const snapshot = store.snapshot();
 const binary = bytes => ({ status: bytes ? 200 : 404, ok: Boolean(bytes), arrayBuffer: async () => Uint8Array.from(bytes).buffer });
 const until = async predicate => {
@@ -229,4 +233,51 @@ test('the active cloud file still decrypts and renders', async t => {
   const ui = await screen(t, '#vault/a.txt', cloudSetup(null, [], counters));
   await until(() => ui.box().includes('CLOUD-FILE-A'));
   assert.equal(counters.blobs, 1);
+});
+
+test('quoted file names remain one download attribute and cannot add attributes', async t => {
+  const ui = await screen(t, '#vault/' + encodeURIComponent(quotedName), cloudSetup(null, [], { blobs: 0 }));
+  await until(() => ui.box().includes('QUOTED-FILE'));
+  const download = ui.window.document.querySelector('a[download]');
+  assert.equal(download.getAttribute('download'), quotedName);
+  assert.equal(ui.window.document.querySelector('[data-fixture-injected]'), null);
+});
+
+test('quoted file names remain intact in selection labels', async t => {
+  const ui = await screen(t, '#vault/', cloudSetup(null, [], { blobs: 0 }));
+  await until(() => ui.window.document.querySelector('[data-sel]'));
+  ui.window.document.querySelector('[data-sel]').click();
+  const input = [...ui.window.document.querySelectorAll('input.pick')].find(el => decodeURIComponent(el.dataset.path) === quotedName);
+  assert.equal(input.getAttribute('aria-label'), quotedName + ' 고르기');
+  assert.equal(ui.window.document.querySelector('[data-fixture-injected]'), null);
+});
+
+test('search terms keep quotes and angle brackets after the filter redraw', async t => {
+  const delayed = [];
+  const setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    const timeout = window.setTimeout.bind(window);
+    window.setTimeout = (fn, ms, ...args) => ms === 160 ? delayed.push(fn) : timeout(fn, ms, ...args);
+  });
+  await until(() => ui.window.document.querySelector('#sf-q'));
+  const query = 'a "quoted" & <literal>';
+  const input = ui.window.document.querySelector('#sf-q');
+  input.value = query;
+  input.dispatchEvent(new ui.window.Event('input'));
+  assert.equal(delayed.length, 1);
+  delayed[0]();
+  assert.equal(ui.window.document.querySelector('#sf-q').value, query);
+});
+
+test('gallery title keeps entity-looking file names literally', async t => {
+  const setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    window.sessionStorage.setItem('files.vault.view', 'grid');
+    window.IntersectionObserver = class { observe() {} disconnect() {} };
+  });
+  await until(() => ui.window.document.querySelector('.frame'));
+  const frame = [...ui.window.document.querySelectorAll('.frame')].find(el => decodeURIComponent(el.dataset.path) === entityName);
+  assert.equal(frame.title, entityName);
 });

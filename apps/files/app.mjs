@@ -13,6 +13,7 @@ import {
 } from './src/vault.mjs';
 import { pickVaultBase } from './src/vault-base.mjs';
 import { laptopGateFor } from './src/laptop-gate.mjs';
+import { escapeHtml as esc } from './src/html.mjs';
 import { CELL_SIZES, cellSize, mountGallery, worthGallery } from './src/gallery.mjs';
 import { VIDEO_MAX_BYTES, mirrorable } from './src/mirror-policy.mjs';
 import { KINDS, SORTS, activeSummary, arrange, arrangeFolders, between, timeOf } from './src/browse.mjs';
@@ -153,12 +154,9 @@ function crumbHtml(bits) {
   return bits.join('<span class="sep">/</span>');
 }
 function link(href, text) {
-  return '<a href="' + href + '">' + text + '</a>';
+  return '<a href="' + esc(href) + '">' + text + '</a>';
 }
 
-function esc(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-}
 function fmtSize(n) {
   if (n >= 1073741824) return (n / 1073741824).toFixed(2) + ' GB';
   if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';

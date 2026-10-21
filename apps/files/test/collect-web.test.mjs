@@ -15,7 +15,7 @@ test('화면이 부르는 조각을 하나도 안 흘린다', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'collect-web-'));
     try {
         execFileSync(process.execPath, [join(APP, 'scripts', 'collect-web.mjs'), dir], { encoding: 'utf8' });
-        for (const rel of ['index.html', 'app.mjs', 'src/vault.mjs', 'src/vault-base.mjs', 'src/gallery.mjs']) {
+        for (const rel of ['index.html', 'app.mjs', 'src/vault.mjs', 'src/vault-base.mjs', 'src/gallery.mjs', 'src/html.mjs']) {
             assert.ok(existsSync(join(dir, rel)), `${rel} 이 안 옮겨졌다`);
         }
         /* 서버 전용 조각은 화면이 안 부르므로 따라오지 않는다. 나가는 것이 적을수록 좋다. */
