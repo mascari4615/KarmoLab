@@ -1227,9 +1227,8 @@ function setInfoOpen(on) {
  * 정보 패널 그리기. 가로세로와 길이는 화면이 이미 그린 것에서 읽으므로
  * 미디어가 실린 뒤 한 번 더 부른다.
  */
-function paintInfo(path, entry, kind, el) {
-  const panel = box.querySelector('.fileinfo');
-  if (!panel) return;
+function paintInfo(panel, path, entry, kind, el) {
+  if (!panel.isConnected) return;
   const media = el
     ? {
         width: el.naturalWidth || el.videoWidth || 0,
@@ -1381,9 +1380,9 @@ async function renderVaultFile(path, isCurrent) {
     panel.className = 'fileinfo';
     panel.hidden = !infoOpen();
     box.appendChild(panel);
-    paintInfo(path, entry, kind, el);
+    paintInfo(panel, path, entry, kind, el);
     /* 가로세로와 길이는 실린 뒤에 온다. 그때 한 번 더 그린다 */
-    const again = () => paintInfo(path, entry, kind, el);
+    const again = () => paintInfo(panel, path, entry, kind, el);
     el.addEventListener('load', again, { once: true });
     el.addEventListener('loadedmetadata', again, { once: true });
     for (const b of box.querySelectorAll('.filebar [data-go]')) {
@@ -1396,7 +1395,7 @@ async function renderVaultFile(path, isCurrent) {
           panel.hidden = !on;
           setInfoOpen(on);
           b.classList.toggle('on', on);
-          if (on) paintInfo(path, entry, kind, el);
+          if (on) paintInfo(panel, path, entry, kind, el);
         } else if (go === 'prev' || go === 'next') {
           goSibling(path, go);
         }

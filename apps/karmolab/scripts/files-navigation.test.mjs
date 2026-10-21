@@ -282,6 +282,19 @@ test('gallery title keeps entity-looking file names literally', async t => {
   assert.equal(frame.title, entityName);
 });
 
+test('late image metadata cannot overwrite the next file information panel', async t => {
+  const ui = await screen(t, '#vault/' + encodeURIComponent(entityName), cloudSetup(null, [], { blobs: 0 }));
+  await until(() => ui.window.document.querySelector('.preview-img'));
+  const oldImage = ui.window.document.querySelector('.preview-img');
+  await ui.go('#vault/a.txt');
+  await until(() => ui.box().includes('CLOUD-FILE-A'));
+  const panel = ui.window.document.querySelector('.fileinfo');
+  const currentInfo = panel.textContent;
+  assert.match(currentInfo, /a\.txt/);
+  oldImage.dispatchEvent(new ui.window.Event('load'));
+  assert.equal(panel.textContent, currentInfo);
+});
+
 test('a queued cloud search cannot redraw over the PC tab', async t => {
   const delayed = [], setup = cloudSetup(null, [], { blobs: 0 });
   const ui = await screen(t, '#vault/', (window, pending) => {
