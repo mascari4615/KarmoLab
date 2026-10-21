@@ -11,7 +11,7 @@
  *  - 배포 잡이 `needs` 로 매달린 앞 잡이 비켜서, 뒤가 전부 건너뛰어짐
  *  - 빌드가 옛 산출물을 그대로 다시 올려서 성공
  *
- * 그래서 **사이트가 스스로 밝힌 판**만 본다. 앱은 빌드 때 `build.json` 에 커밋, 시각을 굽는다:
+ * 사이트가 스스로 밝힌 판과 사이트 빌드 입력의 최신 커밋 비교.
  *
  *   { "stamp": "20260808144710", "commit": "a373a033...", "builtAt": "2026-08-08T14:47:10Z" }
  *
@@ -19,7 +19,7 @@
  *
  * ## 무엇을 낡음이라 하나
  *
- *   낡음 = (사이트 커밋 ≠ main 끝) **그리고** (사이트가 구워진 지 N분 초과)
+ *   낡음: 사이트에 빌드 입력 커밋 미반영, 입력 변경 뒤 유예 초과의 두 조건 충족.
  *
  * 두 조건을 **함께** 봐야 하는 이유:
  *  - 커밋만 보면. 배포는 몇 분 걸린다. 방금 민 것은 아직 안 올라간 게 정상인데 매번 빨개진다.
@@ -60,8 +60,12 @@ export interface FreshnessInput {
   site: SiteBuild | null;
   /** 못 받은 사유 (site 가 null 일 때). */
   unreachableReason?: string;
-  /** main 끝 커밋 sha. 못 받았으면 null. 그때는 판단을 미룬다(남의 고장으로 우릴 깨우지 않는다). */
+  /** 사이트 빌드 입력의 최신 대상 sha. 조회 실패 시 null, 지연 판단 보류. */
   headSha: string | null;
+  /** 최신 사이트 입력 변경 시각. 없는 입력은 기존 빌드 시각 기준. */
+  targetChangedAt?: string;
+  /** 서빙 커밋이 빌드 입력 커밋의 후손인지 GitHub에서 확인한 값. */
+  siteContainsTarget?: boolean;
   now: Date;
   /** 이 시간을 넘게 안 올라갔으면 낡음. */
   staleAfterMin: number;
@@ -75,7 +79,7 @@ export interface FreshnessVerdict {
   ageMin: number | null;
 }
 
-/** 사이트가 스스로 밝힌 판 vs main 끝. 둘을 견줘 한 줄로 답한다. */
+/** 실제 서빙 판본과 사이트 배포 대상 비교. */
 export function evaluateFreshness(input: FreshnessInput): FreshnessVerdict {
   const { site, headSha, now, staleAfterMin } = input;
 
@@ -100,30 +104,33 @@ export function evaluateFreshness(input: FreshnessInput): FreshnessVerdict {
     };
   }
 
-  /* main 끝을 못 물어봤으면 판단하지 않는다. GitHub 이 흔들릴 때 사이트가 낡았다고
-     외치면 애먼 데를 파게 된다. 모르는 것은 모른다고 두는 편이 낫다. */
+  // GitHub 조회 실패와 실제 사이트 배포 지연의 분리.
   if (!headSha) {
     return {
       state: 'fresh',
       ageMin,
-      reason: `main 끝을 못 물어봐 판단을 미룬다 (사이트 판 ${short(site.commit)}, ${humanAge(ageMin)} 전)`,
+      reason: `사이트 배포 대상을 못 물어봐 판단을 미룬다 (사이트 판 ${short(site.commit)}, ${humanAge(ageMin)} 전)`,
     };
   }
 
-  const same = site.commit.startsWith(headSha) || headSha.startsWith(site.commit);
+  const same = input.siteContainsTarget || site.commit.startsWith(headSha) || headSha.startsWith(site.commit);
   if (same) {
     return {
       state: 'fresh',
       ageMin,
-      reason: `사이트 = main 끝 ${short(headSha)} (${humanAge(ageMin)} 전에 올라감)`,
+      reason: `사이트에 배포 대상 ${short(headSha)} 반영 (${humanAge(ageMin)} 전에 올라감)`,
     };
   }
 
-  if (ageMin <= staleAfterMin) {
+  const changedAtMs = input.targetChangedAt ? Date.parse(input.targetChangedAt) : NaN;
+  const pendingMin = Number.isFinite(changedAtMs)
+    ? Math.max(0, Math.floor((now.getTime() - changedAtMs) / 60_000))
+    : ageMin;
+  if (pendingMin <= staleAfterMin) {
     return {
       state: 'fresh',
       ageMin,
-      reason: `올라가는 중. 사이트 ${short(site.commit)} / main ${short(headSha)} (${humanAge(ageMin)} 전 판, 아직 ${staleAfterMin}분 안)`,
+      reason: `올라가는 중. 사이트 ${short(site.commit)} / 배포 대상 ${short(headSha)} (변경 ${humanAge(pendingMin)} 전, 아직 ${staleAfterMin}분 안)`,
     };
   }
 
@@ -131,7 +138,7 @@ export function evaluateFreshness(input: FreshnessInput): FreshnessVerdict {
     state: 'stale',
     ageMin,
     reason:
-      `사이트가 ${humanAge(ageMin)}째 옛 판이다. 사이트 ${short(site.commit)} / main ${short(headSha)}. ` +
+      `사이트가 ${humanAge(ageMin)}째 옛 판이다. 사이트 ${short(site.commit)} / 배포 대상 ${short(headSha)}. ` +
       `배포 실행이 초록이어도 올라간 것은 없다.`,
   };
 }
@@ -200,7 +207,9 @@ export interface DeployFreshnessDeps {
   repo?: string;
   /** 배포 워크플로 파일 이름. 왜 안 올라갔나를 물을 때 쓴다. */
   workflow?: string;
-  /** main 끝을 물을 때 쓸 토큰 (없으면 익명. 시간당 60회라 10분 간격이면 충분하다). */
+  /** 사이트 workflow의 빌드 입력. 디렉터리는 하위 경로 포함. */
+  inputPaths?: readonly string[];
+  /** 사이트 배포 대상을 조회할 GitHub 토큰. 미설정 시 익명 조회. */
   token?: string;
   /** 확인 간격(분). 기본 10, 최소 2. */
   intervalMin?: number;
@@ -223,6 +232,11 @@ export interface DeployFreshnessHandle {
 const DEFAULT_BUILD_URL = 'https://blog.mascari4615.com/build.json';
 const DEFAULT_REPO = 'Mascari4615/KarmoLab';
 const DEFAULT_WORKFLOW = 'pages-deploy.yml';
+// pages-deploy.yml의 push.paths와 회귀 검사로 대조.
+export const SITE_BUILD_INPUTS = [
+  'apps/blog', 'apps/karmolab', 'apps/files', 'packages/ai', 'packages/badapple',
+  '.github/workflows/pages-deploy.yml', 'scripts/indexnow-submit.mjs', 'scripts/audit-sitemap-lastmod.mjs',
+] as const;
 const DEFAULT_INTERVAL_MIN = 10;
 /** 판이 갈렸을 때만 쓰는 초초한 간격. */
 const BUSY_INTERVAL_MIN = 3;
@@ -314,6 +328,7 @@ export async function runFreshnessTick(
     now: () => Date;
     timeoutMs: number;
     token?: string;
+    inputPaths?: readonly string[];
     logger: Pick<Console, 'log' | 'warn' | 'error'>;
     alert?: (event: DeployFreshnessAlert) => void;
   },
@@ -339,27 +354,55 @@ export async function runFreshnessTick(
   }
 
   let headSha: string | null = null;
+  let targetChangedAt: string | undefined;
+  let siteContainsTarget = false;
   try {
     const ghHeaders: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'User-Agent': 'karmolab-bot-deploy-freshness',
     };
     if (deps.token) ghHeaders.Authorization = `Bearer ${deps.token}`;
-    const body = (await getJson(
-      `https://api.github.com/repos/${deps.repo}/commits/main`,
-      fetchImpl,
-      timeoutMs,
-      ghHeaders,
-    )) as { sha?: string };
-    if (body && typeof body.sha === 'string') headSha = body.sha;
+    // 실행 이력만 비교하면 workflow 자체가 시작하지 않은 배포 누락 은폐.
+    const targets = await Promise.all((deps.inputPaths ?? SITE_BUILD_INPUTS).map(async (path) => {
+      const query = new URLSearchParams({ sha: 'main', path, per_page: '1' });
+      const body = await getJson(
+        `https://api.github.com/repos/${deps.repo}/commits?${query}`,
+        fetchImpl, timeoutMs, ghHeaders,
+      ) as Array<{ sha?: string; commit?: { committer?: { date?: string } } }>;
+      if (!Array.isArray(body)) throw new Error('사이트 입력 커밋 응답 형식 오류');
+      const revision = body[0];
+      if (!revision) return null;
+      const at = revision.commit?.committer?.date;
+      if (typeof revision.sha !== 'string' || !revision.sha.trim() || !at || !Number.isFinite(Date.parse(at))) {
+        throw new Error('사이트 입력 커밋 또는 시각 없음');
+      }
+      return { sha: revision.sha.trim(), at };
+    }));
+    const target = targets.filter((value) => value !== null).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
+    if (!target) throw new Error('사이트 배포 대상 없음');
+    headSha = target.sha;
+    targetChangedAt = target.at;
+    if (site && site.commit !== headSha) {
+      const comparison = await getJson(
+        `https://api.github.com/repos/${deps.repo}/compare/${encodeURIComponent(headSha)}...${encodeURIComponent(site.commit)}`,
+        fetchImpl, timeoutMs, ghHeaders,
+      ) as { status?: string };
+      if (!['identical', 'ahead', 'behind', 'diverged'].includes(comparison?.status || '')) {
+        throw new Error('사이트 입력 포함 여부 조회 실패');
+      }
+      siteContainsTarget = comparison.status === 'identical' || comparison.status === 'ahead';
+    }
   } catch (err) {
-    logger.warn(`[DeployFreshness] main 끝을 못 물어봤다. ${String(err).slice(0, 100)}`);
+    headSha = null;
+    logger.warn(`[DeployFreshness] 사이트 배포 대상을 못 물어봤다. ${String(err).slice(0, 100)}`);
   }
 
   const verdict = evaluateFreshness({
     site,
     unreachableReason,
     headSha,
+    targetChangedAt,
+    siteContainsTarget,
     now: now(),
     staleAfterMin: deps.staleAfterMin,
   });
@@ -404,6 +447,7 @@ export function startDeployFreshness(deps: DeployFreshnessDeps = {}): DeployFres
     buildUrl: deps.buildUrl || DEFAULT_BUILD_URL,
     repo: deps.repo || DEFAULT_REPO,
     workflow: deps.workflow || DEFAULT_WORKFLOW,
+    inputPaths: deps.inputPaths,
     staleAfterMin: deps.staleAfterMin ?? DEFAULT_STALE_AFTER_MIN,
     remindMin: deps.remindMin ?? DEFAULT_REMIND_MIN,
     fetchImpl: deps.fetchImpl ?? fetch,

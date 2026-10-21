@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   evaluateFreshness,
   decideAlert,
@@ -7,6 +8,7 @@ import {
   nextDelayMin,
   startDeployFreshness,
   stopDeployFreshness,
+  SITE_BUILD_INPUTS,
   type AlertMemory,
 } from './deploy-freshness';
 
@@ -85,6 +87,18 @@ describe('evaluateFreshness. 사이트 파일이 진실', () => {
     });
     expect(v.state).toBe('fresh');
   });
+
+  it('allows a newly changed site input even when the served build is old', () => {
+    const verdict = evaluateFreshness({
+      site: { commit: OLD, builtAt: at(21 * 60) },
+      headSha: HEAD,
+      now: NOW,
+      staleAfterMin: 45,
+      targetChangedAt: at(5),
+    });
+    expect(verdict.state).toBe('fresh');
+    expect(verdict.reason).toContain('올라가는 중');
+  });
 });
 
 describe('decideAlert. 조용해지는 것이 이 사고의 본체', () => {
@@ -126,8 +140,9 @@ describe('runFreshnessTick. 실제 물어보기', () => {
       if (String(url).includes('build.json')) {
         return { ok: true, json: async () => siteBody } as unknown as Response;
       }
+      if (String(url).includes('/compare/')) return { ok: true, json: async () => ({ status: 'behind' }) } as Response;
       if (headSha === null) return { ok: false, status: 500 } as unknown as Response;
-      return { ok: true, json: async () => ({ sha: headSha }) } as unknown as Response;
+      return { ok: true, json: async () => [{ sha: headSha, commit: { committer: { date: at(21 * 60) } } }] } as unknown as Response;
     });
   }
 
@@ -135,6 +150,7 @@ describe('runFreshnessTick. 실제 물어보기', () => {
     buildUrl: 'https://example.test/build.json',
     repo: 'o/r',
     workflow: 'pages-deploy.yml',
+    inputPaths: ['site'],
     staleAfterMin: 45,
     remindMin: 360,
     now: () => NOW,
@@ -161,6 +177,55 @@ describe('runFreshnessTick. 실제 물어보기', () => {
     );
     expect(verdict.state).toBe('stale');
     expect(alert).toHaveBeenCalledWith(expect.objectContaining({ siteCommit: OLD, headCommit: HEAD }));
+  });
+
+  it('compares with site inputs instead of unrelated bot commits', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      const body = url.includes('build.json')
+        ? { sha: OLD, builtAt: at(21 * 60) }
+        : url.includes('/commits/main')
+          ? { sha: HEAD }
+          : [{ sha: OLD, commit: { committer: { date: at(21 * 60) } } }];
+      return { ok: true, json: async () => body } as Response;
+    });
+    const verdict = await runFreshnessTick(
+      { ...base, fetchImpl: fetchImpl as never },
+      { last: null, lastAlertAt: null },
+    );
+    expect(verdict.state).toBe('fresh');
+    expect(fetchImpl.mock.calls.some(([url]) => url.includes('/commits/main'))).toBe(false);
+    expect(fetchImpl.mock.calls.some(([url]) => url.includes('path=site'))).toBe(true);
+  });
+
+  it('keeps the source inputs aligned with the deployment workflow', () => {
+    const workflow = readFileSync(new URL('../../../../../../.github/workflows/pages-deploy.yml', import.meta.url), 'utf8');
+    const block = workflow.split('    paths:')[1].split('\n  # Allows')[0];
+    const inputs = [...block.matchAll(/^\s+- ([^\r\n#]+)$/gm)].map((match) => match[1].trim().replace(/\/\*\*$/, ''));
+    expect([...SITE_BUILD_INPUTS].sort()).toEqual(inputs.sort());
+  });
+
+  it('accepts a served build that already includes the latest site input', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      const body = url.includes('build.json')
+        ? { sha: HEAD, builtAt: at(21 * 60) }
+        : url.includes('/compare/')
+          ? { status: 'ahead' }
+          : [{ sha: OLD, commit: { committer: { date: at(22 * 60) } } }];
+      return { ok: true, json: async () => body } as Response;
+    });
+    const verdict = await runFreshnessTick({ ...base, fetchImpl: fetchImpl as never }, { last: null, lastAlertAt: null });
+    expect(verdict.state).toBe('fresh');
+    expect(fetchImpl.mock.calls.some(([url]) => url.includes(`/compare/${OLD}...${HEAD}`))).toBe(true);
+  });
+
+  it('still reports an overdue site input when no deployment run exists', async () => {
+    const alert = vi.fn();
+    const verdict = await runFreshnessTick(
+      { ...base, fetchImpl: fakeFetch({ sha: OLD, builtAt: at(21 * 60) }, HEAD) as never, alert },
+      { last: null, lastAlertAt: null },
+    );
+    expect(verdict.state).toBe('stale');
+    expect(alert).toHaveBeenCalledWith(expect.objectContaining({ state: 'stale', headCommit: HEAD }));
   });
 
   it.each(['sha', 'commit'])('rejects an empty %s rather than matching every main commit', async (field) => {
