@@ -515,12 +515,8 @@ jobs:
           Write-Host "[KAR-018] nssm 설정 영구화 완료: AppStderr/AppStdout + USERPROFILE 마스킹 + safe.directory"
           # === /KAR-018 nssm 영구화 ===
 
-          & $nssm restart karmolab-bot-prod 2>&1
-          $exit = $LASTEXITCODE
-          if ($exit -ne 0) {
-            & $nssm start karmolab-bot-prod 2>&1
-            if ($LASTEXITCODE -ne 0) { throw "nssm restart/start karmolab-bot-prod failed" }
-          }
+          & (Join-Path $env:KARMOLAB_BOT_DIR 'scripts/restart-service.ps1') -NssmPath $nssm -ServiceName 'karmolab-bot-prod' -TimeoutSec 60
+          if ($LASTEXITCODE -ne 0) { throw 'Service restart did not reach RUNNING' }
           # ops-self-report 의 reportShutdown → reportStartup 두 임베드가 운영 채널에 도착
           Write-Host "karmolab-bot-prod restarted at $(Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz')"
 
