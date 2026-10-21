@@ -61,6 +61,8 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
     const board = container.querySelector<HTMLElement>('.pl-kanban-board')!;
     const form = container.querySelector<HTMLFormElement>('.pl-kanban-add')!;
     const input = container.querySelector<HTMLInputElement>('[name="task-title"]')!;
+    const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    let creating = false;
 
     function render(): void {
         board.innerHTML = COLUMNS.map((col) => {
@@ -213,8 +215,12 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (creating || destroyed) return;
         const title = input.value.trim();
         if (!title) return;
+        creating = true;
+        submitButton.disabled = true;
+        form.setAttribute('aria-busy', 'true');
         input.value = '';
         void (async () => {
             try {
@@ -223,8 +229,13 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
                 else createLocalTask(title);
                 await reload();
             } catch {
+                if (destroyed) return;
                 toast(t('planner.t48'), 'error');
-                input.value = title;
+                if (input.value === '') input.value = title;
+            } finally {
+                creating = false;
+                submitButton.disabled = false;
+                form.removeAttribute('aria-busy');
             }
         })();
     });

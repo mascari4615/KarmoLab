@@ -419,7 +419,7 @@
     "test:perf:self": "node scripts/smoke-perf.mjs --regress",
     "test:phash": "node scripts/test-phash.mjs",
     "test:pinyin": "node scripts/smoke-charconv-pinyin.mjs",
-    "test:planner": "node scripts/test-planner-core.mjs",
+    "test:planner": "node scripts/test-planner-core.mjs && node --test scripts/planner-kanban.test.mjs",
     "test:platform": "node scripts/smoke-platform-pages.mjs",
     "test:pnum": "node scripts/test-pdfpagenum.mjs",
     "test:pose": "node scripts/run-node-tests.mjs ../../packages/pose/test",
