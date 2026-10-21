@@ -11,8 +11,10 @@ let server;
 let base;
 let fixtureRoot;
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
+const fixtureParent = join(appRoot, 'tmp');
 before(async () => {
-  fixtureRoot = await mkdtemp(join(appRoot, 'dev-http-test-'));
+  await mkdir(fixtureParent, { recursive: true });
+  fixtureRoot = await mkdtemp(join(fixtureParent, 'dev-http-test-'));
   await mkdir(join(fixtureRoot, '.git'));
   await mkdir(join(fixtureRoot, '.well-known'));
   await Promise.all([
@@ -45,7 +47,7 @@ after(async () => {
     await exited;
   }
   if (fixtureRoot) {
-    assert.equal(dirname(fixtureRoot), resolve(appRoot));
+    assert.equal(dirname(fixtureRoot), resolve(fixtureParent));
     assert.ok(basename(fixtureRoot).startsWith('dev-http-test-'));
     await rm(fixtureRoot, { recursive: true, force: true });
   }
@@ -87,7 +89,7 @@ test('malformed URL encoding returns a client error and leaves the server availa
 });
 
 test('development previews deny private dot files while preserving public resources', async () => {
-  const prefix = '/apps/karmolab/' + basename(fixtureRoot);
+  const prefix = '/apps/karmolab/tmp/' + basename(fixtureRoot);
   for (const relative of ['.env', '.env.local', '.git/HEAD', '.npmrc', '%2eenv', '.git%5cHEAD']) {
     assert.equal((await request(prefix + '/' + relative)).status, 403, relative);
   }
