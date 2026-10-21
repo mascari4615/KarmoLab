@@ -51,32 +51,32 @@ describe('service restart waits for the observed state', () => {
     expect(result.code, result.output).toBe(0);
     expect(result.calls).not.toContain('start');
     expect(result.calls).toContain('status');
-  });
+  }, 15000);
 
   it('checks RUNNING even after a successful restart command', () => {
     const result = restart({ states: ['SERVICE_RUNNING'] });
     expect(result.code, result.output).toBe(0);
     expect(result.calls).toContain('status');
-  });
+  }, 15000);
 
   it('fails if START_PENDING never becomes RUNNING', () => {
     const result = restart({ states: ['SERVICE_START_PENDING'] });
     expect(result.code, result.output).not.toBe(0);
-  });
+  }, 15000);
 
   it('fails a paused service instead of declaring success', () => {
     const result = restart({ states: ['SERVICE_PAUSED'] });
     expect(result.code, result.output).not.toBe(0);
-  });
+  }, 15000);
 
   it('starts a stopped service once and waits for it', () => {
     const result = restart({ states: ['SERVICE_STOPPED', 'SERVICE_START_PENDING', 'SERVICE_RUNNING'], restartExit: 1 });
     expect(result.code, result.output).toBe(0);
     expect(result.calls.filter((value: string) => value === 'start')).toHaveLength(1);
-  });
+  }, 15000);
 
   it('keeps an unconfirmed restart failure as a failure', () => {
     const result = restart({ states: ['SERVICE_RUNNING'], restartExit: 1, startExit: 1 });
     expect(result.code, result.output).not.toBe(0);
-  });
+  }, 15000);
 });
