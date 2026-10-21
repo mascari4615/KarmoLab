@@ -193,14 +193,15 @@ export const SLASH_COMMANDS: SlashCommand[] = [
           opt
             .setName('주제')
             .setNameLocalizations(enUS('topic'))
-            .setDescription('게임, /music, AI, ping 등')
-            .setDescriptionLocalizations(enUS('game, music, utility, or overview'))
+            .setDescription('게임, 음악, 기억, AI와 관리')
+            .setDescriptionLocalizations(enUS('game, music, memory, utility, or overview'))
             .setRequired(false)
             .addChoices(
               { name: '개요', name_localizations: enUS('Overview'), value: 'overview' },
               { name: '음성, /music', name_localizations: enUS('Voice, /music'), value: 'music' },
               { name: '검, 미니게임, 주식, 레이드', name_localizations: enUS('Sword, minigames, stocks, raid'), value: 'game' },
-              { name: 'AI, ping, 음성 입장', name_localizations: enUS('AI, ping, voice join'), value: 'utility' },
+              { name: '기억 확인, 저장, 수정', name_localizations: enUS('View, save, and edit memory'), value: 'memory' },
+              { name: 'AI, 봇 상태, 관리', name_localizations: enUS('AI, bot status, administration'), value: 'utility' },
             ),
         ),
     run: async (ctx, interaction) => { await handleHelp(ctx, interaction); },

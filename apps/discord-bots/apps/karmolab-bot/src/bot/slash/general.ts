@@ -12,7 +12,7 @@ export async function handlePing(ctx: BotContext, interaction: ChatInputCommandI
   await interaction.reply({ embeds: [embed] });
 }
 
-/** `/도움말` 주제: 개요 | music | game(페이지 임베드) | utility. 채널 스팸을 줄이려고 기본은 ephemeral */
+/** 도움말의 개요, 음악, 게임, 기억, 관리 안내. 모든 도움말 응답은 나만 보기. */
 export async function handleHelp(ctx: BotContext, interaction: ChatInputCommandInteraction): Promise<void> {
   const topic = interaction.options.getString('주제');
 
@@ -42,14 +42,21 @@ export async function handleHelp(ctx: BotContext, interaction: ChatInputCommandI
           name: '🧠 기억 & AI',
           value:
             '주제: **memory**\n' +
-            '`/기억 확인` / `저장` / `수정` / `핫로그`. 대화 기록 및 프로필 관리\n' +
-            '주제: **utility**. `/yawn` (AI 질문), `/ping` (봇 상태)',
+            '`/character 기억 확인`, `/character 기억 저장`, `/character 기억 수정`, `/character 기억 핫로그`\n' +
+            '주제: **utility**. `/yawn` (AI 질문), `/관리자 핑` (봇 상태)',
         },
         {
           name: '🎧 음성 & 관리',
           value:
             '주제: **utility**\n' +
-            '`/음성입장` / `음성퇴장` / `/cursor-edit` / `/admin-reload` / `/admin-save`',
+            '`/music join`, `/music leave`\n' +
+            '`/관리자 에이전트`, `/관리자 리로드`, `/관리자 저장`',
+        },
+        {
+          name: '📌 다른 기능',
+          value:
+            '`/코덱스` 초기화 소식, `/오락실` 함께할 게임, `/결산` 서버 활동\n' +
+            '`/빌드 상태`, `/일정 일정 목록`, `/프로필`, `/사용량`',
         },
       )
       .setFooter({ text: '예: /도움말 game  |  /도움말 music  |  /도움말 memory' })
@@ -119,34 +126,34 @@ export async function handleHelp(ctx: BotContext, interaction: ChatInputCommandI
           name: '/yawn. AI에 질문',
           value:
             '`질문` (필수) + 선택 `api` (기본 / AI Studio / Vertex) + 선택 `model`\n' +
-            '→ Gemini 또는 Claude CLI로 응답 (env ASSISTANT_AI_PROVIDER 설정)',
+            '설정된 AI로 질문에 답변',
         },
         {
-          name: '/ping. 봇 상태',
+          name: '/관리자 핑. 봇 상태',
           value: '디스코드 웹소켓 지연시간(ms) 표시 (낮을수록 빠름)',
         },
         {
-          name: '🎧 /음성입장, /voice-join',
+          name: '🎧 /music join',
           value: '봇을 음성 채널로 초대\n옵션: 채널 지정 또는 본인이 있는 채널로 자동 입장',
           inline: true,
         },
         {
-          name: '🎧 /음성퇴장, /voice-leave',
+          name: '🎧 /music leave',
           value: '봇이 음성 채널에서 나감',
           inline: true,
         },
         {
-          name: '👨‍💻 /cursor-edit (관리자)',
-          value: '로컬 Cursor agent 실행 (코드 수정 AI)',
+          name: '👨‍💻 /관리자 에이전트',
+          value: '로컬 코드 수정 에이전트 실행',
           inline: true,
         },
         {
-          name: '♻️ /admin-reload (관리자)',
+          name: '♻️ /관리자 리로드',
           value: '봇 설정 재로드',
           inline: true,
         },
         {
-          name: '💾 /admin-save (관리자)',
+          name: '💾 /관리자 저장',
           value: '게임 데이터 즉시 저장',
           inline: true,
         },
@@ -160,30 +167,29 @@ export async function handleHelp(ctx: BotContext, interaction: ChatInputCommandI
     const embed = new EmbedBuilder()
       .setTitle('🧠 기억 커맨드. AI 비서 메모리 관리')
       .setDescription(
-        '대화 기록 및 프로필을 관리합니다.\n' +
-          '모든 정보는 MEMO_REPO_PATH에 자동으로 git commit됩니다.',
+        '현재 캐릭터의 대화 기록과 기억을 확인하고 저장하거나 수정합니다.',
       )
       .addFields(
         {
-          name: '📖 /기억 확인',
+          name: '📖 /character 기억 확인',
           value:
             '저장된 정보 확인\n' +
             '→ user.md (나에 대한 정보) + self.md (봇 자신에 대한 정보)\n' +
             '→ 파일 용량 표시 + 크면 핫로그 사용 안내',
         },
         {
-          name: '💾 /기억 저장',
+          name: '💾 /character 기억 저장',
           value: '지금까지의 대화를 memo 레포에 즉시 커밋 (1시간마다 자동 저장되지만 수동 저장도 가능)',
         },
         {
-          name: '✏️ /기억 수정 [내용]',
+          name: '✏️ /character 기억 수정 [내용]',
           value:
             'AI 도움으로 user.md 수정\n' +
-            '예: `/기억 수정 새로운 취미는 게임`\n' +
+            '예: `/character 기억 수정 새로운 취미는 게임`\n' +
             '→ 수정 전후 줄 수 비교 + 새 파일 크기 표시',
         },
         {
-          name: '🔥 /기억 핫로그',
+          name: '🔥 /character 기억 핫로그',
           value:
             '최근 중요 기억들 조회 (최대 20개)\n' +
             '→ 날짜별로 태깅된 즉시 저장된 정보들\n' +
