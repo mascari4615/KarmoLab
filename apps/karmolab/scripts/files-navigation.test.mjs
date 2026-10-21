@@ -185,7 +185,7 @@ function cloudSetup(heldKey, held, counters) {
         };
       },
     });
-    Object.defineProperty(window, 'crypto', { value: { subtle }, configurable: true });
+    Object.defineProperty(window, 'crypto', { value: { subtle, getRandomValues: array => webcrypto.getRandomValues(array) }, configurable: true });
     window.sessionStorage.setItem('files.vault.pass', 'fixture-only');
     window.URL.createObjectURL = () => { counters.blobs += 1; return 'blob:fixture'; };
     window.fetch = (url, options) => {
@@ -293,6 +293,69 @@ test('late image metadata cannot overwrite the next file information panel', asy
   assert.match(currentInfo, /a\.txt/);
   oldImage.dispatchEvent(new ui.window.Event('load'));
   assert.equal(panel.textContent, currentInfo);
+});
+
+async function pendingTrash(t) {
+  const writes = [], setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    const get = window.fetch;
+    window.fetch = (url, options) => options?.method === 'PUT'
+      ? new Promise((resolve, reject) => writes.push({ resolve, reject }))
+      : get(url, options);
+  });
+  await until(() => ui.window.document.querySelector('[data-sel]'));
+  ui.window.document.querySelector('[data-sel]').click();
+  const choose = name => [...ui.window.document.querySelectorAll('input.pick')]
+    .find(el => decodeURIComponent(el.dataset.path) === name).click();
+  choose('a.txt');
+  assert.equal(ui.window.document.querySelector('[data-pick="trash"]').disabled, false, ui.box());
+  ui.window.document.querySelector('[data-pick="trash"]').click();
+  await until(() => writes.length === 1);
+  return { ...ui, writes, choose };
+}
+
+test('pending trash writes remain single flight after a directory redraw', async t => {
+  const ui = await pendingTrash(t);
+  ui.window.document.querySelector('[data-sort]').click();
+  const button = ui.window.document.querySelector('[data-pick="trash"]');
+  assert.equal(button.disabled, true);
+  button.click();
+  await tick();
+  assert.equal(ui.writes.length, 1);
+  ui.writes[0].resolve({ ok: true });
+});
+
+test('pending trash writes do not hide files before storage confirms success', async t => {
+  const ui = await pendingTrash(t);
+  ui.window.document.querySelector('[data-sort]').click();
+  const names = [...ui.window.document.querySelectorAll('input.pick')].map(el => decodeURIComponent(el.dataset.path));
+  assert.ok(names.includes('a.txt'));
+  ui.writes[0].resolve({ ok: true });
+  await until(() => ![...ui.window.document.querySelectorAll('input.pick')]
+    .some(el => decodeURIComponent(el.dataset.path) === 'a.txt'));
+});
+
+test('completed trash writes preserve a newer selection', async t => {
+  const ui = await pendingTrash(t);
+  ui.choose(quotedName);
+  ui.writes[0].resolve({ ok: true });
+  await until(() => ![...ui.window.document.querySelectorAll('input.pick')]
+    .some(el => decodeURIComponent(el.dataset.path) === 'a.txt'));
+  const selected = [...ui.window.document.querySelectorAll('input.pick:checked')].map(el => decodeURIComponent(el.dataset.path));
+  assert.deepEqual(selected, [quotedName]);
+});
+
+test('failed trash writes keep files visible and release redrawn controls for retry', async t => {
+  const ui = await pendingTrash(t);
+  ui.window.document.querySelector('[data-sort]').click();
+  ui.writes[0].reject(new Error('fixture write failure'));
+  await until(() => !ui.window.document.querySelector('[data-pick="trash"]').disabled);
+  const names = [...ui.window.document.querySelectorAll('input.pick')].map(el => decodeURIComponent(el.dataset.path));
+  assert.ok(names.includes('a.txt'));
+  ui.window.document.querySelector('[data-pick="trash"]').click();
+  await until(() => ui.writes.length === 2);
+  ui.writes[1].resolve({ ok: true });
 });
 
 test('a queued cloud search cannot redraw over the PC tab', async t => {

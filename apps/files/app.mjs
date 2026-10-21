@@ -785,26 +785,38 @@ function trashCount() {
  * 버리거나 되살리기. **청크는 안 지운다.** 표시만 바꾼다.
  * 영영 지우기는 열쇠와 rclone 이 있는 기계에서만 (`npm run empty-trash`).
  */
+let trashSaving = false;
+
 async function moveTrash(paths, toTrash, button) {
+  if (trashSaving) return;
+  trashSaving = true;
+  const session = vaultSession;
   const label = button.textContent;
   button.disabled = true;
   button.textContent = '적는 중';
-  const before = vaultTrash;
   try {
-    vaultTrash = toTrash ? putTrash(vaultTrash, paths) : takeTrash(vaultTrash, paths);
-    await writeTrash(vaultSession, vaultTrash);
-    chosen.clear();
-    selecting = false;
+    const next = toTrash ? putTrash(vaultTrash, paths) : takeTrash(vaultTrash, paths);
+    await writeTrash(session, next);
+    if (vaultSession !== session) return;
+    vaultTrash = next;
+    for (const path of paths) chosen.delete(path);
+    if (!chosen.size) selecting = false;
+    trashSaving = false;
     renderVaultDir(vaultDirNow);
   } catch (e) {
-    /* 못 적었으면 화면도 되돌린다. 지운 줄 알았는데 다음에 다시 뜨면 더 나쁘다 */
-    vaultTrash = before;
-    button.textContent = '못 적음';
+    /* 확인 전에는 목록 유지. 실패한 쓰기를 성공한 표시로 남기지 않도록 제한 */
+    if (button.isConnected) button.textContent = '못 적음';
     console.error('[files] 휴지통 적기 실패', e);
     setTimeout(() => {
+      if (!button.isConnected) return;
       button.disabled = false;
       button.textContent = label;
     }, 2500);
+  } finally {
+    trashSaving = false;
+    for (const current of box.querySelectorAll('[data-pick="trash"], [data-pick="restore"]')) {
+      if (current !== button) current.disabled = !chosen.size;
+    }
   }
 }
 
@@ -838,7 +850,7 @@ function pickBar(files) {
     '<button type="button" class="fb-btn" data-pick="get"' + (chosen.size ? '' : ' disabled') +
     '>받기</button>' +
     '<button type="button" class="fb-btn" data-pick="' + (showTrash ? 'restore' : 'trash') + '"' +
-    (chosen.size ? '' : ' disabled') + '>' + (showTrash ? '되살리기' : '휴지통으로') + '</button>' +
+    (chosen.size && !trashSaving ? '' : ' disabled') + '>' + (showTrash ? '되살리기' : '휴지통으로') + '</button>' +
     '</div>';
 }
 
