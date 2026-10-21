@@ -52,7 +52,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
     container.innerHTML = `
         <div class="pl-kanban">
             <form class="pl-kanban-add">
-                <input type="text" name="task-title" class="pl-input" placeholder="${esc(t('planner.t43'))}">
+                <input type="text" name="task-title" class="pl-input" aria-label="${esc(t('planner.t43'))}" placeholder="${esc(t('planner.t43'))}">
                 <button type="submit" class="btn btn-accent">${esc(t('planner.t44'))}</button>
             </form>
             <div class="pl-kanban-board"></div>

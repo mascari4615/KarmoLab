@@ -283,6 +283,9 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
             .pl-cal-layout { flex-direction: column; }
             .pl-cal-side { width: 100%; flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
             .pl-kanban-board { grid-template-columns: 1fr; }
+            .pl-kanban-add .pl-input { min-width: 0; min-height: 44px; font-size: 16px; }
+            .pl-kanban-add .btn { min-height: 44px; min-width: 44px; }
+            .pl-card-move { min-height: 44px; min-width: 44px; padding: 8px 10px; font-size: var(--font-size-sm); }
             .pl-body { flex-direction: column; }
             .pl-rail { order: -2; width: auto; flex-direction: row; border-left: 0; border-bottom: 1px solid var(--border); padding: 6px; }
             .pl-rail-btn { flex: 1; }
