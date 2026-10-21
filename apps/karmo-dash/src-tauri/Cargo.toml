@@ -20,6 +20,9 @@ url = "2"
 uuid = { version = "1", features = ["v4"] }
 open = "5"
 
+[patch.crates-io]
+glib = { path = "../../../vendor/glib-0.18.5" }
+
 [profile.release]
 lto = "fat"
 codegen-units = 1

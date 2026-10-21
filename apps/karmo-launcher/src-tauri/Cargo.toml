@@ -25,6 +25,9 @@ open = "5"
 minisign-verify = "0.2"
 base64 = "0.22"
 
+[patch.crates-io]
+glib = { path = "../../../vendor/glib-0.18.5" }
+
 [profile.release]
 lto = "fat"
 codegen-units = 1
