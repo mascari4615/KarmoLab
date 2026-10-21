@@ -133,8 +133,8 @@ if (browserTargets.length > 0 && browserTargets.length <= 20) {
    지운다(위 정부 사이트 사고와 같은 모양이다). 5xx 는 못 잼(2)으로 넘긴다. */
 const dead2 = dead.filter((d) => d.status !== 0 && d.status < 500);
 const unreachableCount = dead.filter((d) => d.status === 0 || d.status >= 500);
-for (const d of dead2) console.log(`  ${d.status}  ${d.node}. ${d.label}`);
-for (const d of unreachableCount) console.log(`  못 닿음  ${d.node}. ${d.label}`);
+for (const d of dead2) console.log(`  ${d.status}  ${d.node}. ${d.label} (${d.url})`);
+for (const d of unreachableCount) console.log(`  못 닿음 ${d.status || '응답 없음'}  ${d.node}. ${d.label} (${d.url})`);
 if (dead2.length > 0) {
   console.log(`[studymap-links] 죽은 주소 ${dead2.length}개 / 전체 ${targets.length}개`);
   process.exit(1);
