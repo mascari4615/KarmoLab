@@ -41,8 +41,9 @@ function request(route) {
   });
 }
 
-test('serves Files ES modules as JavaScript, including cache-busted URLs', async () => {
-  for (const route of ['/apps/files/app.mjs', '/apps/files/app.mjs?review=1']) {
+test('serves ES modules as JavaScript, including cache-busted URLs', async () => {
+  // prepush sparse clone에도 포함된 앱 파일로 HTTP 규약 확인
+  for (const route of ['/apps/karmolab/scripts/dev.mjs', '/apps/karmolab/scripts/dev.mjs?review=1']) {
     const response = await request(route);
     assert.equal(response.status, 200);
     assert.match(response.type, /^text\/javascript\b/);
@@ -50,7 +51,7 @@ test('serves Files ES modules as JavaScript, including cache-busted URLs', async
 });
 
 test('preserves HTML and JSON content types', async () => {
-  const [html, json] = await Promise.all([request('/apps/files/index.html'), request('/apps/karmolab/package.json')]);
+  const [html, json] = await Promise.all([request('/apps/karmolab/index.html'), request('/apps/karmolab/package.json')]);
   assert.equal(html.status, 200);
   assert.match(html.type, /^text\/html\b/);
   assert.equal(json.status, 200);
