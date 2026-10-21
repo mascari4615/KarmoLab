@@ -14,9 +14,15 @@ on:
       - 'apps/discord-bots/package.json'
       - 'apps/discord-bots/package-lock.json'
       - 'packages/ai/**'
+      - 'packages/arcade/**'
+      - 'apps/karmolab/src/core/**'
       # 서버가 판을 다시 셈하는 묶음은 오락실 커널에서 나온다. 커널이 바뀌면 봇도 다시 구워야
       # 한다. 안 그러면 서버의 판단이 옛 규칙으로 굳는다 (2026-09-01)
       - 'apps/karmolab/src/widgets/arcade/**'
+      # 서버 검증 묶음에서 제외된 화면과 스타일 경로
+      - '!apps/karmolab/src/widgets/arcade/games/*-view.ts'
+      - '!apps/karmolab/src/widgets/arcade/games/*-view3d.ts'
+      - '!apps/karmolab/src/widgets/arcade/**/*.css'
       - '.github/workflows/deploy-discord-bots.yml'
   workflow_dispatch: {}
 

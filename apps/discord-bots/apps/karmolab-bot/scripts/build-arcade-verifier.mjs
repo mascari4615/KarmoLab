@@ -16,15 +16,13 @@
  *
  * `node scripts/build-arcade-verifier.mjs [--out <경로>]`
  */
-import { build } from 'esbuild';
+import { buildArcadeVerifier } from './lib/arcade-verifier.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /** 이 꾸러미(karmolab-bot) */
 const PKG = path.resolve(HERE, '..');
-/** 커널이 사는 곳 */
-const APP = path.resolve(PKG, '..', '..', '..', 'karmolab');
 const args = process.argv.slice(2);
 const at = args.indexOf('--out');
 const OUT =
@@ -32,16 +30,7 @@ const OUT =
     ? path.resolve(args[at + 1])
     : path.resolve(PKG, 'data', 'arcade-verifier.cjs');
 
-const res = await build({
-  entryPoints: [path.join(APP, 'src/widgets/arcade/verify-entry.ts')],
-  bundle: true,
-  format: 'cjs',
-  platform: 'node',
-  target: 'node20',
-  outfile: OUT,
-  logLevel: 'silent',
-  metafile: true
-});
+const res = await buildArcadeVerifier({ outfile: OUT });
 
 const bytes = Object.values(res.metafile.outputs)[0]?.bytes ?? 0;
 console.log(`[verifier] 구웠다: ${path.relative(process.cwd(), OUT)} (${Math.round(bytes / 1024)}KB)`);
