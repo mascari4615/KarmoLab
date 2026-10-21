@@ -1425,6 +1425,14 @@ async function renderVaultFile(path, isCurrent) {
     const img = document.createElement('img');
     img.className = 'preview-img';
     img.alt = path;
+    img.addEventListener('error', () => {
+      if (!isCurrent() || !img.isConnected) return;
+      const note = document.createElement('p');
+      note.className = 'none';
+      note.setAttribute('role', 'status');
+      note.textContent = '이미지를 표시할 수 없습니다. 위의 받기로 원본을 저장하세요.';
+      img.replaceWith(note);
+    }, { once: true });
     img.src = lastBlob;
     put(img);
     return;

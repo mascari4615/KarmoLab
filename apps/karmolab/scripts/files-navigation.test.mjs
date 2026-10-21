@@ -295,6 +295,36 @@ test('late image metadata cannot overwrite the next file information panel', asy
   assert.equal(panel.textContent, currentInfo);
 });
 
+test('an undecodable image explains the fallback and preserves the original download', async t => {
+  const ui = await screen(t, '#vault/' + encodeURIComponent(entityName), cloudSetup(null, [], { blobs: 0 }));
+  await until(() => ui.window.document.querySelector('.preview-img'));
+  const image = ui.window.document.querySelector('.preview-img');
+  let revoked = 0;
+  ui.window.URL.revokeObjectURL = () => { revoked += 1; };
+  image.dispatchEvent(new ui.window.Event('error'));
+  assert.equal(ui.window.document.querySelector('.preview-img'), null);
+  const note = ui.window.document.querySelector('#box [role="status"]');
+  assert.match(note?.textContent ?? '', /이미지를 표시할 수 없습니다/);
+  const download = ui.window.document.querySelector('.filebar a[download]');
+  assert.equal(download.getAttribute('href'), 'blob:fixture');
+  assert.equal(download.getAttribute('download'), entityName);
+  assert.equal(revoked, 0);
+  image.dispatchEvent(new ui.window.Event('error'));
+  assert.equal(ui.window.document.querySelectorAll('#box [role="status"]').length, 1);
+});
+
+test('a late image decode error cannot replace the next text preview', async t => {
+  const ui = await screen(t, '#vault/' + encodeURIComponent(entityName), cloudSetup(null, [], { blobs: 0 }));
+  await until(() => ui.window.document.querySelector('.preview-img'));
+  const image = ui.window.document.querySelector('.preview-img');
+  await ui.go('#vault/a.txt');
+  await until(() => ui.box().includes('CLOUD-FILE-A'));
+  image.dispatchEvent(new ui.window.Event('error'));
+  assert.match(ui.box(), /CLOUD-FILE-A/);
+  assert.doesNotMatch(ui.box(), /이미지를 표시할 수 없습니다/);
+  assert.equal(ui.window.document.querySelector('.filebar a[download]').getAttribute('download'), 'a.txt');
+});
+
 async function pendingTrash(t) {
   const writes = [], setup = cloudSetup(null, [], { blobs: 0 });
   const ui = await screen(t, '#vault/', (window, pending) => {
