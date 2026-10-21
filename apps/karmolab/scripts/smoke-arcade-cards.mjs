@@ -13,6 +13,9 @@
 import { chromium } from 'playwright';
 import { smokeBase } from './lib/smoke-base.mjs';
 import { WAIT } from './lib/waits.mjs';
+import { readFile } from 'node:fs/promises';
+
+const presidentOpening = JSON.parse(await readFile(new URL('./fixtures/president-opening.json', import.meta.url), 'utf8'));
 
 const GAMES = [
   'blackjack', 'solitaire', 'memory', 'speed', 'highlow', 'president',
@@ -43,8 +46,11 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
   const ctx = await browser.newContext({ serviceWorkers: 'block' });
   const page = await ctx.newPage();
   const boom = [];
+  let phase = 'lobby';
   page.on('pageerror', (e) => boom.push(e.message));
   try {
+    // 실제 타이머는 유지, 내 첫 차례가 보장된 선택 검사 씨앗만 고정
+    if (g === 'president') await page.clock.setFixedTime(new Date(presidentOpening.time));
     await page.route('**/__dev', (r) => r.abort());
     const res = await page.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 20000 });
     if (!res || !res.ok()) { cantRun = `dev 서버가 안 뜬다 (${PAGE})`; await ctx.close(); break; }
@@ -55,6 +61,7 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
     if (!inLobby) { await ctx.close(); continue; }
     await page.click(`[data-obj="${g}"]`, { timeout: 15000 });
     await page.click(`[data-solo="${g}"]`, { timeout: 15000 });
+    phase = 'game view';
     /* 입체가 정본(2026-09-01)이라 기본은 방. 방은 캔버스 하나가 판이고 누를 것은 상 위 카드.
        그래서 캔버스가 떴으면 그려진 것으로, 아니면 평면처럼 글자와 버튼으로 */
     await page.waitForFunction(() => {
@@ -80,6 +87,7 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
       check('blackjack: 입체에서 퍼펙트 페어 곁수 2칩을 고른다', picked === 2, String(picked));
     }
     if (g === 'president' && info.canvas) {
+      phase = 'president selectable cards';
       await page.waitForFunction(() => {
         const measure = window.__bjMeasure?.();
         return Array.isArray(measure?.pickables) && measure.pickables.length > 0;
@@ -88,6 +96,7 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
          브라우저 3자리 판에서 20초도 넘겼다 (2026-09-25). 조건 대기라 빠른 판은 손해 없음 */
       }, undefined, { timeout: Math.max(WAIT * 2, 60000) });
       if (await page.locator('#acIntro').isVisible()) await page.click('#acIntro');
+      phase = 'president intro';
       await page.waitForFunction(() => getComputedStyle(document.querySelector('#acIntro')).display === 'none');
       /* 재움-의도: 배분 애니메이션이 실제로 흐르는 동안 마지막 카드의 출발 시각과
          포인터 집기가 유지되는지를 함께 본다. 즉시 읽으면 애니메이션 검사가 아니다. */
@@ -99,6 +108,7 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
          CI 통짜 판에서 손가락이 빈 상에 떨어져 거짓 빨강 (2026-09-04 실측).
          찍기 직전에 다시 재고, 안 잡히면 다시 잰 자리로 또 찍는다 */
       let selected = false;
+      phase = 'president pointer selection';
       let tried = 0;
       let last = '아직 안 재 봄';
       const pickBy = Date.now() + 20000;
@@ -132,7 +142,16 @@ for (const g of TABLE_ONLY ? [] : GAMES) {
     }
     check(`${g}: 안 터진다`, boom.length === 0, boom[0] || '');
   } catch (e) {
-    check(`${g}: 열린다`, false, String(e).slice(0, 90));
+    const state = await page.evaluate(() => ({
+      visibility: document.visibilityState,
+      intro: document.querySelector('#acIntro') ? getComputedStyle(document.querySelector('#acIntro')).display : null,
+      turn: window.__arcade?.state?.turn,
+      mySeat: window.__arcade?.mySeat,
+      pickables: window.__bjMeasure?.()?.pickables?.length,
+      enabledRanks: document.querySelectorAll('#acPrActs [data-do="rank"]:not(:disabled)').length,
+      pass: !!document.querySelector('#acPrActs [data-do="pass"]:not(:disabled)'),
+    })).catch(() => null);
+    check(`${g}: 열린다`, false, `${phase}: ${String(e).slice(0, 160)} ${JSON.stringify(state)}`);
   }
   await ctx.close();
 }
