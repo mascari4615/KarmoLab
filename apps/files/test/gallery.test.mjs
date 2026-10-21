@@ -119,3 +119,37 @@ test('칸 크기는 넷. 모르는 값은 보통으로', () => {
     const px = CELL_SIZES.map((c) => c.px);
     assert.deepEqual(px, [...px].sort((a, b) => a - b));
 });
+
+test('떠난 뒤 끝난 이미지 요청은 blob을 만들지 않는다', async () => {
+    const dom = fakeDom();
+    let finish;
+    let created = 0;
+    globalThis.URL.createObjectURL = () => { created += 1; return 'blob:late'; };
+    const gal = mountGallery({
+        host: dom.host, files: [{ path: 'a.png' }], kindOf: previewKind,
+        mimeOf: () => 'image/png', hrefOf: p => '#' + p,
+        load: () => new Promise(resolve => { finish = resolve; }),
+    });
+    gal.dispose();
+    finish({ bytes: new Uint8Array([1]) });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(created, 0);
+    assert.ok(dom.observed[0].dead);
+    assert.equal(dom.made[0].classes.has('ready'), false);
+});
+
+test('떠난 뒤 끝난 썸네일 요청은 원본 요청을 시작하지 않는다', async () => {
+    const dom = fakeDom();
+    let finish;
+    let originals = 0;
+    const gal = mountGallery({
+        host: dom.host, files: [{ path: 'a.png', thumb: 1 }], kindOf: previewKind,
+        mimeOf: () => 'image/png', hrefOf: p => '#' + p,
+        loadThumb: () => new Promise(resolve => { finish = resolve; }),
+        load: async () => { originals += 1; return { bytes: new Uint8Array([1]) }; },
+    });
+    gal.dispose();
+    finish(null);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(originals, 0);
+});

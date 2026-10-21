@@ -73,6 +73,7 @@ function human(bytes) {
 export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hrefOf }) {
     const hasThumb = new Set(files.filter((f) => f.thumb).map((f) => f.path));
     const urls = [];
+    let disposed = false;
     let running = 0;
     const queue = [];
 
@@ -96,7 +97,7 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
         .join('');
 
     const pump = () => {
-        while (running < LIMIT && queue.length) {
+        while (!disposed && running < LIMIT && queue.length) {
             const cell = queue.shift();
             running += 1;
             void fill(cell).finally(() => {
@@ -112,7 +113,9 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
         try {
             /* 미리보기가 있으면 그것만 받는다. 원본은 200배 크다 */
             const thumb = hasThumb.has(path) && loadThumb ? await loadThumb(path) : null;
+            if (disposed) return;
             const got = thumb ?? (kindOf(path) === 'image' ? await load(path) : null);
+            if (disposed) return;
             if (!got) throw new Error('none');
             const url = URL.createObjectURL(new Blob([got.bytes], { type: thumb ? 'image/jpeg' : mimeOf(path) }));
             urls.push(url);
@@ -123,6 +126,7 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
             art.replaceChildren(img);
             cell.classList.add('ready');
         } catch {
+            if (disposed) return;
             /* 아직 열람 저장에 없거나 받지 못했다. 칸은 남기고 표시만 바꾼다. */
             cell.classList.add('blank');
         }
@@ -130,6 +134,7 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
 
     const io = new IntersectionObserver(
         (entries) => {
+            if (disposed) return;
             for (const e of entries) {
                 if (!e.isIntersecting) continue;
                 io.unobserve(e.target);
@@ -149,6 +154,8 @@ export function mountGallery({ host, files, kindOf, load, loadThumb, mimeOf, hre
 
     return {
         dispose() {
+            if (disposed) return;
+            disposed = true;
             io.disconnect();
             queue.length = 0;
             for (const url of urls) URL.revokeObjectURL(url);

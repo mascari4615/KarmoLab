@@ -938,6 +938,7 @@ function viewSwitch(mode) {
 }
 
 function renderVaultDir(dir) {
+  if (extFromHash() !== 'vault' || vaultPath() !== dir) return;
   closeGallery();
   /* 파일 화면 키보드 해제. 안 떼면 폴더에서 화살표가 엉뚱한 파일로 튐 */
   if (unbindKeys) {
@@ -1073,9 +1074,11 @@ function renderVaultDir(dir) {
     let timer = 0;
     q.addEventListener('input', () => {
       clearTimeout(timer);
+      sift.query = q.value;
+      const isCurrent = currentView();
       /* 한 글자마다 다시 그리면 큰 폴더에서 입력이 끊김. 잠깐 모아서 한 번 */
       timer = setTimeout(() => {
-        sift.query = q.value;
+        if (!isCurrent() || !q.isConnected) return;
         renderVaultDir(dir);
         const again = box.querySelector('#sf-q');
         if (again) {
@@ -1481,6 +1484,19 @@ async function loadVault() {
 
 function load() {
   viewVersion += 1;
+  closeGallery();
+  if (unbindKeys) {
+    unbindKeys();
+    unbindKeys = null;
+  }
+  if (unbindDirKeys) {
+    unbindDirKeys();
+    unbindDirKeys = null;
+  }
+  if (unwatchScroll) {
+    unwatchScroll();
+    unwatchScroll = null;
+  }
   setTabs();
   revokeBlob();
   stopBuildPolling();

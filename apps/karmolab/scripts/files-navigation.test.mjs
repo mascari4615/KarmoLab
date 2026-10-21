@@ -281,3 +281,51 @@ test('gallery title keeps entity-looking file names literally', async t => {
   const frame = [...ui.window.document.querySelectorAll('.frame')].find(el => decodeURIComponent(el.dataset.path) === entityName);
   assert.equal(frame.title, entityName);
 });
+
+test('a queued cloud search cannot redraw over the PC tab', async t => {
+  const delayed = [], setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    const timeout = window.setTimeout.bind(window);
+    window.setTimeout = (fn, ms, ...args) => ms === 160 ? delayed.push(fn) : timeout(fn, ms, ...args);
+  });
+  await until(() => ui.window.document.querySelector('#sf-q'));
+  const input = ui.window.document.querySelector('#sf-q');
+  input.value = 'a';
+  input.dispatchEvent(new ui.window.Event('input'));
+  await ui.go('#laptop/current');
+  ui.pending[0].resolve(folder('CURRENT-PC'));
+  await tick();
+  delayed[0]();
+  assert.match(ui.box(), /CURRENT-PC/);
+  assert.equal(ui.window.document.querySelector('#sf-q'), null);
+});
+
+test('sorting during the debounce preserves the latest typed search', async t => {
+  const delayed = [], setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    const timeout = window.setTimeout.bind(window);
+    window.setTimeout = (fn, ms, ...args) => ms === 160 ? delayed.push(fn) : timeout(fn, ms, ...args);
+  });
+  await until(() => ui.window.document.querySelector('#sf-q'));
+  const input = ui.window.document.querySelector('#sf-q');
+  input.value = 'a';
+  input.dispatchEvent(new ui.window.Event('input'));
+  ui.window.document.querySelector('[data-sort="size"]').click();
+  assert.equal(ui.window.document.querySelector('#sf-q').value, 'a');
+  delayed[0]();
+  assert.equal(ui.window.document.querySelector('#sf-q').value, 'a');
+});
+
+test('file navigation keys stop when leaving the cloud tab', async t => {
+  const ui = await screen(t, '#vault/a.txt', cloudSetup(null, [], { blobs: 0 }));
+  await until(() => ui.box().includes('CLOUD-FILE-A'));
+  await ui.go('#laptop/current');
+  ui.pending[0].resolve(folder('CURRENT-PC'));
+  await tick();
+  ui.window.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'ArrowRight' }));
+  await tick();
+  assert.equal(ui.window.location.hash, '#laptop/current');
+  assert.match(ui.box(), /CURRENT-PC/);
+});
