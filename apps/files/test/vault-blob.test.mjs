@@ -9,12 +9,12 @@ import { memoryStore } from '../src/vault.mjs';
 import { loadEnvFile } from '../src/env-file.mjs';
 import worker from '../worker.mjs';
 
-test('hdr 가 있으면 /blob/, 없으면 픽스처', async () => {
+test('정본이 아닌 주소에서는 hdr가 있으면 blob, 없으면 픽스처', async () => {
   const fixture = 'https://example/files/v/';
   const miss = await pickVaultBase({
     origin: 'https://files.example',
     fixture,
-    canonical: 'https://files.example',
+    canonical: '',
     fetchFn: async () => ({ ok: false }),
   });
   assert.equal(miss, fixture);
@@ -43,9 +43,9 @@ test('제 자리에 없으면 정본 도메인을 마저 본다', async () => {
   assert.deepEqual(asked, ['https://blog.example/blob/hdr', 'https://files.example/blob/hdr']);
 });
 
-test('이미 정본 도메인이면 같은 것을 두 번 묻지 않는다', async () => {
+test('정본 도메인은 사전 탐색 실패로 픽스처로 바뀌지 않는다', async () => {
   const asked = [];
-  await pickVaultBase({
+  const base = await pickVaultBase({
     origin: 'https://files.example',
     fixture: 'https://files.example/v/',
     canonical: 'https://files.example',
@@ -54,7 +54,17 @@ test('이미 정본 도메인이면 같은 것을 두 번 묻지 않는다', asy
       return { ok: false };
     },
   });
-  assert.equal(asked.length, 1);
+  assert.equal(base, 'https://files.example/blob/');
+  assert.equal(asked.length, 0);
+});
+
+test('실제 정본 주소는 오프라인이어도 시험 저장소를 선택하지 않는다', async () => {
+  const base = await pickVaultBase({
+    origin: 'https://files.mascari4615.com',
+    fixture: 'https://files.mascari4615.com/v/',
+    fetchFn: async () => { throw new Error('fixture offline'); },
+  });
+  assert.equal(base, 'https://files.mascari4615.com/blob/');
 });
 
 test('teeStore 는 정본을 먼저 쓰고 여분 실패를 삼킨다', async () => {

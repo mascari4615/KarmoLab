@@ -1,8 +1,9 @@
 /**
- * 화면이 집을 암호문 뿌리. `/blob/hdr` 가 있으면 Worker, R2 정본, 없으면 Pages 픽스처.
+ * 화면이 집을 암호문 뿌리. 정본 도메인은 Worker의 `/blob/` 고정.
+ * 다른 주소에서는 `/blob/hdr` 탐색 후 Pages 픽스처 선택.
  * 공개 CDN 에 사적 암호문을 올리지 않는다. 픽스처만 Pages `v/`.
  *
- * ★ **제 도메인도 한 번 물어본다** (2026-08-29). `/blob/` 은 Worker 가 사는
+ * ★ **다른 주소에서는 정본도 확인** (2026-08-29). `/blob/` 은 Worker 가 사는
  *   `files.mascari4615.com` 에만 있다. 그런데 이 화면은 Pages 로도 서빙되므로
  *   (`blog.mascari4615.com/files/`), 거기서 열면 제 origin 에는 `/blob/` 이 없어
  *   **픽스처(시험용 금고)로 되떨어졌다**. 맞는 비밀번호를 쳐도 안 열린다.
@@ -11,7 +12,8 @@
  *
  * ★ **묻는 데 시간 제한을 둔다** (2026-08-29). 정본 도메인은 Access 뒤에 있어서,
  *   딴 origin 에서 물으면 답이 아예 안 올 수 있다. 실제로 45초를 넘겨도 안 왔고
- *   화면은 불러오는 중에서 멈춘 채였다. 못 물었으면 없는 것으로 치고 넘어간다.
+ *   화면은 불러오는 중에서 멈춘 채였다. 다른 주소의 탐색만 시간 제한 적용.
+ *   정본 자체의 장애에서는 픽스처로 바꾸지 않고 목록 재시도 화면 유지 (2026-10-22).
  */
 const CANONICAL = 'https://files.mascari4615.com';
 
@@ -20,6 +22,9 @@ export const PROBE_MS = 4000;
 
 export async function pickVaultBase({ origin, fixture, fetchFn, canonical = CANONICAL, probeMs = PROBE_MS }) {
   const root = String(origin || '').replace(/\/+$/, '');
+  const away = String(canonical || '').replace(/\/+$/, '');
+  /* 정본의 통신 실패를 시험 저장소의 비밀번호 실패로 바꾸지 않도록 고정 */
+  if (away && root === away) return away + '/blob/';
   const get = fetchFn || fetch;
   const has = async (base) => {
     /* 답이 영영 안 오는 경우가 있다. 그때 화면 전체가 멈추면 안 된다 */
@@ -44,7 +49,6 @@ export async function pickVaultBase({ origin, fixture, fetchFn, canonical = CANO
 
   if (root && (await has(root + '/blob/'))) return root + '/blob/';
   /* 제 자리에 없을 때만 정본 도메인을 본다. 이미 그 도메인이면 같은 것을 두 번 묻지 않는다. */
-  const away = String(canonical || '').replace(/\/+$/, '');
   if (away && away !== root && (await has(away + '/blob/'))) return away + '/blob/';
   return fixture;
 }

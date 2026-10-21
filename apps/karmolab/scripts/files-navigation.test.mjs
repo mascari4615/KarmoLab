@@ -13,8 +13,8 @@ const bundle = await build({ entryPoints: [entry], bundle: true, write: false, f
   define: { 'import.meta.url': JSON.stringify('http://localhost/apps/files/app.mjs') }, logLevel: 'silent' });
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 
-async function screen(t, hash = '#laptop/slow', setup = () => {}) {
-  const dom = new JSDOM(html, { url: 'http://localhost/apps/files/index.html' + hash, runScripts: 'outside-only' });
+async function screen(t, hash = '#laptop/slow', setup = () => {}, url = 'http://localhost/apps/files/index.html') {
+  const dom = new JSDOM(html, { url: url + hash, runScripts: 'outside-only' });
   t.after(() => dom.window.close());
   const { window } = dom;
   const pending = [];
@@ -387,4 +387,24 @@ test('the recovery screen can explicitly return to password entry', async t => {
   ui.window.document.querySelector('#vault-password').click();
   assert.equal(ui.window.sessionStorage.getItem('files.vault.pass'), null);
   assert.ok(ui.window.document.querySelector('#gate input[type="password"]'));
+});
+
+test('unavailable canonical storage cannot fall back to a differently encrypted public fixture', async t => {
+  const publicStore = memoryStore();
+  await createVault(publicStore, 'different-public-fixture', { iterations: 8000 });
+  const publicSnapshot = publicStore.snapshot();
+  let publicReads = 0;
+  const ui = await screen(t, '#vault/', window => {
+    window.sessionStorage.setItem('files.vault.pass', 'fixture-only');
+    window.fetch = async url => {
+      const key = String(url).split('/v/')[1];
+      if (key) { publicReads += 1; return binary(publicSnapshot.get(key)); }
+      return binary(null);
+    };
+  }, 'https://files.mascari4615.com/');
+  await until(() => /파일 목록을 읽지 못했습니다|비밀번호가 틀렸습니다/.test(ui.box()));
+  assert.doesNotMatch(ui.box(), /비밀번호가 틀렸습니다/);
+  assert.equal(ui.window.sessionStorage.getItem('files.vault.pass'), 'fixture-only');
+  assert.equal(publicReads, 0);
+  assert.ok(ui.window.document.querySelector('#vault-retry'));
 });
