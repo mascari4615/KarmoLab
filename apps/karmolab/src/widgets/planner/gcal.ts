@@ -405,14 +405,21 @@ export function taskMovePayload(task: GoogleTask, to: KanbanColumn): Record<stri
 
 export async function fetchTasks(token: string): Promise<Record<KanbanColumn, GoogleTask[]>> {
     const out: Record<KanbanColumn, GoogleTask[]> = { todo: [], inProgress: [], done: [] };
-    const res = await fetch(`${TASKS_API}/lists/@default/tasks?showCompleted=true&showHidden=true&maxResults=100`, {
-        headers: authHeaders(token)
-    });
-    if (!res.ok) throw new Error(`tasks ${res.status}`);
-    const data = await res.json();
-    for (const task of Array.isArray(data.items) ? data.items : []) {
-        out[classifyTask(task)].push(task);
-    }
+    const seen = new Set<string>();
+    let page = '';
+    do {
+        if (seen.has(page)) throw new Error('tasks repeated page token');
+        seen.add(page);
+        const query = new URLSearchParams({ showCompleted: 'true', showHidden: 'true', maxResults: '100' });
+        if (page) query.set('pageToken', page);
+        const res = await fetch(`${TASKS_API}/lists/@default/tasks?${query}`, {
+            headers: authHeaders(token)
+        });
+        if (!res.ok) throw new Error(`tasks ${res.status}`);
+        const data = await res.json();
+        for (const task of Array.isArray(data.items) ? data.items : []) out[classifyTask(task)].push(task);
+        page = typeof data.nextPageToken === 'string' ? data.nextPageToken : '';
+    } while (page);
     return out;
 }
 

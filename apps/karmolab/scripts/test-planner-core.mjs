@@ -573,6 +573,49 @@ process.stdout.write('\n');
   eq(planned[0].extendedProps.htmlLink, 'https://www.netflix.com/title/1', '넷플릭스 링크');
   eq(anime.animeEvents(new Date('2026-11-01'), new Date('2027-01-01'), netflix).length, 0, '종료 뒤 무한 반복 제외');
 }
+/* 할 일은 한 페이지 100개. 완료 항목까지 포함한 모든 페이지 수집 확인 */
+{
+  const originalFetch = globalThis.fetch;
+  try {
+    const requests = [];
+    const first = Array.from({ length: 100 }, (_, n) => ({ id: `task-${n}`, title: `할 일 ${n}`, status: 'needsAction' }));
+    const pages = [
+      { items: first, nextPageToken: 'page +/한글' },
+      { nextPageToken: 'last-page' },
+      { items: [{ id: 'working', title: '진행', notes: '[IN_PROGRESS]', status: 'needsAction' }, { id: 'finished', title: '완료', status: 'completed' }] }
+    ];
+    globalThis.fetch = async (url, options) => {
+      requests.push({ url: new URL(url), options });
+      return { ok: true, json: async () => pages[requests.length - 1] };
+    };
+    const all = await P.fetchTasks('fixture-only');
+    eq(requests.length, 3, '빈 중간 페이지도 다음 토큰까지 조회');
+    eq(all.todo.length, 100, '첫 페이지 할 일 보존');
+    eq(all.inProgress.map(x => x.id).join(), 'working', '뒤 페이지 진행 중 항목 포함');
+    eq(all.done.map(x => x.id).join(), 'finished', '뒤 페이지 완료 항목 포함');
+    eq(requests[1]?.url.searchParams.get('pageToken'), 'page +/한글', '페이지 토큰 문자 인코딩 보존');
+    check(requests.every(r => r.url.searchParams.get('showCompleted') === 'true' && r.url.searchParams.get('showHidden') === 'true' && r.url.searchParams.get('maxResults') === '100'), '매 페이지 완료와 숨김 옵션 유지');
+    check(requests.every(r => r.options.headers.Authorization === 'Bearer fixture-only'), '매 페이지 기존 인증 헤더 유지');
+
+    let call = 0, error = '';
+    globalThis.fetch = async () => ++call === 1
+      ? { ok: true, json: async () => ({ items: first, nextPageToken: 'next' }) }
+      : { ok: false, status: 503 };
+    try { await P.fetchTasks('fixture-only'); } catch (e) { error = e.message; }
+    eq(error, 'tasks 503', '뒤 페이지 실패를 부분 성공으로 반환하지 않음');
+
+    call = 0; error = '';
+    globalThis.fetch = async () => {
+      call += 1;
+      if (call > 4) throw new Error('fixture runaway');
+      return { ok: true, json: async () => ({ items: [], nextPageToken: 'same-page' }) };
+    };
+    try { await P.fetchTasks('fixture-only'); } catch (e) { error = e.message; }
+    eq(error, 'tasks repeated page token', '잘못 반복된 페이지 토큰은 무한 조회 중단');
+    eq(call, 2, '반복 토큰의 세 번째 요청 없음');
+  } finally { globalThis.fetch = originalFetch; }
+}
+
 if (failures.length) {
   console.error(`\n[test-planner-core] ${failures.length}건 실패:`);
   for (const f of failures) console.error('  - ' + f);
