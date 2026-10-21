@@ -33,27 +33,52 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
       grid.setAttribute('aria-label', t('arcade.mine.kb'));
 
       let hold = 0;
+      let pressed: HTMLButtonElement | null = null;
+      let pointer = -1;
+      let longPress = false;
+      let suppressContext: HTMLButtonElement | null = null;
+      const cancel = (): void => {
+        if (hold) clearTimeout(hold);
+        hold = 0;
+        pressed = null;
+        pointer = -1;
+        longPress = false;
+      };
       cells.forEach((b) => {
         const c = Number(b.dataset.c);
         b.oncontextmenu = (e): void => {
           e.preventDefault();
+          if (suppressContext === b) { suppressContext = null; return; }
+          cancel();
+          if (b.disabled || !b.isConnected) return;
           act({ cell: c, flag: true });
         };
-        b.onpointerdown = (): void => {
+        b.onpointerdown = (e): void => {
+          cancel();
+          suppressContext = null;
+          if (e.button !== 0 || b.disabled) return;
+          pressed = b;
+          pointer = e.pointerId;
           hold = window.setTimeout(() => {
             hold = 0;
+            if (pressed !== b || b.disabled || !b.isConnected) return;
+            longPress = true;
+            suppressContext = b;
             act({ cell: c, flag: true });
           }, 450);
         };
-        const cancel = (): void => {
-          if (hold) { clearTimeout(hold); hold = 0; }
+        const cancelPointer = (e: PointerEvent): void => {
+          if (pressed === b && pointer === e.pointerId) cancel();
         };
-        b.onpointerleave = cancel;
+        b.onpointerleave = cancelPointer;
+        b.onpointercancel = cancelPointer;
         /* 자판 길 (2026-08-14, `audit:mouse-only`). 칸은 원래 `<button>` 이라 초점은 갔는데,
          * 여는 일이 `pointerup` 에 달려 있어 **Enter 를 눌러도 아무 일도 안 났다**
          * (초점만 가고 못 노는 것이 제일 나쁘다. 될 것처럼 보인다).
          * 깃발은 길게 누르기, 오른쪽 버튼뿐이라 자판으로는 아예 못 꽂았다 → F / Shift+Enter. */
         b.onkeydown = (e: KeyboardEvent): void => {
+          cancel();
+          suppressContext = null;
           if (e.key === 'f' || e.key === 'F' || (e.key === 'Enter' && e.shiftKey)) {
             e.preventDefault();
             act({ cell: c, flag: true });
@@ -64,11 +89,11 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
             act({ cell: c });
           }
         };
-        b.onpointerup = (): void => {
-          if (!hold) return; /* 길게 눌러 깃발이 이미 꽂혔다 */
-          clearTimeout(hold);
-          hold = 0;
-          act({ cell: c });
+        b.onpointerup = (e): void => {
+          if (e.button !== 0 || pressed !== b || pointer !== e.pointerId) return;
+          const flagged = longPress;
+          cancel();
+          if (!flagged && !b.disabled && b.isConnected) act({ cell: c });
         };
       });
     };

@@ -284,7 +284,7 @@
     "test:alive-scope": "node --test scripts/lib/alive-scope.test.mjs",
     "test:answers": "node scripts/smoke-tool-behavior.mjs",
     "test:apicache": "node scripts/check-api-cache-rule.mjs",
-    "test:arcade": "node scripts/test-arcade.mjs",
+    "test:arcade": "node scripts/test-arcade.mjs && node --test scripts/minesweeper-input.test.mjs",
     "test:arcade:bots": "node scripts/bench-gomoku-ai.mjs --quick",
     "test:arcade:cards": "node scripts/smoke-arcade-cards.mjs",
     "test:arcade:ghost": "node scripts/test-arcade-ghost.mjs",
