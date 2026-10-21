@@ -22,23 +22,25 @@ async function until(predicate) {
     await tick();
   }
 }
-async function screen(t) {
+async function screen(t, { tasks = [], holdReloads = false } = {}) {
   const dom = new JSDOM('<html lang="ko"><main id="kanban"></main></html>', { url: 'http://localhost/kanban-fixture', runScripts: 'outside-only' });
   t.after(() => dom.window.close());
   const { window } = dom;
   window.__KARMO_LOCALE = 'ko';
   window.__KARMO_I18N = { ko: { planner: translations } };
   const writes = [];
-  let reads = 0;
+  const reads = [];
   window.fetch = (url, options = {}) => {
-    if (options.method === 'POST') return new Promise((resolve, reject) => writes.push({ url: String(url), options, resolve, reject }));
-    reads += 1;
-    return Promise.resolve({ ok: true, json: async () => ({ items: [] }) });
+    if (options.method === 'POST' || options.method === 'PATCH') return new Promise((resolve, reject) => writes.push({ url: String(url), options, resolve, reject }));
+    return new Promise((resolve, reject) => {
+      reads.push({ resolve, reject });
+      if (reads.length === 1 || !holdReloads) resolve({ ok: true, json: async () => ({ items: tasks }) });
+    });
   };
   window.eval(bundle.outputFiles[0].text);
-  await until(() => reads === 1);
+  await until(() => reads.length === 1);
   await tick();
-  return { window, writes, input: window.document.querySelector('input'), form: window.document.querySelector('form'), button: window.document.querySelector('button[type="submit"]') };
+  return { window, writes, reads, input: window.document.querySelector('input'), form: window.document.querySelector('form'), button: window.document.querySelector('button[type="submit"]') };
 }
 async function submit(ui, title) {
   ui.input.value = title;
@@ -86,4 +88,104 @@ test('successful task creation keeps the next draft and releases the submit butt
   await tick(); await tick();
   assert.equal(ui.input.value, 'next unsent draft');
   assert.equal(ui.button.disabled, false);
+});
+
+const taskFixtures = ['a', 'b'].map(id => ({ id, title: `fixture task ${id}`, status: 'needsAction' }));
+const card = (ui, id) => ui.window.document.querySelector(`.pl-card[data-task="${id}"]`);
+const move = (ui, id, to) => card(ui, id).querySelector(`[data-to="${to}"]`).click();
+const taskResponse = (items = taskFixtures) => ({ ok: true, json: async () => ({ items }) });
+
+test('a pending card move blocks its own repeat action while other cards stay usable', async t => {
+  const ui = await screen(t, { tasks: taskFixtures });
+  move(ui, 'a', 'inProgress');
+  await until(() => ui.writes.length === 1);
+  assert.equal(card(ui, 'a').getAttribute('draggable'), 'false');
+  assert.equal(card(ui, 'a').querySelector('[data-to="done"]').disabled, true);
+  assert.equal(card(ui, 'b').querySelector('[data-to="done"]').disabled, false);
+  move(ui, 'a', 'done');
+  await tick();
+  assert.equal(ui.writes.length, 1);
+  ui.writes[0].resolve({ ok: true });
+  await until(() => !card(ui, 'a').querySelector('[data-to="done"]').disabled);
+});
+
+async function overlappingMoves(t) {
+  const ui = await screen(t, { tasks: taskFixtures, holdReloads: true });
+  move(ui, 'a', 'inProgress');
+  await until(() => ui.writes.length === 1);
+  move(ui, 'b', 'done');
+  await until(() => ui.writes.length === 2);
+  ui.writes[0].reject(new Error('fixture first move failed'));
+  await until(() => ui.reads.length === 2);
+  return ui;
+}
+
+test('one failed move reload cannot erase another pending card move', async t => {
+  const ui = await overlappingMoves(t);
+  ui.reads[1].resolve(taskResponse());
+  await tick(); await tick();
+  assert.equal(card(ui, 'a').dataset.col, 'todo');
+  assert.equal(card(ui, 'b').dataset.col, 'done');
+  ui.writes[1].resolve({ ok: true });
+});
+
+test('a reload started before a successful move cannot undo that completed move', async t => {
+  const ui = await overlappingMoves(t);
+  ui.writes[1].resolve({ ok: true });
+  await tick(); await tick();
+  ui.reads[1].resolve(taskResponse());
+  await tick(); await tick();
+  assert.equal(card(ui, 'b').dataset.col, 'done');
+});
+
+test('a stale reload cannot replace a newer task list', async t => {
+  const ui = await overlappingMoves(t);
+  ui.writes[1].reject(new Error('fixture second move failed'));
+  await until(() => ui.reads.length === 3);
+  ui.reads[2].resolve(taskResponse(taskFixtures.map(task => ({ ...task, title: 'NEW-' + task.id }))));
+  await tick(); await tick();
+  assert.match(card(ui, 'b').textContent, /NEW-b/);
+  ui.reads[1].resolve(taskResponse(taskFixtures.map(task => ({ ...task, title: 'OLD-' + task.id }))));
+  await tick(); await tick();
+  assert.match(card(ui, 'b').textContent, /NEW-b/);
+  assert.doesNotMatch(card(ui, 'b').textContent, /OLD-b/);
+});
+
+test('a failed refresh retains the last known remote task list', async t => {
+  const ui = await screen(t, { tasks: taskFixtures, holdReloads: true });
+  move(ui, 'a', 'inProgress');
+  await until(() => ui.writes.length === 1);
+  ui.writes[0].resolve({ ok: false, status: 503 });
+  await until(() => ui.reads.length === 2);
+  ui.reads[1].resolve({ ok: false, status: 503 });
+  await tick(); await tick();
+  assert.ok(card(ui, 'a'));
+  assert.equal(card(ui, 'a').dataset.col, 'todo');
+  assert.ok(card(ui, 'b'));
+});
+
+test('a later fresh list can replace a completed optimistic move with authoritative data', async t => {
+  const ui = await screen(t, { tasks: taskFixtures, holdReloads: true });
+  move(ui, 'a', 'inProgress');
+  await until(() => ui.writes.length === 1);
+  ui.writes[0].resolve({ ok: true });
+  await until(() => !card(ui, 'a').querySelector('[data-to="done"]').disabled);
+  ui.input.value = 'refresh fixture trigger';
+  ui.form.dispatchEvent(new ui.window.Event('submit', { bubbles: true, cancelable: true }));
+  await until(() => ui.writes.length === 2);
+  ui.writes[1].resolve({ ok: true });
+  await until(() => ui.reads.length === 2);
+  ui.reads[1].resolve(taskResponse([{ ...taskFixtures[0], title: 'authoritative completed title', status: 'completed' }, taskFixtures[1]]));
+  await until(() => card(ui, 'a').textContent.includes('authoritative completed title'));
+  assert.equal(card(ui, 'a').dataset.col, 'done');
+});
+
+test('a completed move preserves keyboard focus on another card action', async t => {
+  const ui = await screen(t, { tasks: taskFixtures });
+  move(ui, 'a', 'inProgress');
+  await until(() => ui.writes.length === 1);
+  card(ui, 'b').querySelector('[data-to="done"]').focus();
+  ui.writes[0].resolve({ ok: true });
+  await tick(); await tick();
+  assert.equal(ui.window.document.activeElement, card(ui, 'b').querySelector('[data-to="done"]'));
 });

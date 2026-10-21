@@ -48,6 +48,11 @@ export interface KanbanViewHandle {
 export function buildKanbanView(container: HTMLElement, token: string | null): KanbanViewHandle {
     let data: Record<KanbanColumn, GoogleTask[]> = { todo: [], inProgress: [], done: [] };
     let destroyed = false;
+    let remoteData: Record<KanbanColumn, GoogleTask[]> = { todo: [], inProgress: [], done: [] };
+    let reloadVersion = 0;
+    let mutationVersion = 0;
+    const moving = new Set<string>();
+    const optimisticMoves = new Map<string, { task: GoogleTask; to: KanbanColumn; revision: number; pending: boolean }>();
 
     container.innerHTML = `
         <div class="pl-kanban">
@@ -65,6 +70,8 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
     let creating = false;
 
     function render(): void {
+        const focused = board.contains(document.activeElement) ? document.activeElement as HTMLElement : null;
+        const focusedId = focused?.closest<HTMLElement>('.pl-card')?.dataset.task;
         board.innerHTML = COLUMNS.map((col) => {
             const tasks = data[col.id];
             return `<section class="pl-col" data-col="${col.id}">
@@ -74,6 +81,13 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
                 </div>
             </section>`;
         }).join('');
+        if (focusedId) {
+            const replacement = [...board.querySelectorAll<HTMLElement>('.pl-card')].find(card => card.dataset.task === focusedId);
+            const action = focused?.dataset.to
+                ? [...(replacement?.querySelectorAll<HTMLButtonElement>('.pl-card-move') ?? [])].find(button => button.dataset.to === focused.dataset.to && !button.disabled)
+                : null;
+            (action || replacement)?.focus({ preventScroll: true });
+        }
     }
 
     function card(task: GoogleTask, col: KanbanColumn): string {
@@ -81,10 +95,10 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
         const moves = COLUMNS.filter((c) => c.id !== col)
             .map(
                 (c) =>
-                    `<button type="button" class="pl-card-move" data-task="${esc(task.id)}" data-to="${c.id}" title="${esc(t(c.labelKey))}">→ ${esc(t(c.labelKey))}</button>`
+                    `<button type="button" class="pl-card-move" data-task="${esc(task.id)}" data-to="${c.id}" title="${esc(t(c.labelKey))}"${moving.has(task.id) ? ' disabled' : ''}>→ ${esc(t(c.labelKey))}</button>`
             )
             .join('');
-        return `<article class="pl-card${col === 'done' ? ' pl-card--done' : ''}" draggable="true" tabindex="0" role="listitem" data-task="${esc(task.id)}" data-col="${col}">
+        return `<article class="pl-card${col === 'done' ? ' pl-card--done' : ''}" draggable="${!moving.has(task.id)}" aria-busy="${moving.has(task.id)}" tabindex="0" role="listitem" data-task="${esc(task.id)}" data-col="${col}">
             <div class="pl-card-title">${esc(task.title || t('planner.t12'))}</div>
             ${notes ? `<div class="pl-card-notes">${esc(notes)}</div>` : ''}
             <div class="pl-card-moves">${moves}</div>
@@ -92,22 +106,38 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
     }
 
     async function reload(): Promise<void> {
-        const local = listLocalTasks();
-        let remote: Record<KanbanColumn, GoogleTask[]> = { todo: [], inProgress: [], done: [] };
+        const version = ++reloadVersion;
+        const revision = mutationVersion;
+        const pendingAtStart = new Set([...optimisticMoves].filter(([, move]) => move.pending).map(([id]) => id));
+        let remote = remoteData;
+        let refreshed = !token;
+        let failed = false;
         if (token) {
             try {
                 remote = await withToken(token, fetchTasks);
+                refreshed = true;
             } catch {
-                /* 구글이 안 되면 이 브라우저 것만 보여 준다. 화면이 비어 버리지 않는다 */
-                toast(t('planner.t46'), 'error');
+                failed = true;
             }
         }
-        if (destroyed) return;
+        if (destroyed || version !== reloadVersion) return;
+        if (failed) toast(t('planner.t46'), 'error');
+        remoteData = remote;
+        const local = listLocalTasks();
         data = {
             todo: [...local.todo, ...remote.todo],
             inProgress: [...local.inProgress, ...remote.inProgress],
             done: [...local.done, ...remote.done]
         };
+        /* 조회 시작 뒤의 이동과 당시 대기 중이던 이동은 늦은 목록보다 우선 */
+        for (const [id, move] of optimisticMoves) {
+            if (refreshed && !move.pending && move.revision <= revision && !pendingAtStart.has(id)) {
+                optimisticMoves.delete(id);
+                continue;
+            }
+            for (const column of COLUMNS) data[column.id] = data[column.id].filter(task => task.id !== id);
+            data[move.to] = [move.task, ...data[move.to]];
+        }
         render();
     }
 
@@ -120,6 +150,7 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
     }
 
     async function move(id: string, to: KanbanColumn): Promise<void> {
+        if (moving.has(id)) return;
         const found = findTask(id);
         if (!found || found.from === to) return;
         const { task, from } = found;
@@ -132,18 +163,29 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
             status: to === 'done' ? 'completed' : 'needsAction',
             notes: typeof payload.notes === 'string' ? payload.notes : task.notes
         };
+        moving.add(id);
+        const change = { task: moved, to, revision: ++mutationVersion, pending: true };
+        optimisticMoves.set(id, change);
         data[to] = [moved, ...data[to]];
         render();
 
         try {
             if (isLocal(id)) moveLocalTask(id, to);
             else await withToken(token!, (tok) => patchTask(tok, id, payload));
+            change.pending = false;
+            change.revision = ++mutationVersion;
             /* 끝낸 것, 손댄 것에 경험치. 스트릭과 같은 지갑을 쓴다 */
             if (to === 'done') addExp(EXP_REWARDS.TASK_COMPLETE);
             else if (to === 'inProgress' && from === 'todo') addExp(EXP_REWARDS.TASK_IN_PROGRESS);
         } catch {
+            optimisticMoves.delete(id);
+            mutationVersion += 1;
+            if (destroyed) return;
             toast(t('planner.t47'), 'error');
             await reload();
+        } finally {
+            moving.delete(id);
+            if (!destroyed) render();
         }
     }
 
@@ -154,6 +196,10 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
     board.addEventListener('dragstart', (e) => {
         const card = (e.target as HTMLElement).closest<HTMLElement>('.pl-card');
         if (!card) return;
+        if (moving.has(card.dataset.task ?? '')) {
+            e.preventDefault();
+            return;
+        }
         dragging = card.dataset.task ?? null;
         card.classList.add('pl-card--dragging');
         e.dataTransfer?.setData('text/plain', dragging ?? '');
