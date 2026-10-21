@@ -5,6 +5,8 @@ import {
   runFreshnessTick,
   lastDeployNote,
   nextDelayMin,
+  startDeployFreshness,
+  stopDeployFreshness,
   type AlertMemory,
 } from './deploy-freshness';
 
@@ -149,6 +151,43 @@ describe('runFreshnessTick. 실제 물어보기', () => {
     );
     expect(v.state).toBe('stale');
     expect(alert).toHaveBeenCalledWith(expect.objectContaining({ healthy: false, state: 'stale', siteCommit: OLD, headCommit: HEAD }));
+  });
+
+  it('reads the assembled site sha and reports the served commit', async () => {
+    const alert = vi.fn();
+    const verdict = await runFreshnessTick(
+      { ...base, fetchImpl: fakeFetch({ sha: OLD, builtAt: at(21 * 60) }, HEAD) as never, alert },
+      { last: 'fresh', lastAlertAt: null },
+    );
+    expect(verdict.state).toBe('stale');
+    expect(alert).toHaveBeenCalledWith(expect.objectContaining({ siteCommit: OLD, headCommit: HEAD }));
+  });
+
+  it.each(['sha', 'commit'])('rejects an empty %s rather than matching every main commit', async (field) => {
+    const verdict = await runFreshnessTick(
+      { ...base, fetchImpl: fakeFetch({ [field]: '', builtAt: at(5) }, HEAD) as never },
+      { last: null, lastAlertAt: null },
+    );
+    expect(verdict.state).toBe('unreachable');
+  });
+
+  it('uses the published root build marker by default', async () => {
+    const fetchImpl = fakeFetch({ sha: HEAD, builtAt: at(5) }, HEAD);
+    let finishTick: () => void;
+    const finished = new Promise<void>((resolve) => { finishTick = resolve; });
+    const tickLogged = (line: string) => {
+      if (!line.includes('배포 파수꾼 켬')) finishTick();
+    };
+    const logger = { log: vi.fn(tickLogged), warn: vi.fn(tickLogged), error: vi.fn(tickLogged) };
+    startDeployFreshness({ fetchImpl: fetchImpl as never, now: () => NOW, logger });
+    try {
+      await finished;
+      expect(String(fetchImpl.mock.calls[0][0])).toMatch(/^https:\/\/blog\.mascari4615\.com\/build\.json\?t=\d+$/);
+    } finally {
+      // 다음 tick 예약까지 마친 뒤 타이머 회수.
+      await Promise.resolve();
+      stopDeployFreshness();
+    }
   });
 
   it('passes HTTP 404 as structured lookup failure rather than stale deployment', async () => {

@@ -220,7 +220,7 @@ export interface DeployFreshnessHandle {
   stop: () => void;
 }
 
-const DEFAULT_BUILD_URL = 'https://blog.mascari4615.com/apps/karmolab/build.json';
+const DEFAULT_BUILD_URL = 'https://blog.mascari4615.com/build.json';
 const DEFAULT_REPO = 'Mascari4615/KarmoLab';
 const DEFAULT_WORKFLOW = 'pages-deploy.yml';
 const DEFAULT_INTERVAL_MIN = 10;
@@ -325,9 +325,11 @@ export async function runFreshnessTick(
   let unreachableReason: string | undefined;
   let httpStatus: number | undefined;
   try {
-    const body = (await getJson(deps.buildUrl, fetchImpl, timeoutMs, {})) as Partial<SiteBuild>;
-    if (body && typeof body.commit === 'string' && typeof body.builtAt === 'string') {
-      site = { commit: body.commit, builtAt: body.builtAt };
+    const body = (await getJson(deps.buildUrl, fetchImpl, timeoutMs, {})) as (Partial<SiteBuild> & { sha?: string }) | null;
+    // 조립 사이트는 sha, 별도 앱 빌드는 commit 사용.
+    const commit = body?.sha ?? body?.commit;
+    if (typeof commit === 'string' && commit.trim() && typeof body?.builtAt === 'string') {
+      site = { commit: commit.trim(), builtAt: body.builtAt };
     } else {
       unreachableReason = `build.json 모양이 다르다 (${JSON.stringify(body).slice(0, 120)})`;
     }
