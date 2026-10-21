@@ -370,6 +370,17 @@ function showVaultGate(msg) {
   });
 }
 
+function showVaultRetry() {
+  crumb.textContent = '';
+  box.innerHTML = '<div class="gate"><p role="alert">파일 목록을 읽지 못했습니다.</p>' +
+    '<div class="gate-actions"><button type="button" id="vault-retry">다시 시도</button>' +
+    '<button type="button" class="secondary" id="vault-password">비밀번호 다시 입력</button></div></div>';
+  document.getElementById('vault-retry').addEventListener('click', load);
+  document.getElementById('vault-password').addEventListener('click', () => {
+    sessionStorage.removeItem(VAULT_KEY);
+    showVaultGate();
+  });
+}
 
 // ── PC 업로드 관리 (데스크톱 앱에서만) ───────────────────────────────────────
 // 왜 여기 있나: 전송기를 터미널에서 띄우면 그 세션이 죽을 때 같이 죽는다.
@@ -1464,11 +1475,14 @@ async function loadVault() {
     await ensureVault(isCurrent);
   } catch (e) {
     if (!isCurrent()) return;
-    sessionStorage.removeItem(VAULT_KEY);
     vaultSession = null;
     vaultListing = null;
-    const msg = e instanceof VaultUnlockError ? '비밀번호가 틀렸습니다.' : '파일 목록을 읽지 못했습니다.';
-    showVaultGate(msg);
+    if (e instanceof VaultUnlockError && e.message === 'index') {
+      sessionStorage.removeItem(VAULT_KEY);
+      showVaultGate('비밀번호가 틀렸습니다.');
+    } else {
+      showVaultRetry();
+    }
     return;
   }
   if (!isCurrent()) return;

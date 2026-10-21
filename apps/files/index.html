@@ -319,6 +319,9 @@ input.pick { width: 16px; height: 16px; accent-color: var(--accent); cursor: poi
   font: inherit; font-weight: 600; padding: 9px 20px; border-radius: 8px; cursor: pointer;
 }
 .gate button:hover { filter: brightness(1.08); }
+.gate-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.gate-actions button { min-height: 44px; color: var(--bg); }
+.gate-actions button.secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
 /* 내 PC 올리기. 목록 아래 한 줄 */
 .pc-up { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; border-top: 1px solid var(--line); }
 .pc-up input { flex: 1 1 200px; min-width: 0; color: var(--mute); font: inherit; font-size: .8rem; }

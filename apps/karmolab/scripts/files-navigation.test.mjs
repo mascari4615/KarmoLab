@@ -329,3 +329,62 @@ test('file navigation keys stop when leaving the cloud tab', async t => {
   assert.equal(ui.window.location.hash, '#laptop/current');
   assert.match(ui.box(), /CURRENT-PC/);
 });
+
+test('cloud network errors preserve the password and retry without re-entry', async t => {
+  const setup = cloudSetup(null, [], { blobs: 0 });
+  let failed = false;
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    const fetch = window.fetch;
+    window.fetch = (url, options) => {
+      if (!failed && String(url).endsWith('/v/idx')) {
+        failed = true;
+        return Promise.reject(new Error('fixture connection failed'));
+      }
+      return fetch(url, options);
+    };
+  });
+  await until(() => ui.box().includes('파일 목록을 읽지 못했습니다'));
+  assert.equal(ui.window.sessionStorage.getItem('files.vault.pass'), 'fixture-only');
+  ui.window.document.querySelector('#vault-retry').click();
+  await until(() => ui.window.document.querySelector('#sf-q'));
+  assert.match(ui.box(), /a\.txt/);
+});
+
+test('an invalid cloud header is not reported as an incorrect password', async t => {
+  const setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    const fetch = window.fetch;
+    window.fetch = (url, options) => String(url).endsWith('/v/hdr')
+      ? Promise.resolve(binary(new Uint8Array([0]))) : fetch(url, options);
+  });
+  await until(() => /파일 목록을 읽지 못했습니다|비밀번호가 틀렸습니다/.test(ui.box()));
+  assert.doesNotMatch(ui.box(), /비밀번호가 틀렸습니다/);
+  assert.equal(ui.window.sessionStorage.getItem('files.vault.pass'), 'fixture-only');
+});
+
+test('a genuinely wrong cloud password is still cleared and asks for re-entry', async t => {
+  const setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    window.sessionStorage.setItem('files.vault.pass', 'wrong-fixture-only');
+  });
+  await until(() => ui.box().includes('비밀번호가 틀렸습니다'));
+  assert.equal(ui.window.sessionStorage.getItem('files.vault.pass'), null);
+  assert.ok(ui.window.document.querySelector('#gate input[type="password"]'));
+});
+
+test('the recovery screen can explicitly return to password entry', async t => {
+  const setup = cloudSetup(null, [], { blobs: 0 });
+  const ui = await screen(t, '#vault/', (window, pending) => {
+    setup(window, pending);
+    const fetch = window.fetch;
+    window.fetch = (url, options) => String(url).endsWith('/v/idx')
+      ? Promise.reject(new Error('fixture unavailable')) : fetch(url, options);
+  });
+  await until(() => ui.window.document.querySelector('#vault-password'));
+  ui.window.document.querySelector('#vault-password').click();
+  assert.equal(ui.window.sessionStorage.getItem('files.vault.pass'), null);
+  assert.ok(ui.window.document.querySelector('#gate input[type="password"]'));
+});
