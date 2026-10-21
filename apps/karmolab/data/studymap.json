@@ -2119,7 +2119,7 @@
               "links": [
                 {
                   "label": "Parnas. 모듈 분해 기준 (1972)",
-                  "url": "https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf"
+                  "url": "https://john.cs.olemiss.edu/~hcc/csci555/notes/localcopy/Parnas_Criteria_Decomposing.pdf"
                 }
               ],
               "prereq": [
