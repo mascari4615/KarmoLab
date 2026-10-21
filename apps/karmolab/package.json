@@ -437,6 +437,7 @@
     "test:redact": "node scripts/test-redact.mjs",
     "test:redeploy-guard": "node --test scripts/retry-if-redeployed.test.mjs",
     "test:dev-server": "node --test scripts/dev-server.test.mjs",
+    "test:files-navigation": "node --test scripts/files-navigation.test.mjs",
     "test:region": "node scripts/smoke-region.mjs",
     "test:regionwatch": "node scripts/test-regionwatch.mjs",
     "test:related": "node scripts/test-related.mjs",

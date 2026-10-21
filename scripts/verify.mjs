@@ -386,6 +386,7 @@ if (existsSync('apps/daily/engine.test.mjs')) {
 // Files 클라우드 규격. 의존성 0. 화면 HTML 과 따로, 안 걸면 암호 왕복이 깨져도 Pages 배포는 초록이다.
 if (existsSync('apps/files/test/vault-roundtrip.test.mjs')) {
   run('apps/files 클라우드 왕복', 'apps/files', 'node --test');
+  run('apps/files 응답과 화면 소유권', 'apps/karmolab', 'npm run test:files-navigation');
 }
 
 /* 6. 오탈자. **있으면 여기서 돈다** (2026-08-17).

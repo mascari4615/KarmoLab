@@ -42,6 +42,17 @@ let lastBlob = '';
 let vaultSession = null;
 let vaultListing = null;
 let buildsTimer = 0;
+// 같은 주소로 되돌아온 경우까지 구분하는 화면 요청 순서
+let viewVersion = 0;
+function currentView() {
+  const version = viewVersion;
+  const hash = location.hash;
+  return () => version === viewVersion && hash === location.hash;
+}
+function beginView() {
+  viewVersion += 1;
+  return currentView();
+}
 /* 액자 보기는 폴더를 뜰 때 되돌려 줘야 한다. 칸마다 blob 을 들고 있다. */
 let gallery = null;
 const VIEW_KEY = 'files.vault.view';
@@ -223,10 +234,10 @@ function stopBuildPolling() {
   buildsTimer = 0;
 }
 
-function scheduleBuildPolling(fn, live) {
+function scheduleBuildPolling(fn, live, isCurrent) {
   stopBuildPolling();
-  if (!live || extFromHash() !== 'builds') return;
-  buildsTimer = setTimeout(fn, 10000);
+  if (!live || !isCurrent() || extFromHash() !== 'builds') return;
+  buildsTimer = setTimeout(() => { if (isCurrent()) fn(); }, 10000);
 }
 
 function buildLogName() {
@@ -244,7 +255,7 @@ function buildState(state) {
   return ({ running: '빌드 중', stalling: '응답 대기', done: '완료', dead: '중단' })[state] || state || '대기';
 }
 
-async function buildFetch(path, options = {}) {
+async function buildFetch(path, options = {}, isCurrent = currentView()) {
   const auth = laptopAuth();
   if (!auth) {
     showLaptopGate();
@@ -252,6 +263,7 @@ async function buildFetch(path, options = {}) {
   }
   const headers = { ...(options.headers || {}), Authorization: auth };
   const response = await fetch(LAPTOP_API + path, { ...options, headers });
+  if (!isCurrent()) return null;
   const gate = laptopGateFor(response.status, response.headers.get('Retry-After'));
   if (gate) {
     sessionStorage.removeItem(LAPTOP_KEY);
@@ -259,11 +271,13 @@ async function buildFetch(path, options = {}) {
     return null;
   }
   const data = await response.json().catch(() => ({}));
+  if (!isCurrent()) return null;
   if (!response.ok || !data.ok) throw new Error(data.message || '요청 실패 (' + response.status + ')');
   return data;
 }
 
 async function startBuild(platform, button) {
+  const isCurrent = currentView();
   const status = document.getElementById('build-status');
   const buttons = [...box.querySelectorAll('[data-build-start]')];
   buttons.forEach((item) => { item.disabled = true; });
@@ -273,11 +287,12 @@ async function startBuild(platform, button) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ platform }),
-    });
-    if (!data) return;
+    }, isCurrent);
+    if (!data || !isCurrent()) return;
     if (status) status.textContent = data.message || '빌드를 시작했습니다.';
-    setTimeout(loadBuilds, 1200);
+    setTimeout(() => { if (isCurrent()) loadBuilds(); }, 1200);
   } catch (error) {
+    if (!isCurrent()) return;
     if (status) status.textContent = error.message;
     buttons.forEach((item) => { item.disabled = false; });
     if (button) button.focus();
@@ -285,30 +300,33 @@ async function startBuild(platform, button) {
 }
 
 async function loadBuildLog(name) {
+  const isCurrent = beginView();
   crumb.innerHTML = '<a href="#builds">빌드</a><span class="sep">/</span><a>' + esc(name) + '</a>';
   box.innerHTML = '<p class="none">로그를 불러오는 중...</p>';
   try {
-    const data = await buildFetch('/builds/api/log?p=' + encodeURIComponent(name));
-    if (!data) return;
+    const data = await buildFetch('/builds/api/log?p=' + encodeURIComponent(name), {}, isCurrent);
+    if (!data || !isCurrent()) return;
     box.innerHTML = '<div class="filebar"><a class="fb-btn" href="#builds">목록</a>' +
       '<span class="fb-at">' + esc(buildState(data.state)) + '</span><span class="fb-gap"></span>' +
       '<span class="fb-at">' + fmtSize(data.bytes || 0) + '</span></div>' +
       '<pre class="build-log">' + esc(data.tail || '로그가 아직 없습니다.') + '</pre>';
-    scheduleBuildPolling(() => loadBuildLog(name), data.live);
+    scheduleBuildPolling(() => loadBuildLog(name), data.live, isCurrent);
   } catch (error) {
+    if (!isCurrent()) return;
     box.innerHTML = '<p class="err">' + esc(error.message) + '</p>';
   }
 }
 
 async function loadBuilds() {
+  const isCurrent = beginView();
   stopBuildPolling();
   const logName = buildLogName();
   if (logName) return loadBuildLog(logName);
   crumb.innerHTML = '<a href="#builds">빌드</a>';
   box.innerHTML = '<p class="none">빌드 목록을 불러오는 중...</p>';
   try {
-    const data = await buildFetch('/builds/api/list');
-    if (!data) return;
+    const data = await buildFetch('/builds/api/list', {}, isCurrent);
+    if (!data || !isCurrent()) return;
     const actions = data.canStart
       ? '<button class="fb-btn" type="button" data-build-start="android">Android 빌드</button>' +
         '<button class="fb-btn" type="button" data-build-start="windows">PC 빌드</button>'
@@ -333,8 +351,9 @@ async function loadBuilds() {
         location.hash = '#builds/log/' + button.dataset.buildLog;
       });
     }
-    scheduleBuildPolling(loadBuilds, data.live);
+    scheduleBuildPolling(loadBuilds, data.live, isCurrent);
   } catch (error) {
+    if (!isCurrent()) return;
     box.innerHTML = '<p class="err">' + esc(error.message) + '</p>';
   }
 }
@@ -575,6 +594,7 @@ function unmountUploader() {
 }
 
 function loadLaptop() {
+  const isCurrent = beginView();
   const p = laptopPath();
   const auth = laptopAuth();
   if (!auth) {
@@ -585,6 +605,7 @@ function loadLaptop() {
   fetch(LAPTOP_API + '/files/api/list?p=' + encodeURIComponent(p), {
     headers: { Authorization: auth },
   }).then((r) => {
+    if (!isCurrent()) return null;
     const gate = laptopGateFor(r.status, r.headers.get('Retry-After'));
     if (gate) {
       sessionStorage.removeItem(LAPTOP_KEY);
@@ -600,7 +621,7 @@ function loadLaptop() {
     if (!r.ok) throw new Error('list ' + r.status);
     return r.json();
   }).then((data) => {
-    if (!data) return;
+    if (!data || !isCurrent()) return;
     if (!data.ok) {
       box.innerHTML = '<p class="err">이 항목을 열 수 없습니다.</p>';
       return;
@@ -636,6 +657,7 @@ function loadLaptop() {
     }).join('') + laptopUploadHtml();
     wireLaptopUpload(p);
   }).catch((error) => {
+    if (!isCurrent()) return;
     const detail = error instanceof Error ? error.message : String(error || 'unknown error');
     box.innerHTML = '<p class="err">내 PC에 연결할 수 없습니다.</p>' +
       '<p class="none">' + esc(detail) + '</p>';
@@ -659,6 +681,7 @@ function wireLaptopUpload(dir) {
   const msg = document.getElementById('pc-up-msg');
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    const isCurrent = currentView();
     const files = Array.from(input.files || []);
     if (!files.length) return;
     const auth = laptopAuth();
@@ -686,27 +709,33 @@ function wireLaptopUpload(dir) {
       }
     }
     msg.textContent = (done.length ? '올렸습니다: ' + done.join(', ') : '') + (failed.length ? ' / 거부: ' + failed.join(', ') : '');
-    if (done.length) setTimeout(loadLaptop, 800);
+    if (done.length && isCurrent()) setTimeout(() => { if (isCurrent()) loadLaptop(); }, 800);
   });
 }
 
-async function ensureVault() {
+async function ensureVault(isCurrent) {
   if (vaultSession && vaultListing) return vaultSession;
   const pass = sessionStorage.getItem(VAULT_KEY) || '';
   if (!pass) return null;
   /* 로컬(개발)에선 정본 도메인 안 봄. 개발 중 실제 클라우드를 받으면 느리고 시험이 진짜 자료에 붙음 */
   const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-  vaultBase = new URL(
+  const base = new URL(
     await pickVaultBase({
       origin: location.origin,
       fixture: fixtureBase.href,
       canonical: local ? '' : undefined,
     }),
   );
-  const store = fetchStore(vaultBase.href);
-  vaultSession = await unlockVault(store, pass);
-  vaultListing = await listFiles(vaultSession);
-  vaultTrash = await readTrash(vaultSession);
+  if (!isCurrent()) return null;
+  const store = fetchStore(base.href);
+  const session = await unlockVault(store, pass);
+  const listing = await listFiles(session);
+  const trash = await readTrash(session);
+  if (!isCurrent()) return null;
+  vaultBase = base;
+  vaultSession = session;
+  vaultListing = listing;
+  vaultTrash = trash;
   /* 열렸으니 이제 업로드 패널을 붙인다 */
   mountUploader();
   return vaultSession;
@@ -1273,7 +1302,7 @@ function closeFile(path) {
   location.hash = '#vault/' + encodeURIComponent(path.split('/').slice(0, -1).join('/'));
 }
 
-async function renderVaultFile(path) {
+async function renderVaultFile(path, isCurrent) {
   closeGallery();
   /* 폴더 키보드 해제. 파일 화면에서 Esc 는 닫기다 */
   if (unbindDirKeys) {
@@ -1316,10 +1345,11 @@ async function renderVaultFile(path) {
   const note = box.querySelector('#opening');
   const got = await getFile(vaultSession, path, {
     onProgress: (done, all, bytes) => {
-      if (!note || !note.isConnected || all < 2) return;
+      if (!isCurrent() || !note || !note.isConnected || all < 2) return;
       note.textContent = `여는 중 ${done} / ${all} 조각 (${fmtSize(bytes)})`;
     },
   });
+  if (!isCurrent()) return;
   if (!got) {
     box.innerHTML =
       '<p class="err">이 항목을 열 수 없습니다.</p>' +
@@ -1421,6 +1451,8 @@ async function renderVaultFile(path) {
 }
 
 async function loadVault() {
+  const isCurrent = beginView();
+  const p = vaultPath();
   const pass = sessionStorage.getItem(VAULT_KEY) || '';
   if (!pass) {
     showVaultGate();
@@ -1428,8 +1460,9 @@ async function loadVault() {
   }
   box.innerHTML = '<p class="none">불러오는 중...</p>';
   try {
-    await ensureVault();
+    await ensureVault(isCurrent);
   } catch (e) {
+    if (!isCurrent()) return;
     sessionStorage.removeItem(VAULT_KEY);
     vaultSession = null;
     vaultListing = null;
@@ -1437,17 +1470,19 @@ async function loadVault() {
     showVaultGate(msg);
     return;
   }
-  const p = vaultPath();
+  if (!isCurrent()) return;
   const file = vaultListing.find((f) => f.path === p);
   try {
-    if (file) await renderVaultFile(p);
+    if (file) await renderVaultFile(p, isCurrent);
     else renderVaultDir(p);
   } catch {
+    if (!isCurrent()) return;
     box.innerHTML = '<p class="err">미리보기를 열지 못했습니다.</p>';
   }
 }
 
 function load() {
+  viewVersion += 1;
   setTabs();
   revokeBlob();
   stopBuildPolling();
