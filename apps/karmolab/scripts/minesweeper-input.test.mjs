@@ -205,3 +205,23 @@ test('holding an action key cannot act again after focus advances', t => {
   ui.window.document.activeElement.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'ArrowRight', repeat: true, bubbles: true, cancelable: true }));
   assert.equal(ui.window.document.activeElement, ui.cells[2]);
 });
+
+test('pointer-free native button activation opens a cell', t => {
+  const ui = screen(t);
+  ui.cells[0].click();
+  assert.deepEqual(ui.actions, [{ cell: 0 }]);
+});
+
+test('the click following a physical press does not open twice', t => {
+  const ui = screen(t), cell = ui.cells[0];
+  ui.pointer(cell, 'pointerdown'); ui.pointer(cell, 'pointerup');
+  cell.dispatchEvent(new ui.window.MouseEvent('click', { bubbles: true, detail: 1 }));
+  assert.deepEqual(ui.actions, [{ cell: 0 }]);
+});
+
+test('a physical click following a held flag cannot open the cell', t => {
+  const ui = screen(t), cell = ui.cells[0];
+  ui.pointer(cell, 'pointerdown'); ui.fire(); ui.pointer(cell, 'pointerup');
+  cell.dispatchEvent(new ui.window.MouseEvent('click', { bubbles: true, detail: 1 }));
+  assert.deepEqual(ui.actions, [{ cell: 0, flag: true }]);
+});

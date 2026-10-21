@@ -55,6 +55,13 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
       cells.forEach((b) => {
         const c = Number(b.dataset.c);
         b.onfocus = (): void => { setTabCell(c); };
+        b.onclick = (e): void => {
+          // 포인터 없는 활성화만 처리, 실제 누름 뒤 click의 중복 입력 방지
+          if (e.detail !== 0 || b.disabled || !b.isConnected) return;
+          cancel();
+          suppressContext = null;
+          act({ cell: c });
+        };
         b.oncontextmenu = (e): void => {
           e.preventDefault();
           if (suppressContext === b) { suppressContext = null; return; }
