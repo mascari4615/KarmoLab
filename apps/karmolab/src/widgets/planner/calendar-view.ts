@@ -727,6 +727,7 @@ export function buildCalendarView(
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (form.getAttribute('aria-busy') === 'true') return;
             const title = wrap.querySelector<HTMLInputElement>('[name="event-title"]')!.value.trim();
             if (!title) return;
             if (!allDayBox.checked) for (const side of ['before', 'after']) {
@@ -769,10 +770,20 @@ export function buildCalendarView(
             submit.disabled = true;
             form.setAttribute('aria-busy', 'true');
             const links: LinkedEvent[] = linkedAllDay() ? [] : (['before', 'after'] as const).filter(side => wrap.querySelector<HTMLInputElement>(`[name="link-${side}"]`)!.checked).map(side => ({ side, title: wrap.querySelector<HTMLInputElement>(`[name="link-${side}-title"]`)!.value.trim(), minutes: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-minutes"]`)!.value), gap: Number(wrap.querySelector<HTMLInputElement>(`[name="link-${side}-gap"]`)!.value) }));
+            const fields = [...form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')]
+                .map(control => ({ control, disabled: control.disabled }));
+            for (const { control } of fields) control.disabled = true;
             const ok = await save(title, start, end, isAllDay, calId, ev, repeat, links, scope?.value === 'day', selectedColor);
             if (modalEl !== wrap) return;
             if (ok) closeModal(true);
-            else { const error = wrap.querySelector<HTMLElement>('.pl-form-error')!; error.hidden = false; error.textContent = t('planner.t32'); submit.disabled = false; form.removeAttribute('aria-busy'); }
+            else {
+                for (const { control, disabled } of fields) control.disabled = disabled;
+                const error = wrap.querySelector<HTMLElement>('.pl-form-error')!;
+                error.hidden = false;
+                error.textContent = t('planner.t32');
+                submit.disabled = false;
+                form.removeAttribute('aria-busy');
+            }
         });
     }
 
