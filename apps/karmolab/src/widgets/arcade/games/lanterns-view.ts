@@ -5,6 +5,7 @@
  * 2D 공용 상(`table2d.ts`)을 탄다 (2026-09-03). 상대는 위 자리 카드, 가운데에 남의 패(앞면)와 쌓인 등불, 아래 내 패(뒷면)
  * 뒷면 부채는 안 씀. 이 놀이는 남의 패가 앞면이라 부채 자리에 그 패
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { cardBack, cardMark } from '../card';
@@ -70,7 +71,7 @@ export const lanternsView: GameView<LanternsState, LanternsAction> = {
                 });
               })
               .join('');
-            return '<div class="ac-hbrow"><small>' + seat.name + '</small><div>' + cards + '</div></div>';
+            return '<div class="ac-hbrow"><small>' + escapeHtml(seat.name) + '</small><div>' + cards + '</div></div>';
           })
           .join('');
         othersEl.querySelectorAll<HTMLButtonElement>('.ac-pc').forEach((b) => {

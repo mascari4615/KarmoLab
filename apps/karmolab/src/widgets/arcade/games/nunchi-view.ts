@@ -4,6 +4,7 @@
  * 다음에 외칠 수를 **아주 크게** 띄운다. 이 놀이는 화면을 읽는 게 아니라 사람을 읽는 거라,
  * 눈이 숫자에 붙잡히면 안 된다. 큰 단추 하나, 큰 숫자 하나면 충분하다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import type { NunchiState, NunchiAction } from './nunchi';
@@ -43,7 +44,7 @@ export const nunchiView: GameView<NunchiState, NunchiAction> = {
           .slice(-4)
           .map((l) =>
             '<div class="ac-nul' + (l.clash ? ' ac-clash' : '') + '">' +
-            l.n + '. ' + l.seats.map((i) => v.seats[i]?.name ?? '?').join(', ') +
+            l.n + '. ' + l.seats.map((i) => escapeHtml(v.seats[i]?.name ?? '?')).join(', ') +
             (l.clash ? ' ' + t('arcade.nunchi.clash') : '') + '</div>')
           .join('') +
         (v.finished ? '' : '<small>' + t('arcade.nunchi.left', { n: String(left) }) + '</small>');
@@ -51,7 +52,7 @@ export const nunchiView: GameView<NunchiState, NunchiAction> = {
       who.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + (s.alive[i] ? '' : ' ac-dead') + '">' +
-          seat.name + '</span>')
+          escapeHtml(seat.name) + '</span>')
         .join('');
     };
   }

@@ -4,6 +4,7 @@
  * 위에서 내려다본다. 당구는 **각도를 재는 놀이**라 비스듬히 보면 각이 안 읽힌다.
  * 겨눔은 흰 공에서 뻗는 점선. 세기는 막대로 따로 받는다(끌기 하나로 둘 다 받으면 폰에서 어긋난다).
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import { mountAimDrag, lateralOf } from '../aim-drag';
 import type { GameView } from '../views';
@@ -102,7 +103,7 @@ export const poolView: GameView<PoolState, PoolAction> = {
       scoreEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-plc' + (i === mySeat ? ' ac-me' : '') + '" style="--c:' + SEAT_COLOR[i % 4] + '">' +
-          seat.name + ' <b>' + (s.potted[i] ?? 0) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.potted[i] ?? 0) + '</b></span>')
         .join('');
 
       el.querySelector('#acPlAimL')!.textContent = t('arcade.pool.aim');

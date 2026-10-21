@@ -4,6 +4,7 @@
  * 말을 고르고 돈을 건다. 배당은 승률 근사(파리뮤추얼, 집 몫 14%).
  * 2D 공용 상(`table2d.ts`)을 탄다 (2026-09-03). 상대는 위 자리 카드, 가운데 경주로, 아래 걸 돈과 말
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { mountTable } from '../table2d';
@@ -97,7 +98,7 @@ export const derbyView: GameView<DerbyState, DerbyAction> = {
             const b = s.bet[i];
             return (
               '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-              seat.name + ' <b>' + (s.purse[i] ?? 0) + '</b>' +
+              escapeHtml(seat.name) + ' <b>' + (s.purse[i] ?? 0) + '</b>' +
               (b && s.since !== 0 ? ' ' + SILK[b.horse] + b.amount : '') +
               '</span>'
             );

@@ -4,6 +4,7 @@
  * 때리면 안 되는 것은 **모양이 확실히 다르다**. 색만 다르면 빠르게 두드리는 중에 못 가린다.
  * 남은 시간을 막대로 보여 준다(끝이 언제인지 모르면 서두를 이유가 없다).
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { HOLES, upNow, type WhackState, type WhackAction } from './whack';
@@ -48,7 +49,7 @@ export const whackView: GameView<WhackState, WhackAction> = {
       who.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
         .join('') + '<span class="ac-dts">' + t('arcade.whack.bad') + '</span>';
     };
   }

@@ -6,6 +6,7 @@
  *
  * 내 최고 기록은 이 브라우저에 남김 (옛 놀이의 열쇠 그대로라 기록이 이어짐). 도전과제 둘도 그대로
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { EARLY, type ReactionState, type ReactionAction } from './reaction';
@@ -95,7 +96,7 @@ export const reactionView: GameView<ReactionState, ReactionAction> = {
         .map((seat, i) => {
           const p = s.picks[i];
           const val = p === null || p === undefined ? '' : p === EARLY ? t('arcade.reaction.earlyShort') : p + 'ms';
-          return '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' + seat.name + (val ? ' <b>' + val + '</b>' : '') + '</span>';
+          return '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' + escapeHtml(seat.name) + (val ? ' <b>' + val + '</b>' : '') + '</span>';
         })
         .join('');
     };

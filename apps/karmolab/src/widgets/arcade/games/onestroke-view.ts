@@ -4,6 +4,7 @@
  * 붓 끝에 **닿는 선만** 진하게 보여 준다. 왜 이 선이 안 그어지지로 막히는 자리라,
  * 규칙을 적어 두는 대신 눈에 보이게 한다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { W, H, type StrokeState, type StrokeAction } from './onestroke';
@@ -82,7 +83,7 @@ export const onestrokeView: GameView<StrokeState, StrokeAction> = {
       bar.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + (s.drawn[i]?.length ?? 0) + '/' + s.edges.length + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.drawn[i]?.length ?? 0) + '/' + s.edges.length + '</b></span>')
         .join('') +
         (here >= 0 && !s.edges.some((e, i) => !mine.includes(i) && (e.a === here || e.b === here))
           ? '<span class="ac-dts">' + t('arcade.stroke.stuck') + '</span>'

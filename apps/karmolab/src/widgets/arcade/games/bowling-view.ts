@@ -4,6 +4,7 @@
  * 던지는 쪽 뒤에서 낮게 본다. **핀이 서 있는 것**이 이 놀이의 그림이다.
  * WebGL 을 못 얻는 기기에서는 위에서 내려다보는 2D 로 물러선다(화면이 죽는 것보다 낫다).
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import { mountAimDrag, lateralOf } from '../aim-drag';
 import type { GameView } from '../views';
@@ -103,7 +104,7 @@ export const bowlingView: GameView<BowlingState, BowlingAction> = {
       scoreEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-bws' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + scoreOf(s.rolls[i] ?? []) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + scoreOf(s.rolls[i] ?? []) + '</b></span>')
         .join('');
 
       el.querySelector('#acBwAimL')!.textContent = t('arcade.bowling.aim');

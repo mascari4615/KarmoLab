@@ -4,6 +4,7 @@
  * 입질은 **글자가 아니라 움직임**으로 알린다. 지금!이라고 써 두면 읽는 데 시간이 걸려
  * 창을 놓친다. 찌가 확 들어가고 물결이 커지는 것으로 충분하다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { blip } from '../../../lib/blip';
@@ -196,7 +197,7 @@ export const fishingView: GameView<FishState, FishAction> = {
       who.innerHTML = v.seats
         .map((seat, i) => {
           const sum = (s.caught[i] ?? []).reduce((a, f) => a + f.size, 0);
-          return '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' + seat.name + ' <b>' + sum + '</b></span>';
+          return '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' + escapeHtml(seat.name) + ' <b>' + sum + '</b></span>';
         })
         .join('');
     };

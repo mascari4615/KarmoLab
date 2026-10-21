@@ -4,6 +4,7 @@
  * 바꿔치기는 **커널이 정한 차례를 그대로** 그린다. 화면이 알아서 흔들면 사람마다 다른 것을
  * 보게 된다. 지금 몇 번째 바꿔치기인지도 커널 시계로 센다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { ballAt, progress, type ShellState, type ShellAction } from './shell';
@@ -71,7 +72,7 @@ export const shellgameView: GameView<ShellState, ShellAction> = {
       who.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
         .join('');
     };
   }

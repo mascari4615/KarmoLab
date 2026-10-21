@@ -8,6 +8,7 @@
  * 날아가는 동안 화살을 **점점 낮아지는 막대**로 그려서 내려앉는 중이 보이게 했다.
  * WebGL 이 없는 기기에서는 위에서 보는 2D 로 물러선다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import { mountAimDrag, lateralOf } from '../aim-drag';
 import type { GameView } from '../views';
@@ -130,7 +131,7 @@ export const tuhoView: GameView<TuhoState, TuhoAction> = {
       scoreEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + (i === s.turn ? ' ac-now' : '') + '">' +
-          '<i style="background:' + SEAT_CSS[i % 6] + '"></i> ' + seat.name +
+          '<i style="background:' + SEAT_CSS[i % 6] + '"></i> ' + escapeHtml(seat.name) +
           ' <b>' + s.score[i] + '</b>, ' + t('arcade.tuho.left', { n: String(s.left[i]) }) + '</span>')
         .join('');
 

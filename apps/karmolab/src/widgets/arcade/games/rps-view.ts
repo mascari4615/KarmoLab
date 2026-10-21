@@ -4,6 +4,7 @@
  * **상대가 못 내는 손도 보여 준다**. 그게 이 놀이의 정보 전부다. 안 보여 주면 규칙은 있는데
  * 아무도 그 규칙으로 생각하지 않는다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { HANDS, type RpsState, type RpsAction } from './rps';
@@ -32,7 +33,7 @@ export const rpsView: GameView<RpsState, RpsAction> = {
       const mine = s.picks[mySeat];
 
       foe.innerHTML =
-        '<small>' + v.seats[other].name + '</small>' +
+        '<small>' + escapeHtml(v.seats[other].name) + '</small>' +
         (s.locked[other] >= 0
           ? '<span class="ac-rplock">' + t('arcade.rps.locked', { h: GLYPH[s.locked[other]] }) + '</span>'
           : '<span class="ac-rplock">' + t('arcade.rps.noLock') + '</span>');
@@ -58,7 +59,7 @@ export const rpsView: GameView<RpsState, RpsAction> = {
       who.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
         .join('') + '<span class="ac-dts">' + t('arcade.rps.round', { n: String(s.round + 1) }) + '</span>';
     };
   }

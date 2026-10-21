@@ -4,6 +4,7 @@
  * 겨눔이 **시각으로 정해지므로** 화면은 커널이 준 `now` 로 같은 자리를 그린다 . 
  * 자기 시계를 따로 쓰면 내가 본 자리와 맞은 자리가 갈린다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { fitCanvas, beginFit } from '../fit-canvas';
@@ -114,7 +115,7 @@ export const dartsView: GameView<DartsState, DartsAction> = {
       leftEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + s.left[i] + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + s.left[i] + '</b></span>')
         .join('');
       go.disabled = !myTurn;
     };

@@ -4,6 +4,7 @@
  * 카드 한 장 보고 다음이 위인지 아래인지. 맞히면 판돈이 두 배, 챙기면 내 점수.
  * 2D 공용 상(`table2d.ts`)을 탄다 (2026-09-03). 상대는 위에 자리 카드, 가운데 카드 둘, 아래 위, 아래, 챙기기
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { cardMark, cardBack } from '../card';
@@ -78,7 +79,7 @@ export const highlowView: GameView<HighLowState, HighLowAction> = {
         left.innerHTML = v.seats
           .map((seat, i) =>
             '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-            seat.name + ' <b>' + (s.banked[i] ?? 0) + '</b>, ' +
+            escapeHtml(seat.name) + ' <b>' + (s.banked[i] ?? 0) + '</b>, ' +
             t('arcade.highlow.left', { n: String(s.left[i] ?? 0) }) + '</span>')
           .join('');
       }

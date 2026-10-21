@@ -4,6 +4,7 @@
  * 순서를 정하는 일은 **누르는 차례**로 받는다. 끌어서 옮기기는 폰에서 자주 어긋나고,
  * 몇 번째를 숫자로 고르게 하면 셈이 두 번이 된다. 왼쪽에서 고르면 오른쪽 줄에 쌓인다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { useQuestionCount, type LineupState, type LineupAction } from './lineup';
@@ -62,10 +63,10 @@ export const lineupView: GameView<LineupState, LineupAction> = {
         body.innerHTML =
           '<p class="tool-status">' + t('arcade.lineup.orderHint') + '</p>' +
           '<div class="ac-lurow">' +
-          rest.map((i) => '<button class="ac-lup" data-i="' + i + '">' + v.seats[i].name + '</button>').join('') +
+          rest.map((i) => '<button class="ac-lup" data-i="' + i + '">' + escapeHtml(v.seats[i].name) + '</button>').join('') +
           '</div>' +
           '<div class="ac-luline">' +
-          order.map((i, k) => '<span>' + (k + 1) + '. ' + v.seats[i].name + '</span>').join('') +
+          order.map((i, k) => '<span>' + (k + 1) + '. ' + escapeHtml(v.seats[i].name) + '</span>').join('') +
           '</div>' +
           (order.length === v.seats.length
             ? '<button class="btn btn-primary" id="acLuSend">' + t('arcade.lineup.send') + '</button>'
@@ -87,10 +88,10 @@ export const lineupView: GameView<LineupState, LineupAction> = {
         .sort((a, b) => a.v - b.v || a.i - b.i);
       body.innerHTML =
         '<div class="ac-luline">' +
-        real.map((x, k) => '<span>' + (k + 1) + '. ' + v.seats[x.i].name + ' <b>' + x.v + '</b></span>').join('') +
+        real.map((x, k) => '<span>' + (k + 1) + '. ' + escapeHtml(v.seats[x.i].name) + ' <b>' + x.v + '</b></span>').join('') +
         '</div>' +
         '<div class="ac-lurow">' +
-        v.seats.map((seat, i) => '<span class="ac-dts">' + seat.name + ' ' + s.score[i] + '</span>').join('') +
+        v.seats.map((seat, i) => '<span class="ac-dts">' + escapeHtml(seat.name) + ' ' + s.score[i] + '</span>').join('') +
         '</div>';
       order = [];
     };

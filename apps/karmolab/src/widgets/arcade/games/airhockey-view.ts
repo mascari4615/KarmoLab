@@ -4,6 +4,7 @@
  * 손가락이 닿은 자리를 그대로 보낸다. 이 놀이의 액션은 눌렀다가 아니라 **여기 있다**다.
  * 그래서 `pointermove` 를 그대로 흘려보내되, 소식이 너무 잦으면 그물망이 막히므로 프레임당 하나만.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { keyDrive } from '../key-drive';
@@ -113,7 +114,7 @@ export const airhockeyView: GameView<AirState, AirAction> = {
       scoreEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-plc' + (i === mySeat ? ' ac-me' : '') + '" style="--c:' + SEAT_COLOR[i] + '">' +
-          seat.name + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
         .join('');
     };
   }

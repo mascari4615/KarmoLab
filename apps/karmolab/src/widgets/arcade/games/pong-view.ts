@@ -4,6 +4,7 @@
  * 에어하키와 같은 손놀림(닿은 자리를 보낸다)인데 **x 하나만** 쓴다.
  * 내 라켓이 늘 아래로 오게 그린다. 남의 라켓이 앞에 있으면 방향이 뒤집혀 헷갈린다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { W, H, PAD, type PongState, type PongAction } from './pong';
@@ -109,7 +110,7 @@ export const pongView: GameView<PongState, PongAction> = {
       scoreEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-plc' + (i === mySeat ? ' ac-me' : '') + '" style="--c:' + SEAT_COLOR[i] + '">' +
-          seat.name + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.score[i] ?? 0) + '</b></span>')
         .join('');
     };
   }

@@ -4,6 +4,7 @@
  * 구덩이에 손을 얹으면 **마지막 알이 멎을 자리**를 표시한다. 이 놀이의 수는 어디를 집을까가
  * 아니라 마지막 알이 어디서 멎을까라, 안 보여 주면 손가락으로 세게 된다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import type { GameView } from '../views';
 import { PITS, STORE, ownsPit, sow, type MancalaState, type MancalaAction } from './mancala';
 
@@ -43,8 +44,8 @@ export const mancalaView: GameView<MancalaState, MancalaAction> = {
 
       top.innerHTML = foeRow.map(pit).join('');
       bot.innerHTML = mineRow.map(pit).join('');
-      s0.innerHTML = '<small>' + v.seats[mySeat].name + '</small><b>' + s.board[STORE[mySeat]] + '</b>';
-      s1.innerHTML = '<small>' + v.seats[1 - mySeat].name + '</small><b>' + s.board[STORE[1 - mySeat]] + '</b>';
+      s0.innerHTML = '<small>' + escapeHtml(v.seats[mySeat].name) + '</small><b>' + s.board[STORE[mySeat]] + '</b>';
+      s1.innerHTML = '<small>' + escapeHtml(v.seats[1 - mySeat].name) + '</small><b>' + s.board[STORE[1 - mySeat]] + '</b>';
 
       el.querySelectorAll<HTMLButtonElement>('.ac-mnp').forEach((b) => {
         const i = Number(b.dataset.i);

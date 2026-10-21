@@ -5,6 +5,7 @@
  * 모양이라, 격자에 우겨넣으면 지름길이 지름길로 안 보인다. 모서리 두 곳(지름길 입구)은
  * 굵게 그려서 여기 딱 서면 질러간다가 눈에 들어오게 했다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { pieceMarkup } from '../piece';
@@ -102,7 +103,7 @@ export const yutView: GameView<YutState, YutAction> = {
       who.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + (i === s.turn ? ' ac-now' : '') + '">' +
-          pieceMarkup({ shape: 'pawn', owner: i, compact: true }) + ' ' + seat.name +
+          pieceMarkup({ shape: 'pawn', owner: i, compact: true }) + ' ' + escapeHtml(seat.name) +
           ' <b>' + s.pos[i].filter((p) => p >= OUT).length + '</b>/2</span>')
         .join('');
     };

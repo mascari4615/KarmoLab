@@ -4,6 +4,7 @@
  * 보여 주는 중에는 **누를 수 없다는 것이 눈에 보여야** 한다. 안 그러면 눌렀는데 아무 일이
  * 없어서 고장 난 줄 안다. 지금까지 몇 칸 쳤는지도 점으로 보여 준다(길어지면 헷갈린다).
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { PADS, showing, type SimonState, type SimonAction } from './simon';
@@ -54,7 +55,7 @@ export const simonView: GameView<SimonState, SimonAction> = {
       who.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + (s.alive[i] ? '' : ' ac-dead') + '">' +
-          seat.name + '</span>')
+          escapeHtml(seat.name) + '</span>')
         .join('');
     };
   }

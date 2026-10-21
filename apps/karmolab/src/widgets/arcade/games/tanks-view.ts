@@ -4,6 +4,7 @@
  * **지난 탄착점을 남긴다**. 빗나간 자리를 보고 고쳐 쏘는 것이 이 놀이라, 안 남기면 매번
  * 감으로 다시 찍게 된다. 포신도 지금 고른 각도로 돌아가 있어 쏘기 전에 방향이 보인다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import { mountAimDrag, lateralOf } from '../aim-drag';
 import type { GameView } from '../views';
@@ -154,7 +155,7 @@ export const tanksView: GameView<TanksState, TanksAction> = {
       hpEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-plc' + (i === mySeat ? ' ac-me' : '') + '" style="--c:' + SEAT_COLOR[i] + '">' +
-          seat.name + ' <b>' + '♥'.repeat(Math.max(0, s.hp[i] ?? 0)) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + '♥'.repeat(Math.max(0, s.hp[i] ?? 0)) + '</b></span>')
         .join('');
 
       (el.querySelector('#acTkAl') as HTMLElement).textContent = t('arcade.tanks.angle');

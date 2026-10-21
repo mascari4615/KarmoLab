@@ -4,6 +4,7 @@
  * 깃발은 **길게 누르기**로 받는다. 폰에는 오른쪽 단추가 없다. 데스크톱에서는 오른쪽 단추도 받는다.
  * 숫자는 `nums` 에서 온다(지뢰는 손님에게 안 간다).
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import type { SweepState, SweepAction } from './minesweeper';
@@ -119,7 +120,7 @@ export const minesweeperView: GameView<SweepState, SweepAction> = {
       bar.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + (s.dead[i] ? ' ac-dead' : '') + '">' +
-          seat.name + ' <b>' + (s.opened[i] ?? 0) + '</b></span>')
+          escapeHtml(seat.name) + ' <b>' + (s.opened[i] ?? 0) + '</b></span>')
         .join('') + (dead ? '<span class="ac-dts">' + t('arcade.mine.dead') + '</span>' : '') +
         /* 계측. 판 난이도(3BV)와 내 클릭과 효율. 순위 사이트가 판 뒤에 보여 주는 셋 (2026-09-03) */
         '<span class="ac-dts ac-mstat">' + t('arcade.mine.stats', {

@@ -4,6 +4,7 @@
  * **줄, 칸에서 겹치는 숫자를 붉게** 보여 준다. 정답을 알려 주는 게 아니라(정답은 화면에 안 온다)
  * 이미 화면에 있는 것끼리 부딪히는 것만 짚어 준다. 그 정도는 종이로 풀 때도 눈에 보인다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { N, BOX_W, BOX_H, type SudokuState, type SudokuAction } from './sudoku';
@@ -76,7 +77,7 @@ export const sudokuView: GameView<SudokuState, SudokuAction> = {
       who.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + (s.right[i] ?? 0) + '</b>/' + N * N +
+          escapeHtml(seat.name) + ' <b>' + (s.right[i] ?? 0) + '</b>/' + N * N +
           ((s.wrong?.[i] ?? 0) > 0 ? ' <small>' + t((s.wrong[i] ?? 0) >= 3 ? 'arcade.sudoku.out' : 'arcade.sudoku.wrong', { n: String(s.wrong[i]) }) + '</small>' : '') + '</span>')
         .join('') + (pick < 0 && live ? '<span class="ac-dts">' + t('arcade.sudoku.hint') + '</span>' : '');
     };

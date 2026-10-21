@@ -6,6 +6,7 @@
  *
  * 남은 시간을 막대로 보여 준다. 이 놀이의 긴장은 생각나기 전에 시간이 간다에서 나온다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t, locale } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { useWordPack, type ChainState, type ChainAction } from './wordchain';
@@ -84,7 +85,7 @@ export const wordchainView: GameView<ChainState, ChainAction> = {
       whoEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-dts' + (i === mySeat ? ' ac-me' : '') + (s.alive[i] ? '' : ' ac-dead') + '">' +
-          seat.name + '</span>')
+          escapeHtml(seat.name) + '</span>')
         .join('');
     };
   }

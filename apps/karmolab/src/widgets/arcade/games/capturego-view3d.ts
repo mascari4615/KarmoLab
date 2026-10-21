@@ -4,6 +4,7 @@
  * 바둑이므로 **교차점**에 둔다(오목과 같다). 점수줄과 넘기기는 판 밖에 둔다 . 
  * 3D 판 위에 글자를 얹으면 각도 따라 읽히지 않는다.
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import type { GameView } from '../views';
 import { mountThreeBoard, type Board3d, type Stone } from '../three-board';
 import { N, tryPlay, type GoState, type GoAction } from './capturego';
@@ -50,7 +51,7 @@ export const view3d: GameView<GoState, GoAction> = {
       scoreEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-gos' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + (s.caught[i] ?? 0) + '</b>/5</span>')
+          escapeHtml(seat.name) + ' <b>' + (s.caught[i] ?? 0) + '</b>/5</span>')
         .join('');
       pass.textContent = t('arcade.go.pass');
       pass.disabled = !myTurn;

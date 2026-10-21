@@ -5,6 +5,7 @@
  * 무엇을 겨루는지 안 읽힌다. 못 두는 자리(자살수, 패)는 눌러도 아무 일이 없어야 하고,
  * 그건 규칙이 이미 막아 준다(화면은 흐리게만 한다).
  */
+import { escapeHtml } from '../../../lib/markdown/render';
 import { t } from '../../../lib/i18n';
 import type { GameView } from '../views';
 import { N, tryPlay, type GoState, type GoAction } from './capturego';
@@ -43,7 +44,7 @@ export const capturegoView: GameView<GoState, GoAction> = {
       scoreEl.innerHTML = v.seats
         .map((seat, i) =>
           '<span class="ac-gos' + (i === mySeat ? ' ac-me' : '') + '">' +
-          seat.name + ' <b>' + (s.caught[i] ?? 0) + '</b>/5</span>')
+          escapeHtml(seat.name) + ' <b>' + (s.caught[i] ?? 0) + '</b>/5</span>')
         .join('');
 
       pass.textContent = t('arcade.go.pass');
