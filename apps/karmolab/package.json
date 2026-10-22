@@ -473,6 +473,7 @@
     "test:textcount": "node scripts/test-text-count.mjs",
     "test:tierlist-keys": "node scripts/smoke-tierlist-keys.mjs",
     "test:timecapsule": "node scripts/smoke-timecapsule.mjs",
+    "test:tick": "node --test scripts/tick.test.mjs",
     "test:tool-search": "node scripts/test-tool-search.mjs",
     "test:prepush-build": "node --test scripts/test-prepush-build.mjs",
     "test:tool-url": "node scripts/smoke-tool-url.mjs",

@@ -16,6 +16,7 @@
  * KarmoGraph 은 그릇이고 렌즈지, 작가가 아니다.
  */
 import { t, loadNamespace } from '../../lib/i18n';
+import { intervalWhileVisible } from '../../lib/tick';
 import { GraphCanvas } from '../../lib/karmograph/canvas';
 import { themeFromCss } from '../../lib/karmograph/canvas-theme';
 import { setSketchy } from '../../lib/karmograph/sketchy';
@@ -2987,24 +2988,24 @@ import {
     }
 
     // 자동 넘김. 손을 못 쓰는 자리(전시, 배경 재생)에서 쓴다. 마지막 장에서 처음으로 돈다.
-    let autoTimer: ReturnType<typeof setInterval> | null = null;
+    let stopAutoTimer: (() => void) | null = null;
     function stopAuto(): void {
-      if (autoTimer) clearInterval(autoTimer);
-      autoTimer = null;
+      stopAutoTimer?.();
+      stopAutoTimer = null;
       const btn = root.querySelector('[data-km="stage-auto"]');
       if (btn) btn.textContent = t('karmograph.stageAuto.label');
     }
     Toolbox.onDispose?.(stopAuto);
 
     q<HTMLButtonElement>('stage-auto').onclick = (ev) => {
-      if (autoTimer) { stopAuto(); return; }
+      if (stopAutoTimer) { stopAuto(); return; }
       (ev.currentTarget as HTMLButtonElement).textContent = t('karmograph.btn.msg');
-      autoTimer = setInterval(() => {
+      stopAutoTimer = intervalWhileVisible(() => {
         const list = steps();
         if (list.length === 0 || !presenting) { stopAuto(); return; }
         stepIndex = (stepIndex + 1) % list.length;
         showStep();
-      }, 6000);
+      }, 6000, { refreshOnResume: false });
     };
 
     q<HTMLButtonElement>('story').onclick = () => setPresenting(!presenting);

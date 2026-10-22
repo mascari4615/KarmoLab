@@ -14,11 +14,12 @@
  * Toolbox.onDispose?.(stop);
  * ```
  */
-export function intervalWhileVisible(fn: () => void, ms: number): () => void {
+export function intervalWhileVisible(fn: () => void, ms: number, options: { refreshOnResume?: boolean } = {}): () => void {
   let timer: number | null = null;
+  let disposed = false;
 
   const start = (): void => {
-    if (timer !== null) return;
+    if (disposed || timer !== null) return;
     timer = window.setInterval(fn, ms);
   };
   const stopTimer = (): void => {
@@ -27,13 +28,14 @@ export function intervalWhileVisible(fn: () => void, ms: number): () => void {
     timer = null;
   };
   const onVisibility = (): void => {
+    if (disposed) return;
     if (document.hidden) {
       stopTimer();
       return;
     }
     // 돌아온 순간 **한 번 바로** 돌린다. 안 그러면 덮어 둔 사이 멈춰 있던 화면이
     // 다음 tick(최대 ms) 까지 옛 값을 그대로 보여 준다. 시계라면 그게 곧 틀린 시각이다.
-    fn();
+    if (options.refreshOnResume !== false) fn();
     start();
   };
 
@@ -41,6 +43,7 @@ export function intervalWhileVisible(fn: () => void, ms: number): () => void {
   if (!document.hidden) start();
 
   return (): void => {
+    disposed = true;
     document.removeEventListener('visibilitychange', onVisibility);
     stopTimer();
   };
