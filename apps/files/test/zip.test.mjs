@@ -37,6 +37,26 @@ test('머리와 끝 표시가 규격대로 선다', () => {
     assert.equal(v.getUint16(eocd + 8, true), 1, '항목 수');
 });
 
+test('자동 번호는 뒤에 나올 원래 파일 이름을 차지하지 않는다', () => {
+    assert.deepEqual(uniqueNames(['photo.jpg', 'photo.jpg', 'photo (1).jpg']), [
+        'photo.jpg', 'photo (2).jpg', 'photo (1).jpg'
+    ]);
+});
+
+test('앞서 나온 번호 이름과 자동 번호도 서로 다르다', () => {
+    assert.deepEqual(uniqueNames(['photo.jpg', 'photo (1).jpg', 'photo.jpg']), [
+        'photo.jpg', 'photo (1).jpg', 'photo (2).jpg'
+    ]);
+    const names = uniqueNames(['README', 'README', 'README (1)', 'README (1)']);
+    assert.equal(new Set(names).size, names.length);
+});
+
+test('대소문자만 다른 이름도 Windows에서 덮이지 않는다', () => {
+    assert.deepEqual(uniqueNames(['photo.txt', 'PHOTO.txt', 'photo (1).txt']), [
+        'photo.txt', 'PHOTO (2).txt', 'photo (1).txt'
+    ]);
+});
+
 test('너무 크면 안 묶는다', () => {
     const huge = { name: 'x', bytes: { length: 3 * 1024 * 1024 * 1024 } };
     assert.throws(() => makeZip([huge]), /너무 큽니다/);
@@ -46,6 +66,9 @@ test('윈도우가 실제로 푼다', async (t) => {
     /* 규격을 흉내 낸 것이 아니라 진짜 zip 인지. 바이트 검사만으로는 못 잡는다 */
     const zip = makeZip([
         { name: 'a.txt', bytes: enc('hello') },
+        { name: 'a.txt', bytes: enc('second') },
+        { name: 'a (1).txt', bytes: enc('original numbered file') },
+        { name: 'A.txt', bytes: enc('uppercase file') },
         { name: '한글 이름.txt', bytes: enc('안녕') }
     ]);
     const dir = await mkdtemp(join(tmpdir(), 'zip-'));
@@ -61,7 +84,10 @@ test('윈도우가 실제로 푼다', async (t) => {
     });
     if (!ok) return t.skip('이 기계에서 Expand-Archive 를 못 돌림');
     const names = await readdir(join(dir, 'out'));
-    assert.deepEqual(names.sort(), ['a.txt', '한글 이름.txt']);
+    assert.deepEqual(names.sort(), ['A (3).txt', 'a (1).txt', 'a (2).txt', 'a.txt', '한글 이름.txt']);
     assert.equal(await readFile(join(dir, 'out', 'a.txt'), 'utf8'), 'hello');
+    assert.equal(await readFile(join(dir, 'out', 'a (2).txt'), 'utf8'), 'second');
+    assert.equal(await readFile(join(dir, 'out', 'a (1).txt'), 'utf8'), 'original numbered file');
+    assert.equal(await readFile(join(dir, 'out', 'A (3).txt'), 'utf8'), 'uppercase file');
     assert.equal(await readFile(join(dir, 'out', '한글 이름.txt'), 'utf8'), '안녕');
 });

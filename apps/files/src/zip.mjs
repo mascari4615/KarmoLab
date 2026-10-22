@@ -32,19 +32,27 @@ export function crc32(bytes) {
     return (c ^ 0xffffffff) >>> 0;
 }
 
-/** 같은 이름이 두 번 들어가면 푸는 쪽이 하나를 덮어쓴다. 뒤엣것에 번호를 붙인다 */
+/** 원래 번호 이름 예약과 Windows 대소문자 충돌 회피. 뒤 파일에만 번호 추가 */
 export function uniqueNames(names) {
-    const seen = new Map();
-    return names.map((raw) => {
-        const n = String(raw);
-        if (!seen.has(n)) {
-            seen.set(n, 1);
+    const originals = names.map(String);
+    const reserved = new Set(originals.map((name) => name.toLowerCase()));
+    const used = new Set();
+    const next = new Map();
+    return originals.map((n) => {
+        if (!used.has(n.toLowerCase())) {
+            used.add(n.toLowerCase());
             return n;
         }
-        const i = seen.get(n);
-        seen.set(n, i + 1);
         const dot = n.lastIndexOf('.');
-        return dot > 0 ? `${n.slice(0, dot)} (${i})${n.slice(dot)}` : `${n} (${i})`;
+        let i = next.get(n) ?? 1;
+        let candidate;
+        do {
+            candidate = dot > 0 ? `${n.slice(0, dot)} (${i})${n.slice(dot)}` : `${n} (${i})`;
+            i++;
+        } while (reserved.has(candidate.toLowerCase()) || used.has(candidate.toLowerCase()));
+        next.set(n, i);
+        used.add(candidate.toLowerCase());
+        return candidate;
     });
 }
 
