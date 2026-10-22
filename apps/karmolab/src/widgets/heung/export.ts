@@ -79,7 +79,8 @@ export function smplChunk(sampleRate: number, loopStartSample: number, loopEndSa
   view.setUint32(44, 0, true);
   view.setUint32(48, 0, true);
   view.setUint32(52, start, true);
-  view.setUint32(56, end, true);
+  // 입력의 제외 경계를 WAV의 마지막 포함 표본으로 변환.
+  view.setUint32(56, end - 1, true);
   view.setUint32(60, 0, true);
   view.setUint32(64, 0, true);
   return bytes;

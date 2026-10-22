@@ -791,7 +791,7 @@ else{
   if(smplAt<0)problems.push('루프 지점을 켰는데 WAV 에 smpl 덩어리가 없다');
   else{
     if(loopWav.readUInt32LE(smplAt+36)!==1)problems.push('smpl 에 루프가 한 개가 아니다');
-    if(loopWav.readUInt32LE(smplAt+56)<=loopWav.readUInt32LE(smplAt+52))problems.push('루프 끝이 시작보다 앞이다');
+    if(loopWav.readUInt32LE(smplAt+56)<loopWav.readUInt32LE(smplAt+52))problems.push('루프 끝이 시작보다 앞이다');
     if(loopWav.readUInt32LE(4)!==loopWav.length-8)problems.push(`RIFF 길이가 실제와 다르다 (${loopWav.readUInt32LE(4)} vs ${loopWav.length-8})`);
   }
 }

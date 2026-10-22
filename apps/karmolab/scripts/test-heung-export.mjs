@@ -106,10 +106,15 @@ assert.equal(String.fromCharCode(...chunk.slice(0, 4)), 'smpl');
 assert.equal(chunkView.getUint32(4, true), 60, '덩어리 길이');
 assert.equal(chunkView.getUint32(36, true), 1, '루프 한 개');
 assert.equal(chunkView.getUint32(52, true), 0, '루프 시작 표본');
-assert.equal(chunkView.getUint32(56, true), 88200, '루프 끝 표본');
+assert.equal(chunkView.getUint32(56, true), 88199, '제외 경계를 WAV의 마지막 포함 표본으로 변환');
 assert.equal(chunkView.getUint32(16, true), Math.round(1e9 / 44100), '표본 주기(ns)');
 const backwards = smplChunk(44100, 500, 100);
-assert.ok(new DataView(backwards.buffer).getUint32(56, true) > new DataView(backwards.buffer).getUint32(52, true), '끝이 시작보다 앞이면 바로잡는다');
+assert.equal(new DataView(backwards.buffer).getUint32(56, true), 500, '역전 구간은 시작 표본 한 개를 포함하는 루프');
+const oneFrame = smplChunk(44100, 0, 1);
+assert.equal(new DataView(oneFrame.buffer).getUint32(56, true), 0, '한 표본 루프의 처음과 마지막은 같은 표본');
+const fractional = smplChunk(44100, 2.9, 4.8);
+assert.equal(new DataView(fractional.buffer).getUint32(52, true), 2);
+assert.equal(new DataView(fractional.buffer).getUint32(56, true), 3);
 
 // 세 구간. 루프가 곡 안쪽이면 인트로와 아웃트로까지
 const three = loopSections({ from: 0, to: 32 }, { from: 8, to: 24 });
