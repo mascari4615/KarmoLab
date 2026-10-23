@@ -61,6 +61,17 @@ test('searching after a failed refresh preserves the failure warning and old dat
   await until(() => !refresh.disabled);
   assert.doesNotMatch(root.querySelector('[role=status]').textContent, /목록 다시 읽기 실패/);
 });
+test('refresh reads a changed remote feed instead of the cached snapshot', async t => {
+  const { w, root, ctx } = screen(t);
+  const cached = structuredClone(feed), remote = structuredClone(feed);
+  ctx.repo.readJson = async (_path, options) => structuredClone(options?.fresh ? remote : cached);
+  await w.test.renderDiscovery(ctx);
+  remote.items[0].title = 'Updated remote event';
+  const refresh = root.querySelector('[data-refresh]'); refresh.click();
+  await until(() => !refresh.disabled);
+  assert.match(root.querySelector('.discovery-list').textContent, /Updated remote event/);
+});
+
 test('the real calendar displays the same source event and offers no write controls', async t => {
   const { w, root, dispose } = screen(t);
   const parsed = w.test.parseDiscovery(feed), events = w.test.discoveryEvents(parsed);

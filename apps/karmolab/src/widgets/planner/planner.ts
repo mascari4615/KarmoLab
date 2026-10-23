@@ -496,7 +496,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                 }
             }, async () => {
                 try {
-                    const feed = parseDiscovery(await ctx.repo.readJson<unknown>(DISCOVERY_PATH));
+                    const feed = parseDiscovery(await ctx.repo.readJson<unknown>(DISCOVERY_PATH, { fresh: true }));
                     if (!ctx.isCurrent()) return null;
                     if (feed.sources.some(source => source.status === 'error')) toast('일부 행사 출처 확인 실패. 이전 확인본 포함, 정보 목록에서 상태 확인.', 'error');
                     return feed;

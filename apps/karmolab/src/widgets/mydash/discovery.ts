@@ -49,7 +49,7 @@ export async function renderDiscovery(ctx: DashPanelCtx): Promise<void> {
     const version = ++generation; refresh.disabled = true;
     status.textContent = '목록 불러오는 중...';
     try {
-      const next = parseDiscovery(await ctx.repo.readJson<unknown>(DISCOVERY_PATH));
+      const next = parseDiscovery(await ctx.repo.readJson<unknown>(DISCOVERY_PATH, { fresh: true }));
       if (disposed || version !== generation) return;
       feed = next; readFailed = false; paint();
     } catch (error) {

@@ -581,6 +581,14 @@ import { t, loadNamespace } from '../../lib/i18n';
     async function readText(path: string, opts?: DashReadOpts): Promise<string> {
       const key = cacheKey(cfg, path, opts);
       const old = await cachedRead(key);
+      if (opts?.fresh) {
+        const etag = old === null ? undefined : (await cachedEtag(key)) || undefined;
+        const got = await fetchFresh(path, opts.ref, etag);
+        const text = got.text ?? old ?? '';
+        await saveRead(key, text, got.etag);
+        revalidated.add(key);
+        return text;
+      }
       if (old === null) {
         const got = await fetchFresh(path, opts?.ref);
         const text = got.text || '';

@@ -16,6 +16,8 @@
 /** 어느 브랜치에서 읽나. 없으면 config 의 `branch`. 이벤트 브랜치를 읽을 때만 채움 */
 export interface DashReadOpts {
   ref?: string;
+  /** Wait for a remote observation instead of returning the cached snapshot. */
+  fresh?: boolean;
 }
 
 /** 저장소에서 **읽기만**. 읽기 패널이 받는 전부. */
