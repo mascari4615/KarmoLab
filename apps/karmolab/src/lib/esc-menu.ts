@@ -188,7 +188,8 @@ const KarmoEscMenu = (() => {
 
     /* dash 사이트는 KarmoLab 껍데기가 없다. 대시보드가 칸을 끼워 줄 때만 뜬다 */
     const soloSite = () => document.documentElement.getAttribute('data-site') === 'dash';
-    document.addEventListener('keydown', (e) => {
+    // 위젯의 document 핸들러 처리 뒤 판정. 같은 Escape의 선택 해제와 메뉴 열림 중복 방지
+    window.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape' || e.defaultPrevented || (soloSite() && !custom)) return;
         if (isOpen()) { e.preventDefault(); close(); return; }
         if (typing(document.activeElement) || otherLayerOpen()) return;
