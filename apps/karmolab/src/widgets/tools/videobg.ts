@@ -168,7 +168,8 @@ import { CUTOUT_MODELS, alphaOf, applyAlpha, cutout, planFrames, resampleAlpha, 
           showCost();
           status.textContent = t('videobg.status.ready', { sec: duration.toFixed(1) });
         })
-        .catch(() => {
+        .catch((error: Error) => {
+          if (error.name === 'AbortError') return;
           status.textContent = t('videobg.status.badVideo');
         });
     });

@@ -174,32 +174,68 @@ export function downloadUrl(url: string, filename: string): void {
  * 값어치는 같은 배선을 네 곳에 두지 않는다쪽이다. 과장해서 적지 않는다
  * (`rules/quality.md § 설명문이 거짓말이면 아무 검사에도 안 걸린다`).
  */
+const pendingVideoLoads = new WeakMap<HTMLVideoElement, () => void>();
+const videoDisposalOwners = new WeakSet<HTMLVideoElement>();
+
+function releaseVideoSource(el: HTMLVideoElement): void {
+  const url = el.dataset.karmoObjectUrl;
+  if (!url) return;
+  el.pause();
+  el.removeAttribute('src');
+  el.load();
+  URL.revokeObjectURL(url);
+  delete el.dataset.karmoObjectUrl;
+}
+
 export function attachVideo(el: HTMLVideoElement, file: File | Blob, timeoutMs = 8000): Promise<VideoMeta> {
   return new Promise((resolve, reject) => {
+    pendingVideoLoads.get(el)?.();
+    releaseVideoSource(el);
     const url = URL.createObjectURL(file);
+    el.dataset.karmoObjectUrl = url;
     let done = false;
-    const finish = (ok: boolean): void => {
+    let timer = 0;
+    const validDuration = (): boolean => Number.isFinite(el.duration) && el.duration > 0;
+    const finish = (ok: boolean, error?: Error): void => {
       if (done) return;
       done = true;
       window.clearTimeout(timer);
+      if (el.onerror === onError) el.onerror = null;
+      if (el.onloadedmetadata === onMetadata) el.onloadedmetadata = null;
+      if (el.ontimeupdate === onDuration) el.ontimeupdate = null;
+      if (pendingVideoLoads.get(el) === cancel) pendingVideoLoads.delete(el);
       if (ok) resolve(metaOf(el));
       else {
-        URL.revokeObjectURL(url);
-        reject(new Error('이 영상은 못 읽습니다'));
+        if (el.dataset.karmoObjectUrl === url) releaseVideoSource(el);
+        else URL.revokeObjectURL(url);
+        reject(error ?? new Error('이 영상은 못 읽습니다'));
       }
     };
-    const timer = window.setTimeout(() => finish(Number.isFinite(el.duration)), timeoutMs);
-    el.onerror = (): void => finish(false);
-    el.onloadedmetadata = (): void => {
-      if (Number.isFinite(el.duration) && el.duration > 0) return finish(true);
-      /* 길이를 안 적어 둔 판. 끝까지 밀었다가 돌아오면 그제야 길이가 잡힌다 */
-      el.ontimeupdate = (): void => {
-        el.ontimeupdate = null;
-        el.currentTime = 0;
-        finish(true);
-      };
-      el.currentTime = 1e101;
+    const onError = (): void => finish(false);
+    const onDuration = (): void => {
+      if (!validDuration()) return;
+      el.currentTime = 0;
+      finish(true);
     };
+    const onMetadata = (): void => {
+      if (validDuration()) return finish(true);
+      /* 길이를 안 적어 둔 판. 끝까지 밀었다가 돌아오면 그제야 길이가 잡힌다 */
+      el.ontimeupdate = onDuration;
+      try { el.currentTime = 1e101; } catch { finish(false); }
+    };
+    const cancel = (): void => finish(false, new DOMException('새 영상으로 교체됨', 'AbortError'));
+    pendingVideoLoads.set(el, cancel);
+    if (typeof Toolbox !== 'undefined' && Toolbox.onDispose && !videoDisposalOwners.has(el)) {
+      videoDisposalOwners.add(el);
+      Toolbox.onDispose(() => {
+        videoDisposalOwners.delete(el);
+        pendingVideoLoads.get(el)?.();
+        releaseVideoSource(el);
+      });
+    }
+    timer = window.setTimeout(() => finish(validDuration()), timeoutMs);
+    el.onerror = onError;
+    el.onloadedmetadata = onMetadata;
     el.src = url;
   });
 }

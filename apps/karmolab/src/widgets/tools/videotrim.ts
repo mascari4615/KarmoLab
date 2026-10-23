@@ -146,7 +146,7 @@ import { attachMedia } from './shared/media';
               video.currentTime = 0;
               refresh();
               say(t('videotrim.say.loaded', { name: f.name, len: mmss(duration) }), 'ok');
-            }).catch(() => say(t('videotrim.err.open'), 'error'));
+            }).catch((error: Error) => { if (error.name !== 'AbortError') say(t('videotrim.err.open'), 'error'); });
           }
 
           async function run(): Promise<void> {

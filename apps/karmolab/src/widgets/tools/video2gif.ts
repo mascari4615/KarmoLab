@@ -194,7 +194,7 @@ import { getKarmoGif } from '../../lib/karmogif';
               video.currentTime = 0;
               refresh();
               say(t('video2gif.say.loaded', { name: f.name, len: mmss(duration) }), 'ok');
-            }).catch(() => say(t('video2gif.err.open'), 'error'));
+            }).catch((error: Error) => { if (error.name !== 'AbortError') say(t('video2gif.err.open'), 'error'); });
           }
 
           /** 지정 시각의 화면 한 장을 가져온다. 옮겨지기 전에 그리면 엉뚱한 장면이 담긴다. */

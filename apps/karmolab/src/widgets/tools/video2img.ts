@@ -168,7 +168,7 @@ import { t, loadNamespace } from '../../lib/i18n';
                 w: video.videoWidth,
                 h: video.videoHeight
               }), 'ok');
-            }).catch(() => say(t('video2img.err.open'), 'error'));
+            }).catch((error: Error) => { if (error.name !== 'AbortError') say(t('video2img.err.open'), 'error'); });
           }
 
           async function grabEvery(): Promise<void> {

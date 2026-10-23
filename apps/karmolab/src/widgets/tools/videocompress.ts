@@ -179,7 +179,7 @@ import { t, loadNamespace } from '../../lib/i18n';
                 }),
                 'ok'
               );
-            }).catch(() => say(t('videocompress.err.open'), 'error'));
+            }).catch((error: Error) => { if (error.name !== 'AbortError') say(t('videocompress.err.open'), 'error'); });
           }
 
           async function run(): Promise<void> {
