@@ -164,6 +164,24 @@ export function materialShell(container: HTMLElement, o: MaterialShellOpts): voi
   let token = 0;
   let openJob: string | null = null;
 
+  function clearPreview(): void {
+    for (const el of preview.querySelectorAll<HTMLElement>('[data-karmo-object-url]')) {
+      if (el instanceof HTMLMediaElement) {
+        el.pause();
+        el.removeAttribute('src');
+        el.load();
+      }
+      const url = el.dataset.karmoObjectUrl;
+      if (url) URL.revokeObjectURL(url);
+      delete el.dataset.karmoObjectUrl;
+    }
+    preview.textContent = '';
+  }
+  Toolbox.onDispose?.(() => {
+    token++;
+    clearPreview();
+  });
+
   async function setFile(f: File): Promise<void> {
     file = f;
     /* 셈 공책은 쓰는 칸이 **계속 보여야** 한다. 한 줄 치고 칸이 사라지면 이어 쓸 수가 없다 */
@@ -175,7 +193,7 @@ export function materialShell(container: HTMLElement, o: MaterialShellOpts): voi
         ? t2(o.labels.more, { name: f.name, n: bag.length - 1 })
         : f.name;
     const mine = ++token;
-    preview.textContent = '';
+    clearPreview();
     try {
       const meta = await o.preview(f, preview, () => mine === token);
       if (mine !== token) return;
@@ -195,6 +213,7 @@ export function materialShell(container: HTMLElement, o: MaterialShellOpts): voi
       }
     } catch {
       if (mine !== token) return;
+      clearPreview();
       $('#pfMeta').textContent = fileSize(f.size);
       preview.innerHTML = `<div class="pf-empty">${esc(o.labels.fail)}</div>`;
     }
