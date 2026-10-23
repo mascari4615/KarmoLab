@@ -11,7 +11,7 @@ function fixture(name) {
   const find = node => { if (ts.isFunctionDeclaration(node) && node.name?.text === 'run') run = node; ts.forEachChild(node, find); };
   find(ast); assert.ok(run);
   const code = ts.transpileModule(run.getText(ast) + '\nexports.run = run;', { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
-  const tracks = [], intervals = new Map(), messages = [], displayed = [];
+  const tracks = [], intervals = new Map(), messages = [], displayed = [], recorders = [];
   const stream = () => {
     const list = ['video', 'audio'].map(kind => { const track = { kind, stopped: false, stop() { this.stopped = true; } }; tracks.push(track); return track; });
     return { getTracks: () => [...list], getAudioTracks: () => list.filter(t => t.kind === 'audio'), addTrack: t => list.push(t), removeTrack: t => list.splice(list.indexOf(t), 1) };
@@ -20,14 +20,17 @@ function fixture(name) {
   const selectors = new Map();
   const $ = key => { if (!selectors.has(key)) selectors.set(key, { checked: true, style: {} }); return selectors.get(key); };
   class Recorder {
+    constructor() { recorders.push(this); }
     state = 'inactive';
-    start() { this.state = 'recording'; }
+    starts = 0;
+    start() { this.starts++; this.state = 'recording'; }
     stop() { this.state = 'inactive'; this.ondataavailable?.({ data: new Blob([new Uint8Array(400)]) }); queueMicrotask(() => this.onstop?.()); }
   }
   let timerId = 0;
   const video = { currentTime: 0, onended: null, captureStream: stream, play: async () => {}, pause: () => {} };
   const context = {
     exports: {}, Blob, MediaRecorder: Recorder, made: null, recorder: null,
+    sourceVersion: 0, cancelActive: null,
     video, duration: 10, sourceSize: 10000, runBtn, stopBtn, saveBtn, preview: {}, stats: {}, $, document: {
       createElement: () => ({ width: 0, height: 0, captureStream: stream, getContext: () => ({ drawImage: () => {} }) }),
       addEventListener: () => {}, removeEventListener: () => {},
@@ -41,7 +44,7 @@ function fixture(name) {
   };
   vm.runInNewContext(code, context);
   return {
-    context, tracks, intervals, messages, displayed,
+    context, tracks, intervals, messages, displayed, recorders,
     run: context.exports.run,
     cancel: () => stopBtn.onclick(),
     finish: () => { video.currentTime = 10; if (video.onended) video.onended(); else for (const fn of intervals.values()) fn(); },
@@ -49,6 +52,20 @@ function fixture(name) {
 }
 
 for (const name of ['videotrim', 'videocompress']) {
+  test(name + ' superseded recording cannot unlock or publish into the new source', async () => {
+    const f = fixture(name), job = f.run();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(typeof f.context.cancelActive, 'function');
+    f.context.sourceVersion++;
+    f.context.cancelActive();
+    f.context.runBtn.disabled = true;
+    await job;
+    assert.equal(f.context.runBtn.disabled, true);
+    assert.equal(f.displayed.length, 0);
+    assert.equal(f.context.made, null);
+    assert.ok(!f.messages.includes(name + '.say.cancelled'));
+    assert.ok(f.tracks.every(track => track.stopped));
+  });
   test(name + ' manual stop does not publish a partial clip as success', async () => {
     const f = fixture(name), job = f.run();
     await new Promise(resolve => setImmediate(resolve));
@@ -85,3 +102,16 @@ for (const name of ['videotrim', 'videocompress']) {
     }
   });
 }
+
+test('trim cancelled while seeking never starts recording the replacement source', async () => {
+  const f = fixture('videotrim'); let release;
+  f.context.seekTo = () => new Promise(resolve => { release = resolve; });
+  const job = f.run();
+  assert.equal(typeof f.context.cancelActive, 'function');
+  f.context.sourceVersion++;
+  f.context.cancelActive();
+  release(); await job;
+  assert.equal(f.recorders[0].starts, 0);
+  assert.equal(f.displayed.length, 0);
+  assert.ok(f.tracks.every(track => track.stopped));
+});

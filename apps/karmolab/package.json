@@ -479,6 +479,7 @@
     "test:material-preview": "node --test scripts/material-preview.test.mjs",
     "test:attach-video": "node --test scripts/attach-video.test.mjs",
     "test:video-stop": "node --test scripts/video-stop.test.mjs",
+    "test:video-load-state": "node --test scripts/video-load-state.test.mjs",
     "test:tool-search": "node scripts/test-tool-search.mjs",
     "test:prepush-build": "node --test scripts/test-prepush-build.mjs",
     "test:tool-url": "node scripts/smoke-tool-url.mjs",

@@ -125,7 +125,8 @@ import { t, loadNamespace } from '../../lib/i18n';
           let sourceSize = 0;
           let duration = 0;
           let made: Blob | null = null;
-          let recorder: MediaRecorder | null = null;
+          let sourceVersion = 0;
+          let cancelActive: (() => void) | null = null;
 
           /* 상태 줄은 **공용 하나**를 쓴다 (TASK-KL-291). `aria-live` 가 여기 붙어 있어서
            * 화면낭독기가 다 됐습니다, 못 엽니다를 실제로 읽어 준다. */
@@ -159,7 +160,14 @@ import { t, loadNamespace } from '../../lib/i18n';
           }
 
           function load(f: File): void {
+            sourceVersion++;
+            cancelActive?.();
+            stopBtn.style.display = 'none';
             fileName = f.name;
+            duration = 0;
+            editor.style.display = 'none';
+            runBtn.disabled = true;
+            say(t('videocompress.say.loading'));
             sourceSize = f.size;
             made = null;
             saveBtn.disabled = true;
@@ -168,8 +176,9 @@ import { t, loadNamespace } from '../../lib/i18n';
              * 그냥 물리면 `duration` 이 NaN/Infinity 로 온다. 그 되감기가 공용 쪽에 있다. */
             void attachVideo(video, f).then(() => {
               duration = video.duration;
-              editor.style.display = '';
               refresh();
+              editor.style.display = '';
+              runBtn.disabled = false;
               say(
                 t('videocompress.say.loaded', {
                   name: f.name,
@@ -183,6 +192,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           }
 
           async function run(): Promise<void> {
+            const version = sourceVersion;
             const { w, h } = outSize();
             const canvas = document.createElement('canvas') as Capturable;
             canvas.width = w;
@@ -209,7 +219,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 
             const mimeType = pickRecordType();
             const chunks: Blob[] = [];
-            recorder = new MediaRecorder(out, {
+            const recorder = new MediaRecorder(out, {
               ...(mimeType ? { mimeType } : {}),
               videoBitsPerSecond: bitsPerSecond()
             });
@@ -217,7 +227,7 @@ import { t, loadNamespace } from '../../lib/i18n';
               if (ev.data.size) chunks.push(ev.data);
             };
             const finished = new Promise<Blob>((resolve) => {
-              (recorder as MediaRecorder).onstop = () => resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
+              recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
             });
 
             video.currentTime = 0;
@@ -245,25 +255,31 @@ import { t, loadNamespace } from '../../lib/i18n';
             const stop = (cancelledByUser = false): void => {
               cancelled ||= cancelledByUser;
               cancelAnimationFrame(raf);
-              video.pause();
-              if (recorder && recorder.state !== 'inactive') recorder.stop();
+              window.clearInterval(watch);
+              if (version === sourceVersion) video.pause();
+              if (recorder.state !== 'inactive') recorder.stop();
+              if (cancelled) ownedTracks.forEach(track => track.stop());
             };
-            stopBtn.onclick = () => stop(true);
-            video.onended = () => stop();
+            const cancel = (): void => stop(true);
+            const onEnded = (): void => stop();
+            stopBtn.onclick = cancel;
+            video.onended = onEnded;
 
             const watch = window.setInterval(() => {
               const left = Math.max(0, duration - video.currentTime);
               say(t('videocompress.say.progress', { left: mmss(left) }));
             }, 300);
+            cancelActive = cancel;
 
             const recorded = await finished;
             ownedTracks.forEach(track => track.stop());
             window.clearInterval(watch);
             document.removeEventListener('visibilitychange', onHide);
-            video.onended = null;
+            if (video.onended === onEnded) video.onended = null;
+            if (cancelActive === cancel) cancelActive = null;
+            if (version !== sourceVersion) return;
             runBtn.disabled = false;
             stopBtn.style.display = 'none';
-            recorder = null;
             made = cancelled ? null : recorded;
             if (cancelled) {
               say(t('videocompress.say.cancelled'));

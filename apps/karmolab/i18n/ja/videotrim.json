@@ -1,4 +1,5 @@
 {
+  "videotrim.say.loading": "動画を読み込んでいます...",
   "videotrim.tab": "切り取り",
   "videotrim.drop": "動画をドラッグするか、押して選んでください",
   "videotrim.label.range": "区間 . ",

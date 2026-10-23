@@ -1,4 +1,5 @@
 {
+  "videotrim.say.loading": "Reading video...",
   "videotrim.tab": "Trim",
   "videotrim.drop": "Drop a video here or click to choose one",
   "videotrim.label.range": "Section . ",

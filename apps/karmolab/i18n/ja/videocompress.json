@@ -1,4 +1,5 @@
 {
+  "videocompress.say.loading": "動画を読み込んでいます...",
   "videocompress.tab": "容量を減らす",
   "videocompress.drop": "動画をドラッグするか、押して選んでください",
   "videocompress.label.scale": "画面サイズ",

@@ -105,7 +105,8 @@ import { attachMedia } from './shared/media';
           let fileName = '';
           let duration = 0;
           let made: Blob | null = null;
-          let recorder: MediaRecorder | null = null;
+          let sourceVersion = 0;
+          let cancelActive: (() => void) | null = null;
           let rangeTimer = 0;
 
           /* 상태 줄은 **공용 하나**를 쓴다 (TASK-KL-291). `aria-live` 가 여기 붙어 있어서
@@ -132,7 +133,14 @@ import { attachMedia } from './shared/media';
           }
 
           function load(f: File): void {
+            sourceVersion++;
+            cancelActive?.();
+            stopBtn.style.display = 'none';
             fileName = f.name;
+            duration = 0;
+            editor.style.display = 'none';
+            runBtn.disabled = true;
+            say(t('videotrim.say.loading'));
             made = null;
             saveBtn.disabled = true;
             $<HTMLElement>('#vtResult').style.display = 'none';
@@ -140,16 +148,18 @@ import { attachMedia } from './shared/media';
              * 그냥 물리면 `duration` 이 NaN/Infinity 로 온다. 그 되감기가 공용 쪽에 있다. */
             void attachVideo(video, f).then(() => {
               duration = video.duration;
-              editor.style.display = '';
               startEl.value = '0';
               endEl.value = '1000';
               video.currentTime = 0;
               refresh();
+              editor.style.display = '';
+              runBtn.disabled = false;
               say(t('videotrim.say.loaded', { name: f.name, len: mmss(duration) }), 'ok');
             }).catch((error: Error) => { if (error.name !== 'AbortError') say(t('videotrim.err.open'), 'error'); });
           }
 
           async function run(): Promise<void> {
+            const version = sourceVersion;
             const s = startSec(), e = endSec();
             const span = e - s;
             if (span <= 0) {
@@ -173,42 +183,50 @@ import { attachMedia } from './shared/media';
             }
             const mimeType = pickRecordType();
             const chunks: Blob[] = [];
-            recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             recorder.ondataavailable = (ev) => {
               if (ev.data.size) chunks.push(ev.data);
             };
 
-            const finished = new Promise<Blob>((resolve) => {
-              (recorder as MediaRecorder).onstop = () => resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
+            let cancelBeforeStart!: () => void;
+            const finished = new Promise<Blob | null>((resolve) => {
+              recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
+              cancelBeforeStart = () => resolve(null);
             });
-
-            await seekTo(video, s);
-            runBtn.disabled = true;
-            stopBtn.style.display = '';
-            recorder.start(200);
-            void video.play();
-
-            const t0 = performance.now();
-            const watch = window.setInterval(() => {
-              const left = Math.max(0, span - (performance.now() - t0) / 1000);
-              say(t('videotrim.say.recording', { left: left.toFixed(1) }));
-              if (video.currentTime>= e - 0.03 || left <= 0) stop();
-            }, 100);
-
+            let watch = 0;
             let cancelled = false;
             const stop = (cancelledByUser = false): void => {
               cancelled ||= cancelledByUser;
               window.clearInterval(watch);
-              video.pause();
-              if (recorder && recorder.state !== 'inactive') recorder.stop();
+              if (version === sourceVersion) video.pause();
+              if (recorder.state !== 'inactive') recorder.stop();
+              else if (cancelled) cancelBeforeStart();
+              if (cancelled) ownedTracks.forEach(track => track.stop());
             };
-            stopBtn.onclick = () => stop(true);
+            const cancel = (): void => stop(true);
+            cancelActive = cancel;
+            stopBtn.onclick = cancel;
+            runBtn.disabled = true;
+            await seekTo(video, s);
+            if (cancelled || version !== sourceVersion) stop(true);
+            else {
+              stopBtn.style.display = '';
+              recorder.start(200);
+              void video.play();
+              const t0 = performance.now();
+              watch = window.setInterval(() => {
+                const left = Math.max(0, span - (performance.now() - t0) / 1000);
+                say(t('videotrim.say.recording', { left: left.toFixed(1) }));
+                if (video.currentTime >= e - 0.03 || left <= 0) stop();
+              }, 100);
+            }
 
             const recorded = await finished;
             ownedTracks.forEach(track => track.stop());
+            if (cancelActive === cancel) cancelActive = null;
+            if (version !== sourceVersion) return;
             runBtn.disabled = false;
             stopBtn.style.display = 'none';
-            recorder = null;
             made = cancelled ? null : recorded;
             if (cancelled) {
               say(t('videotrim.say.cancelled'));
