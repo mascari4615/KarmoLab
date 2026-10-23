@@ -42,16 +42,17 @@ function slots(start: number, size: number): number[] {
  * - 축마다 **가장 가까운 한 줄**만 잡는다. 여러 줄을 동시에 잡으면 어느 줄에 붙었는지 못 읽는다.
  * - `tol` 은 판 위 거리(px)다. 화면 거리로 주려면 부르는 쪽에서 배율로 나눠 넣는다.
  *   그래야 확대해도 손끝에서 6px이 유지된다.
- * - 이웃이 하나도 안 가까우면 **자리를 그대로 돌려준다**(격자 결과를 안 건드린다).
+ * - 이웃이 없는 축은 fallback(격자 위치) 유지. 생략하면 원래 위치 유지
  */
 export function alignGuides(
   moving: GuideBox,
   others: GuideBox[],
   tol: number,
+  fallback: { x: number; y: number } = moving,
 ): GuideResult {
   const lines: GuideLine[] = [];
-  let outX = moving.x;
-  let outY = moving.y;
+  let outX = fallback.x;
+  let outY = fallback.y;
 
   for (const axis of ['v', 'h'] as const) {
     const vertical = axis === 'v';

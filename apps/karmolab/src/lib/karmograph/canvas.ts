@@ -702,9 +702,10 @@ export class GraphCanvas {
         const put = snappedPoint(this.dragging.startNodeX, this.dragging.startNodeY, d, (v) => this.snap(v));
         const me = this.getNodeBox(this.dragging.nodeId);   // 격자는 대충까지. 맞추려는 건 옆 카드다 (Alt = 자유)
         const gl = (me && !e.altKey)
-          ? alignGuides({ id: this.dragging.nodeId, ...put, w: me.w, h: me.h },
+          ? alignGuides({ id: this.dragging.nodeId,
+              x: this.dragging.startNodeX + d.dx, y: this.dragging.startNodeY + d.dy, w: me.w, h: me.h },
             (this.dragNeighbors ??= neighborBoxes(this.visibleNodes(), this.dragging.nodeId, (id) => this.getNodeBox(id))),
-            GUIDE_TOL / this.state.scale)
+            GUIDE_TOL / this.state.scale, put)
           : { ...put, lines: [] };
         const { x: newX, y: newY } = gl;
         this.guideLines = gl.lines;

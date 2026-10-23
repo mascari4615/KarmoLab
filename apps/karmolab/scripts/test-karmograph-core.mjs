@@ -528,6 +528,13 @@ const M = await loadModules();
 /* 이웃 줄에 맞추기 (canvas-guides). 격자가 못 맞추는 것을 맞춘다. */
 {
   const { alignGuides, neighborBoxes } = M.guides;
+  const rawNear = alignGuides({ id: 'raw', x: 235, y: 337, w: 80, h: 40 },
+    [{ id: 'neighbor', x: 230, y: 216, w: 80, h: 40 }], 7, { x: 240, y: 336 });
+  eq(rawNear.x, 230, '손끝 5px 안의 이웃은 격자보다 우선');
+  eq(rawNear.y, 336, '안 붙은 축은 격자 유지');
+  const rawFar = alignGuides({ id: 'raw', x: 41, y: 49, w: 40, h: 40 }, [], 7, { x: 40, y: 48 });
+  eq(rawFar.x, 40, '이웃 없음 x 격자');
+  eq(rawFar.y, 48, '이웃 없음 y 격자');
   const other = { id: 'b', x: 100, y: 300, w: 120, h: 40 };
   const near = alignGuides({ id: 'a', x: 96, y: 0, w: 80, h: 40 }, [other], 7);
   check(near.x === 100, '왼쪽 줄이 4px 안이면 이웃의 왼쪽 줄에 붙는다');

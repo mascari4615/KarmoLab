@@ -1304,6 +1304,9 @@ await step('노드에 칸을 만들면 같은 종류의 다른 노드가 그 칸
     throw new Error(`칸을 만들었는데 커서가 그 칸에 없다 (지금 커서: ${now})`);
   });
   await page.fill('[data-km="fld-value"][data-key="출신"]', '마계');
+  // 자동 생성된 출신 칸과 별개인 새 이름으로 종류별 후보 전파 검증
+  await page.fill('[data-km="fld-new"]', '검증용 칸');
+  await page.locator('[data-km="fld-add"]').click();
 
   await page.mouse.dblclick(fbox.x + fbox.width * 0.62, fbox.y + fbox.height * 0.6);
   await page.waitForSelector('[data-km="fld-new"]', { timeout: ms(4000) });
@@ -1315,7 +1318,7 @@ await step('노드에 칸을 만들면 같은 종류의 다른 노드가 그 칸
     { timeout: ms(4000) }
   );
   const opts = await page.locator('#km-fld-suggest option').evaluateAll((os) => os.map((o) => o.value));
-  if (!opts.includes('출신')) {
+  if (!opts.includes('검증용 칸')) {
     const why = await page.evaluate(() => {
       const sel = document.querySelector('[data-km="edit-kind"]');
       return JSON.stringify({ kind: sel?.value, names: [...document.querySelectorAll('[data-km="fld-name"]')].map((i) => i.value) });
