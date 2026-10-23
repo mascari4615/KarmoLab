@@ -103,6 +103,12 @@ const KarmoEscMenu = (() => {
                 <div class="esc-cells">${cellsHtml()}</div>
                 <div class="esc-foot"><kbd>ESC</kbd>${esc(t('shell.menu.close', undefined, '닫기'))}${foot ? `<span class="esc-tools">${foot}</span>` : ''}</div>
             </div>`;
+        el.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            e.preventDefault();
+            e.stopPropagation();
+            close();
+        });
         el.addEventListener('click', (e) => {
             const hit = e.target as HTMLElement | null;
             const pick = hit?.closest?.('[data-esc-pick]');

@@ -7,30 +7,33 @@ import ts from 'typescript';
 function fixture() {
   const source = readFileSync(new URL('../src/lib/esc-menu.ts', import.meta.url), 'utf8');
   const ast = ts.createSourceFile('esc-menu.ts', source, ts.ScriptTarget.Latest, true);
-  let registration;
+  const registrations = [];
   const visit = node => {
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
-      && node.expression.name.text === 'addEventListener' && node.arguments[0]?.text === 'keydown') registration = node;
+      && node.expression.name.text === 'addEventListener' && node.arguments[0]?.text === 'keydown') registrations.push(node);
     ts.forEachChild(node, visit);
   };
   visit(ast);
-  assert.ok(registration);
-  const listeners = { document: [], window: [] };
+  assert.ok(registrations.length);
+  const listeners = { root: [], document: [], window: [] };
   let opened = false;
   const state = {
     custom: null, soloSite: () => false, isOpen: () => opened,
     open: () => { opened = true; }, close: () => { opened = false; },
     typing: () => state.typingNow, otherLayerOpen: () => state.layerNow,
     typingNow: false, layerNow: false,
+    el: { addEventListener: (name, fn) => listeners.root.push(fn) },
     document: { activeElement: null, addEventListener: (name, fn) => listeners.document.push(fn) },
     window: { addEventListener: (name, fn) => listeners.window.push(fn) }
   };
-  vm.runInNewContext(ts.transpileModule(registration.getText(ast), {
+  vm.runInNewContext(ts.transpileModule(registrations.map(node => node.getText(ast)).join(';\n'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022 }
   }).outputText, state);
   const press = () => {
-    const event = { key: 'Escape', defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
-    for (const handler of [...listeners.document, ...listeners.window]) handler(event);
+    const event = { key: 'Escape', defaultPrevented: false, stopped: false,
+      preventDefault() { this.defaultPrevented = true; }, stopPropagation() { this.stopped = true; } };
+    const path = [...(opened ? listeners.root : []), ...listeners.document, ...listeners.window];
+    for (const handler of path) { if (event.stopped) break; handler(event); }
     return event;
   };
   return { state, listeners, press, isOpen: () => opened };
@@ -60,4 +63,14 @@ test('typing and existing dialogs retain Escape ownership', () => {
   f.state.layerNow = true;
   f.press();
   assert.equal(f.isOpen(), false);
+});
+
+test('Escape inside the open menu closes it without reaching background widgets', () => {
+  const f = fixture();
+  f.press();
+  let backgroundEvents = 0;
+  f.listeners.document.push(event => { backgroundEvents++; event.preventDefault(); });
+  f.press();
+  assert.equal(f.isOpen(), false);
+  assert.equal(backgroundEvents, 0);
 });
