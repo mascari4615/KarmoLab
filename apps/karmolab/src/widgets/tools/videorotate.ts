@@ -144,16 +144,17 @@ import { t, loadNamespace } from '../../lib/i18n';
             attachMedia(video, file); // 공용. 앞 주소를 거두고 물린다
             baseName = (file.name || t('videorotate.file.base')).replace(/\.[^.]+$/, '');
             video.onloadeddata = () => {
-              $<HTMLElement>('#vrStage').style.display = '';
-              $<HTMLElement>('#vrControls').style.display = '';
-              runBtn.disabled = false;
-              showStats();
-              // 자리를 옮기면 그림이 바로 오지 않는다. 도착했다고 알려 줄 때 그린다.
-              // 곧바로 그리면 첫 미리보기가 빈 화면이 된다 (시험이 잡았다).
-              video.onseeked = () => paint();
+              // 첫 프레임 seek 완료 뒤 표시. loadeddata 직후에는 빈 그림을 읽을 수 있음
+              video.onseeked = () => {
+                video.onseeked = () => paint();
+                paint();
+                $<HTMLElement>('#vrStage').style.display = '';
+                $<HTMLElement>('#vrControls').style.display = '';
+                runBtn.disabled = false;
+                showStats();
+                say(t('videorotate.say.ready'), 'ok');
+              };
               video.currentTime = 0;
-              paint();
-              say(t('videorotate.say.ready'), 'ok');
             };
             video.onerror = () => say(t('videorotate.err.open'), 'error');
           }
