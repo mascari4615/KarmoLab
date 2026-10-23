@@ -13,6 +13,11 @@ export interface Delta {
   dy: number;
 }
 
+/** 셸 CSS 배율까지 포함한 실제 world 한 단위의 화면 거리 */
+export function screenScale(matrix: { a: number; b: number } | null, fallback: number): number {
+  return (matrix ? Math.hypot(matrix.a, matrix.b) : 0) || fallback || 1;
+}
+
 /** 화면에서 움직인 거리를 판 위 거리로. 확대돼 있을수록 적게 움직인다. */
 export function worldDelta(
   start: { x: number; y: number },

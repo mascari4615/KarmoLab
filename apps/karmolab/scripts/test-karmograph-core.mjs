@@ -496,7 +496,12 @@ const M = await loadModules();
 
 // ---- 끌면 어디로 가나 (canvas-drag)
 {
-  const { worldDelta, snappedPoint, groupDelta, resizedBox, MIN_NODE_W, MIN_NODE_H } = M.drag;
+  const { worldDelta, snappedPoint, groupDelta, resizedBox, screenScale, MIN_NODE_W, MIN_NODE_H } = M.drag;
+  eq(screenScale({ a: 0.97, b: 0 }, 1), 0.97, '셸 97%의 실제 화면 배율');
+  eq(screenScale({ a: 1.94, b: 0 }, 2), 1.94, '셸 97%와 캔버스 2배 합성');
+  eq(screenScale(null, 2), 2, '화면 행렬 없음 기존 배율 유지');
+  check(Math.abs(worldDelta({ x: 0, y: 0 }, { x: 225.04, y: 0 }, screenScale({ a: 0.97, b: 0 }, 1)).dx - 232) < 1e-8,
+    '화면 225.04px 이동은 축소된 판에서 232 이동');
   const snap = (v) => Math.round(v / 10) * 10;
   const d1 = worldDelta({ x: 0, y: 0 }, { x: 100, y: 50 }, 1);
   check(d1.dx === 100 && d1.dy === 50, '배율 1 이면 화면 거리 그대로');

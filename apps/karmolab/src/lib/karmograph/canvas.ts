@@ -54,7 +54,7 @@ import { pressIntent, readPressHits } from './canvas-press';
 import { canRewireTo, isDropOnNode, releaseIntent } from './canvas-release';
 import { curveFromPointer, labelPosFromPointer, linkDropTarget } from './canvas-edgedrag';
 import { buildEdgeLabelSet } from './edge-views';
-import { groupDelta, resizedBox, sizeGrip, snappedPoint, worldDelta } from './canvas-drag';
+import { groupDelta, resizedBox, screenScale, sizeGrip, snappedPoint, worldDelta } from './canvas-drag';
 import { alignGuides, clearGuides, drawGuides, neighborBoxes, type GuideBox, type GuideLine } from './canvas-guides';
 import { minimapRects, minimapWorthIt, paintMinimap, worldFitsInView } from './canvas-minimap';
 import { DEFAULT_THEME } from './canvas-theme';
@@ -623,11 +623,13 @@ export class GraphCanvas {
         this.marquee.rect.setAttribute('height', String(box.h));
         return;
       }
+      const pointerScale = (this.dragging || this.sizing || this.draggingGroup)
+        ? screenScale(this.world.getScreenCTM(), this.state.scale) : this.state.scale;
       if (this.multiDrag && this.dragging) {
         // 고른 것들이 함께 움직인다. 끌고 있는 노드의 이동량을 그대로 얹는다.
         const d = worldDelta(
           { x: this.dragging.startMouseX, y: this.dragging.startMouseY },
-          { x: e.clientX, y: e.clientY }, this.state.scale);
+          { x: e.clientX, y: e.clientY }, pointerScale);
         for (const [id, start] of this.multiDrag) {
           const { x: nx, y: ny } = snappedPoint(start.x, start.y, d, (v) => this.snap(v));
           this.nodeCoords.set(id, { x: nx, y: ny });
@@ -687,7 +689,7 @@ export class GraphCanvas {
         const n = this.spec?.nodes.find((x) => x.id === this.sizing?.nodeId);
         if (n) {
           const d = worldDelta({ x: this.sizing.startX, y: this.sizing.startY },
-            { x: e.clientX, y: e.clientY }, this.state.scale);
+            { x: e.clientX, y: e.clientY }, pointerScale);
           const box = resizedBox(this.sizing.startW, this.sizing.startH, d, e.altKey ? 1 : GRID_SIZE);  // Alt = 격자 무시
           n.w = box.w;
           n.h = box.h;
@@ -698,14 +700,14 @@ export class GraphCanvas {
       }
       if (this.dragging) {
         const d = worldDelta({ x: this.dragging.startMouseX, y: this.dragging.startMouseY },
-          { x: e.clientX, y: e.clientY }, this.state.scale);
+          { x: e.clientX, y: e.clientY }, pointerScale);
         const put = snappedPoint(this.dragging.startNodeX, this.dragging.startNodeY, d, (v) => this.snap(v));
         const me = this.getNodeBox(this.dragging.nodeId);   // 격자는 대충까지. 맞추려는 건 옆 카드다 (Alt = 자유)
         const gl = (me && !e.altKey)
           ? alignGuides({ id: this.dragging.nodeId,
               x: this.dragging.startNodeX + d.dx, y: this.dragging.startNodeY + d.dy, w: me.w, h: me.h },
             (this.dragNeighbors ??= neighborBoxes(this.visibleNodes(), this.dragging.nodeId, (id) => this.getNodeBox(id))),
-            GUIDE_TOL / this.state.scale, put)
+            GUIDE_TOL / pointerScale, put)
           : { ...put, lines: [] };
         const { x: newX, y: newY } = gl;
         this.guideLines = gl.lines;
@@ -717,7 +719,7 @@ export class GraphCanvas {
       } else if (this.draggingGroup) {
         const dg = this.draggingGroup;
         const raw = worldDelta({ x: dg.startMouseX, y: dg.startMouseY },
-          { x: e.clientX, y: e.clientY }, this.state.scale);
+          { x: e.clientX, y: e.clientY }, pointerScale);
         // 기준점만 격자에 붙이고 그 이동량을 멤버 전원에게 얹는다. 셈법은 canvas-drag 가 안다.
         const g = groupDelta(dg.startGroupX, dg.startGroupY, raw, (v) => this.snap(v));
         const { dx, dy } = g.d;
