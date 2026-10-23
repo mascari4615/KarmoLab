@@ -223,16 +223,18 @@ export async function loadAudio(file: File | Blob): Promise<AudioBuffer> {
  * 봉우리가 살아야 한다. AudioMass 가 보여 주는 그 그림이다.
  */
 export function peaks(buffer: AudioBuffer, buckets = 240): number[] {
-  const ch = buffer.getChannelData(0);
-  const per = Math.max(1, Math.floor(ch.length / buckets));
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, channel) => buffer.getChannelData(channel));
   const out: number[] = [];
   for (let i = 0; i < buckets; i++) {
     let max = 0;
-    const from = i * per;
-    const to = Math.min(ch.length, from + per);
-    for (let j = from; j < to; j++) {
-      const v = Math.abs(ch[j]);
-      if (v > max) max = v;
+    // 전체 길이에 비례한 경계로 마지막 표본과 짧은 소리의 위치 보존.
+    const from = Math.floor(i * buffer.length / buckets);
+    const to = Math.min(buffer.length, Math.max(from + 1, Math.floor((i + 1) * buffer.length / buckets)));
+    for (const ch of channels) {
+      for (let j = from; j < to; j++) {
+        const v = Math.abs(ch[j]);
+        if (v > max) max = v;
+      }
     }
     out.push(max);
   }
