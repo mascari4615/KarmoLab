@@ -167,6 +167,7 @@ import { attachMedia } from './shared/media';
             $<HTMLElement>('#vtResult').style.display = 'none';
 
             const stream = grab.call(video);
+            const ownedTracks = stream.getTracks();
             if (!$<HTMLInputElement>('#vtAudio').checked) {
               stream.getAudioTracks().forEach((t) => stream.removeTrack(t));
             }
@@ -194,17 +195,25 @@ import { attachMedia } from './shared/media';
               if (video.currentTime>= e - 0.03 || left <= 0) stop();
             }, 100);
 
-            const stop = (): void => {
+            let cancelled = false;
+            const stop = (cancelledByUser = false): void => {
+              cancelled ||= cancelledByUser;
               window.clearInterval(watch);
               video.pause();
               if (recorder && recorder.state !== 'inactive') recorder.stop();
             };
-            stopBtn.onclick = stop;
+            stopBtn.onclick = () => stop(true);
 
-            made = await finished;
+            const recorded = await finished;
+            ownedTracks.forEach(track => track.stop());
             runBtn.disabled = false;
             stopBtn.style.display = 'none';
             recorder = null;
+            made = cancelled ? null : recorded;
+            if (cancelled) {
+              say(t('videotrim.say.cancelled'));
+              return;
+            }
 
             if (!made || made.size < 100) {
               say(t('videotrim.err.empty'), 'error');

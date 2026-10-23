@@ -35,6 +35,7 @@
   "videocompress.say.loaded": "{name}, {size}, {w}×{h}. 설정을 고르고 줄이세요.",
   "videocompress.say.progress": "다시 담는 중... {left} 남음. 이 탭을 보이는 채로 두세요",
   "videocompress.say.noGain": "줄지 않았어요 ({from} → {to}). 이미 잘 압축된 영상입니다. 화면 크기나 화질을 낮추면 줄지만 흐려집니다.",
+  "videocompress.say.cancelled": "중단했어요. 다시 시작할 수 있어요.",
   "videocompress.say.done": "{from} → {to} ({pct}% 줄었어요). 확인하고 받으세요.",
   "videocompress.say.saved": "내려받았어요.",
   "videocompress.file.suffix": "-작게"

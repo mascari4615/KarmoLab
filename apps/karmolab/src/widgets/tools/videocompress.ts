@@ -198,10 +198,12 @@ import { t, loadNamespace } from '../../lib/i18n';
             $<HTMLElement>('#vcResult').style.display = 'none';
 
             const out = canvas.captureStream(30);
+            const ownedTracks = new Set(out.getTracks());
             // 소리는 원본 영상에서 그대로 가져온다 (다시 그리는 건 화면뿐이다)
             if ($<HTMLInputElement>('#vcAudio').checked) {
               const withAudio = video as HTMLVideoElement & { captureStream?: () => MediaStream };
               const src = withAudio.captureStream?.();
+              src?.getTracks().forEach(track => ownedTracks.add(track));
               src?.getAudioTracks().forEach((t) => out.addTrack(t));
             }
 
@@ -239,26 +241,34 @@ import { t, loadNamespace } from '../../lib/i18n';
             };
             document.addEventListener('visibilitychange', onHide);
 
-            const stop = (): void => {
+            let cancelled = false;
+            const stop = (cancelledByUser = false): void => {
+              cancelled ||= cancelledByUser;
               cancelAnimationFrame(raf);
               video.pause();
               if (recorder && recorder.state !== 'inactive') recorder.stop();
             };
-            stopBtn.onclick = stop;
-            video.onended = stop;
+            stopBtn.onclick = () => stop(true);
+            video.onended = () => stop();
 
             const watch = window.setInterval(() => {
               const left = Math.max(0, duration - video.currentTime);
               say(t('videocompress.say.progress', { left: mmss(left) }));
             }, 300);
 
-            made = await finished;
+            const recorded = await finished;
+            ownedTracks.forEach(track => track.stop());
             window.clearInterval(watch);
             document.removeEventListener('visibilitychange', onHide);
             video.onended = null;
             runBtn.disabled = false;
             stopBtn.style.display = 'none';
             recorder = null;
+            made = cancelled ? null : recorded;
+            if (cancelled) {
+              say(t('videocompress.say.cancelled'));
+              return;
+            }
 
             if (!made || made.size < 100) {
               say(t('videocompress.err.empty'), 'error');

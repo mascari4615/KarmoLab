@@ -29,5 +29,6 @@
   "videotrim.value.about": "약 {n}초",
   "videotrim.say.loaded": "{name}, {len}. 구간을 고르고 잘라 내기를 누르세요.",
   "videotrim.say.recording": "담는 중... {left}초 남음 (구간을 실제로 재생하며 담습니다)",
+  "videotrim.say.cancelled": "중단했어요. 다시 시작할 수 있어요.",
   "videotrim.say.done": "{sec}초, {size} 로 잘라 냈어요. 확인하고 받으세요."
 }

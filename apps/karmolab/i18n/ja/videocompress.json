@@ -35,6 +35,7 @@
   "videocompress.say.loaded": "{name}, {size}, {w}×{h}. 設定を選んで小さくしてください。",
   "videocompress.say.progress": "再エンコード中... 残り {left}. このタブを表示したままにしてください",
   "videocompress.say.noGain": "小さくなりませんでした（{from} → {to}）。すでに十分圧縮された動画です。画面サイズや画質を下げれば小さくなりますが、ぼやけます。",
+  "videocompress.say.cancelled": "中断しました。もう一度実行できます。",
   "videocompress.say.done": "{from} → {to}（{pct}% 減）。確認してダウンロードしてください。",
   "videocompress.say.saved": "ダウンロードしました。",
   "videocompress.file.suffix": "-小"

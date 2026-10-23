@@ -35,6 +35,7 @@
   "videocompress.say.loaded": "{name}, {size}, {w}×{h}. pick your settings and compress.",
   "videocompress.say.progress": "Re-encoding... {left} left. keep this tab visible",
   "videocompress.say.noGain": "It did not get smaller ({from} → {to}). This video is already well compressed. Lowering the frame size or quality will shrink it, but it will look softer.",
+  "videocompress.say.cancelled": "Cancelled. You can start again.",
   "videocompress.say.done": "{from} → {to} ({pct}% smaller). Check it and download.",
   "videocompress.say.saved": "Downloaded.",
   "videocompress.file.suffix": "-small"
