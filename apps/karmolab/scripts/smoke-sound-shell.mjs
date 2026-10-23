@@ -140,6 +140,12 @@ const t2 = await page.evaluate(() => document.querySelector('#sdPlayer').current
 check(t2 > 0, `화살표로 앞으로 간다 (지금 ${t2.toFixed(1)}초)`);
 check((await page.locator('#sdWave').getAttribute('role')) === 'slider', '무엇을 미는 자리인지 밝힌다');
 check(!!(await page.locator('#sdWave').getAttribute('aria-label')), '이름이 있다');
+const seekState = await page.locator('#sdWave').evaluate((canvas) => {
+  const player = document.querySelector('#sdPlayer');
+  return { min: Number(canvas.getAttribute('aria-valuemin')), max: Number(canvas.getAttribute('aria-valuemax')), now: Number(canvas.getAttribute('aria-valuenow')), actual: player.currentTime, duration: player.duration, text: canvas.getAttribute('aria-valuetext') };
+});
+check(seekState.min === 0 && Math.abs(seekState.max - seekState.duration) < 0.001, '파형 슬라이더 범위가 실제 재생 길이와 일치');
+check(Math.abs(seekState.now - seekState.actual) < 0.001 && !!seekState.text, '현재 위치와 시간 표기가 보조기기에도 노출');
 
 
 /* ⑤ 할 일을 고르면 소리가 따라간다 */

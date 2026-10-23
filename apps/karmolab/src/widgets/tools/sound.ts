@@ -124,14 +124,22 @@ import { t, loadNamespace } from '../../lib/i18n';
     if (!alive()) return '';
     drawWave(canvas, peaks(buffer, 240));
 
-    player.ontimeupdate = (): void => {
-      const p = buffer.duration ? player.currentTime / buffer.duration : 0;
-      cursor.style.left = `${Math.min(100, p * 100)}%`;
+    canvas.setAttribute('aria-valuemin', '0');
+    canvas.setAttribute('aria-valuemax', String(buffer.duration));
+    const syncPosition = (): void => {
+      const time = Math.max(0, Math.min(buffer.duration, player.currentTime));
+      const p = buffer.duration ? time / buffer.duration : 0;
+      cursor.style.left = `${p * 100}%`;
+      canvas.setAttribute('aria-valuenow', String(time));
+      canvas.setAttribute('aria-valuetext', `${mmss(time)} / ${mmss(buffer.duration)}`);
     };
+    player.ontimeupdate = syncPosition;
+    syncPosition();
     /* 파형을 눌러 그 자리로. 파형은 보는 것만이 아니라 **옮겨 가는 자리**다 */
     canvas.onclick = (e): void => {
       const rect = canvas.getBoundingClientRect();
       player.currentTime = ((e.clientX - rect.left) / rect.width) * buffer.duration;
+      syncPosition();
       void player.play();
     };
 
@@ -143,12 +151,14 @@ import { t, loadNamespace } from '../../lib/i18n';
     canvas.setAttribute('aria-label', t('sound.wave.aria', undefined, '소리 그림. 화살표로 옮겨 가고 스페이스로 듣습니다'));
     canvas.addEventListener('keydown', (e) => {
       const k = e.key;
-      if (k === 'ArrowRight' || k === 'ArrowLeft') {
+      if (k === 'ArrowRight' || k === 'ArrowLeft' || k === 'ArrowUp' || k === 'ArrowDown') {
         e.preventDefault();
-        player.currentTime = Math.min(buffer.duration, Math.max(0, player.currentTime + (k === 'ArrowRight' ? 5 : -5)));
+        player.currentTime = Math.min(buffer.duration, Math.max(0, player.currentTime + (k === 'ArrowRight' || k === 'ArrowUp' ? 5 : -5)));
+        syncPosition();
       } else if (k === 'Home' || k === 'End') {
         e.preventDefault();
-        player.currentTime = k === 'Home' ? 0 : Math.max(0, buffer.duration - 0.1);
+        player.currentTime = k === 'Home' ? 0 : buffer.duration;
+        syncPosition();
       } else if (k === ' ' || k === 'Enter') {
         e.preventDefault();
         if (player.paused) void player.play();
