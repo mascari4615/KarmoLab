@@ -4287,6 +4287,13 @@ await step('카드를 끌면 이웃 카드의 줄에 붙고, 맞춘 줄이 뜬�
   }
   // 둘째 카드를 첫째 카드의 왼쪽 줄 **근처**(몇 px 어긋나게)로 끈다. 붙어야 정확히 같은 줄이 된다.
   const offBy = 5;
+  const dragGeometry = await m.evaluate(() => [...document.querySelectorAll('.ck-node')].map(node => {
+    const rect = node.getBoundingClientRect();
+    const bg = node.querySelector('.ck-node-bg').getBoundingClientRect();
+    return { transform: node.getAttribute('transform'), rect: { x: rect.x, y: rect.y, w: rect.width },
+      bg: { x: bg.x, y: bg.y, w: bg.width }, matrix: node.getScreenCTM() && {
+        a: node.getScreenCTM().a, d: node.getScreenCTM().d, e: node.getScreenCTM().e, f: node.getScreenCTM().f } };
+  }));
   await m.mouse.move(grab.x, grab.y);
   await m.mouse.down();
   await m.mouse.move(grab.x + (first.x - second2.x) + offBy, grab.y, { steps: 10 });
@@ -4302,7 +4309,8 @@ await step('카드를 끌면 이웃 카드의 줄에 붙고, 맞춘 줄이 뜬�
       nodes: [...document.querySelectorAll('.ck-node')].map((g) => g.getAttribute('transform')),
       groupLayerKids: document.querySelector('.ck-groups')?.childElementCount ?? -1,
     }));
-    throw new Error('끄는 동안 맞춤 줄이 안 뜬다: ' + JSON.stringify(st));
+    throw new Error('끄는 동안 맞춤 줄이 안 뜬다: ' + JSON.stringify({ ...st, dragGeometry,
+      grab, target: { x: grab.x + (first.x - second2.x) + offBy, y: grab.y } }));
   }
   const after = await coords();
   if (after[1] !== after[0]) throw new Error(`줄에 안 붙었다: ${after[0]} vs ${after[1]} (끌기 전 ${x0}/${x1})`);
