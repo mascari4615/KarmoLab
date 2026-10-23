@@ -36,6 +36,7 @@ import {
 import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { ANIME_CALENDAR_ID, ANIME_CHANGED, animeCalendar, animeEvents } from './anime-calendar';
+import { DISCOVERY_CALENDAR_ID, discoveryCalendar, discoveryEvents, type DiscoveryFeed } from '../mydash/discovery-data';
 import { withToken } from './gauth';
 import { HOLIDAY_YEARS, holidayRangeSupported, repeatWindow, type RepeatRule } from './recurrence';
 import { parseLinks, shiftExDates, withLinkedEvents, type LinkedEvent } from './event-group';
@@ -125,7 +126,8 @@ export function buildCalendarView(
     container: HTMLElement,
     token: string | null,
     onOpenDiary?: (date: string) => void,
-    loadFollowups?: () => Promise<Followup[]>
+    loadFollowups?: () => Promise<Followup[]>,
+    loadDiscovery?: () => Promise<DiscoveryFeed | null>
 ): CalendarViewHandle {
     container.innerHTML = `
         <div class="pl-cal-layout">
@@ -170,8 +172,9 @@ export function buildCalendarView(
         backgroundColor: LOCAL_COLOR
     });
     /* AI 후속 일정 (memo 원본). 달력 목록 둘째 줄 */
-    let calendars: GoogleCalendar[] = [localCalendar(), aiCalendar(), animeCalendar()];
+    let calendars: GoogleCalendar[] = [localCalendar(), aiCalendar(), animeCalendar(), discoveryCalendar()];
     let followups: Followup[] = [];
+    let discovery: DiscoveryFeed | null = null;
     let allEvents: FcEvent[] = [];
     const hidden = loadHidden();
     let miniMonth = new Date();
@@ -302,7 +305,7 @@ export function buildCalendarView(
     async function reload(start: Date, end: Date): Promise<void> {
         lastRange = { start, end };
         /* 이 브라우저 것은 늘 있다. 구글은 연동돼 있을 때만 얹는다. */
-        const own = (): FcEvent[] => [...listLocalEvents(t('planner.t50'), new Date(+start - 2 * 86400000), new Date(+end + 2 * 86400000)), ...toAiEvents(followups), ...animeEvents(start, end)];
+        const own = (): FcEvent[] => [...listLocalEvents(t('planner.t50'), new Date(+start - 2 * 86400000), new Date(+end + 2 * 86400000)), ...toAiEvents(followups), ...animeEvents(start, end), ...discoveryEvents(discovery)];
         if (!token) {
             setEvents(own());
             return;
@@ -311,7 +314,7 @@ export function buildCalendarView(
         const pad = 7 * 86400000;
         const from = new Date(+start - pad);
         const to = new Date(+end + pad);
-        const googleCals = calendars.filter((c) => c.id !== LOCAL_CALENDAR_ID && c.id !== AI_CALENDAR_ID && c.id !== ANIME_CALENDAR_ID);
+        const googleCals = calendars.filter((c) => c.id !== LOCAL_CALENDAR_ID && c.id !== AI_CALENDAR_ID && c.id !== ANIME_CALENDAR_ID && c.id !== DISCOVERY_CALENDAR_ID);
         /* 저장본으로 먼저 그리고, 구글에는 바뀐 것만 묻는다 (event-cache.ts) */
         setEvents([...own(), ...cachedEvents(googleCals, from, to)]);
         loading.hidden = false;
@@ -522,7 +525,7 @@ export function buildCalendarView(
         const endDate = ev ? ev.end ?? addHours(startDate, 1) : draft.end;
         const allDay = ev ? ev.allDay : draft.allDay;
         const currentCal = (ev?.extendedProps.calendarId as string) || calendars[0]?.id || 'primary';
-        const editableCalendars = calendars.filter((cal) => cal.id !== AI_CALENDAR_ID && cal.id !== ANIME_CALENDAR_ID && !isHolidayCalendar(cal.id));
+        const editableCalendars = calendars.filter((cal) => cal.id !== AI_CALENDAR_ID && cal.id !== ANIME_CALENDAR_ID && cal.id !== DISCOVERY_CALENDAR_ID && !isHolidayCalendar(cal.id));
 
         const googleInstance = !!ev?.extendedProps.recurringEventId;
         let selectedColor = String(isLocal(ev?.id || '') ? ev?.extendedProps.eventColor || '' : ev?.extendedProps.colorId || '');
@@ -913,6 +916,7 @@ export function buildCalendarView(
         const calName = (ev.extendedProps.calendarName as string) || '';
         const isAi = ev.extendedProps.calendarId === AI_CALENDAR_ID;
         const isAnime = ev.extendedProps.calendarId === ANIME_CALENDAR_ID;
+        const isDiscovery = ev.extendedProps.calendarId === DISCOVERY_CALENDAR_ID;
         const doc = (ev.extendedProps.doc as string) || '';
         const box = document.createElement('div');
         box.className = 'pl-pop';
@@ -925,7 +929,7 @@ export function buildCalendarView(
             <div class="pl-pop-time">${esc(describeWhen(ev))}</div>
             ${linked || parseLinks(ev.extendedProps.linkedEvents).length ? `<div class="pl-pop-cal">${esc(t('planner.groupParent', { title: ev.title }))}</div>` : ''}
             ${calName ? `<div class="pl-pop-cal">${esc(calName)}</div>` : ''}
-            ${isAnime ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">작품 보기</a>` : isAi ? `<div class="pl-pop-cal">${esc(t('planner.t98'))}${doc ? ` <code>${esc(doc)}</code>` : ''}</div>` : `
+            ${isDiscovery ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">공식 안내 보기</a>` : isAnime ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">작품 보기</a>` : isAi ? `<div class="pl-pop-cal">${esc(t('planner.t98'))}${doc ? ` <code>${esc(doc)}</code>` : ''}</div>` : `
             <div class="pl-pop-actions">
                 <button type="button" class="btn btn-ghost pl-pop-edit">${esc(t('planner.t16'))}</button>
                 ${link ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Google ↗</a>` : ''}
@@ -998,11 +1002,11 @@ export function buildCalendarView(
         const holiday = mine.some((c) => isHolidayCalendar(c.id)) ? [] : [HOLIDAY_CALENDAR];
         /* 구글 'AI' 캘린더는 복사본이라 목록에 안 올린다 (원본 memo 를 그린다, 두 번 안 보이게) */
         const googleAi = mine.find((c) => c.summary === AI_GOOGLE_NAME);
-        calendars = [localCalendar(), aiCalendar(), animeCalendar(), ...mine.filter((c) => c !== googleAi), ...holiday];
+        calendars = [localCalendar(), aiCalendar(), animeCalendar(), discoveryCalendar(), ...mine.filter((c) => c !== googleAi), ...holiday];
         aiGoogleId = googleAi ? googleAi.id : '';
     }
     void (async () => {
-        if (loadFollowups) followups = await loadFollowups();
+        [followups, discovery] = await Promise.all([loadFollowups ? loadFollowups() : Promise.resolve([]), loadDiscovery ? loadDiscovery() : Promise.resolve(null)]);
         const view = calendar.view;
         let shown = '';
         if (token) {

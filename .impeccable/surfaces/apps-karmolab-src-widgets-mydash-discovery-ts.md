@@ -1,0 +1,39 @@
+---
+version: 1
+slug: apps-karmolab-src-widgets-mydash-discovery-ts
+primary_target: apps/karmolab/src/widgets/mydash/discovery.ts
+related_targets: [apps/karmolab/src/widgets/planner/calendar-view.ts]
+---
+
+# 행사와 AI 소식
+
+- 기존 Dash의 운영 목록과 플래너 확장, 새 시각 세계나 앱 셸 생성 없음.
+- 사용자 선택: Dash 안에서 본인부터 사용.
+- mode: Operate, Read. 행사 확인과 공식 원문 열기, 같은 행사의 달력 확인.
+
+## Direction contract
+
+THESIS: 확인된 행사와 공식 업데이트를 검색하고 같은 원본의 달력으로 이동.
+
+OWN-WORLD: 기존 Dash의 밝기별 토큰, 글꼴과 버튼 계승. 행 구분선과 텍스트 중심, 새 이미지 없음.
+
+STORY: 제목과 기간 확인, 종류나 검색으로 좁히기, 공식 원문 열기. 실패 출처와 이전 성공본 구분.
+
+FIRST VIEWPORT: 기존 셸 아래 제목, 플래너 링크, 검색과 종류, 갱신 시각, 실제 항목 목록. 출처 상세는 접기.
+
+FORM: 사용자 지정 기존 Dash 확장, code-led. 새 컨셉 추첨 대상 아님.
+
+FINISH: 실제 구성요소와 실수집 데이터의 1440/390/320 밝기별 화면, 검색과 필터와 달력의 읽기 전용 동작 검토. 사용자 수용과 운영 반영 별도 기록.
+
+## 문서 대조 (2026-10-24)
+
+- 판정: 기존 Dash 확장 범위의 문서 대조 통과. 루트 DESIGN.md와 디자인 sidecar 생성, 대체 없음.
+- 대조 소스: `discovery.ts`, `discovery-data.ts`, `planner/calendar-view.ts`, `planner/planner.ts`, 기존 `mydash/dash.css`와 `mydash/mydash.css`.
+- 색: 기존 밝음과 어두움의 본문, 보조 본문, 바탕, 경계선, 주황 초점 토큰 사용. 행사 달력의 녹청색은 해당 출처 식별색이며 전역 팔레트 규칙으로 승격하지 않음.
+- 글자: 기존 돋움 계열 상속, 검색 입력과 선택은 기존 `--font-size-sm` 16px 사용. 새 서체와 전역 글자 크기 체계 없음.
+- 형태와 간격: 기존 각진 입력과 ghost 버튼, 구분선 있는 텍스트 행. 행 위아래 16px, 조작 묶음 간격 12px, 목록 전후 24px는 이번 표면의 실제 값이며 전역 간격 규칙 추가 없음.
+- 조작: 접힌 출처 상세, 검색과 행사/AI 종류 필터, 직접 원문 링크, 44px 조작부와 기존 accent 초점선. 행사 상세는 원문 연결만 제공, 편집과 삭제 버튼 없음.
+- 증거: 비공개 검증 보관본의 `discovery-20261024/` 아래 `light-1440.png`, `light-390.png`, `light-320.png`, `dark-1440.png`, `dark-390.png`, `dark-320.png`, `calendar-320.png` 전부 열람. 같은 폴더 `results.json`의 6개 목록 화면은 문서와 내부 가로 넘침 0, 조작부 최소 44px, 달력 가로 넘침과 pageerror 0.
+- 독립 검토의 두 P2는 수정 판정 확인: 재조회 실패 문구는 검색과 필터 뒤에도 유지, 정상 재조회 후 해제. 출처 오류 메타데이터의 비문자열 값은 새 목록 채택 전에 거절. 회귀 시험의 수정 전 2건 실패와 수정 후 5건 통과는 부모 세션의 실행 증거.
+- 검증 범위: 실제 소스 구성요소와 실제 수집 데이터를 연결한 독립 검증 페이지. 인증된 운영 Dash 화면, 운영 배포, 전체 저장소 검사 최종 결과, 사용자 수용은 이 문서 대조의 판정 대상 아님.
+- 정본화하지 않은 기존 drift: 달력 상세와 FullCalendar 더보기 팝업의 투명 바탕과 겹침. 기존 `--bg-primary: transparent`와 팝업 스타일에서 이어진 문제이며 이번 출처 목록의 디자인 규칙으로 채택하거나 범위 밖 수정하지 않음.

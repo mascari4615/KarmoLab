@@ -933,6 +933,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           { id: 'goals', label: t('mydash.nav.goals', undefined, '목표'), panel: 'goals' },
           /* 플래너 (캘린더, 일기, 칸반, 연속일). 옛 캘린더 방 자리 (사용자 2026-09-23) */
           { id: 'planner', label: t('widgets.planner.title', undefined, '플래너'), panel: 'planner' },
+          { id: 'discovery', label: '행사와 AI 소식', panel: 'discovery' },
         ],
       },
     ];
@@ -981,6 +982,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     machines: 'dash',
     goals: 'me',
     planner: 'cal',
+    discovery: 'book',
   };
   type EscMenuCells = {
     title: string;

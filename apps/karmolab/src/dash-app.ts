@@ -11,6 +11,7 @@ import './widgets/mydash/ai-usage';
 import './widgets/mydash/bookmarks';
 import './widgets/mydash/kakao-daily';
 import './widgets/mydash/discord-channels';
+import './widgets/mydash/discovery';
 import './widgets/mydash/byeoru';
 import './widgets/mydash/automations';
 import './widgets/mydash/machines';

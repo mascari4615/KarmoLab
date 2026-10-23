@@ -25,6 +25,7 @@ import { GOOGLE_CLIENT_ID, ensureToken, forgetToken, requestToken, storedToken }
 import type { CalendarViewHandle } from './calendar-view';
 import { loadCalendarView } from './calendar-loader';
 import { FOLLOWUPS_PATH, type Followup } from './followups';
+import { DISCOVERY_PATH, parseDiscovery, type DiscoveryFeed } from '../mydash/discovery-data';
 import { buildKanbanView, type KanbanViewHandle } from './kanban-view';
 import { buildStreaksView } from './streaks-view';
 import { buildDiaryView, type DiaryViewHandle } from './diary-view';
@@ -330,7 +331,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         document.head.appendChild(el);
     }
 
-    function build(container: HTMLElement, onDispose: (fn: () => void) => void, notifications: NotificationHandle, loadFollowups?: () => Promise<Followup[]>): void {
+    function build(container: HTMLElement, onDispose: (fn: () => void) => void, notifications: NotificationHandle, loadFollowups?: () => Promise<Followup[]>, loadDiscovery?: () => Promise<DiscoveryFeed | null>): void {
         ensureStyle();
         Object.assign(container.style, { height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0', padding: '0' });
         container.innerHTML = `<div class="pl-root"></div>`;
@@ -397,7 +398,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                 (build) => {
                     if (disposed || seq !== mountSeq || !paneEl.isConnected) return;
                     paneEl.innerHTML = '';
-                    cal = build(paneEl, token, (date) => openSide('diary', date), loadFollowups);
+                    cal = build(paneEl, token, (date) => openSide('diary', date), loadFollowups, loadDiscovery);
                 },
                 () => {
                     if (disposed || seq !== mountSeq || !paneEl.isConnected) return;
@@ -480,9 +481,9 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         get title(): string {
             return t('widgets.planner.title', undefined, '플래너');
         },
-        /* 저장소에서는 AI 후속 일정 한 파일만 읽는다. 나머지는 구글과 이 브라우저 저장소 */
+        /* 저장소의 AI 후속 일정과 공통 행사 목록, 나머지는 구글과 이 브라우저 저장소 */
         access: 'read',
-        paths: [FOLLOWUPS_PATH],
+        paths: [FOLLOWUPS_PATH, DISCOVERY_PATH],
         render: async (ctx: DashPanelCtx): Promise<void> => {
             const notifications = mountNotifications(ctx, { visible: false });
             build(ctx.root, (fn) => ctx.onDispose(fn), notifications, async () => {
@@ -492,6 +493,16 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
                     return Array.isArray(data.items) ? data.items : [];
                 } catch {
                     return [];
+                }
+            }, async () => {
+                try {
+                    const feed = parseDiscovery(await ctx.repo.readJson<unknown>(DISCOVERY_PATH));
+                    if (!ctx.isCurrent()) return null;
+                    if (feed.sources.some(source => source.status === 'error')) toast('일부 행사 출처 확인 실패. 이전 확인본 포함, 정보 목록에서 상태 확인.', 'error');
+                    return feed;
+                } catch {
+                    if (ctx.isCurrent()) toast('행사 목록을 읽지 못했습니다. 행사와 AI 소식에서 다시 확인하세요.', 'error');
+                    return null;
                 }
             });
         },
