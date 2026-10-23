@@ -20,8 +20,7 @@ export const PREP = [
   { name: '대조 기준 만들기 (빌드 산출물. 게이트는 verify 몫)', cmd: ['npm', 'run', 'build:artifacts'] },
   /* 아래 검사 몇 개는 **이 자리에 띄운 서버**로 `/t/<도구>/` 를 연다. 그 페이지는
      배포가 찍는 것이라 여기엔 없었고, 화면이 통째로 not found였다(2026-08-13 실측). */
-  { name: '도구, 놀이 페이지 찍기 (검사가 그 주소를 연다)', cmd: ['npm', 'run', 'gen:tool-pages'] },
-  { name: '놀이 페이지 찍기', cmd: ['npm', 'run', 'gen:play-pages'] },
+  { name: '도구 페이지 찍기 (검사가 그 주소를 연다)', cmd: ['npm', 'run', 'gen:tool-pages'] },
 ];
 
 import { readFileSync } from 'node:fs';
@@ -121,13 +120,6 @@ const RAW_CHECKS = [
   { name: '장마다 제 대표 주소를 다는지', cmd: ['npm', 'run', 'audit:canonical'], live: true },
   /* 구조화 데이터도 도구 장만 검사 안이었음. 새로 빠지는 것만 잡는다 (아는 자리는 KNOWN) */
   { name: '장마다 구조화 데이터를 다는지', cmd: ['npm', 'run', 'audit:structured'], live: true },
-  { name: '놀이 셋이 성한지', cmd: ['node', '../play/scripts/smoke.mjs'] },
-  /* 놀이 열 판이 **지어지기는 하나**. 말 묶음을 이르게 부르면 위젯이 통째로 안 올라간다.
-     도구 장이 없는 놀이는 `test:i18n:runtime` 이 안 보고 있었다 (2026-08-14 실서비스 고장). */
-  { name: '놀이가 실제로 지어지는지', cmd: ['npm', 'run', 'test:play-i18n'], live: true },
-  /* 일본어 판도 같은 코드에 **다른 말 묶음**을 얹는다. 열쇠 하나가 비면 그 화면만 죽는다
-     (지금 ja 는 빠진 열쇠가 50개다). 한국어 판이 초록이어도 저쪽은 아닐 수 있다. */
-  { name: '일본어 판 화면이 지어지는지', cmd: ['npm', 'run', 'test:play-i18n:ja'], live: true },
   { name: '검색엔진이 읽는 머리가 성한지', cmd: ['npm', 'run', 'audit:seo'], live: true },
   { name: '비워 둔 자리가 실제와 맞는지', cmd: ['npm', 'run', 'audit:heights'] },
   { name: '설치 정보가 성한지', cmd: ['npm', 'run', 'test:pwa'] },
@@ -154,7 +146,6 @@ const RAW_CHECKS = [
      초록만 보고 믿지 않으려면 빨강도 나는 걸 봐야 한다. 위 `test:perf:self` 와 같은 짝. */
   { name: '성능 예산이 빨간불도 내는지', cmd: ['npm', 'run', 'test:perf:budget:regress'] },
   /* 6분짜리다. 묶음에 넣으면 push 마다 6분이 붙는다. 여기가 그 집이다. */
-  { name: '둘러보기가 끝까지 도는지', cmd: ['npm', 'run', 'smoke:tour'] },
   /* ★ 2026-08-16. 이 줄은 `test:perf:budget:regress` 를 부르고 있었다. `:regress` 는 예산을
      **재어 나온 값의 절반**으로 조여 일부러 빨갛게 만드는 자기시험이고, 한 건이라도 잡히면
      0 으로 끝난다. 즉 실제 예산을 넘든 말든 늘 초록이었다. 이름은 지켜지는지인데

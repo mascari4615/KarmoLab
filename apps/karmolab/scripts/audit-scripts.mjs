@@ -18,12 +18,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { PREP, CHECKS } from './live-checks.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const scripts = pkg.scripts || {};
 const names = new Set(Object.keys(scripts));
 const problems = [];
+
+for (const check of [...PREP, ...CHECKS]) {
+  const [command, action, name] = check.cmd;
+  if (command === 'npm' && action === 'run' && !names.has(name)) {
+    problems.push(`라이브 목록 ${check.name}: 없는 이름 ${name}`);
+  }
+  if (command === 'node' && !fs.existsSync(path.resolve(root, action))) {
+    problems.push(`라이브 목록 ${check.name}: 없는 파일 ${action}`);
+  }
+}
 
 for (const [name, body] of Object.entries(scripts)) {
   for (const [, called] of body.matchAll(/npm run ([a-z0-9:_-]+)/g)) {
