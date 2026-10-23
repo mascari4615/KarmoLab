@@ -71,6 +71,66 @@ fn unknown(vendor: &'static str, reason: impl Into<String>, evidence: Vec<PathBu
     }
 }
 
+/// 스킬 판정. 정본 이름 집합 전부가 홈에 같은 바이트로 있어야 적용, 정본이 없으면 옛 판정 (항목 유무).
+/// 짝: memo scripts/ai-env/audit.mjs 의 skillVendors
+fn skill_vendors(
+    sync: Option<crate::skill_sync::SkillSync>,
+    claude_skills: &Path,
+    codex_skills: &Path,
+    codex_bundled_skills: &Path,
+) -> Vec<VendorState> {
+    let Some(sync) = sync else {
+        return vec![
+            state("claude", has_entries(claude_skills), false, "Claude 사용자 스킬", vec![claude_skills.to_path_buf()]),
+            state(
+                "codex",
+                has_entries(codex_skills) && has_entries(codex_bundled_skills),
+                has_entries(codex_skills) || has_entries(codex_bundled_skills),
+                "Codex 사용자, 시스템 스킬 검색 경로",
+                vec![codex_skills.to_path_buf(), codex_bundled_skills.to_path_buf()],
+            ),
+            state(
+                "grok",
+                has_entries(claude_skills) && has_entries(codex_skills),
+                has_entries(claude_skills) != has_entries(codex_skills),
+                "Claude 스킬과 ~/.agents/skills. 같은 이름은 스킬 설명 하나",
+                vec![claude_skills.to_path_buf(), codex_skills.to_path_buf()],
+            ),
+        ];
+    };
+    let total = sync.total;
+    let (claude_ok, agents_ok) = (sync.claude_ok, sync.agents_ok);
+    let note = |ok: usize| format!("정본 {}개 중 {}개 일치", total, ok);
+    let bundled = has_entries(codex_bundled_skills);
+    vec![
+        state(
+            "claude",
+            claude_ok == total,
+            claude_ok > 0 && claude_ok < total,
+            format!("Claude 사용자 스킬. {}", note(claude_ok)),
+            vec![claude_skills.to_path_buf()],
+        ),
+        state(
+            "codex",
+            agents_ok == total && bundled,
+            (agents_ok > 0 && agents_ok < total) || (agents_ok == total && !bundled),
+            format!(
+                "Codex 사용자 스킬. {}{}",
+                note(agents_ok),
+                if bundled { "" } else { ", 시스템 스킬 폴더 비어 있음" }
+            ),
+            vec![codex_skills.to_path_buf(), codex_bundled_skills.to_path_buf()],
+        ),
+        state(
+            "grok",
+            claude_ok == total && agents_ok == total,
+            (claude_ok > 0 || agents_ok > 0) && !(claude_ok == total && agents_ok == total),
+            format!("Claude 홈 {}, Codex 홈 {}. 같은 이름은 스킬 설명 하나", note(claude_ok), note(agents_ok)),
+            vec![claude_skills.to_path_buf(), codex_skills.to_path_buf()],
+        ),
+    ]
+}
+
 #[tauri::command]
 pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
     let home = PathBuf::from(
@@ -102,21 +162,17 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
     let claude_skills = claude.join("skills");
     let codex_skills = agents.join("skills");
     let codex_bundled_skills = codex.join("skills");
+    let memo_skills = umbrella.join("memo").join("dotfiles").join("skills");
     let skills = EnvironmentFeature {
         id: "skills",
         label: "스킬",
         description: "반복 작업을 위한 SKILL.md 워크플로",
-        vendors: vec![
-            state("claude", has_entries(&claude_skills), false, "Claude 사용자 스킬", vec![claude_skills.clone()]),
-            state("codex", has_entries(&codex_skills) && has_entries(&codex_bundled_skills), has_entries(&codex_skills) || has_entries(&codex_bundled_skills), "Codex 사용자, 시스템 스킬 검색 경로", vec![codex_skills.clone(), codex_bundled_skills.clone()]),
-            state(
-                "grok",
-                has_entries(&claude_skills) && has_entries(&codex_skills),
-                has_entries(&claude_skills) != has_entries(&codex_skills),
-                "Claude 스킬과 ~/.agents/skills. 같은 이름은 스킬 설명 하나",
-                vec![claude_skills.clone(), codex_skills.clone()],
-            ),
-        ],
+        vendors: skill_vendors(
+            crate::skill_sync::count(&memo_skills, &claude_skills, &codex_skills),
+            &claude_skills,
+            &codex_skills,
+            &codex_bundled_skills,
+        ),
     };
 
     let codex_hooks = codex.join("hooks.json");

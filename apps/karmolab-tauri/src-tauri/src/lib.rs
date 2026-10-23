@@ -1,6 +1,7 @@
 mod activity;
 mod ai_quota;
 mod ai_environment;
+mod skill_sync;
 mod app_launcher;
 mod adventure;
 mod agent_team;
