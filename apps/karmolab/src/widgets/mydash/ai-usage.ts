@@ -560,7 +560,44 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 
   type EnvVendor = { vendor: string; status: string; reason: string; evidence: string[] };
   type EnvFeature = { id: string; label: string; description: string; vendors: EnvVendor[] };
-  type EnvAudit = { checked_at: number; features: EnvFeature[] };
+  type EnvSkill = { name: string; description: string; claude: string; agents: string };
+  type EnvSkills = { skills: EnvSkill[]; outside: { claude: string[]; agents: string[] } };
+  type EnvAudit = { checked_at: number; features: EnvFeature[]; skills?: EnvSkills };
+
+  /* 스킬 배포 상태 칩. 색은 하네스 표 칩 재사용 (ok 적용색, drift 일부색, missing 미적용색) */
+  function skillStateChip(state: string): string {
+    const css = state === 'ok' ? 'applied' : state === 'drift' ? 'partial' : 'missing';
+    const label = state === 'ok' ? '일치' : state === 'drift' ? '다름' : '없음';
+    return '<span class="au-env-state au-env-state--' + css + '">' + label + '</span>';
+  }
+
+  function firstSentence(text: string): string {
+    const clean = (text || '').replace(/\s+/g, ' ').trim();
+    const stop = clean.search(/\.(\s|$)/);
+    const out = stop > 0 ? clean.slice(0, stop + 1) : clean;
+    return out.length > 110 ? out.slice(0, 107).trimEnd() + '...' : out;
+  }
+
+  function renderSkills(skills: EnvSkills | undefined): string {
+    if (!skills || !skills.skills || !skills.skills.length) return '';
+    const bad = (item: EnvSkill) => item.claude !== 'ok' || item.agents !== 'ok';
+    const sorted = [...skills.skills].sort((a, b) => Number(bad(b)) - Number(bad(a)) || a.name.localeCompare(b.name));
+    const broken = sorted.filter(bad).length;
+    const rows = sorted.map((item) =>
+      '<tr><th scope="row" title="' + esc(item.description) + '"><strong>' + esc(item.name) + '</strong><small>' +
+      esc(firstSentence(item.description)) + '</small></th><td>' + skillStateChip(item.claude) + '</td><td>' +
+      skillStateChip(item.agents) + '</td></tr>').join('');
+    const outside = (['claude', 'agents'] as const)
+      .filter((key) => skills.outside && skills.outside[key] && skills.outside[key].length)
+      .map((key) => (key === 'claude' ? 'Claude 홈' : 'Codex 홈') + ': ' + skills.outside[key].map(esc).join(', '))
+      .join(' / ');
+    return '<p class="au-foot">스킬 정본 ' + skills.skills.length + '개. ' +
+      (broken ? '배포가 어긋난 것 ' + broken + '개를 위에 올림.' : '두 홈 모두 정본과 같음.') +
+      ' 정본은 memo dotfiles/skills, 어긋나면 sync-agent-runtime.ps1 -Only skills-common.</p>' +
+      '<div class="au-env-scroll"><table class="au-env"><thead><tr><th>스킬</th><th>Claude 홈</th><th>Codex 홈</th></tr></thead><tbody>' +
+      rows + '</tbody></table></div>' +
+      (outside ? '<p class="au-foot">정본 밖 (정리 후보, 사용자 확인 뒤 삭제): ' + outside + '</p>' : '');
+  }
 
   function envStatusLabel(status: string): string {
     if (status === 'applied') return '적용';
@@ -597,7 +634,7 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
     root.innerHTML =
       '<div class="au"><p class="au-foot">이 컴퓨터의 지침, 스킬, 훅이 벤더마다 깔려 있는지. 칸에 마우스를 올리면 근거 경로.</p>' +
       '<div class="au-env-scroll"><table class="au-env"><thead><tr><th>기능</th>' + head + '</tr></thead><tbody>' +
-      rows + '</tbody></table></div></div>';
+      rows + '</tbody></table></div>' + renderSkills(audit.skills) + '</div>';
   }
 
   function agoSeconds(epoch: number): string {
