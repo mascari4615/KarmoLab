@@ -3,6 +3,7 @@ import { DISCOVERY_PATH, parseDiscovery, sourceLink, type DiscoveryFeed, type Di
 import { discoveryContent, discoveryIcon, discoveryStyles, discoveryTitle, guardDiscoveryImages } from './discovery-content';
 
 const when = (date: string): string => new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(date));
+const postedDate = (date: string): string => new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium' }).format(new Date(date));
 const dates = (item: DiscoveryItem): string => item.kind === 'event' ? `${item.start} ~ ${new Date(Date.parse(item.end!) - 86400000).toISOString().slice(0, 10)}` : when(item.publishedAt!);
 
 export async function renderDiscovery(ctx: DashPanelCtx): Promise<void> {
@@ -42,7 +43,7 @@ export async function renderDiscovery(ctx: DashPanelCtx): Promise<void> {
       if (item.version) { if (releaseSources.has(item.sourceId)) return false; releaseSources.add(item.sourceId); }
       return (!kind || item.kind === kind) && (!term || `${item.title} ${item.headline || ''} ${item.sourceName} ${item.location || ''} ${item.summary || ''} ${item.reading || ''} ${item.body || ''}`.toLocaleLowerCase().includes(term));
     });
-    list.innerHTML = items.map(item => `<li class="discovery-row"><button type="button" class="discovery-story" data-item="${esc(item.id)}" aria-current="${item.id === selected}"><img class="discovery-thumb ${item.imageUrl ? '' : 'discovery-thumb--icon'}" src="${esc(item.imageUrl ? sourceLink(item.imageUrl) : discoveryIcon(item))}" alt="" referrerpolicy="no-referrer" loading="lazy"><div class="discovery-copy"><h3>${esc(discoveryTitle(item))}</h3><p>${esc(item.summary || item.body?.slice(0, 180) || item.location || '공식 원문 내용 읽기')}</p><small>${esc(item.sourceName)} / ${esc(item.kind === 'event' ? dates(item) : item.publishedAt!.slice(0, 10))}</small></div></button></li>`).join('') || '<li class="discovery-row">일치하는 항목이 없습니다. 검색어와 종류를 바꿔 보세요.</li>';
+    list.innerHTML = items.map(item => `<li class="discovery-row"><button type="button" class="discovery-story" data-item="${esc(item.id)}" aria-current="${item.id === selected}"><img class="discovery-thumb ${item.imageUrl ? '' : 'discovery-thumb--icon'}" src="${esc(item.imageUrl ? sourceLink(item.imageUrl) : discoveryIcon(item))}" alt="" referrerpolicy="no-referrer" loading="lazy"><div class="discovery-copy"><h3>${esc(discoveryTitle(item))}</h3><p>${esc(item.summary || item.body?.slice(0, 180) || item.location || '공식 원문 내용 읽기')}</p><small>${esc(item.sourceName)} / ${esc(item.kind === 'event' ? dates(item) : postedDate(item.publishedAt!))}</small></div></button></li>`).join('') || '<li class="discovery-row">일치하는 항목이 없습니다. 검색어와 종류를 바꿔 보세요.</li>';
     guardDiscoveryImages(list);
     for (const button of list.querySelectorAll<HTMLButtonElement>('[data-item]')) button.addEventListener('click', () => openItem(items.find(item => item.id === button.dataset.item)!, true));
     const item = items.find(row => row.id === selected) || items[0];

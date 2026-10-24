@@ -104,11 +104,12 @@ test('each event links to its own calendar date while news keeps its source link
 test('latest release groups history while Korean body stays readable and searchable', async t => {
   const { w, root, ctx } = screen(t);
   const next = structuredClone(feed);
-  Object.assign(next.items[1], { version: 'v2', headline: '파일 정리 개선', summary: '파일 보존 오류 수정', reading: 'retention 오류 수정\n<script>unsafe</script>', body: 'Original release notes' });
+  Object.assign(next.items[1], { version: 'v2', publishedAt: '2026-10-23T23:30:00Z', headline: '파일 정리 개선', summary: '파일 보존 오류 수정', reading: 'retention 오류 수정\n<script>unsafe</script>', body: 'Original release notes' });
   next.items.push({ ...next.items[1], id: 'code:old', version: 'v1', publishedAt: '2020-01-01T00:00:00Z' });
   ctx.repo.readJson = async () => next;
   await w.test.renderDiscovery(ctx);
   assert.equal(root.querySelectorAll('.discovery-row').length, 2);
+  assert.match(root.querySelector('[data-item="code:1"] small').textContent, /2026\. 10\. 24/);
   assert.match(root.querySelector('.discovery-reader').textContent, /retention 오류 수정/);
   assert.match(root.querySelector('.discovery-reader').textContent, /이전 릴리스 1개/);
   assert.equal(root.querySelector('.discovery-reader script'), null);
