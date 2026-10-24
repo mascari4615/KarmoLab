@@ -18,7 +18,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
@@ -54,7 +54,7 @@ runs:
     #   (해시가 다르면 캐시는 자동으로 안 맞고 그냥 다시 짓는다. 낡은 dist 를 쓸 위험이 없다.)
     - name: 공용 꾸러미 dist 캐시
       id: pkgcache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           packages/ai/dist
@@ -90,7 +90,7 @@ runs:
     - name: 브라우저 캐시
       id: browsercache
       if: inputs.chromium == 'true'
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('apps/karmolab/package-lock.json') }}
