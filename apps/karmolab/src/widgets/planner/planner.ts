@@ -153,6 +153,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         .pl-cal-hint { margin-top: 8px; font-size: var(--font-size-2xs); color: var(--text-tertiary); line-height: 1.5; }
         .pl-cal-list-title { font-size: var(--font-size-xs); color: var(--text-tertiary); font-weight: 600; margin-bottom: 6px; }
         .pl-cal-item { display: flex; align-items: center; gap: 6px; font-size: var(--font-size-xs); color: var(--text-secondary); padding: 3px 0; cursor: pointer; }
+        .pl-cal-all { min-height: 44px; font-weight: 600; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
         .pl-cal-dot { width: 10px; height: 10px; border-radius: var(--radius-sm); flex: 0 0 auto; }
         .pl-cal-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

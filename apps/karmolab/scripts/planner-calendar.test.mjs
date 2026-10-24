@@ -52,6 +52,29 @@ async function screen(t, allDay = false) {
   return { window, dialog, input, form, writes, submit };
 }
 
+test('calendar master checkbox selects and clears every loaded calendar and shows partial selection', async t => {
+  const ui = await screen(t);
+  ui.dialog.close();
+  const doc = ui.window.document;
+  const master = () => doc.querySelector('[data-cal-all]');
+  const boxes = () => [...doc.querySelectorAll('[data-cal]')];
+  assert.ok(master(), 'master checkbox must be present');
+  assert.ok(boxes().length >= 5, 'includes local, AI, anime, discovery and remote calendars');
+  assert.equal(master().checked, true);
+  boxes()[0].click();
+  assert.equal(master().indeterminate, true);
+  master().click();
+  assert.ok(boxes().every(box => box.checked));
+  assert.equal(master().indeterminate, false);
+  master().click();
+  assert.ok(boxes().every(box => !box.checked));
+  assert.equal(master().checked, false);
+  assert.deepEqual(JSON.parse(ui.window.localStorage.getItem('karmolab_planner_hidden_calendars')).sort(), boxes().map(box => box.dataset.cal).sort());
+  doc.querySelector('[data-mode="all"]').click();
+  assert.equal(master().checked, true);
+  assert.ok(boxes().every(box => box.checked));
+});
+
 test('pending calendar save makes editable fields unavailable without blocking cancellation', async t => {
   const ui = await screen(t);
   ui.submit();

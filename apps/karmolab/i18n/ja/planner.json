@@ -129,6 +129,7 @@
   "planner.repeatHolidayRange": "対応する祝日の年の範囲で繰り返し開始日と終了日を指定してください。",
   "planner.repeatDaysRequired": "繰り返す曜日を1つ以上選択してください。",
   "planner.repeatDateInvalid": "繰り返し期間に選択した曜日の予定が含まれるようにしてください。",
+  "planner.allCalendars": "すべてのカレンダー",
   "planner.t94": "表示",
   "planner.t95": "すべて",
   "planner.t96": "自分の予定",

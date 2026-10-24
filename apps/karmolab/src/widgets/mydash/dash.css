@@ -137,6 +137,10 @@ html[data-site="dash"] .myd::after { background: var(--dash-veil); }
     left: var(--dash-pad);
     top: var(--dash-head-top);
   }
+  html[data-site="dash"]:not([data-sidebar="rail"]) .myd-main:has(.discovery) {
+    margin-top: var(--dash-top);
+    padding-top: 0;
+  }
 }
 html[data-site="dash"] .myd-title {
   font-size: var(--font-size-title);

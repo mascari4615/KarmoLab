@@ -17,7 +17,7 @@ export function discoveryStyles(): void {
   const style = document.createElement('style'); style.id = 'discovery-style';
   style.textContent = `
     .discovery {max-width:88rem;margin-inline:auto;color:var(--text-primary);background:var(--dash-paper,var(--bg-secondary));border:1px solid var(--border)}
-    .discovery-controls {display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .discovery-controls {display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:1;background:var(--dash-paper,var(--bg-secondary))}
     .discovery input {margin-left:auto;min-width:0;width:260px;height:44px;padding:8px 12px;background:var(--dash-paper,var(--bg-secondary));border:1px solid var(--border);font:inherit;font-size:var(--font-size-sm);color:var(--text-primary)}
     .discovery input::placeholder{color:var(--text-secondary);opacity:1}.discovery button{font:inherit;color:inherit;cursor:pointer}
     .discovery-tabs{display:flex;gap:4px}.discovery-tabs button{border:0;min-height:44px;padding:6px 12px;background:transparent}

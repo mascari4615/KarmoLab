@@ -462,6 +462,10 @@ export function buildCalendarView(
     function renderList(): void {
         sideList.innerHTML = `
             <div class="pl-cal-list-title">${esc(t('planner.t15'))}</div>
+            <label class="pl-cal-item pl-cal-all">
+                <input type="checkbox" data-cal-all>
+                <span>${esc(t('planner.allCalendars', undefined, '전체 캘린더'))}</span>
+            </label>
             ${calendars
                 .map((c) => {
                     const color = c.backgroundColor || '#4285f4';
@@ -479,7 +483,7 @@ export function buildCalendarView(
     /* 보기 모드. 전체, 내 일정 (AI 끔), AI 만. 캘린더 켜고 끄기를 한 번에 바꾸는 것 */
     const modesEl = container.querySelector<HTMLElement>('.pl-cal-modes')!;
     function currentMode(): string {
-        if (hidden.size === 0) return 'all';
+        if (calendars.every(c => !hidden.has(c.id))) return 'all';
         const others = calendars.filter((c) => c.id !== AI_CALENDAR_ID);
         if (hidden.size === 1 && hidden.has(AI_CALENDAR_ID)) return 'mine';
         if (!hidden.has(AI_CALENDAR_ID) && others.every((c) => hidden.has(c.id))) return 'ai';
@@ -488,6 +492,10 @@ export function buildCalendarView(
     function markModes(): void {
         const m = currentMode();
         modesEl.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+        const master = sideList.querySelector<HTMLInputElement>('[data-cal-all]')!;
+        const selected = calendars.filter(c => !hidden.has(c.id)).length;
+        master.checked = selected === calendars.length;
+        master.indeterminate = selected > 0 && selected < calendars.length;
     }
     modesEl.addEventListener('click', (e) => {
         const mode = (e.target as HTMLElement).closest<HTMLElement>('[data-mode]')?.dataset.mode;
@@ -503,6 +511,18 @@ export function buildCalendarView(
 
     sideList.addEventListener('change', (e) => {
         const box = e.target as HTMLInputElement;
+        if (box.hasAttribute('data-cal-all')) {
+            for (const c of calendars) {
+                if (box.checked) hidden.delete(c.id);
+                else hidden.add(c.id);
+            }
+            sideList.querySelectorAll<HTMLInputElement>('[data-cal]').forEach(input => { input.checked = box.checked; });
+            saveHidden(hidden);
+            markModes();
+            applyEvents();
+            renderMini();
+            return;
+        }
         const id = box.dataset.cal;
         if (!id) return;
         if (box.checked) hidden.delete(id);
