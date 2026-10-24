@@ -4044,8 +4044,8 @@
               "check": "느린 요청 하나를 도구로 구간별 분해한다",
               "links": [
                 {
-                  "label": "curl 매뉴얼",
-                  "url": "https://curl.se/docs/manpage.html"
+                  "label": "curl 요청 구간 측정",
+                  "url": "https://everything.curl.dev/usingcurl/verbose/all-variables.html"
                 }
               ],
               "prereq": [
