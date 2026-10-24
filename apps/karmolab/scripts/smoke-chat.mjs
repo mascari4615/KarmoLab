@@ -123,12 +123,33 @@ const browser = await chromium.launch();
 async function openWindow(userAgent) {
   const context = await browser.newContext({ userAgent });
   const page = await context.newPage();
+  const network = [];
+  page.on('requestfailed', request => {
+    const url = new URL(request.url());
+    if (request.url().startsWith(apiOrigin) || request.url().startsWith(PROD_ORIGIN)) network.push({ target: url.origin === PROD_ORIGIN ? 'production-blocked' : 'local', path: url.pathname, error: request.failure()?.errorText });
+  });
+  // 채팅이 계정보다 먼저 붙는 실제 지연 로드 순서의 재현.
+  await page.route('**/js/account.js*', async route => {
+    await page.waitForSelector('#klChatDock', { state: 'attached', timeout: WAIT });
+    await route.continue();
+  });
+  page.on('response', response => {
+    const url = new URL(response.url());
+    if (url.pathname.startsWith('/kl/chat/')) network.push({ path: url.pathname, status: response.status() });
+  });
+  // 계정 없는 도구 화면에서도 쓰는 채팅 기본 주소를 검사 서버로 교체.
+  await page.route('**/js/widgets/chat.js*', async route => {
+    const response = await route.fetch();
+    const script = await response.text();
+    if (!script.includes(PROD_ORIGIN)) throw new Error('Chat default API source changed');
+    await route.fulfill({ response, body: script.replaceAll(PROD_ORIGIN, apiOrigin) });
+  });
 
   /* 서버 주소를 갈아 끼운다.
    *
    * 요청을 가로채 주소만 바꾸는 방법은 못 쓴다. 브라우저가 `https` → `http` 로 바꾸는 것을
    * 막는다. 그래서 앱이 **주소를 읽는 자리**에서 바꾼다: 계정 스크립트가 자기 객체를 창에
-   * 얹는 순간을 붙잡아 그 안의 주소만 바꿔치기한다. 앱 코드는 한 글자도 안 고친다. */
+   * 얹는 순간을 붙잡아 그 안의 주소만 바꿔치기한다. 원본 파일 변경 없이 검사 서버 주소만 교체. */
   await page.addInitScript((origin) => {
     let held;
     Object.defineProperty(window, 'KarmoAccount', {
@@ -143,7 +164,7 @@ async function openWindow(userAgent) {
   // 운영 서버로 새는 요청이 있으면 검사가 진짜 사이트를 건드리게 된다. 막아 둔다.
   await page.route(`${PROD_ORIGIN}/**`, (route) => route.abort());
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' });
-  return { context, page };
+  return { context, page, network };
 }
 
 const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -217,6 +238,7 @@ try {
     b.page.waitForSelector(label, { timeout: WAIT }).then(() => true).catch(() => false),
   ]);
   if (!bothNamed.every(Boolean)) {
+    console.log(`[smoke-chat] 이름표 진단 ${JSON.stringify([{ named: bothNamed[0], network: a.network.slice(-12) }, { named: bothNamed[1], network: b.network.slice(-12) }])}`);
     const state = await a.page.evaluate(() => {
       const panel = document.querySelector('.klchat-panel');
       const open = panel instanceof HTMLElement && getComputedStyle(panel).display !== 'none';
@@ -229,6 +251,7 @@ try {
   const nameB = (await b.page.locator('#klChatMe .klchat-who').textContent())?.trim() ?? '';
   check('이름표', /\S+\s\S+/.test(nameA), `이름표가 색 동물 모양이 아니다: ${JSON.stringify(nameA)}`);
   check('이름표', nameA !== nameB, `다른 사람인데 이름이 같다 (${nameA})`);
+  check('검사 서버', ![...a.network, ...b.network].some(row => row.target === 'production-blocked' && row.path.startsWith('/kl/chat/')), '채팅이 검사 서버 대신 차단된 운영 주소를 요청했다');
 
   // ③ 지금 여기가 둘을 센다. 흐르는 연결이 양쪽 다 붙었다는 증거다.
   await a.page.waitForFunction(() => document.querySelector('#klChatHere')?.textContent === '2명', null, { timeout: WAIT });
