@@ -86,3 +86,38 @@ test('the real calendar displays the same source event and offers no write contr
   root.querySelector('.pl-cal-create').click();
   assert.equal(root.querySelector('[name=event-calendar] option[value=karmo-discovery]'), null);
 });
+
+test('each event links to its own calendar date while news keeps its source link', async t => {
+  const { w, root, ctx } = screen(t);
+  await w.test.renderDiscovery(ctx);
+  const rows = root.querySelectorAll('.discovery-row');
+  assert.equal(rows[0].querySelector('a[href^="#planner/discovery/"]')?.getAttribute('href'), `#planner/discovery/${start}`);
+  assert.equal(rows[1].querySelector('a[href^="#planner/discovery/"]'), null);
+  assert.equal(rows[0].querySelector('a[target="_blank"]').href, feed.items[0].url);
+});
+
+test('calendar date links open the event month even when the event calendar was hidden', async t => {
+  const { w, root, dispose } = screen(t);
+  const future = structuredClone(feed);
+  future.items[0].start = '2030-11-19'; future.items[0].end = '2030-11-21';
+  const parsed = w.test.parseDiscovery(future);
+  const hidden = JSON.stringify(['karmo-discovery']);
+  w.localStorage.setItem('karmolab_planner_hidden_calendars', hidden);
+  w.localStorage.setItem('karmolab.planner.view', 'timeGridDay');
+  w.history.replaceState({}, '', '#planner/discovery/2030-11-19');
+  const handle = w.test.buildCalendarView(root, null, undefined, async () => [], async () => parsed);
+  dispose.push(() => handle.destroy());
+  await until(() => root.querySelector('.fc-event')?.textContent.includes('Expo test event'));
+  assert.match(root.querySelector('.fc-toolbar-title').textContent, /2030.*11/);
+  assert.ok(root.querySelector('.fc-dayGridMonth-view'));
+  assert.equal(root.querySelector('[data-cal="karmo-discovery"]').checked, true);
+  assert.equal(w.localStorage.getItem('karmolab_planner_hidden_calendars'), hidden);
+  w.history.replaceState({}, '', '#planner%2Fdiscovery%2F2030-12-04');
+  w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+  await until(() => /2030.*12/.test(root.querySelector('.fc-toolbar-title').textContent));
+  w.history.replaceState({}, '', '#planner/discovery/2030-02-30');
+  w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+  assert.match(root.querySelector('.fc-toolbar-title').textContent, /2030.*12/);
+  handle.destroy(); dispose.pop();
+  w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+});

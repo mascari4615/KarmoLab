@@ -11,6 +11,12 @@ export interface DiscoverySource { id: string; name: string; status: 'ok' | 'err
 export interface DiscoveryFeed { schema: 'discovery-feed/1'; generatedAt: string; sources: DiscoverySource[]; items: DiscoveryItem[] }
 const timestamp = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const dateOnly = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && timestamp(value) && new Date(value).toISOString().slice(0, 10) === value;
+export function discoveryCalendarDate(hash: string): string | undefined {
+  try {
+    const date = /^#planner\/discovery\/(\d{4}-\d{2}-\d{2})$/.exec(decodeURIComponent(hash))?.[1];
+    return dateOnly(date) ? date : undefined;
+  } catch { return undefined; }
+}
 const text = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
 export function sourceLink(value: string): string {
   try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password ? u.href : ''; } catch { return ''; }

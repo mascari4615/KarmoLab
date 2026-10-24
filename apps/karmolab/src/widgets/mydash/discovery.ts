@@ -39,7 +39,7 @@ export async function renderDiscovery(ctx: DashPanelCtx): Promise<void> {
     list.innerHTML = items.map(item => {
       const source = feed!.sources.find(s => s.id === item.sourceId)!;
       const date = item.kind === 'event' ? `${item.start} ~ ${new Date(Date.parse(item.end!) - 86400000).toISOString().slice(0, 10)}${item.location ? ` / ${item.location}` : ''}` : when(item.publishedAt!);
-      return `<li class="discovery-row"><a href="${esc(sourceLink(item.url))}" target="_blank" rel="noopener noreferrer">${esc(item.title)}</a><small>${esc(date)}</small><small>${esc(item.sourceName)} / ${source.status === 'error' ? '최신 확인 실패, 이전 확인본' : '공식 출처'} / 확인 ${esc(when(item.checkedAt))}</small></li>`;
+      return `<li class="discovery-row"><a href="${esc(sourceLink(item.url))}" target="_blank" rel="noopener noreferrer">${esc(item.title)}</a><small>${esc(date)}</small>${item.kind === 'event' ? `<a href="#planner/discovery/${esc(item.start!)}" aria-label="${esc(item.title)} 달력에서 보기">달력에서 보기</a>` : ''}<small>${esc(item.sourceName)} / ${source.status === 'error' ? '최신 확인 실패, 이전 확인본' : '공식 출처'} / 확인 ${esc(when(item.checkedAt))}</small></li>`;
     }).join('') || '<li class="discovery-row">일치하는 항목이 없습니다. 검색어와 종류를 바꿔 보세요.</li>';
     const failed = feed.sources.filter(s => s.status === 'error');
     status.textContent = `${readFailed ? '목록 다시 읽기 실패, 이전 목록 표시. ' : ''}${items.length}개 표시 / 수집 ${when(feed.generatedAt)}${failed.length ? ` / ${failed.length}개 출처 확인 실패, 이전 확인본 포함` : ''}`;

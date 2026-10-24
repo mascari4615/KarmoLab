@@ -36,7 +36,7 @@ import {
 import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { ANIME_CALENDAR_ID, ANIME_CHANGED, animeCalendar, animeEvents } from './anime-calendar';
-import { DISCOVERY_CALENDAR_ID, discoveryCalendar, discoveryEvents, type DiscoveryFeed } from '../mydash/discovery-data';
+import { DISCOVERY_CALENDAR_ID, discoveryCalendar, discoveryCalendarDate, discoveryEvents, type DiscoveryFeed } from '../mydash/discovery-data';
 import { withToken } from './gauth';
 import { HOLIDAY_YEARS, holidayRangeSupported, repeatWindow, type RepeatRule } from './recurrence';
 import { parseLinks, shiftExDates, withLinkedEvents, type LinkedEvent } from './event-group';
@@ -177,6 +177,8 @@ export function buildCalendarView(
     let discovery: DiscoveryFeed | null = null;
     let allEvents: FcEvent[] = [];
     const hidden = loadHidden();
+    const discoveryDate = discoveryCalendarDate(window.location.hash);
+    if (discoveryDate) hidden.delete(DISCOVERY_CALENDAR_ID);
     let miniMonth = new Date();
     let destroyed = false;
 
@@ -192,7 +194,8 @@ export function buildCalendarView(
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
         locale: koLocale,
         /* 보기 넷 (월, 주, 일, 일정 목록). 마지막에 본 보기로 연다 (Google 캘린더처럼) */
-        initialView: savedView(),
+        initialView: discoveryDate ? 'dayGridMonth' : savedView(),
+        initialDate: discoveryDate,
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -292,6 +295,16 @@ export function buildCalendarView(
 
     const calendar = new Calendar(mount, options);
     calendar.render();
+    const followDiscoveryDate = (): void => {
+        const date = discoveryCalendarDate(window.location.hash);
+        if (!date || destroyed) return;
+        hidden.delete(DISCOVERY_CALENDAR_ID);
+        calendar.changeView('dayGridMonth', date);
+        renderList();
+        applyEvents();
+        renderMini();
+    };
+    window.addEventListener('hashchange', followDiscoveryDate);
     /* FullCalendar 의 화살표는 `role="img"` 인데 이름이 없다. 이름은 감싼 버튼이 이미 들고
        있으므로 아이콘은 숨긴다 (axe role-img-alt 2곳, 2026-09-04) */
     for (const icon of mount.querySelectorAll('.fc-icon')) icon.setAttribute('aria-hidden', 'true');
@@ -1065,6 +1078,7 @@ export function buildCalendarView(
         destroy: () => {
             destroyed = true;
             window.removeEventListener(ANIME_CHANGED, animeChanged);
+            window.removeEventListener('hashchange', followDiscoveryDate);
             mobile.removeEventListener('change', adaptSettings);
             resize.disconnect();
             closePopover();
