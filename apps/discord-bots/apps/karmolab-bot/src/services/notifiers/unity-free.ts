@@ -12,7 +12,7 @@ import {
   type Client,
   type SendableChannels,
 } from 'discord.js';
-import cheerio from 'cheerio';
+import { load } from 'cheerio';
 import { channelIdFor } from '../channel-provision';
 import { notificationServices } from '../notification-services';
 import { createStateStore } from './state-store';
@@ -48,7 +48,7 @@ function extractGiftPackageHrefFromRawHtml(html: string): string | null {
   return m ? m[1] : null;
 }
 
-function findGiftAssetUrl($: ReturnType<typeof cheerio.load>, html: string): string | null {
+function findGiftAssetUrl($: ReturnType<typeof load>, html: string): string | null {
   let found: string | null = null;
   $('a[href*="/packages/"]').each((_, el) => {
     if (found) return;
@@ -77,7 +77,7 @@ async function fetchUnityAssetImage(assetUrl: string): Promise<string | null> {
     if (!res.ok) return null;
 
     const html = await res.text();
-    const $ = cheerio.load(html);
+    const $ = load(html);
 
     const ogImage = $('meta[property="og:image"]').attr('content');
     if (ogImage) {
@@ -116,8 +116,13 @@ export async function fetchPublisherSaleAssetInfo(): Promise<PublisherSaleAssetI
   }
 
   const html = await res.text();
-  const $ = cheerio.load(html);
-  const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
+  const $ = load(html);
+  const body = $('body').clone();
+  body.find('script, style').remove();
+  body.find('p, div, li, h1, h2, h3, h4, h5, h6, br, section, article').each((_, el) => {
+    $(el).after(' ');
+  });
+  const bodyText = body.text().replace(/\s+/g, ' ').trim();
 
   const couponMatch = bodyText.match(/coupon code\s+([A-Z0-9]+)/i);
   const couponCode = couponMatch ? couponMatch[1] : null;

@@ -36,7 +36,7 @@
     "@google/generative-ai": "^0.21.0",
     "@karmo/ai": "file:../../../../packages/ai",
     "@karmo/arcade": "file:../../../../packages/arcade",
-    "cheerio": "1.0.0-rc.12",
+    "cheerio": "1.2.0",
     "discord.js": "^14.26.0",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
