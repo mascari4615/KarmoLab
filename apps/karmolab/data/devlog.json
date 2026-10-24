@@ -2,11 +2,123 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1722,
+    "commits": 1750,
     "days": 14,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-10-24",
+      "entries": [
+        {
+          "sha": "66afad3f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "authoring",
+          "text": "expose wardrobe preview distances and tile name height as serialized fields"
+        },
+        {
+          "sha": "196313c8",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "scene-content",
+          "text": "toon surface v2 in the scene model and loader"
+        },
+        {
+          "sha": "3b324e87",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "authoring",
+          "text": "dock the authoring, character view and wardrobe windows in the main window"
+        },
+        {
+          "sha": "36a943ef",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "shader",
+          "text": "toon outline, hair band highlight and richer shade colour (off by default)"
+        },
+        {
+          "sha": "160198a0",
+          "type": "perf",
+          "typeLabel": "빨라진 것",
+          "scope": "authoring",
+          "text": "redraw the wardrobe preview only when the scene, worn state, look or size changed"
+        },
+        {
+          "sha": "fc819240",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "authoring",
+          "text": "plain and toon look choice for the wardrobe window preview"
+        }
+      ],
+      "quiet": 0,
+      "more": 6
+    },
+    {
+      "date": "2026-10-22",
+      "entries": [
+        {
+          "sha": "a489a0a2",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "authoring",
+          "text": "outfit panel rereads worn markers when the scene changes"
+        },
+        {
+          "sha": "c9e8b640",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "scene-content",
+          "text": "atomic save waits out a short file lock"
+        },
+        {
+          "sha": "34447a8a",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "wardrobe",
+          "text": "read the worn outfit from the scene when an outfit file is opened"
+        },
+        {
+          "sha": "84f8ac96",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "authoring",
+          "text": "a failed outfit change is not shown as worn"
+        },
+        {
+          "sha": "780d6b58",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "wardrobe",
+          "text": "carrier role keeps a part off the body when the anchor bone bends"
+        },
+        {
+          "sha": "0cfd818f",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "authoring",
+          "text": "edit spring inertia in the dynamics panel"
+        }
+      ],
+      "quiet": 1,
+      "more": 8
+    },
+    {
+      "date": "2026-10-21",
+      "entries": [
+        {
+          "sha": "c4aca5e0",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "wardrobe",
+          "text": "add portable outfit composition with part attachment"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
     {
       "date": "2026-10-18",
       "entries": [
@@ -408,122 +520,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "features",
           "text": "갈래 설치자 셋과 공용 쪽 배선"
-        },
-        {
-          "sha": "bb18951b",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "features",
-          "text": "갈래가 자기를 심는다. 씬 조립과 SO 타입 표에서 갈래 이름을 걷어낸다"
-        },
-        {
-          "sha": "3c1de2a8",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "뽑기 연출. 모으기, 터짐, 카드 한 장씩"
-        },
-        {
-          "sha": "54f8f4c4",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "일제 사격을 카드 누르고 적 누르기로도. 전투 구도를 관리 열 왼쪽으로"
-        },
-        {
-          "sha": "bfcf5123",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "웨이브마다 세상이 튀던 것. 카메라를 시네머신으로, 방은 제자리에"
-        },
-        {
-          "sha": "7740c30b",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "던전 탭. 입장과 소탕, 보상 셋"
         }
       ],
       "quiet": 56,
-      "more": 33
-    },
-    {
-      "date": "2026-09-03",
-      "entries": [
-        {
-          "sha": "2b2d0f9d",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "전투 피드백과 선택 팝업을 다듬는다"
-        },
-        {
-          "sha": "28d276ad",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "죽은 편성 칸과 사운드 경로를 바로잡는다"
-        },
-        {
-          "sha": "0641998c",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "모바일 조작 피드백을 마무리한다"
-        }
-      ],
-      "quiet": 0,
-      "more": 0
-    },
-    {
-      "date": "2026-09-02",
-      "entries": [
-        {
-          "sha": "a61112c9",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "수치 성장 클릭 피드백을 분명히 한다"
-        },
-        {
-          "sha": "266fc970",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "오프라인 보상을 복귀 팝업으로 보여준다"
-        },
-        {
-          "sha": "88a20c4f",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "영웅별 수치 성장을 개별 클릭으로 나눈다"
-        }
-      ],
-      "quiet": 1,
-      "more": 0
-    },
-    {
-      "date": "2026-09-01",
-      "entries": [
-        {
-          "sha": "4d3132a4",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "상점 탭을 열고 가방 넓히기. 편성은 셋으로 좁힌다"
-        },
-        {
-          "sha": "f43250f7",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "재화 칩 글자를 본문에 맞춤. 유니티가 그린 실제 값으로 쟀다"
-        }
-      ],
-      "quiet": 6,
-      "more": 21
+      "more": 38
     }
   ]
 }
