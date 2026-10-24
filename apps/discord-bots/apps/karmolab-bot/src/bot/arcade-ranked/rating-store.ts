@@ -51,6 +51,10 @@ export const writeStoredRatings = (game: string, values: ReadonlyMap<string, Sto
 };
 
 export const resetRatingStore = (): void => {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
   store = {};
 };
 

@@ -6,17 +6,21 @@
  */
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import express from 'express';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Server } from 'http';
 import { registerArcadeQueue, resetQueue } from './arcade-queue';
 import { registerArcadeReport, resetReports } from './arcade-report';
-import { ratingOf, resetRatings } from './arcade-rating';
+import { ratingOf, resetRatings, resetPairs } from './arcade-rating';
 import { registerArcadeTape, resetTapes } from './arcade-tape';
 import { setVerifier } from './arcade-verify';
 
 let server: Server;
 let base = '';
+let stateDir = '';
+const previousRatingFile = process.env.ARCADE_RATING_FILE;
+const previousPairFile = process.env.ARCADE_PAIR_FILE;
 
 /** 가짜 로그인. `x-test-user` 머리에 적은 이름이 곧 그 사람 */
 const fakeWho = (req: { headers: Record<string, unknown> }): { id: string; handle: string } | null => {
@@ -33,22 +37,47 @@ const C = 'account-c';
 const D = 'account-d';
 
 beforeAll(async () => {
-  process.env.ARCADE_RATING_FILE = path.join(os.tmpdir(), 'arcade-report-test.json');
+  stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'arcade-report-test-'));
+  process.env.ARCADE_RATING_FILE = path.join(stateDir, 'ratings.json');
+  process.env.ARCADE_PAIR_FILE = path.join(stateDir, 'pairs.json');
   const app = express();
   registerArcadeQueue(app, fakeWho as never);
   registerArcadeReport(app, fakeWho as never);
   registerArcadeTape(app, fakeWho as never);
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, '127.0.0.1', () => resolve());
-  });
-  const addr = server.address();
-  base = `http://127.0.0.1:${typeof addr === 'object' && addr ? addr.port : 0}`;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await new Promise<void>((resolve, reject) => {
+      server = app.listen(0, '127.0.0.1', () => resolve());
+      server.once('error', reject);
+    });
+    const addr = server.address();
+    if (!addr || typeof addr !== 'object') throw new Error('Missing test server port');
+    base = `http://127.0.0.1:${addr.port}`;
+    try {
+      // 커널 배정 포트와 Fetch의 차단 목록 차이 확인
+      await fetch(base + '/__test_port_probe__');
+      return;
+    } catch (error) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      if ((error as { cause?: { message?: string } }).cause?.message !== 'bad port') throw error;
+    }
+  }
+  throw new Error('Fetch-compatible test port unavailable after 20 attempts');
 });
 
-afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+afterAll(async () => {
+  resetRatings();
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  if (previousRatingFile === undefined) delete process.env.ARCADE_RATING_FILE;
+  else process.env.ARCADE_RATING_FILE = previousRatingFile;
+  if (previousPairFile === undefined) delete process.env.ARCADE_PAIR_FILE;
+  else process.env.ARCADE_PAIR_FILE = previousPairFile;
+  if (!path.resolve(stateDir).startsWith(path.resolve(os.tmpdir()) + path.sep)) throw new Error('Temporary state directory boundary');
+  fs.rmSync(stateDir, { recursive: true, force: true });
+});
 beforeEach(() => {
   resetQueue();
   resetRatings();
+  resetPairs();
   resetReports();
   resetTapes();
   /* 기본은 묶음 없음. 옛 검사들이 재검증에 걸리지 않게 */
