@@ -37,6 +37,7 @@ import { diaryDates } from './diary-store';
 import { AI_CALENDAR_ID, AI_GOOGLE_NAME, aiCalendar, syncToGoogle, toAiEvents, type Followup } from './followups';
 import { ANIME_CALENDAR_ID, ANIME_CHANGED, animeCalendar, animeEvents } from './anime-calendar';
 import { DISCOVERY_CALENDAR_ID, discoveryCalendar, discoveryCalendarDate, discoveryEvents, type DiscoveryFeed } from '../mydash/discovery-data';
+import { discoveryContent, discoveryStyles, guardDiscoveryImages } from '../mydash/discovery-content';
 import { withToken } from './gauth';
 import { HOLIDAY_YEARS, holidayRangeSupported, repeatWindow, type RepeatRule } from './recurrence';
 import { parseLinks, shiftExDates, withLinkedEvents, type LinkedEvent } from './event-group';
@@ -216,6 +217,7 @@ export function buildCalendarView(
         /* 달마다 필요한 주만 (5주면 5줄). 6줄 고정이면 칸이 낮아져 일정이 "+N 개" 뒤로 숨음 (2026-09-25 사용자 "일정 하나도 안 보이고") */
         fixedWeekCount: false,
         selectable: true,
+        selectAllow: () => !mobile.matches || calendar.view.type !== 'dayGridMonth',
         dateClick: (info) => {
             if (mobile.matches && info.view.type === 'dayGridMonth') calendar.changeView('timeGridDay', info.date);
         },
@@ -930,6 +932,7 @@ export function buildCalendarView(
         const isAi = ev.extendedProps.calendarId === AI_CALENDAR_ID;
         const isAnime = ev.extendedProps.calendarId === ANIME_CALENDAR_ID;
         const isDiscovery = ev.extendedProps.calendarId === DISCOVERY_CALENDAR_ID;
+        if (isDiscovery) discoveryStyles();
         const doc = (ev.extendedProps.doc as string) || '';
         const box = document.createElement('div');
         box.className = 'pl-pop';
@@ -942,7 +945,7 @@ export function buildCalendarView(
             <div class="pl-pop-time">${esc(describeWhen(ev))}</div>
             ${linked || parseLinks(ev.extendedProps.linkedEvents).length ? `<div class="pl-pop-cal">${esc(t('planner.groupParent', { title: ev.title }))}</div>` : ''}
             ${calName ? `<div class="pl-pop-cal">${esc(calName)}</div>` : ''}
-            ${isDiscovery ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">공식 안내 보기</a>` : isAnime ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">작품 보기</a>` : isAi ? `<div class="pl-pop-cal">${esc(t('planner.t98'))}${doc ? ` <code>${esc(doc)}</code>` : ''}</div>` : `
+            ${isDiscovery ? `${ev.extendedProps.discoveryItem ? discoveryContent(ev.extendedProps.discoveryItem, true) : ''}<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">공식 안내 보기</a>` : isAnime ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">작품 보기</a>` : isAi ? `<div class="pl-pop-cal">${esc(t('planner.t98'))}${doc ? ` <code>${esc(doc)}</code>` : ''}</div>` : `
             <div class="pl-pop-actions">
                 <button type="button" class="btn btn-ghost pl-pop-edit">${esc(t('planner.t16'))}</button>
                 ${link ? `<a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Google ↗</a>` : ''}
@@ -958,6 +961,7 @@ export function buildCalendarView(
         const host = container.getBoundingClientRect();
         box.style.left = `${Math.max(8, Math.min(atX - host.left, host.width - rect.width - 8))}px`;
         box.style.top = `${Math.max(8, Math.min(atY - host.top + 8, host.height - rect.height - 8))}px`;
+        if (isDiscovery) guardDiscoveryImages(box);
         (box.querySelector<HTMLElement>('.pl-pop-edit') ?? box.querySelector<HTMLElement>('.pl-modal-x'))?.focus();
 
         box.querySelector('.pl-modal-x')!.addEventListener('click', () => closePopover(true));

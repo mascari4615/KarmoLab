@@ -35,9 +35,9 @@ test('untrusted feed rejects unsafe links, impossible dates and unknown sources'
 test('information list searches, filters and escapes data, with failure status visible', async t => {
   const { w, root, ctx } = screen(t); await w.test.renderDiscovery(ctx);
   assert.equal(root.querySelectorAll('.discovery-row').length, 2);
-  assert.equal(root.querySelectorAll('img,script').length, 0);
+  assert.equal(root.querySelectorAll('img[src=x],script').length, 0);
   assert.match(root.querySelector('[role=status]').textContent, /확인 실패/);
-  const filter = root.querySelector('select'); filter.value = 'event'; filter.dispatchEvent(new w.Event('change'));
+  root.querySelector('[data-kind=event]').click();
   assert.equal(root.querySelectorAll('.discovery-row').length, 1);
   const query = root.querySelector('input'); query.value = 'not-found'; query.dispatchEvent(new w.Event('input'));
   assert.match(root.querySelector('.discovery-list').textContent, /일치하는 항목이 없습니다/);
@@ -74,7 +74,8 @@ test('refresh reads a changed remote feed instead of the cached snapshot', async
 
 test('the real calendar displays the same source event and offers no write controls', async t => {
   const { w, root, dispose } = screen(t);
-  const parsed = w.test.parseDiscovery(feed), events = w.test.discoveryEvents(parsed);
+  const detailed = structuredClone(feed); detailed.items[0].reading = '공식 행사 본문 <script>unsafe</script>'; detailed.items[0].summary = '관람 시간과 프로그램';
+  const parsed = w.test.parseDiscovery(detailed), events = w.test.discoveryEvents(parsed);
   assert.equal(events.length, 1); assert.equal(events[0].startEditable, false); assert.equal(events[0].durationEditable, false);
   const handle = w.test.buildCalendarView(root, null, undefined, async () => [], async () => parsed);
   dispose.push(() => handle.destroy());
@@ -83,6 +84,8 @@ test('the real calendar displays the same source event and offers no write contr
   await until(() => root.querySelector('.pl-pop'));
   assert.equal(root.querySelector('.pl-pop-edit'), null); assert.equal(root.querySelector('.pl-pop-del'), null);
   assert.equal(root.querySelector('.pl-pop a').href, feed.items[0].url);
+  assert.match(root.querySelector('.pl-pop .discovery-reading').textContent, /공식 행사 본문/);
+  assert.equal(root.querySelector('.pl-pop script'), null);
   root.querySelector('.pl-cal-create').click();
   assert.equal(root.querySelector('[name=event-calendar] option[value=karmo-discovery]'), null);
 });
@@ -90,10 +93,28 @@ test('the real calendar displays the same source event and offers no write contr
 test('each event links to its own calendar date while news keeps its source link', async t => {
   const { w, root, ctx } = screen(t);
   await w.test.renderDiscovery(ctx);
-  const rows = root.querySelectorAll('.discovery-row');
-  assert.equal(rows[0].querySelector('a[href^="#planner/discovery/"]')?.getAttribute('href'), `#planner/discovery/${start}`);
-  assert.equal(rows[1].querySelector('a[href^="#planner/discovery/"]'), null);
-  assert.equal(rows[0].querySelector('a[target="_blank"]').href, feed.items[0].url);
+  root.querySelector('[data-item="expo"]').click();
+  assert.equal(root.querySelector('.discovery-reader a[href^="#planner/discovery/"]')?.getAttribute('href'), `#planner/discovery/${start}`);
+  assert.equal(root.querySelector('.discovery-reader a[target="_blank"]').href, feed.items[0].url);
+  root.querySelector('[data-item="code:1"]').click();
+  assert.equal(root.querySelector('.discovery-reader a[href^="#planner/discovery/"]'), null);
+  assert.equal(root.querySelector('.discovery-reader a[target="_blank"]').href, feed.items[1].url);
+});
+
+test('latest release groups history while Korean body stays readable and searchable', async t => {
+  const { w, root, ctx } = screen(t);
+  const next = structuredClone(feed);
+  Object.assign(next.items[1], { version: 'v2', headline: '파일 정리 개선', summary: '파일 보존 오류 수정', reading: 'retention 오류 수정\n<script>unsafe</script>', body: 'Original release notes' });
+  next.items.push({ ...next.items[1], id: 'code:old', version: 'v1', publishedAt: '2020-01-01T00:00:00Z' });
+  ctx.repo.readJson = async () => next;
+  await w.test.renderDiscovery(ctx);
+  assert.equal(root.querySelectorAll('.discovery-row').length, 2);
+  assert.match(root.querySelector('.discovery-reader').textContent, /retention 오류 수정/);
+  assert.match(root.querySelector('.discovery-reader').textContent, /이전 릴리스 1개/);
+  assert.equal(root.querySelector('.discovery-reader script'), null);
+  const input = root.querySelector('input'); input.value = 'retention'; input.dispatchEvent(new w.Event('input'));
+  assert.equal(root.querySelectorAll('.discovery-story').length, 1);
+  assert.match(root.querySelector('.discovery-reader').textContent, /Original release notes/);
 });
 
 test('calendar date links open the event month even when the event calendar was hidden', async t => {

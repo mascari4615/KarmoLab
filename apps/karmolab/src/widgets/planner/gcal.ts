@@ -62,6 +62,7 @@ export interface FcEvent {
         eventColor?: string;
         seriesColor?: string;
         htmlLink: string;
+        discoveryItem?: import('../mydash/discovery-data').DiscoveryItem;
         recurringEventId?: string;
         localSeriesId?: string;
         repeatRule?: RepeatRule;

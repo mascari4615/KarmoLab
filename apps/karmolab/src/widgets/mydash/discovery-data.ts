@@ -1,11 +1,13 @@
 import type { FcEvent, GoogleCalendar } from '../planner/gcal';
 
-export const DISCOVERY_PATH = 'data/discovery/feed.json';
+export const DISCOVERY_PATH = 'data/discovery/feed.generated.json';
 export const DISCOVERY_CALENDAR_ID = 'karmo-discovery';
 const COLOR = '#247b74';
 export interface DiscoveryItem {
   id: string; sourceId: string; sourceName: string; category: string; kind: 'event' | 'news'; title: string; url: string;
   checkedAt: string; publishedAt?: string; start?: string; end?: string; location?: string;
+  version?: string; headline?: string; summary?: string; reading?: string; body?: string; imageUrl?: string;
+  summaryStatus?: 'ready' | 'error'; contentStatus?: 'excerpt';
 }
 export interface DiscoverySource { id: string; name: string; status: 'ok' | 'error'; checkedAt: string; lastSuccessAt: string | null; count: number; error?: string }
 export interface DiscoveryFeed { schema: 'discovery-feed/1'; generatedAt: string; sources: DiscoverySource[]; items: DiscoveryItem[] }
@@ -33,6 +35,9 @@ export function parseDiscovery(value: unknown): DiscoveryFeed {
   for (const item of feed.items) {
     if (!item || !text(item.id) || ids.has(item.id) || !sources.has(item.sourceId) || !text(item.title) || !text(item.sourceName) || !sourceLink(item.url) || !timestamp(item.checkedAt)) throw new Error('정보 항목 형식 오류');
     ids.add(item.id);
+    for (const key of ['version', 'headline', 'summary', 'reading', 'body', 'imageUrl', 'location'] as const) if (item[key] !== undefined && (typeof item[key] !== 'string' || item[key]!.length > (key === 'body' ? 20000 : 5000))) throw new Error('소식 본문 형식 오류');
+    if (item.imageUrl && !sourceLink(item.imageUrl)) throw new Error('소식 이미지 주소 오류');
+    if (item.summaryStatus !== undefined && !['ready', 'error'].includes(item.summaryStatus)) throw new Error('소식 요약 상태 오류');
     if (item.kind === 'event') {
       if (!dateOnly(item.start) || !dateOnly(item.end) || item.end <= item.start) throw new Error('행사 날짜 형식 오류');
     } else if (item.kind !== 'news' || !timestamp(item.publishedAt)) throw new Error('소식 날짜 형식 오류');
@@ -44,6 +49,6 @@ export function discoveryEvents(feed: DiscoveryFeed | null): FcEvent[] {
   return (feed?.items || []).filter(item => item.kind === 'event').map(item => ({
     id: `discovery:${item.id}`, title: item.title, start: item.start!, end: item.end!, allDay: true,
     backgroundColor: COLOR, borderColor: COLOR, startEditable: false, durationEditable: false,
-    extendedProps: { calendarId: DISCOVERY_CALENDAR_ID, calendarName: item.sourceName, googleId: `discovery:${item.id}`, htmlLink: sourceLink(item.url) },
+    extendedProps: { calendarId: DISCOVERY_CALENDAR_ID, calendarName: item.sourceName, googleId: `discovery:${item.id}`, htmlLink: sourceLink(item.url), discoveryItem: item },
   }));
 }
