@@ -205,7 +205,7 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         }
 
         /* 일정 풍선 */
-        .pl-pop { position: absolute; z-index: 45; width: 260px; padding: 12px 14px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 8px 28px rgba(0,0,0,.25); }
+        .pl-pop { position: absolute; z-index: 45; width: 260px; padding: 12px 14px; background: var(--dash-paper, var(--bg-secondary)); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 8px 28px rgba(0,0,0,.25); }
         .pl-pop-head { display: flex; align-items: center; justify-content: space-between; }
         .pl-pop-dot { width: 10px; height: 10px; border-radius: 50%; }
         .pl-pop-title { font-weight: 700; color: var(--text-primary); margin: 4px 0; word-break: break-word; }
