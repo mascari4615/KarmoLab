@@ -167,6 +167,22 @@ try {
     console.log('[smoke-ask] lifetime ' + scenario + ' PASS');
     await check.close();
   }
+  for (const focus of ['.kp-input', '.kp-ask', '.kp-close']) {
+    const check = await context.newPage();
+    await check.goto(URL_TARGET, { waitUntil: 'networkidle' });
+    await check.keyboard.press('Control+k');
+    await check.locator('.kp-overlay .kp-input').fill('사진에서 글자만 빼줘');
+    const target = check.locator('.kp-overlay ' + focus);
+    await target.waitFor();
+    await target.focus();
+    const before = asked;
+    await check.keyboard.press('Escape');
+    assert.equal(await check.locator('.kp-overlay').count(), 0, 'Escape closes from ' + focus);
+    assert.equal(asked, before, 'Escape does not submit an ask');
+    assert.equal(await check.locator('.esc-menu:not([hidden])').count(), 0, 'Escape does not open the shell menu');
+    console.log('[smoke-ask] Escape ' + focus + ' PASS');
+    await check.close();
+  }
 } catch (error) { problems.push('ask lifetime: ' + error.message); }
 finally { await browser.close(); }
 
@@ -174,4 +190,4 @@ if (problems.length) {
   console.error('❌ 말로 부리기\n  - ' + problems.join('\n  - '));
   process.exit(1);
 }
-console.log('✅ 말로 부리기. 0건에서만 뜸, 누르면 조각 받아 서버 1회, 고른 도구로 이동, 404 없음, refresh와 입력 및 닫기와 연속 요청 4경계');
+console.log('✅ 말로 부리기. 0건에서만 뜸, 누르면 조각 받아 서버 1회, 고른 도구로 이동, 404 없음, 요청 수명 4경계와 Escape focus 3종');

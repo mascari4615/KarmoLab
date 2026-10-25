@@ -1067,6 +1067,11 @@ const KarmoPalette = (() => {
       render(inst);
     });
     input.addEventListener('keydown', (e) => onKey(inst, e));
+    if (mode === 'overlay') {
+      root.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !e.defaultPrevented) onKey(inst, e);
+      });
+    }
 
     /* 첫 화면에서는 **누르기 전까지 목록을 접어 둔다** (TASK-KL-129, 사용자 요청).
      * 예전에는 열린 채로 있어서 첫 화면의 절반을 목록이 차지했다. 아직 아무것도 안 물어봤는데
