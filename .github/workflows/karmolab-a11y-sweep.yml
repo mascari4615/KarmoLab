@@ -39,8 +39,14 @@ jobs:
           chromium: 'true'
 
       # 검사가 굽힌 것을 읽는다. 안 구우면 `못 돌림` 으로 끝난다 (그건 통과가 아니다)
+      - name: 채팅과 함께 보기 검사의 봇 API 준비
+        working-directory: apps/discord-bots/apps/karmolab-bot
+        run: npx tsc -p tsconfig.json
+
       - name: 굽기
         working-directory: apps/karmolab
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: npm run build
 
       # 두 검사는 서로 안 막는다. 하나가 빨개도 다른 하나의 숫자는 봐야 한다
