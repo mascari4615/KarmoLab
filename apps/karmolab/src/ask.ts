@@ -16,7 +16,7 @@ import { t, loadNamespace } from './lib/i18n';
    빌드는 브라우저 밖에서도 읽으므로 document 가 있을 때만. */
 if (typeof document !== 'undefined') void loadNamespace('ask');
 interface AskArgs {
-    host: HTMLElement;
+    getHost: () => HTMLElement | null;
     q: string;
     close: () => void;
     byId: (id: string) => { title: string } | undefined;
@@ -30,9 +30,9 @@ interface AskArgs {
 const answered = new Map<string, string>();
 
 async function run(args: AskArgs): Promise<void> {
-    const { host, q, close, byId, esc } = args;
+    const { q, close, byId, esc } = args;
+    if (!args.getHost()) return;
     const base = (window as any).KarmoAccount?.apiBase;
-    const button = host.querySelector<HTMLButtonElement>('.kp-ask');
     let picked: { toolId: string; why?: string } | null = null;
     let line = '';
     try {
@@ -48,7 +48,9 @@ async function run(args: AskArgs): Promise<void> {
     } catch {
         line = t('ask.t02');
     }
-    if (!host.isConnected) return;
+    const host = args.getHost();
+    if (!host) return;
+    const button = host.querySelector<HTMLButtonElement>('.kp-ask');
     if (button) button.remove();
 
     if (picked) {

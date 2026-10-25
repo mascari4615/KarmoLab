@@ -471,6 +471,7 @@ const KarmoPalette = (() => {
     rows: Array<{ el: HTMLElement; entry?: Entry; copy?: string }>;
     active: number;
     restoreFocus: Element | null;
+    askToken: object | null;
   };
 
   let overlay: Instance | null = null;
@@ -765,6 +766,14 @@ const KarmoPalette = (() => {
       return;
     }
     const run = (): void => {
+      const token = {};
+      inst.askToken = token;
+      const getHost = (): HTMLElement | null => {
+        const current = inst.mode === 'inline' ? inline : overlay;
+        if (current !== inst || inst.askToken !== token || inst.input.value.trim() !== q
+          || !inst.root.isConnected || !inst.root.getClientRects().length) return null;
+        return inst.list.querySelector<HTMLElement>('.kp-empty');
+      };
       button.disabled = true;
       button.textContent = '고르는 중...';
       /* `?.` 로 부르면 **묶음이 안 만들어진다**. 빌드가 부르는 곳을 글자로 찾는데
@@ -772,10 +781,13 @@ const KarmoPalette = (() => {
       const bring = Toolbox.ensureScript;
       if (!bring) return;
       void Toolbox.ensureScript('root/ask')
-        .then(() => (window as any).KarmoAsk?.run({ host, q, close, byId, esc, go: (id: string) => Toolbox.switchPage(id) }))
+        .then(() => (window as any).KarmoAsk?.run({ getHost, q, close, byId, esc, go: (id: string) => Toolbox.switchPage(id) }))
         .catch(() => {
-          button.disabled = false;
-          button.textContent = '하려는 일로 찾기 →';
+          const currentButton = getHost()?.querySelector<HTMLButtonElement>('.kp-ask');
+          if (currentButton) {
+            currentButton.disabled = false;
+            currentButton.textContent = '하려는 일로 찾기 →';
+          }
         });
     };
     button.addEventListener('click', run);
@@ -1047,9 +1059,10 @@ const KarmoPalette = (() => {
     box.appendChild(live);
     root.appendChild(box);
 
-    const inst: Instance = { root, input, list, mode, rows: [], active: -1, restoreFocus: null };
+    const inst: Instance = { root, input, list, mode, rows: [], active: -1, restoreFocus: null, askToken: null };
 
     input.addEventListener('input', () => {
+      inst.askToken = null;
       if (mode === 'inline') loadExtraIndexes();
       render(inst);
     });
@@ -1138,7 +1151,7 @@ const KarmoPalette = (() => {
    *  그 글자를 안 넘기면 사람은 자기가 친 것이 사라진 줄 안다. 그대로 이어 받는다. */
   function open(seed?: string): void {
     if (overlay) {
-      if (seed) { overlay.input.value = seed; render(overlay); }
+      if (seed) { overlay.askToken = null; overlay.input.value = seed; render(overlay); }
       else overlay.input.select();
       overlay.input.focus();
       return;
