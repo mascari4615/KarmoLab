@@ -21,7 +21,9 @@ const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
 
 let asked = 0;
+const routeMethods = [];
 await context.route('**/kl/route', async (route) => {
+  routeMethods.push(route.request().method());
   asked++;
   await route.fulfill({
     status: 200,
@@ -33,6 +35,10 @@ await context.route('**/kl/route', async (route) => {
 await context.route('**/kl/**', (route) => (route.request().url().includes('/kl/route') ? route.fallback() : route.abort()));
 
 const page = await context.newPage();
+const routeErrors = [];
+page.on('console', message => {
+  if (message.type() === 'error' && message.text().includes('/kl/route')) routeErrors.push(message.text());
+});
 page.on('pageerror', (e) => problems.push(`페이지 스크립트가 죽었다: ${e.message}`));
 const missing = [];
 page.on('response', (r) => {
@@ -51,7 +57,18 @@ if (!(await page.locator('.kp-ask').count())) {
 
 // ② 누르면 조각을 데려와 서버에 묻고, 고른 도구가 화면에 뜬다.
 await page.click('.kp-ask');
-await page.waitForSelector('.kp-ask-hit', { timeout: 15000 });
+try {
+  await page.waitForSelector('.kp-ask-hit', { timeout: 15000 });
+} catch (error) {
+  const state = await page.evaluate(() => ({
+    api: window.KarmoAccount?.apiBase,
+    message: document.querySelector('.kp-ask-none')?.textContent || '',
+    result: document.querySelector('.kp-inline .kp-results')?.textContent || ''
+  }));
+  console.error('[smoke-ask] route diagnostic', { asked, routeMethods, routeErrors, state });
+  await browser.close();
+  throw error;
+}
 if (asked !== 1) problems.push(`서버를 ${asked}번 불렀다 (한 번이어야 한다)`);
 const hit = await page.locator('.kp-ask-hit').innerText();
 if (!/글자/.test(hit)) problems.push(`고른 것이 이상하다: ${hit}`);

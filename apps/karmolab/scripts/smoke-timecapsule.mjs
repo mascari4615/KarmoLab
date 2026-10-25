@@ -24,6 +24,13 @@ const letter2 = '먼 날의 너에게. 이 줄이 그대로 보이면 잠금이 
 const waited = 210000; // 2분 뒤로 잠그고 넉넉히 기다린다
 
 const failures = [];
+const clockReads = [];
+const rememberClock = (request, status) => {
+  const target = new URL(request.url());
+  if (!target.hostname.includes('drand.')) return;
+  clockReads.push({ host: target.hostname, path: target.pathname, status });
+  if (clockReads.length > 8) clockReads.shift();
+};
 const check = (name, cond, detail) => {
   if (!cond) failures.push(`${name}. ${detail}`);
 };
@@ -34,6 +41,8 @@ let cantRun = '';
 try {
   const page = await browser.newPage();
   page.on('pageerror', (e) => failures.push(`페이지 오류: ${e.message}`));
+  page.on('response', (response) => rememberClock(response, response.status()));
+  page.on('requestfailed', (request) => rememberClock(request, request.failure()?.errorText || 'failed'));
 
   // ① 잠그면 주소가 나온다 (2분 뒤로)
   const res = await page.goto(TOOL, { waitUntil: 'domcontentloaded' });
@@ -112,6 +121,7 @@ try {
   // ④ 진짜로 그때가 지나면 열린다
   const deadline = Date.now() + waited;
   let openedText = '';
+  let lastState = {};
   while (Date.now() < deadline && !openedText) {
     await page.waitForTimeout(15000);
     await page.goto('about:blank');
@@ -119,9 +129,14 @@ try {
     await page
       .waitForFunction(() => !/여는 중/.test(document.querySelector('#tcStatus')?.textContent || ''), undefined, { timeout: 60000 })
       .catch(() => {});
-    openedText = await page.evaluate(() => document.querySelector('.tc-letter')?.textContent || '');
+    lastState = await page.evaluate(() => ({
+      letter: document.querySelector('.tc-letter')?.textContent || '',
+      status: document.querySelector('#tcStatus')?.textContent || '',
+      when: document.querySelector('.tc-when')?.textContent || ''
+    }));
+    openedText = lastState.letter;
   }
-  check('때가 되면 열림', openedText.includes('먼 날의'), `기다렸는데 안 열렸다 (${Math.round(waited / 1000)}초)`);
+  check('때가 되면 열림', openedText.includes('먼 날의'), `기다렸는데 안 열렸다 (${Math.round(waited / 1000)}초). 상태 ${JSON.stringify(lastState)}, 공개 시계 ${JSON.stringify(clockReads)}`);
   check('적은 그대로', openedText.trim() === letter2, `나온 글: ${openedText.slice(0, 40)}`);
 } catch (e) {
   if (!cantRun) failures.push(`검사가 끝까지 못 갔다: ${e.message}`);

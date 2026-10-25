@@ -75,6 +75,7 @@ async function checkOne(page, id) {
   page.on('console', onConsole);
 
   const missing = [];
+  const optionalAtlasMissing = [];
   /* ★ **500 대는 없다가 아니라 지금 잠깐 안 준다다** (2026-08-13 실측).
      배포가 갈리는 동안 자산 하나가 503 을 냈고, 그것만으로 화면이 안 뜬다 빨강이 났다 . 
      같은 자리를 곧바로 다시 물어보면 200 이었다. 없는 파일(4xx)과 서버 딸꾹질(5xx)은
@@ -90,13 +91,21 @@ async function checkOne(page, id) {
   const onResponse = (r) => {
     if (r.status() >= 400 && !/gc\.zgo\.at|goatcounter/.test(r.url())) {
       const short = `${r.status()} ${r.url().split('/').slice(-2).join('/')}`;
+      const resource = new URL(r.url());
+      if (id === 'memo-atlas' && r.status() === 404 &&
+          resource.origin === new URL(BASE).origin &&
+          resource.pathname === '/apps/karmolab/data/memo-atlas.json') {
+        optionalAtlasMissing.push(short);
+        return;
+      }
       const toRecheck = r.status() >= 500 || hashedNames.test(r.url().split('?')[0]);
       if (toRecheck) hiccups.push({ url: r.url(), short });
       else missing.push(short);
     }
   };
   page.on('response', onResponse);
-  const res = await page.goto(url, { waitUntil: 'networkidle' });
+  // 아래 실제 도구 DOM으로 준비 판정. 부가 요청의 network idle과 분리.
+  const res = await page.goto(url, { waitUntil: 'domcontentloaded' });
   /* 도구 화면이 그려질 때까지 기다린다. 고정 시간(700ms)으로 재면 **늦게 뜨는 도구가 억울하게
    * 걸린다.** 실제로 글자표(코드 두 덩이를 받는다)가 세 번 다 빈 화면으로 잡혔는데,
    * 3초 뒤에 보면 멀쩡히 떠 있었다. 진짜로 안 뜨는 페이지는 이 기다림이 끝나고 그대로 걸린다. */
@@ -129,6 +138,14 @@ async function checkOne(page, id) {
       here: location.pathname
     };
   }, id);
+  if (optionalAtlasMissing.length) {
+    const emptyAtlas = page.locator('#page-memo-atlas .atlas-card');
+    const privateExplanation = await emptyAtlas.textContent();
+    const pickerVisible = await emptyAtlas.locator('.atlas-pick').isVisible();
+    if (!pickerVisible || !privateExplanation?.includes('지도 데이터는 이 레포에 담지 않아요.')) {
+      missing.push(...optionalAtlasMissing);
+    }
+  }
 
   // 도구 아래의 설명, FAQ 까지 사람이 실제로 닿는지 (TASK-KL-089).
   // 화면을 꽉 쓰는 도구는 바깥 스크롤이 꺼져 이 부분이 통째로 잘린 적이 있다.
