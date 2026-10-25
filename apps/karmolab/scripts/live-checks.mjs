@@ -21,6 +21,7 @@ export const PREP = [
   /* 아래 검사 몇 개는 **이 자리에 띄운 서버**로 `/t/<도구>/` 를 연다. 그 페이지는
      배포가 찍는 것이라 여기엔 없었고, 화면이 통째로 not found였다(2026-08-13 실측). */
   { name: '도구 페이지 찍기 (검사가 그 주소를 연다)', cmd: ['npm', 'run', 'gen:tool-pages'] },
+  { name: '첫 화면 미리 그리기 (성능 예산 검사 준비)', cmd: ['npm', 'run', 'prerender:home'] },
 ];
 
 import { readFileSync } from 'node:fs';
