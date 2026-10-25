@@ -2,6 +2,14 @@
 export const DEFERRED = ['명령 팔레트'];
 export const isDeferred = (title) => DEFERRED.some((prefix) => title.startsWith(prefix));
 
+export function toolDetailCss(source) {
+  const parts = sections(source);
+  if (parts.filter((part) => part.title === '도구 목록 전용').length !== 1) {
+    throw new Error('도구 목록 전용 CSS 구역이 하나여야 함');
+  }
+  return parts.filter((part) => part.title !== '도구 목록 전용').map((part) => part.text).join('\n');
+}
+
 export function sections(text) {
   const lines = text.split('\n');
   const marks = [];

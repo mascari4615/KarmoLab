@@ -144,7 +144,7 @@ export async function serveRepo(options = {}) {
        체크아웃에서는 404 → 셸이 영영 안 뜬다(`Toolbox=undefined`, 60초 초과).
        그 장의 알맹이는 앱 셸과 같다(미리 그린 겉모습만 다르다). 여기서 재려는 것은
        겉모습이 아니라 `?m=` 이 열리는 동작이다. */
-    if (!fs.existsSync(file) && /^\/apps\/blog\//.test(target)) {
+    if (options.fallbackShell !== false && !fs.existsSync(file) && /^\/apps\/blog\//.test(target)) {
       const shell = path.join(root, 'apps/karmolab/index.html');
       if (fs.existsSync(shell)) file = shell;
     }

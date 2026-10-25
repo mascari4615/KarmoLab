@@ -54,7 +54,7 @@ export const generated = [
   },
   {
     npm: 'build:css',
-    outputs: ['css/tools.min.css'],
+    outputs: ['css/tools.min.css', 'css/tools-detail.min.css'],
     why: '도구 장의 압축 스타일. 정본은 css/tools.css이며 저장소에서 추적하지 않는다',
     weight: '배포가 build:css로 매번 다시 굽는다'
   },

@@ -739,7 +739,8 @@ function buildToolPage(id) {
   let html = shellCommon(shell, {
     permalink: `${BASE_PATH}/${id}/`,
     lastModified: modified[id].date,
-    bootPaths
+    bootPaths,
+    toolDetail: true
   });
 
   html = replaceTitle(html, esc(title));

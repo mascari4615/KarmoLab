@@ -45,6 +45,12 @@ const expected = withoutRetired(Object.keys(seo)).filter((id) => !notOnHub.has(i
 
 const browser = await chromium.launch();
 const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+async function openToolList(target = page) {
+  const list = target.locator('details.tool-hub-all');
+  if (await list.count() && !await list.evaluate((element) => element.open)) {
+    await list.locator(':scope > summary').click();
+  }
+}
 /** 걸러 찾기가 **끝났나**. 보이는 카드 수가 두 번 연속 같으면 끝난 것으로 본다.
     시간을 박으면 느린 판에서 옛 수를 읽는다(`quality.md` § 재우고 읽지 마라). */
 async function untilFiltered(page, max = 5000) {
@@ -83,6 +89,7 @@ if (res.status() !== 200) problems.push(`목록 페이지가 안 열린다 (http
 await page.waitForTimeout(2500);   // 재움-의도: 늦게 받는 것들(load 뒤 한가할 때)이 올 시간을 준다
 for (const m of [...new Set(notFetched)].slice(0, 5)) problems.push(`관문에서 못 받은 것. ${m}`);
 
+await openToolList();
 const state = await page.evaluate(() => {
   const links = [...document.querySelectorAll('a[href^="/t/"]')];
   const ids = links
@@ -151,7 +158,7 @@ if (state.groups < 3) problems.push(`분류 묶음이 ${state.groups}개뿐이�
       const vis = (e) => e.getBoundingClientRect().height > 0;
       const cards = [...document.querySelectorAll('.tool-hub-grid:not(.tool-hub-mine-grid) .tool-hub-card')].filter(vis).length;
       const sum = [...document.querySelectorAll('.tool-hub-group')]
-        .filter(vis)
+        .filter((group) => vis(group) && !group.matches('.tool-hub-all > summary .tool-hub-group'))
         .reduce((s, g) => s + (parseInt(g.querySelector('.tool-hub-count')?.textContent || '0', 10) || 0), 0);
       return { cards, sum };
     });
@@ -249,7 +256,8 @@ if (state.firstHref) {
   // 거르지 않은 목록으로 돌아와서 누른다. 카드 차례가 바뀌어도 흔들리지 않는다.
   await page.goto(`${BASE}/t/`, { waitUntil: 'networkidle', timeout: 25000 });
   await page.waitForTimeout(400);
-  await page.click('.tool-hub-grid:not(.tool-hub-mine-grid) .tool-hub-card');
+  await openToolList();
+  await page.locator('.tool-hub-grid:not(.tool-hub-mine-grid) .tool-hub-card:visible').first().click();
   await page.waitForLoadState('networkidle');
   const landed = new URL(page.url()).pathname;
   if (!landed.startsWith(state.firstHref)) problems.push(`카드를 눌렀더니 엉뚱한 곳으로 간다 (${landed})`);
@@ -267,6 +275,7 @@ if (state.firstHref) {
   const sp = await s.newPage();
   await sp.goto(`${BASE}/t/`, { waitUntil: 'networkidle', timeout: 30000 });
   await sp.waitForTimeout(400);
+  await openToolList(sp);
   /* 내려가는 자리가 **문서라고 단정하지 않는다** (TASK-KL-129).
    * 목록이 앱 셸 안으로 들어오면서 실제로 굴러가는 것은 본문 칸(.main-content)이다.
    * 문서만 재면 짧다고 나오는데, 화면에서는 멀쩡히 내려간다. 검사가 거짓으로 운다.
@@ -298,6 +307,7 @@ if (state.firstHref) {
   const phone = await (await browser.newContext({ viewport: { width: 375, height: 720 } })).newPage();
   await phone.goto(`${BASE}/t/`, { waitUntil: 'networkidle', timeout: 30000 });
   await phone.waitForTimeout(700);
+  await openToolList(phone);
   const m = await phone.evaluate(() => {
     /* 보이지 않는 닻은 안 센다 (2026-09-05). 채팅 닻(#klChatDock)은 옆줄 밑에 1x1 `visibility:hidden`
        으로 남아 있어 누르기 작은 것으로 찍혔다. 사람이 누르는 자리가 아니다 */

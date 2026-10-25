@@ -20,7 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFERRED, isDeferred, sections, stripComments } from './lib/shell-css.mjs';
+import { DEFERRED, isDeferred, sections, stripComments, toolDetailCss } from './lib/shell-css.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SRC = path.join(root, 'css/toolbox.css');
@@ -78,6 +78,8 @@ const head = (what) =>
 const TOOLS_SRC = path.join(root, 'css/tools.css');
 const TOOLS_MIN = 'css/tools.min.css';
 const outputs = {
+  'css/tools-detail.min.css':
+    head('도구 상세 장의 스타일. 정본은 `css/tools.css`') + toolDetailCss(fs.readFileSync(TOOLS_SRC, 'utf8')) + '\n',
   [TOOLS_MIN]:
     head('도구 장의 스타일. 정본은 `css/tools.css`') + fs.readFileSync(TOOLS_SRC, 'utf8') + '\n',
   [NAMES.critical]:

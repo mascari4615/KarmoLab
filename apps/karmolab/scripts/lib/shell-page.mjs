@@ -75,7 +75,7 @@ export function scriptFile(p) {
 /**
  * 이 셸을 이 주소의 한 장으로 만든다. 앞머리, 부팅 목록, 큰제목, 안 쓰는 스타일.
  */
-export function shellCommon(html, { permalink, lastModified, bootPaths }) {
+export function shellCommon(html, { permalink, lastModified, bootPaths, toolDetail = false }) {
   // 사이트맵에 실릴 변경일도 여기서 박는다 (jekyll-sitemap 이 front matter 의 이 값을 읽는다).
   html = html.replace(
     /^---\nlayout: none\npermalink: \/\n---/,
@@ -156,7 +156,9 @@ export function shellCommon(html, { permalink, lastModified, bootPaths }) {
        이 스타일을 **막고 그리게** 되돌린다. */
     '<link rel="stylesheet" href="/apps/karmolab/css/tools.min.css" media="print">';
   if (!html.includes(TOOLS_CSS_DEFERRED)) throw new Error('셸에서 도구 스타일 자리를 못 찾음. index.html 확인');
-  html = html.replace(TOOLS_CSS_DEFERRED, '<link rel="stylesheet" href="/apps/karmolab/css/tools.min.css">');
+  html = html.replace(TOOLS_CSS_DEFERRED, toolDetail
+    ? TOOLS_CSS_DEFERRED + '\n    <link rel="stylesheet" href="/apps/karmolab/css/tools-detail.min.css">'
+    : '<link rel="stylesheet" href="/apps/karmolab/css/tools.min.css">');
 
   const RANDOMGEN_CSS =
     '<link rel="stylesheet" href="/apps/karmolab/css/randomgen.css" media="print">';
