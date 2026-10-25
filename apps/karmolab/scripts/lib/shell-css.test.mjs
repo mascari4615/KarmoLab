@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { toolDetailCss, stripComments } from './shell-css.mjs';
 import { loadShell, shellCommon } from './shell-page.mjs';
 import { serveRepo } from './serve-static.mjs';
@@ -68,4 +69,18 @@ test('static helper keeps default fallback but strict callers get missing 404 an
     const real = await fetch(strict.base + '/apps/karmolab/index.html');
     assert.equal(real.status, 200); await real.text();
   } finally { normal.close(); strict.close(); }
+});
+
+test('style token audit walks source CSS while excluding only the known generated bundles', () => {
+  const audit = fs.readFileSync(path.join(root, 'scripts/audit-style-tokens.mjs'), 'utf8');
+  const start = audit.indexOf('function walk(dir, fn)');
+  const end = audit.indexOf('\nfunction stripComments', start);
+  assert.ok(start >= 0 && end > start);
+  const names = ['tools.css', 'theme.css', 'tools-detail.css', 'tools-other.min.css',
+    'tools.min.css', 'tools-detail.min.css', 'shell-critical.css', 'shell-deferred.css', 'tools.aabbccdd.css'];
+  const seen = [];
+  runInNewContext(audit.slice(start, end) + '\nwalk("/fixture/css", file => seen.push(path.basename(file)));', {
+    fs: { readdirSync: () => names.map(name => ({ name, isDirectory: () => false })) }, path, SKIP: new Set(), seen
+  });
+  assert.deepEqual(seen, ['tools.css', 'theme.css', 'tools-detail.css', 'tools-other.min.css']);
 });
