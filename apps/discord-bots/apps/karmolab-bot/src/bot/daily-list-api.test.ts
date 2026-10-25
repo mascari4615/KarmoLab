@@ -23,13 +23,24 @@ beforeEach(async () => {
   const app = express();
   app.use(express.json());
   registerDailyListRoutes(app, store);
-  await new Promise<void>((resolve) => {
-    server = app.listen(0, () => {
-      const address = server.address();
-      baseUrl = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
-      resolve();
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await new Promise<void>((resolve, reject) => {
+      server = app.listen(0, '127.0.0.1', resolve);
+      server.once('error', reject);
     });
-  });
+    const address = server.address();
+    if (!address || typeof address !== 'object') throw new Error('Missing test server port');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      // 커널 배정 포트와 Fetch 차단 목록의 차이 확인
+      await fetch(`${baseUrl}/__test_port_probe__`);
+      return;
+    } catch (error) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      if ((error as { cause?: { message?: string } }).cause?.message !== 'bad port') throw error;
+    }
+  }
+  throw new Error('Fetch-compatible test port unavailable after 20 attempts');
 });
 
 afterEach(async () => {

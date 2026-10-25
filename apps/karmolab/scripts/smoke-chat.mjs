@@ -120,7 +120,7 @@ const PAGE = `${siteOrigin}/apps/karmolab/index.html`;
 const browser = await chromium.launch();
 
 /** 창 하나. 각자 다른 브라우저인 척해야 서버가 **다른 사람**으로 본다(이름표가 갈린다). */
-async function openWindow(userAgent) {
+async function openWindow(userAgent, url = PAGE) {
   const context = await browser.newContext({ userAgent });
   const page = await context.newPage();
   const network = [];
@@ -130,8 +130,10 @@ async function openWindow(userAgent) {
   });
   // 채팅이 계정보다 먼저 붙는 실제 지연 로드 순서의 재현.
   await page.route('**/js/account.js*', async route => {
-    await page.waitForSelector('#klChatDock', { state: 'attached', timeout: WAIT });
-    await route.continue();
+    try {
+      await page.waitForSelector('#klChatDock', { state: 'attached', timeout: WAIT });
+      await route.continue();
+    } catch (error) { if (!page.isClosed()) throw error; }
   });
   page.on('response', response => {
     const url = new URL(response.url());
@@ -161,9 +163,24 @@ async function openWindow(userAgent) {
       },
     });
   }, apiOrigin);
+  // 실제 SSE 연결을 유지한 신원과 표시 그룹 경계 관찰
+  await page.addInitScript(() => {
+    const NativeEventSource = window.EventSource;
+    window.EventSource = class extends NativeEventSource {
+      constructor(url, options) {
+        super(url, options);
+        if (new URL(String(url), location.href).pathname === '/kl/chat/stream') {
+          window.__chatTestStream = this;
+          this.addEventListener('hello', event => {
+            window.__chatTestMe = JSON.parse(event.data).me;
+          });
+        }
+      }
+    };
+  });
   // 운영 서버로 새는 요청이 있으면 검사가 진짜 사이트를 건드리게 된다. 막아 둔다.
   await page.route(`${PROD_ORIGIN}/**`, (route) => route.abort());
-  await page.goto(PAGE, { waitUntil: 'domcontentloaded' });
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
   return { context, page, network };
 }
 
@@ -250,7 +267,15 @@ try {
   const nameA = (await a.page.locator('#klChatMe .klchat-who').textContent())?.trim() ?? '';
   const nameB = (await b.page.locator('#klChatMe .klchat-who').textContent())?.trim() ?? '';
   check('이름표', /\S+\s\S+/.test(nameA), `이름표가 색 동물 모양이 아니다: ${JSON.stringify(nameA)}`);
-  check('이름표', nameA !== nameB, `다른 사람인데 이름이 같다 (${nameA})`);
+  const [identityA, identityB] = await Promise.all([
+    a.page.evaluate(() => window.__chatTestMe),
+    b.page.evaluate(() => window.__chatTestMe),
+  ]);
+  check('서로 다른 신원', /^[a-f0-9]{10}$/.test(identityA?.who ?? '') &&
+    /^[a-f0-9]{10}$/.test(identityB?.who ?? '') && identityA.who !== identityB.who,
+    '두 실제 창의 SSE 신원이 없거나 같다');
+  check('이름표', identityA?.name === nameA && identityB?.name === nameB,
+    '실제 SSE 신원과 표시 이름이 다르다');
   check('검사 서버', ![...a.network, ...b.network].some(row => row.target === 'production-blocked' && row.path.startsWith('/kl/chat/')), '채팅이 검사 서버 대신 차단된 운영 주소를 요청했다');
 
   // ③ 지금 여기가 둘을 센다. 흐르는 연결이 양쪽 다 붙었다는 증거다.
@@ -329,8 +354,7 @@ try {
    * 찍힌 도구 화면이 없으면 이 항목만 건너뛴다(빌드 산출물이라 없을 수 있다). */
   const toolPage = path.join(SITE_ROOT, 'apps/blog/t/qrread/index.html');
   if (existsSync(toolPage)) {
-    const c = await openWindow(CHROME);
-    await c.page.goto(`${siteOrigin}/apps/blog/t/qrread/index.html`, { waitUntil: 'domcontentloaded' });
+    const c = await openWindow(CHROME, `${siteOrigin}/apps/blog/t/qrread/index.html`);
     try {
       await c.page.waitForSelector('#klChatDock', { state: 'attached', timeout: 15000 });
       check('도구 화면', true, '');
@@ -339,6 +363,35 @@ try {
     }
     await c.context.close();
   }
+
+  // 실제 왕복/상한/도구 검증 뒤 동일 표시명 신원 그룹의 고정 입력 검사
+  await openChat(a.page);
+  const collision = await a.page.evaluate(() => {
+    const stream = window.__chatTestStream;
+    if (!stream || stream.readyState !== EventSource.OPEN) throw new Error('실제 SSE 연결이 없다');
+    const at = new Date().toISOString();
+    const fixture = [
+      { id: 'chat-collision-a', who: '1111111111', text: '충돌 신원 A' },
+      { id: 'chat-collision-b', who: '2222222222', text: '충돌 신원 B' },
+      { id: 'chat-collision-b2', who: '2222222222', text: '같은 신원 B 계속' },
+    ];
+    for (const message of fixture) stream.dispatchEvent(new MessageEvent('msg', {
+      data: JSON.stringify({ message: { ...message, name: '분홍 나비', color: '#f094c0', at, byOwner: false } }),
+    }));
+    return fixture.map(({ id }) => {
+      const row = document.querySelector(`#klChatLog .klchat-line[data-id="${id}"]`);
+      return { id: row?.dataset.id, continued: row?.classList.contains('cont'),
+        names: row?.querySelectorAll('.klchat-who').length,
+        text: row?.textContent ?? '' };
+    });
+  });
+  check('같은 표시명 신원 분리', collision.length === 3 &&
+    collision[0].id === 'chat-collision-a' && collision[1].id === 'chat-collision-b' &&
+    collision[2].id === 'chat-collision-b2' &&
+    collision[0].names === 1 && collision[1].names === 1 && collision[2].names === 0 &&
+    collision[0].continued === false && collision[1].continued === false && collision[2].continued === true &&
+    collision[0].text.includes('충돌 신원 A') && collision[1].text.includes('충돌 신원 B'),
+    '같은 표시명인 다른 신원이 합쳐졌거나 같은 신원의 연속 발화가 분리됐다');
 
   // ⑩ 화면이 통째로 죽지 않았다. 인라인 스크립트가 깨지면 여기서만 드러난다.
   const errors = [];
