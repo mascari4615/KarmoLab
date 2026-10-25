@@ -1411,14 +1411,14 @@ for (const id of ids) {
 }
 
 /* ── 오락실 판마다 한 장 (감사 E1, 사용자 결정 2026-09-03: 화면 글자 0, 머리 메타만) ──
-   `/t/arcade/<game>/`. 로비에 뜨는 판만. 열면 오락실이 그 판의 상세로 열림(`KARMOLAB_ARCADE_GAME`).
+   `/t/arcade/<game>/`. 감춘 기존 판의 직접 주소 유지 (play.md 숨김 계약).
+   로비, 무작위의 hidden 필터와 분리. 진입 시 오락실의 해당 판 상세 열림(`KARMOLAB_ARCADE_GAME`).
    도구 장의 설명 덩어리(.tool-seo)는 안 넣음. 사람 눈에는 지금 오락실과 똑같음.
    이름과 한 줄은 오락실 번역 파일(i18n/ko/arcade.json)의 그 판 값 그대로. 새 글은 없음 */
 const arcadeGames = (() => {
   const meta = fs.readFileSync(path.join(root, 'src/widgets/arcade/catalog-meta.generated.ts'), 'utf8');
   const out = [];
   for (const m of meta.matchAll(/\{ id: '([a-z0-9-]+)', icon: '[^']*', kind: '([a-z]+)', seats: \[(\d+), (\d+)\][^}]*?\}/g)) {
-    if (/hidden: true/.test(m[0])) continue;
     out.push({ id: m[1], kind: m[2], seats: [Number(m[3]), Number(m[4])] });
   }
   return out;

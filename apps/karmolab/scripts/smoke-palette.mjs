@@ -105,18 +105,18 @@ if (!inputThere) problems.push('첫 화면에 찾는 입력이 없다');
 // 검사는 사람처럼 눌러서 시작한다. 자동 포커스에 기대면 그 정책이 바뀔 때 같이 깨진다.
 await page.locator('.kp-inline .kp-input').click();
 
-/* 카드 3장은 **남아 있어야 한다** (사용자 요청 2026-08-07). 한때 카드 자리를 팔레트가
- * 통째로 가져갔는데, 눈에 익은 자리를 그대로 두라는 말을 들었다. 둘 다 있는 것이 정답이다 . 
- * 한쪽만 남으면 둘 중 누군가의 화면이 사라진 것이므로 여기서 잡는다. */
-/* 장수는 고정이 아니다. 다른 작업이 카드를 늘린다(커뮤니티가 그렇게 붙었다). 숫자를
- * 박아 두면 남의 정상적인 추가가 남의 잘못으로 잡힌다. 사라지지 않았나만 본다. */
-const cards = await page.$$eval('.landing-cta-card', (els) => els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
-if (cards.length < 3) {
-  problems.push(`첫 화면 카드가 ${cards.length}장뿐이다. ${cards.join(' / ') || '없음'}`);
+/* 현행 정본 apps/karmolab.md / systems/app-shell.md: 사용자 결정 2026-09-08.
+ * 만든 것 다섯은 카드, 유틸 도구와 즐겨찾기는 그 아래 입구다. 둘 다 보존한다. */
+for (const id of ['meok', 'heung', 'karmograph', 'arcade', 'wm']) {
+  if (!(await page.locator(`.landing-cta-card[data-goto="${id}"]`).isVisible())) {
+    problems.push(`첫 화면에서 ${id} 작품 카드가 사라졌다`);
+  }
 }
-/* 문서 카드는 문서 위젯과 같이 사라졌다 (2026-09-05 라이브: 즐겨찾기, 도구 목록, 커뮤니티, 오락실) */
-for (const must of ['즐겨찾기', '도구 목록']) {
-  if (!cards.some((c) => c.startsWith(must))) problems.push(`첫 화면에서 ${must} 카드가 사라졌다`);
+for (const [name, selector] of [
+  ['즐겨찾기', '.landing-more [data-goto="favorites"]'],
+  ['도구 목록', '.landing-more a[href="/t/"]'],
+]) {
+  if (!(await page.locator(selector).isVisible())) problems.push(`첫 화면에서 ${name} 입구가 사라졌다`);
 }
 /* 위아래 순서는 화면 주인이 정한다 (카드가 먼저인 지금 배치 = KL-129, 사용자 요청).
  * 검사가 지킬 것은 순서가 아니라 **둘 다 살아 있는가** 다. 한쪽이 사라지면 그건 사고다. */
@@ -189,14 +189,11 @@ if (!emptyLink) problems.push('결과 0건일 때 다음 갈 곳이 없다');
 /* ── ⑥ Enter 로 실제로 열린다 ──────────────────────────────── */
 await type('텍스트 도구');
 await page.keyboard.press('Enter');
-await page.waitForTimeout(400);
-const opened = await page.evaluate(() => ({
-  hash: location.hash,
-  title: document.getElementById('pageTitle')?.textContent || '',
-}));
-if (!opened.hash || opened.hash === '#home') {
-  problems.push(`Enter 로 도구가 안 열린다. 주소가 ${opened.hash || '(비어 있음)'} 그대로다`);
-}
+/* change.tool-page-navigation: 제 주소가 있는 도구는 해시 대신 실제 장으로 옮긴다. */
+await page.waitForURL(url => url.pathname === '/t/text/', { timeout: 15000 })
+  .catch(() => problems.push(`Enter 로 텍스트 도구의 주소가 안 열린다 (${page.url()})`));
+await page.waitForSelector('#page-text.active #pfText', { state: 'visible', timeout: 15000 })
+  .catch(() => problems.push('Enter 로 연 텍스트 도구의 입력칸이 안 붙었다'));
 
 /* ── ⑦ 도구를 보는 중에 Ctrl+K 로 뜨고 Esc 로 닫힌다 ───────── */
 await page.keyboard.press('Control+k');
@@ -215,7 +212,8 @@ else {
 
 /* ── ⑧ 연 도구가 최근 맨 위에 온다 ─────────────────────── */
 await page.evaluate(() => Toolbox.switchPage('home'));
-await page.waitForTimeout(300);
+await page.waitForURL(url => url.pathname === '/', { timeout: 15000 });
+await page.waitForSelector('.kp-inline .kp-input', { state: 'visible', timeout: 15000 });
 await page.locator('.kp-inline .kp-input').fill('');
 await page.waitForTimeout(150);
 const sections = await page.$$eval('.kp-inline .kp-section', (els) => els.map((e) => e.textContent.trim()));
