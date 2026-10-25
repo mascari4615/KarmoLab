@@ -72,6 +72,17 @@
         (window.KLPerf?.mark ?? window.__klMark)?.('shell:theme');
         await yieldToMain();
         Toolbox.init();
+        try {
+          if (sessionStorage.getItem('karmolab_flow_run')) {
+            void Toolbox.ensureScript('root/widgets-index').then(() => {
+              const flow = window.KARMOLAB_LAZY_META?.find(meta => meta.id === 'flow');
+              if (!flow) throw new Error('Flow metadata missing');
+              window.KARMOLAB_LAZY_META_BY_ID!.flow = flow;
+              if (!Toolbox.getTools().some(tool => tool.id === 'flow')) Toolbox.registerDeferred(flow);
+              return Toolbox.kickLazyLoad('flow');
+            }).catch((error: unknown) => console.warn('Flow restore failed', error));
+          }
+        } catch { /* 저장소 접근이 막힌 탭 */ }
         (window.KLPerf?.mark ?? window.__klMark)?.('shell:ready');
         await yieldToMain();
         const lastPage = (function () {

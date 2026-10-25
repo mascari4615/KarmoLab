@@ -64,21 +64,18 @@ if (manualCountdown !== 0) problems.push('자동을 껐는데 초를 세고 있�
 
 /* ② 자동이 켜져 있으면. 결과가 나온 뒤 초를 세고 스스로 넘어간다. */
 await seed(true);
+const beforeAutoUrl = page.url();
 await fireResult();
 await page.waitForSelector('.flow-bar-auto', { timeout: 5000 });
 const countdownText = await page.locator('.flow-bar-auto').first().textContent();
 if (!/\d초 뒤/.test(countdownText ?? '')) problems.push(`남은 초가 안 보인다: ${countdownText}`);
 
-await page.waitForFunction(() => JSON.parse(sessionStorage.getItem('karmolab_flow_run') || '{}').at === 1, undefined, {
-  timeout: 12000,
-}).catch(() => problems.push('자동을 켰는데 다음 단계로 안 갔다'));
-/* 화면이 실제로 옮겨 갔나. 주소는 **묶음 이름**이 된다. pdfcompress 는 PDF 도구 탭이라
- * `#pdf` 로 간다(도구 이름이 주소에 그대로 뜰 것이라 처음 헛짚었다). 그러니 주소는
- * 흐름 화면을 떠났나로만 보고, 몇 단계인지는 띠에게 묻는다. */
-const landed = await page.evaluate(() => location.hash);
-if (landed === '#flow') problems.push('다음 단계로 갔다는데 화면은 흐름 목록 그대로다');
+// 다음 도구의 새 문서까지 이동한 뒤 진행 띠 복원 확인
+await page.waitForURL((url) => url.href !== beforeAutoUrl, { waitUntil: 'domcontentloaded', timeout: WAIT });
+if (new URL(page.url()).hash === '#flow') problems.push('다음 단계로 갔다는데 화면은 흐름 목록 그대로다');
 const barText = (await page.locator('.flow-bar-count').first().textContent()) ?? '';
 if (!barText.includes('2 / 2')) problems.push(`띠가 아직 다음 단계를 안 가리킨다: ${barText}`);
+if (await page.evaluate(() => JSON.parse(sessionStorage.getItem('karmolab_flow_run') || '{}').at) !== 1) problems.push('자동을 켰는데 다음 단계로 안 갔다');
 
 /* ③ **멈출 수 있어야** 자동이다. 못 멈추는 자동은 덫이다. */
 await seed(true);

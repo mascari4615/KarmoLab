@@ -660,8 +660,9 @@ import { intervalWhileVisible } from '../lib/tick';
 
     // 도구 화면으로 옮겨 다녀도 띠는 따라온다.
     window.addEventListener('hashchange', paintBar);
-    if (document.readyState === 'complete') paintBar();
-    else window.addEventListener('load', paintBar);
+    const restoreBar = () => { void loadNamespace('flow').then(paintBar); };
+    if (document.readyState === 'complete') restoreBar();
+    else window.addEventListener('load', restoreBar);
 
     Toolbox.register({
         ...Toolbox.getLazyWidgetPublicMeta!('flow'),
