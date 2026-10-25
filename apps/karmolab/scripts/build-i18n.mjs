@@ -17,6 +17,7 @@
  * 사용:
  *   node scripts/build-i18n.mjs            내보내기 + state 표시
  *   node scripts/build-i18n.mjs --check    아무것도 안 쓰고 검사만 (빌드 게이트)
+ *   node scripts/build-i18n.mjs --registries-only  언어와 지역 등록부만 생성
  *   node scripts/build-i18n.mjs --seal     지금 번역이 원문과 맞다고 도장 (원문 지문 갱신)
  */
 import fs from 'node:fs';
@@ -39,6 +40,10 @@ const NO_SRC_WRITE = CHECK || EMIT_ONLY;
  *   지우는 일은 사람 몫이라, 그 숫자가 상수처럼 굳어 아무도 안 읽게 된다. 지우는 것은 기계 일이다.
  *   기본이 아니라 **부를 때만** 지운다: 원본 쪽이 작업 중이면(개명 도중) 번역을 먼저 버릴 수 있다. */
 const PRUNE = process.argv.includes('--prune');
+const REGISTRIES_ONLY = process.argv.includes('--registries-only');
+if (REGISTRIES_ONLY && process.argv.slice(2).some(argument => argument !== '--registries-only')) {
+  throw new Error('--registries-only cannot be combined with other modes');
+}
 const I18N_DIR = path.join(APP_ROOT, 'i18n');
 const OUT_DIR = path.join(APP_ROOT, 'js/i18n');
 const LOCK_PATH = path.join(I18N_DIR, '.lock.json');
@@ -119,6 +124,11 @@ const regionPath = path.join(APP_ROOT, 'src/lib/region-registry.ts');
 const regionOld = fs.existsSync(regionPath) ? fs.readFileSync(regionPath, 'utf8') : '';
 const regionDrift = regionOld.split('\r\n').join('\n') !== regionTs;
 if (regionDrift && !NO_SRC_WRITE) fs.writeFileSync(regionPath, regionTs, 'utf8');
+
+if (REGISTRIES_ONLY) {
+  console.log('[i18n] 언어와 지역 등록부 2개 생성. 런타임 번역 파일 유지');
+  process.exit(0);
+}
 
 /* ── ①-b 도구 글은 이미 있는 파일에서 뽑는다 ───────────
  *

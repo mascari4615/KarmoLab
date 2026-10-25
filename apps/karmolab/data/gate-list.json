@@ -4,6 +4,17 @@
   "list": [
     "test:css-subset",
     {
+      "name": "test:i18n-registries",
+      "watch": [
+        "scripts/build-i18n.mjs",
+        "scripts/lib/locales.mjs",
+        "scripts/lib/generated-artifacts.mjs",
+        "scripts/i18n-registry-output.test.mjs",
+        "data/locales.json",
+        "data/regions.json"
+      ]
+    },
+    {
       "name": "test:tool-md-output",
       "watch": [
         "scripts/gen-tool-md.mjs",

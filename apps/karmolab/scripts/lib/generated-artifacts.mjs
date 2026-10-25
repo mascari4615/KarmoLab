@@ -21,7 +21,7 @@ export const generated = [
   {
     /* ★ 목록 감사(`audit:generated-registry`)가 찾아낸 넷 중 셋 (2026-08-17). 나머지 하나(글꼴)는
        파이썬으로 굽고 원본 글꼴 파일이 있어야 해서 이 자리에서 재현이 안 된다. 그 검사의 «빼는 것» 에 적었다. */
-    npm: 'build:i18n',
+    npm: 'build:i18n:registries',
     outputs: ['src/lib/i18n-registry.ts', 'src/lib/region-registry.ts'],
     why: '말 판, 지역 표를 코드로 찍은 것. 낡으면 새 언어, 지역이 화면에 안 뜬다'
   },

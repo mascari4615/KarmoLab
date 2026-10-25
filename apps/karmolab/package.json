@@ -175,6 +175,8 @@
     "test:tool-md-output": "node --test scripts/tool-md-output.test.mjs",
     "build:devlog": "node scripts/build-devlog.mjs",
     "build:i18n": "node scripts/build-i18n.mjs",
+    "build:i18n:registries": "node scripts/build-i18n.mjs --registries-only",
+    "test:i18n-registries": "node --test scripts/i18n-registry-output.test.mjs",
     "build:wiki": "node scripts/sync-wiki.mjs",
     "build:wm-tasks": "node scripts/build-wm-tasks.mjs",
     "build:worldbook": "node scripts/build-worldbook.mjs",
