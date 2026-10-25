@@ -56,9 +56,11 @@ function judge(live) {
   let behind;
   try {
     git('cat-file', '-e', `${live.sha}^{commit}`);
+    git('merge-base', '--is-ancestor', live.sha, 'HEAD');
+    if (git('rev-list', '--max-parents=0', `${live.sha}..HEAD`)) throw new Error('History is cut inside the comparison range');
     behind = Number(git('rev-list', '--count', `${live.sha}..HEAD`));
   } catch {
-    done(2, `[audit-live-fresh] CANNOT-RUN. 라이브 sha ${live.sha.slice(0, 8)} 를 이 체크아웃에서 못 찾는다 (얕은 클론).`);
+    done(2, `[audit-live-fresh] CANNOT-RUN. 라이브 sha ${live.sha.slice(0, 8)} 에서 HEAD까지 연속 이력을 확인하지 못했다 (얕은 클론 또는 다른 계보).`);
     return;
   }
 

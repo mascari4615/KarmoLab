@@ -68,6 +68,8 @@ jobs:
         working-directory: apps/karmolab
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
 
       # ★ **짓기 전 채비는 한 곳에서** (2026-08-13, `.github/actions/setup-karmolab`).
       #   여기 서른 줄이 배포, verify, 카모그래프 워크플로와 같은 내용을 각자 들고 있었다.
