@@ -66,6 +66,9 @@ try {
  * 채팅 라우트가 실제로 그 안에 있는지부터 확인한다. */
 const apiSource = await readFile(dist, 'utf-8');
 if (!apiSource.includes('/kl/chat/stream')) cantRun('지어 둔 karmolab-bot 에 채팅 라우트가 없다 (낡은 산출물). npm run build 부터');
+// The fixture server serves these same bytes; widgets are excluded from filename stamping.
+const chatScript = await readFile(path.join(APP_ROOT, 'js/widgets/chat.js'), 'utf-8');
+if (!chatScript.includes(PROD_ORIGIN)) throw new Error('Chat default API source changed');
 
 const tmp = await mkdtemp(path.join(tmpdir(), 'kl149-smoke-'));
 const app = express();
@@ -141,10 +144,7 @@ async function openWindow(userAgent, url = PAGE) {
   });
   // 계정 없는 도구 화면에서도 쓰는 채팅 기본 주소를 검사 서버로 교체.
   await page.route('**/js/widgets/chat.js*', async route => {
-    const response = await route.fetch();
-    const script = await response.text();
-    if (!script.includes(PROD_ORIGIN)) throw new Error('Chat default API source changed');
-    await route.fulfill({ response, body: script.replaceAll(PROD_ORIGIN, apiOrigin) });
+    await route.fulfill({ status: 200, contentType: 'text/javascript; charset=utf-8', body: chatScript.replaceAll(PROD_ORIGIN, apiOrigin) });
   });
 
   /* 서버 주소를 갈아 끼운다.
