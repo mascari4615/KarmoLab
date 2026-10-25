@@ -238,7 +238,7 @@ import { toolIndexPath } from './lib/site-base';
             + '<b>' + n(visits.today) + '</b></span>'
             + '<span class="landing-pulse-stat"><span class="landing-pulse-k">Total</span>'
             + '<b>' + n(visits.total) + '</b></span>'
-            + '<button type="button" class="landing-pulse-all" data-open-plaza>전부 보기 →</button></p>';
+            + '<button type="button" class="landing-pulse-all" data-open-plaza>' + escapeHtml(t('site.pulse.viewAll', undefined, '전부 보기')) + ' →</button></p>';
 
         const all = slot.querySelector('[data-open-plaza]');
         if (all) all.onclick = () => switchPage('plaza');

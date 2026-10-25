@@ -14,6 +14,7 @@
   "site.cta.dashboard": "Dashboard",
   "site.nav.menu": "Menu",
   "site.greeting": "Welcome back, {name}",
+  "site.pulse.viewAll": "View all",
   "site.feed.changes": "KarmoLab. Changelog",
   "site.nav.home": "Home",
   "site.nav.tools": "Tools",

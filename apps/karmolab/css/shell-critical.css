@@ -3330,7 +3330,7 @@ html[data-skin="field"] .landing-pulse-all {
     padding: 0 14px;
     border-left: 1px solid var(--text-primary);
     font-weight: 700;
-    color: var(--accent);
+    color: var(--accent-ink);
 }
 
 html[data-skin="field"] .kl-modal-overlay { background: rgba(20, 20, 18, 0.35); backdrop-filter: blur(3px); }
