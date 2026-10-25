@@ -512,7 +512,7 @@
     "verify:karmograph": "node scripts/run-karmograph-live.mjs",
     "verify:live": "node scripts/run-live-checks.mjs",
     "verify:prepush": "node scripts/run-prepush.mjs",
-    "verify:quality": "node scripts/run-gates.mjs --serial audit:boot test:perf test:perf:budget test:leak",
+    "verify:quality": "node scripts/run-gates.mjs --serial audit:boot test:perf test:perf:budget test:leak test:widget-idle",
     "verify:tonight": "node scripts/verify-tonight.mjs"
   },
   "devDependencies": {

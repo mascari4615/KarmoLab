@@ -628,7 +628,6 @@
     "test:badapple:load",
     "test:chat",
     "test:copresence",
-    "test:widget-idle",
     "audit:widget-raf",
     "test:offline",
     "audit:handoff",
