@@ -4,6 +4,15 @@
   "list": [
     "test:css-subset",
     {
+      "name": "test:tool-md-output",
+      "watch": [
+        "scripts/gen-tool-md.mjs",
+        "scripts/assemble-site.mjs",
+        "scripts/split-outputs.mjs",
+        "scripts/tool-md-output.test.mjs"
+      ]
+    },
+    {
       "name": "test:esc-menu-keyboard",
       "watch": [
         "src/lib/esc-menu.ts",

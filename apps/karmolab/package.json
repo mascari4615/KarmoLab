@@ -172,6 +172,7 @@
     "build:artifacts": "npm run build:i18n && npm run gen:type-pool && npm run gen:word-pool && npm run gen:arcade-catalog && npm run gen:locale-pages && node build.mjs && npm run gen:changelog && npm run gen:feeds && npm run gen:llms && npm run build:wiki && npm run build:worldbook && npm run build:wm-tasks && npm run gen:core-tools && npm run gen:tool-md",
     "build:css": "node scripts/split-css.mjs",
     "test:css-subset": "node --test scripts/lib/shell-css.test.mjs",
+    "test:tool-md-output": "node --test scripts/tool-md-output.test.mjs",
     "build:devlog": "node scripts/build-devlog.mjs",
     "build:i18n": "node scripts/build-i18n.mjs",
     "build:wiki": "node scripts/sync-wiki.mjs",

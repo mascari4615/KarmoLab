@@ -107,7 +107,7 @@ function rehost(app, dest) {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, e.name);
       if (e.isDirectory()) { walk(p); continue; }
-      if (!/\.(html|xml|txt)$/.test(e.name)) continue;
+      if (!/\.(html|xml|txt|md)$/.test(e.name)) continue;
       const before = fs.readFileSync(p, 'utf8');
       let after = before.replace(BLOG_ORIGIN_RE, (all, rest) => hostFor(app, rest) + '/' + rest);
       if (/^sitemap.*\.xml$/.test(e.name) && path.dirname(p) === dest) after = ownSitemap(app, after);

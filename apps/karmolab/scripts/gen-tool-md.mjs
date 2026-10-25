@@ -113,15 +113,12 @@ for (const id of ids) {
 
   lines.push('', '---', '', '브라우저 안에서 계산합니다. 파일은 기기 밖으로 나가지 않습니다.', '');
 
-  /*
-   * 앞머리(front matter)가 있어야 Jekyll 이 이 파일을 내보낸다. 다만 그 순간 **Liquid** 도
-   * 같이 돈다. 본문에 `{{` 나 `{%` 가 섞이면 그 자리가 조용히 사라지거나 빌드가 깨진다.
-   * 지금 도구 설명에는 없지만 언젠가 하나 들어가면 그날 알게 된다. `raw` 로 감싸면 그만이다
-   * (감싼 표시 자체는 출력에 안 남는다).
-   */
+  /* Node 조립기의 permalink 앞머리 제거와 본문 원문 출력.
+   * Jekyll 제거 뒤 응답에 노출되던 Liquid 보호 wrapper 제외.
+   * 본문 속 {{ ... }} / {% ... %}도 평가 없이 원문 보존. */
   const body =
     `---\npermalink: /t/${id}.md\n---\n` +
-    `{% raw %}${lines.join('\n')}\n{% endraw %}\n`;
+    `${lines.join('\n')}\n`;
   fs.writeFileSync(path.join(outDir, `${id}.txt`), body, 'utf8');
   n++;
 }
