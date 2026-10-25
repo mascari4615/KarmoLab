@@ -98,7 +98,7 @@ const arcadeIds = [];
  * 도구 카드를 오로라로 찍지 않는 이유: 도구 133장이 전부 같은 번짐을 쓰면 피드에서 서로
  * 구분이 안 된다. 놀이는 여덟 장뿐이라 같은 얼굴이어도 그 세계로 읽힌다.
  */
-const AURORA = new Set(['default', 'play', 'today', ...games.map((g) => g.id), ...arcadeIds]);
+const AURORA = new Set(['default', 'play', 'today', ...arcadeIds]);
 const styleOf = (id) => (AURORA.has(id) ? 'aurora' : 'lab');
 
 

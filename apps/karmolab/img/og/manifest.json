@@ -130,8 +130,8 @@
   "livecount": "f51925366137",
   "mesh3d": "9deafc710d72",
   "arcade": "a7f128d03b1c",
-  "arcade-reflex": "be9e0665d94e",
-  "arcade-gomoku": "157347539019",
+  "arcade-reflex": "2a683bdf7c01",
+  "arcade-gomoku": "92c30c342397",
   "arcade-four": "a8cdbbb1eb20",
   "arcade-memory": "cc5602770ec4",
   "arcade-hitblow": "8152ff822088",
@@ -157,7 +157,7 @@
   "arcade-lineup": "99537d714056",
   "arcade-minesweeper": "e52a0b2b768c",
   "arcade-liars": "ce1fcb2be1f0",
-  "arcade-twenty": "258e4715869a",
+  "arcade-twenty": "18d593e2e684",
   "arcade-snake": "d996fd0f1891",
   "arcade-onestroke": "b0c88c6038b5",
   "arcade-fishing": "96457074598c",
@@ -210,5 +210,11 @@
   "my-ai": "e7ee2cacccee",
   "memo-atlas": "7c19cd9a0224",
   "recall": "5b58caf86b00",
-  "arcade-solitaire": "2237df939155"
+  "arcade-solitaire": "2237df939155",
+  "arcade-worldcup": "9f95b4f6bfb7",
+  "arcade-reaction": "e031d9550dcb",
+  "arcade-higher": "341332f8df62",
+  "arcade-ghosttype": "e17f2ed7d05d",
+  "arcade-dailycho": "e561c40a77e7",
+  "arcade-daily": "969fa6a94478"
 }

@@ -17,7 +17,9 @@
  * 사용: node scripts/smoke-pwa.mjs
  *       BASE=http://127.0.0.1:8797/apps/blog node scripts/smoke-pwa.mjs
  */
-const BASE = process.env.BASE || 'https://blog.mascari4615.com';
+import { liveBase } from './lib/live-url.mjs';
+
+const BASE = liveBase();
 const APP = '/';
 
 // 설치 정보와 아이콘은 사이트 뿌리 기준 주소(`/apps/karmolab/...`)로 걸려 있다.

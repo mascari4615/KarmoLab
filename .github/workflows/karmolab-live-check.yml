@@ -83,7 +83,7 @@ jobs:
       #   이제 여기서도, `npm run verify:live` 에서도 **같은 파일**을 읽는다. 갈라질 수가 없다.
       - name: 라이브 점검 (목록 = scripts/live-checks.mjs, 로컬은 npm run verify:live)
         env:
-          BASE: https://blog.mascari4615.com
+          BASE: https://lab.mascari4615.com
           TRIES: '12'
           WAIT_MS: '20000'
         run: npm run verify:live -- --shard ${{ matrix.shard }}
