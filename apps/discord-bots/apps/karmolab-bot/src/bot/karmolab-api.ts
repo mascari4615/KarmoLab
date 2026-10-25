@@ -85,6 +85,7 @@ const SESSION_COOKIE = 'kl_session';
  */
 const ALLOWED_ORIGINS = new Set([
   'https://blog.mascari4615.com',
+  'https://lab.mascari4615.com',
   // KarmoLab 핫리로드 개발 서버 (KL-100, `cd apps/karmolab && npm run dev`).
   // 이게 없으면 개발 중에는 로그인, 커뮤니티가 통째로 막힌다 (브라우저가 요청을 버린다).
   'http://localhost:8813',

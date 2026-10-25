@@ -100,16 +100,30 @@ describe('계정 API. HTTP', () => {
     expect(await res.json()).toEqual({ account: null });
   });
 
-  it('아는 출처에서 부르면 쿠키를 실을 수 있게 답한다', async () => {
-    const res = await fetch(`${baseUrl}/kl/me`, { headers: { Origin: 'https://blog.mascari4615.com' } });
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://blog.mascari4615.com');
-    expect(res.headers.get('access-control-allow-credentials')).toBe('true');
-    expect(res.headers.get('vary')).toContain('Origin');
+  it.each([
+    'https://blog.mascari4615.com',
+    'https://lab.mascari4615.com',
+    'http://127.0.0.1:8813',
+    'http://localhost:8820',
+  ])('아는 출처의 계정과 표 목록 쿠키 허용 (%s)', async (origin) => {
+    for (const endpoint of ['/kl/me', '/kl/packs?sort=popular&needs=image&limit=40']) {
+      const res = await fetch(`${baseUrl}${endpoint}`, { headers: { Origin: origin } });
+      expect(res.status).toBe(200);
+      expect(res.headers.get('access-control-allow-origin')).toBe(origin);
+      expect(res.headers.get('access-control-allow-credentials')).toBe('true');
+      expect(res.headers.get('vary')).toContain('Origin');
+    }
   });
 
-  it('모르는 출처에는 허용 헤더를 안 준다', async () => {
-    const res = await fetch(`${baseUrl}/kl/me`, { headers: { Origin: 'https://evil.example.com' } });
-    expect(res.headers.get('access-control-allow-origin')).toBeNull();
+  it.each([
+    'https://evil.example.com',
+    'https://lab.mascari4615.com.evil.example.com',
+  ])('모르는 출처의 계정과 표 목록 쿠키 차단 (%s)', async (origin) => {
+    for (const endpoint of ['/kl/me', '/kl/packs?sort=popular&needs=image&limit=40']) {
+      const res = await fetch(`${baseUrl}${endpoint}`, { headers: { Origin: origin } });
+      expect(res.headers.get('access-control-allow-origin')).toBeNull();
+      expect(res.headers.get('access-control-allow-credentials')).toBeNull();
+    }
   });
 
   it('로그인 없이는 기록을 못 올린다', async () => {
