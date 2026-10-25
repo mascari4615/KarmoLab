@@ -175,9 +175,49 @@ if (!cantRun) {
   await p.waitForFunction(() => Array.isArray(window.__arcade?.state?.drawn?.[0]));
   const before = await p.evaluate(() => (window.__arcade?.state?.drawn?.[0] ?? []).length);
   const opens = await p.evaluate(() => document.querySelectorAll('.ac-oskey').length);
-  await p.keyboard.press('ArrowRight');
-  await p.keyboard.press('Enter');
-  await p.waitForFunction((from) => (window.__arcade?.state?.drawn?.[0] ?? []).length === from + 1, before);
+  const strokeProbe = await p.evaluateHandle(() => {
+    const events = [];
+    const targets = [];
+    const observe = (e) => {
+      if (events.length >= 16) return;
+      const target = e.target;
+      targets.push(target);
+      events.push({ type: e.type, key: e.key, id: target?.id, edge: target?.dataset?.i });
+    };
+    document.addEventListener('keydown', observe, true);
+    document.addEventListener('click', observe, true);
+    return {
+      snapshot: () => ({
+        game: window.__arcade?.game, seat: window.__arcade?.mySeat,
+        drawn: window.__arcade?.state?.drawn, focus: document.activeElement?.id,
+        visibleLegal: [...document.querySelectorAll('.ac-oskey')].filter(e => e.offsetParent !== null)
+          .map(e => ({ edge: e.dataset.i, selected: e.classList.contains('ac-key'), connected: e.isConnected })),
+        events: events.map((event, i) => ({ ...event, connected: targets[i]?.isConnected }))
+      }),
+      dispose: () => {
+        document.removeEventListener('keydown', observe, true);
+        document.removeEventListener('click', observe, true);
+      }
+    };
+  });
+  const strokeBefore = await strokeProbe.evaluate(probe => probe.snapshot());
+  try {
+    await p.keyboard.press('ArrowRight');
+    await p.keyboard.press('Enter');
+    await p.waitForFunction((from) => (window.__arcade?.state?.drawn?.[0] ?? []).length === from + 1, before);
+  } catch (error) {
+    let failed;
+    try {
+      failed = await strokeProbe.evaluate(probe => probe.snapshot());
+    } catch (diagnosticError) {
+      failed = { diagnosticError: String(diagnosticError) };
+    }
+    console.error('ONESTROKE_FIRST_ENTER ' + JSON.stringify({ before: strokeBefore, failed }));
+    throw error;
+  } finally {
+    await strokeProbe.evaluate(probe => probe.dispose()).catch(() => {});
+    await strokeProbe.dispose().catch(() => {});
+  }
   await p.waitForFunction(() => {
     const count = document.querySelectorAll('.ac-oskey').length;
     return count > 0 && count <= 4;
