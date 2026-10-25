@@ -111,6 +111,7 @@
     "audit:generated-registry": "node scripts/audit-generated-registry.mjs",
     "audit:handoff": "node scripts/audit-handoff-accepts.mjs",
     "audit:heights": "node scripts/measure-tool-heights.mjs --check",
+    "test:heights-status": "node --test scripts/measure-tool-heights.test.mjs",
     "audit:hidden": "node scripts/audit-hidden-display.mjs",
     "audit:hidden-tab": "node scripts/audit-hidden-tab-cpu.mjs",
     "audit:i18n-catalog": "node scripts/audit-i18n-catalog.mjs",

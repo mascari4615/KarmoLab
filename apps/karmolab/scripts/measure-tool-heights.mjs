@@ -180,7 +180,7 @@ if (check) {
     console.log(`[measure-heights] 이 기록은 ${meta.platform} 에서 잰 것이고 여기는 ${process.platform} 이다. 판정하지 않는다(못 돌림).`);
     console.log('  글꼴이 그려지는 높이는 컴퓨터마다 다르다. 판정하려면 기록을 **이 자리에서** 다시 재라:');
     console.log('  npm run measure:heights -- --force');
-    process.exit(0);
+    process.exit(2);
   }
   const off = [];
   for (const id of todo) {

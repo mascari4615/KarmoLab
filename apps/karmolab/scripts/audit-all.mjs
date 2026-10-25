@@ -41,7 +41,7 @@ const results = [];
 for (const [label, script] of CHECKS) {
   const started = Date.now();
   const r = spawnSync(npm, ['run', '--silent', script], { stdio: 'inherit', env: process.env, shell: process.platform === 'win32' });
-  results.push({ label, script, ok: r.status === 0, sec: Math.round((Date.now() - started) / 1000) });
+  results.push({ label, script, status: r.status, sec: Math.round((Date.now() - started) / 1000) });
 }
 
 /* ★ 톱니 조이기 (TASK-KL-312). 한 바퀴 돈 김에 **좋아진 만큼 기준선을 조인다.**
@@ -50,14 +50,17 @@ for (const [label, script] of CHECKS) {
  *   (게이트가 아니다. 조이기가 실패해도 검사 결과를 바꾸지 않는다.) */
 spawnSync(npm, ['run', '--silent', 'ratchet:tighten'], { stdio: 'inherit', env: process.env, shell: process.platform === 'win32' });
 
-const failed = results.filter((r) => !r.ok);
+const failed = results.filter((r) => r.status !== 0 && r.status !== 2);
+const unmeasured = results.filter((r) => r.status === 2);
+const passed = results.filter((r) => r.status === 0);
 console.log('');
 console.log('─'.repeat(60));
-for (const r of results) console.log(` ${r.ok ? '✓' : '✗'} ${r.label.padEnd(28)} ${String(r.sec).padStart(3)}초  (${r.script})`);
+for (const r of results) console.log(` ${r.status === 0 ? 'PASS' : r.status === 2 ? 'CANNOT' : 'FAIL'} ${r.label.padEnd(28)} ${String(r.sec).padStart(3)}초  (${r.script})`);
 console.log('─'.repeat(60));
+console.log(`[audit-all] 통과 ${passed.length}, 실패 ${failed.length}, 못 돌림 ${unmeasured.length} (총 ${results.reduce((s, r) => s + r.sec, 0)}초)`);
 
 if (failed.length) {
   console.error(`[audit-all] ${results.length}개 중 ${failed.length}개가 빨갛다. ${failed.map((f) => f.label).join(', ')}`);
   process.exit(1);
 }
-console.log(`[audit-all] ${results.length}개 검사 모두 통과 (총 ${results.reduce((s, r) => s + r.sec, 0)}초)`);
+if (unmeasured.length) process.exit(2);
