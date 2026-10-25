@@ -23,6 +23,13 @@ const TOOL = `${BASE}/t/timecapsule/`;
 const letter2 = '먼 날의 너에게. 이 줄이 그대로 보이면 잠금이 제대로 열린 것이다.';
 const waited = 210000; // 2분 뒤로 잠그고 넉넉히 기다린다
 
+function capsuleSettled() {
+  const status = document.querySelector('#tcStatus');
+  return !!status && status.getClientRects().length > 0
+    && Boolean(status.textContent?.trim())
+    && (!!document.querySelector('#tcOut .tc-letter, #tcOut .tc-locked') || status.classList.contains('error'));
+}
+
 const failures = [];
 const clockReads = [];
 const rememberClock = (request, status) => {
@@ -75,7 +82,7 @@ try {
   await page.goto('about:blank');
   await page.goto(TOOL + hash, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#tcStatus', { timeout: 30000 });
-  await page.waitForFunction(() => !/여는 중/.test(document.querySelector('#tcStatus')?.textContent || ''), undefined, {
+  await page.waitForFunction(capsuleSettled, undefined, {
     timeout: 60000
   });
   const lockedScreen = await page.evaluate(() => ({
@@ -104,7 +111,7 @@ try {
   }`);
   await earlier.goto(TOOL + hash, { waitUntil: 'domcontentloaded' });
   await earlier.waitForSelector('#tcStatus', { timeout: 30000 });
-  await earlier.waitForFunction(() => !/여는 중/.test(document.querySelector('#tcStatus')?.textContent || ''), undefined, {
+  await earlier.waitForFunction(capsuleSettled, undefined, {
     timeout: 60000
   });
   const spoofed = await earlier.evaluate(() => ({
@@ -127,9 +134,11 @@ try {
     await page.goto('about:blank');
     await page.goto(TOOL + hash, { waitUntil: 'domcontentloaded' });
     await page
-      .waitForFunction(() => !/여는 중/.test(document.querySelector('#tcStatus')?.textContent || ''), undefined, { timeout: 60000 })
+      .waitForFunction(capsuleSettled, undefined, { timeout: 60000 })
       .catch(() => {});
     lastState = await page.evaluate(() => ({
+      mounted: !!document.querySelector('#tcStatus'),
+      readyState: document.readyState,
       letter: document.querySelector('.tc-letter')?.textContent || '',
       status: document.querySelector('#tcStatus')?.textContent || '',
       when: document.querySelector('.tc-when')?.textContent || ''
