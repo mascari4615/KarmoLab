@@ -413,6 +413,7 @@ import { t, loadNamespace, locale } from '../lib/i18n';
     }
 
     let host: HTMLElement | null = null;
+    let renderGeneration = 0;
     let boards: Board[] = [];
     /** 글 판(블로그) 요약. 서버 판이 아니라 git 색인이 정본이다 (change.board-unify ①). */
     let blogSummary: Partial<Record<BlogBoardId, BlogBoardSummary>> = {};
@@ -1969,6 +1970,7 @@ import { t, loadNamespace, locale } from '../lib/i18n';
      */
     async function render(): Promise<void> {
         if (!host) return;
+        const generation = ++renderGeneration;
         // 다른 화면으로 가면 옛 본문의 읽는 곳 감시 해제
         stopPostBodyWatch?.();
         stopPostBodyWatch = null;
@@ -1996,6 +1998,13 @@ import { t, loadNamespace, locale } from '../lib/i18n';
         }
 
         if (boards.length === 0) {
+            if (!window.KarmoAccount?.apiBase) {
+                const target = host;
+                const route = location.href;
+                await Toolbox.whenApiBase();
+                if (generation !== renderGeneration || host !== target || !target.isConnected ||
+                    !target.closest('.tool-page.active') || location.href !== route) return;
+            }
             const raw = (await api('/kl/boards')) as BoardsResponse | null;
             if (!raw?.boards) {
                 offline();

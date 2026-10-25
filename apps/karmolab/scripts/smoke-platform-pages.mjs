@@ -44,7 +44,7 @@ const SCREENS = [
   { hash: 'status', name: '상태, 변경 기록', need: '.st-card, .st-fail' },
   // 커뮤니티는 들어오는 자리에 따라 다른 것을 그린다. 홈(갤러리 카드, 최근 글)과 갤러리 안(표).
   // 처음에 홈 표식을 빼먹어서 안 그려졌다고 잘못 일렀다. 둘 다 적는다.
-  { hash: 'community', name: '커뮤니티', need: '.c-feed-row, .c-gal-card, .c-boards, .c-table, .c-fail, .c-invite' },
+  { hash: 'community', name: '커뮤니티', need: '.c-galleries .c-gal, .c-feeds .c-feed-empty, .c-feed-row, .c-boards, .c-table, .c-invite' },
   { hash: 'user', name: '내 정보', need: '.user-layout' },
   // 내 정보에서 떼어 낸 화면 (TASK-KL-139). 헤더 톱니의 유일한 목적지라 안 그려지면 설정이 통째로 사라진다.
   { hash: 'settings', name: '환경 설정', need: '.settings-layout' },
@@ -55,6 +55,64 @@ const failures = [];
 /** 봇이 안 답해 판정할 수 없던 것. 빨강도 초록도 아니다(2 로 끝낸다). */
 const couldNotMeasure = [];
 const notes = [];
+
+// Exercise startup ordering without calling the real community API.
+async function checkCommunityStartup() {
+  for (const mode of ['delayed', 'timeout', 'leave']) {
+    const context = await browser.newContext({ userAgent: HUMAN_UA, viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
+    const page = await context.newPage();
+    let reads = 0;
+    const errors = [];
+    const accountRequests = [];
+    page.on('pageerror', (error) => errors.push(String(error)));
+    let release;
+    const accountGate = new Promise((resolve) => { release = resolve; });
+    try {
+      await page.route('**/js/account*.js*', async (route) => {
+        accountRequests.push(route.request().url());
+        await accountGate;
+        if (!page.isClosed()) await route.continue().catch(() => {});
+      });
+      await page.route('https://bot.mascari4615.com/**', async (route) => {
+        if (route.request().method() !== 'GET') return route.abort();
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === '/kl/boards') reads += 1;
+        const data = pathname === '/kl/boards' ? { boards: [], signedIn: false, labelMaxLength: 30, descMaxLength: 100 } : { posts: [] };
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
+      });
+      await page.goto(`${BASE}#community`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForSelector('#page-community.active', { timeout: 10000 });
+      if (mode === 'leave') {
+        await page.evaluate(() => Toolbox.switchPage('home'));
+        release();
+        await page.waitForFunction(() => Boolean(window.KarmoAccount?.apiBase), {}, { timeout: 10000 });
+        await page.waitForTimeout(250);
+        if (reads || await page.locator('#page-community.active').count()) throw new Error('late startup changed a departed view');
+      } else if (mode === 'timeout') {
+        await page.waitForSelector('#page-community .c-empty details', { state: 'attached', timeout: 10000 });
+        if (reads || !(await page.locator('#page-community details').textContent()).includes('no_api_base')) throw new Error('startup timeout lost its error boundary');
+      } else {
+        await page.waitForTimeout(400);
+        release();
+        await page.waitForSelector('#page-community.active .c-galleries', { state: 'visible', timeout: 10000 });
+        if (!reads || await page.locator('#page-community .c-feed-empty').count() !== 2) throw new Error('delayed account did not render the empty home');
+      }
+      console.log(`[smoke-platform] community startup ${mode} PASS`);
+    } catch (error) {
+      const state = await page.evaluate(() => ({
+        url: location.href,
+        active: [...document.querySelectorAll('.tool-page.active')].map((node) => node.id),
+        apiBase: window.KarmoAccount?.apiBase,
+        text: document.querySelector('#page-community')?.textContent?.slice(0, 1200),
+      })).catch(() => null);
+      console.error('[smoke-platform] startup diagnostic', JSON.stringify({ mode, reads, accountRequests, errors, state }));
+      throw error;
+    } finally {
+      release();
+      await context.close();
+    }
+  }
+}
 
 async function check(width, height, label) {
   const context = await browser.newContext({ userAgent: HUMAN_UA, viewport: { width, height } });
@@ -87,7 +145,13 @@ async function check(width, height, label) {
 
     let drew = true;
     try {
-      await page.waitForSelector(screen.need, { timeout: 20000, state: 'attached' });
+      const scoped = screen.need.split(',').map((s) => `#page-${screen.hash}.active ${s.trim()}`).join(',');
+      await page.waitForSelector(scoped + (screen.hash === 'community' ? ', #page-community.active .c-empty details' : ''), { timeout: 20000, state: 'visible' });
+      if (screen.hash === 'community' && await page.locator('#page-community.active .c-empty details').count()) {
+        const detail = await page.locator('#page-community.active .c-empty details').textContent();
+        if (detail.includes('no_api_base')) failures.push(`${label} 커뮤니티: 계정 초기화 전 읽기 (${detail.trim()})`);
+        else couldNotMeasure.push(`${label} 커뮤니티: 오류 안내만 표시되어 데이터는 못 잼 (${detail.trim()})`);
+      }
     } catch {
       drew = false;
     }
@@ -97,6 +161,15 @@ async function check(width, height, label) {
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
+    const visibleMain = await page.evaluate((id) => {
+      const main = document.querySelector(`#page-${id}.active`);
+      if (!main) return false;
+      const box = main.getBoundingClientRect();
+      const x = Math.min(innerWidth - 1, Math.max(0, box.x + box.width / 2));
+      const y = Math.min(innerHeight - 1, Math.max(0, box.y + Math.min(box.height / 2, 180)));
+      return box.width > 0 && box.height > 0 && main.contains(document.elementFromPoint(x, y));
+    }, screen.hash);
+    if (drew && !visibleMain) failures.push(`${label} ${screen.name}: 실제 본문이 가려졌거나 화면 밖에 있다`);
 
     page.off('response', onResponse);
     if (!drew) {
@@ -136,9 +209,13 @@ try {
   notes.push('기록 서버에 못 닿았다. 값이 필요한 칸은 못 봤다 (화면이 닫히는 것 자체는 정상)');
 }
 
-await check(1280, 900, '[넓은 화면]');
-await check(390, 844, '[폰]');
-await browser.close();
+try {
+  await checkCommunityStartup();
+  await check(1280, 900, '[넓은 화면]');
+  await check(390, 844, '[폰]');
+} finally {
+  await browser.close();
+}
 
 for (const note of notes) console.log(`[smoke-platform] ⚠ ${note}`);
 /* 봇이 안 답해 못 본 화면이 있으면 **그 사실을 먼저** 적는다. 빨강이 따로 없으면 2(못 잼)로 끝낸다 . 
