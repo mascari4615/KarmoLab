@@ -283,6 +283,53 @@ html[data-home-bg="village"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/
 html[data-home-bg="clouds"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-clouds.webp'); }
 html[data-home-bg="twilight"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-twilight.webp'); }
 html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-dusk.webp'); }
+.mydh:has(.mydq) { overflow-y: auto; }
+.mydq {
+  position: relative;
+  max-width: min(760px, 70%);
+  margin-bottom: var(--space-md);
+  padding: var(--space-md);
+  background: var(--dash-paper, var(--bg-secondary));
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+}
+.mydq [hidden] { display: none; }
+.mydq-head, .mydq-controls, .mydq-kinds { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+.mydq-head { justify-content: space-between; }
+.mydq h2, .mydq h3 { margin: 0; font-size: var(--font-size-sm); }
+.mydq button { min-height: 44px; border: 1px solid var(--border); padding: 6px 12px; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font: inherit; }
+.mydq button:hover { background: var(--bg-tertiary); }
+.mydq button:focus-visible, .mydq input:focus-visible, .mydq textarea:focus-visible, .mydq summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mydq button[aria-pressed="true"], .mydq .mydq-save { background: var(--text-primary); color: var(--dash-paper, var(--bg-secondary)); border-color: var(--text-primary); }
+.mydq .mydq-open { border: 0; text-decoration: underline; }
+.mydq-kinds { margin: var(--space-sm) 0; gap: 0; }
+.mydq-kinds button + button { border-left: 0; }
+.mydq-label { display: block; margin-bottom: 6px; }
+.mydq textarea, .mydq input { background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); font: inherit; }
+.mydq textarea { display: block; width: 100%; padding: 10px 12px; min-height: 70px; resize: vertical; line-height: 1.6; box-sizing: border-box; }
+.mydq-controls { margin-top: var(--space-sm); }
+.mydq-controls label { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mydq input { padding: 6px; min-height: 44px; max-width: 100%; box-sizing: border-box; }
+.mydq-save { margin-left: auto; }
+.mydq-hint, .mydq-status { font-size: var(--font-size-xs); line-height: 1.5; margin: 8px 0 0; }
+.mydq-hint { color: var(--text-secondary); }
+.mydq-status:empty { display: none; }
+.mydq-status[role="alert"] { color: var(--text-primary); font-weight: 600; }
+.mydq-summary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+.mydq-recent { border-top: 1px solid var(--border); margin-top: var(--space-md); padding-top: var(--space-md); }
+.mydq-recent section { min-width: 0; }
+.mydq-recent h3 { margin-bottom: 8px; }
+.mydq-recent ul { list-style: none; padding: 0; margin: 0; }
+.mydq-recent li { display: flex; align-items: center; gap: 8px; margin: 4px 0; overflow-wrap: anywhere; }
+.mydq-recent p { margin: 6px 0; line-height: 1.6; overflow-wrap: anywhere; }
+.mydq-recent small { display: block; color: var(--text-secondary); }
+.mydq-diary { margin-top: var(--space-md); }
+.mydq-diary summary { cursor: pointer; min-height: 44px; padding: 8px 0; overflow-wrap: anywhere; }
+.mydq-diary summary span { color: var(--text-secondary); }
+.mydq-diary details p { white-space: pre-wrap; }
+@media (max-width: 1100px) { .mydq { max-width: none; } }
+@media (max-width: 599px) { .mydq-summary { grid-template-columns: 1fr; } .mydq { padding: 12px; } }
 .mydh-bg {
   position: absolute;
   inset: 0;

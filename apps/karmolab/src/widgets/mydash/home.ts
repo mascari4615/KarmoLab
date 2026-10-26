@@ -17,6 +17,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 import { ensureToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents } from '../planner/gcal';
 import { mountNotifications } from '../planner/notifications';
+import { mountQuickCapture } from '../planner/quick-capture';
 
 (function (): void {
   'use strict';
@@ -249,6 +250,7 @@ import { mountNotifications } from '../planner/notifications';
 
     root.className += ' mydh';
     root.innerHTML = frameHtml();
+    mountQuickCapture(ctx);
     mountNotifications(ctx);
     root.addEventListener('click', (ev) => {
       const el = (ev.target as HTMLElement | null)?.closest('[data-open]') as HTMLElement | null;
