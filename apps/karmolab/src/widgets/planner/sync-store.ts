@@ -1,21 +1,6 @@
 import type { DashRepoWrite } from '../mydash/kit';
-
-export const PLANNER_KEYS = {
-    diary: 'karmolab_planner_diary',
-    tasks: 'karmolab_planner_tasks',
-    events: 'karmolab_planner_events'
-} as const;
-type Collection = keyof typeof PLANNER_KEYS;
-type Row = Record<string, unknown>;
-interface Operation {
-    id: string;
-    collection: Collection;
-    key: string;
-    parents: string[];
-    at: number;
-    value: Row | null;
-}
-interface Batch { schema: 'planner-sync/1'; id: string; ops: Operation[] }
+import { PLANNER_KEYS, rowKey, validateRow, parseBatch, plannerHeads, materializePlanner, type Collection, type Row, type Operation, type Batch } from './sync-model';
+export { PLANNER_KEYS } from './sync-model';
 export type PlannerSyncState = { phase: 'pending' | 'syncing' | 'synced' | 'error'; message: string };
 type SharedWindow = Window & { KarmoPlannerSyncWriter?: (key: string, rows: unknown[]) => void };
 let state: PlannerSyncState = { phase: 'pending', message: '자동 동기화 연결 중' };
@@ -25,20 +10,6 @@ function announce(next: PlannerSyncState): void {
     state = next;
     window.dispatchEvent(new Event('planner-sync-status'));
 }
-function rowKey(collection: Collection, row: Row): string {
-    const key = row[collection === 'diary' ? 'date' : 'id'];
-    if (typeof key !== 'string' || !key) throw new Error('기존 기록의 이름을 읽을 수 없어요.');
-    return key;
-}
-function validateRow(collection: Collection, raw: unknown): Row {
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('기록 형식을 확인해 주세요.');
-    const row = raw as Row;
-    rowKey(collection, row);
-    if (collection === 'diary' ? typeof row.text !== 'string' : typeof row.title !== 'string') throw new Error('기록 본문을 읽을 수 없어요.');
-    if (collection === 'events' && (typeof row.start !== 'string' || typeof row.end !== 'string' || typeof row.allDay !== 'boolean')) throw new Error('일정 날짜를 읽을 수 없어요.');
-    if (collection === 'tasks' && !['todo', 'inProgress', 'done'].includes(String(row.column))) throw new Error('할 일 상태를 읽을 수 없어요.');
-    return row;
-}
 function readRows(storage: Storage, collection: Collection): Row[] {
     const raw = storage.getItem(PLANNER_KEYS[collection]);
     const rows: unknown = raw === null ? [] : JSON.parse(raw);
@@ -46,15 +17,6 @@ function readRows(storage: Storage, collection: Collection): Row[] {
     const result = rows.map(row => validateRow(collection, row));
     if (new Set(result.map(row => rowKey(collection, row))).size !== result.length) throw new Error('기록 이름이 중복돼 동기화를 멈췄어요.');
     return result;
-}
-function parseBatch(raw: unknown): Batch {
-    const batch = raw as Batch;
-    if (!batch || batch.schema !== 'planner-sync/1' || typeof batch.id !== 'string' || !/^[\w-]+$/.test(batch.id) || !Array.isArray(batch.ops)) throw new Error('동기화 기록 형식을 확인해 주세요.');
-    for (const op of batch.ops) {
-        if (!op || !Object.prototype.hasOwnProperty.call(PLANNER_KEYS, op.collection) || typeof op.id !== 'string' || typeof op.key !== 'string' || !Array.isArray(op.parents) || !op.parents.every(id => typeof id === 'string') || !Number.isFinite(op.at)) throw new Error('동기화 기록을 읽지 못했어요.');
-        if (op.value !== null && rowKey(op.collection, validateRow(op.collection, op.value)) !== op.key) throw new Error('동기화 기록 이름이 달라요.');
-    }
-    return batch;
 }
 
 /** Append-only journal, with the existing planner arrays as local read caches. */
@@ -74,10 +36,6 @@ export class PlannerJournal {
         return batches;
     }
     private ops(): Operation[] { return this.batches().flatMap(batch => batch.ops); }
-    private heads(ops: Operation[]): Operation[] {
-        const superseded = new Set(ops.flatMap(op => op.parents));
-        return ops.filter(op => !superseded.has(op.id)).sort((a, b) => a.at - b.at || a.id.localeCompare(b.id));
-    }
     private append(ops: Omit<Operation, 'id'>[]): void {
         if (!ops.length) return;
         const id = this.uuid();
@@ -102,7 +60,7 @@ export class PlannerJournal {
         const ops: Omit<Operation, 'id'>[] = [];
         for (const key of new Set([...before.keys(), ...after.keys()])) {
             if (JSON.stringify(before.get(key)) === JSON.stringify(after.get(key))) continue;
-            const heads = this.heads(all.filter(op => op.collection === collection && op.key === key));
+            const heads = plannerHeads(all.filter(op => op.collection === collection && op.key === key));
             ops.push({ collection, key, parents: heads.map(op => op.id), at, value: after.get(key) || null });
         }
         // The durable journal precedes the cache; a failed cache write is recoverable.
@@ -112,27 +70,11 @@ export class PlannerJournal {
     apply(): boolean {
         const all = this.ops();
         for (const collection of Object.keys(PLANNER_KEYS) as Collection[]) readRows(this.storage, collection);
+        const materialized = materializePlanner(all);
         let changed = false;
         for (const collection of Object.keys(PLANNER_KEYS) as Collection[]) {
             readRows(this.storage, collection);
-            const groups = new Map<string, Operation[]>();
-            for (const op of all.filter(op => op.collection === collection)) groups.set(op.key, [...(groups.get(op.key) || []), op]);
-            const rows: Row[] = [];
-            for (const ops of groups.values()) {
-                const heads = this.heads(ops);
-                const winner = heads[heads.length - 1];
-                if (!winner?.value) continue;
-                let value = winner.value;
-                if (collection === 'diary') {
-                    // Concurrent diary edits retain both texts; a later edit resolves all heads.
-                    const texts = [...new Set(heads.flatMap(op => op.value ? [String(op.value.text)] : []))];
-                    const distinct = texts.filter(text => !texts.some(other => other !== text && other.startsWith(text)));
-                    value = { ...value, text: distinct.join('\n\n[다른 기기 기록]\n\n') };
-                }
-                rows.push(value);
-            }
-            rows.sort((a, b) => rowKey(collection, a).localeCompare(rowKey(collection, b)));
-            const next = JSON.stringify(rows);
+            const next = JSON.stringify(materialized[collection]);
             const key = PLANNER_KEYS[collection];
             if ((this.storage.getItem(key) || '[]') !== next) { this.storage.setItem(key, next); changed = true; }
         }
