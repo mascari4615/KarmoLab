@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 const script = fileURLToPath(new URL('../../scripts/restart-service.ps1', import.meta.url));
 const powershell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
 const stub = `param([string]$Action,[string]$ServiceName)
+Add-Content -LiteralPath $env:RESTART_TEST_TRACE -Value ("stub_" + $Action + "_enter")
 $state = Get-Content -LiteralPath $env:RESTART_TEST_STATE -Raw | ConvertFrom-Json
 $state.calls += $Action
 $code = 0
@@ -22,6 +23,7 @@ if ($Action -eq 'status') {
   $code = $state.startExit
 }
 $state | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $env:RESTART_TEST_STATE -Encoding UTF8
+Add-Content -LiteralPath $env:RESTART_TEST_TRACE -Value ("stub_" + $Action + "_exit")
 exit $code
 `;
 
@@ -30,15 +32,34 @@ function restart(scenario: { states: string[]; restartExit?: number; startExit?:
   const folder = mkdtempSync(prefix);
   const stubPath = join(folder, 'nssm-stub.ps1');
   const statePath = join(folder, 'state.json');
+  const tracePath = join(folder, 'trace.txt');
+  const launcherPath = join(folder, 'launch.ps1');
   writeFileSync(stubPath, stub);
+  writeFileSync(tracePath, '');
+  writeFileSync(launcherPath, `Set-Content -LiteralPath $env:RESTART_TEST_TRACE -Value 'pwsh_started'
+& $env:RESTART_TEST_SCRIPT -NssmPath $env:RESTART_TEST_STUB -TimeoutSec 1 -PollIntervalMs 10
+exit $LASTEXITCODE
+`);
   writeFileSync(statePath, JSON.stringify({ cursor: 0, calls: [], restartExit: 0, startExit: 0, restartMessage: '', ...scenario }));
   try {
-    const result = spawnSync(powershell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-NssmPath', stubPath, '-TimeoutSec', '1', '-PollIntervalMs', '10'], {
-      encoding: 'utf8', timeout: 10000, env: { ...process.env, RESTART_TEST_STATE: statePath }, windowsHide: true,
+    const started = performance.now();
+    const result = spawnSync(powershell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', launcherPath], {
+      encoding: 'utf8', timeout: 10000, env: { ...process.env, RESTART_TEST_STATE: statePath, RESTART_TEST_TRACE: tracePath, RESTART_TEST_SCRIPT: script, RESTART_TEST_STUB: stubPath }, windowsHide: true,
     });
-    if (result.error) throw result.error;
+    const safeOutput = (value: string) => value.split(/\r?\n/).filter(line =>
+      /^\[restart-service\] karmolab-bot-prod SERVICE_[A-Z_]+$/.test(line.trim())
+      || /^Unexpected status SERVICE_START_PENDING$/.test(line.trim())).slice(-8);
+    const diagnostics = {
+      elapsedMs: Math.round(performance.now() - started), code: result.status, signal: result.signal,
+      errorCode: (result.error as NodeJS.ErrnoException | undefined)?.code,
+      stages: readFileSync(tracePath, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/)
+        .filter(line => /^(pwsh_started|stub_(restart|status|start)_(enter|exit))$/.test(line)).slice(-16),
+      stdout: safeOutput(result.stdout || ''), stderr: safeOutput(result.stderr || ''),
+      stdoutBytes: Buffer.byteLength(result.stdout || ''), stderrBytes: Buffer.byteLength(result.stderr || ''),
+    };
+    if (result.error) throw new Error('restart fixture child failed: ' + JSON.stringify(diagnostics));
     const state = JSON.parse(readFileSync(statePath, 'utf8').replace(/^\uFEFF/, ''));
-    return { code: result.status, output: result.stdout + result.stderr, calls: state.calls };
+    return { code: result.status, output: JSON.stringify(diagnostics), calls: state.calls };
   } finally {
     if (!resolve(folder).startsWith(prefix)) throw new Error('Temporary fixture escaped its root');
     rmSync(folder, { recursive: true });
