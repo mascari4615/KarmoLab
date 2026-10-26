@@ -102,6 +102,7 @@
     "audit:ctl": "node scripts/audit-control-chars.mjs",
     "audit:data": "node scripts/audit-tool-data.mjs",
     "audit:deploy": "node scripts/audit-deploy-health.mjs",
+    "test:deploy-health": "node --test scripts/audit-deploy-health.test.mjs",
     "audit:drift": "node scripts/run-gates.mjs audit:bundles audit:coverage audit:aliases",
     "audit:entry-sources": "node scripts/check-entry-sources.mjs",
     "audit:fonts": "node scripts/audit-fonts.mjs",

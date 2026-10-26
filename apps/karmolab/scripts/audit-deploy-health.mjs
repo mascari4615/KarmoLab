@@ -36,7 +36,7 @@ const arg = (name, fallback) => {
 const HOURS = Number(arg('hours', 24));
 /** 이보다 오래 살았던 취소 = 짓다가 죽은 것. */
 const RUNNING_CANCEL_SEC = 120;
-/** 마지막 성공이 이보다 오래됐으면 배포가 서 있는 것으로 본다. */
+/** 미반영 커밋이 있는 판의 마지막 성공 경과 상한. */
 const STALE_SUCCESS_SEC = 3 * 60 * 60;
 /**
  * 사유를 캐 볼 실패 수 상한. 로그 한 건 읽는 데 몇 초씩 걸린다.
@@ -153,6 +153,9 @@ function liveLag(repoDefaultBranch = 'origin/main') {
       encoding: 'utf8',
     }).trim();
     const at = execFileSync('git', ['log', '-1', '--format=%cr', liveSha], { encoding: 'utf8' }).trim();
+    if (!/^\d+$/.test(behind) || !Number.isSafeInteger(Number(behind))) {
+      return { liveSha: liveSha.slice(0, 8), err: '뒤처진 커밋 수를 유효하게 재지 못했다' };
+    }
     return { liveSha: liveSha.slice(0, 8), behind: Number(behind), at };
   } catch {
     return { liveSha: liveSha.slice(0, 8), err: '얼마나 뒤처졌는지 못 셌다 (그 판을 로컬에서 모른다)' };
@@ -237,7 +240,7 @@ if (lastSuccessAt === null) {
       `사이트는 ${lag.liveSha} 에 서 있고 그 뒤로 올린 것이 ${lag.behind}건. 성공 여부와 무관하게 사람에게 안 닿고 있다.`,
     );
   }
-  if (Date.now() - lastSuccessAt > STALE_SUCCESS_SEC * 1000) {
+  if (lag.behind > 0 && Date.now() - lastSuccessAt > STALE_SUCCESS_SEC * 1000) {
     problems.push(`마지막 성공이 ${Math.round((Date.now() - lastSuccessAt) / 3600000)}시간 전. 배포가 서 있다.`);
   }
 }
@@ -247,4 +250,6 @@ if (problems.length) {
   for (const line of problems) console.error(`  - ${line}`);
   process.exit(1);
 }
+if (lag.err) cantRun(lag.err);
+if (lag.behind === 0) console.log('[audit-deploy-health] 정상 유휴. 실제 사이트 뒤로 미반영 커밋 없음');
 console.log('[audit-deploy-health] 배포 건강. 마지막 성공 뒤로 새로 아픈 것 없음');
