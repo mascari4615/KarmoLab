@@ -2,7 +2,7 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1759,
+    "commits": 1762,
     "days": 14,
     "shown": 60
   },
@@ -10,6 +10,27 @@
     {
       "date": "2026-10-26",
       "entries": [
+        {
+          "sha": "ac698b94",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "scene",
+          "text": "명시한 색과 mip 단계를 보존하는 이미지 리소스"
+        },
+        {
+          "sha": "43ad0b08",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "pool",
+          "text": "소유자 해제 뒤 비활성화 예외 방지"
+        },
+        {
+          "sha": "284bbb03",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "scene",
+          "text": "텍스처 반복 설정과 편집 자원 해제 보존"
+        },
         {
           "sha": "26c5998f",
           "type": "fix",
@@ -30,31 +51,10 @@
           "typeLabel": "고친 것",
           "scope": "authoring",
           "text": "액터 추가 시 연출 편집 기록을 유지"
-        },
-        {
-          "sha": "082cdb63",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ci",
-          "text": "임시 시험 경로의 끝 구분자를 정규화"
-        },
-        {
-          "sha": "7f7e979e",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "초안 복구 검증 실패 시 현재 편집을 보존"
-        },
-        {
-          "sha": "4586738b",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ci",
-          "text": "Windows 야간 빌드의 성공 기록 만료를 검사"
         }
       ],
-      "quiet": 1,
-      "more": 0
+      "quiet": 2,
+      "more": 3
     },
     {
       "date": "2026-10-25",
