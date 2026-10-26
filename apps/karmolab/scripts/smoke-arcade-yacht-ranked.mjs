@@ -41,6 +41,18 @@ const consoleErrors = [];
 const contexts = [];
 let pages = [];
 const reports = new Map();
+const tapeStore = new Map();
+const timeline = [];
+const startedAt = Date.now();
+const observed = new WeakMap();
+const noteRequest = (id, request, event, detail = {}) => {
+  const path = new URL(request.url()).pathname;
+  const kind = path.startsWith('/kl/arcade/tape/of/') ? 'tape-of' : path === '/kl/arcade/report' ? 'report' : null;
+  if (!kind || timeline.length >= 64) return;
+  const start = observed.get(request) ?? Date.now();
+  observed.set(request, start);
+  timeline.push({ id, kind, method: request.method(), event, atMs: Date.now() - startedAt, elapsedMs: Date.now() - start, ...detail });
+};
 
 try {
   pages = await Promise.all(ids.map(async (id, seat) => {
@@ -72,9 +84,17 @@ try {
         host: seat === 0, room: 'beginner', opponent: '등급전 상대', ids, seat
       })
     }));
-    await context.route('**/kl/arcade/tape', (route) => route.fulfill({
-      contentType: 'application/json', body: JSON.stringify({ id: 'ranked-yacht-tape' })
-    }));
+    await context.route('**/kl/arcade/tape', (route) => {
+      const body = route.request().postDataJSON();
+      const id = 'ranked-yacht-tape';
+      tapeStore.set(body.code, id);
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ id }) });
+    });
+    await context.route('**/kl/arcade/tape/of/*', (route) => {
+      const requestedCode = decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
+      const id = tapeStore.get(requestedCode);
+      return route.fulfill({ status: id ? 200 : 404, contentType: 'application/json', body: JSON.stringify(id ? { id } : { error: 'tape_not_found' }) });
+    });
     await context.route('**/kl/arcade/report', async (route) => {
       const body = JSON.parse(route.request().postData() ?? '{}');
       reports.set(id, body);
@@ -90,6 +110,10 @@ try {
       });
     });
     const page = await context.newPage();
+    page.on('request', request => noteRequest(id, request, 'request'));
+    page.on('response', response => noteRequest(id, response.request(), 'response', { status: response.status() }));
+    page.on('requestfinished', request => noteRequest(id, request, 'finished'));
+    page.on('requestfailed', request => noteRequest(id, request, 'failed', { error: request.failure()?.errorText }));
     page.on('pageerror', (error) => failures.push(`${id}: ${error.message}`));
     page.on('console', (message) => {
       if (message.type() === 'error') consoleErrors.push(`${id}: ${message.text()}`);
@@ -174,6 +198,7 @@ try {
   failures.push(`창 상태: ${JSON.stringify(diagnostics)}`);
   if (consoleErrors.length) failures.push(`콘솔 오류 ${consoleErrors.length}건, 처음 8건: ${consoleErrors.slice(0, 8).join(' | ')}`);
 } finally {
+  console.log('[arcade-yacht-ranked] tape/report timeline: ' + JSON.stringify(timeline));
   await Promise.all(contexts.map((context) => context.close().catch(() => {})));
   await browser.close();
   await server.close();
