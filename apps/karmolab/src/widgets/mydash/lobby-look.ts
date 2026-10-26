@@ -11,6 +11,7 @@ export const LOBBY_CHARACTERS = [
   { id: 'yon', name: '욘', outfits: [
     { id: 'yon-original', name: '잠옷', image: '/apps/karmolab/img/widgets/mydash/yawn-stand.webp' },
     { id: 'yon-casual', name: '일상복', image: '/apps/karmolab/img/widgets/mydash/wardrobe/yon-casual.png' },
+    { id: 'yon-casual-manga', name: '일상복 (만화풍)', image: '/apps/karmolab/img/widgets/mydash/wardrobe/yon-casual-manga-v1.png' },
   ] },
   { id: 'alisa', name: '알리사', outfits: [
     { id: 'alisa-original', name: '메이드', image: '/apps/karmolab/img/widgets/mydash/goals/alisa.webp' },
