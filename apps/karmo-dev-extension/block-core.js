@@ -47,6 +47,8 @@
     .${PANEL} { position: fixed; left: 8px; top: 110px; width: 230px; max-height: calc(100vh - 130px); overflow-y: auto; padding: 8px 10px; z-index: 50; border: 1px solid #ccc; border-radius: 4px;
       font: 12px/1.5 system-ui, sans-serif; color: #333; background: rgba(255,255,255,.96); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
     .${PANEL} b { display: block; margin-bottom: 4px; font-size: 12px; color: #666; }
+    .${PANEL}.is-collapsed { width: auto; }
+    .${PANEL} .karmo-panel-toggle { cursor: pointer; padding: 3px 8px; color: inherit; background: transparent; border: 1px solid #aaa; border-radius: 3px; font: inherit; }
     .${PANEL} div { display: flex; gap: 6px; align-items: center; padding: 2px 0; cursor: pointer; }
     .${PANEL} div:hover { background: rgba(128,128,128,.14); }
     .${PANEL} input[type="color"] { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
@@ -286,6 +288,22 @@
         document.body.append(box);
       }
       box.textContent = "";
+      box.classList.toggle("is-collapsed", !!settings.panelCollapsed);
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "karmo-panel-toggle";
+      toggle.textContent = settings.panelCollapsed ? "패널 펼치기" : "패널 접기";
+      toggle.setAttribute("aria-expanded", String(!settings.panelCollapsed));
+      toggle.addEventListener("click", () => {
+        highlightKey(null);
+        settings.panelCollapsed = !settings.panelCollapsed;
+        panelSig = "";
+        renderPanel(multis);
+        box.querySelector(".karmo-panel-toggle")?.focus();
+        setSetting({ panelCollapsed: settings.panelCollapsed });
+      });
+      box.append(toggle);
+      if (settings.panelCollapsed) return;
       if (multis.length) {
         const t = document.createElement("b");
         t.textContent = "이 페이지 여러 글 쓴 유저";

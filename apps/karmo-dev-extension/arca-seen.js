@@ -1,6 +1,6 @@
 /**
  * 아카라이브 글 목록 읽음 구분선: 지난 방문에서 본 마지막 글 아래에 줄을 긋고 새 글 개수를 적음
- * 대상: /b/<채널> 의 첫 페이지, 정렬, 개념글, 말머리 같은 보기마다 따로 기억
+ * 대상: /b/<채널> 의 모든 페이지, 정렬, 개념글, 말머리 같은 보기마다 따로 기억
  * 저장: chrome.storage.local 의 karmoSeen, 형태 { 보기: { base, max, at } }
  *   max: 본 가장 큰 글 번호, base: 구분선 기준 (지난 방문의 max)
  *   마지막 방문에서 10분이 지나야 base 가 max 로 올라감, 새로고침해도 구분선 유지
@@ -10,10 +10,48 @@
   const WINDOW_MS = 10 * 60 * 1000;
   const MAX_VIEWS = 200;
 
+  const VISITED = "karmoVisited:";
+  const article = /^\/b\/([^/]+)\/(\d+)\/?$/.exec(location.pathname);
+  if (article && document.querySelector(".article-head")) {
+    const remember = () => {
+      if (document.visibilityState !== "visible") return;
+      document.removeEventListener("visibilitychange", remember);
+      chrome.storage.local.set({ [`${VISITED}${article[1]}:${article[2]}`]: Date.now() });
+    };
+    document.addEventListener("visibilitychange", remember);
+    remember();
+  }
+  const links = [...document.querySelectorAll('.list-table a.vrow:not(.notice):not(.head)')]
+    .map((row) => {
+      const url = new URL(row.getAttribute("href"), location.href);
+      const match = /^\/b\/([^/]+)\/(\d+)\/?$/.exec(url.pathname);
+      return match && url.origin === location.origin ? { row, key: `${VISITED}${match[1]}:${match[2]}`, tag: `${match[1]}:${match[2]}` } : null;
+    }).filter(Boolean);
+  const visitStyle = document.createElement("style");
+  visitStyle.textContent = `.karmo-visited .title { opacity: .65; }
+    .karmo-visited-label { display: inline-block; margin-right: 5px; font-size: 11px; color: #777; }`;
+  document.documentElement.append(visitStyle);
+  function markVisited(item) {
+    item.row.classList.add("karmo-visited");
+    const title = item.row.querySelector(".title");
+    if (!title || title.querySelector(".karmo-visited-label")) return;
+    const label = document.createElement("span");
+    label.className = "karmo-visited-label";
+    label.textContent = "읽음";
+    title.prepend(label);
+  }
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    for (const item of links) if (changes[item.key]?.newValue) markVisited(item);
+  });
+  chrome.storage.local.get([...links.map((item) => item.key), "karmoStats"], (saved) => {
+    const legacy = new Set(saved.karmoStats?.opened || []);
+    for (const item of links) if (saved[item.key] || legacy.has(item.tag)) markVisited(item);
+  });
+
   const m = /^\/b\/([^/]+)\/?$/.exec(location.pathname);
   if (!m) return;
   const params = new URLSearchParams(location.search);
-  if (Number(params.get("p") || 1) !== 1) return;
   params.delete("p");
   const view = `${m[1]}?${params}`;
 
@@ -49,12 +87,11 @@
     document.dispatchEvent(new CustomEvent("karmo-seen"));
     if (base == null) return;
     const fresh = rows.filter((r) => r.id > base).length;
-    if (!fresh) return;
+    const firstOld = rows.find((r) => r.id <= base);
+    if (!fresh || !firstOld) return;
     const line = document.createElement("div");
     line.className = "karmo-seen";
-    line.textContent = `여기까지 읽음 (지난 방문 이후 새 글 ${fresh}개)`;
-    const firstOld = rows.find((r) => r.id <= base);
-    if (firstOld) firstOld.row.before(line);
-    else rows.at(-1).row.after(line);
+    line.textContent = `여기까지 읽음 (이 페이지 새 글 ${fresh}개)`;
+    firstOld.row.before(line);
   });
 })();
