@@ -1,11 +1,12 @@
 import { build } from 'esbuild';
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import assert from 'node:assert/strict';
 
-const output = process.argv[2];
-if (!output) throw new Error('Usage: node scripts/planner-sync-browser.mjs <private-artifacts-directory>');
+const output = process.argv.slice(2).find(arg => !arg.startsWith('--')) || await mkdtemp(join(tmpdir(), 'planner-sync-'));
 await mkdir(output, { recursive: true });
 const main = await build({ stdin: { resolveDir: process.cwd(), contents: `
 import { startPlannerSync } from './src/widgets/planner/sync-store';
@@ -37,7 +38,7 @@ const server = createServer(async (req, res) => {
   res.end('<!doctype html><meta name="viewport" content="width=device-width"><title>오늘 기록 동기화 검토</title><style>body{font:16px sans-serif;max-width:800px;margin:24px auto;padding:16px}textarea{width:95%;min-height:100px}button{padding:10px;margin:4px}small{display:block}section{margin:20px 0}</style><h1>오늘 기록 동기화 검토</h1><main></main><button id="calendar-add">별도 달력 번들에서 일정 추가</button><button id="calendar-delete">별도 달력 번들에서 일정 삭제</button><script src="/main.js"></script><script src="/calendar.js"></script>');
 });
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(18843, '127.0.0.1', resolve); });
-const browser = await chromium.launch({ channel: 'msedge', headless: false });
+const browser = await chromium.launch({ ...(process.platform === 'win32' ? { channel: 'msedge' } : {}), headless: process.argv.includes('--headless') || process.env.CI === 'true' });
 const errors = [];
 const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
