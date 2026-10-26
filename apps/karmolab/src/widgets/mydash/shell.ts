@@ -36,6 +36,7 @@ import discordChannelsCss from './discord-channels.css';
 import byeoruCss from './byeoru.css';
 import automationsCss from './automations.css';
 import { t, loadNamespace } from '../../lib/i18n';
+import { startPlannerSync } from '../planner/sync-store';
 
 (function (): void {
   'use strict';
@@ -853,6 +854,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           throw new DashError('net', branch + ' 트리가 JSON 이 아니다');
         }
         const list = (raw as { tree?: unknown }).tree;
+        if ((raw as { truncated?: boolean }).truncated) throw new DashError('net', branch + ' 파일 목록이 일부만 도착했습니다.');
         if (!Array.isArray(list)) return [];
         const out: DashEntry[] = [];
         for (const e of list as Array<{ path?: string; type?: string; size?: number }>) {
@@ -1122,6 +1124,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     let panelBox: HTMLElement | null = null;
     /** online 이벤트 떼는 손. 대시보드 한 판에 하나 */
     let stopOnline: (() => void) | null = null;
+    let stopPlannerSync: (() => void) | null = null;
     /* 머리말 한 줄(statEl)과 실패 보고는 화면에 하나뿐이라 칸으로 못 가름. 세대 번호로 가름.
        지금 세대가 아닌 패널이 부르면 무시. */
     let panelGen = 0;
@@ -1244,6 +1247,8 @@ import { t, loadNamespace } from '../../lib/i18n';
        ★ 화면틀은 로그인 전에도 보인다 (사용자 2026-09-16). 목록은 살아 있고, 오늘은 빈 카드
        일곱, 다른 자리는 로그인 안내. 로그인 카드가 화면을 통째로 차지하던 것을 위쪽 한 장으로. */
     function showLoggedOut(cfg: Config | null, why?: string): void {
+      stopPlannerSync?.();
+      stopPlannerSync = null;
       reopen = null;
       acctEl.textContent = '';
       outBtn.hidden = true;
@@ -1442,6 +1447,7 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     /* ── 로그인 뒤 ── */
     async function showDashboard(cfg: Config): Promise<void> {
+      stopPlannerSync?.();
       root.classList.remove('myd--gate');
       /* 뒤에서 받은 새 판이 다르면 보던 방을 다시 그림. 여러 파일이 연달아 와도 한 번만.
          ★ 그 파일을 **지금 방이 읽었을 때만.** 다른 방 파일로 다시 그리면 판정 초안, 거름, 스크롤이 사라짐.
@@ -1461,6 +1467,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           else reopen();
         }, 400);
       });
+      stopPlannerSync = startPlannerSync(repo, cfg.owner + '/' + cfg.repo + '/' + repo.eventsBranch);
 
       /** 지금 방을 다시 그리면 입력이 사라지는 판. 쓰는 방, 또는 입력 칸에 커서 */
       function roomBusy(): boolean {

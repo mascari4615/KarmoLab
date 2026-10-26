@@ -5,14 +5,14 @@
  * 따로 없다. `2026-08-17` 이 그 일기의 이름이다. 같은 날 또 쓰면 그 장을 고치는 것이지
  * 새 장이 생기지 않는다.
  *
- * 저장은 [[TASK-KL-321]] 에서 만든 이 브라우저 자리 옆이다. 구글에 보낼 것이 아니므로
- * 연동과 아무 상관 없이 돈다. 나중에 밖으로 내보낼 때(메모 저장소든 드라이브든) 여기가
- * 그대로 원본이 된다. 그때 붙일 자리만 `exportAll` 로 열어 둔다.
+ * 기존 브라우저 배열은 로컬 읽기 캐시, 로그인한 Dash의 동기화는 sync-store 담당.
+ * 구글 연동과 독립적인 기록. 전송 전 입력과 exportAll 내보내기 경계 유지.
  *
  * 빈 글은 **지운 것으로 본다.** 오늘 뭐 썼더라 하고 열었다가 그냥 닫았을 때 빈 장이
  * 쌓이면, 달력에 일기 표식이 거짓으로 켜진다.
  */
 
+import { writePlannerCollection } from './sync-store';
 const DIARY_KEY = 'karmolab_planner_diary';
 
 export interface DiaryEntry {
@@ -39,11 +39,7 @@ function readAll(): DiaryEntry[] {
 }
 
 function writeAll(items: DiaryEntry[]): void {
-    try {
-        localStorage.setItem(DIARY_KEY, JSON.stringify(items));
-    } catch {
-        /* 저장 못 하는 브라우저에서도 쓰는 동안은 화면이 돌아야 한다 */
-    }
+    writePlannerCollection(DIARY_KEY, items);
 }
 
 /** 그 날 일기 (없으면 null) */

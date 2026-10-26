@@ -22,12 +22,12 @@ function renderDaily(ctx: DashPanelCtx): void {
     const from = Date.parse(day + 'T00:00:00+09:00');
     const to = from + 8 * 86400000;
     const at = (value: string): number => Date.parse(value.length === 10 ? value + 'T00:00:00+09:00' : value);
-    const events = [...listEvents('이 브라우저', new Date(from), new Date(to)), ...(report?.events || []).filter(event => !event.id.startsWith('local__'))]
+    const events = [...listEvents('내 기록', new Date(from), new Date(to)), ...(report?.events || []).filter(event => !event.id.startsWith('local__'))]
       .filter(event => at(event.end) > from && at(event.start) < to)
       .sort((a, b) => at(a.start) - at(b.start));
     const when = (value: string, allDay: boolean): string => allDay ? value + ' 종일' : new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     agenda.innerHTML = `<section><div class="mydd-section-head"><h3>할 일 <span>${tasks.length + remoteTasks.length}</span></h3><button type="button" data-open="kanban">전체 보기</button></div>${tasks.length + remoteTasks.length ? `<ul>${tasks.slice(0, 8).map(task => `<li><button type="button" data-complete="${esc(task.id)}" aria-label="완료: ${esc(task.title)}">완료</button><span>${esc(task.title)}</span></li>`).join('')}${remoteTasks.slice(0, 5).map(task => `<li><span>${esc(task.title)}<small>구글 할 일${task.due ? ' / ' + esc(task.due.slice(0, 10)) : ''}</small></span></li>`).join('')}</ul>` : '<p>할 일이 생기면 왼쪽에서 바로 남겨보세요.</p>'}${notice ? `<p role="status">${esc(notice)}</p>` : ''}${undone ? '<button type="button" data-undo>완료 되돌리기</button>' : ''}</section>
-      <section><div class="mydd-section-head"><h3>오늘과 다음 7일 <span>${events.length}</span></h3><button type="button" data-open="calendar">캘린더 보기</button></div>${events.length ? `<ol>${events.slice(0, 8).map(event => `<li><span>${esc(event.title)}<small>${esc(when(event.start, event.allDay))}</small></span></li>`).join('')}</ol>` : '<p>정해진 약속이 없어요.</p>'}<p class="mydd-source">이 브라우저${report?.connected ? '와 연결한 구글 계정' : ''}의 일정과 할 일</p></section>
+      <section><div class="mydd-section-head"><h3>오늘과 다음 7일 <span>${events.length}</span></h3><button type="button" data-open="calendar">캘린더 보기</button></div>${events.length ? `<ol>${events.slice(0, 8).map(event => `<li><span>${esc(event.title)}<small>${esc(when(event.start, event.allDay))}</small></span></li>`).join('')}</ol>` : '<p>정해진 약속이 없어요.</p>'}<p class="mydd-source">내 기록${report?.connected ? '과 연결한 구글 계정' : ''}의 일정과 할 일</p></section>
       <section class="mydd-anime"><div class="mydd-section-head"><h3>애니 숙제 <span>${(report?.homework || []).filter(item => !item.watchedAt && !item.archived).length}</span></h3><button type="button" data-open="anime">목록 보기</button></div><p>시청 기록과 새 회차를 플래너에서 확인해요.</p></section>`;
   }
   const safelyPaint = (): void => {
@@ -67,11 +67,13 @@ function renderDaily(ctx: DashPanelCtx): void {
     safelyPaint();
   });
   window.addEventListener('planner-local-change', safelyPaint);
+  window.addEventListener('planner-remote-change', safelyPaint);
   window.addEventListener('storage', safelyPaint);
   window.addEventListener('focus', safelyPaint);
   ctx.onDispose(() => {
     unsubscribe();
     window.removeEventListener('planner-local-change', safelyPaint);
+    window.removeEventListener('planner-remote-change', safelyPaint);
     window.removeEventListener('storage', safelyPaint);
     window.removeEventListener('focus', safelyPaint);
   });

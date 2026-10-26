@@ -46,6 +46,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     /* 첫 그림을 그리기 **전에는** 저장하지 않는다. 안 그러면 화면을 새로 세울 때
        빈 칸이 그 날 일기를 덮어 지운다. 실제로 그렇게 한 번 날렸다. */
     let ready = false;
+    let loadedText = '';
 
     container.innerHTML = `
         <div class="pl-diary">
@@ -99,6 +100,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
         flush(); // 옮기기 전에 쓰던 것부터 저장한다 (첫 그림에서는 아무것도 안 한다)
         current = date;
         textEl.value = readDiary(date)?.text ?? '';
+        loadedText = textEl.value;
         savedEl.textContent = '';
         renderHead();
         renderList();
@@ -113,9 +115,16 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
             saveTimer = null;
         }
         const before = readDiary(current)?.text ?? '';
-        const now = textEl.value;
-        if (before === now.trim()) return;
-        const kept = writeDiary(current, now);
+        let now = textEl.value.trim();
+        if (loadedText === now) return;
+        if (before !== loadedText && before !== now && before && now) {
+            now = now.startsWith(before) ? now : before.startsWith(now) ? before : before + '\n\n[다른 기기 기록]\n\n' + now;
+        }
+        let kept: boolean;
+        try { kept = writeDiary(current, now); }
+        catch { savedEl.textContent = '저장하지 못했어요. 입력은 그대로 두었어요.'; return; }
+        loadedText = now;
+        if (textEl.value.trim() !== now) textEl.value = now;
         if (kept) {
             /* 일기를 쓴 날 = 그 날의 연속일. 오늘 어제 것을 채워 넣어도 어제 썼다가 맞다. */
             const result = recordStreakActivity('diary', current);
@@ -166,6 +175,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
         }
         deleteDiary(current);
         textEl.value = '';
+        loadedText = '';
         savedEl.textContent = t('planner.t87');
         renderHead();
         renderList();
@@ -177,6 +187,17 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     };
     document.addEventListener('visibilitychange', onHide);
     window.addEventListener('pagehide', flush);
+    const remoteChanged = (): void => {
+        if (destroyed) return;
+        renderList();
+        if (textEl.value.trim() !== loadedText) {
+            savedEl.textContent = '다른 기기 기록이 도착했어요. 입력을 저장할 때 함께 보존해요.';
+            return;
+        }
+        const next = readDiary(current)?.text ?? '';
+        if (next !== loadedText) { textEl.value = next; loadedText = next; renderHead(); }
+    };
+    window.addEventListener('planner-remote-change', remoteChanged);
 
     load(current);
     if (!listDiary().length) textEl.focus();
@@ -187,6 +208,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
             destroyed = true;
             document.removeEventListener('visibilitychange', onHide);
             window.removeEventListener('pagehide', flush);
+            window.removeEventListener('planner-remote-change', remoteChanged);
         },
         open: (date: string) => {
             load(date);

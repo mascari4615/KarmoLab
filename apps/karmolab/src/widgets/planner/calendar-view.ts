@@ -1098,10 +1098,16 @@ export function buildCalendarView(
         if (!destroyed && lastRange) setEvents([...allEvents.filter(e => e.extendedProps.calendarId !== ANIME_CALENDAR_ID && !e.extendedProps.parentEventId), ...animeEvents(lastRange.start, lastRange.end)]);
     };
     window.addEventListener(ANIME_CHANGED, animeChanged);
+    const remoteChanged = (): void => {
+        if (destroyed || !lastRange) return;
+        setEvents([...allEvents.filter(event => event.extendedProps.calendarId !== LOCAL_CALENDAR_ID && !event.extendedProps.parentEventId), ...listLocalEvents('내 기록', new Date(+lastRange.start - 2 * 86400000), new Date(+lastRange.end + 2 * 86400000))]);
+    };
+    window.addEventListener('planner-remote-change', remoteChanged);
     return {
         destroy: () => {
             destroyed = true;
             window.removeEventListener(ANIME_CHANGED, animeChanged);
+            window.removeEventListener('planner-remote-change', remoteChanged);
             window.removeEventListener('hashchange', followDiscoveryDate);
             mobile.removeEventListener('change', adaptSettings);
             resize.disconnect();

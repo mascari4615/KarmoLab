@@ -288,10 +288,13 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
 
     render();
     void reload();
+    const remoteChanged = (): void => { if (!destroyed) void reload(); };
+    window.addEventListener('planner-remote-change', remoteChanged);
 
     return {
         destroy: () => {
             destroyed = true;
+            window.removeEventListener('planner-remote-change', remoteChanged);
         }
     };
 }

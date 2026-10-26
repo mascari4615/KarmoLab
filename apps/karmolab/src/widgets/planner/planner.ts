@@ -29,6 +29,7 @@ import { DISCOVERY_PATH, parseDiscovery, type DiscoveryFeed } from '../mydash/di
 import { buildKanbanView, type KanbanViewHandle } from './kanban-view';
 import { buildStreaksView } from './streaks-view';
 import { buildDiaryView, type DiaryViewHandle } from './diary-view';
+import { plannerSyncState } from './sync-store';
 
 (function (): void {
     const esc = (v: string): string =>
@@ -337,6 +338,14 @@ import { buildDiaryView, type DiaryViewHandle } from './diary-view';
         Object.assign(container.style, { height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0', padding: '0' });
         container.innerHTML = `<div class="pl-root"></div>`;
         const root = container.querySelector<HTMLElement>('.pl-root')!;
+        const syncStatus = document.createElement('p');
+        syncStatus.className = 'pl-note';
+        syncStatus.setAttribute('role', 'status');
+        root.before(syncStatus);
+        const paintSync = (): void => { syncStatus.textContent = plannerSyncState().message; };
+        paintSync();
+        window.addEventListener('planner-sync-status', paintSync);
+        onDispose(() => window.removeEventListener('planner-sync-status', paintSync));
         const mobileHeader = window.matchMedia('(max-width: 899px)');
         const placeConnection = (): void => {
             const bar = root.querySelector<HTMLElement>('.pl-bar');

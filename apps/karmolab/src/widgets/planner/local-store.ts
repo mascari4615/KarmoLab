@@ -1,8 +1,8 @@
 /**
- * 이 브라우저 안의 일정, 할 일. 구글 없이도 쓴다 (TASK-KL-321)
+ * 일정과 할 일의 로컬 읽기 캐시, 로그인한 Dash의 공통 동기화 저장 경로.
  *
  * 플래너는 원래 구글 연동이 **있어야만** 아무것도 보이는 게 없었다. 그건 우리 도구가 아니라
- * 구글 화면 한 겹이라는 뜻이다. 그래서 **여기 저장소를 정본으로 하나 둔다**. 연동은 얹는 것이다.
+ * 구글 화면 한 겹이라는 뜻이다. 구글 연동과 독립적인 기록, 동기화는 sync-store 담당.
  *
  * 규칙 하나로 둘을 가른다: **id 앞머리.** 여기 것은 전부 `local__` 로 시작하고, 구글 것은
  * `<캘린더>__<일정>` 이다. 그래서 화면은 둘을 섞어 보여 주고, 고칠 때는 id 만 보고 어디로
@@ -14,6 +14,7 @@
 import type { FcEvent, GoogleTask, KanbanColumn } from './gcal';
 import { occurrences, type RepeatRule } from './recurrence';
 import type { LinkedEvent } from './event-group';
+import { writePlannerCollection } from './sync-store';
 
 export const LOCAL_PREFIX = 'local__';
 export const LOCAL_CALENDAR_ID = 'local';
@@ -38,12 +39,7 @@ function read<T>(key: string): T[] {
 }
 
 function write<T>(key: string, items: T[]): void {
-    try {
-        localStorage.setItem(key, JSON.stringify(items));
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('planner-local-change'));
-    } catch {
-        /* 저장 못 해도 이번 화면은 돌아야 한다 */
-    }
+    writePlannerCollection(key, items);
 }
 
 function newId(): string {

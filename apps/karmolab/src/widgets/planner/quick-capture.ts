@@ -1,6 +1,7 @@
 import type { DashPanelCtx } from '../mydash/kit';
 import { esc } from '../mydash/kit';
 import { listDiary, readDiary, writeDiary } from './diary-store';
+import { plannerSyncState } from './sync-store';
 import { createEvent, createTask, listEvents, listTasks, moveTask } from './local-store';
 import { recordStreakActivity } from '../../lib/gamification';
 
@@ -38,7 +39,7 @@ export function mountQuickCapture(ctx: DashPanelCtx, { showAgenda = true } = {})
         <label class="mydq-label" for="mydq-text">오늘 남기고 싶은 것</label>
         <textarea id="mydq-text" name="quick-text" rows="2" required maxlength="10000" placeholder="한 일이나 생각을 짧게 적어도 괜찮아요"></textarea>
         <div class="mydq-controls"><label class="mydq-date-label">날짜 <input name="quick-date" type="date" required aria-label="기록 날짜"></label><label class="mydq-time-label" hidden>시각 <input name="quick-time" type="time" aria-label="일정 시작 시각"></label><button type="submit" class="mydq-save">일기에 추가</button></div>
-        <p class="mydq-hint">이 브라우저에 저장, 기존 플래너와 같은 기록</p>
+        <p class="mydq-hint" role="status"></p>
         <p class="mydq-status" role="status" aria-live="polite"></p>
         <button type="button" class="mydq-undo" hidden>할 일 완료 되돌리기</button>
         </form><div class="mydq-recent"></div>`;
@@ -174,10 +175,16 @@ export function mountQuickCapture(ctx: DashPanelCtx, { showAgenda = true } = {})
         ctx.openItem('planner');
     });
     const changed = (): void => { if (ctx.isCurrent()) recent(); };
+    const syncStatus = (): void => { box.querySelector<HTMLElement>('.mydq-hint')!.textContent = plannerSyncState().message; };
+    syncStatus();
+    window.addEventListener('planner-sync-status', syncStatus);
+    window.addEventListener('planner-remote-change', changed);
     window.addEventListener('storage', changed);
     window.addEventListener('planner-local-change', changed);
     window.addEventListener('focus', changed);
     ctx.onDispose(() => {
+        window.removeEventListener('planner-sync-status', syncStatus);
+        window.removeEventListener('planner-remote-change', changed);
         window.removeEventListener('storage', changed);
         window.removeEventListener('planner-local-change', changed);
         window.removeEventListener('focus', changed);
