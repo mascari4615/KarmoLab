@@ -23,7 +23,7 @@ export interface NotificationHandle {
 }
 const when = (value: string): string => new Date(value.length === 10 ? value + 'T00:00:00+09:00' : value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-export function mountNotifications(ctx: DashPanelCtx, { visible = true } = {}): NotificationHandle {
+export function mountNotifications(ctx: DashPanelCtx, { visible = true, compact = false } = {}): NotificationHandle {
     const box = document.createElement('details');
     box.className = 'pl-notifications';
     try { box.open = localStorage.getItem('planner.notifications.open') === '1'; } catch { /* 저장 불가 */ }
@@ -33,6 +33,13 @@ export function mountNotifications(ctx: DashPanelCtx, { visible = true } = {}): 
         <div class="pl-notify-actions"><button type="button" class="btn btn-ghost pl-notify-connect">상시 구글 알림 연결</button><button type="button" class="btn btn-ghost pl-notify-anime">애니 숙제</button><button type="button" class="btn btn-ghost pl-notify-refresh">지금 갱신</button><button type="button" class="btn btn-ghost pl-notify-test">디코로 안내 보내기</button><button type="button" class="btn btn-ghost pl-notify-disconnect" hidden>구글 알림 연결 해제</button></div>
         <p>기존 알림 채널로 아침 요약, 일정 전 안내, 찜과 시청 작품의 새 에피소드 알림. 로컬 일정과 할 일은 이 브라우저에서 홈이나 플래너를 열 때 동기화.</p>
         <div class="pl-notify-report"></div></div>`;
+    if (compact) {
+        box.classList.add('pl-notifications--compact');
+        box.querySelector('summary')!.firstChild!.textContent = '디코 알림 설정 ';
+        box.querySelector<HTMLElement>('.pl-notify-count')!.hidden = true;
+        box.querySelector<HTMLElement>('.pl-notify-report')!.hidden = true;
+        box.querySelector<HTMLElement>('.pl-notify-body > p:not(.pl-notify-status)')!.textContent = '연결한 디스코드 채널의 아침 요약과 일정 전 알림을 관리합니다.';
+    }
     const style = document.createElement('style');
     style.textContent = `.pl-notifications{flex-shrink:0;border-top:1px solid var(--border);font-size:var(--font-size-sm);color:var(--text-primary)}.pl-notifications summary{padding:12px 16px;cursor:pointer;min-height:44px}.pl-notify-count{font-size:var(--font-size-xs);color:var(--text-secondary)}.pl-notify-body{padding:0 16px 16px;max-height:50vh;overflow:auto}.pl-notify-body p{color:var(--text-secondary);line-height:1.6}.pl-notify-actions{display:flex;flex-wrap:wrap;gap:8px}.pl-notify-actions button{min-height:44px}.pl-notify-actions [hidden]{display:none}.pl-notify-report{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px}.pl-notify-report h3{font-size:var(--font-size-sm);margin:12px 0}.pl-notify-report ul{padding-left:20px;margin:0}.pl-notify-report li{margin:8px 0;overflow-wrap:anywhere}.pl-notify-report a{color:var(--accent)}.pl-notify-warning{color:var(--text-primary)!important}`;
     box.appendChild(style);

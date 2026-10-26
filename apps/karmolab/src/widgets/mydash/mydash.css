@@ -283,7 +283,46 @@ html[data-home-bg="village"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/
 html[data-home-bg="clouds"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-clouds.webp'); }
 html[data-home-bg="twilight"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-twilight.webp'); }
 html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-dusk.webp'); }
-.mydh:has(.mydq) { overflow-y: auto; }
+.mydd { width: 100%; }
+.mydd-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md); }
+.mydd .mydq { max-width: none; margin: 0; }
+.mydq--diary-only .mydq-summary { display: none; }
+.mydd-agenda { padding: var(--space-md); background: var(--dash-paper, var(--bg-secondary)); border: 1px solid var(--border); }
+.mydd-agenda section + section { margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--border); }
+.mydd h3 { font-size: var(--font-size-sm); margin: 0; }
+.mydd-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mydd button { font: inherit; color: var(--text-primary); }
+.mydd-agenda button { min-height: 44px; padding: 6px 10px; border: 1px solid var(--border); background: var(--dash-paper, var(--bg-secondary)); cursor: pointer; }
+.mydd button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mydd-agenda ul, .mydd-agenda ol { list-style: none; padding: 0; margin: 8px 0; }
+.mydd-agenda li { display: flex; align-items: center; gap: 8px; margin: 6px 0; overflow-wrap: anywhere; }
+.mydd-agenda small { display: block; color: var(--text-secondary); }
+.mydd-agenda p { line-height: 1.6; font-size: var(--font-size-sm); }
+.mydd-source { color: var(--text-secondary); }
+.mydd-notifications { margin-top: var(--space-md); padding: 0 var(--space-md); background: var(--dash-paper, var(--bg-secondary)); border: 1px solid var(--border); }
+.pl-notifications--compact .pl-notify-report[hidden] { display: none; }
+.mydl-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--space-lg); }
+.mydl-preview { position: sticky; top: 0; height: min(640px, 72vh); overflow: hidden; border: 1px solid var(--border); }
+.mydl-backdrop { width: 100%; height: 100%; object-fit: cover; }
+.mydl-character { position: absolute; bottom: 0; right: 0; height: 95%; max-width: none; object-fit: contain; }
+.mydl-character[hidden], .mydh-yawn[hidden] { display: none; }
+.mydl-caption { position: absolute; left: 0; bottom: 0; padding: 10px 14px; background: var(--dash-paper); color: var(--text-primary); }
+.mydl-options { min-width: 0; padding: var(--space-md); background: var(--dash-paper, var(--bg-secondary)); border: 1px solid var(--border); }
+.mydl h3 { margin: 0 0 10px; font-size: var(--font-size-sm); }
+.mydl h3:not(:first-child) { margin-top: var(--space-lg); }
+.mydl-characters, .mydl-outfits, .mydl-backgrounds { display: flex; gap: 8px; flex-wrap: wrap; }
+.mydl button { min-height: 44px; border: 1px solid var(--border); background: var(--dash-paper); color: var(--text-primary); padding: 8px 12px; font: inherit; cursor: pointer; }
+.mydl button[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 700; }
+.mydl button:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.mydl-characters button { display: flex; flex-direction: column; align-items: center; width: 100px; padding: 0 0 8px; overflow: hidden; }
+.mydl-characters img { width: 100%; height: 120px; object-fit: cover; object-position: top; }
+.mydl-backgrounds button { width: 120px; padding: 0 0 8px; }
+.mydl-backgrounds img { display: block; width: 100%; height: 64px; object-fit: cover; margin-bottom: 6px; }
+.mydl-status { min-height: 1.5em; line-height: 1.6; font-size: var(--font-size-sm); }
+@media (max-width: 899px) {
+  .mydd-layout, .mydl-layout { grid-template-columns: minmax(0, 1fr); }
+  .mydl-preview { position: relative; height: 350px; }
+}
 .mydq {
   position: relative;
   max-width: min(760px, 70%);

@@ -29,6 +29,7 @@ import { dashRegistry, esc, httpsUrl } from './kit';
 import type { DashEntry, DashPanel, DashPanelCtx, DashReadOpts, DashRepoWrite } from './kit';
 import { cachedEtag, cachedRead, clearReads, saveRead } from './read-cache';
 import mydashCss from './mydash.css';
+import { LOBBY_BACKGROUNDS, applyLobbyLook } from './lobby-look';
 import dashCss from './dash.css';
 import kakaoDailyCss from './kakao-daily.css';
 import discordChannelsCss from './discord-channels.css';
@@ -916,6 +917,8 @@ import { t, loadNamespace } from '../../lib/i18n';
         label: t('mydash.nav.now', undefined, '지금'),
         items: [
           { id: 'today', label: t('mydash.nav.home', undefined, '홈'), panel: 'home' },
+          { id: 'daily', label: '오늘', panel: 'daily' },
+          { id: 'appearance', label: '꾸미기', panel: 'appearance' },
           { id: 'user-presence', label: '내 상태', panel: 'user-presence' },
           { id: 'byeoru', label: '벼루 관리', panel: 'byeoru' },
           { id: 'automations', label: '자동화', panel: 'automations' },
@@ -982,6 +985,8 @@ import { t, loadNamespace } from '../../lib/i18n';
   /** ESC 메뉴 칸의 아이콘 (`img/shell/menu/*.png`). 홈 카드와 같은 매핑, 나 는 소개 그림 */
   const MENU_ICONS: Record<string, string> = {
     today: 'home',
+    daily: 'memo',
+    appearance: 'set',
     'user-presence': 'me',
     bookmarks: 'book',
     'kakao-daily': 'book',
@@ -1005,13 +1010,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   const THEME_KEY = 'toolbox_theme';
   const BG_KEY = 'toolbox_home_bg';
   /* 이름은 lab 설정의 첫 화면 배경 목록과 같게 (toolbox.ts HOME_BGS) */
-  const BGS: Array<{ id: string; label: string }> = [
-    { id: 'auto', label: '자동' },
-    { id: 'village', label: '마을' },
-    { id: 'clouds', label: '구름' },
-    { id: 'twilight', label: '황혼' },
-    { id: 'dusk', label: '해질녘' },
-  ];
+  const BGS: Array<{ id: string; label: string }> = LOBBY_BACKGROUNDS.map(item => ({ id: item.id, label: item.name }));
   function readKey(k: string): string {
     try {
       return localStorage.getItem(k) || '';
@@ -1034,6 +1033,8 @@ import { t, loadNamespace } from '../../lib/i18n';
     const bg = lookBg();
     if (bg === 'auto') html.removeAttribute('data-home-bg');
     else html.setAttribute('data-home-bg', bg);
+    applyLobbyLook();
+    window.dispatchEvent(new Event('dash-lobby-change'));
   }
   const lookTools = (): Array<{ label: () => string; pick: () => void }> => [
     {

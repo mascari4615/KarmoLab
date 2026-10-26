@@ -28,7 +28,7 @@ function checkStorage(kind: Kind): void {
     if (!valid) throw new Error('기존 저장 내용을 읽을 수 없어요. 플래너에서 확인해 주세요.');
 }
 
-export function mountQuickCapture(ctx: DashPanelCtx): void {
+export function mountQuickCapture(ctx: DashPanelCtx, { showAgenda = true } = {}): void {
     const box = document.createElement('section');
     box.className = 'mydq';
     box.setAttribute('aria-label', '빠른 기록');
@@ -49,6 +49,7 @@ export function mountQuickCapture(ctx: DashPanelCtx): void {
     const status = box.querySelector<HTMLElement>('.mydq-status')!;
     const save = box.querySelector<HTMLButtonElement>('.mydq-save')!;
     const undo = box.querySelector<HTMLButtonElement>('.mydq-undo')!;
+    box.classList.toggle('mydq--diary-only', !showAgenda);
     let kind: Kind = 'diary';
     let lastDone: { id: string; column: 'todo' | 'inProgress' } | null = null;
     date.value = today();

@@ -16,8 +16,7 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
 import { ensureToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents } from '../planner/gcal';
-import { mountNotifications } from '../planner/notifications';
-import { mountQuickCapture } from '../planner/quick-capture';
+import { applyLobbyLook } from './lobby-look';
 
 (function (): void {
   'use strict';
@@ -197,6 +196,7 @@ import { mountQuickCapture } from '../planner/quick-capture';
 
   function tiles(): Tile[] {
     return [
+      { item: 'daily', title: '오늘', icon: 'memo', count: async () => null },
       /* 판정 대기와 북마크는 한 방 (사용자 2026-09-23). 방이 판정 대기부터 열려 목록 수도 대기 수 */
       {
         item: 'bookmarks',
@@ -209,6 +209,7 @@ import { mountQuickCapture } from '../planner/quick-capture';
       { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), icon: 'stat', count: aiCount },
       { item: 'machines', title: t('mydash.nav.machines', undefined, '머신'), icon: 'dash', count: pcCount },
       { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), icon: 'cal', count: calendarCount },
+      { item: 'appearance', title: '꾸미기', icon: 'set', count: async () => null },
     ];
   }
 
@@ -250,8 +251,14 @@ import { mountQuickCapture } from '../planner/quick-capture';
 
     root.className += ' mydh';
     root.innerHTML = frameHtml();
-    mountQuickCapture(ctx);
-    mountNotifications(ctx);
+    applyLobbyLook();
+    const changedLook = (): void => { if (ctx.isCurrent()) applyLobbyLook(); };
+    window.addEventListener('dash-lobby-change', changedLook);
+    window.addEventListener('storage', changedLook);
+    ctx.onDispose(() => {
+      window.removeEventListener('dash-lobby-change', changedLook);
+      window.removeEventListener('storage', changedLook);
+    });
     root.addEventListener('click', (ev) => {
       const el = (ev.target as HTMLElement | null)?.closest('[data-open]') as HTMLElement | null;
       if (el) ctx.openItem(el.getAttribute('data-open') || '');
@@ -264,7 +271,7 @@ import { mountQuickCapture } from '../planner/quick-capture';
     }));
 
     /* 오는 대로 하나씩 채운다. 느린 출처 하나가 나머지 수를 붙잡지 않게 */
-    const results = await Promise.all(
+    await Promise.all(
       jobs.map(async (j): Promise<boolean> => {
         let value: string | null;
         try {
@@ -287,9 +294,6 @@ import { mountQuickCapture } from '../planner/quick-capture';
         return true;
       })
     );
-    if (!ctx.isCurrent()) return;
-    const alive = results.filter(Boolean).length;
-    ctx.setCount('today', alive + '/' + results.length);
   }
 
   void loadNamespace('mydash').catch(() => undefined);
