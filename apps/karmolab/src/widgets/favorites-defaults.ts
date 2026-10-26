@@ -95,6 +95,7 @@ export const DEFAULT_ITEMS: FavoriteGroup[] = [
         { url: 'https://www.twitch.tv', label: 'Twitch', icon: 'https://cdn.simpleicons.org/twitch' },
         { url: 'https://x.com', label: 'X (Twitter)', icon: 'https://cdn.simpleicons.org/x' },
         { url: 'https://www.reddit.com', label: 'Reddit', icon: 'https://cdn.simpleicons.org/reddit' },
+        { url: 'https://arca.live/', label: '아카라이브', icon: null },
         { url: 'https://discord.com', label: 'Discord', icon: 'https://cdn.simpleicons.org/discord' },
         { url: 'https://lolesports.com/', label: 'LoL Esports', icon: null },
     ]},
