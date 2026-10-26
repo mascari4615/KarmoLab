@@ -83,6 +83,7 @@
         "arca-insight.js",
         "arca-block.js",
         "arca-seen.js",
+        "arca-scrap.js",
         "arca-liked-link.js"
       ],
       "run_at": "document_idle"
