@@ -88,7 +88,7 @@
     if (base == null) return;
     const fresh = rows.filter((r) => r.id > base).length;
     const firstOld = rows.find((r) => r.id <= base);
-    if (!fresh || !firstOld) return;
+    if (!firstOld || (!fresh && firstOld.id !== base)) return;
     const line = document.createElement("div");
     line.className = "karmo-seen";
     line.textContent = `여기까지 읽음 (이 페이지 새 글 ${fresh}개)`;
