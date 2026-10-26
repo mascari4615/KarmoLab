@@ -225,8 +225,25 @@ const LANES = 4;
 async function runCase([id, input, press, expect]) {
   const page = await ctx.newPage();
   const scope = `#page-${id}`;
+  const navigation = { commit: false, domcontentloaded: false, load: false };
+  const started = performance.now();
+  const committed = frame => { if (frame === page.mainFrame()) navigation.commit = true; };
+  const domReady = () => { navigation.domcontentloaded = true; };
+  const loaded = () => { navigation.load = true; };
+  if (id === 'radix') {
+    page.on('framenavigated', committed); page.on('domcontentloaded', domReady); page.on('load', loaded);
+  }
   try {
-    await page.goto(`${BASE}/t/${id}/`, { waitUntil: 'networkidle', timeout: 25000 });
+    if (id === 'radix') {
+      const deadline = performance.now() + 25000;
+      await page.goto(`${BASE}/t/${id}/`, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      const remaining = deadline - performance.now();
+      if (remaining <= 0) throw new Error('radix preparation deadline exceeded');
+      await page.locator(`${scope} textarea, ${scope} input[type="text"], ${scope} input[type="number"], ${scope} input:not([type]), ${scope} input[type="date"]`).first()
+        .waitFor({ state: 'visible', timeout: remaining });
+    } else {
+      await page.goto(`${BASE}/t/${id}/`, { waitUntil: 'networkidle', timeout: 25000 });
+    }
     await page.waitForTimeout(800);
 
     /* 칸이 여러 개인 도구 (TASK-KL-089).
@@ -302,8 +319,19 @@ async function runCase([id, input, press, expect]) {
     }
     process.stdout.write('.');
   } catch (e) {
+    if (id === 'radix') {
+      try {
+        const url = new URL(page.url());
+        console.error('[radix-navigation] ' + JSON.stringify({ ...navigation, elapsedMs: Math.round(performance.now() - started),
+          origin: url.origin, path: url.pathname === '/t/radix/' ? url.pathname : '[redirected path]' }));
+      } catch { /* Diagnostics must not replace the original failure. */ }
+    }
     failures.push(`${id}: ${String(e.message).slice(0, 90)}`);
     process.stdout.write('x');
+  } finally {
+    if (id === 'radix') {
+      page.off('framenavigated', committed); page.off('domcontentloaded', domReady); page.off('load', loaded);
+    }
   }
   await page.close();
 }
