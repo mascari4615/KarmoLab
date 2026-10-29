@@ -409,6 +409,25 @@ const CAL = { id: 'me@example.com', summary: '내 캘린더', backgroundColor: '
 
 const R = await load('src/widgets/planner/recurrence.ts', 'recurrence');
 {
+  const model = await load('src/widgets/planner/event-model.ts', 'event-model');
+  const rows = [{ id: 'local__shared', title: 'shared', start: '2026-10-14', end: '2026-10-15', allDay: true,
+    repeat: { frequency: 'daily', interval: 1, days: [], until: '2026-10-16' },
+    exceptions: { '2026-10-14': { start: '2026-11-02', end: '2026-11-03' }, '2026-10-15': { cancelled: true } } }];
+  const raw = JSON.stringify(rows);
+  localStorage.setItem('karmolab_planner_events', raw);
+  const range = [new Date(2026, 10, 2), new Date(2026, 10, 3)];
+  const moved = model.eventsFromRows(rows, 'shared', ...range);
+  eq(JSON.stringify(moved), JSON.stringify(L.listEvents('shared', ...range)), 'pure model and browser cache use identical expansion');
+  eq(moved.length, 1, 'moved exception enters a range outside its series');
+  eq(moved[0].extendedProps.googleId, 'local__shared', 'derived occurrence retains source key');
+  eq(moved[0].extendedProps.occurrenceDate, '2026-10-14', 'moved occurrence retains original date');
+  eq(JSON.stringify(rows), raw, 'pure expansion preserves input rows');
+  eq(localStorage.getItem('karmolab_planner_events'), raw, 'pure expansion preserves stored rows');
+  const boundary = model.eventsFromRows([{ ...rows[0], exceptions: {} }], 'shared', new Date(2026, 9, 15), new Date(2026, 9, 16));
+  eq(boundary.map(event => event.start).join(), '2026-10-15', 'all day overlap excludes end at from and start at to');
+  localStorage.removeItem('karmolab_planner_events');
+}
+{
   const groups=await load('src/widgets/planner/event-group.ts','event-groups');
   const local=await load('src/widgets/planner/local-store.ts','group-local');
   localStorage.removeItem('karmolab_planner_events');
