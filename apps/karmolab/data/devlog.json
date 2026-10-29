@@ -2,11 +2,32 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1762,
-    "days": 14,
+    "commits": 1764,
+    "days": 15,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-10-30",
+      "entries": [
+        {
+          "sha": "51288f8b",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "10분 생존 뒤 보스와 재도전 연결"
+        },
+        {
+          "sha": "a91e6670",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "생존 전투의 성장과 재도전 흐름 복구"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
     {
       "date": "2026-10-26",
       "entries": [
@@ -506,24 +527,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "traversal",
           "text": "등반과 활공 시험 Stage 연결"
-        },
-        {
-          "sha": "46a31d38",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "던전은 이제 안에 들어가 싸우는 시간 제한 판. 규칙은 SO"
-        },
-        {
-          "sha": "6582b974",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "movement",
-          "text": "지상 가감속과 아날로그 저속 이동, 웅크리기 충돌 처리"
         }
       ],
       "quiet": 2,
-      "more": 2
+      "more": 4
     }
   ]
 }
