@@ -8,8 +8,8 @@ import { JSDOM } from 'jsdom';
 const entry = fileURLToPath(new URL('../src/widgets/planner/kanban-view.ts', import.meta.url));
 const translations = JSON.parse(await readFile(new URL('../i18n/ko/planner.json', import.meta.url), 'utf8'));
 const bundle = await build({
-  stdin: { contents: `import { buildKanbanView } from ${JSON.stringify(entry)}; buildKanbanView(document.getElementById('kanban'), 'fixture-only');`, resolveDir: fileURLToPath(new URL('../', import.meta.url)) },
-  bundle: true, write: false, format: 'iife', logLevel: 'silent',
+  stdin: { contents: `export { buildKanbanView } from ${JSON.stringify(entry)}; export { PlannerJournal } from './src/widgets/planner/sync-store';`, resolveDir: fileURLToPath(new URL('../', import.meta.url)) },
+  bundle: true, write: false, format: 'iife', globalName: 'KanbanFixture', logLevel: 'silent',
   plugins: [{ name: 'test-auth', setup(context) {
     context.onLoad({ filter: /[\\/]planner[\\/]gauth\.ts$/ }, () => ({ contents: "export async function withToken(_, fn) { return fn('fixture-only'); }", loader: 'js' }));
   } }]
@@ -38,6 +38,7 @@ async function screen(t, { tasks = [], holdReloads = false } = {}) {
     });
   };
   window.eval(bundle.outputFiles[0].text);
+  window.KanbanFixture.buildKanbanView(window.document.getElementById('kanban'), 'fixture-only');
   await until(() => reads.length === 1);
   await tick();
   return { window, writes, reads, input: window.document.querySelector('input'), form: window.document.querySelector('form'), button: window.document.querySelector('button[type="submit"]') };
@@ -47,6 +48,73 @@ async function submit(ui, title) {
   ui.form.dispatchEvent(new ui.window.Event('submit', { bubbles: true, cancelable: true }));
   await until(() => ui.writes.length === 1);
 }
+
+function localScreen(t, { beforeAppend = false } = {}) {
+  const dom = new JSDOM('<html lang="ko"><main id="kanban"></main></html>', { url: 'https://fixture.invalid', runScripts: 'outside-only' });
+  t.after(() => dom.window.close());
+  const { window } = dom;
+  window.__KARMO_LOCALE = 'ko'; window.__KARMO_I18N = { ko: { planner: translations } };
+  window.fetch = () => { throw new Error('Local fixture forbids network'); };
+  window.eval(bundle.outputFiles[0].text);
+  const storage = window.localStorage, key = 'karmolab_planner_tasks';
+  let fail = false;
+  const wrapped = {
+    getItem: name => storage.getItem(name), key: index => storage.key(index), get length() { return storage.length; },
+    removeItem: name => storage.removeItem(name),
+    setItem(name, value) {
+      if (fail && (beforeAppend ? name.includes('.batch.') : name === key)) { fail = false; throw new window.DOMException('fixture quota', 'QuotaExceededError'); }
+      storage.setItem(name, value);
+    }
+  };
+  const journal = new window.KanbanFixture.PlannerJournal(wrapped, 'fixture'); journal.migrate(); journal.apply();
+  window.KarmoPlannerSyncWriter = (_, rows) => journal.write('tasks', rows);
+  const view = window.KanbanFixture.buildKanbanView(window.document.getElementById('kanban'), null);
+  t.after(() => view.destroy());
+  return { window, journal, input: window.document.querySelector('input'), form: window.document.querySelector('form'), button: window.document.querySelector('button[type="submit"]'),
+    read: () => JSON.parse(storage.getItem(key) || '[]'), failNext() { fail = true; } };
+}
+function submitLocal(ui, title) {
+  ui.input.value = title;
+  ui.form.dispatchEvent(new ui.window.Event('submit', { bubbles: true, cancelable: true }));
+}
+
+test('a committed local creation consumes its input across cache recovery without duplicate IDs', async t => {
+  const ui = localScreen(t);
+  ui.failNext(); submitLocal(ui, '같은 할 일');
+  await until(() => !ui.button.disabled);
+  assert.equal(ui.input.value, ''); assert.equal(ui.read().length, 0);
+  assert.match(ui.window.document.querySelector('.pl-toast').textContent, /이 기기에.*기록했어요.*목록은 아직 갱신하지 못했어요/);
+  const count = ui.journal.batches().length;
+  ui.journal.apply(); ui.window.dispatchEvent(new ui.window.Event('planner-remote-change'));
+  ui.form.dispatchEvent(new ui.window.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(ui.journal.batches().length, count);
+  assert.equal(ui.read().length, 1); assert.equal(ui.read()[0].title, '같은 할 일');
+  submitLocal(ui, '같은 할 일'); await until(() => !ui.button.disabled);
+  assert.equal(ui.read().length, 2); assert.equal(new Set(ui.read().map(row => row.id)).size, 2);
+});
+
+test('a local pre-append failure restores its title for a single retry', async t => {
+  const ui = localScreen(t, { beforeAppend: true });
+  ui.failNext(); submitLocal(ui, '다시 저장'); await until(() => !ui.button.disabled);
+  assert.equal(ui.input.value, '다시 저장'); assert.equal(ui.journal.batches().length, 0);
+  assert.match(ui.window.document.querySelector('.pl-toast').textContent, /추가하지 못했습니다/);
+  ui.form.dispatchEvent(new ui.window.Event('submit', { bubbles: true, cancelable: true })); await until(() => !ui.button.disabled);
+  assert.equal(ui.read().length, 1); assert.equal(ui.read()[0].title, '다시 저장'); assert.equal(ui.input.value, '');
+});
+
+test('a post-creation render failure keeps a newer draft without restoring the completed title', async t => {
+  const ui = localScreen(t), board = ui.window.document.querySelector('.pl-kanban-board');
+  const html = Object.getOwnPropertyDescriptor(ui.window.Element.prototype, 'innerHTML');
+  let fail = true;
+  Object.defineProperty(board, 'innerHTML', { get() { return html.get.call(this); }, set(value) {
+    if (fail) { fail = false; ui.input.value = '새로운 초안'; throw new Error('fixture render failed'); }
+    html.set.call(this, value);
+  } });
+  submitLocal(ui, '완료된 할 일'); await until(() => !ui.button.disabled);
+  assert.equal(ui.read().length, 1); assert.equal(ui.read()[0].title, '완료된 할 일');
+  assert.equal(ui.input.value, '새로운 초안');
+  assert.match(ui.window.document.querySelector('.pl-toast').textContent, /이 기기에.*기록했어요/);
+});
 
 test('a failed task creation preserves a newer draft typed while waiting', async t => {
   const ui = await screen(t);

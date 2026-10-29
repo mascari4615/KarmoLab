@@ -21,6 +21,7 @@ import {
 } from './gcal';
 import { EXP_REWARDS, addExp } from '../../lib/gamification';
 import { withToken } from './gauth';
+import { isPlannerWriteCommitted } from './sync-store';
 import {
     createTask as createLocalTask,
     isLocal,
@@ -269,13 +270,19 @@ export function buildKanbanView(container: HTMLElement, token: string | null): K
         form.setAttribute('aria-busy', 'true');
         input.value = '';
         void (async () => {
+            let created = false;
             try {
                 /* 연동 전이면 이 브라우저에 적는다. 구글이 없다고 못 적을 이유가 없다 */
                 if (token) await withToken(token, (tok) => createTask(tok, title));
                 else createLocalTask(title);
+                created = true;
                 await reload();
-            } catch {
+            } catch (error) {
                 if (destroyed) return;
+                if (created || (!token && isPlannerWriteCommitted(error))) {
+                    toast(token ? '할 일은 저장했지만 목록을 갱신하지 못했어요. 같은 내용을 다시 저장할 필요는 없어요.' : '이 기기에 할 일을 기록했어요. 목록은 아직 갱신하지 못했어요. 같은 내용을 다시 저장할 필요는 없어요.', 'info');
+                    return;
+                }
                 toast(t('planner.t48'), 'error');
                 if (input.value === '') input.value = title;
             } finally {
