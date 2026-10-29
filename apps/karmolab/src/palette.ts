@@ -747,6 +747,7 @@ const KarmoPalette = (() => {
   }
 
   function resetList(inst: Instance): void {
+    if (inst.list.scrollTop) inst.list.scrollTop = 0;
     inst.list.innerHTML = '';
     inst.rows = [];
     inst.active = -1;
@@ -904,7 +905,7 @@ const KarmoPalette = (() => {
    * 포커스는 입력이 계속 쥐고, 목록에서는 표시만 옮긴다 (ARIA combobox).
    * 진짜 포커스를 목록으로 옮기면 타이핑이 끊긴다.
    */
-  function setActive(inst: Instance, i: number): void {
+  function setActive(inst: Instance, i: number, { scroll = false }: { scroll?: boolean } = {}): void {
     if (inst.active >= 0 && inst.rows[inst.active]) {
       inst.rows[inst.active].el.classList.remove('is-active');
       inst.rows[inst.active].el.setAttribute('aria-selected', 'false');
@@ -915,7 +916,7 @@ const KarmoPalette = (() => {
       row.classList.add('is-active');
       row.setAttribute('aria-selected', 'true');
       inst.input.setAttribute('aria-activedescendant', row.id);
-      row.scrollIntoView({ block: 'nearest' });
+      if (scroll) row.scrollIntoView({ block: 'nearest' });
     } else {
       inst.input.removeAttribute('aria-activedescendant');
     }
@@ -924,7 +925,7 @@ const KarmoPalette = (() => {
   function move(inst: Instance, delta: number): void {
     if (!inst.rows.length) return;
     const n = inst.rows.length;
-    setActive(inst, (inst.active + delta + n) % n);
+    setActive(inst, (inst.active + delta + n) % n, { scroll: true });
   }
 
   function choose(inst: Instance, entry: Entry): void {

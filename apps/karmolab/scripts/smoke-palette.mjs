@@ -26,6 +26,9 @@ import { stripJekyll } from './lib/serve-static.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const blogRoot = path.dirname(path.dirname(root));
+const paletteSource = process.argv.includes('--source')
+  ? await (await import('esbuild')).build({ entryPoints: [path.join(root, 'src/palette.ts')], bundle: true, write: false, format: 'iife', logLevel: 'silent' })
+  : null;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -54,6 +57,10 @@ const server = http.createServer((req, res) => {
   if (urlPath.endsWith('/')) urlPath += 'index.html';
 
   const file = path.join(blogRoot, urlPath.replace(/^\//, ''));
+  if (paletteSource && file === path.join(root, 'js/palette.js')) {
+    res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' }).end(paletteSource.outputFiles[0].text);
+    return;
+  }
   if (!file.startsWith(blogRoot) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     res.writeHead(404).end('not found');
     return;
@@ -147,6 +154,49 @@ if (inputSkin.shadow && inputSkin.shadow !== 'none') {
 }
 
 /* ── ② 이름으로 찾기 + 일치 글자 강조 ──────────────────────── */
+await page.evaluate(() => {
+  window.__paletteScrollCalls = 0;
+  window.__paletteOriginalScroll = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function (...args) {
+    if (this.classList.contains('kp-row')) window.__paletteScrollCalls++;
+    return window.__paletteOriginalScroll.apply(this, args);
+  };
+  const list = document.querySelector('.kp-inline .kp-list');
+  window.__paletteListStyle = list.getAttribute('style');
+  list.style.height = '72px'; list.style.maxHeight = '72px'; list.style.overflowY = 'auto';
+});
+await page.locator('.kp-inline .kp-input').fill('도구');
+await page.waitForFunction(() => document.querySelectorAll('.kp-inline .kp-row').length >= 4);
+await page.locator('.kp-inline .kp-row').first().hover();
+const renderCalls = await page.evaluate(() => window.__paletteScrollCalls);
+if (renderCalls !== 0) problems.push(`검색 재렌더나 hover가 결과 scrollIntoView를 호출했다 (${renderCalls})`);
+for (let index = 0; index < 3; index++) await page.locator('.kp-inline .kp-input').press('ArrowDown');
+await page.locator('.kp-inline .kp-input').press('ArrowUp');
+const navigation = await page.evaluate(() => {
+  const list = document.querySelector('.kp-inline .kp-list');
+  const input = document.querySelector('.kp-inline .kp-input');
+  const active = list.querySelector('.kp-row.is-active');
+  const box = list.getBoundingClientRect(), row = active.getBoundingClientRect();
+  return { calls: window.__paletteScrollCalls, scroll: list.scrollTop, visible: row.top >= box.top - 1 && row.bottom <= box.bottom + 1,
+    focus: document.activeElement === input, aria: input.getAttribute('aria-activedescendant') === active.id };
+});
+if (navigation.calls < 4 || navigation.scroll <= 0 || !navigation.visible || !navigation.focus || !navigation.aria) {
+  problems.push(`화살표 선택행 스크롤, 가시성이나 입력 접근성이 깨졌다 (${JSON.stringify(navigation)})`);
+}
+await page.locator('.kp-inline .kp-input').fill('텍스트 도구');
+await page.waitForFunction(() => document.querySelector('.kp-inline .kp-row.is-active') === document.querySelector('.kp-inline .kp-row'));
+const queryReset = await page.evaluate(() => {
+  const list = document.querySelector('.kp-inline .kp-list'), first = list.querySelector('.kp-row');
+  const box = list.getBoundingClientRect(), row = first.getBoundingClientRect();
+  const result = { calls: window.__paletteScrollCalls, scroll: list.scrollTop, visible: row.top >= box.top - 1 && row.bottom <= box.bottom + 1 };
+  Element.prototype.scrollIntoView = window.__paletteOriginalScroll;
+  if (window.__paletteListStyle === null) list.removeAttribute('style'); else list.setAttribute('style', window.__paletteListStyle);
+  return result;
+});
+if (queryReset.calls !== navigation.calls || queryReset.scroll !== 0 || !queryReset.visible) {
+  problems.push(`새 검색 첫행 복귀가 동기 scrollIntoView에 의존한다 (${JSON.stringify(queryReset)})`);
+}
+console.log('[smoke-palette] scroll fixture ' + JSON.stringify({ mode: paletteSource ? 'source' : 'artifact', renderCalls, navigation, queryReset }));
 await type('텍스트 도구');
 let titles = await rowTitles();
 if (!titles.length) problems.push('텍스트 도구 로 찾은 결과가 0개다');
