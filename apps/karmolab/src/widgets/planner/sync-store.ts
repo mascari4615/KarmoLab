@@ -146,6 +146,10 @@ export class PlannerJournal {
         for (const key of new Set([...before.keys(), ...after.keys()])) {
             if (JSON.stringify(before.get(key)) === JSON.stringify(after.get(key))) continue;
             const heads = plannerHeads(all.filter(op => op.collection === collection && op.key === key));
+            const current = materializePlanner(heads)[collection][0];
+            if (JSON.stringify(before.get(key)) !== JSON.stringify(current)) {
+                throw Object.assign(new Error('목록이 최신 기록과 달라 새 입력은 아직 저장하지 않았어요. 목록을 갱신한 뒤 다시 저장해 주세요.'), { code: 'planner_cache_stale' });
+            }
             ops.push({ collection, key, parents: heads.map(op => op.id), at, value: after.get(key) || null });
         }
         // The durable journal precedes the cache; a failed cache write is recoverable.

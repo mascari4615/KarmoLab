@@ -6,7 +6,7 @@ import { JSDOM } from 'jsdom';
 
 const entry = fileURLToPath(new URL('../src/widgets/planner/quick-capture.ts', import.meta.url));
 const { outputFiles } = await build({
-  stdin: { contents: `export { mountQuickCapture } from ${JSON.stringify(entry)}; export { PlannerJournal, PLANNER_KEYS } from './src/widgets/planner/sync-store';`, resolveDir: fileURLToPath(new URL('../', import.meta.url)) },
+  stdin: { contents: `export { mountQuickCapture } from ${JSON.stringify(entry)}; export { PlannerJournal, PLANNER_KEYS } from './src/widgets/planner/sync-store'; export { materializePlanner } from './src/widgets/planner/sync-model';`, resolveDir: fileURLToPath(new URL('../', import.meta.url)) },
   bundle: true, write: false, format: 'iife', globalName: 'Capture', logLevel: 'silent'
 });
 function screen(t, initial = {}) {
@@ -28,13 +28,14 @@ function screen(t, initial = {}) {
 
 function journalWithFailure(ui, key, beforeAppend = false) {
   const storage = ui.window.localStorage;
-  let fail = false;
+  let fail = false, persistent = false;
   const wrapped = {
     getItem: name => storage.getItem(name), key: index => storage.key(index), get length() { return storage.length; },
     removeItem: name => storage.removeItem(name),
     setItem(name, value) {
       if (fail && (beforeAppend ? name.includes('.batch.') : name === key)) {
-        fail = false; throw new ui.window.DOMException('fixture quota', 'QuotaExceededError');
+        if (!persistent) fail = false;
+        throw new ui.window.DOMException('fixture quota', 'QuotaExceededError');
       }
       storage.setItem(name, value);
     }
@@ -45,8 +46,30 @@ function journalWithFailure(ui, key, beforeAppend = false) {
     const collection = Object.keys(ui.window.Capture.PLANNER_KEYS).find(collection => ui.window.Capture.PLANNER_KEYS[collection] === name);
     journal.write(collection, rows);
   };
-  return { journal, failNext() { fail = true; } };
+  return { journal, failNext() { fail = true; persistent = false; }, failAlways() { fail = true; persistent = true; }, recover() { fail = false; } };
 }
+
+test('a new diary draft cannot replace an earlier committed entry while its cache remains stale', t => {
+  const key = 'karmolab_planner_diary';
+  const ui = screen(t, { [key]: [{ date: '2026-10-29', text: '기존', updatedAt: 1 }] });
+  const durable = journalWithFailure(ui, key);
+  const current = () => ui.window.Capture.materializePlanner(durable.journal.batches().flatMap(batch => batch.ops)).diary[0].text;
+  ui.get('[name="quick-date"]').value = '2026-10-29';
+  durable.failAlways(); ui.input('초안 A'); ui.submit();
+  assert.equal(ui.get('textarea').value, '');
+  assert.equal(current(), '기존\n\n초안 A');
+  const count = durable.journal.batches().length;
+  ui.input('초안 B'); ui.submit();
+  assert.equal(durable.journal.batches().length, count);
+  assert.equal(current(), '기존\n\n초안 A');
+  assert.equal(ui.read(key)[0].text, '기존');
+  assert.equal(ui.get('textarea').value, '초안 B');
+  assert.match(ui.get('.mydq-status').textContent, /새 입력은 아직 저장하지 않았어요/);
+  durable.recover(); durable.journal.apply(); ui.submit();
+  assert.equal(ui.read(key)[0].text, '기존\n\n초안 A\n\n초안 B');
+  assert.equal(current(), '기존\n\n초안 A\n\n초안 B');
+  assert.equal(ui.get('textarea').value, '');
+});
 
 for (const [kind, key] of [['diary', 'karmolab_planner_diary'], ['task', 'karmolab_planner_tasks'], ['event', 'karmolab_planner_events']]) {
   test(`committed ${kind} consumes its draft despite cache failure and does not repeat after recovery`, t => {

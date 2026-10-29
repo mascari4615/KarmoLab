@@ -324,6 +324,38 @@ test('storage failures do not pretend a write succeeded', t => {
   assert.throws(() => journal.write('tasks', [task('local__a')]), /quota/);
   assert.equal(a.read('tasks').length, 0);
 });
+test('cache array ordering does not block edits to matching journal rows', t => {
+  const a = device(t);
+  a.journal.write('tasks', [task('local__a'), task('local__b')]);
+  a.storage.setItem('karmolab_planner_tasks', JSON.stringify([...a.read('tasks')].reverse()));
+  a.journal.write('tasks', [task('local__b'), task('local__a', 'edited')]);
+  assert.equal(a.read('tasks').find(row => row.id === 'local__a').title, 'edited');
+  assert.equal(a.read('tasks').length, 2);
+});
+
+test('stale changed keys reject before append while unrelated key edits retain authoritative records', t => {
+  const a = device(t), key = 'karmolab_planner_tasks';
+  a.journal.write('tasks', [task('local__a'), task('local__b')]);
+  let unavailable = true;
+  const storage = {
+    getItem: key => a.storage.getItem(key), key: index => a.storage.key(index), get length() { return a.storage.length; },
+    removeItem: key => a.storage.removeItem(key),
+    setItem(name, value) { if (unavailable && name === key) throw new Error('cache unavailable'); a.storage.setItem(name, value); }
+  };
+  const writer = new a.window.Sync.PlannerJournal(storage, 'fixture');
+  assert.throws(() => writer.write('tasks', [task('local__a', 'committed A'), task('local__b')]), error => error.committed === true);
+  const count = writer.batches().length;
+  assert.throws(() => writer.write('tasks', [task('local__a', 'stale replacement'), task('local__b')]), error => error.code === 'planner_cache_stale' && !a.window.Sync.isPlannerWriteCommitted(error));
+  assert.equal(writer.batches().length, count);
+  assert.equal(a.read('tasks')[0].title, 'local__a');
+  assert.throws(() => writer.write('tasks', [task('local__a'), task('local__b', 'committed B')]), error => error.committed === true);
+  assert.throws(() => writer.write('tasks', [task('local__a'), task('local__b'), task('local__new')]), error => error.committed === true);
+  unavailable = false; writer.apply();
+  assert.equal(a.read('tasks')[0].title, 'committed A');
+  assert.equal(a.read('tasks')[1].title, 'committed B');
+  assert.equal(a.read('tasks')[2].id, 'local__new');
+});
+
 test('corrupt legacy records stop migration and preserve every original byte', t => {
   const dom = new JSDOM('', { url: 'https://fixture.invalid', runScripts: 'outside-only' }); t.after(() => dom.window.close());
   dom.window.eval(bundle.outputFiles[0].text + '\nwindow.Sync = Sync;');
@@ -377,27 +409,32 @@ for (const mode of ['oversized', 'quota']) test(`a ${mode} diary save failure bl
   view.destroy();
 });
 
-test('a clean diary editor refreshes and cannot resurrect a remotely deleted diary on blur', t => {
-  const a = device(t, { karmolab_planner_diary: [diary('원래 본문')] });
+test('a clean diary editor refreshes and cannot resurrect a remotely deleted diary on blur', async t => {
+  const a = device(t, { karmolab_planner_diary: [diary('원래 본문')] }), peer = device(t), repo = remote();
+  await a.journal.sync(repo); await peer.journal.sync(repo);
   const root = a.window.document.createElement('main'); a.window.document.body.append(root);
   const view = a.window.Sync.buildDiaryView(root, '2026-10-27');
   const text = root.querySelector('textarea');
-  a.storage.setItem('karmolab_planner_diary', JSON.stringify([diary('폰에서 수정')]));
+  peer.journal.write('diary', [diary('폰에서 수정')]);
+  await peer.journal.sync(repo); await a.journal.sync(repo);
   a.window.dispatchEvent(new a.window.Event('planner-remote-change'));
   assert.equal(text.value, '폰에서 수정');
-  a.storage.setItem('karmolab_planner_diary', '[]');
+  peer.journal.write('diary', []);
+  await peer.journal.sync(repo); await a.journal.sync(repo);
   a.window.dispatchEvent(new a.window.Event('planner-remote-change'));
   text.dispatchEvent(new a.window.Event('blur'));
   assert.equal(a.read('diary').length, 0);
   view.destroy();
 });
-test('a dirty diary editor preserves its draft and merges the arriving remote text on save', t => {
-  const a = device(t, { karmolab_planner_diary: [diary('원래 본문')] });
+test('a dirty diary editor preserves its draft and merges the arriving remote text on save', async t => {
+  const a = device(t, { karmolab_planner_diary: [diary('원래 본문')] }), peer = device(t), repo = remote();
+  await a.journal.sync(repo); await peer.journal.sync(repo);
   const root = a.window.document.createElement('main'); a.window.document.body.append(root);
   const view = a.window.Sync.buildDiaryView(root, '2026-10-27');
   const text = root.querySelector('textarea'); text.value = '아직 쓰는 PC 본문';
   text.dispatchEvent(new a.window.Event('input'));
-  a.storage.setItem('karmolab_planner_diary', JSON.stringify([diary('새 폰 본문')]));
+  peer.journal.write('diary', [diary('새 폰 본문')]);
+  await peer.journal.sync(repo); await a.journal.sync(repo);
   a.window.dispatchEvent(new a.window.Event('planner-remote-change'));
   assert.equal(text.value, '아직 쓰는 PC 본문');
   text.dispatchEvent(new a.window.Event('blur'));
