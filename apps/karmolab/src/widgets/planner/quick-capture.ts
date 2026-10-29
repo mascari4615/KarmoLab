@@ -1,7 +1,7 @@
 import type { DashPanelCtx } from '../mydash/kit';
 import { esc } from '../mydash/kit';
 import { listDiary, readDiary, writeDiary } from './diary-store';
-import { plannerSyncState } from './sync-store';
+import { isPlannerWriteCommitted, plannerSyncState } from './sync-store';
 import { createEvent, createTask, listEvents, listTasks, moveTask } from './local-store';
 import { recordStreakActivity } from '../../lib/gamification';
 
@@ -98,6 +98,10 @@ export function mountQuickCapture(ctx: DashPanelCtx, { showAgenda = true } = {})
             box.querySelector<HTMLElement>('.mydq-recent')!.innerHTML = `<div class="mydq-summary"><section><h3>남은 할 일 <span>${tasks.length}</span></h3>${tasks.length ? `<ul>${tasks.slice(0, 3).map(task => `<li><button type="button" data-done="${esc(task.id)}" aria-label="완료: ${esc(task.title)}">완료</button><span>${esc(task.title)}</span></li>`).join('')}</ul>` : '<p>해야 할 일을 한 줄로 남겨보세요.</p>'}</section><section><h3>다가오는 7일</h3>${events.length ? `<ul>${events.map(event => `<li><span>${esc(event.title)}<small>${esc(event.allDay ? event.start + ' 종일' : new Date(event.start).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</small></span></li>`).join('')}</ul>` : '<p>이 브라우저에 저장한 일정이 없어요.</p>'}</section></div><section class="mydq-diary"><h3>최근 일기</h3>${diaries.length ? diaries.map(entry => `<details><summary>${esc(entry.date)} <span>${esc(entry.text.split('\n').find(line => line.trim())?.slice(0, 70) || '')}</span></summary><p>${esc(entry.text)}</p></details>`).join('') : '<p>첫 기록은 한 문장이면 충분해요.</p>'}</section>`;
         } catch { box.querySelector<HTMLElement>('.mydq-recent')!.textContent = '기록을 읽지 못했어요. 기존 내용은 그대로 두었어요.'; }
     }
+    const consumeDraft = (): void => {
+        text.value = '';
+        try { localStorage.removeItem(DRAFT_KEY); } catch { /* 본문 저장 성공, 임시 기록만 잔존 */ }
+    };
     box.querySelector('form')!.addEventListener('submit', event => {
         event.preventDefault();
         const value = text.value.trim();
@@ -121,12 +125,20 @@ export function mountQuickCapture(ctx: DashPanelCtx, { showAgenda = true } = {})
                 const id = createEvent({ title: value, start, end: allDay ? end.slice(0, 10) : end, allDay });
                 if (!listEvents('이 브라우저').some(item => item.id === id)) throw new Error('저장 공간이나 브라우저 설정을 확인해 주세요.');
             }
-            text.value = '';
-            try { localStorage.removeItem(DRAFT_KEY); } catch { /* 본문 저장 성공, 임시 기록만 잔존 */ }
+            consumeDraft();
             message(kind === 'diary' ? `${date.value} 일기에 추가했어요.` : kind === 'task' ? '할 일에 추가했어요.' : `${date.value} 일정에 추가했어요.${time.value ? ' 1시간 일정으로 저장.' : ' 종일 일정으로 저장.'}`);
             recent();
             text.focus();
         } catch (error) {
+            if (isPlannerWriteCommitted(error)) {
+                consumeDraft();
+                if (kind === 'diary') {
+                    try { recordStreakActivity('diary', date.value); } catch { /* 본문 journal 저장 유지 */ }
+                }
+                message('이 기기에 기록했어요. 목록은 아직 갱신하지 못했어요. 같은 내용을 다시 저장할 필요는 없어요.', true);
+                text.focus();
+                return;
+            }
             message(error instanceof SyntaxError ? '기존 저장 내용을 읽을 수 없어요. 내용을 보존하고 플래너에서 확인해 주세요.' : `저장하지 못했어요. ${error instanceof Error ? error.message : '다시 시도해 주세요.'}`, true);
         }
     });

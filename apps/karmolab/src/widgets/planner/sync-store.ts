@@ -4,6 +4,14 @@ export { PLANNER_KEYS } from './sync-model';
 export const PLANNER_IMPORT_KEY = 'karmolab_planner_pending_import';
 const CACHE_OWNER_KEY = 'planner.sync.cache-owner';
 export type PlannerSyncState = { phase: 'pending' | 'syncing' | 'synced' | 'error'; message: string };
+export class PlannerWriteCommittedError extends Error {
+    readonly code = 'planner_cache_write_failed';
+    readonly committed = true;
+    constructor() { super('기록은 저장했지만 목록을 갱신하지 못했어요.'); }
+}
+export function isPlannerWriteCommitted(error: unknown): boolean {
+    return !!error && typeof error === 'object' && 'code' in error && error.code === 'planner_cache_write_failed' && 'committed' in error && error.committed === true;
+}
 type SharedWindow = Window & { KarmoPlannerSyncWriter?: (key: string, rows: unknown[]) => void };
 const BATCH_BYTE_LIMIT = 1024 * 1024;
 function batchFits(batch: Batch): boolean { return new Blob([JSON.stringify(batch, null, 2) + '\n']).size <= BATCH_BYTE_LIMIT; }
@@ -142,7 +150,8 @@ export class PlannerJournal {
         }
         // The durable journal precedes the cache; a failed cache write is recoverable.
         this.append(ops);
-        this.apply();
+        try { this.apply(); }
+        catch { throw new PlannerWriteCommittedError(); }
     }
     apply(): boolean {
         this.requireCacheOwner();
@@ -198,7 +207,13 @@ export function writePlannerCollection(key: string, rows: unknown[]): void {
     const collection = (Object.keys(PLANNER_KEYS) as Collection[]).find(collection => PLANNER_KEYS[collection] === key);
     if (!collection) throw new Error('알 수 없는 플래너 기록');
     const writer = typeof window === 'undefined' ? undefined : (window as SharedWindow).KarmoPlannerSyncWriter;
-    if (writer) writer(key, rows);
+    if (writer) {
+        try { writer(key, rows); }
+        catch (error) {
+            if (isPlannerWriteCommitted(error)) window.dispatchEvent(new Event('planner-local-change'));
+            throw error;
+        }
+    }
     else { readRows(localStorage, collection); localStorage.setItem(key, JSON.stringify(rows)); }
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') window.dispatchEvent(new Event('planner-local-change'));
 }

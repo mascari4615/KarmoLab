@@ -6,7 +6,7 @@ import { JSDOM } from 'jsdom';
 
 const entry = fileURLToPath(new URL('../src/widgets/planner/quick-capture.ts', import.meta.url));
 const { outputFiles } = await build({
-  stdin: { contents: `export { mountQuickCapture } from ${JSON.stringify(entry)}`, resolveDir: fileURLToPath(new URL('../', import.meta.url)) },
+  stdin: { contents: `export { mountQuickCapture } from ${JSON.stringify(entry)}; export { PlannerJournal, PLANNER_KEYS } from './src/widgets/planner/sync-store';`, resolveDir: fileURLToPath(new URL('../', import.meta.url)) },
   bundle: true, write: false, format: 'iife', globalName: 'Capture', logLevel: 'silent'
 });
 function screen(t, initial = {}) {
@@ -25,6 +25,67 @@ function screen(t, initial = {}) {
   const submit = () => get('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
   return { window, root, get, read, input, submit, disposers, opened, mount };
 }
+
+function journalWithFailure(ui, key, beforeAppend = false) {
+  const storage = ui.window.localStorage;
+  let fail = false;
+  const wrapped = {
+    getItem: name => storage.getItem(name), key: index => storage.key(index), get length() { return storage.length; },
+    removeItem: name => storage.removeItem(name),
+    setItem(name, value) {
+      if (fail && (beforeAppend ? name.includes('.batch.') : name === key)) {
+        fail = false; throw new ui.window.DOMException('fixture quota', 'QuotaExceededError');
+      }
+      storage.setItem(name, value);
+    }
+  };
+  const journal = new ui.window.Capture.PlannerJournal(wrapped, 'fixture');
+  journal.migrate(); journal.apply();
+  ui.window.KarmoPlannerSyncWriter = (name, rows) => {
+    const collection = Object.keys(ui.window.Capture.PLANNER_KEYS).find(collection => ui.window.Capture.PLANNER_KEYS[collection] === name);
+    journal.write(collection, rows);
+  };
+  return { journal, failNext() { fail = true; } };
+}
+
+for (const [kind, key] of [['diary', 'karmolab_planner_diary'], ['task', 'karmolab_planner_tasks'], ['event', 'karmolab_planner_events']]) {
+  test(`committed ${kind} consumes its draft despite cache failure and does not repeat after recovery`, t => {
+    const initial = kind === 'diary' ? { [key]: [{ date: '2026-10-29', text: '기존', updatedAt: 1 }] } : {};
+    const ui = screen(t, initial), durable = journalWithFailure(ui, key);
+    ui.get(`[data-kind="${kind}"]`).click(); ui.get('[name="quick-date"]').value = '2026-10-29';
+    ui.input('새 초안');
+    let notified = 0; ui.window.addEventListener('planner-local-change', () => notified++);
+    durable.failNext(); ui.submit();
+    assert.equal(ui.get('textarea').value, '');
+    assert.equal(ui.window.localStorage.getItem('planner.quick-capture.draft'), null);
+    assert.match(ui.get('.mydq-status').textContent, /기기에 기록했어요.*목록.*갱신하지 못했어요/);
+    assert.equal(notified, 1);
+    const count = durable.journal.batches().length;
+    durable.journal.apply(); ui.submit();
+    assert.equal(durable.journal.batches().length, count);
+    const saved = ui.read(key);
+    assert.equal(saved.length, 1);
+    assert.equal(kind === 'diary' ? saved[0].text : saved[0].title, kind === 'diary' ? '기존\n\n새 초안' : '새 초안');
+    ui.input('새 초안'); ui.submit();
+    if (kind === 'diary') assert.equal(ui.read(key)[0].text, '기존\n\n새 초안\n\n새 초안');
+    else assert.equal(ui.read(key).length, 2);
+  });
+}
+
+test('failure before journal append retains the draft and retries exactly once', t => {
+  const key = 'karmolab_planner_diary';
+  const ui = screen(t, { [key]: [{ date: '2026-10-29', text: '기존', updatedAt: 1 }] });
+  const durable = journalWithFailure(ui, key, true), count = durable.journal.batches().length;
+  ui.get('[name="quick-date"]').value = '2026-10-29'; ui.input('새 초안');
+  durable.failNext(); ui.submit();
+  assert.equal(ui.get('textarea').value, '새 초안');
+  assert.match(ui.get('.mydq-status').textContent, /저장하지 못했어요/);
+  assert.equal(durable.journal.batches().length, count);
+  assert.equal(ui.read(key)[0].text, '기존');
+  durable.journal.apply(); ui.submit();
+  assert.equal(ui.read(key)[0].text, '기존\n\n새 초안');
+  assert.equal(ui.get('textarea').value, '');
+});
 
 test('append to existing diary, refresh, and render literal HTML safely', t => {
   const ui = screen(t, { karmolab_planner_diary: [{ date: '2026-10-26', text: '기존 기록', updatedAt: 1 }] });
