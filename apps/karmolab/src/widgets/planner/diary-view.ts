@@ -97,7 +97,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     }
 
     function load(date: string): void {
-        flush(); // 옮기기 전에 쓰던 것부터 저장한다 (첫 그림에서는 아무것도 안 한다)
+        if (!flush()) return;
         current = date;
         textEl.value = readDiary(date)?.text ?? '';
         loadedText = textEl.value;
@@ -108,21 +108,21 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     }
 
     /** 지금 값을 저장한다. 실제로 달라졌을 때만 적는다 (연속일이 헛되이 늘지 않게). */
-    function flush(): void {
-        if (!ready) return;
+    function flush(): boolean {
+        if (!ready) return true;
         if (saveTimer) {
             clearTimeout(saveTimer);
             saveTimer = null;
         }
         const before = readDiary(current)?.text ?? '';
         let now = textEl.value.trim();
-        if (loadedText === now) return;
+        if (loadedText === now) return true;
         if (before !== loadedText && before !== now && before && now) {
             now = now.startsWith(before) ? now : before.startsWith(now) ? before : before + '\n\n[다른 기기 기록]\n\n' + now;
         }
         let kept: boolean;
         try { kept = writeDiary(current, now); }
-        catch { savedEl.textContent = '저장하지 못했어요. 입력은 그대로 두었어요.'; return; }
+        catch { savedEl.textContent = '저장하지 못했어요. 입력은 그대로 두었어요.'; return false; }
         loadedText = now;
         if (textEl.value.trim() !== now) textEl.value = now;
         if (kept) {
@@ -134,6 +134,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
         }
         savedEl.textContent = kept ? t('planner.t86') : t('planner.t87');
         renderList();
+        return true;
     }
 
     textEl.addEventListener('input', () => {

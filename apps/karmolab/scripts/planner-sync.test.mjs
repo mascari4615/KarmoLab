@@ -337,6 +337,46 @@ test('stopping during a read prevents late remote cache writes', async t => {
   await b.journal.sync(repo); assert.equal(b.read('tasks').length, 0);
 });
 
+for (const mode of ['oversized', 'quota']) test(`a ${mode} diary save failure blocks navigation until the draft can be saved`, t => {
+  const rows = [{ date: '2026-10-28', text: 'First saved', updatedAt: 1 }, { date: '2026-10-29', text: 'Second saved', updatedAt: 1 }];
+  const a = device(t, { karmolab_planner_diary: rows });
+  let unavailable = mode === 'quota', attempts = 0;
+  a.window.KarmoPlannerSyncWriter = (_key, next) => {
+    attempts++;
+    if (unavailable) throw new Error('fixture quota');
+    a.journal.write('diary', next);
+  };
+  const root = a.window.document.createElement('main'); a.window.document.body.append(root);
+  const view = a.window.Sync.buildDiaryView(root, '2026-10-28');
+  const text = root.querySelector('textarea');
+  const draft = mode === 'oversized' ? '한'.repeat(350000) : 'Unsaved short draft';
+  text.value = draft;
+  text.dispatchEvent(new a.window.Event('blur'));
+  const error = root.querySelector('.pl-diary-saved').textContent;
+  assert.match(error, /저장하지 못했어요/);
+  root.querySelector('[data-date="2026-10-29"]').dispatchEvent(new a.window.MouseEvent('click', { bubbles: true }));
+  assert.equal(text.value, draft);
+  assert.equal(root.querySelector('.pl-diary-item--on').dataset.date, '2026-10-28');
+  assert.equal(root.querySelector('.pl-diary-saved').textContent, error);
+  assert.equal(a.read('diary').find(row => row.date === '2026-10-28').text, 'First saved');
+  view.open('2026-10-29');
+  assert.equal(text.value, draft);
+  root.querySelector('.pl-diary-today').dispatchEvent(new a.window.MouseEvent('click', { bubbles: true }));
+  assert.equal(text.value, draft);
+  assert.equal(root.querySelector('.pl-diary-item--on').dataset.date, '2026-10-28');
+  unavailable = false;
+  const saved = mode === 'oversized' ? 'Shortened draft' : draft;
+  text.value = saved;
+  const before = a.journal.batches().length, beforeAttempts = attempts;
+  root.querySelector('[data-date="2026-10-29"]').dispatchEvent(new a.window.MouseEvent('click', { bubbles: true }));
+  assert.equal(attempts, beforeAttempts + 1);
+  assert.equal(a.journal.batches().length, before + 1);
+  assert.equal(a.read('diary').find(row => row.date === '2026-10-28').text, saved);
+  assert.equal(text.value, 'Second saved');
+  assert.equal(root.querySelector('.pl-diary-item--on').dataset.date, '2026-10-29');
+  view.destroy();
+});
+
 test('a clean diary editor refreshes and cannot resurrect a remotely deleted diary on blur', t => {
   const a = device(t, { karmolab_planner_diary: [diary('원래 본문')] });
   const root = a.window.document.createElement('main'); a.window.document.body.append(root);
