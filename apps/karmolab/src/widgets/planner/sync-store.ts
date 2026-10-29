@@ -2,6 +2,7 @@ import type { DashRepoWrite } from '../mydash/kit';
 import { PLANNER_KEYS, rowKey, validateRow, parseBatch, plannerHeads, materializePlanner, type Collection, type Row, type Operation, type Batch } from './sync-model';
 export { PLANNER_KEYS } from './sync-model';
 export const PLANNER_IMPORT_KEY = 'karmolab_planner_pending_import';
+const CACHE_OWNER_KEY = 'planner.sync.cache-owner';
 export type PlannerSyncState = { phase: 'pending' | 'syncing' | 'synced' | 'error'; message: string };
 type SharedWindow = Window & { KarmoPlannerSyncWriter?: (key: string, rows: unknown[]) => void };
 let state: PlannerSyncState = { phase: 'pending', message: '자동 동기화 연결 중' };
@@ -37,6 +38,10 @@ export class PlannerJournal {
         return batches;
     }
     private ops(): Operation[] { return this.batches().flatMap(batch => batch.ops); }
+    ownsCache(): boolean { return this.storage.getItem(CACHE_OWNER_KEY) === this.prefix; }
+    private requireCacheOwner(): void {
+        if (!this.ownsCache()) throw new Error('다른 저장소가 열려 있어 기록 동기화를 멈췄어요. 이 저장소를 다시 열어 주세요.');
+    }
     private append(ops: Omit<Operation, 'id'>[]): void {
         if (!ops.length) return;
         const id = this.uuid();
@@ -44,14 +49,28 @@ export class PlannerJournal {
         this.storage.setItem(this.prefix + 'batch.' + id, JSON.stringify(batch));
     }
     migrate(): void {
-        if (this.storage.getItem(this.prefix + 'migrated')) return;
+        const migrated = this.storage.getItem(this.prefix + 'migrated');
+        if (migrated !== null) {
+            if (migrated !== '1') throw new Error('기존 기록의 이관 상태를 확인해 주세요.');
+            for (const collection of Object.keys(PLANNER_KEYS) as Collection[]) readRows(this.storage, collection);
+            this.storage.setItem(CACHE_OWNER_KEY, this.prefix);
+            return;
+        }
         // Validate every collection before recording or replacing any legacy data.
         const collections = Object.keys(PLANNER_KEYS) as Collection[];
         const rows = collections.map(collection => ({ collection, rows: readRows(this.storage, collection) }));
-        this.append(rows.flatMap(({ collection, rows }) => rows.map(value => ({ collection, key: rowKey(collection, value), parents: [], at: 0, value }))));
+        let otherScope = false;
+        for (let i = 0; i < this.storage.length; i++) {
+            const match = this.storage.key(i)?.match(/^planner\.sync\.(.+)\.(?:migrated|batch\.[^.]+|ack\.[^.]+)$/);
+            if (match && 'planner.sync.' + match[1] + '.' !== this.prefix) otherScope = true;
+        }
+        // Shared caches belong to an existing journal; only the first scope imports legacy rows.
+        if (!otherScope) this.append(rows.flatMap(({ collection, rows }) => rows.map(value => ({ collection, key: rowKey(collection, value), parents: [], at: 0, value }))));
         this.storage.setItem(this.prefix + 'migrated', '1');
+        this.storage.setItem(CACHE_OWNER_KEY, this.prefix);
     }
     importPending(): void {
+        this.requireCacheOwner();
         const raw = this.storage.getItem(PLANNER_IMPORT_KEY);
         if (raw === null) return;
         const payload: unknown = JSON.parse(raw);
@@ -82,6 +101,7 @@ export class PlannerJournal {
         this.storage.removeItem(PLANNER_IMPORT_KEY);
     }
     write(collection: Collection, rows: Row[]): void {
+        this.requireCacheOwner();
         const old = readRows(this.storage, collection);
         rows.forEach(row => validateRow(collection, row));
         const before = new Map(old.map(row => [rowKey(collection, row), row]));
@@ -99,6 +119,7 @@ export class PlannerJournal {
         this.apply();
     }
     apply(): boolean {
+        this.requireCacheOwner();
         const all = this.ops();
         for (const collection of Object.keys(PLANNER_KEYS) as Collection[]) readRows(this.storage, collection);
         const materialized = materializePlanner(all);
@@ -117,14 +138,17 @@ export class PlannerJournal {
         return this.busy;
     }
     private async exchange(repo: DashRepoWrite): Promise<void> {
+        this.requireCacheOwner();
         const prefix = 'planner/sync/';
         const files = await repo.tree(repo.eventsBranch);
         if (this.stopped) return;
+        this.requireCacheOwner();
         for (const file of files.filter(file => file.type === 'file' && file.path.startsWith(prefix) && file.path.endsWith('.json'))) {
             const id = file.path.slice(prefix.length, -5);
             if (this.storage.getItem(this.prefix + 'ack.' + id)) continue;
             const batch = parseBatch(await repo.readJson(file.path, { ref: repo.eventsBranch }));
             if (this.stopped) return;
+            this.requireCacheOwner();
             if (batch.id !== id) throw new Error('동기화 파일 이름이 달라요.');
             this.storage.setItem(this.prefix + 'batch.' + id, JSON.stringify(batch));
             this.storage.setItem(this.prefix + 'ack.' + id, '1');
@@ -136,6 +160,7 @@ export class PlannerJournal {
         if (pending.length) {
             await repo.putNewJsonMany(pending.map(batch => ({ path: prefix + batch.id + '.json', value: batch })), 'sync planner records');
             if (this.stopped) return;
+            this.requireCacheOwner();
             for (const batch of pending) this.storage.setItem(this.prefix + 'ack.' + batch.id, '1');
         }
     }
@@ -169,34 +194,35 @@ export function startPlannerSync(repo: DashRepoWrite, scope: string): () => void
     try { journal.migrate(); journal.importPending(); journal.apply(); }
     catch { announce({ phase: 'error', message: '기존 기록을 읽지 못해 동기화를 멈췄어요. 원본은 보존했어요.' }); return () => { journal.stopped = true; if (shared.KarmoPlannerSyncWriter === writer) delete shared.KarmoPlannerSyncWriter; }; }
     const schedule = (delay = 600): void => {
-        if (journal.stopped) return;
+        if (journal.stopped || !journal.ownsCache()) return;
         window.clearTimeout(timer);
         timer = window.setTimeout(() => { void run(); }, delay);
     };
     const run = async (): Promise<void> => {
-        if (journal.stopped) return;
+        if (journal.stopped || !journal.ownsCache()) return;
         if (syncing) { dirty = true; return; }
         syncing = true;
         dirty = false;
         announce({ phase: 'syncing', message: '기기 간 기록 동기화 중' });
         try {
             await journal.sync(repo);
-            if (journal.stopped) return;
+            if (journal.stopped || !journal.ownsCache()) return;
             failures = 0;
             announce(journal.pending() ? { phase: 'pending', message: '이 기기에 저장됨, 동기화 대기' } : { phase: 'synced', message: '기기 간 자동 동기화됨' });
         } catch (error) {
-            if (journal.stopped) return;
+            if (journal.stopped || !journal.ownsCache()) return;
             failures++;
             const kind = (error as { kind?: string }).kind;
             announce({ phase: 'error', message: kind === 'perm' ? '이 기기에 저장됨. 동기화 쓰기 권한을 확인해 주세요.' : kind === 'auth' ? '이 기기에 저장됨. 다시 로그인하면 동기화해요.' : '이 기기에 저장됨. 연결되면 동기화를 다시 시도해요.' });
         } finally {
             syncing = false;
-            if (!journal.stopped && !document.hidden) schedule(dirty ? 600 : Math.min(300000, 45000 * 2 ** Math.min(failures, 3)));
+            if (!journal.stopped && journal.ownsCache() && !document.hidden) schedule(dirty ? 600 : Math.min(300000, 45000 * 2 ** Math.min(failures, 3)));
         }
     };
-    const changed = (): void => { dirty = true; announce({ phase: 'pending', message: '이 기기에 저장됨, 동기화 대기' }); schedule(); };
+    const changed = (): void => { if (!journal.ownsCache()) return; dirty = true; announce({ phase: 'pending', message: '이 기기에 저장됨, 동기화 대기' }); schedule(); };
     const visible = (): void => { if (!document.hidden) schedule(0); };
     const storage = (event: StorageEvent): void => {
+        if (!journal.ownsCache()) return;
         if (!event.key?.startsWith(journal.prefix)) return;
         try { const updated = journal.apply(); if (updated || event.key.startsWith(journal.prefix + 'batch.')) notify(); schedule(); }
         catch { announce({ phase: 'error', message: '이 기기 기록을 읽지 못해 동기화를 멈췄어요. 원본은 보존했어요.' }); }
