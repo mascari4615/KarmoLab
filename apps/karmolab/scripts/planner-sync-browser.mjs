@@ -45,6 +45,8 @@ const mobile = await browser.newContext({ viewport: { width: 390, height: 844 },
 try {
   const a = await desktop.newPage(), b = await mobile.newPage();
   for (const page of [a, b]) page.on('pageerror', error => errors.push(error.message));
+  // Keep the dated fixture in the upcoming window while synchronization timers run normally.
+  for (const page of [a, b]) await page.clock.setFixedTime(new Date('2026-10-27T03:00:00Z'));
   const url = 'http://127.0.0.1:18843/';
   await a.goto(url); await b.goto(url);
   await a.locator('.mydq-hint').filter({ hasText: '기기 간 자동 동기화됨' }).waitFor();
