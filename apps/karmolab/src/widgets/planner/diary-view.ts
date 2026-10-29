@@ -20,6 +20,7 @@ import {
     writeDiary
 } from './diary-store';
 import { recordStreakActivity } from '../../lib/gamification';
+import { isPlannerWriteCommitted } from './sync-store';
 
 const esc = (v: string): string =>
     v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -34,6 +35,7 @@ function humanDate(date: string): string {
 
 export interface DiaryViewHandle {
     destroy: () => void;
+    beforeClose: () => boolean;
     /** 다른 화면(달력)에서 그 날 일기를 열 때 */
     open: (date: string) => void;
 }
@@ -47,6 +49,10 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
        빈 칸이 그 날 일기를 덮어 지운다. 실제로 그렇게 한 번 날렸다. */
     let ready = false;
     let loadedText = '';
+    let cachePending = false;
+    const pendingMessage = (): string => textEl.value.trim() === loadedText
+        ? '이 기기에 기록했어요. 목록 갱신을 기다리고 있어요.'
+        : '앞선 기록은 이 기기에 저장했어요. 지금 입력은 아직 저장하지 않았어요. 목록 갱신을 기다리고 있어요.';
 
     container.innerHTML = `
         <div class="pl-diary">
@@ -115,6 +121,11 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
             saveTimer = null;
         }
         const before = readDiary(current)?.text ?? '';
+        if (cachePending) {
+            if (before !== loadedText) { savedEl.textContent = pendingMessage(); return false; }
+            cachePending = false;
+            savedEl.textContent = loadedText ? t('planner.t86') : t('planner.t87');
+        }
         let now = textEl.value.trim();
         if (loadedText === now) return true;
         if (before !== loadedText && before !== now && before && now) {
@@ -122,7 +133,11 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
         }
         let kept: boolean;
         try { kept = writeDiary(current, now); }
-        catch { savedEl.textContent = '저장하지 못했어요. 입력은 그대로 두었어요.'; return false; }
+        catch (error) {
+            if (!isPlannerWriteCommitted(error)) { savedEl.textContent = '저장하지 못했어요. 입력은 그대로 두었어요.'; return false; }
+            cachePending = true;
+            kept = !!now;
+        }
         loadedText = now;
         if (textEl.value.trim() !== now) textEl.value = now;
         if (kept) {
@@ -132,14 +147,15 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
                 toast(t('planner.t71', { level: result.newLevel }), 'success');
             }
         }
-        savedEl.textContent = kept ? t('planner.t86') : t('planner.t87');
+        savedEl.textContent = cachePending ? pendingMessage() : kept ? t('planner.t86') : t('planner.t87');
+        if (cachePending) return false;
         renderList();
         return true;
     }
 
     textEl.addEventListener('input', () => {
         renderHead();
-        savedEl.textContent = '';
+        savedEl.textContent = cachePending ? pendingMessage() : '';
         if (saveTimer) clearTimeout(saveTimer);
         /* 손을 멈추면 저장한다. 저장 단추를 누르는 일을 사람에게 시키지 않는다 */
         saveTimer = setTimeout(() => {
@@ -190,6 +206,10 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     window.addEventListener('pagehide', flush);
     const remoteChanged = (): void => {
         if (destroyed) return;
+        if (cachePending) {
+            cachePending = false;
+            savedEl.textContent = loadedText ? t('planner.t86') : t('planner.t87');
+        }
         renderList();
         if (textEl.value.trim() !== loadedText) {
             savedEl.textContent = '다른 기기 기록이 도착했어요. 입력을 저장할 때 함께 보존해요.';
@@ -204,6 +224,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     if (!listDiary().length) textEl.focus();
 
     return {
+        beforeClose: flush,
         destroy: () => {
             flush();
             destroyed = true;

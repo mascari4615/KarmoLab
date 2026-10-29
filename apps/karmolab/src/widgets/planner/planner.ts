@@ -360,6 +360,7 @@ import { plannerSyncState } from './sync-store';
         let side: SideId | null = savedSide();
         let cal: CalendarViewHandle | null = null;
         let sideLive: KanbanViewHandle | DiaryViewHandle | null = null;
+        const beforeCloseSide = (): boolean => !sideLive || !('beforeClose' in sideLive) || sideLive.beforeClose();
 
         const disposeSide = (): void => {
             sideLive?.destroy();
@@ -379,6 +380,7 @@ import { plannerSyncState } from './sync-store';
 
         /* 달력은 그대로 두고 오른쪽 판만 갈아 끼운다. 같은 단추를 다시 누르면 닫힘 */
         function openSide(next: SideId | null, diaryDate?: string): void {
+            if (!beforeCloseSide()) return;
             disposeSide();
             side = next;
             root.dataset.side = side || '';

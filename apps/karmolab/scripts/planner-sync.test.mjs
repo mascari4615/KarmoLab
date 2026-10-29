@@ -369,6 +369,69 @@ test('stopping during a read prevents late remote cache writes', async t => {
   await b.journal.sync(repo); assert.equal(b.read('tasks').length, 0);
 });
 
+function diaryCacheFailure(t) {
+  const a = device(t, { karmolab_planner_diary: [{ date: '2026-10-28', text: 'First saved', updatedAt: 1 }, { date: '2026-10-29', text: 'Second saved', updatedAt: 1 }] });
+  let broken = true, attempts = 0;
+  const storage = {
+    get length() { return a.storage.length; }, key: index => a.storage.key(index), getItem: key => a.storage.getItem(key), removeItem: key => a.storage.removeItem(key),
+    setItem(key, value) { if (broken && key === 'karmolab_planner_diary') throw new Error('fixture diary cache quota'); a.storage.setItem(key, value); }
+  };
+  const journal = new a.window.Sync.PlannerJournal(storage, 'fixture');
+  a.window.KarmoPlannerSyncWriter = (_key, rows) => { attempts++; journal.write('diary', rows); };
+  const root = a.window.document.createElement('main'); a.window.document.body.append(root);
+  const view = a.window.Sync.buildDiaryView(root, '2026-10-28');
+  return { ...a, journal, root, view, text: root.querySelector('textarea'), attempts: () => attempts, recover() { broken = false; journal.apply(); } };
+}
+
+for (const deletion of [false, true]) test(`committed diary ${deletion ? 'deletion' : 'text'} waits for cache recovery without another write or activity`, t => {
+  const a = diaryCacheFailure(t), value = deletion ? '' : 'Durable fixture text';
+  a.text.value = value;
+  a.text.dispatchEvent(new a.window.Event('blur'));
+  const count = a.journal.batches().length;
+  assert.equal(a.attempts(), 1); assert.equal(count, 2);
+  assert.match(a.root.querySelector('.pl-diary-saved').textContent, /이 기기에 기록/);
+  assert.equal(a.read('diary').find(row => row.date === '2026-10-28').text, 'First saved');
+  const activity = a.storage.getItem('toolbox_user_data');
+  if (deletion) assert.equal(activity, null);
+  else assert.equal(JSON.parse(activity).streaks.diary.lastActivityDate, '2026-10-28');
+  a.text.dispatchEvent(new a.window.Event('blur'));
+  a.view.open('2026-10-28');
+  a.view.open('2026-10-29');
+  a.root.querySelector('.pl-diary-today').dispatchEvent(new a.window.MouseEvent('click', { bubbles: true }));
+  a.root.querySelector('[data-date="2026-10-29"]').dispatchEvent(new a.window.MouseEvent('click', { bubbles: true }));
+  assert.equal(a.text.value, value); assert.equal(a.attempts(), 1);
+  assert.equal(a.root.querySelector('.pl-diary-item--on').dataset.date, '2026-10-28');
+  assert.equal(a.storage.getItem('toolbox_user_data'), activity);
+  a.recover();
+  if (!deletion) a.window.dispatchEvent(new a.window.Event('planner-remote-change'));
+  a.view.open('2026-10-29');
+  assert.equal(a.text.value, 'Second saved'); assert.equal(a.attempts(), 1); assert.equal(a.journal.batches().length, count);
+  assert.equal(a.storage.getItem('toolbox_user_data'), activity);
+  const saved = a.read('diary').find(row => row.date === '2026-10-28');
+  if (deletion) assert.equal(saved, undefined); else assert.equal(saved.text, value);
+  a.view.destroy();
+});
+
+test('a newer remote diary after committed cache recovery preserves and merges a subsequently typed draft', t => {
+  const a = diaryCacheFailure(t);
+  a.text.value = 'Already durable'; a.text.dispatchEvent(new a.window.Event('blur'));
+  assert.equal(a.attempts(), 1);
+  a.text.value = 'New unsaved draft';
+  a.recover();
+  const rows = a.read('diary').map(row => row.date === '2026-10-28' ? { ...row, text: 'New remote text', updatedAt: 2 } : row);
+  a.journal.write('diary', rows);
+  a.window.dispatchEvent(new a.window.Event('planner-remote-change'));
+  assert.equal(a.text.value, 'New unsaved draft');
+  const before = a.journal.batches().length;
+  a.text.dispatchEvent(new a.window.Event('blur'));
+  const saved = a.read('diary').find(row => row.date === '2026-10-28').text;
+  assert.equal(saved, 'New remote text\n\n[다른 기기 기록]\n\nNew unsaved draft');
+  assert.equal(a.journal.batches().length, before + 1);
+  a.text.dispatchEvent(new a.window.Event('blur'));
+  assert.equal(a.journal.batches().length, before + 1);
+  a.view.destroy();
+});
+
 for (const mode of ['oversized', 'quota']) test(`a ${mode} diary save failure blocks navigation until the draft can be saved`, t => {
   const rows = [{ date: '2026-10-28', text: 'First saved', updatedAt: 1 }, { date: '2026-10-29', text: 'Second saved', updatedAt: 1 }];
   const a = device(t, { karmolab_planner_diary: rows });
