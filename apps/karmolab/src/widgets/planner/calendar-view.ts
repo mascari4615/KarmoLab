@@ -9,6 +9,7 @@
  * 두 번 띄우게 되는데, 그 값에 비해 하는 일이 달을 넘기고 날을 고른다뿐이다.
  */
 import { toast } from './toast';
+import { isPlannerWriteCommitted } from './sync-store';
 import { t } from '../../lib/i18n';
 import {
     createEvent,
@@ -845,6 +846,8 @@ export function buildCalendarView(
         single = false,
         color = ''
     ): Promise<boolean> {
+        let creatingLocal = false;
+        let localCreated = false;
         try {
             /* 어디에 쓸지는 **id 앞머리**가 정한다. 이 브라우저 것과 구글 것이 한 화면에 섞여 있다 */
             if (ev && isLocal(ev.id)) {
@@ -879,13 +882,19 @@ export function buildCalendarView(
                 }
                 if (!single || omit.length !== 3 || color !== previousColor) await withToken(token!, (tok) => patchEvent(tok, calId, id, { title, start, end, allDay, colorId: color === previousColor ? undefined : color, repeat, linkedEvents: links, commonLinks: true, recurrence }, omit));
             } else if (calId === LOCAL_CALENDAR_ID || !token) {
+                creatingLocal = true;
                 createLocalEvent({ title, allDay, color, repeat, linkedEvents, ...stored(start, end, allDay) });
+                localCreated = true;
             } else {
                 await withToken(token, (tok) => createEvent(tok, calId, { title, start, end, allDay, colorId: color, repeat, linkedEvents, commonLinks: true }));
             }
             if (lastRange) await reload(lastRange.start, lastRange.end);
             return true;
-        } catch {
+        } catch (error) {
+            if (creatingLocal && (localCreated || isPlannerWriteCommitted(error))) {
+                toast('일정은 이 기기에 기록했어요. 목록은 아직 갱신하지 못했어요. 같은 내용을 다시 저장할 필요는 없어요.', 'info');
+                return true;
+            }
             toast(t('planner.t32'), 'error');
             return false;
         }
