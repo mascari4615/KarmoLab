@@ -5,6 +5,9 @@ export const PLANNER_IMPORT_KEY = 'karmolab_planner_pending_import';
 const CACHE_OWNER_KEY = 'planner.sync.cache-owner';
 export type PlannerSyncState = { phase: 'pending' | 'syncing' | 'synced' | 'error'; message: string };
 type SharedWindow = Window & { KarmoPlannerSyncWriter?: (key: string, rows: unknown[]) => void };
+const BATCH_BYTE_LIMIT = 1024 * 1024;
+function batchFits(batch: Batch): boolean { return new Blob([JSON.stringify(batch, null, 2) + '\n']).size <= BATCH_BYTE_LIMIT; }
+function oversizedBatch(): Error { return new Error('동기화 기록은 파일당 1 MiB까지 저장할 수 있어요. 내용을 나눠 주세요.'); }
 let state: PlannerSyncState = { phase: 'pending', message: '자동 동기화 연결 중' };
 
 export function plannerSyncState(): PlannerSyncState { return state; }
@@ -44,9 +47,32 @@ export class PlannerJournal {
     }
     private append(ops: Omit<Operation, 'id'>[]): void {
         if (!ops.length) return;
-        const id = this.uuid();
-        const batch: Batch = { schema: 'planner-sync/1', id, ops: ops.map((op, i) => ({ ...op, id: id + '-' + i })) };
-        this.storage.setItem(this.prefix + 'batch.' + id, JSON.stringify(batch));
+        const batches: Batch[] = [];
+        const ids = new Set<string>();
+        const partition = (items: Omit<Operation, 'id'>[]): void => {
+            const id = this.uuid();
+            if (ids.has(id) || this.storage.getItem(this.prefix + 'batch.' + id) !== null || this.storage.getItem(this.prefix + 'ack.' + id) !== null) throw new Error('동기화 기록 이름이 겹쳐 저장을 멈췄어요. 다시 시도해 주세요.');
+            ids.add(id);
+            const batch: Batch = { schema: 'planner-sync/1', id, ops: items.map((op, i) => ({ ...op, id: id + '-' + i })) };
+            if (batchFits(batch)) { batches.push(batch); return; }
+            if (items.length === 1) throw oversizedBatch();
+            const middle = Math.floor(items.length / 2);
+            partition(items.slice(0, middle));
+            partition(items.slice(middle));
+        };
+        partition(ops);
+        const created: string[] = [];
+        try {
+            for (const batch of batches) {
+                const key = this.prefix + 'batch.' + batch.id;
+                if (this.storage.getItem(key) !== null || this.storage.getItem(this.prefix + 'ack.' + batch.id) !== null) throw new Error('동기화 기록 이름이 겹쳐 저장을 멈췄어요. 다시 시도해 주세요.');
+                this.storage.setItem(key, JSON.stringify(batch));
+                created.push(key);
+            }
+        } catch (error) {
+            for (const key of created) this.storage.removeItem(key);
+            throw error;
+        }
     }
     migrate(): void {
         const migrated = this.storage.getItem(this.prefix + 'migrated');
@@ -158,6 +184,7 @@ export class PlannerJournal {
         if (this.apply()) this.changed();
         const pending = this.batches().filter(batch => !this.storage.getItem(this.prefix + 'ack.' + batch.id));
         if (pending.length) {
+            if (pending.some(batch => !batchFits(batch))) throw oversizedBatch();
             await repo.putNewJsonMany(pending.map(batch => ({ path: prefix + batch.id + '.json', value: batch })), 'sync planner records');
             if (this.stopped) return;
             this.requireCacheOwner();

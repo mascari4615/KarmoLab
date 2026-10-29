@@ -31,6 +31,80 @@ function remote() {
 const task = (id, title = id, column = 'todo') => ({ id, title, column });
 const diary = text => ({ date: '2026-10-27', text, updatedAt: 1 });
 
+test('legacy multi-day diary import splits wire JSON into blobs accepted by the 1 MiB reader', async t => {
+  const rows = ['2026-10-28', '2026-10-29'].map(date => ({ date, text: '한'.repeat(180000), updatedAt: 1 }));
+  const a = device(t, { karmolab_planner_diary: rows }), repo = remote();
+  assert.equal(a.journal.batches().length, 2);
+  await a.journal.sync(repo);
+  assert.equal(repo.files.size, 2);
+  for (const batch of repo.files.values()) assert.ok(Buffer.byteLength(JSON.stringify(batch, null, 2) + '\n') <= 1048576);
+  const b = device(t); await b.journal.sync(repo);
+  assert.equal(JSON.stringify(b.read('diary')), JSON.stringify(rows));
+});
+
+test('one oversized operation preserves prior cache, journal and pending desktop import', t => {
+  const a = device(t);
+  a.journal.write('diary', [diary('kept')]);
+  const before = JSON.stringify(a.journal.batches()), cache = a.storage.getItem('karmolab_planner_diary');
+  assert.throws(() => a.journal.write('diary', [diary('한'.repeat(350000))]), /1 MiB/);
+  assert.equal(JSON.stringify(a.journal.batches()), before);
+  assert.equal(a.storage.getItem('karmolab_planner_diary'), cache);
+  const pending = JSON.stringify({ karmolab_planner_tasks: JSON.stringify([task('local__small')]), karmolab_planner_events: JSON.stringify([{ id: 'local__large', title: '한'.repeat(350000), start: '2026-10-29', end: '2026-10-30', allDay: true }]) });
+  a.storage.setItem(a.window.Sync.PLANNER_IMPORT_KEY, pending);
+  assert.throws(() => a.journal.importPending(), /1 MiB/);
+  assert.equal(JSON.stringify(a.journal.batches()), before);
+  assert.equal(a.storage.getItem(a.window.Sync.PLANNER_IMPORT_KEY), pending);
+  assert.equal(a.storage.getItem('karmolab_planner_diary'), cache);
+  assert.equal(a.read('tasks').length, 0);
+});
+
+test('oversized legacy diary migration leaves the original cache and migration state untouched', t => {
+  const a = device(t);
+  a.storage.removeItem(a.journal.prefix + 'migrated');
+  const original = JSON.stringify([diary('한'.repeat(350000))]);
+  a.storage.setItem('karmolab_planner_diary', original);
+  assert.throws(() => a.journal.migrate(), /1 MiB/);
+  assert.equal(a.journal.batches().length, 0);
+  assert.equal(a.storage.getItem(a.journal.prefix + 'migrated'), null);
+  assert.equal(a.storage.getItem('karmolab_planner_diary'), original);
+});
+
+test('storage failure during split append rolls back only its newly written batches', t => {
+  const a = device(t);
+  a.journal.write('tasks', [task('local__kept')]);
+  const before = JSON.stringify(a.journal.batches());
+  let writes = 0;
+  const storage = {
+    get length() { return a.storage.length; }, key: index => a.storage.key(index), getItem: key => a.storage.getItem(key), removeItem: key => a.storage.removeItem(key),
+    setItem(key, value) { if (key.startsWith(a.journal.prefix + 'batch.') && ++writes === 2) throw new Error('fixture quota'); a.storage.setItem(key, value); }
+  };
+  const journal = new a.window.Sync.PlannerJournal(storage, 'fixture');
+  const rows = ['2026-10-28', '2026-10-29'].map(date => ({ date, text: '한'.repeat(180000), updatedAt: 1 }));
+  assert.throws(() => journal.write('diary', rows), /fixture quota/);
+  assert.equal(writes, 2); assert.equal(JSON.stringify(journal.batches()), before);
+  assert.equal(a.read('diary').length, 0); assert.equal(a.read('tasks')[0].id, 'local__kept');
+});
+
+test('existing batch UUID collisions cannot overwrite an earlier journal entry', t => {
+  const a = device(t);
+  a.journal.write('tasks', [task('local__kept')]);
+  const before = JSON.stringify(a.journal.batches()), id = a.journal.batches()[0].id;
+  const journal = new a.window.Sync.PlannerJournal(a.storage, 'fixture', () => {}, () => id);
+  assert.throws(() => journal.write('tasks', [task('local__other')]), /이름이 겹쳐/);
+  assert.equal(JSON.stringify(journal.batches()), before); assert.equal(a.read('tasks')[0].id, 'local__kept');
+});
+
+test('preexisting oversized pending blobs reject the entire upload without acknowledgements', async t => {
+  const a = device(t), repo = remote();
+  a.journal.write('tasks', [task('local__small')]);
+  const batch = { schema: 'planner-sync/1', id: 'legacy-large', ops: [{ id: 'legacy-large-0', collection: 'diary', key: '2026-10-27', parents: [], at: 1, value: diary('한'.repeat(350000)) }] };
+  const raw = JSON.stringify(batch), key = a.journal.prefix + 'batch.' + batch.id;
+  a.storage.setItem(key, raw);
+  await assert.rejects(a.journal.sync(repo), /1 MiB/);
+  assert.equal(repo.files.size, 0); assert.equal(a.storage.getItem(key), raw);
+  for (const item of a.journal.batches()) assert.equal(a.storage.getItem(a.journal.prefix + 'ack.' + item.id), null);
+});
+
 test('legacy diary, task and recurrence import, then a fresh device restores all three', async t => {
   const a = device(t, { karmolab_planner_diary: [diary('기존 일기')], karmolab_planner_tasks: [task('local__1')], karmolab_planner_events: [{ id: 'local__e', title: '반복 일정', start: '2026-10-27', end: '2026-10-28', allDay: true, repeat: { freq: 'weekly' }, exceptions: { '2026-11-03': { cancelled: true } } }] });
   const b = device(t), repo = remote();
