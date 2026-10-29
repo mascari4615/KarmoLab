@@ -9,18 +9,31 @@ $ErrorActionPreference = 'Continue'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 if (-not (Test-Path -LiteralPath $NssmPath)) { throw 'NSSM executable not found' }
 
+function Write-RestartTrace([string]$Stage) {
+    if (-not $env:RESTART_SERVICE_TRACE) { return }
+    try { Add-Content -LiteralPath $env:RESTART_SERVICE_TRACE -Value $Stage -ErrorAction Stop }
+    catch { }
+}
+
 function Invoke-Nssm([string]$Action) {
     $output = & $NssmPath $Action $ServiceName 2>&1
     $nativeExit = $LASTEXITCODE
-    return [pscustomobject]@{ ExitCode = $nativeExit; Output = ($output | Out-String).Trim() }
+    Write-RestartTrace 'nssm_returned'
+    Write-RestartTrace 'format_enter'
+    $formatted = ($output | Out-String).Trim()
+    Write-RestartTrace 'format_exit'
+    return [pscustomobject]@{ ExitCode = $nativeExit; Output = $formatted }
 }
 
 $restartResult = Invoke-Nssm 'restart'
+Write-RestartTrace 'restart_host_enter'
 if ($restartResult.Output) { Write-Host $restartResult.Output }
+Write-RestartTrace 'restart_host_exit'
 $confirmedTransition = $restartResult.ExitCode -eq 0 -or $restartResult.Output -match 'SERVICE_START_PENDING'
 $startIssued = $false
 $elapsed = [Diagnostics.Stopwatch]::StartNew()
 
+Write-RestartTrace 'polling_enter'
 while ($elapsed.Elapsed.TotalSeconds -lt $TimeoutSec) {
     $statusResult = Invoke-Nssm 'status'
     $match = [regex]::Match($statusResult.Output, '(?m)^\s*(SERVICE_[A-Z_]+)\s*$')

@@ -96,7 +96,7 @@ Add-Content -LiteralPath $env:RESTART_TEST_TRACE -Value ("stub_" + $Action + "_e
 exit $code
 `;
 
-async function restart(scenario: { states: string[]; restartExit?: number; startExit?: number; restartMessage?: string }) {
+async function restart(scenario: { states: string[]; restartExit?: number; startExit?: number; restartMessage?: string }, traceMode: 'enabled' | 'disabled' | 'unwritable' = 'enabled') {
   const prefix = join(resolve(tmpdir()), 'bot service restart ');
   const folder = mkdtempSync(prefix);
   const stubPath = join(folder, 'nssm-stub.ps1');
@@ -113,7 +113,7 @@ exit $LASTEXITCODE
   let closureUnconfirmed = false;
   try {
     const result = await fixtureChild(powershell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', launcherPath],
-      { ...process.env, RESTART_TEST_STATE: statePath, RESTART_TEST_TRACE: tracePath, RESTART_TEST_SCRIPT: script, RESTART_TEST_STUB: stubPath });
+      { ...process.env, RESTART_SERVICE_TRACE: traceMode === 'disabled' ? '' : traceMode === 'unwritable' ? folder : tracePath, RESTART_TEST_STATE: statePath, RESTART_TEST_TRACE: tracePath, RESTART_TEST_SCRIPT: script, RESTART_TEST_STUB: stubPath });
     closureUnconfirmed = result.closureUnconfirmed === true;
     let trace = '', traceError: string | undefined;
     try { trace = readFileSync(tracePath, 'utf8'); } catch (error) { traceError = (error as NodeJS.ErrnoException).code || 'trace_read_failed'; }
@@ -125,13 +125,13 @@ exit $LASTEXITCODE
       timedOut: result.timedOut, closed: result.closed, closureUnconfirmed: result.closureUnconfirmed,
       executable: result.executable, availableParallelism: result.availableParallelism, proc: result.proc,
       traceError, stages: trace.replace(/^\uFEFF/, '').split(/\r?\n/)
-        .filter(line => /^(pwsh_started|stub_(restart|status|start)_(enter|exit))$/.test(line)).slice(-16),
+        .filter(line => /^(pwsh_started|stub_(restart|status|start)_(enter|exit)|nssm_returned|format_enter|format_exit|restart_host_enter|restart_host_exit|polling_enter)$/.test(line)).slice(-32),
       stdout: safeOutput(result.stdout || ''), stderr: safeOutput(result.stderr || ''),
       stdoutBytes: result.stdoutBytes, stderrBytes: result.stderrBytes,
     };
     if (result.errorCode || result.closureUnconfirmed) throw new Error('restart fixture child failed: ' + JSON.stringify(diagnostics));
     const state = JSON.parse(readFileSync(statePath, 'utf8').replace(/^\uFEFF/, ''));
-    return { code: result.code, output: JSON.stringify(diagnostics), calls: state.calls };
+    return { code: result.code, output: JSON.stringify(diagnostics), calls: state.calls, stages: diagnostics.stages };
   } finally {
     if (!resolve(folder).startsWith(prefix)) throw new Error('Temporary fixture escaped its root');
     if (!closureUnconfirmed) rmSync(folder, { recursive: true });
@@ -144,6 +144,10 @@ describe('service restart waits for the observed state', () => {
     expect(result.code, result.output).toBe(0);
     expect(result.calls).not.toContain('start');
     expect(result.calls).toContain('status');
+    expect(result.stages.slice(0, 10)).toEqual([
+      'pwsh_started', 'stub_restart_enter', 'stub_restart_exit', 'nssm_returned',
+      'format_enter', 'format_exit', 'restart_host_enter', 'restart_host_exit', 'polling_enter', 'stub_status_enter',
+    ]);
   }, 15000);
 
   it('checks RUNNING even after a successful restart command', async () => {
@@ -175,6 +179,14 @@ describe('service restart waits for the observed state', () => {
 });
 
 describe('restart fixture diagnostics', () => {
+  for (const mode of ['disabled', 'unwritable'] as const) {
+    it(`keeps restart behavior when diagnostic tracing is ${mode}`, async () => {
+      const result = await restart({ states: ['SERVICE_RUNNING'] }, mode);
+      expect(result.code, result.output).toBe(0);
+      expect(result.calls).toEqual(['restart', 'status']);
+      expect(result.stages).not.toContain('nssm_returned');
+    }, 15000);
+  }
   it('parses stat after a comm containing spaces and parentheses and rejects incomplete counters', () => {
     const fields = Array(20).fill('0');
     fields[0] = 'R'; fields[11] = '12'; fields[12] = '4'; fields[19] = '99';
