@@ -40,19 +40,6 @@ import { download } from './shared/image';
 
   /** 그리기는 **말 묶음이 온 뒤**에. */
   function draw(container: HTMLElement): void {
-          /* 돈은 **사는 곳**의 통화로 적는다. 알맹이의 `won()` 은 원이 박혀 있어
-             글로 답하는 쪽(MCP)에만 쓴다. 화면은 그 나라 돈으로 (₩, ¥, $). */
-          const money = (n: number): string => {
-            try {
-              return new Intl.NumberFormat(locale(), {
-                style: 'currency',
-                currency: regionMeta().currency,
-                maximumFractionDigits: 0
-              }).format(Math.round(n));
-            } catch {
-              return Math.round(n).toLocaleString(locale());
-            }
-          };
           container.innerHTML = `
             <div class="field-group">
               <div class="tool-grid-2">
@@ -113,6 +100,7 @@ import { download } from './shared/image';
           const row = (k: string, v: string): string =>
             `<div class="tool-list-row"><span class="tool-list-key">${k}</span><span class="tool-list-val">${v}</span></div>`;
 
+          let renderedInput: string | null = null;
           function run(): void {
             const P = parseFloat($<HTMLInputElement>('#loP').value) || 0;
             const rate = parseFloat($<HTMLInputElement>('#loR').value) || 0;
@@ -121,6 +109,13 @@ import { download } from './shared/image';
 
             const grace = Math.max(0, Math.round(parseFloat($<HTMLInputElement>('#loG').value) || 0));
             const extra = Math.max(0, parseFloat($<HTMLInputElement>('#loX').value) || 0);
+            const language = locale(), currency = regionMeta().currency;
+            const inputKey = JSON.stringify([P, rate, months, type, grace, extra, showAll, language, currency]);
+            if (inputKey === renderedInput) return;
+            let formatter: Intl.NumberFormat | null = null;
+            try { formatter = new Intl.NumberFormat(language, { style: 'currency', currency, maximumFractionDigits: 0 }); }
+            catch { /* Invalid regional currency retains the existing numeric fallback. */ }
+            const money = (n: number): string => formatter ? formatter.format(Math.round(n)) : Math.round(n).toLocaleString(language);
 
             const build = type === 'pp' ? equalPrincipal : type === 'bu' ? bullet : equalPayment;
             const base = withGrace(P, rate, grace, build(P, rate, months));
@@ -184,6 +179,7 @@ import { download } from './shared/image';
                   })
                 : '') +
               t('loan.status.note');
+            renderedInput = inputKey;
             Toolbox.trackUse?.(type);
           }
 

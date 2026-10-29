@@ -332,7 +332,7 @@
     "test:contrast": "node scripts/smoke-contrast.mjs",
     "test:copresence": "node scripts/smoke-copresence.mjs",
     "test:copyable": "node scripts/test-copyable.mjs",
-    "test:core": "node scripts/test-core.mjs",
+    "test:core": "node scripts/test-core.mjs && node --test scripts/loan-widget.test.mjs",
     "test:corecount": "node scripts/test-core-charcount.mjs",
     "test:cotext": "node scripts/check-cotext.mjs",
     "test:cutout": "node scripts/test-cutout.mjs",
