@@ -1,6 +1,6 @@
 [package]
 name = "karmo-dash"
-version = "0.1.5"
+version = "0.1.6"
 description = "KarmoDash desktop calendar and personal dashboard"
 authors = ["mascari4615"]
 edition = "2021"
