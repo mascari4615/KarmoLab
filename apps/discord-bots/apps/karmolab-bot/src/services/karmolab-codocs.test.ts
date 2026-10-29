@@ -64,12 +64,25 @@ describe('같이 쓴 글 원장 (KL-191 축2)', () => {
   });
 
   it('넘치면 가장 오래 안 만진 것부터 버린다', () => {
+    const docs = Object.fromEntries(Array.from({ length: DOCS_MAX }, (_, i) => {
+      const id = `room${i}:field`;
+      return [id, { id, text: `글 ${i}`, updatedAt: new Date(Date.UTC(2000, 0, 1) + i * 1000).toISOString(), version: 1 }];
+    }));
+    fs.writeFileSync(statePath, JSON.stringify({ version: 1, docs }), 'utf-8');
     const store = new KarmolabCoDocStore(statePath);
-    for (let i = 0; i < DOCS_MAX + 5; i += 1) {
+    store.put('room0:field', '최근 수정');
+    for (let i = DOCS_MAX; i < DOCS_MAX + 5; i += 1) {
       store.put(`room${i}:field`, `글 ${i}`);
     }
     expect(store.stats().docs).toBe(DOCS_MAX);
-    expect(store.get('room0:field')).toBeNull();       // 가장 오래된 것
-    expect(store.get(`room${DOCS_MAX + 4}:field`)).not.toBeNull(); // 가장 최근 것
+    for (let i = 1; i <= 5; i += 1) expect(store.get(`room${i}:field`)).toBeNull();
+    expect(store.get('room6:field')).not.toBeNull();
+    expect(store.get('room0:field')!.text).toBe('최근 수정');
+    expect(store.get(`room${DOCS_MAX + 4}:field`)).not.toBeNull();
+    const reopened = new KarmolabCoDocStore(statePath);
+    expect(reopened.stats().docs).toBe(DOCS_MAX);
+    expect(reopened.get('room0:field')!.text).toBe('최근 수정');
+    for (let i = 1; i <= 5; i += 1) expect(reopened.get(`room${i}:field`)).toBeNull();
+    expect(reopened.get(`room${DOCS_MAX + 4}:field`)).not.toBeNull();
   });
 });
