@@ -18,7 +18,7 @@ export function desktopConnect(mount: HTMLElement): boolean {
   const title = document.createElement('h1');
   title.textContent = 'KarmoDash PC 앱 연결';
   const copy = document.createElement('p');
-  copy.textContent = '이 브라우저의 Dash 로그인, 구글 연결, 로컬 일정과 할 일을 이 PC의 앱에 복사합니다. 앱의 같은 항목은 브라우저 내용으로 교체됩니다. 브라우저 원본은 유지됩니다. 로컬 일정은 이후 각각 저장됩니다.';
+  copy.textContent = '이 브라우저의 Dash 로그인, 구글 연결, 로컬 일정과 할 일을 이 PC의 앱에 복사합니다. 앱의 같은 항목은 브라우저 내용으로 교체되고, 앱에서 삭제한 항목도 브라우저에 있으면 복원됩니다. 브라우저에 없는 앱 기록은 유지됩니다. 브라우저 원본은 유지됩니다. 로그인한 뒤 기기 간 자동 동기화됩니다.';
   const status = document.createElement('p');
   status.setAttribute('role', 'status');
   const button = document.createElement('button');

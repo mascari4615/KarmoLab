@@ -46,7 +46,7 @@ fn connect(app: AppHandle) {
                     return Err("앱 화면 출처 오류".into());
                 }
                 let json = serde_json::to_string(&data).map_err(|e| e.to_string())?;
-                window.eval(&format!("for(const [k,v] of Object.entries({json})) localStorage.setItem(k,v); location.hash='#planner'; location.reload();")).map_err(|e| e.to_string())?;
+                window.eval(&format!("(() => {{ const incoming={json}; const planner={{}}; for(const [k,v] of Object.entries(incoming)) {{ if(k==='karmolab_planner_events'||k==='karmolab_planner_tasks') planner[k]=v; else localStorage.setItem(k,v); }} if(Object.keys(planner).length) localStorage.setItem('karmolab_planner_pending_import',JSON.stringify(planner)); location.hash='#planner'; location.reload(); }})();")).map_err(|e| e.to_string())?;
                 show(&app);
                 Ok(())
             })

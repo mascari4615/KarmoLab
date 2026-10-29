@@ -1,6 +1,7 @@
 import type { DashRepoWrite } from '../mydash/kit';
 import { PLANNER_KEYS, rowKey, validateRow, parseBatch, plannerHeads, materializePlanner, type Collection, type Row, type Operation, type Batch } from './sync-model';
 export { PLANNER_KEYS } from './sync-model';
+export const PLANNER_IMPORT_KEY = 'karmolab_planner_pending_import';
 export type PlannerSyncState = { phase: 'pending' | 'syncing' | 'synced' | 'error'; message: string };
 type SharedWindow = Window & { KarmoPlannerSyncWriter?: (key: string, rows: unknown[]) => void };
 let state: PlannerSyncState = { phase: 'pending', message: '자동 동기화 연결 중' };
@@ -49,6 +50,36 @@ export class PlannerJournal {
         const rows = collections.map(collection => ({ collection, rows: readRows(this.storage, collection) }));
         this.append(rows.flatMap(({ collection, rows }) => rows.map(value => ({ collection, key: rowKey(collection, value), parents: [], at: 0, value }))));
         this.storage.setItem(this.prefix + 'migrated', '1');
+    }
+    importPending(): void {
+        const raw = this.storage.getItem(PLANNER_IMPORT_KEY);
+        if (raw === null) return;
+        const payload: unknown = JSON.parse(raw);
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('가져올 기록 형식을 확인해 주세요.');
+        const all = this.ops();
+        const at = all.reduce((at, op) => Math.max(at, op.at + 1), Date.now());
+        const ops: Omit<Operation, 'id'>[] = [];
+        for (const collection of Object.keys(PLANNER_KEYS) as Collection[]) {
+            const value = (payload as Record<string, unknown>)[PLANNER_KEYS[collection]];
+            if (value === undefined) continue;
+            if (typeof value !== 'string') throw new Error('가져올 기록 형식을 확인해 주세요.');
+            const rows: unknown = JSON.parse(value);
+            if (!Array.isArray(rows)) throw new Error('가져올 기록 형식을 확인해 주세요.');
+            const imported = new Set<string>();
+            for (const rawRow of rows) {
+                const row = validateRow(collection, rawRow);
+                const key = rowKey(collection, row);
+                if (imported.has(key)) throw new Error('가져올 기록 이름이 중복돼요.');
+                imported.add(key);
+                const heads = plannerHeads(all.filter(op => op.collection === collection && op.key === key));
+                // Explicit imports replace matching rows, including intentional restoration of a deletion.
+                if (heads.length === 1 && JSON.stringify(heads[0].value) === JSON.stringify(row)) continue;
+                ops.push({ collection, key, parents: heads.map(op => op.id), at, value: row });
+            }
+        }
+        this.append(ops);
+        this.apply();
+        this.storage.removeItem(PLANNER_IMPORT_KEY);
     }
     write(collection: Collection, rows: Row[]): void {
         const old = readRows(this.storage, collection);
@@ -135,7 +166,7 @@ export function startPlannerSync(repo: DashRepoWrite, scope: string): () => void
         journal.write(collection, rows as Row[]);
     };
     shared.KarmoPlannerSyncWriter = writer;
-    try { journal.migrate(); journal.apply(); }
+    try { journal.migrate(); journal.importPending(); journal.apply(); }
     catch { announce({ phase: 'error', message: '기존 기록을 읽지 못해 동기화를 멈췄어요. 원본은 보존했어요.' }); return () => { journal.stopped = true; if (shared.KarmoPlannerSyncWriter === writer) delete shared.KarmoPlannerSyncWriter; }; }
     const schedule = (delay = 600): void => {
         if (journal.stopped) return;

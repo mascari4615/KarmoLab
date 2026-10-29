@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { JSDOM } from 'jsdom';
 import { readFile } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
 const translations = JSON.parse(await readFile(new URL('../i18n/ko/planner.json', import.meta.url), 'utf8'));
 const bundle = await build({ stdin: { resolveDir: process.cwd(), contents: "export * from './src/widgets/planner/sync-store'; export { buildDiaryView } from './src/widgets/planner/diary-view';" }, bundle: true, write: false, format: 'iife', globalName: 'Sync', logLevel: 'silent' });
 function device(t, initial = {}) {
@@ -36,6 +37,62 @@ test('legacy diary, task and recurrence import, then a fresh device restores all
   await a.journal.sync(repo); await b.journal.sync(repo);
   for (const key of ['diary', 'tasks', 'events']) assert.equal(JSON.stringify(a.read(key)), JSON.stringify(b.read(key)));
   assert.equal(b.read('events')[0].exceptions['2026-11-03'].cancelled, true);
+});
+test('explicit desktop handoff replaces matching rows, restores selected deletions and retains unrelated records', async t => {
+  const a = device(t), repo = remote();
+  a.journal.write('tasks', [task('local__kept', 'PC edit'), task('local__deleted'), task('local__unrelated')]);
+  a.journal.write('tasks', [task('local__kept', 'PC edit'), task('local__unrelated')]);
+  const incoming = {
+    karmolab_planner_tasks: JSON.stringify([task('local__kept', 'stale browser copy'), task('local__deleted'), task('local__imported')]),
+    karmolab_planner_events: JSON.stringify([{ id: 'local__event', title: 'Imported event', start: '2026-10-27', end: '2026-10-28', allDay: true }])
+  };
+  const native = await readFile(new URL('../../karmo-dash/src-tauri/src/lib.rs', import.meta.url), 'utf8');
+  const handoff = native.match(/window\.eval\(&format!\("([^"\r\n]+)"\)\)/)[1];
+  let reloads = 0;
+  const cached = a.storage.getItem('karmolab_planner_tasks');
+  runInNewContext(handoff.replace('{json}', JSON.stringify(incoming)).replaceAll('{{', '{').replaceAll('}}', '}'), {
+    localStorage: a.storage, location: { reload() { reloads++; } }
+  });
+  assert.equal(reloads, 1);
+  assert.equal(a.storage.getItem('karmolab_planner_tasks'), cached);
+  const restarted = new a.window.Sync.PlannerJournal(a.storage, 'fixture');
+  restarted.migrate(); restarted.importPending(); restarted.apply();
+  assert.deepEqual(a.read('tasks').map(row => row.id), ['local__deleted', 'local__imported', 'local__kept', 'local__unrelated']);
+  assert.equal(a.read('tasks').find(row => row.id === 'local__kept').title, 'stale browser copy');
+  assert.equal(a.storage.getItem(a.window.Sync.PLANNER_IMPORT_KEY), null);
+  await restarted.sync(repo);
+  const b = device(t); await b.journal.sync(repo);
+  assert.equal(JSON.stringify(b.read('tasks')), JSON.stringify(a.read('tasks')));
+  assert.equal(b.read('events')[0].id, 'local__event');
+});
+test('desktop import validates the complete payload and retains it on failure', t => {
+  const a = device(t);
+  const raw = JSON.stringify({ karmolab_planner_tasks: JSON.stringify([task('local__imported')]), karmolab_planner_events: '{broken' });
+  a.storage.setItem(a.window.Sync.PLANNER_IMPORT_KEY, raw);
+  assert.throws(() => a.journal.importPending());
+  assert.equal(a.journal.batches().length, 0);
+  assert.equal(a.storage.getItem(a.window.Sync.PLANNER_IMPORT_KEY), raw);
+  assert.equal(a.read('tasks').length, 0);
+});
+test('desktop import retries after a cache write failure without recording duplicate operations', t => {
+  const a = device(t);
+  a.storage.setItem(a.window.Sync.PLANNER_IMPORT_KEY, JSON.stringify({ karmolab_planner_tasks: JSON.stringify([task('local__imported')]) }));
+  let fail = true;
+  const storage = {
+    getItem: key => a.storage.getItem(key),
+    setItem(key, value) { if (fail && key === 'karmolab_planner_tasks') throw new Error('cache write failed'); a.storage.setItem(key, value); },
+    key: index => a.storage.key(index), get length() { return a.storage.length; },
+    removeItem: key => a.storage.removeItem(key)
+  };
+  const journal = new a.window.Sync.PlannerJournal(storage, 'fixture');
+  assert.throws(() => journal.importPending(), /cache write failed/);
+  assert.equal(journal.batches().length, 1);
+  assert.notEqual(a.storage.getItem(a.window.Sync.PLANNER_IMPORT_KEY), null);
+  assert.equal(a.read('tasks').length, 0);
+  fail = false; journal.importPending();
+  assert.equal(journal.batches().length, 1);
+  assert.equal(a.read('tasks')[0].id, 'local__imported');
+  assert.equal(a.storage.getItem(a.window.Sync.PLANNER_IMPORT_KEY), null);
 });
 test('concurrent additions, completion and deletion converge without erasing unrelated rows', async t => {
   const a = device(t), b = device(t), repo = remote();
