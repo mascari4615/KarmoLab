@@ -129,7 +129,7 @@ pub async fn part_fetch(part: String, app: tauri::AppHandle) -> Result<FetchedPa
     let mut archive = zip::ZipArchive::new(reader).map_err(|e| format!("압축을 못 열었다: {e}"))?;
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
-        let raw = entry.name().replace('\\', "/");
+        let raw = entry.name().map_err(|e| e.to_string())?.replace('\\', "/");
         let Some(target) = safe_join(&base, &raw) else {
             return Err(format!("압축 안에 바깥을 가리키는 자리가 있다: {raw}"));
         };

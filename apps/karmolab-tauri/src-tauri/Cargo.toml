@@ -64,7 +64,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 # TASK-KAR-227: 동반자 꾸러미를 릴리스에서 받아 푼다. 「소스 없이 깔기」의 마지막 한 칸이다.
 # 기본 기능만 켠다 — deflate 로 충분하고(러너의 Compress-Archive 가 그걸 쓴다), 암호·bzip2 는
 # 안 쓴다. 안 쓰는 기능을 켜면 그만큼 앱이 커진다(이 앱의 미덕은 5MB 다).
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 # TASK-KL-037: adventure dataUrl → 별 PNG 파일 분리 시 base64 디코드.
 base64 = "0.22"
