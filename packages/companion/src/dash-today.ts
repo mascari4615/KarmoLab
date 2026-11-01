@@ -68,13 +68,14 @@ const clockOf = (at: Date): string => at.toLocaleTimeString('en-GB', { timeZone:
 export function summarizeToday(agenda: Agenda | null, aiDue: number, now: Date, warnings: string[] = []): Today {
   const today = dayOf(now);
   const tomorrow = dayOf(new Date(now.getTime() + 86_400_000));
-  const upcoming: { at: number; item: TodayItem; start?: string; end?: string }[] = [];
+  const upcoming: { at: number; item: TodayItem; start?: string; end?: string; day?: string }[] = [];
   for (const e of agenda?.events ?? []) {
     if (!e.title || !e.start || skipEvent(e)) continue;
     if (e.allDay === true) {
       const day = e.start.slice(0, 10);
-      if (day === today) upcoming.push({ at: 0, item: { title: e.title, when: '종일' } });
-      else if (day === tomorrow) upcoming.push({ at: 1e15, item: { title: e.title, when: '내일 종일' } });
+      // id 에 날짜가 들어가게 day 를 둠 (startAt 은 시각 있는 일정만, 타이머용). 없으면 매일 같은 제목의 종일 일정이 같은 id 라 어제 읽음이 남음
+      if (day === today) upcoming.push({ at: 0, item: { title: e.title, when: '종일' }, day });
+      else if (day === tomorrow) upcoming.push({ at: 1e15, item: { title: e.title, when: '내일 종일' }, day });
       continue;
     }
     const start = new Date(e.start);
@@ -100,7 +101,7 @@ export function summarizeToday(agenda: Agenda | null, aiDue: number, now: Date, 
 
   const items: NotifyItem[] = [
     ...shown.map((u): NotifyItem => ({
-      id: `일정:${u.start ?? u.item.when}:${u.item.title}`,
+      id: `일정:${u.start ?? u.day ?? u.item.when}:${u.item.title}`,
       kind: '일정',
       title: u.item.title,
       sub: u.item.when ?? '',

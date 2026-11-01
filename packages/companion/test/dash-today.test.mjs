@@ -94,3 +94,9 @@ export async function invokeDash(name, args) {
   assert.equal(second.badge, 1);
   assert.ok(second.warnings.some((w) => w.includes('20:00 에 받은 일정')), second.warnings.join('|'));
 });
+
+test('종일 일정 id 에 날짜, 시각 없음', () => {
+  const t = summarizeToday({ events: [{ id: 'g1', title: '생일', start: '2026-11-01', allDay: true }] }, 0, now);
+  assert.equal(t.items[0].id, '일정:2026-11-01:생일');
+  assert.equal(t.items[0].startAt, undefined);
+});

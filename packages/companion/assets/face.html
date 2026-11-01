@@ -1717,7 +1717,12 @@
       ntToast.classList.remove('on');
       ntToast.hidden = true;
       reportHitAreas();
-      setTimeout(() => void ntToastOrHold(item, '다시'), NT_SNOOZE_MS);
+      setTimeout(() => {
+        // 그사이 원본에서 사라졌거나 끝난 일정이면 다시 안 띄움
+        const still = ntData?.items?.find((i) => i.id === item.id);
+        if (!still || (still.endAt && Date.parse(still.endAt) < Date.now())) return;
+        void ntToastOrHold(still, '다시');
+      }, NT_SNOOZE_MS);
     };
     ntToast.dataset.kind = item.kind;
     ntToast.hidden = false;
