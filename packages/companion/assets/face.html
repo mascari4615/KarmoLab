@@ -208,6 +208,26 @@
   let 아이콘모드 = false;
   let ntIconAt = null;
   let ntBodySize = null;
+  /* 끄는 중에는 창 전체가 누를 자리. 창은 70ms 마다 커서가 누를 자리 밖이면 클릭을 통과시키는데,
+     빨리 끌면 커서가 옛 자리 밖으로 먼저 나가 창이 마우스를 놓쳤음 (끌기가 혼자 풀림, 사용자 2026-11-02) */
+  let 끄는중 = false;
+  function 끌기시작() {
+    끄는중 = true;
+    끌기마지막 = Date.now();
+    reportHitAreas();
+  }
+  function 끌기끝() {
+    if (!끄는중) return;
+    끄는중 = false;
+    reportHitAreas();
+  }
+  /* 놓기를 놓치면 화면 전체가 막힘. 버튼이 안 눌린 움직임이 오거나 3초 넘게 움직임이 없으면 끝냄 */
+  let 끌기마지막 = 0;
+  document.addEventListener('pointermove', (e) => {
+    끌기마지막 = Date.now();
+    if (끄는중 && e.buttons === 0) 끌기끝();
+  }, true);
+  setInterval(() => { if (끄는중 && Date.now() - 끌기마지막 > 3000) 끌기끝(); }, 1000);
   /** 1px 넘게 바뀔 때만 씀. 같은 값을 매 프레임 쓰면 그리기가 늘어남 */
   function ntMove(el, x, y) {
     const rx = Math.round(x);
@@ -1544,7 +1564,11 @@
   function reportHitAreas() {
     placeNotify();
     if (inDesktopWindow === false) return;
-    const areas = [];
+    const areas = 끄는중 ? [[0, 0, innerWidth, innerHeight]] : [];
+    if (끄는중) {
+      window.__TAURI__.core.invoke('set_hit_areas', { areas }).catch(() => {});
+      return;
+    }
     const add = (el) => {
       if (el === null || el === undefined || el.hidden === true) return;
       const r = el.getBoundingClientRect();
@@ -1750,6 +1774,7 @@
     ntIcon.setPointerCapture(e.pointerId);
     const r = ntIcon.getBoundingClientRect();
     ntDrag = { sx: e.clientX, sy: e.clientY, ox: e.clientX - r.left, oy: e.clientY - r.top, moved: false };
+    끌기시작();
   });
   ntIcon.addEventListener('pointermove', (e) => {
     if (ntDrag === null) return;
@@ -1758,17 +1783,24 @@
     ntIcon.classList.add('dragging');
     ntIconAt = { x: e.clientX - ntDrag.ox, y: e.clientY - ntDrag.oy };
     placeNotify();
-    reportHitAreas();
   });
-  ntIcon.addEventListener('pointerup', () => {
-    if (ntDrag === null) return;
+  const ntDrop = (cancelled) => {
+    if (ntDrag === null) return false;
     const moved = ntDrag.moved;
     ntDrag = null;
     ntIcon.classList.remove('dragging');
+    끌기끝();
     if (moved) {
       try { localStorage.setItem('companion.iconAt', JSON.stringify(ntIconAt)); } catch { /* 이번 자리만 유지 */ }
-      return;
     }
+    return !moved && !cancelled;
+  };
+  // 놓친 경우 (포인터 취소, 붙잡기 잃음) 도 끌기를 끝냄. 안 그러면 다음 움직임에 아이콘이 혼자 따라옴
+  ntIcon.addEventListener('pointercancel', () => ntDrop(true));
+  ntIcon.addEventListener('lostpointercapture', () => ntDrop(true));
+  ntIcon.addEventListener('pointerup', () => {
+    // 제자리에서 뗀 것만 누르기 (판 열고 닫기)
+    if (!ntDrop(false)) return;
     if (ntBoard.hidden) ntOpenBoard(); else { ntBoard.hidden = true; reportHitAreas(); }
   });
   // 두 번 눌러 몸으로 돌아가기는 뺌. 판을 열고 닫는 두 번 누르기가 아이콘 모드를 풀었음 (사용자 2026-11-02)
@@ -2222,6 +2254,9 @@
     stopRoam();
     endActivity();
     grabbed = { x: e.clientX, y: e.clientY, moved: false };
+    // 몸 끌기도 같은 문제. 붙잡고 창 전체를 누를 자리로
+    try { stage.setPointerCapture(e.pointerId); } catch { /* 붙잡기 못 해도 끌기는 됨 */ }
+    끌기시작();
   });
 
   stage?.addEventListener('pointermove', (e) => {
@@ -2256,6 +2291,7 @@
   const touched = (kind) => fetch(`/touch?kind=${kind}`, { method: 'POST' }).catch(() => {});
 
   const release = () => {
+    끌기끝();
     if (grabbed === null) return;
     const wasClick = grabbed.moved === false;
     const samples = grabbed.samples ?? [];
@@ -2289,6 +2325,7 @@
   };
   stage?.addEventListener('pointerup', release);
   stage?.addEventListener('pointercancel', release);
+  stage?.addEventListener('lostpointercapture', release);
 
   // 우클릭 = 설정. 화면 밖으로 안 넘치게 자리를 잡는다.
   stage?.addEventListener('contextmenu', (e) => {
