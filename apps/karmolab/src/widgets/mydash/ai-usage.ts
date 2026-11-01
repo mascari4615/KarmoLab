@@ -615,10 +615,18 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
       root.innerHTML = '<div class="au"><div class="au-foot">하네스 표가 아직 없다. <code>node memo/scripts/ai-env/audit.mjs</code></div></div>';
       return;
     }
-    const host = dirs[0];
+    /* 기계가 둘 이상이면 사용량 탭처럼 칩으로 고름. 전에는 첫 기계만 보였음 (Dash 할 일 2026-10-07) */
+    await showEnv(ctx, dirs, dirs[0]);
+  }
+
+  async function showEnv(ctx: DashPanelCtx, dirs: string[], host: string): Promise<void> {
+    const { root, repo, status } = ctx;
     const audit = await readLive<EnvAudit>(repo, ENV_DIR + '/' + host + '/audit.json');
     const when = audit.checked_at ? agoSeconds(audit.checked_at) : '';
-    status(host + (when ? ', ' + when : ''));
+    status(hostLabel(host) + (when ? ', ' + when : ''));
+    const chips = dirs.length > 1
+      ? '<div class="au-chips">' + dirs.map((h) => '<button type="button" data-env-host="' + esc(h) + '"' + (h === host ? ' class="on"' : '') + '>' + esc(hostLabel(h)) + '</button>').join('') + '</div>'
+      : '';
     const vendors = ['claude', 'codex', 'grok'] as const;
     const head = vendors.map((v) => '<th>' + v[0].toUpperCase() + v.slice(1) + '</th>').join('');
     const rows = (audit.features || []).map((feature) => {
@@ -632,9 +640,15 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
       return '<tr><th scope="row"><strong>' + esc(feature.label) + '</strong><small>' + esc(feature.description) + '</small></th>' + cells + '</tr>';
     }).join('');
     root.innerHTML =
-      '<div class="au"><p class="au-foot">이 컴퓨터의 지침, 스킬, 훅이 벤더마다 깔려 있는지. 칸에 마우스를 올리면 근거 경로.</p>' +
+      '<div class="au">' + chips + '<p class="au-foot">' + esc(hostLabel(host)) + ' 의 지침, 스킬, 훅이 벤더마다 깔려 있는지. 칸에 마우스를 올리면 근거 경로.</p>' +
       '<div class="au-env-scroll"><table class="au-env"><thead><tr><th>기능</th>' + head + '</tr></thead><tbody>' +
       rows + '</tbody></table></div>' + renderSkills(audit.skills) + '</div>';
+    root.querySelectorAll<HTMLButtonElement>('[data-env-host]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const next = button.dataset.envHost ?? host;
+        if (next !== host) void showEnv(ctx, dirs, next).catch((e) => status('못 읽음: ' + (e instanceof Error ? e.message : String(e))));
+      });
+    });
   }
 
   function agoSeconds(epoch: number): string {
