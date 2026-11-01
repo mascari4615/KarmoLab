@@ -506,6 +506,13 @@
     "audit:orphans",
     "smoke:batchretry",
     "audit:prerender-home",
+    {
+      "name": "smoke:arcadekeys",
+      "watch": [
+        "src/widgets/arcade/**",
+        "scripts/smoke-arcade-keys.mjs"
+      ]
+    },
     "audit:arcade-contract",
     "audit:arcade-feel",
     "test:arcade",
