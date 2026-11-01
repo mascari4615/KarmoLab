@@ -2,11 +2,109 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1764,
-    "days": 15,
+    "commits": 1789,
+    "days": 14,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-11-02",
+      "entries": [
+        {
+          "sha": "58e37401",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "movement",
+          "text": "재사용된 적의 이전 밀림과 피격 정지 초기화"
+        },
+        {
+          "sha": "2c9a824f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "movement",
+          "text": "중첩 충돌에서 다른 캐릭터의 접촉 목록 덮어쓰기 방지"
+        },
+        {
+          "sha": "6bb7b5e0",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ai",
+          "text": "생성자 대기 시간이 사라져 돌진이 즉시 취소되던 문제 수정"
+        },
+        {
+          "sha": "cef31804",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "movement",
+          "text": "재사용 접촉 누락과 충돌 조회 배열 생성 제거"
+        },
+        {
+          "sha": "1d135ed9",
+          "type": "perf",
+          "typeLabel": "빨라진 것",
+          "scope": "movement",
+          "text": "접지 최근접 조회와 자기 몸 필터 통합"
+        },
+        {
+          "sha": "a395569b",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "survival",
+          "text": "재사용 공격의 타격 누락과 접촉 기록 잔류 제거"
+        }
+      ],
+      "quiet": 1,
+      "more": 6
+    },
+    {
+      "date": "2026-11-01",
+      "entries": [
+        {
+          "sha": "a4ee719f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "movement",
+          "text": "누적 간격 비교에 엔진 부동소수 비교 적용"
+        },
+        {
+          "sha": "9950cbef",
+          "type": "perf",
+          "typeLabel": "빨라진 것",
+          "scope": "survival",
+          "text": "화면 밖 일반 적의 이동 시간을 누적 처리"
+        },
+        {
+          "sha": "573a3e08",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "movement",
+          "text": "막힌 턱의 반복 질의와 틱 내부 형상 재조회 제거"
+        },
+        {
+          "sha": "5c814461",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "combat",
+          "text": "풀 재사용의 스킬 리스너와 비활성 갱신 누수 제거"
+        },
+        {
+          "sha": "883863e4",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "기존 TMP 데미지 글꼴과 재질 스타일 복원"
+        },
+        {
+          "sha": "73c3e0b1",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "기본 데미지 스킨 자산 이름 규약 적용"
+        }
+      ],
+      "quiet": 0,
+      "more": 6
+    },
     {
       "date": "2026-10-30",
       "entries": [
@@ -426,111 +524,6 @@
       ],
       "quiet": 3,
       "more": 9
-    },
-    {
-      "date": "2026-09-20",
-      "entries": [
-        {
-          "sha": "41612ac9",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "바닥에 풀 타일, 소품에 바위 트라이플레이너. 단색 폐기"
-        },
-        {
-          "sha": "2377bb4f",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "인형 자리 탭은 강화 대상 고르기, 인형 바꾸기는 큰 초상화"
-        },
-        {
-          "sha": "64c21f68",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "던전 판이 끝나면 던전 안에 멈춰 결과, 나가기를 눌러야 본판"
-        }
-      ],
-      "quiet": 1,
-      "more": 0
-    },
-    {
-      "date": "2026-09-09",
-      "entries": [
-        {
-          "sha": "6f197e2c",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "extend C2 panels to tabs and dialogs"
-        },
-        {
-          "sha": "e0d50b0e",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "camera",
-          "text": "fade marked pillars while preserving orbit distance"
-        },
-        {
-          "sha": "841c4552",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "인형 중심 분리 패널과 전장 배경 적용"
-        },
-        {
-          "sha": "155590eb",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "camera",
-          "text": "anticipate orbit obstruction before contact"
-        },
-        {
-          "sha": "26f82893",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "camera",
-          "text": "isolate orbit rotation from tracking references"
-        },
-        {
-          "sha": "3ec6a349",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "camera",
-          "text": "keep climbing view outside walls and add exploration course"
-        }
-      ],
-      "quiet": 0,
-      "more": 1
-    },
-    {
-      "date": "2026-09-08",
-      "entries": [
-        {
-          "sha": "99ce7b6e",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "traversal",
-          "text": "복귀 위치 보정 충돌과 활공 안내 수정"
-        },
-        {
-          "sha": "70dc2264",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "던전 v2. 본판 위 두 번째 전장, 난이도 3 x 스테이지 5, 나가기"
-        },
-        {
-          "sha": "d8f057aa",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "traversal",
-          "text": "등반과 활공 시험 Stage 연결"
-        }
-      ],
-      "quiet": 2,
-      "more": 4
     }
   ]
 }
