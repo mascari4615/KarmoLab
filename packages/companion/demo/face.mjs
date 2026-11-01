@@ -654,6 +654,7 @@ ${tallyReport(tally)}`;
   today: todaySource,
   settings: () => settingsReport(settings),
   putSettings: (next) => settings.put(next),
+  settingValues: () => settings.all,
   // 얼굴 신호를 유도할 재료. 생김새는 다른 세션이 이 신호를 받아 쓴다.
   feeling: () => heart.state,
   port,
@@ -888,7 +889,7 @@ if (screenMs > 0) {
   eye = screenSense({
     everyMs: screenMs,
     // 사람이 방금 말을 걸었으면 이번 차례는 건너뛴다. 화면 보기가 대답을 늦춘다.
-    okToLook: () => Date.now() - lastSpokenToAt > 30_000,
+    okToLook: () => settings.on('screenLook') && Date.now() - lastSpokenToAt > 30_000,
     freshMs: Number(process.env.COMPANION_SEEING_FRESH_MS ?? '20000'),
     log: (m) => console.log(m),
   });

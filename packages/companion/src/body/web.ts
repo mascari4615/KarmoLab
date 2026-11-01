@@ -80,6 +80,8 @@ export interface WebBodyOptions {
   troubles?: () => string;
   /** 설정을 사람이 읽는 글로. */
   settings?: () => string;
+  /** 설정 값 그대로. 창의 켜고 끄기 칸이 읽는다. */
+  settingValues?: () => Readonly<Record<string, number | boolean>>;
   /** 설정을 바꾼다. 안 받아들인 것들을 돌려준다. */
   putSettings?: (next: unknown) => string[];
   /** 오프라인 받아쓰기. 없으면 브라우저 받아쓰기로 물러선다. */
@@ -781,6 +783,12 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
 
         // 만든 게 실제로 도는지 보는 창구. 사람이 열어 봐도 읽히는 글로 준다.
         // 손댈 수 있는 설정. 읽고(GET) 바꾸고(POST). 재시작 없이 먹는다.
+        if (url === '/settings.json') {
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(JSON.stringify(options.settingValues?.() ?? {}));
+          return;
+        }
+
         if (url === '/settings') {
           if (req.method === 'POST') {
             let raw = '';

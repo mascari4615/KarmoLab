@@ -28,6 +28,9 @@ export interface SettingSpec {
 export const toConfigure: Readonly<Record<string, SettingSpec>> = {
   speakFirst: { what: '얘가 먼저 말을 걸어도 되나', value: true },
   speakFirstIntervalSec: { what: '먼저 말 걸지 살펴보는 간격', value: 300, min: 60, max: 3600 },
+  // 기능별 끄기. 사용자 지시 2026-11-01 (듣기는 창의 듣기 방식 끔)
+  screenLook: { what: '화면을 곁눈질해도 되나', value: true },
+  voiceOut: { what: '말을 소리로 내나 (끄면 말풍선만)', value: true },
   screenLookIntervalSec: { what: '화면을 곁눈질하는 간격 (0 = 안 봄)', value: 120, min: 0, max: 1800 },
   quietHourStart: { what: '이 시각부터 조용 (시)', value: 23, min: 0, max: 23 },
   quietHourEnd: { what: '이 시각까지 조용 (시)', value: 7, min: 0, max: 23 },

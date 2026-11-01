@@ -54,7 +54,12 @@
       <option value="always">늘 듣기 (부르면 돌아본다)</option>
       <option value="toggle">한 번 눌러 켜고 끄기</option>
       <option value="push">누르고 있는 동안만</option>
+      <option value="off">끔 (마이크 안 씀)</option>
     </select></label>
+    <!-- 기능별 끄기. 서로 따로 (사용자 지시 2026-11-01) -->
+    <label class="check"><input type="checkbox" id="optScreen" /> 화면 보기</label>
+    <label class="check"><input type="checkbox" id="optVoice" /> 소리 내기 (끄면 말풍선만)</label>
+    <label class="check"><input type="checkbox" id="optFirst" /> 먼저 말 걸기</label>
     <!-- 지금 소리가 들어오는지 **눈으로** 보이게. 이게 없으면 안 들린다의 원인이
          마이크인지 문턱인지 사람이 알 길이 없다. 가는 세로선 = 문이 열리는 문턱. -->
     <div class="level" id="micLevel" title="지금 들어오는 소리"><i></i><b></b></div>
@@ -285,6 +290,7 @@
   const mute = document.getElementById('mute');
   // 얘가 하는 말은 전부 소리로 나온다. 혼잣말도, 화면 보고 하는 말도. 예외 없다.
   const voiceOn = pageSurface === false;
+  let 소리끔 = false; // 사람이 우클릭 설정에서 끈 소리
   let koVoice = null;
 
   function pickVoice() {
@@ -404,8 +410,9 @@
   }
 
   function speakAloud(message, queued) {
+    // 사람이 소리를 끈 동안은 소리 낸 것으로 센다. 무음 고장 경보는 끈 소리를 고장으로 안 봄
     발화.소리냄 += 1;
-    if (voiceOn === false) return;
+    if (voiceOn === false || 소리끔) return;
     // **얼굴 표는 소리로 읽지 않는다.** 화면 쪽은 떼고 그리는데 소리 쪽엔 떼는 자리가
     // 없어서, 얘가 대괄호 졸림 대괄호를 읽고 있었다(실측).
     message = stripEmoji(message);
@@ -991,6 +998,7 @@
   let offlineListening = false;
 
   async function toggleListening() {
+    if (듣기방식 === 'off') { tell('듣기를 꺼 뒀다. 우클릭 설정의 듣기 방식에서 켠다'); return; }
     if (offlineEars) { await toggleOffline(); return; }
     if (recognizer === null) return;
     if (listening) { recognizer.stop(); return; }
@@ -1185,7 +1193,7 @@
     localStorage.setItem('companion.earMode', 듣기방식);
     늘듣기 = 듣기방식 === 'always';
     localStorage.setItem('companion.alwaysEars', 늘듣기 ? '1' : '0');
-    tell(`듣는 방식: ${{ always: '늘 듣기', toggle: '눌러서 켜고 끄기', push: '누르는 동안만' }[듣기방식]}`);
+    tell(`듣는 방식: ${{ always: '늘 듣기', toggle: '눌러서 켜고 끄기', push: '누르는 동안만', off: '끔' }[듣기방식]}`);
     if (듣기방식 === 'always') void 늘듣기켜기();
     else 귀닫기();
   });
@@ -1435,6 +1443,36 @@
       render();
     }, seconds * 1000);
   }
+
+  /* 기능별 켜고 끄기. 값은 서버 설정 파일이 정본 (껐다 켜도 유지) */
+  const 기능칸 = { optScreen: 'screenLook', optVoice: 'voiceOut', optFirst: 'speakFirst' };
+  async function 기능읽기() {
+    try {
+      const values = await (await fetch('/settings.json', { cache: 'no-store' })).json();
+      for (const [id, key] of Object.entries(기능칸)) {
+        const box = document.getElementById(id);
+        if (box) box.checked = values[key] !== false;
+      }
+      소리끔 = values.voiceOut === false;
+    } catch (e) {
+      tell(`설정을 못 읽었다: ${e && e.message ? e.message : e}`);
+    }
+  }
+  for (const [id, key] of Object.entries(기능칸)) {
+    document.getElementById(id)?.addEventListener('change', async (e) => {
+      const on = e.target.checked;
+      if (key === 'voiceOut') { 소리끔 = !on; if (!on) 새말(); }
+      try {
+        const { failed } = await (await fetch('/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ [key]: on }) })).json();
+        if (failed.length > 0) tell(`설정 안 바뀜: ${failed.join(', ')}`);
+      } catch (err) {
+        tell(`설정 저장 실패: ${err && err.message ? err.message : err}`);
+        e.target.checked = !on;
+        if (key === 'voiceOut') 소리끔 = on;
+      }
+    });
+  }
+  void 기능읽기();
 
   function closeMenu() {
     menu.hidden = true;
