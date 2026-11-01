@@ -218,16 +218,24 @@ if (!cantRun) {
     await strokeProbe.evaluate(probe => probe.dispose()).catch(() => {});
     await strokeProbe.dispose().catch(() => {});
   }
-  await p.waitForFunction(() => {
-    const count = document.querySelectorAll('.ac-oskey').length;
-    return count > 0 && count <= 4;
+  /* 버튼 수는 **상태에서 계산한 값과 같아질 때까지** 기다린다. 전에는 1~4개를 기다렸는데,
+     첫 획의 끝점이 막다른 점(이어진 선이 그 한 획뿐)이면 맞는 답이 0개라 30초 뒤 시간 초과.
+     그림판은 판마다 무작위라 CI 에서 4번 중 3번 빨강이었음 (2026-10-30~31, 제품은 정상) */
+  const settled = await p.waitForFunction(() => {
+    const s = window.__arcade?.state;
+    const mine = s?.drawn?.[0] ?? [];
+    const here = s?.at?.[0] ?? -1;
+    const want = (s?.edges ?? []).filter((e, i) => !mine.includes(i) && (here < 0 || e.a === here || e.b === here)).length;
+    const shown = document.querySelectorAll('.ac-oskey').length;
+    return shown === want ? { shown, want } : false;
   });
+  const { shown: opens2, want: expected } = await settled.jsonValue();
+  await settled.dispose();
   const after = await p.evaluate(() => (window.__arcade?.state?.drawn?.[0] ?? []).length);
-  const opens2 = await p.evaluate(() => document.querySelectorAll('.ac-oskey').length);
   /* 첫 수는 시작점이 없어 **모든 선**이 후보다(12개). 그건 규칙이 그렇다.
      키로 놀 만한가는 **한 획 그은 뒤**에 갈린다: 붓 끝에 닿는 선만 남아야 화살표로 훑을 수 있다.
-     격자의 한 점에 모이는 선은 넷을 못 넘는다. */
-  check('한붓그리기: 첫 수 뒤엔 붓 끝에 닿는 선만 남는다', opens2 > 0 && opens2 <= 4, `${opens} → ${opens2}개`);
+     격자의 한 점에 모이는 선은 넷을 못 넘는다. 막다른 점이면 0개가 맞다 */
+  check('한붓그리기: 첫 수 뒤엔 붓 끝에 닿는 선만 남는다', opens2 === expected && opens2 <= 4, `${opens} → ${opens2}개 (상태 기준 ${expected}개)`);
   check('한붓그리기: 엔터가 진짜로 한 획 긋는다', after === before + 1, `${before} → ${after}`);
   await quit();
   await p.waitForSelector('[data-obj]', { timeout: WAIT });
