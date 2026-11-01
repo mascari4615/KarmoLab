@@ -60,6 +60,10 @@
     <label class="check"><input type="checkbox" id="optScreen" /> 화면 보기</label>
     <label class="check"><input type="checkbox" id="optVoice" /> 소리 내기 (끄면 말풍선만)</label>
     <label class="check"><input type="checkbox" id="optFirst" /> 먼저 말 걸기</label>
+    <label>미리 알림<select id="optLead">
+      <option value="0">시작 때만</option><option value="5">5분 전</option><option value="10">10분 전</option>
+      <option value="15">15분 전</option><option value="30">30분 전</option>
+    </select></label>
     <label class="check"><input type="checkbox" id="optIcon" /> 아이콘 모드 (몸 숨김, 화면 집중)</label>
     <!-- 지금 소리가 들어오는지 **눈으로** 보이게. 이게 없으면 안 들린다의 원인이
          마이크인지 문턱인지 사람이 알 길이 없다. 가는 세로선 = 문이 열리는 문턱. -->
@@ -368,6 +372,7 @@
   // 얘가 하는 말은 전부 소리로 나온다. 혼잣말도, 화면 보고 하는 말도. 예외 없다.
   const voiceOn = pageSurface === false;
   let 소리끔 = false; // 사람이 우클릭 설정에서 끈 소리
+  let ntLeadMin = 10; // 일정 몇 분 전 카드. 서버 설정 notifyLeadMin (벤치마킹 후보 3, 2026-11-02)
   let koVoice = null;
 
   function pickVoice() {
@@ -1533,6 +1538,9 @@
         if (box) box.checked = values[key] !== false;
       }
       소리끔 = values.voiceOut === false;
+      if (typeof values.notifyLeadMin === 'number') ntLeadMin = values.notifyLeadMin;
+      const lead = document.getElementById('optLead');
+      if (lead) lead.value = String(ntLeadMin);
     } catch (e) {
       tell(`설정을 못 읽었다: ${e && e.message ? e.message : e}`);
     }
@@ -1551,6 +1559,20 @@
       }
     });
   }
+  document.getElementById('optLead')?.addEventListener('change', async (e) => {
+    const before = ntLeadMin;
+    ntLeadMin = Number(e.target.value);
+    ntSchedule();
+    renderNotify();
+    try {
+      const { failed } = await (await fetch('/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ notifyLeadMin: ntLeadMin }) })).json();
+      if (failed.length > 0) tell(`설정 안 바뀜: ${failed.join(', ')}`);
+    } catch (err) {
+      tell(`설정 저장 실패: ${err && err.message ? err.message : err}`);
+      ntLeadMin = before;
+      e.target.value = String(before);
+    }
+  });
   void 기능읽기();
 
   function closeMenu() {
@@ -1622,7 +1644,7 @@
     const end = Date.parse(item.endAt ?? item.startAt);
     if (now >= start && now < end) return { label: '지금', tone: 'now' };
     const left = start - now;
-    if (left > 0 && left <= 10 * 60_000) return { label: `${Math.ceil(left / 60_000)}분 뒤`, tone: 'now' };
+    if (left > 0 && left <= Math.max(ntLeadMin, 10) * 60_000) return { label: `${Math.ceil(left / 60_000)}분 뒤`, tone: 'now' };
     return { label: item.label, tone: '' };
   }
   const ntOpen = (item) => !ntRead.has(item.id);
@@ -1709,7 +1731,7 @@
     }, 6000);
   }
 
-  /** 일정 시작 10분 전과 시작 시각에 카드. 받은 목록이 바뀔 때마다 다시 맞춤 */
+  /** 일정 시작 N분 전 (설정 미리 알림) 과 시작 시각에 카드. 받은 목록이 바뀔 때마다 다시 맞춤 */
   function ntSchedule() {
     ntTimers.forEach(clearTimeout);
     ntTimers = [];
@@ -1717,7 +1739,8 @@
     for (const item of ntData?.items ?? []) {
       if (item.kind !== '일정' || !item.startAt) continue;
       const start = Date.parse(item.startAt);
-      for (const [at, label] of [[start - 10 * 60_000, '10분 뒤'], [start, '지금']]) {
+      const marks = ntLeadMin > 0 ? [[start - ntLeadMin * 60_000, `${ntLeadMin}분 뒤`], [start, '지금']] : [[start, '지금']];
+      for (const [at, label] of marks) {
         // setTimeout 상한 약 24.8일. 내일 일정까지만 다루므로 넘지 않음
         if (at > now) ntTimers.push(setTimeout(() => { void ntToastOrHold(item, label); renderNotify(); }, at - now));
       }
