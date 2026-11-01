@@ -15075,7 +15075,8 @@
     "arcade.mine.cell.closed": "56feb16f58",
     "arcade.mine.cell.flag": "1755bf8c27",
     "arcade.mine.cell.number": "4ba1b2ef76",
-    "arcade.mine.cell.empty": "b7613e6a96"
+    "arcade.mine.cell.empty": "b7613e6a96",
+    "wm.worldSite": "2f40e27d1d"
   },
   "ja": {
     "about.failed": "f11e2dbbfa",
@@ -30153,6 +30154,7 @@
     "arcade.mine.cell.closed": "56feb16f58",
     "arcade.mine.cell.flag": "1755bf8c27",
     "arcade.mine.cell.number": "4ba1b2ef76",
-    "arcade.mine.cell.empty": "b7613e6a96"
+    "arcade.mine.cell.empty": "b7613e6a96",
+    "wm.worldSite": "2f40e27d1d"
   }
 }

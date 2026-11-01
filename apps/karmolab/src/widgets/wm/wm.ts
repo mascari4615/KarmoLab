@@ -514,6 +514,7 @@ interface WorldBook {
         <div class="wm-in-cta">
           <button type="button" class="btn btn-primary" data-go="all">${esc(t('wm.t24'))}</button>
           <button type="button" class="btn btn-ghost" data-go="news">${esc(t('wm.t25'))}</button>
+          <a class="btn btn-primary" href="https://wm.mascari4615.com/" rel="noopener">${esc(t('wm.worldSite'))}</a>
           <a class="btn btn-ghost" href="${appPath('wm/')}">${esc(t('wm.t26'))}</a>
           <a class="btn btn-ghost" href="https://github.com/Mascari4615/Witch-Mendokusai" rel="noopener">${esc(t('wm.t27'))}</a>
         </div>
@@ -571,6 +572,7 @@ interface WorldBook {
         <button type="button" class="wm-nav-btn${on('talk')}" data-go="talk">${esc(t('wm.t34'))}</button>
         <button type="button" class="wm-nav-btn${on('news')}" data-go="news">${esc(t('wm.t35'))}</button>
         <button type="button" class="wm-nav-btn${on('board')}" data-go="board">${esc(t('wm.t36'))}</button>
+        <a class="wm-nav-link" href="https://wm.mascari4615.com/" rel="noopener">${esc(t('wm.worldSite'))}</a>
         <a class="wm-nav-link" href="${appPath('wm/')}">${esc(t('wm.t37'))}</a>
         <a class="wm-nav-link" href="https://github.com/Mascari4615/Witch-Mendokusai" rel="noopener">${esc(t('wm.t27'))}</a>
       </nav>`;
