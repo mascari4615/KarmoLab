@@ -110,6 +110,7 @@ import {
   onDemand,
   sibling,
   dashTodaySource,
+  ReadMarks,
   Gap,
   gapLine,
   sharedWindowWatcher,
@@ -609,12 +610,11 @@ const todayMemo = process.env.COMPANION_MEMO_DIR?.trim() || sibling('memo', join
 if (todayMemo === null) console.log('[오늘] memo 저장소를 이웃에서 못 찾았다. 할 일 숫자 없이 지낸다');
 // 1분 보관. 목록 변화는 아래 고리가 1분마다 대조해 창에 바로 밀어 넣음
 const todaySource = dashTodaySource(todayMemo, { ttlMs: 60_000 });
-// 알림 줄 읽음. 원본이 아니라 이 컴퓨터의 표시 상태. 원본에서 사라진 줄은 지움
+// 알림 줄 읽음. 원본이 아니라 이 컴퓨터의 표시 상태. 원본에서 이틀 안 보인 줄만 지움 (read-marks.ts)
 const readFile = join(home, '알림-읽음.json');
-const readIds = new Set((() => { try { return JSON.parse(readFileSync(readFile, 'utf8')); } catch { return []; } })());
-function saveRead(alive) {
-  if (alive) for (const id of [...readIds]) if (!alive.has(id)) readIds.delete(id);
-  try { writeFileSync(readFile, JSON.stringify([...readIds])); } catch (e) { console.log(`[알림] 읽음 저장 실패: ${e.message}`); }
+const readIds = new ReadMarks((() => { try { return JSON.parse(readFileSync(readFile, 'utf8')); } catch { return null; } })(), Date.now());
+function saveRead() {
+  try { writeFileSync(readFile, JSON.stringify(readIds)); } catch (e) { console.log(`[알림] 읽음 저장 실패: ${e.message}`); }
 }
 let todayIds = null;
 if (todayMemo !== null) {
@@ -625,8 +625,9 @@ if (todayMemo !== null) {
     const fresh = todayIds === null ? [] : [...ids].filter((id) => !todayIds.has(id) && !readIds.has(id));
     const changed = todayIds === null || ids.size !== todayIds.size || fresh.length > 0 || [...todayIds].some((id) => !ids.has(id));
     todayIds = ids;
+    readIds.touch(ids, Date.now());
     if (changed) {
-      saveRead(ids);
+      saveRead();
       web.emit({ type: 'today', fresh });
       if (fresh.length > 0) console.log(`[알림] 새 줄 ${fresh.length}: ${fresh.join(', ')}`);
     }
@@ -681,11 +682,11 @@ ${tallyReport(tally)}`;
   // 오늘 할 일과 일정. Dash 웹 대신 몸 옆 표시 (2026-11-01)
   today: async () => {
     const t = await todaySource();
-    return t === null ? null : { ...t, read: [...readIds].filter((id) => t.items.some((i) => i.id === id)) };
+    return t === null ? null : { ...t, read: readIds.ids().filter((id) => t.items.some((i) => i.id === id)) };
   },
   todayMark: (id, read) => {
-    if (read) readIds.add(id); else readIds.delete(id);
-    saveRead(null);
+    readIds.set(id, read, Date.now());
+    saveRead();
   },
   todayUrl: async (id) => (await todaySource().catch(() => null))?.items.find((i) => i.id === id)?.url ?? null,
   settings: () => settingsReport(settings),

@@ -7,6 +7,7 @@ export * from './types';
 export { Companion, type CompanionOptions } from './core';
 export { loadCharacter, loadCharacters, resolveCharacterDir } from './character';
 export { summarizeToday, dashTodaySource, type Today, type TodayItem } from './dash-today';
+export { ReadMarks } from './read-marks';
 export { Gap, isBusy, gapLine, type FrontSample, type GapKind } from './gap';
 export { sharedWindowWatcher } from './body/windows-watch';
 export { parseSurfaceName, SURFACE_NAMES, type SurfaceName } from './surface';
