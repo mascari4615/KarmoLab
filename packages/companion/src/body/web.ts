@@ -163,6 +163,13 @@ export function isThisMachine(origin: string): boolean {
   }
 }
 
+/** 이 기계 안에서 온 연결인지. IPv4 가 IPv6 소켓에 `::ffff:127.0.0.1` 꼴로 옴 */
+export function isLoopback(address: string | undefined): boolean {
+  if (address === undefined) return false;
+  const a = address.startsWith('::ffff:') ? address.slice(7) : address;
+  return a === '::1' || a.startsWith('127.');
+}
+
 export function webBody(options: WebBodyOptions = {}): WebBody {
   const channel = options.channel ?? 'web';
   // 4615 는 karmolab-bot dev 웹훅이 이미 쓴다. 둘 다 켜면 나중에 뜬 쪽이 죽는다.
@@ -265,6 +272,12 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
            그렇다고 아무 곳에나 열면 **인터넷의 어떤 페이지든** 이 대화를 읽고 말을 걸 수
            있다(로컬 서버는 그 페이지에게도 그냥 주소일 뿐이다). 그래서 이 기계에서 뜬
            것만 허용한다. 열되, 밖으로는 안 연다. */
+        /* 듣기는 모든 주소 (창이 [::1] 로도 붙음). 같은 와이파이 기기의 직접 접속과
+           DNS 재바인딩 (남의 도메인이 127.0.0.1 로 풀려 같은 출처로 /history 읽기) 은 여기서 거절 */
+        if (!isLoopback(req.socket.remoteAddress) || !isThisMachine(`http://${req.headers.host ?? ''}`)) {
+          res.writeHead(403).end();
+          return;
+        }
         const caller = req.headers.origin;
         if (caller !== undefined && isThisMachine(caller)) {
           res.setHeader('access-control-allow-origin', caller);

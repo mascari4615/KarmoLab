@@ -33,3 +33,28 @@ test('밖 Origin 의 POST 는 403, 이 기계와 Origin 없음은 통과', async
     body.sense.stop();
   }
 });
+
+test('같은 망 기기와 남의 Host (DNS 재바인딩) 는 읽기도 403', async () => {
+  const { isLoopback } = await import('../dist/index.js');
+  assert.equal(isLoopback('::1'), true);
+  assert.equal(isLoopback('::ffff:127.0.0.1'), true);
+  assert.equal(isLoopback('127.0.0.1'), true);
+  assert.equal(isLoopback('192.168.0.12'), false);
+  assert.equal(isLoopback('::ffff:192.168.0.12'), false);
+  assert.equal(isLoopback(undefined), false);
+
+  const body = webBody({ port: port + 1, open: false, history: () => [{ role: 'said', text: '비밀' }] });
+  body.sense.start(() => {});
+  try {
+    const http = await import('node:http');
+    const get = (host) => new Promise((done, fail) => {
+      http.get({ host: '127.0.0.1', port: port + 1, path: '/history', headers: { host } }, (res) => { res.resume(); done(res.statusCode); }).on('error', fail);
+    });
+    assert.equal(await get(`evil.example:${port + 1}`), 403);
+    assert.equal(await get(`localhost.evil.example:${port + 1}`), 403);
+    assert.equal(await get(`localhost:${port + 1}`), 200);
+    assert.equal(await get(`127.0.0.1:${port + 1}`), 200);
+  } finally {
+    body.sense.stop();
+  }
+});
