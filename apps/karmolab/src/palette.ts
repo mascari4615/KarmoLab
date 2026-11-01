@@ -762,6 +762,13 @@ const KarmoPalette = (() => {
   function askWire(inst: Instance, host: HTMLElement, q: string): void {
     const button = host.querySelector<HTMLButtonElement>('.kp-ask');
     if (!button) return;
+    /* 답을 받은 뒤 목록이 다시 그려지면 (늦게 온 큰 색인 등) 새 빈칸에 버튼이 다시 생기고 답 줄이 사라졌음
+       라이브 점검 test:ask 빨강 (2026-11-02). 이미 고른 물음이면 버튼 대신 답 줄 */
+    const again = (window as any).KarmoAsk?.hitRow?.(q, { close, byId, esc, go: (id: string) => Toolbox.switchPage(id) });
+    if (again) {
+      button.replaceWith(again);
+      return;
+    }
     if (!(window as any).KarmoAccount?.apiBase) {
       button.remove(); // 서버가 없으면 이 길 자체가 없다. 눌러도 아무 일 없는 단추가 제일 나쁘다
       return;

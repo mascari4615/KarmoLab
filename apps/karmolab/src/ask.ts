@@ -26,8 +26,24 @@ interface AskArgs {
     go: (id: string) => void;
 }
 
-/** 이미 고른 물음. 같은 물음을 두 번 묻지 않는다(서버도 안 두들긴다). */
-const answered = new Map<string, string>();
+/** 이미 고른 물음. 같은 물음을 두 번 묻지 않는다(서버도 안 두들긴다). 목록이 다시 그려지면 팔레트가 여기서 다시 꺼냄 */
+const answered = new Map<string, { toolId: string; why?: string }>();
+
+/** 고른 도구 한 줄. 답을 받은 직후와, 그 뒤 목록이 다시 그려졌을 때 같은 모양 */
+function hitRow(picked: { toolId: string; why?: string }, args: Pick<AskArgs, 'close' | 'byId' | 'esc' | 'go'>): HTMLButtonElement {
+    const entry = args.byId(picked.toolId);
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'kp-ask-hit';
+    row.innerHTML =
+        '<b>' + args.esc(entry ? entry.title : picked.toolId) + '</b>' +
+        (picked.why ? '<span>' + args.esc(picked.why) + '</span>' : '');
+    row.addEventListener('click', () => {
+        args.close();
+        args.go(picked.toolId);
+    });
+    return row;
+}
 
 async function run(args: AskArgs): Promise<void> {
     const { q, close, byId, esc } = args;
@@ -54,19 +70,8 @@ async function run(args: AskArgs): Promise<void> {
     if (button) button.remove();
 
     if (picked) {
-        answered.set(q, picked.toolId);
-        const entry = byId(picked.toolId);
-        const row = document.createElement('button');
-        row.type = 'button';
-        row.className = 'kp-ask-hit';
-        row.innerHTML =
-            '<b>' + esc(entry ? entry.title : picked.toolId) + '</b>' +
-            (picked.why ? '<span>' + esc(picked.why) + '</span>' : '');
-        row.addEventListener('click', () => {
-            close();
-            args.go(picked!.toolId);
-        });
-        host.insertBefore(row, host.querySelector('.kp-empty-link'));
+        answered.set(q, picked);
+        host.insertBefore(hitRow(picked, args), host.querySelector('.kp-empty-link'));
         return;
     }
 
@@ -76,4 +81,11 @@ async function run(args: AskArgs): Promise<void> {
     host.insertBefore(note, host.querySelector('.kp-empty-link'));
 }
 
-(window as any).KarmoAsk = { run, known: (q: string): string | undefined => answered.get(q) };
+(window as any).KarmoAsk = {
+    run,
+    known: (q: string): string | undefined => answered.get(q)?.toolId,
+    hitRow: (q: string, args: Pick<AskArgs, 'close' | 'byId' | 'esc' | 'go'>): HTMLButtonElement | null => {
+        const picked = answered.get(q);
+        return picked ? hitRow(picked, args) : null;
+    },
+};
