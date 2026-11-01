@@ -278,6 +278,13 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
           res.writeHead(204).end();
           return;
         }
+        /* 위 CORS 는 읽기만 막음. 단순 POST (text/plain, no-cors) 는 응답을 못 읽어도 서버에서 실행됨
+           아무 웹 페이지가 `/say` 로 말 넣기, `/room` 으로 일 방 전환, `/settings` 바꾸기가 가능했음 (2026-11-02 자율 루프)
+           브라우저는 POST 에 Origin 을 붙이므로 이 기계 밖 Origin (null 포함) 이면 거절. Origin 없는 노드 호출과 시험은 그대로 */
+        if (req.method !== 'GET' && req.method !== 'HEAD' && caller !== undefined && !isThisMachine(caller)) {
+          res.writeHead(403).end();
+          return;
+        }
 
         if (url === '/' || url.startsWith('/?')) {
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
