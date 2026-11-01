@@ -1823,6 +1823,8 @@
     document.body.classList.toggle('iconmode', on);
     ntIcon.hidden = !on;
     if (on) { stopRoam(); fall.active = false; }
+    // 아이콘 동안 창 목록을 안 받았으니 몸으로 돌아오면 바로 한 번 (낡은 윗면에 서지 않게)
+    else if (gravityEnabled) setTimeout(() => refreshSurfaces(), 0);
     body3d?.pause?.(on);
     for (const pet of pets) pet.body?.pause?.(on);
     const box = document.getElementById('optIcon');
@@ -2007,7 +2009,8 @@
 
   /** 서버가 알려 주는 창 목록을 윗면 토막으로 바꾼다. 좌표는 화면 물리 픽셀에서 이 창 안 CSS 픽셀로 */
   async function refreshSurfaces() {
-    if (surfaceMod === null) return;
+    // 아이콘 모드는 중력 정지. 창 목록 요청 (분당 200회) 도 쉼
+    if (surfaceMod === null || 아이콘모드) return;
     try {
       const data = await (await fetch('/windows', { cache: 'no-store' })).json();
       const dpr = window.devicePixelRatio || 1;
