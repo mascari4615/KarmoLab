@@ -110,6 +110,10 @@ import {
   onDemand,
   sibling,
   dashTodaySource,
+  Gap,
+  gapLine,
+  sharedWindowWatcher,
+  windowsIdleMs,
   repoCopies,
   lineStore,
   touchKind,
@@ -842,6 +846,36 @@ if (clockMs > 0) {
 // 닿는 것. 감각은 웹 창이 보내 주고(몸에 손이 닿는 자리가 거기다) 입은 같은 창이다.
 // 몸을 따로 두는 이유는 통로를 갈라야 말과 닿음이 안 섞이기 때문이다.
 bodies.push({ name: TOUCH_CHANNEL, sense: { name: '닿음', start() {} }, voice: web.voice });
+
+// 틈 알림 (Dash 2단계, 2026-11-01). 게임, 영상이 끝난 직후와 켠 직후에 오늘 할 일 한 줄
+// 두뇌 없이 고정 문형. 먼저 말 걸기 설정과 조용한 시간을 따름. 5초마다 앞 창 확인
+if (process.platform === 'win32' && todayMemo !== null && process.env.COMPANION_GAP !== '0') {
+  const gap = new Gap();
+  const said = new Set();
+  let saidDay = '';
+  setInterval(async () => {
+    const kind = gap.feed(sharedWindowWatcher().foreground());
+    if (kind === null) return;
+    if (settings.on('speakFirst') === false || quiet.maySpeakFirst === false) {
+      console.log(`[틈] ${kind}. 먼저 말 걸기 꺼짐 또는 조용한 시간이라 참음`);
+      return;
+    }
+    const idle = windowsIdleMs();
+    if (idle !== null && idle > 5 * 60_000) {
+      console.log(`[틈] ${kind}. 자리에 없음 (${Math.round(idle / 60000)}분째 입력 없음)`);
+      return;
+    }
+    const day = new Date().toDateString();
+    if (day !== saidDay) { said.clear(); saidDay = day; }
+    const today = await todaySource().catch(() => null);
+    if (today === null) { console.log(`[틈] ${kind}. 오늘 정보 못 읽음`); return; }
+    const line = gapLine(today, kind, said);
+    if (line === null) { console.log(`[틈] ${kind}. 새로 알릴 항목 없음`); return; }
+    line.keys.forEach((k) => said.add(k));
+    console.log(`[틈] ${kind}. ${line.text}`);
+    web.voice.speak({ text: line.text, channel: 'today', at: Date.now() });
+  }, 5000);
+}
 
 // 스스로 말 걸기. 시간이 아니라 이유로 깨운다. 이유가 없으면 조용하다.
 if (process.env.COMPANION_NUDGE !== '0') {

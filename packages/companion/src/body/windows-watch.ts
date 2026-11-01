@@ -11,9 +11,18 @@ export interface WindowRect {
   maximized: boolean;
 }
 
+/** 앞 창. 틈 알림이 게임과 영상 판정에 씀. full 은 모니터 전체를 덮는가 */
+export interface Foreground {
+  title: string;
+  exe: string;
+  full: boolean;
+}
+
 export interface WindowWatcher {
   /** 가장 최근에 읽은 창 목록. 위쪽(앞쪽) 창이 먼저. 감시기가 죽었으면 빈 목록. */
   latest(): { windows: WindowRect[]; at: number; alive: boolean };
+  /** 가장 최근 앞 창. 못 읽었으면 null */
+  foreground(): Foreground | null;
   stop(): void;
 }
 
@@ -27,10 +36,11 @@ export interface WindowWatcher {
 export function watchWindows(): WindowWatcher {
   // Windows 전용(user32). 다른 OS 는 창 없음으로 처리, 몸은 바닥만 사용
   if (process.platform !== 'win32') {
-    return { latest: () => ({ windows: [], at: 0, alive: false }), stop: () => {} };
+    return { latest: () => ({ windows: [], at: 0, alive: false }), foreground: () => null, stop: () => {} };
   }
   const script = join(dirname(__filename), '..', '..', 'assets', 'windows-watch.ps1');
   let windows: WindowRect[] = [];
+  let front: Foreground | null = null;
   let at = 0;
   let child: ChildProcess | null = null;
   let stopped = false;
@@ -60,7 +70,8 @@ export function watchWindows(): WindowWatcher {
         newline = buffer.indexOf('\n');
         if (line === '') continue;
         try {
-          const parsed = JSON.parse(line) as { w?: number[][] };
+          const parsed = JSON.parse(line) as { w?: number[][]; f?: { t?: string; p?: string; full?: number } | null };
+          front = parsed.f ? { title: parsed.f.t ?? '', exe: parsed.f.p ?? '', full: parsed.f.full === 1 } : null;
           windows = (parsed.w ?? []).map((row) => ({
             id: row[0] ?? 0,
             left: row[1] ?? 0,
@@ -94,10 +105,20 @@ export function watchWindows(): WindowWatcher {
       // 목록은 바뀔 때만 오므로 at 이 오래됐다고 죽은 게 아니다. 프로세스가 있으면 산 것
       return { windows, at, alive: child !== null };
     },
+    foreground() {
+      return child === null ? null : front;
+    },
     stop() {
       stopped = true;
       child?.kill();
       child = null;
     },
   };
+}
+
+let shared: WindowWatcher | null = null;
+/** 감시기 하나를 몸 걷기와 틈 알림이 같이 씀. PowerShell 상주 프로세스 두 개 방지 */
+export function sharedWindowWatcher(): WindowWatcher {
+  shared ??= watchWindows();
+  return shared;
 }

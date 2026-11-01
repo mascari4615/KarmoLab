@@ -26,6 +26,46 @@ public static class CompanionWin {
   [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out int v, int size);
   [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out RECT r, int size);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+  [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr h, uint flags);
+  [StructLayout(LayoutKind.Sequential)] struct MONITORINFO { public int Size; public RECT Monitor; public RECT Work; public uint Flags; }
+  [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr m, ref MONITORINFO info);
+
+  // Non-ASCII goes out as \uXXXX so the console codepage cannot break it.
+  static string Json(string s) {
+    StringBuilder b = new StringBuilder("\"");
+    foreach (char c in s) {
+      if (c == '"' || c == '\\') { b.Append('\\').Append(c); }
+      else if (c < 32 || c > 126) { b.Append("\\u").Append(((int)c).ToString("x4")); }
+      else { b.Append(c); }
+    }
+    return b.Append('"').ToString();
+  }
+
+  // Foreground window: title, process name, and whether it covers its whole monitor (games, video).
+  static string Foreground() {
+    IntPtr h = GetForegroundWindow();
+    if (h == IntPtr.Zero) return "null";
+    StringBuilder t = new StringBuilder(512);
+    GetWindowText(h, t, 512);
+    uint pid;
+    GetWindowThreadProcessId(h, out pid);
+    string exe = "";
+    try { exe = Process.GetProcessById((int)pid).ProcessName; } catch { }
+    StringBuilder cls = new StringBuilder(128);
+    GetClassName(h, cls, 128);
+    string name = cls.ToString();
+    int full = 0;
+    RECT r;
+    MONITORINFO mi = new MONITORINFO();
+    mi.Size = Marshal.SizeOf(typeof(MONITORINFO));
+    if (name != "Progman" && name != "WorkerW" && GetWindowRect(h, out r) && GetMonitorInfo(MonitorFromWindow(h, 2), ref mi)) {
+      if (r.L <= mi.Monitor.L && r.T <= mi.Monitor.T && r.R >= mi.Monitor.R && r.B >= mi.Monitor.B) full = 1;
+    }
+    return "{\"t\":" + Json(t.ToString()) + ",\"p\":" + Json(exe) + ",\"full\":" + full + "}";
+  }
 
   static readonly string[] SkipClasses = {
     "Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "Windows.UI.Core.CoreWindow", "XamlExplorerHostIslandWindow"
@@ -59,7 +99,7 @@ public static class CompanionWin {
       rows.Add("[" + h.ToInt64() + "," + r.L + "," + r.T + "," + r.R + "," + r.B + "," + (IsZoomed(h) ? 1 : 0) + "]");
       return true;
     }, IntPtr.Zero);
-    return "{\"w\":[" + string.Join(",", rows.ToArray()) + "]}";
+    return "{\"w\":[" + string.Join(",", rows.ToArray()) + "],\"f\":" + Foreground() + "}";
   }
 }
 '@

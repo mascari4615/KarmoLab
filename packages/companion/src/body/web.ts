@@ -14,7 +14,7 @@ import { keepReason } from '../heard';
 import type { Speech } from '../voice/edge-tts';
 import type { Body, MemoryEntry, Sensation, Sense, Utterance, Voice } from '../types';
 import { repoCopies, thisRepo } from '../workspace';
-import { watchWindows, type WindowWatcher } from './windows-watch';
+import { sharedWindowWatcher, type WindowWatcher } from './windows-watch';
 
 /**
  * 창이 서버에게 붙여 보내는 **이름들**. 한 곳에서 정한다.
@@ -450,7 +450,7 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
         /* 화면의 창 위치. 몸이 창 윗면에 서는 데 필요. 처음 요청 때 감시기를 띄움.
            좌표는 화면 물리 픽셀이고 앞쪽(위쪽) 창이 먼저다. */
         if (url === '/windows') {
-          windowWatcher ??= watchWindows();
+          windowWatcher ??= sharedWindowWatcher();
           const seen = windowWatcher.latest();
           res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
           res.end(JSON.stringify(seen));

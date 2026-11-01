@@ -40,7 +40,7 @@ const kindTable: readonly point[] = [
   // **통화 중일 때만** 막고 싶은데 제목으로는 그걸 못 가른다. 지금은 통화로 본다.
   // 잘못 막는 쪽이 잘못 끼어드는 쪽보다 낫다.
   { slot: '통화', word: ['zoom', 'meet.google', 'microsoft teams', 'webex', '통화 중', 'discord', 'gather'] },
-  { slot: '보는중', word: ['youtube', 'netflix', 'twitch', 'laftel', 'watcha', 'tving', 'vlc', 'mpv', '- pot'] },
+  { slot: '보는중', word: ['youtube', 'netflix', 'twitch', 'laftel', 'watcha', 'tving', 'vlc', 'mpv', '- pot', 'chzzk', 'soop', 'afreeca', '치지직'] },
   { slot: '노는중', word: ['steam', 'league of legends', 'minecraft', 'valorant', '로스트아크'] },
   {
     slot: '만드는중',
