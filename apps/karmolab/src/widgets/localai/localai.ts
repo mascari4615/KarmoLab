@@ -27,6 +27,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   }
   interface TranslatorLike {
     translate: (text: string) => Promise<string>;
+    destroy?: () => void;
   }
   interface TranslatorApi {
     availability: (opts: { sourceLanguage: string; targetLanguage: string }) => Promise<string>;
@@ -38,6 +39,7 @@ import { t, loadNamespace } from '../../lib/i18n';
   }
   interface SummarizerLike {
     summarize: (text: string) => Promise<string>;
+    destroy?: () => void;
   }
   interface SummarizerApi {
     availability: () => Promise<string>;
@@ -60,6 +62,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     availability: () => Promise<string>;
     create: (opts?: { monitor?: (m: DownloadMonitor) => void }) => Promise<{
       detect: (text: string) => Promise<Array<{ detectedLanguage: string; confidence: number }>>;
+      destroy?: () => void;
     }>;
   }
 
@@ -186,16 +189,22 @@ import { t, loadNamespace } from '../../lib/i18n';
 
     async function detect(text: string): Promise<string | null> {
       if (!g.LanguageDetector) return null;
+      let detector: { destroy?: () => void } | null = null;
       try {
-        const detector = await withLimit(g.LanguageDetector.create(), 20, t('localai.t25'));
-        const guesses = await withLimit(detector.detect(text.slice(0, 400)), 15, t('localai.t25'));
+        const made = await withLimit(g.LanguageDetector.create(), 20, t('localai.t25'));
+        detector = made;
+        const guesses = await withLimit(made.detect(text.slice(0, 400)), 15, t('localai.t25'));
         return guesses?.[0]?.detectedLanguage || null;
       } catch {
         return null; // 감지가 안 되면 사람에게 고르라고 한다. 틀린 언어로 번역하는 것보다 낫다
+      } finally {
+        // 누를 때마다 새로 만드는 모델 객체. 안 버리면 실패와 성공 모두 메모리에 남음 (ai-runtime 공백 2026-11-02)
+        detector?.destroy?.();
       }
     }
 
     run.onclick = async (): Promise<void> => {
+      let made: { destroy?: () => void } | undefined; // 이번 누름에 만든 모델 객체. finally 에서 버림
       const text = input.value.trim();
       if (!text) {
         state.textContent = t('localai.t26');
@@ -230,7 +239,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           run.disabled = false;
           return;
         }
-        const translator = await withLimit(
+        const translator = made = await withLimit(
           g.Translator!.create({ ...pair, monitor: progressWatcher(bar, state) }),
           can === 'available' ? 20 : 120,
           t('localai.t31')
@@ -243,6 +252,7 @@ import { t, loadNamespace } from '../../lib/i18n';
         /* 실패해도 **왜인지** 적는다. 빈 화면은 고장으로 읽힌다. */
         state.textContent = t('localai.failTranslate', { why: String(err).split('\n')[0].slice(0, 110) });
       } finally {
+        made?.destroy?.();
         run.disabled = false;
       }
     };
@@ -285,6 +295,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     const btn = container.querySelector('#laiSum') as HTMLButtonElement;
 
     btn.onclick = async (): Promise<void> => {
+      let made: { destroy?: () => void } | undefined; // 이번 누름에 만든 모델 객체. finally 에서 버림
       const text = input.value.trim();
       if (!text) {
         state.textContent = t('localai.t35');
@@ -300,7 +311,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           btn.disabled = false;
           return;
         }
-        const summarizer = await withLimit(
+        const summarizer = made = await withLimit(
           g.Summarizer!.create({
             type: (container.querySelector('#laiType') as HTMLSelectElement).value,
             length: (container.querySelector('#laiLen') as HTMLSelectElement).value,
@@ -317,6 +328,7 @@ import { t, loadNamespace } from '../../lib/i18n';
       } catch (err) {
         state.textContent = t('localai.failSummarize', { why: String(err).split('\n')[0].slice(0, 110) });
       } finally {
+        made?.destroy?.();
         btn.disabled = false;
       }
     };
@@ -352,6 +364,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     const btn = container.querySelector('#laiPRun') as HTMLButtonElement;
 
     btn.onclick = async (): Promise<void> => {
+      let made: { destroy?: () => void } | undefined; // 이번 누름에 만든 모델 객체. finally 에서 버림
       const text = input.value.trim();
       if (!text) {
         state.textContent = t('localai.t40');
@@ -367,7 +380,7 @@ import { t, loadNamespace } from '../../lib/i18n';
           btn.disabled = false;
           return;
         }
-        const session = await withLimit(
+        const session = made = await withLimit(
           g.LanguageModel!.create({ monitor: progressWatcher(bar, state) }),
           can === 'available' ? 20 : 180,
           t('localai.t42')
@@ -375,11 +388,11 @@ import { t, loadNamespace } from '../../lib/i18n';
         state.textContent = t('localai.t43');
         out.textContent = await withLimit(session.prompt(text), 90, t('localai.t44'));
         state.textContent = t('localai.t33');
-        session.destroy?.();
         Toolbox.trackUse?.('localai-prompt');
       } catch (err) {
         state.textContent = t('localai.fail', { why: String(err).split(String.fromCharCode(10))[0].slice(0, 110) });
       } finally {
+        made?.destroy?.();
         btn.disabled = false;
       }
     };
