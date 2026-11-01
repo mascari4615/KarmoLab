@@ -110,12 +110,18 @@ await radioChip.click({ force: true });
    우리가 잘못한 것인지도 알 수 없었다(로컬은 초록이라 더 그랬다).
    게다가 이 줄이 기다리는 것은 **바깥 방송 목록**이다. 그 목록에 못 닿은 것은
    우리 화면이 깨진 것이 아니라 **못 잰 것**(2)이다. 둘을 갈라 말한다. */
-const isOn = await page
-  .waitForFunction(() => /방송 중|못 받았/.test(document.querySelector('.bm-line')?.textContent || ''), undefined, {
+/* 맞은 순간의 글을 그대로 받아 둔다. 다시 읽으면 저절로 울린 곳이 실패해
+   "그 자리는 지금 아무도 방송하지 않습니다" 로 이미 바뀌어 있었음 (CI 2026-11-01, 방송 readyState 0) */
+const seen = await page
+  .waitForFunction(() => {
+    const text = document.querySelector('.bm-line')?.textContent || '';
+    return /방송 중|못 받았/.test(text) ? text : false;
+  }, undefined, {
     timeout: 15000,
   })
-  .then(() => true)
-  .catch(() => false);
+  .then((handle) => handle.jsonValue())
+  .catch(() => null);
+const isOn = seen !== null;
 if (!isOn) {
   const currentText = (await page.locator('.bm-line').textContent().catch(() => '')) || '(빈 줄)';
   console.log(`
@@ -125,7 +131,7 @@ if (!isOn) {
   if (frozen) await frozen.close();
   process.exit(2);
 }
-const said = await page.locator('.bm-line').textContent();
+const said = seen;
 check(/3곳|3 places|3か所/.test(said || ''), `받은 자리 수를 말해야 한다 (지금: ${said})`);
 
 /* ③ 고리가 실제로 화면에 찍히는가. 겹을 켜기 전과 픽셀이 달라야 한다 */
