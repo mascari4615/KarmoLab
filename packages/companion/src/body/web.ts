@@ -15,6 +15,7 @@ import type { Speech } from '../voice/edge-tts';
 import type { Body, MemoryEntry, Sensation, Sense, Utterance, Voice } from '../types';
 import { repoCopies, thisRepo } from '../workspace';
 import { sharedWindowWatcher, type WindowWatcher } from './windows-watch';
+import { isBusy } from '../gap';
 
 /**
  * 창이 서버에게 붙여 보내는 **이름들**. 한 곳에서 정한다.
@@ -453,6 +454,13 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
            기록에만 남는 상태는 아무도 안 본다. */
         /* 화면의 창 위치. 몸이 창 윗면에 서는 데 필요. 처음 요청 때 감시기를 띄움.
            좌표는 화면 물리 픽셀이고 앞쪽(위쪽) 창이 먼저다. */
+        /* 지금 몰입 중인가 (영상, 게임, 통화, 전체 화면). 알림 카드를 미룰지 창이 물음 */
+        if (url === '/busy') {
+          const front = sharedWindowWatcher().foreground();
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(JSON.stringify({ busy: isBusy(front), title: front?.title ?? null }));
+          return;
+        }
         if (url === '/windows') {
           windowWatcher ??= sharedWindowWatcher();
           const seen = windowWatcher.latest();

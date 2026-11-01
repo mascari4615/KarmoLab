@@ -1664,6 +1664,29 @@
   /* 미루기. 카드가 6초 뒤 사라지면 놓친 일정은 판을 열어야만 알았음. 10분 뒤 같은 카드를 다시
      (벤치마킹 memo projects/dash/reference/companion-notify-bench-20261102.md, Pet Reminder 의 snooze) */
   const NT_SNOOZE_MS = 10 * 60_000;
+  /* 몰입 중 (영상, 게임, 통화, 전체 화면) 이면 카드를 미뤘다가 끝나면 마지막 하나만 띄움. 칸 숫자는 그대로
+     (벤치마킹의 방해 금지, 동반자 계약의 시청 중 침묵). 판정은 서버의 앞 창 감시 (/busy) */
+  let ntHeld = null;
+  async function ntBusy() {
+    try { return (await (await fetch('/busy', { cache: 'no-store' })).json()).busy === true; } catch { return false; }
+  }
+  async function ntToastOrHold(item, label) {
+    if (await ntBusy()) {
+      const first = ntHeld === null;
+      ntHeld = { item, label };
+      if (first) {
+        const wait = setInterval(async () => {
+          if (await ntBusy()) return;
+          clearInterval(wait);
+          const held = ntHeld;
+          ntHeld = null;
+          if (held) ntShowToast(held.item, held.label);
+        }, 15_000);
+      }
+      return;
+    }
+    ntShowToast(item, label);
+  }
   function ntShowToast(item, label) {
     ntToast.innerHTML = `<b>${esc(label)}</b> ${esc(item.title)}<small>${esc(item.kind)}. 눌러서 판 열기</small>` +
       '<button type="button" class="nt-snooze">10분 뒤 다시</button>';
@@ -1672,7 +1695,7 @@
       ntToast.classList.remove('on');
       ntToast.hidden = true;
       reportHitAreas();
-      setTimeout(() => ntShowToast(item, '다시'), NT_SNOOZE_MS);
+      setTimeout(() => void ntToastOrHold(item, '다시'), NT_SNOOZE_MS);
     };
     ntToast.dataset.kind = item.kind;
     ntToast.hidden = false;
@@ -1696,7 +1719,7 @@
       const start = Date.parse(item.startAt);
       for (const [at, label] of [[start - 10 * 60_000, '10분 뒤'], [start, '지금']]) {
         // setTimeout 상한 약 24.8일. 내일 일정까지만 다루므로 넘지 않음
-        if (at > now) ntTimers.push(setTimeout(() => { ntShowToast(item, label); renderNotify(); }, at - now));
+        if (at > now) ntTimers.push(setTimeout(() => { void ntToastOrHold(item, label); renderNotify(); }, at - now));
       }
     }
   }
@@ -1711,7 +1734,7 @@
     renderNotify();
     ntSchedule();
     const first = (ntData.items ?? []).find((i) => fresh.includes(i.id));
-    if (first) ntShowToast(first, fresh.length > 1 ? `새 ${fresh.length}개` : ntStatus(first).label);
+    if (first) void ntToastOrHold(first, fresh.length > 1 ? `새 ${fresh.length}개` : ntStatus(first).label);
   }
 
   function ntOpenBoard(kind) {
