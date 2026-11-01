@@ -208,6 +208,7 @@
   let 아이콘모드 = false;
   let ntIconAt = null;
   let ntBodySize = null;
+  let ntMovedAt = 0;
   /* 끄는 중에는 창 전체가 누를 자리. 창은 70ms 마다 커서가 누를 자리 밖이면 클릭을 통과시키는데,
      빨리 끌면 커서가 옛 자리 밖으로 먼저 나가 창이 마우스를 놓쳤음 (끌기가 혼자 풀림, 사용자 2026-11-02) */
   let 끄는중 = false;
@@ -233,6 +234,7 @@
     const rx = Math.round(x);
     const ry = Math.round(y);
     if (el.dataset.x === String(rx) && el.dataset.y === String(ry)) return;
+    ntMovedAt = performance.now();
     el.dataset.x = String(rx);
     el.dataset.y = String(ry);
     el.style.left = rx + 'px';
@@ -1818,10 +1820,17 @@
     const box = body3d?.screenBox?.();
     if (box) ntBodySize = { width: Math.round(box.width / 8) * 8, height: Math.round(box.height / 8) * 8 };
   }, 2000);
-  (function ntFollow() {
+  /* 칸이 움직였으면 누를 자리도 0.1초 안에 다시 알림. 500ms 마다만 알리면 걷는 몸 옆 칸을 눌러도
+     클릭이 뒤 창으로 빠졌음 */
+  let ntReportedAt = 0;
+  (function ntFollow(now) {
     if (!아이콘모드 && !ntDock.hidden) placeNotify();
+    if (ntMovedAt > ntReportedAt && now - ntReportedAt > 100) {
+      ntReportedAt = now;
+      reportHitAreas();
+    }
     requestAnimationFrame(ntFollow);
-  })();
+  })(0);
   document.getElementById('ntBody').addEventListener('click', () => 아이콘모드켜기(false));
   // 중력 상태(fall)가 아래에서 선언되므로 스크립트 끝난 뒤 복원
   setTimeout(() => {
