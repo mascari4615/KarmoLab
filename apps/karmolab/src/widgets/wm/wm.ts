@@ -161,7 +161,8 @@ interface WorldBook {
     return board;
   }
 
-  /** 만드는 중. 개발 노트의 TASK 머리말이 그대로 공개 보드가 된다(본문은 안 나간다). */
+  /** 만드는 중. 개발 정본(App, Feature)의 단계 머리말이 그대로 공개 보드가 된다(본문은 안 나간다).
+      id 는 문서 경로라 방문자에게 뜻이 없어 안 보임 */
   function boardHtml(b: TaskBoard): string {
     return `
       <p class="wb-lead">지금 만들고 있는 것들입니다. ${b.counts.shown}건.</p>
@@ -171,8 +172,7 @@ interface WorldBook {
             <h3 class="wm-board-status">${escapeHtml(g.label)} <span class="wb-chip">${g.count}</span></h3>
             <ul class="wm-board-list">${g.items
               .map(
-                (task) => `<li><span class="wm-board-id">${escapeHtml(task.id)}</span>
-                  <span class="wm-board-title">${escapeHtml(task.title)}</span></li>`
+                (task) => `<li><span class="wm-board-title">${escapeHtml(task.title)}</span></li>`
               )
               .join('')}</ul>
           </section>`
