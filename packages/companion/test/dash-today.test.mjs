@@ -48,3 +48,15 @@ test('원본 경고는 숨기지 않는다', () => {
 test('memo 가 없으면 null', async () => {
   assert.equal(await dashTodaySource(null)(), null);
 });
+
+test('알림 줄은 종류별, 새 화는 라프텔 주소, AI 는 기한 수 한 줄', () => {
+  const t = summarizeToday({
+    events: [{ title: '회의', start: '2026-11-01T11:30:00Z', end: '2026-11-01T12:00:00Z' }],
+    tasks: [{ id: 'a1', title: '빨래', status: 'needsAction' }],
+    anime: [{ id: 47465, title: '만화동산', publishedAt: '2026-11-01T10:00:00Z' }],
+  }, 2, now);
+  assert.deepEqual(t.items.map((i) => i.kind), ['일정', '할 일', '새 소식', 'AI']);
+  assert.equal(t.items[0].startAt, '2026-11-01T11:30:00.000Z');
+  assert.equal(t.items[2].url, 'https://laftel.net/item/47465');
+  assert.equal(t.items[3].title, 'AI 후속 일정 2개');
+});

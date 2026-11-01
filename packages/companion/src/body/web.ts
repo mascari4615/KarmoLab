@@ -126,6 +126,10 @@ export interface WebBodyOptions {
   enterRoom?: (id: string) => boolean;
   /** 오늘 할 일과 일정 (Dash 원본). 없으면 `/today` 가 없다고 답한다. */
   today?: () => Promise<import('../dash-today').Today | null>;
+  /** 알림 줄 읽음 표시. 확인 버튼이 부름 */
+  todayMark?: (id: string, read: boolean) => void;
+  /** 알림 줄의 보기 주소. 서버가 가진 목록에서만 찾음 */
+  todayUrl?: (id: string) => Promise<string | null>;
 }
 
 /**
@@ -138,7 +142,7 @@ export interface WebBodyOptions {
  * 의존성 0: 기본 http + SSE 만 쓴다.
  */
 /** 창 몸. 보통 몸에 더해, 알아챈 것을 밖에서 밀어 넣는 자리를 하나 더 갖는다. */
-export type WebBody = Body & { noticed: (what2: string) => void };
+export type WebBody = Body & { noticed: (what2: string) => void; emit: (event: Record<string, unknown>) => void };
 
 /**
  * 이 기계에서 뜬 창인가. 곁에서 붙는 다른 화면(KarmoLab 앱)만 들여보낸다.
@@ -471,6 +475,36 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
             (value) => reply(value ?? { error: 'memo 저장소를 이웃에서 못 찾았다' }),
             (e) => reply({ error: e instanceof Error ? e.message : String(e) }),
           );
+          return;
+        }
+
+        if (url === '/today/read' && req.method === 'POST') {
+          let raw = '';
+          req.on('data', (chunk) => { raw += chunk; if (raw.length > 4000) req.destroy(); });
+          req.on('end', () => {
+            try {
+              const { id, read } = JSON.parse(raw) as { id?: unknown; read?: unknown };
+              if (typeof id === 'string') options.todayMark?.(id, read !== false);
+              res.writeHead(204).end();
+            } catch {
+              res.writeHead(400).end();
+            }
+          });
+          return;
+        }
+        if (url.startsWith('/today/open?') && req.method === 'POST') {
+          const id = new URL(url, 'http://x').searchParams.get('id') ?? '';
+          void (options.todayUrl?.(id) ?? Promise.resolve(null)).then((target) => {
+            // 정해 둔 곳만. 원본에 이상한 주소가 들어와도 아무 데나 열지 않음
+            let host = '';
+            try { host = target ? new URL(target).protocol + '//' + new URL(target).host : ''; } catch { /* 깨진 주소 */ }
+            if (target !== null && ['https://laftel.net', 'https://www.netflix.com', 'https://dash.mascari4615.com'].includes(host)) {
+              openBrowser(target);
+              res.writeHead(204).end();
+            } else {
+              res.writeHead(404).end();
+            }
+          });
           return;
         }
 
@@ -911,7 +945,7 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
 
   /* 알아챈 것을 밖에서도 밀어 넣을 수 있게 내준다. 인식은 여기서만 일어나지 않는다
      (자리 판단, 사건 담기, 재료 밀림은 전부 바깥에 있다). */
-  return { name: channel, sense, voice, noticed: noticed };
+  return { name: channel, sense, voice, noticed: noticed, emit: broadcast };
 }
 
 /**

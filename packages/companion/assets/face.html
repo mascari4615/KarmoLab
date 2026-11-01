@@ -60,6 +60,7 @@
     <label class="check"><input type="checkbox" id="optScreen" /> 화면 보기</label>
     <label class="check"><input type="checkbox" id="optVoice" /> 소리 내기 (끄면 말풍선만)</label>
     <label class="check"><input type="checkbox" id="optFirst" /> 먼저 말 걸기</label>
+    <label class="check"><input type="checkbox" id="optIcon" /> 아이콘 모드 (몸 숨김, 화면 집중)</label>
     <!-- 지금 소리가 들어오는지 **눈으로** 보이게. 이게 없으면 안 들린다의 원인이
          마이크인지 문턱인지 사람이 알 길이 없다. 가는 세로선 = 문이 열리는 문턱. -->
     <div class="level" id="micLevel" title="지금 들어오는 소리"><i></i><b></b></div>
@@ -81,6 +82,17 @@
   <button class="mute" id="mute" hidden></button>
   <div class="status" id="status"></div>
 
+  <!-- 알림. 종류별 칸과 숫자, 누르면 판, 새 줄은 카드 한 장. 말 없음 (사용자 2026-11-02, 메이플 플래너 참고) -->
+  <div class="nt-dock" id="ntDock" hidden></div>
+  <div class="nt-board" id="ntBoard" hidden>
+    <div class="nt-head"><strong>오늘</strong><span id="ntAt"></span><button type="button" class="menu-x" id="ntClose" title="닫기" aria-label="닫기">✕</button></div>
+    <div id="ntRows"></div>
+    <div class="nt-foot"><span>새 줄은 1분 안에, 일정 시각은 그 시각에</span><a href="https://dash.mascari4615.com/" id="ntDash">Dash 열기</a></div>
+  </div>
+  <div class="nt-toast" id="ntToast" hidden></div>
+  <!-- 아이콘 모드의 몸. 끌어 옮김, 누르면 판, 두 번 누르면 몸으로 -->
+  <div class="nt-icon" id="ntIcon" hidden title="누르면 알림 판, 두 번 누르면 몸">욘</div>
+
   <div class="room">
     <!-- 얘가 하는 말 -->
     <div class="bubble" id="bubble"><div class="bubble-text" id="bubbleText"></div></div>
@@ -96,14 +108,6 @@
 
     <!-- 지금 뭐 하는 중인지. 아이콘 하나로. 얘는 계속 떠 있는데 뭘 하는지 알 길이 없었다. -->
     <div class="doing" id="doing" title="지금 뭐 하는 중"><span class="ico" id="doingIco">, </span><span class="lab" id="doingLab"></span></div>
-
-    <!-- 오늘 할 일 숫자. 누르면 오늘 판. Dash 웹 대신 -->
-    <button type="button" class="today-badge" id="todayBadge" hidden title="오늘"></button>
-    <div class="today" id="today" hidden>
-      <div class="today-head"><span>오늘</span><button type="button" class="menu-x" id="todayClose" title="닫기" aria-label="닫기">✕</button></div>
-      <div class="today-body" id="todayBody"></div>
-      <div class="today-foot"><a href="https://dash.mascari4615.com/" target="_blank" rel="noopener" id="todayOpen">Dash 열기</a><span id="todayAt"></span></div>
-    </div>
 
     <!-- 말 걸기. 얘를 누르면 열린다 -->
     <div class="talk" id="talk">
@@ -200,6 +204,42 @@
   // 한가할 때 하는 일(앉아 졸기, 춤). null 이면 안 하는 중
   const act = { kind: null, until: 0 };
   const pets = []; // 분신들(pet.js)
+  // 아이콘 모드와 아이콘 자리. 누를 자리 보고가 시작부터 읽으므로 여기서 미리 잡음
+  let 아이콘모드 = false;
+  let ntIconAt = null;
+  /** 알림 칸, 판, 카드의 자리. 기준은 몸 모드면 몸이 차지한 네모, 아이콘 모드면 아이콘
+      칸은 기준 옆 (오른쪽 끝이면 왼쪽), 판과 카드는 칸 옆. 화면 밖으로 안 나가게 자름 */
+  function placeNotify() {
+    const dock = document.getElementById('ntDock');
+    const icon = document.getElementById('ntIcon');
+    if (!dock || !icon) return;
+    let anchor;
+    if (아이콘모드) {
+      const size = 52;
+      const x = Math.min(innerWidth - size - 4, Math.max(4, ntIconAt?.x ?? innerWidth - size - 18));
+      const y = Math.min(innerHeight - size - 4, Math.max(4, ntIconAt?.y ?? innerHeight - size - 18));
+      Object.assign(icon.style, { left: x + 'px', top: y + 'px' });
+      anchor = { x, y, width: size, height: size };
+    } else {
+      anchor = body3d?.screenBox?.() ?? null;
+      if (!anchor) return;
+    }
+    const clampY = (y, h) => Math.min(innerHeight - h - 4, Math.max(4, y));
+    const dockW = dock.offsetWidth || 90;
+    const dockH = dock.offsetHeight || 130;
+    const left = anchor.x + anchor.width + dockW + 360 > innerWidth;
+    const dockX = left ? anchor.x - dockW - 10 : anchor.x + anchor.width + 10;
+    const dockY = clampY(아이콘모드 ? anchor.y + anchor.height - dockH : anchor.y + anchor.height * 0.15, dockH);
+    Object.assign(dock.style, { left: dockX + 'px', top: dockY + 'px' });
+    for (const id of ['ntBoard', 'ntToast']) {
+      const el = document.getElementById(id);
+      if (!el || el.hidden) continue;
+      const w = el.offsetWidth || 320;
+      const h = el.offsetHeight || 200;
+      const x = left ? dockX - w - 10 : dockX + dockW + 10;
+      Object.assign(el.style, { left: Math.max(4, Math.min(innerWidth - w - 4, x)) + 'px', top: clampY(dockY + dockH - h, h) + 'px' });
+    }
+  }
 
   const 방자리 = {
     x: Number(localStorage.getItem('companion.roomX') ?? '0') || null,
@@ -768,6 +808,8 @@
     const data = JSON.parse(e.data);
     if (data.type === 'notice') {
       알아챈것(data.text);
+    } else if (data.type === 'today') {
+      window.알림갱신?.(Array.isArray(data.fresh) ? data.fresh : []);
     } else if (data.type === 'heard') {
       알아챈것(`들었다: ${data.text ?? ''}`);
       setState('thinking', '생각하는 중...');
@@ -1485,7 +1527,7 @@
      안 그러면 보이지도 않는 창이 화면 한 구석의 클릭을 통째로 삼킨다. */
   let hitAreaComplained = false;
   function reportHitAreas() {
-    placeTodayBadge(body3d?.screenBox?.());
+    placeNotify();
     if (inDesktopWindow === false) return;
     const areas = [];
     const add = (el) => {
@@ -1501,8 +1543,7 @@
       if (box) areas.push(box);
     }
     if (chatOpen) add(talk);
-    add(document.getElementById('todayBadge'));
-    add(document.getElementById('today'));
+    for (const id of ['ntDock', 'ntBoard', 'ntToast', 'ntIcon']) add(document.getElementById(id));
     add(menu);
     add(sheet);
     add(ask);
@@ -1517,79 +1558,216 @@
   }
   setInterval(reportHitAreas, 500);
 
-  /* ── 오늘 ──────────────────────────────────────────────────
-     Dash 원본의 할 일과 일정을 서버(/today)에서 받는다. 서버가 5분 동안 지난 값을 주므로
-     여기서는 1분마다 물어도 원본엔 5분에 한 번. 못 읽으면 숫자 대신 ! 와 그 사유. */
-  /* 숫자는 몸이 실제 차지하는 자리의 오른쪽 위 바깥. CSS 고정값은 모자에 겹쳤다(2026-11-01 화면 확인).
-     방 안에 있으니 걷기는 따라오고, 몸 크기가 바뀔 때만 다시 잰다. */
-  function placeTodayBadge(box) {
-    const badge = document.getElementById('todayBadge');
-    const room = badge?.parentElement?.getBoundingClientRect();
-    if (!box || !room) return;
-    badge.style.left = `${box.x + box.width - room.x}px`;
-    badge.style.top = `${Math.max(0, box.y - room.y)}px`;
-    const panel = document.getElementById('today');
-    // 화면 오른쪽 끝이면 몸 왼쪽으로 편다
-    const roomy = box.x + box.width + 30 + 270 <= innerWidth;
-    panel.style.left = `${roomy ? box.x + box.width - room.x + 30 : box.x - room.x - 270}px`;
-    panel.style.top = `${Math.max(0, box.y - room.y)}px`;
-  }
-  const todayBadge = document.getElementById('todayBadge');
-  const todayPanel = document.getElementById('today');
-  const todayBody = document.getElementById('todayBody');
-  const todayAt = document.getElementById('todayAt');
-  let todayData = null;
+  /* ── 알림 ──────────────────────────────────────────────────
+     Dash 원본의 일정, 할 일, 새 화, AI 후속을 종류별 칸과 숫자로. 칸을 누르면 판, 새 줄은 카드 한 장
+     서버가 1분마다 원본을 대조해 바뀌면 'today' 신호로 밀어 넣음. 일정 시작과 10분 전은 창의 타이머가 그 시각에
+     말 걸기 없음 (사용자 2026-11-02 "말 거는 것 말고 알림 형식이 기본"). 설계 memo projects/dash/reference/companion-dash-20261101.md */
+  const NT_KINDS = ['일정', '할 일', '새 소식', 'AI'];
+  const ntDock = document.getElementById('ntDock');
+  const ntBoard = document.getElementById('ntBoard');
+  const ntRows = document.getElementById('ntRows');
+  const ntToast = document.getElementById('ntToast');
+  const ntIcon = document.getElementById('ntIcon');
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  function renderToday() {
-    const d = todayData;
+  let ntData = null;
+  let ntRead = new Set();
+  let ntTimers = [];
+  let ntToastTimer = null;
+
+  /** 일정 줄의 상태 글자를 지금 시각으로. 시작 10분 전부터 곧, 진행 중이면 지금 */
+  function ntStatus(item, now = Date.now()) {
+    if (item.kind !== '일정' || !item.startAt) return { label: item.label, tone: item.tone };
+    const start = Date.parse(item.startAt);
+    const end = Date.parse(item.endAt ?? item.startAt);
+    if (now >= start && now < end) return { label: '지금', tone: 'now' };
+    const left = start - now;
+    if (left > 0 && left <= 10 * 60_000) return { label: `${Math.ceil(left / 60_000)}분 뒤`, tone: 'now' };
+    return { label: item.label, tone: '' };
+  }
+  const ntOpen = (item) => !ntRead.has(item.id);
+
+  function renderNotify() {
+    const d = ntData;
     if (d === null) return;
+    ntDock.hidden = false;
     if (d.error) {
-      todayBadge.textContent = '!';
-      todayBadge.classList.add('bad');
-      todayBody.innerHTML = `<p class="today-warn">${esc(d.error)}</p>`;
-      todayAt.textContent = '';
+      ntDock.innerHTML = `<button type="button" class="nt-chip late">알림<b>!</b></button>`;
+      ntRows.innerHTML = `<p class="nt-warn">${esc(d.error)}</p>`;
+      document.getElementById('ntAt').textContent = '';
     } else {
-      todayBadge.classList.remove('bad');
-      todayBadge.textContent = d.badge > 0 ? String(d.badge) : '0';
-      todayBadge.classList.toggle('zero', d.badge === 0);
-      const section = (title, rows) => rows.length === 0 ? '' : `<div class="today-sec">${title}</div>${rows.join('')}`;
-      todayBody.innerHTML = [
-        section('일정', d.events.map((e) => `<div class="today-row"><b>${esc(e.when ?? '')}</b><span>${esc(e.title)}</span></div>`)),
-        section(`할 일 ${d.tasks.length}`, d.tasks.slice(0, 3).map((t) => `<div class="today-row"><span>${esc(t.title)}</span></div>`)
-          .concat(d.tasks.length > 3 ? [`<div class="today-more">외 ${d.tasks.length - 3}개</div>`] : [])),
-        section('새 화', d.anime.slice(0, 3).map((a) => `<div class="today-row"><span>${esc(a)}</span></div>`)),
-        d.aiDue > 0 ? `<div class="today-ai">AI 후속 일정 ${d.aiDue}개 기한 지남</div>` : '',
-        ...d.warnings.map((w) => `<p class="today-warn">${esc(w)}</p>`),
-      ].join('') || '<p class="today-empty">오늘은 비었다.</p>';
-      todayAt.textContent = new Date(d.fetchedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준';
+      ntDock.innerHTML = NT_KINDS.map((k) => {
+        const list = d.items.filter((i) => i.kind === k && ntOpen(i));
+        const tones = list.map((i) => ntStatus(i).tone);
+        const cls = list.length === 0 ? 'zero' : tones.includes('late') ? 'late' : tones.includes('now') ? 'hot' : '';
+        return `<button type="button" class="nt-chip ${cls}" data-kind="${k}">${k}<b>${list.length}</b></button>`;
+      }).join('');
+      ntRows.innerHTML = NT_KINDS.map((k) => {
+        const list = d.items.filter((i) => i.kind === k);
+        if (list.length === 0) return '';
+        return `<div class="nt-sec" id="nt-sec-${k.replace(' ', '')}"><span>${k}</span><span>${list.filter(ntOpen).length} / ${list.length}</span></div>` +
+          list.map((i) => {
+            const st = ntStatus(i);
+            const read = ntRead.has(i.id);
+            const act = i.url ? '보기' : i.kind === 'AI' ? 'Dash' : read ? '되돌림' : '확인';
+            return `<div class="nt-row ${read ? 'read' : ''}" data-id="${esc(i.id)}"><span class="nt-st ${st.tone}">${esc(st.label)}</span>` +
+              `<span class="nt-t">${esc(i.title)}<small>${esc(i.sub)}</small></span><button type="button">${act}</button></div>`;
+          }).join('');
+      }).join('') + d.warnings.map((w) => `<p class="nt-warn">${esc(w)}</p>`).join('') ||
+        '<p class="nt-empty">오늘은 비었다.</p>';
+      document.getElementById('ntAt').textContent = new Date(d.fetchedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 원본';
     }
-    todayBadge.hidden = false;
+    placeNotify();
     reportHitAreas();
   }
-  async function pullToday() {
+
+  function ntShowToast(item, label) {
+    ntToast.innerHTML = `<b>${esc(label)}</b> ${esc(item.title)}<small>${esc(item.kind)}. 눌러서 판 열기</small>`;
+    ntToast.dataset.kind = item.kind;
+    ntToast.hidden = false;
+    requestAnimationFrame(() => ntToast.classList.add('on'));
+    placeNotify();
+    reportHitAreas();
+    clearTimeout(ntToastTimer);
+    ntToastTimer = setTimeout(() => {
+      ntToast.classList.remove('on');
+      setTimeout(() => { ntToast.hidden = true; reportHitAreas(); }, 260);
+    }, 6000);
+  }
+
+  /** 일정 시작 10분 전과 시작 시각에 카드. 받은 목록이 바뀔 때마다 다시 맞춤 */
+  function ntSchedule() {
+    ntTimers.forEach(clearTimeout);
+    ntTimers = [];
+    const now = Date.now();
+    for (const item of ntData?.items ?? []) {
+      if (item.kind !== '일정' || !item.startAt) continue;
+      const start = Date.parse(item.startAt);
+      for (const [at, label] of [[start - 10 * 60_000, '10분 뒤'], [start, '지금']]) {
+        // setTimeout 상한 약 24.8일. 내일 일정까지만 다루므로 넘지 않음
+        if (at > now) ntTimers.push(setTimeout(() => { ntShowToast(item, label); renderNotify(); }, at - now));
+      }
+    }
+  }
+
+  async function pullNotify(fresh = []) {
     try {
-      todayData = await (await fetch('/today', { cache: 'no-store' })).json();
+      ntData = await (await fetch('/today', { cache: 'no-store' })).json();
+      ntRead = new Set(ntData.read ?? []);
     } catch (e) {
-      todayData = { error: `오늘 못 받음: ${e && e.message ? e.message : e}` };
+      ntData = { error: `알림 못 받음: ${e && e.message ? e.message : e}` };
     }
-    renderToday();
+    renderNotify();
+    ntSchedule();
+    const first = (ntData.items ?? []).find((i) => fresh.includes(i.id));
+    if (first) ntShowToast(first, fresh.length > 1 ? `새 ${fresh.length}개` : ntStatus(first).label);
   }
-  todayBadge.addEventListener('click', (e) => {
+
+  function ntOpenBoard(kind) {
+    ntBoard.hidden = false;
+    placeNotify();
+    reportHitAreas();
+    if (kind) document.getElementById('nt-sec-' + kind.replace(' ', ''))?.scrollIntoView({ block: 'nearest' });
+  }
+  ntDock.addEventListener('click', (e) => {
+    const chip = e.target.closest('.nt-chip');
+    if (!chip) return;
     e.stopPropagation();
-    todayPanel.hidden = !todayPanel.hidden;
-    if (todayPanel.hidden === false) pullToday();
-    reportHitAreas();
+    if (!ntBoard.hidden && ntBoard.dataset.kind === chip.dataset.kind) { ntBoard.hidden = true; reportHitAreas(); return; }
+    ntBoard.dataset.kind = chip.dataset.kind ?? '';
+    ntOpenBoard(chip.dataset.kind);
   });
-  document.getElementById('todayClose').addEventListener('click', () => {
-    todayPanel.hidden = true;
-    reportHitAreas();
+  ntToast.addEventListener('click', () => {
+    ntToast.classList.remove('on');
+    ntToast.hidden = true;
+    ntOpenBoard(ntToast.dataset.kind);
   });
-  document.getElementById('todayOpen').addEventListener('click', (e) => {
+  document.getElementById('ntClose').addEventListener('click', () => { ntBoard.hidden = true; reportHitAreas(); });
+  document.getElementById('ntDash').addEventListener('click', (e) => {
     e.preventDefault();
     fetch('/open-dash', { method: 'POST' }).catch((err) => tell(`Dash 못 엶: ${err && err.message ? err.message : err}`));
   });
-  pullToday();
-  setInterval(pullToday, 60_000);
+  ntRows.addEventListener('click', async (e) => {
+    const button = e.target.closest('.nt-row button');
+    if (!button) return;
+    const id = button.closest('.nt-row').dataset.id;
+    const item = ntData?.items?.find((i) => i.id === id);
+    if (!item) return;
+    if (item.url) {
+      const res = await fetch('/today/open?id=' + encodeURIComponent(id), { method: 'POST' }).catch(() => null);
+      if (!res || !res.ok) tell('못 열었다. 허용한 주소가 아니거나 서버가 답이 없다');
+    } else if (item.kind === 'AI') {
+      fetch('/open-dash', { method: 'POST' }).catch(() => {});
+    }
+    // 보기와 Dash 도 확인으로 침. 되돌림은 읽음 해제
+    const read = !ntRead.has(id);
+    if (read) ntRead.add(id); else ntRead.delete(id);
+    renderNotify();
+    fetch('/today/read', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, read }) })
+      .catch((err) => tell(`읽음 저장 실패: ${err && err.message ? err.message : err}`));
+  });
+  // 서버가 바뀐 목록을 밀어 넣음 (events 의 'today'). 상태 글자는 30초마다 시각에 맞춰 다시 그림
+  window.알림갱신 = (fresh) => { void pullNotify(fresh ?? []); };
+  setInterval(renderNotify, 30_000);
+  void pullNotify();
+
+  /* ── 아이콘 모드 ────────────────────────────────────────────
+     몸을 숨기고 그리기, 걷기, 중력 정지. 오른쪽 아래 둥근 아이콘만. 끌어 옮기고 자리 기억
+     4px 넘게 움직이면 끌기, 아니면 누르기 (판 열고 닫기). 두 번 누르면 몸으로. 우클릭 설정에도 켜고 끄기 */
+  const NT_ICON = 52;
+  try { ntIconAt = JSON.parse(localStorage.getItem('companion.iconAt') || 'null'); } catch { /* 기본 자리 */ }
+  function 아이콘모드켜기(on) {
+    아이콘모드 = on;
+    document.body.classList.toggle('iconmode', on);
+    ntIcon.hidden = !on;
+    if (on) { stopRoam(); fall.active = false; }
+    body3d?.pause?.(on);
+    for (const pet of pets) pet.body?.pause?.(on);
+    const box = document.getElementById('optIcon');
+    if (box) box.checked = on;
+    try { localStorage.setItem('companion.iconMode', on ? '1' : '0'); } catch { /* 이번만 적용 */ }
+    placeNotify();
+    reportHitAreas();
+  }
+  document.getElementById('optIcon')?.addEventListener('change', (e) => 아이콘모드켜기(e.target.checked));
+  let ntDrag = null;
+  ntIcon.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    ntIcon.setPointerCapture(e.pointerId);
+    const r = ntIcon.getBoundingClientRect();
+    ntDrag = { sx: e.clientX, sy: e.clientY, ox: e.clientX - r.left, oy: e.clientY - r.top, moved: false };
+  });
+  ntIcon.addEventListener('pointermove', (e) => {
+    if (ntDrag === null) return;
+    if (!ntDrag.moved && Math.hypot(e.clientX - ntDrag.sx, e.clientY - ntDrag.sy) < 4) return;
+    ntDrag.moved = true;
+    ntIcon.classList.add('dragging');
+    ntIconAt = { x: e.clientX - ntDrag.ox, y: e.clientY - ntDrag.oy };
+    placeNotify();
+    reportHitAreas();
+  });
+  ntIcon.addEventListener('pointerup', () => {
+    if (ntDrag === null) return;
+    const moved = ntDrag.moved;
+    ntDrag = null;
+    ntIcon.classList.remove('dragging');
+    if (moved) {
+      try { localStorage.setItem('companion.iconAt', JSON.stringify(ntIconAt)); } catch { /* 이번 자리만 유지 */ }
+      return;
+    }
+    if (ntBoard.hidden) ntOpenBoard(); else { ntBoard.hidden = true; reportHitAreas(); }
+  });
+  ntIcon.addEventListener('dblclick', () => 아이콘모드켜기(false));
+  ntIcon.addEventListener('contextmenu', (e) => {
+    // 아이콘에서도 우클릭 설정. 몸의 우클릭과 같은 메뉴
+    e.preventDefault();
+    menu.hidden = false;
+    reportHitAreas();
+  });
+  addEventListener('resize', () => placeNotify());
+  // 중력 상태(fall)가 아래에서 선언되므로 스크립트 끝난 뒤 복원
+  setTimeout(() => {
+    try { if (localStorage.getItem('companion.iconMode') === '1') 아이콘모드켜기(true); } catch { /* 몸 모드로 시작 */ }
+  }, 0);
 
   /* ── 화면 걷기 ─────────────────────────────────────────────
      full 모드에서 한가할 때 가끔 화면 바닥을 가로질러 걷는다. 동작은 제자리 걸음이라
@@ -1723,7 +1901,7 @@
 
   function checkGravity() {
     // 앉은 자세는 경계 상자가 바닥보다 20px 낮게 나온다(실측). 앉아 있는 동안은 판정하지 않는다
-    if (!gravityEnabled || fall.active || act.kind === 'sit' || grabbed?.moved === true || Date.now() < fall.blockedUntil) return;
+    if (아이콘모드 || !gravityEnabled || fall.active || act.kind === 'sit' || grabbed?.moved === true || Date.now() < fall.blockedUntil) return;
     const feet = feetBottom();
     if (feet === null) return;
 
@@ -1986,7 +2164,7 @@
       if (act.kind !== null && Date.now() >= act.until) endActivity();
     }, 500);
     setInterval(() => {
-      if (roam.active || act.kind !== null || Date.now() < roam.nextAt) return;
+      if (아이콘모드 || roam.active || act.kind !== null || Date.now() < roam.nextAt) return;
       // 한가할 때만. 말하고 생각하고 화면 보는 중, 마이크가 켜졌거나 대화창이 열렸거나 잡혀 있을 때는 안 걷는다.
       // 글 입력칸에 초점만 있는 'listening' 은 막지 않는다 (시작하자마자 그 상태로 남아 영영 안 걸었다)
       if (['speaking', 'thinking', 'looking'].includes(currentMood) || listening || chatOpen || grabbed !== null || fall.active || document.hidden) return;

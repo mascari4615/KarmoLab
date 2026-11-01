@@ -617,7 +617,7 @@ export async function mountModel(canvas, modelName, onFail) {
   // 정지에 가까운 자세의 낮은 프레임 상한. 눈 깜빡임(0.14초)이 보이는 하한
   const QUIET_FPS = { idle: 15, listening: 15, thinking: 15, sitting: 8 };
 
-  renderer.setAnimationLoop((time) => {
+  const loop = (time) => {
     const cap = fpsCap > 0 ? Math.min(fpsCap, QUIET_FPS[state.mood] ?? fpsCap) : 0;
     if (cap > 0 && time - lastDraw < 1000 / cap - 2) {
       perf.skipped += 1;
@@ -735,7 +735,8 @@ export async function mountModel(canvas, modelName, onFail) {
     perf.frames += 1;
     perf.calls = renderer.info.render.calls; // 마지막 그리기의 호출 수 (계측용)
     perf.triangles = renderer.info.render.triangles;
-  });
+  };
+  renderer.setAnimationLoop(loop);
 
   /**
    * 얘가 화면에서 실제로 차지하는 네모.
@@ -773,6 +774,10 @@ export async function mountModel(canvas, modelName, onFail) {
 
   return {
     screenBox,
+    /** 아이콘 모드에서 그리기 정지. 몸이 안 보이는 동안 CPU 0 */
+    pause(yes) {
+      renderer.setAnimationLoop(yes ? null : loop);
+    },
     setMood(mood) {
       state.mood = mood || 'idle';
       lastDraw = -1e9; // 자세 변경 시 즉시 그림 요청
