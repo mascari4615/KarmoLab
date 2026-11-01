@@ -27,7 +27,7 @@
   "companion.t22": "목소리",
   "companion.t23": "<span class=\"cmp-empty\">아직 나눈 말이 없다.</span>",
   "companion.t24": "얘",
-  "companion.t25": "배포된 페이지에서는 로컬 봇에 못 붙는다. 앱이나 로컬 dev 에서 열어라",
+  "companion.t25": "배포된 페이지와 릴리스 앱에서는 로컬 봇에 못 붙는다. 로컬 dev 에서 열어라",
   "companion.t26": "곁에 있다",
   "companion.t27": "첫 소리 아직 안 쟀다",
   "companion.t28": "답이 없다 (안 켜져 있을 수 있다)",

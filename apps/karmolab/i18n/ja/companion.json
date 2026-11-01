@@ -27,7 +27,7 @@
   "companion.t22": "こえ",
   "companion.t23": "<span class=\"cmp-empty\">まだ交わした言葉がない。</span>",
   "companion.t24": "あの子",
-  "companion.t25": "公開ページからはローカルのボットにつなげない. アプリかローカル dev で開け",
+  "companion.t25": "公開ページとリリース版アプリからはローカルのボットにつなげない. ローカル dev で開け",
   "companion.t26": "そばにいる",
   "companion.t27": "最初の声はまだ測っていない",
   "companion.t28": "返事がない (点いていないかもしれない)",

@@ -10,7 +10,7 @@
  *   오간 말, 아는 것, 첫 소리까지. 표면을 두 벌 만들면 반드시 갈라진다.
  *
  * 붙는 자리: 봇은 이 기계에서 도는 로컬 서버다. 배포된 https 페이지에서는 브라우저가
- * http 로컬 주소를 막으므로(mixed content) **앱이나 로컬 dev 에서만** 붙는다 . 
+ * http 로컬 주소를 막고 동반자 서버도 이 기계 출처만 받아 **로컬 dev 에서만** 붙는다 (릴리스 앱도 배포 주소라 불가). 
  * 못 붙을 때 고장처럼 보이지 않게 화면이 그 이유를 직접 말한다.
  */
 import { t, loadNamespace } from '../lib/i18n';
@@ -20,7 +20,8 @@ import { t, loadNamespace } from '../lib/i18n';
     v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   const BASE = 'http://127.0.0.1:4620';
-  const unattachable = location.protocol === 'https:' && location.hostname.endsWith('github.io');
+  // 동반자 서버는 이 기계 출처만 받음 (isThisMachine). 배포 주소와 그 주소를 여는 릴리스 앱에서는 못 붙음, 로컬 dev 만 (2026-11-02)
+  const unattachable = !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) && location.protocol !== 'tauri:';
 
   type Entry = { role: 'sensed' | 'said'; channel: string; text: string; at: number };
   type Stats = { sampleCount: number; firstSoundMedianMs: number | null; worstMs: number | null };

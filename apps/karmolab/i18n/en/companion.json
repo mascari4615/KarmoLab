@@ -27,7 +27,7 @@
   "companion.t22": "Voice",
   "companion.t23": "<span class=\"cmp-empty\">Nothing said yet.</span>",
   "companion.t24": "it",
-  "companion.t25": "A deployed page cannot reach the local bot. open it in the app or a local dev server",
+  "companion.t25": "A deployed page or the release app cannot reach the local bot. open it on a local dev server",
   "companion.t26": "it is around",
   "companion.t27": "the first sound has not been timed yet",
   "companion.t28": "no answer (it may not be on)",
