@@ -85,13 +85,13 @@
   <!-- 알림. 종류별 칸과 숫자, 누르면 판, 새 줄은 카드 한 장. 말 없음 (사용자 2026-11-02, 메이플 플래너 참고) -->
   <div class="nt-dock" id="ntDock" hidden></div>
   <div class="nt-board" id="ntBoard" hidden>
-    <div class="nt-head"><strong>오늘</strong><span id="ntAt"></span><button type="button" class="menu-x" id="ntClose" title="닫기" aria-label="닫기">✕</button></div>
+    <div class="nt-head"><strong>오늘</strong><span id="ntAt"></span><button type="button" class="nt-body" id="ntBody">몸으로</button><button type="button" class="menu-x" id="ntClose" title="닫기" aria-label="닫기">✕</button></div>
     <div id="ntRows"></div>
     <div class="nt-foot"><span>새 줄은 1분 안에, 일정 시각은 그 시각에</span><a href="https://dash.mascari4615.com/" id="ntDash">Dash 열기</a></div>
   </div>
   <div class="nt-toast" id="ntToast" hidden></div>
   <!-- 아이콘 모드의 몸. 끌어 옮김, 누르면 판, 두 번 누르면 몸으로 -->
-  <div class="nt-icon" id="ntIcon" hidden title="누르면 알림 판, 두 번 누르면 몸">욘</div>
+  <div class="nt-icon" id="ntIcon" hidden title="누르면 알림 판, 끌어서 옮김">욘</div>
 
   <div class="room">
     <!-- 얘가 하는 말 -->
@@ -207,6 +207,17 @@
   // 아이콘 모드와 아이콘 자리. 누를 자리 보고가 시작부터 읽으므로 여기서 미리 잡음
   let 아이콘모드 = false;
   let ntIconAt = null;
+  let ntBodySize = null;
+  /** 1px 넘게 바뀔 때만 씀. 같은 값을 매 프레임 쓰면 그리기가 늘어남 */
+  function ntMove(el, x, y) {
+    const rx = Math.round(x);
+    const ry = Math.round(y);
+    if (el.dataset.x === String(rx) && el.dataset.y === String(ry)) return;
+    el.dataset.x = String(rx);
+    el.dataset.y = String(ry);
+    el.style.left = rx + 'px';
+    el.style.top = ry + 'px';
+  }
   /** 알림 칸, 판, 카드의 자리. 기준은 몸 모드면 몸이 차지한 네모, 아이콘 모드면 아이콘
       칸은 기준 옆 (오른쪽 끝이면 왼쪽), 판과 카드는 칸 옆. 화면 밖으로 안 나가게 자름 */
   function placeNotify() {
@@ -221,8 +232,12 @@
       Object.assign(icon.style, { left: x + 'px', top: y + 'px' });
       anchor = { x, y, width: size, height: size };
     } else {
-      anchor = body3d?.screenBox?.() ?? null;
-      if (!anchor) return;
+      // 자세마다 바뀌는 몸 네모 대신 방 자리 기준. 몸 네모는 동작마다 ±20px 흔들려 칸이 떨렸음 (사용자 2026-11-02)
+      // 몸 크기만 가끔 재고(ntBodySize), 위치는 방의 가운데 아래에 붙임
+      const room = document.querySelector('.room:not(.pet)')?.getBoundingClientRect();
+      if (!room || room.width === 0) return;
+      const size = ntBodySize ?? { width: room.width * 0.5, height: room.height * 0.7 };
+      anchor = { x: room.x + room.width / 2 - size.width / 2, y: room.y + room.height - size.height, width: size.width, height: size.height };
     }
     const clampY = (y, h) => Math.min(innerHeight - h - 4, Math.max(4, y));
     const dockW = dock.offsetWidth || 90;
@@ -230,14 +245,14 @@
     const left = anchor.x + anchor.width + dockW + 360 > innerWidth;
     const dockX = left ? anchor.x - dockW - 10 : anchor.x + anchor.width + 10;
     const dockY = clampY(아이콘모드 ? anchor.y + anchor.height - dockH : anchor.y + anchor.height * 0.15, dockH);
-    Object.assign(dock.style, { left: dockX + 'px', top: dockY + 'px' });
+    ntMove(dock, dockX, dockY);
     for (const id of ['ntBoard', 'ntToast']) {
       const el = document.getElementById(id);
       if (!el || el.hidden) continue;
       const w = el.offsetWidth || 320;
       const h = el.offsetHeight || 200;
       const x = left ? dockX - w - 10 : dockX + dockW + 10;
-      Object.assign(el.style, { left: Math.max(4, Math.min(innerWidth - w - 4, x)) + 'px', top: clampY(dockY + dockH - h, h) + 'px' });
+      ntMove(el, Math.max(4, Math.min(innerWidth - w - 4, x)), clampY(dockY + dockH - h, h));
     }
   }
 
@@ -1756,7 +1771,8 @@
     }
     if (ntBoard.hidden) ntOpenBoard(); else { ntBoard.hidden = true; reportHitAreas(); }
   });
-  ntIcon.addEventListener('dblclick', () => 아이콘모드켜기(false));
+  // 두 번 눌러 몸으로 돌아가기는 뺌. 판을 열고 닫는 두 번 누르기가 아이콘 모드를 풀었음 (사용자 2026-11-02)
+  // 몸으로는 판 머리의 몸으로 버튼이나 우클릭 설정에서
   ntIcon.addEventListener('contextmenu', (e) => {
     // 아이콘에서도 우클릭 설정. 몸의 우클릭과 같은 메뉴
     e.preventDefault();
@@ -1764,6 +1780,17 @@
     reportHitAreas();
   });
   addEventListener('resize', () => placeNotify());
+  /* 몸 모드에서 칸이 걷는 몸을 매 프레임 따라감. 방 자리는 CSS 로 부드럽게 움직이므로 같은 박자로
+     몸 크기는 2초마다 한 번, 반올림해 잼 */
+  setInterval(() => {
+    const box = body3d?.screenBox?.();
+    if (box) ntBodySize = { width: Math.round(box.width / 8) * 8, height: Math.round(box.height / 8) * 8 };
+  }, 2000);
+  (function ntFollow() {
+    if (!아이콘모드 && !ntDock.hidden) placeNotify();
+    requestAnimationFrame(ntFollow);
+  })();
+  document.getElementById('ntBody').addEventListener('click', () => 아이콘모드켜기(false));
   // 중력 상태(fall)가 아래에서 선언되므로 스크립트 끝난 뒤 복원
   setTimeout(() => {
     try { if (localStorage.getItem('companion.iconMode') === '1') 아이콘모드켜기(true); } catch { /* 몸 모드로 시작 */ }

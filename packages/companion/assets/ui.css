@@ -791,7 +791,8 @@ body.page .inlay {
 
 /* ── 알림 ────────────────────────────────────────────────
    종류별 칸과 숫자, 판, 카드, 아이콘. 자리는 face.html placeNotify 가 정함 */
-.nt-dock, .nt-board, .nt-toast, .nt-icon { position: fixed; pointer-events: auto; z-index: 20; }
+/* 설정(9), 아는 것(8), 물어보기(10) 아래. 알림이 설정을 가리던 문제 (사용자 2026-11-02) */
+.nt-dock, .nt-board, .nt-toast, .nt-icon { position: fixed; pointer-events: auto; z-index: 7; }
 .nt-dock[hidden], .nt-board[hidden], .nt-toast[hidden], .nt-icon[hidden] { display: none !important; }
 .nt-dock { display: flex; flex-direction: column; gap: 5px; }
 .nt-chip { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 3px 7px 3px 9px; border-radius: 999px; border: 1px solid var(--edge); background: var(--panel); color: var(--ink); font: 600 12px/18px "Pretendard", "Segoe UI", system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
@@ -804,6 +805,8 @@ body.page .inlay {
 .nt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .nt-head strong { font-size: 14px; }
 .nt-head span { flex: 1; color: var(--dim); font-size: 11px; }
+.nt-body { display: none; font: inherit; font-size: 11px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--edge); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
+body.iconmode .nt-body { display: inline-block; }
 .nt-sec { display: flex; justify-content: space-between; margin-top: 9px; color: var(--dim); font-size: 11px; }
 .nt-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 8px; align-items: center; padding: 5px 3px; border-radius: 6px; }
 .nt-row:hover { background: rgba(255,255,255,.05); }
