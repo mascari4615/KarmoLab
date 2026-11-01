@@ -20,7 +20,12 @@ import {
     writeDiary
 } from './diary-store';
 import { recordStreakActivity } from '../../lib/gamification';
-import { isPlannerWriteCommitted } from './sync-store';
+import { isPlannerWriteCommitted, plannerWriterIdentity } from './sync-store';
+
+type DiaryDraft = { text: string; loadedText: string };
+type DiaryDrafts = { lastDate: string; dates: Map<string, DiaryDraft> };
+/* 같은 페이지의 같은 기록 연결에서만 복원. 저장소와 인증 정보 미사용 */
+const draftsByWriter = new WeakMap<object, DiaryDrafts>();
 
 const esc = (v: string): string =>
     v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -41,7 +46,10 @@ export interface DiaryViewHandle {
 }
 
 export function buildDiaryView(container: HTMLElement, startDate?: string): DiaryViewHandle {
-    let current = startDate || ymd(new Date());
+    const writer = plannerWriterIdentity();
+    const drafts = writer ? draftsByWriter.get(writer) ?? { lastDate: '', dates: new Map<string, DiaryDraft>() } : null;
+    if (writer && drafts) draftsByWriter.set(writer, drafts);
+    let current = startDate || drafts?.lastDate || ymd(new Date());
     let query = '';
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
     let destroyed = false;
@@ -81,6 +89,20 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     const savedEl = container.querySelector<HTMLElement>('.pl-diary-saved')!;
     const searchEl = container.querySelector<HTMLInputElement>('.pl-diary-search')!;
 
+    function rememberDraft(): void {
+        if (!drafts || !ready || plannerWriterIdentity() !== writer) return;
+        if (textEl.value.trim() !== loadedText) {
+            drafts.dates.set(current, { text: textEl.value, loadedText });
+            drafts.lastDate = current;
+        } else {
+            drafts.dates.delete(current);
+            if (drafts.lastDate === current) {
+                const dates = Array.from(drafts.dates.keys());
+                drafts.lastDate = dates[dates.length - 1] ?? '';
+            }
+        }
+    }
+
     function renderList(): void {
         const items = searchDiary(query);
         if (!items.length) {
@@ -108,6 +130,12 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
         textEl.value = readDiary(date)?.text ?? '';
         loadedText = textEl.value;
         savedEl.textContent = '';
+        const draft = drafts?.dates.get(date);
+        if (draft) {
+            textEl.value = draft.text;
+            loadedText = draft.loadedText;
+            savedEl.textContent = '쓰던 입력을 복원했어요. 저장할 때 다른 기기 기록도 함께 보존해요.';
+        }
         renderHead();
         renderList();
         ready = true;
@@ -120,6 +148,8 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
             clearTimeout(saveTimer);
             saveTimer = null;
         }
+        if (destroyed || plannerWriterIdentity() !== writer) return false;
+        rememberDraft();
         const before = readDiary(current)?.text ?? '';
         if (cachePending) {
             if (before !== loadedText) { savedEl.textContent = pendingMessage(); return false; }
@@ -140,6 +170,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
         }
         loadedText = now;
         if (textEl.value.trim() !== now) textEl.value = now;
+        rememberDraft();
         if (kept) {
             /* 일기를 쓴 날 = 그 날의 연속일. 오늘 어제 것을 채워 넣어도 어제 썼다가 맞다. */
             const result = recordStreakActivity('diary', current);
@@ -154,6 +185,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     }
 
     textEl.addEventListener('input', () => {
+        rememberDraft();
         renderHead();
         savedEl.textContent = cachePending ? pendingMessage() : '';
         if (saveTimer) clearTimeout(saveTimer);
@@ -184,6 +216,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     });
 
     container.querySelector('.pl-diary-del')!.addEventListener('click', () => {
+        if (destroyed || plannerWriterIdentity() !== writer) return;
         if (!readDiary(current)) return;
         if (!confirm(t('planner.t88', { date: humanDate(current) }))) return;
         if (saveTimer) {
@@ -193,6 +226,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
         deleteDiary(current);
         textEl.value = '';
         loadedText = '';
+        rememberDraft();
         savedEl.textContent = t('planner.t87');
         renderHead();
         renderList();
@@ -205,7 +239,7 @@ export function buildDiaryView(container: HTMLElement, startDate?: string): Diar
     document.addEventListener('visibilitychange', onHide);
     window.addEventListener('pagehide', flush);
     const remoteChanged = (): void => {
-        if (destroyed) return;
+        if (destroyed || plannerWriterIdentity() !== writer) return;
         if (cachePending) {
             cachePending = false;
             savedEl.textContent = loadedText ? t('planner.t86') : t('planner.t87');

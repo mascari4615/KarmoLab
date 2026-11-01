@@ -13,6 +13,10 @@ export function isPlannerWriteCommitted(error: unknown): boolean {
     return !!error && typeof error === 'object' && 'code' in error && error.code === 'planner_cache_write_failed' && 'committed' in error && error.committed === true;
 }
 type SharedWindow = Window & { KarmoPlannerSyncWriter?: (key: string, rows: unknown[]) => void };
+/** 현재 페이지의 기록 연결 식별자. 연결을 다시 시작하면 새 객체 */
+export function plannerWriterIdentity(): object | null {
+    return (window as SharedWindow).KarmoPlannerSyncWriter ?? null;
+}
 const BATCH_BYTE_LIMIT = 1024 * 1024;
 function batchFits(batch: Batch): boolean { return new Blob([JSON.stringify(batch, null, 2) + '\n']).size <= BATCH_BYTE_LIMIT; }
 function oversizedBatch(): Error { return new Error('동기화 기록은 파일당 1 MiB까지 저장할 수 있어요. 내용을 나눠 주세요.'); }
