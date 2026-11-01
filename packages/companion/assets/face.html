@@ -1661,8 +1661,19 @@
     reportHitAreas();
   }
 
+  /* 미루기. 카드가 6초 뒤 사라지면 놓친 일정은 판을 열어야만 알았음. 10분 뒤 같은 카드를 다시
+     (벤치마킹 memo projects/dash/reference/companion-notify-bench-20261102.md, Pet Reminder 의 snooze) */
+  const NT_SNOOZE_MS = 10 * 60_000;
   function ntShowToast(item, label) {
-    ntToast.innerHTML = `<b>${esc(label)}</b> ${esc(item.title)}<small>${esc(item.kind)}. 눌러서 판 열기</small>`;
+    ntToast.innerHTML = `<b>${esc(label)}</b> ${esc(item.title)}<small>${esc(item.kind)}. 눌러서 판 열기</small>` +
+      '<button type="button" class="nt-snooze">10분 뒤 다시</button>';
+    ntToast.querySelector('.nt-snooze').onclick = (e) => {
+      e.stopPropagation();
+      ntToast.classList.remove('on');
+      ntToast.hidden = true;
+      reportHitAreas();
+      setTimeout(() => ntShowToast(item, '다시'), NT_SNOOZE_MS);
+    };
     ntToast.dataset.kind = item.kind;
     ntToast.hidden = false;
     requestAnimationFrame(() => ntToast.classList.add('on'));

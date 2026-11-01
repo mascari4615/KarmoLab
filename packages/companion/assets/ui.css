@@ -826,6 +826,7 @@ body.iconmode .nt-body { display: inline-block; }
 .nt-toast { width: 290px; padding: 8px 11px; border-radius: 10px; border: 1px solid var(--accent); background: var(--panel); font-size: 13px; cursor: pointer; opacity: 0; transform: translateY(10px); transition: opacity .25s, transform .25s; }
 .nt-toast.on { opacity: 1; transform: none; }
 .nt-toast small { display: block; color: var(--dim); font-size: 11px; margin-top: 2px; }
+.nt-snooze { margin-top: 6px; font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--edge); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
 .nt-icon { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--accent); background: #18202b; color: var(--accent); display: grid; place-items: center; font-weight: 700; cursor: pointer; touch-action: none; user-select: none; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
 .nt-icon.dragging { cursor: grabbing; box-shadow: 0 8px 22px rgba(0,0,0,.55); }
 /* 아이콘 모드: 몸, 말풍선, 대화창, 분신 숨김 */
