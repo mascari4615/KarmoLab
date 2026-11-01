@@ -20,6 +20,7 @@ import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { worldbookCompat } from './lib/worldbook-compat.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const KARMOLAB_ROOT = path.resolve(__dirname, '..');
@@ -312,6 +313,12 @@ async function main() {
     if (drop > 0.3) {
       problems.push(`문서 수가 ${prev.counts.docs} → ${book.counts.docs} 로 ${Math.round(drop * 100)}% 줄었다. 수집이 깨진 것 아닌지 확인`);
     }
+  }
+  // 공개 호환. 사라진 종류는 실패, 문서와 필드는 경고 (wm-hub 공백 2026-11-02)
+  if (prev && book) {
+    const compat = worldbookCompat(prev, book, { allowDrop: process.env.WORLDBOOK_ALLOW_DROP === '1' });
+    problems.push(...compat.problems);
+    for (const n of compat.notes) console.warn(`[worldbook] ⚠ ${n}`);
   }
 
   if (problems.length > 0) {
