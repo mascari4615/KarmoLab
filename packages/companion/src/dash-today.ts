@@ -46,7 +46,16 @@ export interface Today {
   fetchedAt: string;
 }
 
-interface AgendaEvent { id?: string; title?: string; start?: string; end?: string; allDay?: boolean }
+interface AgendaEvent { id?: string; title?: string; start?: string; end?: string; allDay?: boolean; source?: string }
+
+/**
+ * 알림에서 뺄 일정. 사용자 결정 2026-11-02 "둘 다 빼"
+ * 달의 위상 캘린더, Dash 반복 일정의 회차 (id 끝이 `::날짜` 또는 `::날짜::link:N`, 출근, 회사, 퇴근 등)
+ */
+export function skipEvent(e: AgendaEvent): boolean {
+  if (e.source === '달의 위상') return true;
+  return /::\d{4}-\d{1,2}-\d{1,2}(::|$)/.test(e.id ?? '');
+}
 interface AgendaTask { id?: string; title?: string; status?: string }
 interface AgendaAnime { id?: number | string; title?: string; publishedAt?: string; url?: string }
 interface Agenda { events?: AgendaEvent[]; tasks?: AgendaTask[]; anime?: AgendaAnime[]; errors?: string[] }
@@ -61,7 +70,7 @@ export function summarizeToday(agenda: Agenda | null, aiDue: number, now: Date, 
   const tomorrow = dayOf(new Date(now.getTime() + 86_400_000));
   const upcoming: { at: number; item: TodayItem; start?: string; end?: string }[] = [];
   for (const e of agenda?.events ?? []) {
-    if (!e.title || !e.start) continue;
+    if (!e.title || !e.start || skipEvent(e)) continue;
     if (e.allDay === true) {
       const day = e.start.slice(0, 10);
       if (day === today) upcoming.push({ at: 0, item: { title: e.title, when: '종일' } });

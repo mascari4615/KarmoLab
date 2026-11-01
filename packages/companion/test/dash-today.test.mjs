@@ -60,3 +60,15 @@ test('알림 줄은 종류별, 새 화는 라프텔 주소, AI 는 기한 수 �
   assert.equal(t.items[2].url, 'https://laftel.net/item/47465');
   assert.equal(t.items[3].title, 'AI 후속 일정 2개');
 });
+
+test('달의 위상과 반복 일정 회차는 알림에서 뺌', () => {
+  const t = summarizeToday({
+    events: [
+      { id: 'moon__1', title: '하현달', start: '2026-11-01', allDay: true, source: '달의 위상' },
+      { id: 'local__abc::2026-11-1::link:0', title: '출근', start: '2026-11-01T12:30:00Z', end: '2026-11-01T13:00:00Z' },
+      { id: 'local__abc::2026-11-1', title: '회사', start: '2026-11-01T13:00:00Z', end: '2026-11-01T14:00:00Z' },
+      { id: 'local__xyz', title: '병원', start: '2026-11-01T12:00:00Z', end: '2026-11-01T12:30:00Z' },
+    ],
+  }, 0, now);
+  assert.deepEqual(t.events.map((e) => e.title), ['병원']);
+});
