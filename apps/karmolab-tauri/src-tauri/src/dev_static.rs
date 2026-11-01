@@ -118,6 +118,46 @@ fn serve_loop(listener: TcpListener, repo_root: PathBuf) {
     }
 }
 
+/// Host 헤더가 이 기계 이름인지. 포트는 안 봄
+fn host_is_loopback(host: &str) -> bool {
+    let name = if host.starts_with('[') {
+        host.split(']').next().map(|s| &s[1..]).unwrap_or("")
+    } else {
+        host.split(':').next().unwrap_or("")
+    };
+    matches!(name.to_ascii_lowercase().as_str(), "localhost" | "127.0.0.1" | "::1")
+}
+
+/// `.well-known` 밖의 점 조각이 있는지
+fn has_hidden_part(rel: &str) -> bool {
+    rel.split(['/', '\\']).any(|p| p.starts_with('.') && p != "." && p != ".well-known")
+}
+
+#[cfg(test)]
+mod guard_tests {
+    use super::*;
+
+    #[test]
+    fn host_guard() {
+        assert!(host_is_loopback("127.0.0.1:8898"));
+        assert!(host_is_loopback("localhost:8898"));
+        assert!(host_is_loopback("[::1]:8898"));
+        assert!(!host_is_loopback("evil.example:8898"));
+        assert!(!host_is_loopback("localhost.evil.example"));
+        assert!(!host_is_loopback(""));
+    }
+
+    #[test]
+    fn hidden_guard() {
+        assert!(has_hidden_part("apps/files/.env"));
+        assert!(has_hidden_part(".git/config"));
+        assert!(has_hidden_part("a\\.git\\config"));
+        assert!(!has_hidden_part("apps/karmolab/index.html"));
+        assert!(!has_hidden_part(".well-known/x"));
+        assert!(!has_hidden_part(""));
+    }
+}
+
 fn handle(mut stream: TcpStream, root: &Path) -> std::io::Result<()> {
     stream.set_read_timeout(Some(Duration::from_secs(10))).ok();
     let mut reader = BufReader::new(stream.try_clone()?);
@@ -126,7 +166,8 @@ fn handle(mut stream: TcpStream, root: &Path) -> std::io::Result<()> {
     if reader.read_line(&mut request_line)? == 0 {
         return Ok(());
     }
-    // 나머지 헤더 소진 (body 없음 — GET/HEAD). 빈 줄까지.
+    // 나머지 헤더 소진 (body 없음 — GET/HEAD). 빈 줄까지. Host 만 기억
+    let mut host = String::new();
     loop {
         let mut h = String::new();
         if reader.read_line(&mut h)? == 0 {
@@ -135,6 +176,15 @@ fn handle(mut stream: TcpStream, root: &Path) -> std::io::Result<()> {
         if h == "\r\n" || h == "\n" {
             break;
         }
+        if let Some((name, value)) = h.split_once(':') {
+            if name.trim().eq_ignore_ascii_case("host") {
+                host = value.trim().to_string();
+            }
+        }
+    }
+    // DNS 재바인딩 차단. 남의 도메인 페이지가 이 주소로 풀려 레포 파일 (apps/files/.env 등) 을 읽는 길 (2026-11-02)
+    if !host_is_loopback(&host) {
+        return write_status(&mut stream, 403, "Forbidden", None);
     }
 
     let mut it = request_line.split_whitespace();
@@ -156,6 +206,10 @@ fn handle(mut stream: TcpStream, root: &Path) -> std::io::Result<()> {
     };
 
     let rel = decoded.trim_start_matches('/');
+    // 점으로 시작하는 조각 (.env, .git) 은 미리보기 대상 아님. KarmoLab dev.mjs 와 같은 규칙
+    if has_hidden_part(rel) {
+        return write_status(&mut stream, 403, "Forbidden", None);
+    }
     let rel = if rel.is_empty() { "." } else { rel };
     let candidate = root.join(rel);
 

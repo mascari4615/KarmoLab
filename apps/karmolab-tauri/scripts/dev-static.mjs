@@ -165,6 +165,16 @@ async function handleRequest(req, res) {
       return;
     }
 
+    // DNS 재바인딩 (남의 도메인이 이 주소로 풀림) 과 점 조각 (.env, .git) 차단. dev_static.rs 와 같은 규칙 (2026-11-02)
+    const rawHost = String(req.headers.host || '').toLowerCase();
+    const hostName = rawHost.startsWith('[') ? rawHost.slice(1, rawHost.indexOf(']')) : rawHost.replace(/:\d+$/, '');
+    const hidden = decoded.split(/[\\/]/).some((part) => part.startsWith('.') && part !== '.' && part !== '.well-known');
+    if (!['localhost', '127.0.0.1', '::1'].includes(hostName) || hidden) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+
     const rel = decoded === '/' || decoded === '' ? '.' : decoded.replace(/^\/+/, '');
     const fsPath = path.resolve(REPO_ROOT, rel);
 
