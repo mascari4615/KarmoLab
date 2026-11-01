@@ -72,3 +72,25 @@ test('달의 위상과 반복 일정 회차는 알림에서 뺌', () => {
   }, 0, now);
   assert.deepEqual(t.events.map((e) => e.title), ['병원']);
 });
+
+test('일정 읽기가 실패하면 마지막 값과 그 시각 경고', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const dir = mkdtempSync(join(tmpdir(), 'dash-today-'));
+  mkdirSync(join(dir, 'scripts', 'lib'), { recursive: true });
+  writeFileSync(join(dir, 'scripts', 'lib', 'dash-agent.mjs'), `let n = 0;
+export async function invokeDash(name, args) {
+  if (args.resource === 'followups') return { items: [] };
+  n += 1;
+  if (n > 1) throw new Error('offline');
+  return { data: { tasks: [{ id: 'a', title: '빨래', status: 'needsAction' }] } };
+}`);
+  let t = now.getTime();
+  const read = dashTodaySource(dir, { ttlMs: 0, now: () => new Date(t) });
+  assert.equal((await read()).badge, 1);
+  t += 60_000;
+  const second = await read();
+  assert.equal(second.badge, 1);
+  assert.ok(second.warnings.some((w) => w.includes('20:00 에 받은 일정')), second.warnings.join('|'));
+});

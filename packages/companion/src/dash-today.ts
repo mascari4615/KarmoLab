@@ -153,6 +153,8 @@ export function dashTodaySource(memoDir: string | null, options: { ttlMs?: numbe
   let cached: { at: number; value: Today } | null = null;
   let inflight: Promise<Today | null> | null = null;
   let invoke: InvokeDash | null = null;
+  let lastAgenda: { at: Date; data: Agenda } | null = null;
+  let lastAiDue = 0;
 
   async function read(): Promise<Today | null> {
     if (memoDir === null) return null;
@@ -163,7 +165,11 @@ export function dashTodaySource(memoDir: string | null, options: { ttlMs?: numbe
       invoke('dash_read', { resource: 'agenda' }).catch((e: Error) => { warnings.push(`일정 못 읽음: ${e.message}`); return null; }),
       invoke('dash_read', { resource: 'followups', status: 'open', through: dayOf(now) }).catch((e: Error) => { warnings.push(`후속 일정 못 읽음: ${e.message}`); return null; }),
     ]);
-    return summarizeToday(agenda?.data ?? null, Array.isArray(followups?.items) ? followups.items.length : 0, now, warnings);
+    // 통신이 잠깐 끊겨도 판이 비지 않게 마지막으로 받은 값을 씀. 언제 값인지 경고에 적음
+    if (agenda?.data) lastAgenda = { at: now, data: agenda.data };
+    else if (lastAgenda !== null) warnings.push(`${clockOf(lastAgenda.at)} 에 받은 일정으로 표시`);
+    if (Array.isArray(followups?.items)) lastAiDue = followups.items.length;
+    return summarizeToday(agenda?.data ?? lastAgenda?.data ?? null, lastAiDue, now, warnings);
   }
 
   return async () => {
