@@ -1823,14 +1823,19 @@
   /* 칸이 움직였으면 누를 자리도 0.1초 안에 다시 알림. 500ms 마다만 알리면 걷는 몸 옆 칸을 눌러도
      클릭이 뒤 창으로 빠졌음 */
   let ntReportedAt = 0;
-  (function ntFollow(now) {
+  // 몸이 움직일 때 (걷기, 떨어지기, 끌기) 만 매 프레임. 가만히 있으면 0.25초마다. 상시 매 프레임은 창을 쉬지 못하게 함
+  function ntFollow() {
+    const now = performance.now();
     if (!아이콘모드 && !ntDock.hidden) placeNotify();
     if (ntMovedAt > ntReportedAt && now - ntReportedAt > 100) {
       ntReportedAt = now;
       reportHitAreas();
     }
-    requestAnimationFrame(ntFollow);
-  })(0);
+    const moving = !아이콘모드 && (roam.active || fall.active || document.body.classList.contains('dragging'));
+    if (moving) requestAnimationFrame(ntFollow); else setTimeout(ntFollow, 250);
+  }
+  // 중력 상태(fall)가 아래에서 선언되므로 스크립트 끝난 뒤 시작
+  setTimeout(ntFollow, 0);
   document.getElementById('ntBody').addEventListener('click', () => 아이콘모드켜기(false));
   // 중력 상태(fall)가 아래에서 선언되므로 스크립트 끝난 뒤 복원
   setTimeout(() => {
