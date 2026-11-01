@@ -27,7 +27,8 @@ import { withoutRetired } from './lib/retired-operations.mjs';
 import { untilSettled } from './lib/settle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const BASE = process.env.BASE || 'https://blog.mascari4615.com';
+// 앱 셸과 도구 목록은 lab 에 산다 (주소 셋 나누기 뒤). blog 기본값이라 로컬 실행이 첫 화면 없음 넷으로 빨갰음 (2026-11-02)
+const BASE = process.env.BASE || 'https://lab.mascari4615.com';
 const seo = JSON.parse(fs.readFileSync(path.join(root, 'data/tools-seo.json'), 'utf8')).tools;
 /* 작업대로 흡수된 옛 도구는 목록에 카드가 없다. 주소만 살아 있고(숨은 별칭) 누르면
    작업대의 그 조작으로 간다. 목록에서 찾으면 빠졌다로 열여섯 건이 뜬다(2026-08-13).
