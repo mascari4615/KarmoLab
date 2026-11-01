@@ -122,6 +122,8 @@ export interface WebBodyOptions {
   };
   /** 일 방 / 말 방 들어가기. */
   enterRoom?: (id: string) => boolean;
+  /** 오늘 할 일과 일정 (Dash 원본). 없으면 `/today` 가 없다고 답한다. */
+  today?: () => Promise<import('../dash-today').Today | null>;
 }
 
 /**
@@ -450,6 +452,31 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
           const seen = windowWatcher.latest();
           res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
           res.end(JSON.stringify(seen));
+          return;
+        }
+
+        /* 오늘 할 일과 일정. 머리 위 숫자와 눌러 펼치는 판이 읽어 간다. */
+        if (url === '/today') {
+          const reply = (body: unknown) => {
+            res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+            res.end(JSON.stringify(body));
+          };
+          if (options.today === undefined) {
+            reply({ error: '연결 안 됨' });
+            return;
+          }
+          options.today().then(
+            (value) => reply(value ?? { error: 'memo 저장소를 이웃에서 못 찾았다' }),
+            (e) => reply({ error: e instanceof Error ? e.message : String(e) }),
+          );
+          return;
+        }
+
+        /* Dash 열기. 투명 창 안 링크의 행선지 불명이라 서버가 기본 브라우저로
+           고정 주소 하나만. 창이 보낸 주소 그대로 열기 금지 */
+        if (url === '/open-dash' && req.method === 'POST') {
+          openBrowser('https://dash.mascari4615.com/');
+          res.writeHead(204).end();
           return;
         }
 

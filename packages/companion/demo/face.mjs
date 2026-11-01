@@ -109,6 +109,7 @@ import {
   demandBoot,
   onDemand,
   sibling,
+  dashTodaySource,
   repoCopies,
   lineStore,
   touchKind,
@@ -600,6 +601,10 @@ function rememberShape(meta) {
 // 사람이 마지막으로 말을 건 시각. 화면 보기가 그 위로 끼어들지 않게 쓰인다.
 let lastSpokenToAt = 0;
 
+const todayMemo = process.env.COMPANION_MEMO_DIR?.trim() || sibling('memo', join('scripts', 'lib', 'dash-agent.mjs'));
+if (todayMemo === null) console.log('[오늘] memo 저장소를 이웃에서 못 찾았다. 할 일 숫자 없이 지낸다');
+const todaySource = dashTodaySource(todayMemo);
+
 const web = webBody({
   // 안 받은 소리도 센다. 창에 띄우기만 하면 창을 안 볼 때 사라진다 (35회차).
   mark: (name, fate, why) => tally.mark(name, fate, why),
@@ -645,6 +650,8 @@ ${tallyReport(tally)}`;
     ],
   }),
   enterRoom,
+  // 오늘 할 일과 일정. Dash 웹 대신 몸 옆 표시 (2026-11-01)
+  today: todaySource,
   settings: () => settingsReport(settings),
   putSettings: (next) => settings.put(next),
   // 얼굴 신호를 유도할 재료. 생김새는 다른 세션이 이 신호를 받아 쓴다.

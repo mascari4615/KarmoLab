@@ -92,6 +92,14 @@
     <!-- 지금 뭐 하는 중인지. 아이콘 하나로. 얘는 계속 떠 있는데 뭘 하는지 알 길이 없었다. -->
     <div class="doing" id="doing" title="지금 뭐 하는 중"><span class="ico" id="doingIco">, </span><span class="lab" id="doingLab"></span></div>
 
+    <!-- 오늘 할 일 숫자. 누르면 오늘 판. Dash 웹 대신 -->
+    <button type="button" class="today-badge" id="todayBadge" hidden title="오늘"></button>
+    <div class="today" id="today" hidden>
+      <div class="today-head"><span>오늘</span><button type="button" class="menu-x" id="todayClose" title="닫기" aria-label="닫기">✕</button></div>
+      <div class="today-body" id="todayBody"></div>
+      <div class="today-foot"><a href="https://dash.mascari4615.com/" target="_blank" rel="noopener" id="todayOpen">Dash 열기</a><span id="todayAt"></span></div>
+    </div>
+
     <!-- 말 걸기. 얘를 누르면 열린다 -->
     <div class="talk" id="talk">
       <div class="log" id="log"><div class="empty">말해 봐. 코드면 그대로.</div></div>
@@ -167,6 +175,14 @@
      창을 화면만큼 키웠으니, 얘가 사는 자리를 화면 안에서 옮겨 다니게 한다.
      끌면 창이 아니라 **얘가** 움직인다. 잘릴 테두리가 없으니 애초에 잘릴 것도 없다. */
   const 전체화면 = new URLSearchParams(location.search).get('full') === '1';
+  /* 창 밖(브라우저 탭)에서 열면 투명, 누를 자리, 창 위 서기가 다 빠진다. 사람도 에이전트도
+     그걸 동반자 확인으로 착각한다(2026-11-01). 한눈에 보이게 띠를 띄운다. */
+  if (!inDesktopWindow && 전체화면) {
+    const strip = document.createElement('div');
+    strip.className = 'preview-strip';
+    strip.textContent = '브라우저 미리보기. 실제 동반자는 투명 창: packages/companion 에서 npm run face';
+    document.body.append(strip);
+  }
   if (전체화면) document.body.classList.add('full');
   const pageSurface = new URLSearchParams(location.search).get('surface') === 'page';
   if (pageSurface) {
@@ -1431,6 +1447,7 @@
      안 그러면 보이지도 않는 창이 화면 한 구석의 클릭을 통째로 삼킨다. */
   let hitAreaComplained = false;
   function reportHitAreas() {
+    placeTodayBadge(body3d?.screenBox?.());
     if (inDesktopWindow === false) return;
     const areas = [];
     const add = (el) => {
@@ -1446,6 +1463,8 @@
       if (box) areas.push(box);
     }
     if (chatOpen) add(talk);
+    add(document.getElementById('todayBadge'));
+    add(document.getElementById('today'));
     add(menu);
     add(sheet);
     add(ask);
@@ -1459,6 +1478,80 @@
     });
   }
   setInterval(reportHitAreas, 500);
+
+  /* ── 오늘 ──────────────────────────────────────────────────
+     Dash 원본의 할 일과 일정을 서버(/today)에서 받는다. 서버가 5분 동안 지난 값을 주므로
+     여기서는 1분마다 물어도 원본엔 5분에 한 번. 못 읽으면 숫자 대신 ! 와 그 사유. */
+  /* 숫자는 몸이 실제 차지하는 자리의 오른쪽 위 바깥. CSS 고정값은 모자에 겹쳤다(2026-11-01 화면 확인).
+     방 안에 있으니 걷기는 따라오고, 몸 크기가 바뀔 때만 다시 잰다. */
+  function placeTodayBadge(box) {
+    const badge = document.getElementById('todayBadge');
+    const room = badge?.parentElement?.getBoundingClientRect();
+    if (!box || !room) return;
+    badge.style.left = `${box.x + box.width - room.x}px`;
+    badge.style.top = `${Math.max(0, box.y - room.y)}px`;
+    const panel = document.getElementById('today');
+    // 화면 오른쪽 끝이면 몸 왼쪽으로 편다
+    const roomy = box.x + box.width + 30 + 270 <= innerWidth;
+    panel.style.left = `${roomy ? box.x + box.width - room.x + 30 : box.x - room.x - 270}px`;
+    panel.style.top = `${Math.max(0, box.y - room.y)}px`;
+  }
+  const todayBadge = document.getElementById('todayBadge');
+  const todayPanel = document.getElementById('today');
+  const todayBody = document.getElementById('todayBody');
+  const todayAt = document.getElementById('todayAt');
+  let todayData = null;
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function renderToday() {
+    const d = todayData;
+    if (d === null) return;
+    if (d.error) {
+      todayBadge.textContent = '!';
+      todayBadge.classList.add('bad');
+      todayBody.innerHTML = `<p class="today-warn">${esc(d.error)}</p>`;
+      todayAt.textContent = '';
+    } else {
+      todayBadge.classList.remove('bad');
+      todayBadge.textContent = d.badge > 0 ? String(d.badge) : '0';
+      todayBadge.classList.toggle('zero', d.badge === 0);
+      const section = (title, rows) => rows.length === 0 ? '' : `<div class="today-sec">${title}</div>${rows.join('')}`;
+      todayBody.innerHTML = [
+        section('일정', d.events.map((e) => `<div class="today-row"><b>${esc(e.when ?? '')}</b><span>${esc(e.title)}</span></div>`)),
+        section(`할 일 ${d.tasks.length}`, d.tasks.slice(0, 3).map((t) => `<div class="today-row"><span>${esc(t.title)}</span></div>`)
+          .concat(d.tasks.length > 3 ? [`<div class="today-more">외 ${d.tasks.length - 3}개</div>`] : [])),
+        section('새 화', d.anime.slice(0, 3).map((a) => `<div class="today-row"><span>${esc(a)}</span></div>`)),
+        d.aiDue > 0 ? `<div class="today-ai">AI 후속 일정 ${d.aiDue}개 기한 지남</div>` : '',
+        ...d.warnings.map((w) => `<p class="today-warn">${esc(w)}</p>`),
+      ].join('') || '<p class="today-empty">오늘은 비었다.</p>';
+      todayAt.textContent = new Date(d.fetchedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준';
+    }
+    todayBadge.hidden = false;
+    reportHitAreas();
+  }
+  async function pullToday() {
+    try {
+      todayData = await (await fetch('/today', { cache: 'no-store' })).json();
+    } catch (e) {
+      todayData = { error: `오늘 못 받음: ${e && e.message ? e.message : e}` };
+    }
+    renderToday();
+  }
+  todayBadge.addEventListener('click', (e) => {
+    e.stopPropagation();
+    todayPanel.hidden = !todayPanel.hidden;
+    if (todayPanel.hidden === false) pullToday();
+    reportHitAreas();
+  });
+  document.getElementById('todayClose').addEventListener('click', () => {
+    todayPanel.hidden = true;
+    reportHitAreas();
+  });
+  document.getElementById('todayOpen').addEventListener('click', (e) => {
+    e.preventDefault();
+    fetch('/open-dash', { method: 'POST' }).catch((err) => tell(`Dash 못 엶: ${err && err.message ? err.message : err}`));
+  });
+  pullToday();
+  setInterval(pullToday, 60_000);
 
   /* ── 화면 걷기 ─────────────────────────────────────────────
      full 모드에서 한가할 때 가끔 화면 바닥을 가로질러 걷는다. 동작은 제자리 걸음이라
