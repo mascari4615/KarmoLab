@@ -849,7 +849,8 @@ bodies.push({ name: TOUCH_CHANNEL, sense: { name: '닿음', start() {} }, voice:
 
 // 틈 알림 (Dash 2단계, 2026-11-01). 게임, 영상이 끝난 직후와 켠 직후에 오늘 할 일 한 줄
 // 두뇌 없이 고정 문형. 먼저 말 걸기 설정과 조용한 시간을 따름. 5초마다 앞 창 확인
-if (process.platform === 'win32' && todayMemo !== null && process.env.COMPANION_GAP !== '0') {
+// 기본 꺼짐. 사용자 "말 거는 것 말고 알림 형식이 기본" (2026-11-02). 알림 판으로 대체 예정, 환경 COMPANION_GAP 값 1 일 때만
+if (process.platform === 'win32' && todayMemo !== null && process.env.COMPANION_GAP === '1') {
   const gap = new Gap();
   const said = new Set();
   let saidDay = '';
