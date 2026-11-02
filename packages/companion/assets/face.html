@@ -1702,8 +1702,14 @@
     ring.innerHTML = '';
     const items = [...켜고끄기, { icon: 'ellipsis', name: '더보기', more: true }];
     const { x, y, r } = 원형자리;
-    // 위를 가운데로 왼쪽 아래부터 오른쪽 아래까지 220도
-    const from = -200, to = 20;
+    // 기본은 위로 220도 부채꼴. 화면 끝에 붙으면 반대쪽으로 펼쳐 버튼이 밖으로 나가 겹치지 않게.
+    // 좌우 끝에서는 반원을 넘으면 몸 너머 화면 밖까지 감기므로 170도
+    const room = r + 40;
+    const near = { right: innerWidth - x < room, left: x < room, top: y < room };
+    let mid = near.top ? 90 : -90;
+    let half = 110;
+    if (near.right) { mid = 180; half = 85; } else if (near.left) { mid = 0; half = 85; }
+    const from = mid - half, to = mid + half;
     items.forEach((t, i) => {
       const a = (from + (to - from) * (i / (items.length - 1))) * Math.PI / 180;
       const b = document.createElement('button');

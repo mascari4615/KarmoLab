@@ -123,6 +123,29 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('몸이 화면 끝에 있어도 원형 버튼이 화면 안에 겹치지 않고 펼쳐진다', async () => {
+      const page = await openWindow('?full=1&roam=0&gravity=0');
+      for (const roomX of ['40', '480']) {
+        await page.evaluate((x) => { localStorage.setItem('companion.roomX', x); localStorage.setItem('companion.roomY', '40'); }, roomX);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1200);
+        await page.locator('.stage').click({ button: 'right', force: true });
+        const pts = await page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+        assert.equal(pts.length, 7, `원형 버튼이 7개가 아니다 (roomX ${roomX})`);
+        const size = page.viewportSize();
+        for (const [x, y] of pts) assert.ok(x >= 26 && x <= size.width - 26 && y >= 26 && y <= size.height - 26, `버튼이 화면 밖 (${x}, ${y}), roomX ${roomX}`);
+        for (let i = 0; i < pts.length; i += 1) {
+          for (let j = i + 1; j < pts.length; j += 1) {
+            const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+            assert.ok(d >= 44, `버튼 ${i}, ${j} 이 겹친다 (거리 ${d.toFixed(0)}px, roomX ${roomX}) ${JSON.stringify(pts.map((p) => p.map(Math.round)))}`);
+          }
+        }
+        await page.keyboard.press('Escape');
+      }
+      await page.evaluate(() => { localStorage.removeItem('companion.roomX'); localStorage.removeItem('companion.roomY'); });
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
