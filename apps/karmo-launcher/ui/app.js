@@ -15,6 +15,7 @@ const msgEl = $('msg');
 const ICON = { tauri: 'tool', web: 'dash', unity: 'play', tool: 'tool', bot: 'tool' };
 let apps = [];
 const status = new Map();
+const fmt = (a) => (a.install && a.install.format) || 'nsis';
 let current = null;
 let busy = null;
 let progress = { got: 0, total: 0, phase: '' };
@@ -39,7 +40,7 @@ function paintList() {
   listEl.innerHTML = apps
     .map((a) => {
       const st = status.get(a.id);
-      const tag = a.soon ? '<em class="soon">준비 중</em>' : st && st.running ? '<em class="run">실행 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : '';
+      const tag = a.soon ? '<em class="soon">준비 중</em>' : st && st.running ? '<em class="run">실행 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : a.access === 'private' ? '<em class="soon">비공개</em>' : '';
       const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
       return (
         '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
@@ -62,8 +63,11 @@ function paintMain() {
   const st = status.get(app.id) || {};
   const info = [];
   if (app.kind !== 'web' && !app.soon) {
-    info.push(['내 버전', st.installed ? st.version || '-' : '설치 안 됨']);
-    info.push(['최신', st.latest || (st.error ? '못 읽음' : '-')]);
+    if (fmt(app) === 'local') info.push(['위치', st.installed ? '이 PC' : '이 PC 에 없음']);
+    else {
+      info.push(['내 버전', st.installed ? st.version || '-' : '설치 안 됨']);
+      info.push(['최신', st.latest || (st.error ? '못 읽음' : '-')]);
+    }
   }
   headEl.innerHTML =
     '<h1>' + esc(app.name) + '</h1><p>' + esc(app.summary) + '</p>' +
@@ -80,8 +84,11 @@ function paintMain() {
   let start = '';
   if (app.soon) start = '<p class="note">아직 받을 수 있는 판이 없습니다.</p>';
   else if (app.kind === 'web') start = '<button type="button" class="start" data-act="open">브라우저로 열기</button>';
-  else {
-    const key = app.install && app.install.registry;
+  else if (fmt(app) === 'local') {
+    start = st.installed
+      ? '<button type="button" class="start" data-act="launch">실행</button>'
+      : '<p class="note">이 PC 의 작업 폴더에 없습니다. 오른쪽 위 열쇠에서 작업 폴더를 바꿀 수 있습니다.</p>';
+  } else {
     /* 실행 중이면 Steam 처럼 끄기가 주 버튼. 떠 있는 동안 설치 프로그램이 파일을 못 바꾸니 업데이트, 제거는 막음 */
     if (st.running) {
       start = '<button type="button" class="start running" data-act="stop">끄기<small>실행 중</small></button>';
@@ -91,13 +98,13 @@ function paintMain() {
       start = '<button type="button" class="start" data-act="install">업데이트<small>' + esc(st.version) + ' → ' + esc(st.latest) + '</small></button>';
     else if (st.installed) start = '<button type="button" class="start" data-act="launch">실행</button>';
     if (!st.running && st.installed && hasUpdate(st)) sub.push('<button type="button" data-act="launch">실행</button>');
-    if (!st.running && st.installed && key) sub.push('<button type="button" data-act="uninstall">제거</button>');
+    if (!st.running && st.installed) sub.push('<button type="button" data-act="uninstall">제거</button>');
   }
   const pct = progress.total ? Math.round((progress.got / progress.total) * 100) : 0;
   const bar =
     busy === app.id
       ? '<div class="bar"><i style="width:' + pct + '%"></i></div><p class="note">' +
-        esc(progress.phase === 'verify' ? '서명 확인 중' : progress.phase === 'install' ? '설치 중' : progress.phase === 'uninstall' ? '제거 중' : '받는 중 ' + pct + '%') + '</p>'
+        esc(progress.phase === 'verify' ? '파일 확인 중' : progress.phase === 'install' ? '설치 중' : progress.phase === 'uninstall' ? '제거 중' : '받는 중 ' + pct + '%') + '</p>'
       : '';
   actsEl.innerHTML = bar + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
   actsEl.querySelectorAll('button').forEach((b) => (b.disabled = !!busy));
@@ -122,7 +129,7 @@ async function load() {
   try {
     const m = await invoke('fetch_manifest');
     apps = Array.isArray(m.apps) ? m.apps : [];
-    msgEl.textContent = '';
+    msgEl.textContent = m.private && m.private.state === 'error' ? '비공개 목록을 못 받음: ' + m.private.error : '';
   } catch (e) {
     msgEl.textContent = '목록을 못 받음: ' + e;
     apps = [];
@@ -140,7 +147,7 @@ async function act(kind) {
   try {
     if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
     if (kind === 'launch') {
-      await invoke('launch_app', { registryKey: app.install.registry });
+      await invoke('launch_app', { app });
       /* 창이 뜨기까지 잠깐. 바로 한 번, 조금 뒤 한 번 다시 잼 */
       window.setTimeout(() => void pollRunning(), 1500);
       return;
@@ -149,7 +156,7 @@ async function act(kind) {
       /* 누르는 즉시 꺼진 것으로 그림. stop_app 은 꺼진 뒤에 돌아오고, 그때 실제 상태로 다시 잼 (사용자 "끄기가 바로바로") */
       status.set(app.id, { ...st, running: false });
       paint();
-      await invoke('stop_app', { registryKey: app.install.registry });
+      await invoke('stop_app', { app });
       await pollRunning();
       return;
     }
@@ -157,11 +164,11 @@ async function act(kind) {
     if (kind === 'install') {
       progress = { got: 0, total: 0, phase: 'download' };
       paintMain();
-      await invoke('install_app', { id: app.id, url: st.download, args: (app.install && app.install.args) || [], signature: st.signature || '' });
+      await invoke('install_app', { app, url: st.download, version: st.latest || '', signature: st.signature || '', sha256: st.sha256 || '' });
     } else if (kind === 'uninstall') {
       progress = { got: 0, total: 0, phase: 'uninstall' };
       paintMain();
-      await invoke('uninstall_app', { registryKey: app.install.registry });
+      await invoke('uninstall_app', { app });
     }
   } catch (e) {
     status.set(app.id, { ...st, error: String(e) });
@@ -177,10 +184,9 @@ async function pollRunning() {
   let changed = false;
   for (const app of apps) {
     const st = status.get(app.id);
-    const key = app.install && app.install.registry;
-    if (!st || !st.installed || !key) continue;
+    if (!st || !st.installed || fmt(app) === 'local') continue;
     try {
-      const now = await invoke('running_status', { registryKey: key });
+      const now = await invoke('running_status', { app });
       if (now !== st.running) {
         st.running = now;
         changed = true;
@@ -207,6 +213,43 @@ actsEl.addEventListener('click', (e) => {
   if (b) void act(b.dataset.act);
 });
 $('reload').addEventListener('click', () => void load());
+
+/* GitHub 로그인과 작업 폴더. 토큰은 백엔드가 자격 증명 관리자에 보관하고 화면은 이름만 받음 */
+const keysEl = $('keys');
+const ghStateEl = $('ghState');
+async function paintKeys() {
+  try {
+    const login = await invoke('github_status');
+    ghStateEl.textContent = login ? '로그인: ' + login + '. 비공개 항목이 목록에 나옵니다' : '로그인 안 됨. 공개 항목만 보입니다';
+  } catch (e) {
+    ghStateEl.textContent = '토큰 확인 실패: ' + e;
+  }
+  try {
+    $('ws').value = (await invoke('get_settings')).workspace || '';
+  } catch {
+    /* 기본값 그대로 */
+  }
+}
+async function keyAction(fn) {
+  ghStateEl.textContent = '확인 중';
+  try {
+    await fn();
+  } catch (e) {
+    ghStateEl.textContent = String(e);
+    return;
+  }
+  $('ghToken').value = '';
+  await paintKeys();
+  await load();
+}
+$('keyBtn').addEventListener('click', () => {
+  keysEl.hidden = !keysEl.hidden;
+  if (!keysEl.hidden) void paintKeys();
+});
+$('ghSave').addEventListener('click', () => void keyAction(() => invoke('github_set_token', { token: $('ghToken').value })));
+$('ghGit').addEventListener('click', () => void keyAction(() => invoke('github_use_git_login')));
+$('ghClear').addEventListener('click', () => void keyAction(() => invoke('github_clear')));
+$('wsSave').addEventListener('click', () => void keyAction(() => invoke('set_workspace', { path: $('ws').value })));
 $('min').addEventListener('click', () => void appWindow.minimize());
 /* 닫기는 트레이로 (Steam 처럼). 끝내기는 트레이 메뉴 */
 $('close').addEventListener('click', () => void appWindow.hide());

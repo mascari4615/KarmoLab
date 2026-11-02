@@ -66,6 +66,13 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .titlebar .msg { flex: 1; text-align: right; padding-right: 10px; font-size: 11px; color: var(--ink3); }
 .wb { width: 34px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: var(--ink2); font: 400 15px var(--en); cursor: pointer; }
 .wb:hover { color: var(--ink); background: var(--panel); }
+/* 로그인과 작업 폴더 판. 제목 줄 아래 오른쪽 */
+.keys { position: absolute; top: 76px; right: 40px; width: 360px; z-index: 7; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line, rgba(127,127,127,0.3)); display: grid; gap: 8px; }
+.keys .t { font-size: 11px; color: var(--ink3); letter-spacing: 0.1em; }
+.keys .krow { display: flex; gap: 6px; }
+.keys input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--line, rgba(127,127,127,0.4)); background: transparent; color: var(--ink); font: 12px var(--ko); }
+.keys button { padding: 6px 10px; border: 1px solid var(--line, rgba(127,127,127,0.4)); background: transparent; color: var(--ink); font: 12px var(--ko); cursor: pointer; white-space: nowrap; }
+.keys button:hover { background: var(--bg); }
 
 .side { position: absolute; left: 40px; top: 84px; bottom: 56px; width: 260px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(16px); padding: 14px 0; z-index: 2; overflow: auto; }
 .side .en { display: block; padding: 0 18px 10px; }

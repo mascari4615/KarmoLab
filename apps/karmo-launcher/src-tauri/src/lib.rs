@@ -1,18 +1,37 @@
 //! 런처 백엔드. 목록 (manifest) 받기, 설치 상태와 최신 버전 재기, 받기와 설치, 실행, 삭제.
 //!
 //! 화면이 GitHub 에 직접 fetch 하면 CORS 로 막혀서 받기는 전부 여기서.
-//! 설치 상태는 NSIS 가 남기는 레지스트리 (HKCU Uninstall) 에서 읽음. 런처 밖에서 깐 것도 보임.
+//! 설치 형식 셋 (`install.format`):
+//! - `nsis`: 설치 프로그램. 상태는 NSIS 가 남기는 HKCU Uninstall 레지스트리. 런처 밖에서 깐 것도 보임
+//! - `zip`: 압축을 런처 데이터 폴더 `apps/<id>` 에 풂. 상태는 그 폴더의 `.karmo-version`
+//! - `local`: 받지 않음. 작업 폴더 (설정) 아래에 파일이 있으면 그것을 실행
+//!
+//! 목록은 둘. 공개 목록 (KarmoLab 저장소) 과 비공개 목록 (memo 저장소, GitHub 토큰이 있어야 읽힘).
+//! 토큰은 Windows 자격 증명 관리자에 런처 이름으로 보관.
 //! 정본: memo/changes/launcher.md
 use serde::Serialize;
 use serde_json::Value;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
-/// 목록 정본. 공개 저장소의 파일 하나 (API 가 아니라 raw 라 시간당 60회 제한 없음)
+/// 공개 목록 정본. 공개 저장소의 파일 하나 (API 가 아니라 raw 라 시간당 60회 제한 없음)
 const MANIFEST_URL: &str =
     "https://raw.githubusercontent.com/mascari4615/KarmoLab/main/apps/karmo-launcher/manifest.json";
+
+/// 비공개 목록. memo (private) 라 토큰이 없으면 404. 공개 목록에 비공개 항목 이름을 남기지 않으려고 따로 둠
+const PRIVATE_MANIFEST_API: &str =
+    "https://api.github.com/repos/mascari4615/memo/contents/data/launcher/apps.json";
+
+/// 토큰을 붙여 보내는 곳. 내 저장소 API 만 (다른 주소로 토큰이 새지 않게)
+const OWNER_API: &str = "https://api.github.com/repos/mascari4615/";
+
+/// 자격 증명 관리자 항목 이름
+const TOKEN_TARGET: &str = "karmo-launcher:github";
+
+/// 이 PC 의 git 로그인 (Git Credential Manager 가 남기는 항목). 사용자가 버튼을 눌렀을 때만 읽음
+const GIT_LOGIN_TARGET: &str = "git:https://github.com";
 
 /// 앱마다 최신 판 (버전, 날짜, 주소, 서명). 릴리스 CI 가 판을 낼 때마다 그 앱 줄을 고쳐 씀 (memo changes/launcher.md 구조 결정)
 const CATALOG_URL: &str =
@@ -32,15 +51,291 @@ fn verify_signature(data: &[u8], signature_b64: &str) -> Result<(), String> {
     key.verify(data, &sig, false).map_err(|_| "서명이 맞지 않음. 받은 파일을 실행하지 않음".to_string())
 }
 
-/// 한 앱의 최신 판. 목록 (catalog) 을 먼저 보고, 그 줄이 없으면 앱의 Tauri latest.json (옛 길)
+/// 받은 파일의 sha256 이 GitHub 가 적어 둔 값 (`digest`) 과 같은지. zip 처럼 minisign 서명이 없는 판에 씀
+#[cfg(test)]
+fn verify_sha256(data: &[u8], want_hex: &str) -> Result<(), String> {
+    use sha2::Digest;
+    same_sha256(sha2::Sha256::digest(data).as_slice(), want_hex)
+}
+
+fn same_sha256(got: &[u8], want_hex: &str) -> Result<(), String> {
+    let got: String = got.iter().map(|b| format!("{:02x}", b)).collect();
+    if got.eq_ignore_ascii_case(want_hex.trim()) {
+        Ok(())
+    } else {
+        Err("sha256 이 맞지 않음. 받은 파일을 풀지 않음".into())
+    }
+}
+
+/* ---------- GitHub 토큰 (자격 증명 관리자) ---------- */
+
+#[cfg(windows)]
+fn wide(s: &str) -> Vec<u16> {
+    s.encode_utf16().chain(std::iter::once(0)).collect()
+}
+
+#[cfg(windows)]
+fn cred_read(target: &str) -> Option<Vec<u8>> {
+    use windows_sys::Win32::Security::Credentials::{CredFree, CredReadW, CREDENTIALW, CRED_TYPE_GENERIC};
+    let t = wide(target);
+    unsafe {
+        let mut p: *mut CREDENTIALW = std::ptr::null_mut();
+        if CredReadW(t.as_ptr(), CRED_TYPE_GENERIC, 0, &mut p) == 0 || p.is_null() {
+            return None;
+        }
+        let c = &*p;
+        let blob = if c.CredentialBlob.is_null() {
+            Vec::new()
+        } else {
+            std::slice::from_raw_parts(c.CredentialBlob, c.CredentialBlobSize as usize).to_vec()
+        };
+        CredFree(p as *const _);
+        Some(blob)
+    }
+}
+
+#[cfg(windows)]
+fn cred_write(target: &str, user: &str, secret: &str) -> Result<(), String> {
+    use windows_sys::Win32::Security::Credentials::{CredWriteW, CREDENTIALW, CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC};
+    let mut t = wide(target);
+    let mut u = wide(user);
+    let blob = secret.as_bytes();
+    unsafe {
+        let mut c: CREDENTIALW = std::mem::zeroed();
+        c.Type = CRED_TYPE_GENERIC;
+        c.TargetName = t.as_mut_ptr();
+        c.UserName = u.as_mut_ptr();
+        c.CredentialBlobSize = blob.len() as u32;
+        c.CredentialBlob = blob.as_ptr() as *mut u8;
+        c.Persist = CRED_PERSIST_LOCAL_MACHINE;
+        if CredWriteW(&c, 0) == 0 {
+            return Err("자격 증명 저장 실패".into());
+        }
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn cred_delete(target: &str) {
+    use windows_sys::Win32::Security::Credentials::{CredDeleteW, CRED_TYPE_GENERIC};
+    let t = wide(target);
+    unsafe {
+        CredDeleteW(t.as_ptr(), CRED_TYPE_GENERIC, 0);
+    }
+}
+
+#[cfg(not(windows))]
+fn cred_read(_target: &str) -> Option<Vec<u8>> {
+    None
+}
+#[cfg(not(windows))]
+fn cred_write(_t: &str, _u: &str, _s: &str) -> Result<(), String> {
+    Err("Windows 전용".into())
+}
+#[cfg(not(windows))]
+fn cred_delete(_target: &str) {}
+
+/// 자격 증명 값. 런처가 쓴 것은 UTF-8, cmdkey 같은 도구가 쓴 것은 UTF-16
+fn decode_secret(blob: &[u8]) -> String {
+    let utf16 = blob.len() >= 2 && blob.len() % 2 == 0 && blob.iter().skip(1).step_by(2).all(|&b| b == 0);
+    let s = if utf16 {
+        let w: Vec<u16> = blob.chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+        String::from_utf16_lossy(&w)
+    } else {
+        String::from_utf8_lossy(blob).to_string()
+    };
+    s.trim().to_string()
+}
+
+fn token() -> Option<String> {
+    cred_read(TOKEN_TARGET).map(|b| decode_secret(&b)).filter(|t| !t.is_empty())
+}
+
+/// 토큰으로 GitHub 사용자 이름. 틀린 토큰이면 Err
+fn github_login_of(token: &str) -> Result<String, String> {
+    let res = client()?
+        .get("https://api.github.com/user")
+        .bearer_auth(token)
+        .send()
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("GitHub 가 토큰을 거절 ({})", res.status().as_u16()));
+    }
+    let v: Value = serde_json::from_str(&res.text().map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    str_at(&v, &["login"]).map(String::from).ok_or_else(|| "사용자 이름 없음".into())
+}
+
+fn save_token(token: &str) -> Result<String, String> {
+    let t = token.trim();
+    if t.is_empty() {
+        return Err("토큰이 비어 있음".into());
+    }
+    let login = github_login_of(t)?;
+    cred_write(TOKEN_TARGET, &login, t)?;
+    Ok(login)
+}
+
+/// 로그인한 GitHub 이름. 토큰이 없으면 None
+#[tauri::command]
+async fn github_status() -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(|| match token() {
+        None => Ok(None),
+        Some(t) => github_login_of(&t).map(Some),
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn github_set_token(token: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || save_token(&token))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// 이 PC 의 git 로그인을 런처 토큰으로 복사 (사용자가 누를 때만)
+#[tauri::command]
+async fn github_use_git_login() -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let blob = cred_read(GIT_LOGIN_TARGET).ok_or("이 PC 에 git 로그인 기록이 없음")?;
+        save_token(&decode_secret(&blob))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn github_clear() {
+    cred_delete(TOKEN_TARGET);
+}
+
+/* ---------- 설정 (작업 폴더) ---------- */
+
+fn settings_path(handle: &AppHandle) -> Result<PathBuf, String> {
+    Ok(handle.path().app_config_dir().map_err(|e| e.to_string())?.join("settings.json"))
+}
+
+fn default_workspace() -> String {
+    let home = std::env::var("USERPROFILE").unwrap_or_default();
+    Path::new(&home).join("repos").join("karmoddrine").to_string_lossy().to_string()
+}
+
+/// 로컬 항목을 찾는 뿌리. 기본은 `%USERPROFILE%\repos\karmoddrine`
+fn workspace(handle: &AppHandle) -> String {
+    settings_path(handle)
+        .ok()
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| str_at(&v, &["workspace"]).map(String::from))
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(default_workspace)
+}
+
+#[tauri::command]
+fn get_settings(handle: AppHandle) -> Value {
+    serde_json::json!({ "workspace": workspace(&handle) })
+}
+
+#[tauri::command]
+fn set_workspace(handle: AppHandle, path: String) -> Result<(), String> {
+    let p = settings_path(&handle)?;
+    if let Some(dir) = p.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    std::fs::write(&p, serde_json::json!({ "workspace": path.trim() }).to_string()).map_err(|e| e.to_string())
+}
+
+/* ---------- 받기 ---------- */
+
+fn client() -> Result<reqwest::blocking::Client, String> {
+    reqwest::blocking::Client::builder()
+        .user_agent("karmo-launcher")
+        .build()
+        .map_err(|e| e.to_string())
+}
+
+/// GET. 내 저장소 API 주소면 토큰을 붙임 (비공개 저장소, 시간당 제한 완화)
+fn request(url: &str, accept: Option<&str>) -> Result<reqwest::blocking::Response, String> {
+    let mut rq = client()?.get(url);
+    if let Some(a) = accept {
+        rq = rq.header("Accept", a);
+    }
+    if url.starts_with(OWNER_API) {
+        if let Some(t) = token() {
+            rq = rq.bearer_auth(t);
+        }
+    }
+    let res = rq.send().map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        let code = res.status().as_u16();
+        if code == 404 && url.starts_with(OWNER_API) && token().is_none() {
+            return Err("비공개 저장소. GitHub 로그인이 필요함".into());
+        }
+        return Err(format!("{} {}", code, url));
+    }
+    Ok(res)
+}
+
+fn get_text(url: &str) -> Result<String, String> {
+    request(url, None)?.text().map_err(|e| e.to_string())
+}
+
+/// 목록 둘을 합침. 비공개 목록의 항목에는 `access: "private"` 를 붙임.
+/// 개발 중에는 `KARMO_LAUNCHER_MANIFEST` 로 공개 목록 자리에 로컬 파일이나 다른 주소
+#[tauri::command]
+async fn fetch_manifest() -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let src = std::env::var("KARMO_LAUNCHER_MANIFEST").unwrap_or_else(|_| MANIFEST_URL.to_string());
+        let text = if src.starts_with("http") {
+            get_text(&src)?
+        } else {
+            std::fs::read_to_string(&src).map_err(|e| format!("{}: {}", src, e))?
+        };
+        let mut m: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+        let private = if token().is_none() {
+            serde_json::json!({ "state": "no-token" })
+        } else {
+            match request(PRIVATE_MANIFEST_API, Some("application/vnd.github.raw"))
+                .and_then(|r| r.text().map_err(|e| e.to_string()))
+                .and_then(|t| serde_json::from_str::<Value>(&t).map_err(|e| e.to_string()))
+            {
+                Ok(p) => {
+                    let mut n = 0;
+                    if let (Some(dst), Some(src)) = (m.get_mut("apps").and_then(|a| a.as_array_mut()), p.get("apps").and_then(|a| a.as_array())) {
+                        for a in src {
+                            let mut a = a.clone();
+                            a["access"] = Value::from("private");
+                            dst.push(a);
+                            n += 1;
+                        }
+                    }
+                    serde_json::json!({ "state": "ok", "count": n })
+                }
+                Err(e) => serde_json::json!({ "state": "error", "error": e }),
+            }
+        };
+        m["private"] = private;
+        Ok(m)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// 한 앱의 최신 판
+#[derive(Default)]
 struct Latest {
     version: Option<String>,
     pub_date: Option<String>,
     url: Option<String>,
     signature: Option<String>,
+    sha256: Option<String>,
 }
 
+/// `source.type`: `tauri-latest` (목록 catalog 먼저, 없으면 앱 latest.json) 또는 `gh-release` (저장소 릴리스의 자산 하나)
 fn latest_of(app: &Value) -> Result<Latest, String> {
+    if str_at(app, &["source", "type"]) == Some("gh-release") {
+        return latest_gh_release(app);
+    }
     let id = str_at(app, &["id"]).unwrap_or_default();
     if let Ok(text) = get_text(CATALOG_URL) {
         if let Ok(cat) = serde_json::from_str::<Value>(&text) {
@@ -50,6 +345,7 @@ fn latest_of(app: &Value) -> Result<Latest, String> {
                     pub_date: str_at(e, &["pub_date"]).map(String::from),
                     url: str_at(e, &["url"]).map(String::from),
                     signature: str_at(e, &["signature"]).map(String::from),
+                    sha256: None,
                 });
             }
         }
@@ -62,39 +358,47 @@ fn latest_of(app: &Value) -> Result<Latest, String> {
         pub_date: str_at(&latest, &["pub_date"]).map(String::from),
         url: str_at(&latest, &["platforms", platform, "url"]).map(String::from),
         signature: str_at(&latest, &["platforms", platform, "signature"]).map(String::from),
+        sha256: None,
     })
 }
 
-fn client() -> Result<reqwest::blocking::Client, String> {
-    reqwest::blocking::Client::builder()
-        .user_agent("karmo-launcher")
-        .build()
-        .map_err(|e| e.to_string())
-}
-
-fn get_text(url: &str) -> Result<String, String> {
-    let res = client()?.get(url).send().map_err(|e| e.to_string())?;
-    if !res.status().is_success() {
-        return Err(format!("{} {}", res.status().as_u16(), url));
+/// 저장소 릴리스를 새것부터 보며 태그 머리 (`tag_prefix`) 와 자산 이름 (`asset_prefix`, `asset_suffix`) 이 맞는 첫 자산.
+/// 판 번호는 태그에서 머리와 `v` 를 뗀 것. 주소는 자산 API 주소 (비공개 저장소도 토큰으로 받음)
+fn latest_gh_release(app: &Value) -> Result<Latest, String> {
+    let repo = str_at(app, &["source", "repo"]).ok_or("source.repo 없음")?;
+    if !repo.starts_with("mascari4615/") {
+        return Err(format!("허용 안 된 저장소: {}", repo));
     }
-    res.text().map_err(|e| e.to_string())
+    let tag_prefix = str_at(app, &["source", "tag_prefix"]).unwrap_or("");
+    let asset_prefix = str_at(app, &["source", "asset_prefix"]).unwrap_or("");
+    let asset_suffix = str_at(app, &["source", "asset_suffix"]).unwrap_or("");
+    let list: Value = serde_json::from_str(&get_text(&format!("https://api.github.com/repos/{}/releases?per_page=30", repo))?)
+        .map_err(|e| e.to_string())?;
+    for r in list.as_array().into_iter().flatten() {
+        if r.get("draft").and_then(|d| d.as_bool()).unwrap_or(false) {
+            continue;
+        }
+        let tag = str_at(r, &["tag_name"]).unwrap_or("");
+        if !tag.starts_with(tag_prefix) {
+            continue;
+        }
+        for a in r.get("assets").and_then(|a| a.as_array()).into_iter().flatten() {
+            let name = str_at(a, &["name"]).unwrap_or("");
+            if name.starts_with(asset_prefix) && name.ends_with(asset_suffix) {
+                return Ok(Latest {
+                    version: Some(tag[tag_prefix.len()..].trim_start_matches('v').to_string()),
+                    pub_date: str_at(r, &["published_at"]).map(String::from),
+                    url: str_at(a, &["url"]).map(String::from),
+                    signature: None,
+                    sha256: str_at(a, &["digest"]).and_then(|d| d.strip_prefix("sha256:")).map(String::from),
+                });
+            }
+        }
+    }
+    Err("받을 수 있는 판이 아직 없음".into())
 }
 
-/// 개발 중에는 `KARMO_LAUNCHER_MANIFEST` 로 로컬 파일이나 다른 주소
-#[tauri::command]
-async fn fetch_manifest() -> Result<Value, String> {
-    tauri::async_runtime::spawn_blocking(|| {
-        let src = std::env::var("KARMO_LAUNCHER_MANIFEST").unwrap_or_else(|_| MANIFEST_URL.to_string());
-        let text = if src.starts_with("http") {
-            get_text(&src)?
-        } else {
-            std::fs::read_to_string(&src).map_err(|e| format!("{}: {}", src, e))?
-        };
-        serde_json::from_str(&text).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
+/* ---------- 설치 상태 ---------- */
 
 #[derive(Serialize, Default)]
 struct Status {
@@ -105,8 +409,106 @@ struct Status {
     running: bool,
     download: Option<String>,
     signature: Option<String>,
+    sha256: Option<String>,
     location: Option<String>,
     error: Option<String>,
+}
+
+fn format_of(app: &Value) -> &str {
+    str_at(app, &["install", "format"]).unwrap_or("nsis")
+}
+
+/// 앱 id 는 폴더 이름이 되므로 소문자, 숫자, 하이픈만
+fn safe_id(app: &Value) -> Result<String, String> {
+    let id = str_at(app, &["id"]).ok_or("id 없음")?;
+    if id.is_empty() || !id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
+        return Err(format!("쓸 수 없는 id: {}", id));
+    }
+    Ok(id.to_string())
+}
+
+/// 상대 경로만 (뿌리 밖으로 나가는 `..`, 드라이브, 절대 경로 거절)
+fn safe_rel(rel: &str) -> Result<String, String> {
+    let r = rel.replace('\\', "/");
+    if r.is_empty() || r.starts_with('/') || r.contains(':') || r.split('/').any(|p| p == "..") {
+        return Err(format!("쓸 수 없는 경로: {}", rel));
+    }
+    Ok(r)
+}
+
+fn zip_dir(handle: &AppHandle, app: &Value) -> Result<PathBuf, String> {
+    Ok(handle.path().app_local_data_dir().map_err(|e| e.to_string())?.join("apps").join(safe_id(app)?))
+}
+
+fn local_path(handle: &AppHandle, app: &Value) -> Result<PathBuf, String> {
+    let rel = safe_rel(str_at(app, &["local", "path"]).ok_or("local.path 없음")?)?;
+    Ok(Path::new(&workspace(handle)).join(rel))
+}
+
+const VERSION_FILE: &str = ".karmo-version";
+
+/// 실행 중을 볼 프로세스 이름. nsis 는 레지스트리의 MainBinaryName, zip 은 `install.exe`
+fn exe_of(app: &Value) -> Option<String> {
+    match format_of(app) {
+        "nsis" => registry(str_at(app, &["install", "registry"])?)?.get("MainBinaryName").cloned(),
+        "zip" => str_at(app, &["install", "exe"]).map(String::from),
+        _ => None,
+    }
+}
+
+fn status_blocking(handle: &AppHandle, app: &Value) -> Status {
+    let mut st = Status::default();
+    match format_of(app) {
+        "zip" => match zip_dir(handle, app) {
+            Ok(dir) => {
+                if let Ok(v) = std::fs::read_to_string(dir.join(VERSION_FILE)) {
+                    st.installed = true;
+                    st.version = Some(v.trim().to_string());
+                    st.location = Some(dir.to_string_lossy().to_string());
+                }
+            }
+            Err(e) => st.error = Some(e),
+        },
+        "local" => match local_path(handle, app) {
+            Ok(p) => {
+                st.installed = p.exists();
+                st.location = Some(p.to_string_lossy().to_string());
+            }
+            Err(e) => st.error = Some(e),
+        },
+        _ => {
+            if let Some(key) = str_at(app, &["install", "registry"]) {
+                if let Some(reg) = registry(key) {
+                    st.installed = true;
+                    st.version = reg.get("DisplayVersion").cloned();
+                    st.location = reg.get("InstallLocation").cloned();
+                }
+            }
+        }
+    }
+    if st.installed {
+        st.running = exe_of(app).map(|exe| is_running(&exe)).unwrap_or(false);
+    }
+    if app.get("source").is_some() {
+        match latest_of(app) {
+            Ok(l) => {
+                st.latest = l.version;
+                st.pub_date = l.pub_date;
+                st.download = l.url;
+                st.signature = l.signature;
+                st.sha256 = l.sha256;
+            }
+            Err(e) => st.error = Some(e),
+        }
+    }
+    st
+}
+
+#[tauri::command]
+async fn app_status(handle: AppHandle, app: Value) -> Result<Status, String> {
+    tauri::async_runtime::spawn_blocking(move || status_blocking(&handle, &app))
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /* 레지스트리와 프로세스는 Windows API 로 직접. 예전엔 reg, tasklist, taskkill 을 창 없이 띄웠는데
@@ -203,36 +605,35 @@ fn is_running(exe: &str) -> bool {
     !pids_of(exe).is_empty()
 }
 
-/// 실행 중인 것만 가볍게. 화면이 몇 초마다 부름 (최신 판은 다시 안 받음)
+/// 실행 중인 것만 가볍게. 화면이 1초마다 부름 (최신 판은 다시 안 받음)
 #[tauri::command]
-fn running_status(registry_key: String) -> bool {
-    registry(&registry_key)
-        .and_then(|r| r.get("MainBinaryName").cloned())
-        .map(|exe| is_running(&exe))
-        .unwrap_or(false)
+fn running_status(app: Value) -> bool {
+    exe_of(&app).map(|exe| is_running(&exe)).unwrap_or(false)
 }
 
 /// 끄기. 창 닫기만으로는 트레이로 숨는 앱이 실행 중으로 남음 (2026-09-25 KarmoLab)
-/// 먼저 `<exe> --quit` 로 트레이 끝내기와 같은 길,
-/// 그 인자를 모르는 옛 판은 3초 뒤 강제 종료
+/// nsis 앱은 먼저 `<exe> --quit` 로 트레이 끝내기와 같은 길, 그 인자를 모르는 옛 판은 3초 뒤 강제 종료.
+/// zip 앱은 바로 강제 종료
 #[tauri::command]
-async fn stop_app(registry_key: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || stop_blocking(&registry_key))
+async fn stop_app(app: Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || stop_blocking(&app))
         .await
         .map_err(|e| e.to_string())?
 }
 
-fn stop_blocking(registry_key: &str) -> Result<(), String> {
-    let reg = registry(registry_key).ok_or("설치 안 됨")?;
-    let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?.clone();
-    if let Some(dir) = reg.get("InstallLocation") {
-        let _ = Command::new(std::path::Path::new(dir).join(&exe)).arg("--quit").spawn();
-    }
-    for _ in 0..30 {
-        if !is_running(&exe) {
-            return Ok(());
+fn stop_blocking(app: &Value) -> Result<(), String> {
+    let exe = exe_of(app).ok_or("끌 프로세스 이름 모름")?;
+    if format_of(app) == "nsis" {
+        let reg = registry(str_at(app, &["install", "registry"]).unwrap_or_default()).ok_or("설치 안 됨")?;
+        if let Some(dir) = reg.get("InstallLocation") {
+            let _ = Command::new(Path::new(dir).join(&exe)).arg("--quit").spawn();
         }
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        for _ in 0..30 {
+            if !is_running(&exe) {
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
     }
     kill_all(&exe);
     for _ in 0..20 {
@@ -252,34 +653,7 @@ fn str_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a str> {
     cur.as_str()
 }
 
-#[tauri::command]
-async fn app_status(app: Value) -> Result<Status, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let mut st = Status::default();
-        if let Some(key) = str_at(&app, &["install", "registry"]) {
-            if let Some(reg) = registry(key) {
-                st.installed = true;
-                st.version = reg.get("DisplayVersion").cloned();
-                st.location = reg.get("InstallLocation").cloned();
-                st.running = reg.get("MainBinaryName").map(|exe| is_running(exe)).unwrap_or(false);
-            }
-        }
-        if app.get("source").is_some() {
-            match latest_of(&app) {
-                Ok(l) => {
-                    st.latest = l.version;
-                    st.pub_date = l.pub_date;
-                    st.download = l.url;
-                    st.signature = l.signature;
-                }
-                Err(e) => st.error = Some(e),
-            }
-        }
-        st
-    })
-    .await
-    .map_err(|e| e.to_string())
-}
+/* ---------- 설치, 실행, 제거 ---------- */
 
 #[derive(Serialize, Clone)]
 struct Progress {
@@ -289,13 +663,56 @@ struct Progress {
     phase: String,
 }
 
-/// 받기 (진행을 `install-progress` 로), 설치 프로그램을 인자와 함께 실행, 끝날 때까지 대기.
+/// zip 안 이름. UTF-8 이 아니면 CP949 (Windows PowerShell 5.1 의 Compress-Archive 가 한글 이름을 그렇게 씀)
+fn zip_name(raw: &[u8]) -> String {
+    match std::str::from_utf8(raw) {
+        Ok(s) => s.to_string(),
+        Err(_) => encoding_rs::EUC_KR.decode(raw).0.to_string(),
+    }
+}
+
+/// 옆 폴더에 다 풀고 나서 바꿔 끼움. 중간에 실패하면 깔린 판은 그대로
+fn extract_zip(file: &Path, dest: &Path) -> Result<(), String> {
+    let tmp = dest.with_extension("new");
+    let _ = std::fs::remove_dir_all(&tmp);
+    std::fs::create_dir_all(&tmp).map_err(|e| e.to_string())?;
+    let mut z = zip::ZipArchive::new(std::fs::File::open(file).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    for i in 0..z.len() {
+        let mut e = z.by_index(i).map_err(|e| e.to_string())?;
+        let name = zip_name(e.name_raw());
+        let dir_entry = name.ends_with('/') || name.ends_with('\\');
+        let rel = safe_rel(name.trim_end_matches(['/', '\\']))?;
+        let out = tmp.join(&rel);
+        if dir_entry {
+            std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+            continue;
+        }
+        if let Some(p) = out.parent() {
+            std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
+        }
+        let mut f = std::fs::File::create(&out).map_err(|e| e.to_string())?;
+        std::io::copy(&mut e, &mut f).map_err(|e| e.to_string())?;
+    }
+    if dest.exists() {
+        std::fs::remove_dir_all(dest).map_err(|e| format!("옛 판을 못 지움 (실행 중인지 확인): {}", e))?;
+    }
+    std::fs::rename(&tmp, dest).map_err(|e| e.to_string())
+}
+
+/// 받기 (진행을 `install-progress` 로), 확인, 설치.
+/// nsis 는 릴리스 서명 (minisign) 이 맞을 때만 설치 프로그램을 인자와 함께 실행, zip 은 sha256 이 맞을 때만 풂.
 /// GitHub 자산 API 주소는 `Accept: application/octet-stream` 이라야 파일이 옴
 #[tauri::command]
-async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<String>, signature: String) -> Result<(), String> {
-    /* 받아서 실행하는 파일이라 출처를 내 저장소 릴리스로 묶고, 받은 뒤 릴리스 서명 (minisign) 이 맞을 때만 실행 */
-    if signature.trim().is_empty() {
+async fn install_app(handle: AppHandle, app: Value, url: String, version: String, signature: String, sha256: String) -> Result<(), String> {
+    let format = format_of(&app).to_string();
+    if format == "nsis" && signature.trim().is_empty() {
         return Err("서명이 없는 판은 설치하지 않음".into());
+    }
+    if format == "zip" && sha256.trim().is_empty() {
+        return Err("sha256 이 없는 판은 풀지 않음".into());
+    }
+    if format != "nsis" && format != "zip" {
+        return Err(format!("받아서 까는 형식이 아님: {}", format));
     }
     const ALLOWED: [&str; 2] = [
         "https://github.com/mascari4615/",
@@ -304,27 +721,21 @@ async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<Strin
     if !ALLOWED.iter().any(|p| url.starts_with(p)) {
         return Err(format!("허용 안 된 주소: {}", url));
     }
+    let id = safe_id(&app)?;
     tauri::async_runtime::spawn_blocking(move || {
         let say = |got: u64, total: u64, phase: &str| {
             let _ = handle.emit("install-progress", Progress { id: id.clone(), got, total, phase: phase.to_string() });
         };
-        let mut res = client()?
-            .get(&url)
-            .header("Accept", "application/octet-stream")
-            .send()
-            .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            return Err(format!("받기 실패 {}", res.status().as_u16()));
-        }
+        let mut res = request(&url, Some("application/octet-stream"))?;
         let total = res.content_length().unwrap_or(0);
         /* %TEMP% 에 exe 를 받아 실행하는 것도 다운로더 모양이라 런처 자기 캐시 폴더에 받음 */
-        let dir = {
-            use tauri::Manager;
-            handle.path().app_cache_dir().map_err(|e| e.to_string())?.join("downloads")
-        };
+        let dir = handle.path().app_cache_dir().map_err(|e| e.to_string())?.join("downloads");
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        let file: PathBuf = dir.join(format!("{}-setup.exe", id));
+        let file: PathBuf = dir.join(if format == "zip" { format!("{}.zip", id) } else { format!("{}-setup.exe", id) });
         let mut out = std::fs::File::create(&file).map_err(|e| e.to_string())?;
+        /* sha256 은 받으면서 잼. WM zip 은 2GB 가까이라 통째로 메모리에 올리지 않음 */
+        use sha2::Digest;
+        let mut hasher = sha2::Sha256::new();
         let mut buf = vec![0u8; 256 * 1024];
         let mut got: u64 = 0;
         let mut last: u64 = 0;
@@ -334,6 +745,7 @@ async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<Strin
                 break;
             }
             out.write_all(&buf[..n]).map_err(|e| e.to_string())?;
+            hasher.update(&buf[..n]);
             got += n as u64;
             if got - last > 1024 * 1024 {
                 last = got;
@@ -342,16 +754,40 @@ async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<Strin
         }
         drop(out);
         say(got, total, "verify");
-        let bytes = std::fs::read(&file).map_err(|e| e.to_string())?;
-        if let Err(e) = verify_signature(&bytes, &signature) {
+        let checked = if format == "zip" {
+            same_sha256(hasher.finalize().as_slice(), &sha256)
+        } else {
+            std::fs::read(&file).map_err(|e| e.to_string()).and_then(|bytes| verify_signature(&bytes, &signature))
+        };
+        if let Err(e) = checked {
             let _ = std::fs::remove_file(&file);
             return Err(e);
         }
         say(got, total, "install");
-        let status = Command::new(&file).args(&args).status().map_err(|e| e.to_string())?;
-        let _ = std::fs::remove_file(&file);
-        if !status.success() {
-            return Err(format!("설치 프로그램이 {:?} 로 끝남", status.code()));
+        if format == "zip" {
+            let dest = zip_dir(&handle, &app)?;
+            if let Some(exe) = exe_of(&app) {
+                if is_running(&exe) {
+                    let _ = std::fs::remove_file(&file);
+                    return Err("실행 중. 끈 뒤에 다시".into());
+                }
+            }
+            let r = extract_zip(&file, &dest);
+            let _ = std::fs::remove_file(&file);
+            r?;
+            std::fs::write(dest.join(VERSION_FILE), version.trim()).map_err(|e| e.to_string())?;
+        } else {
+            let args: Vec<String> = app
+                .get("install")
+                .and_then(|i| i.get("args"))
+                .and_then(|a| a.as_array())
+                .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+                .unwrap_or_default();
+            let status = Command::new(&file).args(&args).status().map_err(|e| e.to_string())?;
+            let _ = std::fs::remove_file(&file);
+            if !status.success() {
+                return Err(format!("설치 프로그램이 {:?} 로 끝남", status.code()));
+            }
         }
         say(got, total, "done");
         Ok(())
@@ -360,26 +796,66 @@ async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<Strin
     .map_err(|e| e.to_string())?
 }
 
-/// 설치된 실행 파일. 레지스트리의 설치 자리와 본 실행 파일 이름
+/// 실행. nsis 는 레지스트리의 설치 자리와 본 실행 파일, zip 은 풀린 폴더의 `install.entry`,
+/// local 은 `local.run` (명령과 인자, `{path}` 자리에 찾은 파일). 모두 보이는 창으로
 #[tauri::command]
-fn launch_app(registry_key: String) -> Result<(), String> {
-    let reg = registry(&registry_key).ok_or("설치 안 됨")?;
-    let dir = reg.get("InstallLocation").ok_or("설치 자리 모름")?;
-    let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?;
-    Command::new(PathBuf::from(dir).join(exe)).spawn().map_err(|e| e.to_string())?;
+fn launch_app(handle: AppHandle, app: Value) -> Result<(), String> {
+    match format_of(&app) {
+        "zip" => {
+            let dir = zip_dir(&handle, &app)?;
+            let entry = safe_rel(str_at(&app, &["install", "entry"]).ok_or("install.entry 없음")?)?;
+            Command::new(dir.join(entry)).current_dir(&dir).spawn().map_err(|e| e.to_string())?;
+        }
+        "local" => {
+            let path = local_path(&handle, &app)?;
+            if !path.exists() {
+                return Err(format!("이 PC 에 없음: {}", path.display()));
+            }
+            let p = path.to_string_lossy().to_string();
+            let run: Vec<String> = app
+                .get("local")
+                .and_then(|l| l.get("run"))
+                .and_then(|r| r.as_array())
+                .map(|a| a.iter().filter_map(|x| x.as_str()).map(|s| s.replace("{path}", &p)).collect())
+                .unwrap_or_else(|| vec![p.clone()]);
+            let (cmd, args) = run.split_first().ok_or("local.run 이 비어 있음")?;
+            let mut c = Command::new(cmd);
+            c.args(args);
+            if let Some(d) = path.parent() {
+                c.current_dir(d);
+            }
+            c.spawn().map_err(|e| e.to_string())?;
+        }
+        _ => {
+            let reg = registry(str_at(&app, &["install", "registry"]).ok_or("install.registry 없음")?).ok_or("설치 안 됨")?;
+            let dir = reg.get("InstallLocation").ok_or("설치 자리 모름")?;
+            let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?;
+            Command::new(PathBuf::from(dir).join(exe)).spawn().map_err(|e| e.to_string())?;
+        }
+    }
     Ok(())
 }
 
 #[tauri::command]
-async fn uninstall_app(registry_key: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let reg = registry(&registry_key).ok_or("설치 안 됨")?;
-        let un = reg.get("UninstallString").ok_or("제거 프로그램 모름")?;
-        let status = Command::new(un).arg("/S").status().map_err(|e| e.to_string())?;
-        if !status.success() {
-            return Err(format!("제거 프로그램이 {:?} 로 끝남", status.code()));
+async fn uninstall_app(handle: AppHandle, app: Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || match format_of(&app) {
+        "zip" => {
+            if exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+                return Err("실행 중. 끈 뒤에 다시".into());
+            }
+            let dir = zip_dir(&handle, &app)?;
+            std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())
         }
-        Ok(())
+        "local" => Err("로컬 항목은 런처가 지우지 않음".into()),
+        _ => {
+            let reg = registry(str_at(&app, &["install", "registry"]).ok_or("install.registry 없음")?).ok_or("설치 안 됨")?;
+            let un = reg.get("UninstallString").ok_or("제거 프로그램 모름")?;
+            let status = Command::new(un).arg("/S").status().map_err(|e| e.to_string())?;
+            if !status.success() {
+                return Err(format!("제거 프로그램이 {:?} 로 끝남", status.code()));
+            }
+            Ok(())
+        }
     })
     .await
     .map_err(|e| e.to_string())?
@@ -429,7 +905,6 @@ async fn self_update_install(app: AppHandle) -> Result<(), String> {
 }
 
 fn show_main(app: &AppHandle) {
-    use tauri::Manager;
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.unminimize();
         let _ = w.show();
@@ -453,11 +928,8 @@ pub fn run() {
             /* 창과 트레이 아이콘을 파일에서 직접 박음. 기본 창 아이콘에 맡겼더니 작업 표시줄이 옛 별 아이콘으로
                돌아갔다 (사용자 2026-09-25 "계속 예전 아이콘으로 돌아가") */
             let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/128x128@2x.png"))?;
-            {
-                use tauri::Manager;
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.set_icon(icon.clone());
-                }
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.set_icon(icon.clone());
             }
             let tray = TrayIconBuilder::with_id("main")
                 .tooltip("Karmo Launcher")
@@ -477,7 +949,24 @@ pub fn run() {
             .build(app)?;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![fetch_manifest, app_status, running_status, stop_app, self_update_check, self_update_install, install_app, launch_app, uninstall_app, open_url])
+        .invoke_handler(tauri::generate_handler![
+            fetch_manifest,
+            app_status,
+            running_status,
+            stop_app,
+            self_update_check,
+            self_update_install,
+            install_app,
+            launch_app,
+            uninstall_app,
+            open_url,
+            github_status,
+            github_set_token,
+            github_use_git_login,
+            github_clear,
+            get_settings,
+            set_workspace
+        ])
         .run(tauri::generate_context!())
         .expect("런처를 띄우지 못함");
 }
@@ -508,17 +997,18 @@ mod tests {
         assert!(is_running("explorer.exe"));
     }
 
-    /// 실제 KarmoLab 최신 설치 파일을 받아 latest.json 의 서명으로 확인 (네트워크 수십 MB). `cargo test -- --ignored`
     /// 떠 있는 KarmoLab 을 끄고 실행 중이 아닌지 (실제로 끔). `cargo test karmolab_stop_live -- --ignored`
     #[test]
     #[ignore]
     fn karmolab_stop_live() {
-        let exe = registry("KarmoLab").and_then(|r| r.get("MainBinaryName").cloned()).expect("KarmoLab 레지스트리");
+        let app = serde_json::json!({ "id": "karmolab", "install": { "format": "nsis", "registry": "KarmoLab" } });
+        let exe = exe_of(&app).expect("KarmoLab 레지스트리");
         assert!(is_running(&exe), "먼저 KarmoLab 을 켜 둔다");
-        stop_blocking("KarmoLab").unwrap();
+        stop_blocking(&app).unwrap();
         assert!(!is_running(&exe));
     }
 
+    /// 실제 KarmoLab 최신 설치 파일을 받아 latest.json 의 서명으로 확인 (네트워크 수십 MB). `cargo test -- --ignored`
     #[test]
     #[ignore]
     fn karmolab_signature_live() {
@@ -532,6 +1022,37 @@ mod tests {
         let mut bad = bytes.to_vec();
         bad[1000] ^= 0xff;
         assert!(verify_signature(&bad, l.signature.as_deref().unwrap()).is_err(), "한 바이트 바뀐 파일은 거절");
+    }
+
+    /// 컴패니언 zip: 공개 릴리스에서 찾고, 받고, sha256 확인, 한 바이트 바꾸면 거절, 풀어서 한글 이름과 시작 파일 확인.
+    /// `cargo test companion_zip_live -- --ignored`
+    #[test]
+    #[ignore]
+    fn companion_zip_live() {
+        let app = serde_json::json!({
+            "id": "companion",
+            "source": { "type": "gh-release", "repo": "mascari4615/KarmoLab", "tag_prefix": "karmolab-v", "asset_prefix": "companion-", "asset_suffix": ".zip" }
+        });
+        let l = latest_of(&app).unwrap();
+        let sha = l.sha256.expect("GitHub digest");
+        let bytes = request(&l.url.unwrap(), Some("application/octet-stream")).unwrap().bytes().unwrap();
+        verify_sha256(&bytes, &sha).expect("sha256");
+        let mut bad = bytes.to_vec();
+        bad[100] ^= 0xff;
+        assert!(verify_sha256(&bad, &sha).is_err());
+        let base = std::env::temp_dir().join("karmo-launcher-zip-test");
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let file = base.join("c.zip");
+        std::fs::write(&file, &bytes).unwrap();
+        let dest = base.join("companion");
+        extract_zip(&file, &dest).unwrap();
+        assert!(dest.join("scripts").join("start.cmd").exists());
+        assert!(dest.join("companion-window.exe").exists());
+        let names: Vec<String> = std::fs::read_dir(dest.join("characters")).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().to_string()).collect();
+        println!("version {:?} characters {:?}", l.version, names);
+        assert!(names.iter().any(|n| n.chars().any(|c| ('\u{AC00}'..='\u{D7A3}').contains(&c))), "한글 이름이 깨지지 않음");
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     /// 이름이 겹치지 않는 ping 사본을 띄워 실행 중으로 읽고, 강제 종료 뒤 사라지는지 (Windows API 경로)
@@ -553,5 +1074,28 @@ mod tests {
     #[test]
     fn registry_missing_is_none() {
         assert!(registry("karmo-launcher-no-such-app").is_none());
+    }
+
+    #[test]
+    fn rel_paths_stay_inside() {
+        assert!(safe_rel("scripts\\start.cmd").is_ok());
+        assert!(safe_rel("../x").is_err());
+        assert!(safe_rel("a/../../x").is_err());
+        assert!(safe_rel("C:/Windows").is_err());
+        assert!(safe_rel("/etc").is_err());
+    }
+
+    #[test]
+    fn secret_both_encodings() {
+        assert_eq!(decode_secret(b"gho_abc"), "gho_abc");
+        let w: Vec<u8> = "gho_abc".encode_utf16().flat_map(|c| c.to_le_bytes()).collect();
+        assert_eq!(decode_secret(&w), "gho_abc");
+    }
+
+    #[test]
+    fn cp949_zip_name() {
+        let (raw, _, _) = encoding_rs::EUC_KR.encode("characters\\욘.md");
+        assert_eq!(zip_name(&raw), "characters\\욘.md");
+        assert_eq!(zip_name("a/b.txt".as_bytes()), "a/b.txt");
     }
 }
