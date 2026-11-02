@@ -78,6 +78,54 @@ fn containing(current: Rect, areas: &[Rect]) -> Option<usize> {
     areas.iter().position(|&(l, t, w, h)| cx >= l && cx < l + w && cy >= t && cy < t + h)
 }
 
+/// 커서 (물리 px), 창 원점 (물리 px), 배율
+#[cfg(windows)]
+fn pointer_and_window(
+    hwnd: isize,
+    _window: &tauri::WebviewWindow,
+) -> Option<(tauri::PhysicalPosition<f64>, tauri::PhysicalPosition<i32>, f64)> {
+    #[repr(C)]
+    struct Point {
+        x: i32,
+        y: i32,
+    }
+    #[repr(C)]
+    struct WinRect {
+        left: i32,
+        top: i32,
+        right: i32,
+        bottom: i32,
+    }
+    #[link(name = "user32")]
+    extern "system" {
+        fn GetCursorPos(point: *mut Point) -> i32;
+        fn GetWindowRect(hwnd: isize, rect: *mut WinRect) -> i32;
+        fn GetDpiForWindow(hwnd: isize) -> u32;
+    }
+    let mut point = Point { x: 0, y: 0 };
+    let mut rect = WinRect { left: 0, top: 0, right: 0, bottom: 0 };
+    unsafe {
+        if GetCursorPos(&mut point) == 0 || GetWindowRect(hwnd, &mut rect) == 0 {
+            return None;
+        }
+        let dpi = GetDpiForWindow(hwnd);
+        let scale = if dpi == 0 { 1.0 } else { dpi as f64 / 96.0 };
+        Some((
+            tauri::PhysicalPosition::new(point.x as f64, point.y as f64),
+            tauri::PhysicalPosition::new(rect.left, rect.top),
+            scale,
+        ))
+    }
+}
+
+#[cfg(not(windows))]
+fn pointer_and_window(
+    _hwnd: isize,
+    window: &tauri::WebviewWindow,
+) -> Option<(tauri::PhysicalPosition<f64>, tauri::PhysicalPosition<i32>, f64)> {
+    Some((window.cursor_position().ok()?, window.outer_position().ok()?, window.scale_factor().unwrap_or(1.0)))
+}
+
 /// (x, y, 너비, 높이), 물리 px
 type Rect = (i32, i32, i32, i32);
 
@@ -197,6 +245,11 @@ fn main() {
             // 화면 쪽에서 커서를 좇을 수는 없다 — 클릭을 통과시키는 동안에는 창이 마우스
             // 움직임 자체를 못 받기 때문이다. 그래서 여기서 커서 위치를 직접 들여다본다.
             let handle = app.handle().clone();
+            // 창 핸들은 한 번만 물음. 이것도 메인 스레드를 거침
+            #[cfg(windows)]
+            let hwnd = window.hwnd().map(|h| h.0 as isize).unwrap_or(0);
+            #[cfg(not(windows))]
+            let hwnd = 0isize;
             std::thread::spawn(move || {
                 let mut passing_through = false;
                 let mut tick: u32 = 0;
@@ -208,15 +261,15 @@ fn main() {
                     if fit_monitor && tick % 30 == 0 {
                         refit_if_layout_changed(&window);
                     }
-                    let Ok(cursor) = window.cursor_position() else { continue };
-                    let Ok(mut origin) = window.outer_position() else { continue };
+                    // 커서, 창 자리, 배율은 Win32 로 바로 읽음. Tauri 창 함수는 매번 메인 스레드를
+                    // 거쳐 70ms 마다 세 번 오갔음 (아이콘 모드에서 20초당 141ms)
+                    let Some((cursor, mut origin, scale)) = pointer_and_window(hwnd, &window) else { continue };
 
                     if fit_monitor && handle.state::<Dragging>().0.load(std::sync::atomic::Ordering::Relaxed) {
                         if let Some(moved) = follow_cursor_monitor(&window, cursor.x, cursor.y, origin) {
                             origin = moved;
                         }
                     }
-                    let scale = window.scale_factor().unwrap_or(1.0);
 
                     let local_x = (cursor.x - origin.x as f64) / scale;
                     let local_y = (cursor.y - origin.y as f64) / scale;
