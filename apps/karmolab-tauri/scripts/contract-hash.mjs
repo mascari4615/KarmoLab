@@ -43,6 +43,7 @@ const INCLUDE = [
   'src-tauri/tauri.release.conf.json',
   'src-tauri-shared',
   'src-tauri-ml',
+  'src-tauri-companion', // 릴리스가 companion-window.exe 도 같이 담음. 빠져 있어 창 수정이 건너뛰어졌음 (2026-11-02)
   '../../vendor/glib-0.18.5/Cargo.toml',
   '../../vendor/glib-0.18.5/src',
   '../../vendor/rand-0.7.3/Cargo.toml',
