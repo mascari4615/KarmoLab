@@ -1061,6 +1061,11 @@ export function ownWindowExe(): string | null {
   const told = process.env.COMPANION_WINDOW_EXE?.trim();
   if (told !== undefined && told !== '' && existsSync(told)) return told;
 
+  /* 받은 묶음 (릴리스 zip, 런처 설치) 은 창 프로그램을 묶음 뿌리에 같이 넣는다. 저장소 자리만 보다가
+     묶음에 있는데도 못 찾고 브라우저로 열었다 (2026-11-03 런처에서 실행, 사용자 지적) */
+  const packed = join(packageRoot, 'companion-window.exe');
+  if (existsSync(packed)) return packed;
+
   /* **저장소 위치에 묶지 않는다.**
    *
    * 굽는 데 몇 분이 걸리는 물건이라 저장소마다 한 벌씩 있지 않다. 세션이 자기 작업 폴더

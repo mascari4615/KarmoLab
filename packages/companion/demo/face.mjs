@@ -432,7 +432,8 @@ const selfImage = new SelfImage({
 /* sibling 저장소에서 오는 것들. 없으면 **없다고 말한다.** 조용히 빠지면 화면에서는
    몸이 큐브로 바뀌고 로컬 목소리가 사라진 것으로만 보이고, 그건 회귀로 읽힌다. */
 function yonMesh() {
-  const game = sibling('WitchMendokusai', 'Assets');
+  /* 게임 저장소 폴더 이름은 PC 마다 다름 (이 데스크톱은 Witch-Mendokusai, 2026-11-03 실측) */
+  const game = sibling('WitchMendokusai', 'Assets') ?? sibling('Witch-Mendokusai', 'Assets');
   if (game === null) {
     console.log('[몸] 게임 저장소를 이웃에서 못 찾았다. 3D 몸 없이 큐브로 지낸다');
     return null;

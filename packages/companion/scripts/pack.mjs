@@ -24,7 +24,8 @@ const out = process.argv[2] ?? join(root, 'pack');
 const CODE = ['dist', 'demo', 'characters', 'package.json', 'README.md'];
 
 /** 실행에 쓰는 곁딸린 파일. 3D 몸 동작(6.4MB)은 선택물이라 뺀다. */
-const ASSET_SKIP = new Set(['anim']);
+/* anim (3D 몸 동작) 도 넣음. three 를 넣어 3D 몸이 서게 되자 동작 파일이 없다는 줄이 남았다 (2026-11-03) */
+const ASSET_SKIP = new Set([]);
 
 /**
  * 런타임에 진짜 부르는 꾸러미. **여기 적은 것은 뿌리일 뿐이고, 그것들이 부르는 것은
@@ -116,6 +117,30 @@ for (const dep of KEEP_DEPS) {
     dereference: true,
     filter: (src) => !relative(from, src).split(/[\\/]/).includes('node_modules'),
   });
+}
+
+/* three 는 통째 (32MB) 대신 화면이 부르는 파일만 (약 2MB). 없으면 3D 몸 실패, 큐브로 물러섬 (2026-11-03 런처 설치본 실측).
+   대상: three.module.js, three/addons 의 FBXLoader, GLTFLoader 와 그 import */
+const THREE_FILES = [
+  'package.json',
+  'build/three.module.js',
+  'build/three.core.js',
+  'examples/jsm/loaders/FBXLoader.js',
+  'examples/jsm/loaders/GLTFLoader.js',
+  'examples/jsm/utils/SkeletonUtils.js',
+  'examples/jsm/utils/BufferGeometryUtils.js',
+  'examples/jsm/curves/NURBSCurve.js',
+  'examples/jsm/curves/NURBSUtils.js',
+  'examples/jsm/libs/fflate.module.js',
+];
+for (const rel of THREE_FILES) {
+  const from = join(root, 'node_modules', 'three', rel);
+  if (!existsSync(from)) {
+    skipped.push('three/' + rel);
+    continue;
+  }
+  mkdirSync(dirname(join(nm, 'three', rel)), { recursive: true });
+  cpSync(from, join(nm, 'three', rel));
 }
 
 // 꾸러미 표는 배포판 것으로 다시 적는다. 선택물이 필수로 남아 있으면 설치가 1GB 를 끌어온다.

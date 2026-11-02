@@ -256,7 +256,7 @@ export class Pet {
     roam.speed = jog ? (1.1 * box.height) / 0.93 : (0.8 * box.height) / 1.33;
     roam.active = true;
     roam.last = performance.now();
-    this.body.setFacing(roam.dir);
+    this.body?.setFacing(roam.dir);
     this.body.setMood(jog ? 'jogging' : 'walking');
     requestAnimationFrame((now) => this.roamStep(now));
   }

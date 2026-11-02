@@ -32,6 +32,12 @@ export function thisRepo(): string {
  * @param expected 그 안에 반드시 있어야 하는 것. 이름만 같은 빈 폴더를 집지 않으려고
  */
 export function sibling(name: string, expected?: string): string | null {
+  /* 받은 묶음 (런처 설치) 은 저장소 밖에 있어 위로 훑어도 이웃이 없다. 런처가 작업 폴더를 알려 준다 (2026-11-03) */
+  const told = process.env.COMPANION_WORKSPACE?.trim();
+  if (told) {
+    const slot = join(told, name);
+    if (existsSync(slot) && (expected === undefined || existsSync(join(slot, expected)))) return slot;
+  }
   let above = thisRepo();
   for (let layer = 0; layer < 4; layer += 1) {
     above = join(above, '..');
