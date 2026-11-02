@@ -75,3 +75,18 @@ test('뛰어오르는 속도로 실제로 그 면에 닿는다', () => {
   assert.ok(Math.abs(vx * time - run) < 1e-6);
   assert.ok(vy < 0, '위로 뛴다');
 });
+
+test('걸어갈 자리는 다른 몸 바로 옆을 피한다', async () => {
+  const { spreadTarget } = await import('../assets/surfaces.js');
+  // 멀면 그대로
+  assert.equal(spreadTarget(500, [100, 900], 100, 1800), 500);
+  // 본체 (520) 바로 옆이면 가장 덜 붙는 자리로
+  const moved = spreadTarget(500, [520, 900], 100, 1800);
+  assert.ok(Math.min(Math.abs(moved - 520), Math.abs(moved - 900)) >= 110, `여전히 붙음: ${moved}`);
+  assert.ok(moved >= 100 && moved <= 1800, `범위 밖: ${moved}`);
+  // 자리가 꽉 차면 그래도 가장 넓은 틈
+  const tight = spreadTarget(150, [100, 200, 300], 100, 300);
+  assert.ok(tight >= 100 && tight <= 300);
+  // 다른 몸이 없으면 그대로
+  assert.equal(spreadTarget(640, [], 100, 1800), 640);
+});

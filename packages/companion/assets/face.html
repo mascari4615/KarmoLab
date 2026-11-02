@@ -2472,6 +2472,8 @@
         width: () => innerWidth,
         height: () => innerHeight,
         report: reportHitAreas,
+        // 다른 몸의 가로 자리 (본체와 나머지 분신). 걸어갈 자리를 고를 때 피함
+        others: (self) => [방자리.x ?? innerWidth - 240, ...pets.filter((p) => p !== self).map((p) => p.x)],
       };
       for (let i = 0; i < petCount; i += 1) {
         const el = document.createElement('div');

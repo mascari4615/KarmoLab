@@ -4,7 +4,7 @@
 // 중력, 창 윗면 서기, 걷기, 앉기, 춤, 뛰기, 던지기 규칙은 본체와 같은 값 사용
 // (본체 쪽 구현은 face.html 에 있음. 둘을 한 곳으로 합치는 것이 다음 정리 대상)
 
-import { jumpTargets, jumpVelocity, landingSurface, supportAt } from '/surfaces.js';
+import { jumpTargets, jumpVelocity, landingSurface, spreadTarget, supportAt } from '/surfaces.js';
 
 export const GRAVITY_PX = 2600; // px/s². 본체와 같은 값
 export const FEET_BIAS = 0.039; // 경계 상자 바닥이 보이는 발 끝보다 키의 이만큼 아래
@@ -248,6 +248,8 @@ export class Pet {
     let target = minX + Math.random() * Math.max(1, maxX - minX);
     const minDistance = Math.min(250, (maxX - minX) / 2);
     if (Math.abs(target - this.x) < minDistance) target = this.x < (minX + maxX) / 2 ? maxX : minX;
+    // 바닥에서는 본체와 다른 분신 바로 옆을 피함. 창 위 걷기는 자리가 좁아 그대로
+    if (on === undefined) target = spreadTarget(target, this.env.others?.(this) ?? [], minX, maxX);
     if (on !== undefined && Math.random() < 0.15) target = target > this.x ? on.r + 90 : on.l - 90;
     const jog = Math.random() < 0.3;
     const roam = this.roam;

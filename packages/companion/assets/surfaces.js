@@ -113,3 +113,21 @@ export function jumpVelocity(rise, run, gravity, clear = 80) {
   const time = up + down;
   return { vx: run / time, vy, time };
 }
+
+/**
+ * 걸어갈 자리 고르기. 바라는 자리가 다른 몸 (본체, 분신) 과 gap 보다 가까우면 [minX, maxX] 안에서
+ * 가장 덜 붙는 자리로 바꿈. 분신끼리 한자리에 겹쳐 서던 것 방지 (2026-11-03)
+ */
+export function spreadTarget(want, occupied, minX, maxX, gap = 110) {
+  const clearance = (x) => occupied.reduce((m, o) => Math.min(m, Math.abs(o - x)), Infinity);
+  if (clearance(want) >= gap) return want;
+  let best = want;
+  let bestClear = clearance(want);
+  const steps = 16;
+  for (let i = 0; i <= steps; i += 1) {
+    const x = minX + ((maxX - minX) * i) / steps;
+    const c = clearance(x);
+    if (c > bestClear) { best = x; bestClear = c; }
+  }
+  return best;
+}
