@@ -52,6 +52,18 @@ export class Pet {
     this.el.remove();
   }
 
+  /**
+   * 창이 다른 모니터로 옮겨 감. 화면 위 자리를 지키도록 창 원점 이동량만큼 되돌리고
+   * 서 있던 면은 잊음 (그 창은 옛 모니터에 있음). 새 창 끝에 붙잡힌 뒤 중력이 바닥을 찾음
+   */
+  shiftBy(dx, dy) {
+    this.stopRoam();
+    this.x += dx;
+    this.y += dy;
+    this.stand = { id: 'floor', y: null };
+    this.place();
+  }
+
   /** 위치를 화면 안으로 붙잡아 요소에 쓴다 */
   place() {
     const width = this.env.width();

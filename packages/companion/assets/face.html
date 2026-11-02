@@ -306,7 +306,11 @@
     document.body.classList.toggle('talk-left', 방자리.x > innerWidth - 520);
   }
   방자리적용();
-  addEventListener('resize', 방자리적용);
+  addEventListener('resize', () => {
+    방자리적용();
+    // 창이 작은 모니터로 옮겨 가면 분신이 새 창 밖에 남지 않게
+    for (const pet of pets) pet.place();
+  });
   /* 차지하는 자리 보기. 투명한 창은 무엇이 어디를 먹는지 눈으로 볼 수가 없다.
      보기엔 그대로인데를 각자 짐작으로 따지지 않으려면 눈에 보여야 한다. */
   if (localStorage.getItem('companion.showBoxes') === '1') document.body.classList.add('showboxes');
@@ -1978,6 +1982,7 @@
         if (moved === null) { stopRoam(); return; }
         방자리.x += moved[0];
         방자리.y += moved[1];
+        for (const pet of pets) pet.shiftBy(moved[0], moved[1]);
         roam.target = 방자리.x + roam.dir * (250 + Math.random() * 300);
         roam.last = performance.now();
       }).catch(() => { roam.hopping = false; stopRoam(); });
@@ -2441,6 +2446,7 @@
     }
     grabbed?.samples?.splice(0);
     방자리적용();
+    for (const pet of pets) pet.shiftBy(dx, dy);
   });
   stage?.addEventListener('lostpointercapture', release);
 
