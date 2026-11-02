@@ -210,6 +210,14 @@ $('reload').addEventListener('click', () => void load());
 $('min').addEventListener('click', () => void appWindow.minimize());
 /* 닫기는 트레이로 (Steam 처럼). 끝내기는 트레이 메뉴 */
 $('close').addEventListener('click', () => void appWindow.hide());
+/* 크기 조절. 틀 없는 투명 창이라 손잡이에서 OS 크기 조절을 직접 시작 */
+document.querySelectorAll('[data-rz]').forEach((el) => {
+  el.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    void appWindow.startResizeDragging(el.dataset.rz);
+  });
+});
 
 /* 런처 자신의 업데이트. 새 판이 있으면 묻지 않고 받아 설치하고 다시 켬 (Steam 처럼, 사용자 2026-09-25 "런처는 그래야지").
    버튼으로만 받게 했더니 0.1.3 이 그대로 남아 끄기 수정이 안 들어왔다. 켜자마자 한 번, 트레이에 오래 있으니 30분마다.

@@ -38,6 +38,16 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .en { font-family: var(--en); letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; color: var(--ink3); }
 
 .win { position: absolute; inset: 24px 24px 24px 24px; }
+/* 크기 조절 손잡이. 판 가장자리 (창 끝에서 24px) 를 가운데로 안팎 10px 씩 */
+.rz i { position: fixed; z-index: 50; }
+.rz [data-rz="North"] { top: 14px; left: 34px; right: 34px; height: 20px; cursor: ns-resize; }
+.rz [data-rz="South"] { bottom: 14px; left: 34px; right: 34px; height: 20px; cursor: ns-resize; }
+.rz [data-rz="West"] { left: 14px; top: 34px; bottom: 34px; width: 20px; cursor: ew-resize; }
+.rz [data-rz="East"] { right: 14px; top: 34px; bottom: 34px; width: 20px; cursor: ew-resize; }
+.rz [data-rz="NorthWest"] { top: 14px; left: 14px; width: 20px; height: 20px; cursor: nwse-resize; }
+.rz [data-rz="SouthEast"] { bottom: 14px; right: 14px; width: 20px; height: 20px; cursor: nwse-resize; }
+.rz [data-rz="NorthEast"] { top: 14px; right: 14px; width: 20px; height: 20px; cursor: nesw-resize; }
+.rz [data-rz="SouthWest"] { bottom: 14px; left: 14px; width: 20px; height: 20px; cursor: nesw-resize; }
 /* 판 네 변을 흐리게 (가로 띠와 세로 띠의 교집합) */
 .panel {
   position: absolute; inset: 0; overflow: hidden;

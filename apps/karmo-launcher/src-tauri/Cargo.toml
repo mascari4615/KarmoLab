@@ -25,6 +25,11 @@ open = "5"
 minisign-verify = "0.2"
 base64 = "0.22"
 
+# 레지스트리와 프로세스를 API 로 (reg, tasklist, taskkill 숨김 실행 대신. Defender 오탐 2026-11-02)
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Threading"] }
+
 [patch.crates-io]
 glib = { path = "../../../vendor/glib-0.18.5" }
 

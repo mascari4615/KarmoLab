@@ -21,9 +21,6 @@ const CATALOG_URL: &str =
 /// 릴리스 서명 공개 키 (minisign, Tauri 업데이터와 같은 키. tauri.conf.json plugins.updater.pubkey)
 const RELEASE_PUBKEY_B64: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdCNERFQUE2MzRGNTVEQ0IKUldUTFhmVTBwdXBOZXdJMk1RODMyVEw0YjdvYjJZK3ovTzZRWUNlaUM2N2EvNlJxRzZmbkhuSmMK";
 
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-
 /// Tauri 서명 (minisign 서명 파일을 base64 로 한 번 더 싼 것) 으로 받은 파일을 확인
 fn verify_signature(data: &[u8], signature_b64: &str) -> Result<(), String> {
     use base64::Engine;
@@ -112,49 +109,98 @@ struct Status {
     error: Option<String>,
 }
 
-/// HKCU Uninstall 키 하나의 값들. 없으면 None
+/* 레지스트리와 프로세스는 Windows API 로 직접. 예전엔 reg, tasklist, taskkill 을 창 없이 띄웠는데
+   "숨김 시스템 도구 실행 + exe 받아 실행" 조합이 다운로더 모양이라 Defender 가 런처를
+   Trojan:Win32/Bearfoos.A!ml 로 지웠다 (2026-11-02, memo changes/launcher.md) */
+
+/// HKCU Uninstall 키 하나의 값들 (문자열과 DWORD). 없으면 None
+#[cfg(windows)]
 fn registry(key: &str) -> Option<std::collections::HashMap<String, String>> {
-    let path = format!(r"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\{}", key);
-    let mut cmd = Command::new("reg");
-    cmd.args(["query", &path]);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(CREATE_NO_WINDOW);
-    }
-    let out = cmd.output().ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    let text = String::from_utf8_lossy(&out.stdout).to_string();
+    use winreg::{enums::HKEY_CURRENT_USER, RegKey};
+    let path = format!(r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{}", key);
+    let k = RegKey::predef(HKEY_CURRENT_USER).open_subkey(path).ok()?;
     let mut map = std::collections::HashMap::new();
-    for line in text.lines() {
-        let parts: Vec<&str> = line.trim().splitn(3, "    ").collect();
-        if parts.len() == 3 && parts[1].starts_with("REG_") {
-            map.insert(parts[0].to_string(), parts[2].trim().trim_matches('"').to_string());
-        }
+    for (name, _) in k.enum_values().flatten() {
+        let v = match k.get_value::<String, _>(&name) {
+            Ok(s) => s,
+            Err(_) => match k.get_value::<u32, _>(&name) {
+                Ok(n) => n.to_string(),
+                Err(_) => continue,
+            },
+        };
+        map.insert(name, v.trim().trim_matches('"').to_string());
     }
     Some(map)
 }
 
-fn hidden(cmd: &mut Command) -> &mut Command {
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(CREATE_NO_WINDOW);
-    }
-    cmd
+#[cfg(not(windows))]
+fn registry(_key: &str) -> Option<std::collections::HashMap<String, String>> {
+    None
 }
 
-/// 실행 중인가. tasklist CSV 한 줄이 `"<exe>",` 로 시작하면 있음 (없으면 안내 문장 한 줄)
-fn is_running(exe: &str) -> bool {
-    let filter = format!("IMAGENAME eq {}", exe);
-    let out = match hidden(Command::new("tasklist").args(["/FI", &filter, "/FO", "CSV", "/NH"])).output() {
-        Ok(o) => o,
-        Err(_) => return false,
+/// 이름이 exe 인 프로세스 id 들 (대소문자 무시). ToolHelp 스냅샷 한 번
+#[cfg(windows)]
+fn pids_of(exe: &str) -> Vec<u32> {
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
     };
-    let head = format!("\"{}\"", exe.to_lowercase());
-    String::from_utf8_lossy(&out.stdout).lines().any(|l| l.trim().to_lowercase().starts_with(&head))
+    let want = exe.to_lowercase();
+    let mut pids = Vec::new();
+    unsafe {
+        let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snap == INVALID_HANDLE_VALUE {
+            return pids;
+        }
+        let mut e: PROCESSENTRY32W = std::mem::zeroed();
+        e.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+        let mut ok = Process32FirstW(snap, &mut e) != 0;
+        while ok {
+            let len = e.szExeFile.iter().position(|&c| c == 0).unwrap_or(e.szExeFile.len());
+            if String::from_utf16_lossy(&e.szExeFile[..len]).to_lowercase() == want {
+                pids.push(e.th32ProcessID);
+            }
+            ok = Process32NextW(snap, &mut e) != 0;
+        }
+        CloseHandle(snap);
+    }
+    pids
+}
+
+#[cfg(not(windows))]
+fn pids_of(_exe: &str) -> Vec<u32> {
+    Vec::new()
+}
+
+/// 강제 종료. 하나라도 못 끄면 false
+#[cfg(windows)]
+fn kill_all(exe: &str) -> bool {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+    let mut all = true;
+    for pid in pids_of(exe) {
+        unsafe {
+            let h = OpenProcess(PROCESS_TERMINATE, 0, pid);
+            if h.is_null() {
+                all = false;
+                continue;
+            }
+            if TerminateProcess(h, 1) == 0 {
+                all = false;
+            }
+            CloseHandle(h);
+        }
+    }
+    all
+}
+
+#[cfg(not(windows))]
+fn kill_all(_exe: &str) -> bool {
+    false
+}
+
+fn is_running(exe: &str) -> bool {
+    !pids_of(exe).is_empty()
 }
 
 /// 실행 중인 것만 가볍게. 화면이 몇 초마다 부름 (최신 판은 다시 안 받음)
@@ -180,7 +226,7 @@ fn stop_blocking(registry_key: &str) -> Result<(), String> {
     let reg = registry(registry_key).ok_or("설치 안 됨")?;
     let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?.clone();
     if let Some(dir) = reg.get("InstallLocation") {
-        let _ = hidden(Command::new(std::path::Path::new(dir).join(&exe)).arg("--quit")).spawn();
+        let _ = Command::new(std::path::Path::new(dir).join(&exe)).arg("--quit").spawn();
     }
     for _ in 0..30 {
         if !is_running(&exe) {
@@ -188,11 +234,14 @@ fn stop_blocking(registry_key: &str) -> Result<(), String> {
         }
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    let status = hidden(Command::new("taskkill").args(["/F", "/IM", &exe])).status().map_err(|e| e.to_string())?;
-    if !status.success() && is_running(&exe) {
-        return Err(format!("끄기 실패 {:?}", status.code()));
+    kill_all(&exe);
+    for _ in 0..20 {
+        if !is_running(&exe) {
+            return Ok(());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    Ok(())
+    Err("끄기 실패".into())
 }
 
 fn str_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a str> {
@@ -268,7 +317,11 @@ async fn install_app(handle: AppHandle, id: String, url: String, args: Vec<Strin
             return Err(format!("받기 실패 {}", res.status().as_u16()));
         }
         let total = res.content_length().unwrap_or(0);
-        let dir = std::env::temp_dir().join("karmo-launcher");
+        /* %TEMP% 에 exe 를 받아 실행하는 것도 다운로더 모양이라 런처 자기 캐시 폴더에 받음 */
+        let dir = {
+            use tauri::Manager;
+            handle.path().app_cache_dir().map_err(|e| e.to_string())?.join("downloads")
+        };
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let file: PathBuf = dir.join(format!("{}-setup.exe", id));
         let mut out = std::fs::File::create(&file).map_err(|e| e.to_string())?;
@@ -479,6 +532,22 @@ mod tests {
         let mut bad = bytes.to_vec();
         bad[1000] ^= 0xff;
         assert!(verify_signature(&bad, l.signature.as_deref().unwrap()).is_err(), "한 바이트 바뀐 파일은 거절");
+    }
+
+    /// 이름이 겹치지 않는 ping 사본을 띄워 실행 중으로 읽고, 강제 종료 뒤 사라지는지 (Windows API 경로)
+    #[cfg(windows)]
+    #[test]
+    fn kill_spawned_copy() {
+        let exe = "karmo-launcher-kill-test.exe";
+        let path = std::env::temp_dir().join(exe);
+        std::fs::copy(r"C:\Windows\System32\PING.EXE", &path).unwrap();
+        let mut child = Command::new(&path).args(["-n", "30", "127.0.0.1"]).spawn().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        assert!(is_running(exe));
+        assert!(kill_all(exe));
+        let _ = child.wait();
+        assert!(!is_running(exe));
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
