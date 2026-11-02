@@ -37,41 +37,60 @@
   </div>
 
   <!-- 얘를 우클릭하면 나오는 것. 평소엔 없다. -->
+  <!-- 우클릭: 몸 둘레 원형 (자주 쓰는 켜고 끄기 6 + 더보기). 더보기: 판 (빠른 설정, 목소리와 듣기, 기억과 도구)
+       (사용자 2026-11-02 시안 A + C 채택, memo notes/companion-menu-20261102). 버튼은 스크립트가 만듦 -->
+  <div class="ring" id="ring" hidden></div>
   <div class="menu" id="menu" hidden>
-    <!-- 닫는 길이 Esc 와 바깥 누르기뿐이었다. 뚫린 창에서는 바깥이 클릭을 안 받고,
-         창에 초점이 없으면 Esc 도 안 먹는다. 열면 못 닫는 설정창이었다. 그래서 ✕. -->
-    <div class="menu-head"><span>설정</span><button class="menu-x" id="menuClose" title="닫기 (Esc)" aria-label="닫기">✕</button></div>
-    <label>누구<select id="whoPick"></select></label>
-    <label>머리<select id="brainPick"></select></label>
-    <label>목소리<select id="voicePick"></select></label>
-    <!-- 소리 조절. 곁에 두는 존재라 지금 좀 작게가 자주 필요하다. -->
-    <label>소리 크기<input id="volPick" type="range" min="0" max="100" step="5" /></label>
-    <label>말 빠르기<input id="ratePick" type="range" min="60" max="160" step="5" /></label>
-    <label>몸 크기<input id="sizePick" type="range" min="60" max="200" step="5" /></label>
-    <hr />
-    <label>마이크<select id="micPick"></select></label>
-    <label>듣기 방식<select id="earMode">
-      <option value="always">늘 듣기 (부르면 돌아본다)</option>
-      <option value="toggle">한 번 눌러 켜고 끄기</option>
-      <option value="push">누르고 있는 동안만</option>
-      <option value="off">끔 (마이크 안 씀)</option>
-    </select></label>
-    <!-- 기능별 끄기. 서로 따로 (사용자 지시 2026-11-01) -->
-    <label class="check"><input type="checkbox" id="optScreen" /> 화면 보기</label>
-    <label class="check"><input type="checkbox" id="optVoice" /> 소리 내기 (끄면 말풍선만)</label>
-    <label class="check"><input type="checkbox" id="optFirst" /> 먼저 말 걸기</label>
-    <label>미리 알림<select id="optLead">
-      <option value="0">시작 때만</option><option value="5">5분 전</option><option value="10">10분 전</option>
-      <option value="15">15분 전</option><option value="30">30분 전</option>
-    </select></label>
-    <label class="check"><input type="checkbox" id="optIcon" /> 아이콘 모드 (몸 숨김, 화면 집중)</label>
-    <!-- 지금 소리가 들어오는지 **눈으로** 보이게. 이게 없으면 안 들린다의 원인이
-         마이크인지 문턱인지 사람이 알 길이 없다. 가는 세로선 = 문이 열리는 문턱. -->
-    <div class="level" id="micLevel" title="지금 들어오는 소리"><i></i><b></b></div>
-    <button class="item" id="alwaysEarsBtn" hidden>늘 듣기</button>
-    <button class="item" id="boxesBtn">차지하는 자리 보기</button>
-    <button class="item" id="knownBtn">나에 대해 아는 것</button>
-    <button class="item danger" id="gripClose">끄기</button>
+    <div class="menu-rail">
+      <button type="button" class="cur" data-page="quick" title="빠른 설정" data-icon="sliders-horizontal"></button>
+      <button type="button" data-page="voice" title="목소리와 듣기" data-icon="mic-vocal"></button>
+      <button type="button" data-page="more" title="기억과 도구" data-icon="book-heart"></button>
+      <button type="button" class="menu-off" id="gripClose" title="끄기" data-icon="power"></button>
+    </div>
+    <div class="menu-main">
+      <!-- 닫는 길이 Esc 와 바깥 누르기뿐이면, 뚫린 창에서는 바깥이 클릭을 안 받고 초점이 없으면 Esc 도 안 먹는다. 그래서 닫기 버튼 -->
+      <div class="menu-head">
+        <div class="menu-face" id="menuFace"></div>
+        <div><div class="menu-name" id="menuName"></div><div class="menu-chips" id="menuChips"></div></div>
+        <button type="button" class="menu-x" id="menuClose" title="닫기 (Esc)" aria-label="닫기" data-icon="x"></button>
+      </div>
+      <div class="menu-page" data-page="quick">
+        <div class="menu-tiles" id="menuTiles"></div>
+        <label class="menu-bar" title="소리 크기"><i data-icon="volume-1"></i><input id="volPick" type="range" min="0" max="100" step="5" /><output id="volNum"></output></label>
+        <label class="menu-bar" title="말 빠르기"><i data-icon="gauge"></i><input id="ratePick" type="range" min="60" max="160" step="5" /><output id="rateNum"></output></label>
+        <label class="menu-bar" title="몸 크기"><i data-icon="scaling"></i><input id="sizePick" type="range" min="60" max="200" step="5" /><output id="sizeNum"></output></label>
+      </div>
+      <div class="menu-page" data-page="voice" hidden>
+        <div class="menu-sub">인격</div>
+        <label class="menu-field"><i data-icon="user-round"></i><span>누구</span><select id="whoPick"></select></label>
+        <label class="menu-field"><i data-icon="brain"></i><span>머리</span><select id="brainPick"></select></label>
+        <label class="menu-field"><i data-icon="audio-lines"></i><span>목소리</span><select id="voicePick"></select></label>
+        <div class="menu-sub">듣기</div>
+        <label class="menu-field"><i data-icon="mic"></i><span>마이크</span><select id="micPick"></select></label>
+        <label class="menu-field"><i data-icon="ear"></i><span>방식</span><select id="earMode">
+          <option value="always">늘 듣기 (부르면 돌아봄)</option>
+          <option value="toggle">한 번 눌러 켜고 끄기</option>
+          <option value="push">누르는 동안만</option>
+          <option value="off">끔 (마이크 안 씀)</option>
+        </select></label>
+        <!-- 지금 소리가 들어오는지 눈으로. 없으면 안 들림의 원인이 마이크인지 문턱인지 모름. 세로선 = 문이 열리는 문턱 -->
+        <div class="level" id="micLevel" title="지금 들어오는 소리"><i></i><b></b></div>
+      </div>
+      <div class="menu-page" data-page="more" hidden>
+        <label class="menu-field"><i data-icon="bell"></i><span>미리 알림</span><select id="optLead">
+          <option value="0">시작 때만</option><option value="5">5분 전</option><option value="10">10분 전</option>
+          <option value="15">15분 전</option><option value="30">30분 전</option>
+        </select></label>
+        <button type="button" class="menu-link" id="knownBtn"><i data-icon="book-heart"></i>나에 대해 아는 것<i class="go" data-icon="chevron-right"></i></button>
+        <button type="button" class="menu-link" id="boxesBtn"><i data-icon="scan"></i>차지하는 자리 보기<i class="go" data-icon="chevron-right"></i></button>
+        <button type="button" class="menu-link" id="alwaysEarsBtn" hidden>늘 듣기</button>
+      </div>
+      <!-- 기능별 끄기의 값 칸. 서로 따로 (사용자 지시 2026-11-01). 보이는 것은 원형 버튼과 판의 칸, 저장은 이 칸의 change -->
+      <div class="menu-hidden">
+        <input type="checkbox" id="optScreen" /><input type="checkbox" id="optVoice" />
+        <input type="checkbox" id="optFirst" /><input type="checkbox" id="optIcon" />
+      </div>
+    </div>
   </div>
 
   <!-- 아는 것 -->
@@ -1587,8 +1606,162 @@
   });
   void 기능읽기();
 
+  /* ── 우클릭 메뉴: 원형과 판 ───────────────────────────────
+     우클릭하면 몸 (아이콘 모드면 아이콘) 둘레에 원형 버튼. 켜고 끄기 6개와 더보기. 더보기는 판.
+     원형 버튼과 판의 칸은 같은 값 (숨긴 checkbox, earMode, optLead) 을 바꾸고 저장은 그 칸의 change 가 함 */
+  const ring = document.getElementById('ring');
+  const menuTiles = document.getElementById('menuTiles');
+  let 아이콘함수 = null;
+  import('/icons.js')
+    .then((m) => { 아이콘함수 = m.icon; 아이콘채우기(document); })
+    .catch((e) => tell(`메뉴 아이콘을 못 불렀다: ${e}`));
+  function 아이콘채우기(root) {
+    if (아이콘함수 === null) return;
+    for (const el of root.querySelectorAll('[data-icon]')) {
+      if (el.dataset.filled === el.dataset.icon) continue;
+      el.insertAdjacentHTML('afterbegin', 아이콘함수(el.dataset.icon));
+      el.dataset.filled = el.dataset.icon;
+    }
+  }
+  const 알림단계 = [0, 5, 10, 15, 30];
+  let 듣기켤방식 = 'always';
+  const 켜고끄기 = [
+    { icon: 'ear', name: '듣기',
+      on: () => (document.getElementById('earMode')?.value ?? 'off') !== 'off',
+      flip: () => {
+        const box = document.getElementById('earMode');
+        if (!box) return;
+        if (box.value !== 'off') { 듣기켤방식 = box.value; box.value = 'off'; } else box.value = 듣기켤방식;
+        box.dispatchEvent(new Event('change'));
+      } },
+    { icon: 'monitor', name: '화면 보기', box: 'optScreen' },
+    { icon: 'volume-2', name: '소리', box: 'optVoice' },
+    { icon: 'message-circle-more', name: '먼저 말 걸기', box: 'optFirst' },
+    { icon: 'minimize-2', name: '아이콘 모드', box: 'optIcon' },
+    { icon: 'bell',
+      name: () => (ntLeadMin > 0 ? `알림 ${ntLeadMin}분 전` : '알림 시작 때만'),
+      on: () => ntLeadMin > 0,
+      flip: () => {
+        const box = document.getElementById('optLead');
+        if (!box) return;
+        box.value = String(알림단계[(알림단계.indexOf(Number(box.value)) + 1) % 알림단계.length]);
+        box.dispatchEvent(new Event('change'));
+      } },
+  ];
+  for (const t of 켜고끄기) {
+    if (t.box === undefined) continue;
+    t.on = () => document.getElementById(t.box)?.checked === true;
+    t.flip = () => {
+      const box = document.getElementById(t.box);
+      if (!box) return;
+      box.checked = !box.checked;
+      box.dispatchEvent(new Event('change'));
+    };
+  }
+  const 이름 = (t) => (typeof t.name === 'function' ? t.name() : t.name);
+
+  /** 판의 칸, 머리, 숫자를 지금 값으로 */
+  function 판그리기() {
+    menuTiles.innerHTML = '';
+    for (const t of 켜고끄기) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'menu-tile' + (t.on() ? ' on' : '');
+      b.dataset.icon = t.icon;
+      b.append(이름(t));
+      b.addEventListener('click', () => { t.flip(); 판그리기(); 원형그리기(); });
+      menuTiles.appendChild(b);
+    }
+    const who = document.getElementById('whoPick');
+    const name = who?.selectedOptions?.[0]?.textContent?.trim() || '동반자';
+    document.getElementById('menuName').textContent = name;
+    document.getElementById('menuFace').textContent = name.slice(0, 1);
+    const chips = document.getElementById('menuChips');
+    chips.innerHTML = '';
+    const ear = document.getElementById('earMode')?.value ?? 'off';
+    const brain = document.getElementById('brainPick')?.selectedOptions?.[0]?.textContent?.trim();
+    for (const [text, live] of [[ear === 'off' ? '안 들음' : '듣는 중', ear !== 'off'], [brain, false]]) {
+      if (!text) continue;
+      const c = document.createElement('span');
+      c.textContent = text;
+      if (live) c.className = 'live';
+      chips.appendChild(c);
+    }
+    document.getElementById('volNum').textContent = document.getElementById('volPick').value;
+    document.getElementById('rateNum').textContent = `${(Number(document.getElementById('ratePick').value) / 100).toFixed(1)}x`;
+    document.getElementById('sizeNum').textContent = `${document.getElementById('sizePick').value}%`;
+    아이콘채우기(menu);
+  }
+  for (const id of ['volPick', 'ratePick', 'sizePick']) document.getElementById(id)?.addEventListener('input', 판그리기);
+  for (const id of ['earMode', 'whoPick', 'brainPick']) document.getElementById(id)?.addEventListener('change', 판그리기);
+
+  // 원형의 중심과 반지름. 몸이면 몸 위쪽 40%, 아이콘이면 아이콘 가운데
+  let 원형자리 = { x: 0, y: 0, r: 150 };
+  function 원형그리기() {
+    if (ring.hidden) return;
+    ring.innerHTML = '';
+    const items = [...켜고끄기, { icon: 'ellipsis', name: '더보기', more: true }];
+    const { x, y, r } = 원형자리;
+    // 위를 가운데로 왼쪽 아래부터 오른쪽 아래까지 220도
+    const from = -200, to = 20;
+    items.forEach((t, i) => {
+      const a = (from + (to - from) * (i / (items.length - 1))) * Math.PI / 180;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ring-btn' + (t.more ? ' more' : t.on() ? ' on' : '');
+      b.dataset.icon = t.icon;
+      // 화면 밖 버튼은 안쪽으로 붙잡음
+      b.style.left = `${Math.min(innerWidth - 30, Math.max(30, x + Math.cos(a) * r))}px`;
+      b.style.top = `${Math.min(innerHeight - 50, Math.max(30, y + Math.sin(a) * r))}px`;
+      const tip = document.createElement('small');
+      tip.textContent = t.more ? '더보기' : `${이름(t)} ${t.on() ? '켜짐' : '꺼짐'}`;
+      b.appendChild(tip);
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (t.more) { 판열기(); return; }
+        t.flip();
+        원형그리기();
+      });
+      ring.appendChild(b);
+    });
+    아이콘채우기(ring);
+  }
+  function 원형열기(rect, small) {
+    menu.hidden = true;
+    원형자리 = small
+      ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, r: 84 }
+      : { x: rect.x + rect.width / 2, y: rect.y + rect.height * 0.4, r: Math.max(120, Math.min(170, rect.height * 0.5)) };
+    ring.hidden = false;
+    // 아이콘 옆 알림 칸과 원형 버튼이 겹침. 원형이 떠 있는 동안만 숨김
+    document.body.classList.add('ring-open');
+    원형그리기();
+    reportHitAreas();
+  }
+  function 판열기() {
+    ring.hidden = true;
+    document.body.classList.remove('ring-open');
+    판그리기();
+    menu.hidden = false;
+    // 원형 중심의 왼쪽, 자리가 없으면 오른쪽. 위아래는 화면 안
+    const box = menu.getBoundingClientRect();
+    const leftSide = 원형자리.x - 원형자리.r - box.width - 12;
+    const left = leftSide >= 6 ? leftSide : 원형자리.x + 원형자리.r + 12;
+    menu.style.left = `${Math.max(6, Math.min(left, innerWidth - box.width - 6))}px`;
+    menu.style.top = `${Math.max(6, Math.min(원형자리.y - box.height / 2, innerHeight - box.height - 6))}px`;
+    reportHitAreas();
+  }
+  for (const b of menu.querySelectorAll('.menu-rail button[data-page]')) {
+    b.addEventListener('click', () => {
+      for (const x of menu.querySelectorAll('.menu-rail button[data-page]')) x.classList.toggle('cur', x === b);
+      for (const page of menu.querySelectorAll('.menu-page')) page.hidden = page.dataset.page !== b.dataset.page;
+      reportHitAreas();
+    });
+  }
+
   function closeMenu() {
     menu.hidden = true;
+    ring.hidden = true;
+    document.body.classList.remove('ring-open');
     reportHitAreas();
   }
   // 설정창을 여는 길은 하나(우클릭)인데 닫는 길이 없으면, 한 번 열면 화면을 덮은 채 남는다.
@@ -1620,6 +1793,7 @@
     if (chatOpen) add(talk);
     for (const id of ['ntDock', 'ntBoard', 'ntToast', 'ntIcon']) add(document.getElementById(id));
     add(menu);
+    if (ring.hidden === false) for (const b of ring.children) add(b);
     add(sheet);
     add(ask);
     window.__TAURI__.core.invoke('set_hit_areas', { areas }).catch((e) => {
@@ -1886,8 +2060,7 @@
   ntIcon.addEventListener('contextmenu', (e) => {
     // 아이콘에서도 우클릭 설정. 몸의 우클릭과 같은 메뉴
     e.preventDefault();
-    menu.hidden = false;
-    reportHitAreas();
+    원형열기(ntIcon.getBoundingClientRect(), true);
   });
   addEventListener('resize', () => placeNotify());
   /* 몸 모드에서 칸이 걷는 몸을 매 프레임 따라감. 방 자리는 CSS 로 부드럽게 움직이므로 같은 박자로
@@ -2471,18 +2644,17 @@
   });
   stage?.addEventListener('lostpointercapture', release);
 
-  // 우클릭 = 설정. 화면 밖으로 안 넘치게 자리를 잡는다.
+  // 우클릭하면 몸 둘레 원형. 원형의 더보기가 판
   stage?.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    menu.hidden = false;
-    const box = menu.getBoundingClientRect();
-    menu.style.left = `${Math.max(6, Math.min(e.clientX, innerWidth - box.width - 6))}px`;
-    menu.style.top = `${Math.max(6, Math.min(e.clientY, innerHeight - box.height - 6))}px`;
-    reportHitAreas();
+    const box = body3d?.screenBox?.();
+    원형열기(box ? { x: box.x, y: box.y, width: box.width, height: box.height } : stage.getBoundingClientRect(), false);
   });
 
   document.addEventListener('pointerdown', (e) => {
-    if (menu.hidden === false && menu.contains(e.target) === false && stage?.contains(e.target) === false) closeMenu();
+    if (menu.hidden && ring.hidden) return;
+    if (menu.contains(e.target) || ring.contains(e.target) || stage?.contains(e.target) || ntIcon.contains(e.target)) return;
+    closeMenu();
   });
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;

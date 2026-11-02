@@ -87,10 +87,14 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
-    await t.test('우클릭 설정창을 단추로 닫을 수 있다. Esc, 바깥누르기는 뚫린 창에서 안 먹는다', async () => {
+    await t.test('우클릭은 원형, 더보기는 판, 판은 닫기 버튼으로 닫힌다. Esc, 바깥누르기는 뚫린 창에서 안 먹는다', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
-      assert.equal(await page.locator('#menu').isVisible(), true, '우클릭했는데 설정이 안 열렸다');
+      assert.equal(await page.locator('#ring .ring-btn').count(), 7, '우클릭했는데 원형 버튼 7개 (켜고 끄기 6, 더보기) 가 안 떴다');
+      await page.locator('#ring .ring-btn.more').click();
+      assert.equal(await page.locator('#ring').isVisible(), false, '더보기를 눌렀는데 원형이 남아 있다');
+      assert.equal(await page.locator('#menu').isVisible(), true, '더보기를 눌렀는데 판이 안 열렸다');
+      assert.equal(await page.locator('#menuTiles .menu-tile').count(), 6, '판의 켜고 끄기 칸이 6개가 아니다');
       assert.equal(await page.locator('#menuClose').isVisible(), true, '닫는 단추가 눈에 안 보인다');
       await page.click('#menuClose');
       assert.equal(await page.locator('#menu').isVisible(), false, '단추를 눌렀는데 안 닫힌다');
