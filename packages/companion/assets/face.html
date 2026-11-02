@@ -2014,7 +2014,7 @@
      창 위치는 서버(/windows)에서 받음. 주소 뒤 gravity=0 이면 끔 */
   const gravityEnabled = 전체화면 && new URLSearchParams(location.search).get('gravity') !== '0';
   const GRAVITY_PX = 2600; // px/s². 눈으로 조정할 값
-  const fall = { active: false, thrown: false, vx: 0, vy: 0, feet: 0, sliding: false, last: 0, reportedAt: 0, blockedUntil: 0 };
+  const fall = { active: false, thrown: false, vx: 0, vy: 0, feet: 0, sliding: false, last: 0, reportedAt: 0, blockedUntil: 0, hopping: false };
   // 지금 서 있는 면. 바닥이면 id 가 'floor'
   const stand = { id: 'floor', y: null };
   // 착지나 첫 설정 직후 잠깐만 발 높이를 정확히 맞춤(착지 자세와 대기 자세의 경계 상자 차이 보정)
@@ -2146,8 +2146,23 @@
     reportHitAreas();
   }
 
+  /* 창을 옆 모니터로 옮기는 동안 낙하를 멈춰 둠. 옮긴 뒤 몸, 발, 분신 자리를 창 원점 이동량만큼 되돌림 */
+  function 던져서넘기(dir) {
+    fall.hopping = true;
+    window.__TAURI__.core.invoke('hop_monitor', { dir }).then((moved) => {
+      fall.hopping = false;
+      if (moved === null) { fall.vx *= -0.5; return; }
+      방자리.x += moved[0];
+      방자리.y += moved[1];
+      fall.feet += moved[1];
+      for (const pet of pets) pet.shiftBy(moved[0], moved[1]);
+      방자리적용();
+    }).catch(() => { fall.hopping = false; fall.vx *= -0.5; });
+  }
+
   function fallStep(now) {
     if (!fall.active) return;
+    if (fall.hopping) { fall.last = now; requestAnimationFrame(fallStep); return; }
     const dt = Math.min(0.05, (now - fall.last) / 1000);
     fall.last = now;
 
@@ -2179,8 +2194,11 @@
       방자리.x += fall.vx * dt;
       if (방자리.y <= 0 && fall.vy < 0) fall.vy = 0; // 천장
       방자리적용();
-      // 벽에 닿으면 반쯤 튕긴다
-      if ((방자리.x <= 41 && fall.vx < 0) || (방자리.x >= innerWidth - 41 && fall.vx > 0)) fall.vx *= -0.5;
+      // 벽에 닿으면 반쯤 튕긴다. 세게 던졌으면 옆 모니터로 날아감 (없으면 튕김)
+      if ((방자리.x <= 41 && fall.vx < 0) || (방자리.x >= innerWidth - 41 && fall.vx > 0)) {
+        if (fall.thrown && inDesktopWindow && Math.abs(fall.vx) > 600) 던져서넘기(Math.sign(fall.vx));
+        else fall.vx *= -0.5;
+      }
       const moved = 방자리.y - beforeY;
       fall.feet += moved;
       // 면에 닿는 것은 내려갈 때뿐. 올라갈 때는 창 윗면을 아래에서 통과
