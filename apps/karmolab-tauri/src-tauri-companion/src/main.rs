@@ -118,6 +118,8 @@ fn main() {
                 window.set_position(tauri::LogicalPosition::new(x.max(0.0), y.max(0.0)))?;
             }
 
+            mark_tool_window(&window);
+
             // 커서가 「눌러야 하는 자리」에 있을 때만 창이 클릭을 받는다.
             //
             // 화면 쪽에서 커서를 좇을 수는 없다 — 클릭을 통과시키는 동안에는 창이 마우스
@@ -160,6 +162,8 @@ fn main() {
                     if inside == passing_through {
                         passing_through = !inside;
                         let _ = window.set_ignore_cursor_events(!inside);
+                        // tao 가 확장 스타일을 통째로 다시 써서 매번 다시 붙임
+                        mark_tool_window(&window);
                     }
                 }
             });
@@ -168,6 +172,38 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("동반자 창을 띄우지 못했다");
+}
+
+/**
+ * 창에 WS_EX_TOOLWINDOW 를 붙임.
+ *
+ * 크로뮴 계열 브라우저(Edge, Chrome, 웨일)는 자기 창이 다른 창에 다 가려지면 그리기를
+ * 멈춤. 이 창은 화면 전체 크기라, 클릭을 받는 동안 (WS_EX_TRANSPARENT 해제) 아래 브라우저가
+ * 가려졌다고 판정해 영상이 검게 변했음 (사용자 2026-11-02, 몸에 커서를 올리면 유튜브와
+ * 치지직이 검정). 크로뮴의 가림 판정 `gfx::IsWindowVisibleAndFullyOpaque` 는 도구 창을 제외함
+ */
+fn mark_tool_window(window: &tauri::WebviewWindow) {
+    #[cfg(windows)]
+    {
+        #[link(name = "user32")]
+        extern "system" {
+            fn GetWindowLongPtrW(hwnd: isize, index: i32) -> isize;
+            fn SetWindowLongPtrW(hwnd: isize, index: i32, value: isize) -> isize;
+        }
+        const GWL_EXSTYLE: i32 = -20;
+        const WS_EX_TOOLWINDOW: isize = 0x80;
+        if let Ok(hwnd) = window.hwnd() {
+            let hwnd = hwnd.0 as isize;
+            unsafe {
+                let style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+                if style & WS_EX_TOOLWINDOW == 0 {
+                    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, style | WS_EX_TOOLWINDOW);
+                }
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = window;
 }
 
 /// 창을 그 모니터의 작업 영역 (작업표시줄 뺀 자리) 에 맞춤
