@@ -52,7 +52,7 @@
         "asset_prefix": "companion-",
         "asset_suffix": ".zip"
       },
-      "install": { "format": "zip", "entry": "scripts/start.cmd", "exe": "companion-window.exe" },
+      "install": { "format": "zip", "entry": "scripts/start.cmd", "exe": "companion-window.exe", "env": { "COMPANION_WORKSPACE": "{workspace}" } },
       "art": {
         "bg": "sky-twilight",
         "icon": "set"

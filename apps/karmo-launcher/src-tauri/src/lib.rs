@@ -804,7 +804,20 @@ fn launch_app(handle: AppHandle, app: Value) -> Result<(), String> {
         "zip" => {
             let dir = zip_dir(&handle, &app)?;
             let entry = safe_rel(str_at(&app, &["install", "entry"]).ok_or("install.entry 없음")?)?;
-            Command::new(dir.join(entry)).current_dir(&dir).spawn().map_err(|e| e.to_string())?;
+            let mut c = Command::new(dir.join(entry));
+            c.current_dir(&dir);
+            /* `install.env`: 앱에 넘길 환경 변수. `{workspace}` 는 설정의 작업 폴더, `{dir}` 은 풀린 폴더.
+               컴패니언은 저장소 밖에 풀려 이웃 (memo, 게임 저장소) 을 못 찾아서 작업 폴더를 알려 줌 */
+            if let Some(env) = app.get("install").and_then(|i| i.get("env")).and_then(|e| e.as_object()) {
+                let ws = workspace(&handle);
+                let d = dir.to_string_lossy().to_string();
+                for (k, v) in env {
+                    if let Some(v) = v.as_str() {
+                        c.env(k, v.replace("{workspace}", &ws).replace("{dir}", &d));
+                    }
+                }
+            }
+            c.spawn().map_err(|e| e.to_string())?;
         }
         "local" => {
             let path = local_path(&handle, &app)?;
