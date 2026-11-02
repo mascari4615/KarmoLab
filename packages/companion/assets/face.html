@@ -1582,13 +1582,18 @@
     document.getElementById(id)?.addEventListener('change', async (e) => {
       const on = e.target.checked;
       if (key === 'voiceOut') { 소리끔 = !on; if (!on) 새말(); }
-      try {
-        const { failed } = await (await fetch('/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ [key]: on }) })).json();
-        if (failed.length > 0) tell(`설정 안 바뀜: ${failed.join(', ')}`);
-      } catch (err) {
-        tell(`설정 저장 실패: ${err && err.message ? err.message : err}`);
+      const undo = () => {
         e.target.checked = !on;
         if (key === 'voiceOut') 소리끔 = on;
+        // 원형과 판의 아이콘은 바꾼 값으로 그려져 있음. 되돌린 값으로 다시
+        메뉴다시그리기();
+      };
+      try {
+        const { failed } = await (await fetch('/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ [key]: on }) })).json();
+        if (failed.length > 0) { tell(`설정 안 바뀜: ${failed.join(', ')}`); undo(); }
+      } catch (err) {
+        tell(`설정 저장 실패: ${err && err.message ? err.message : err}`);
+        undo();
       }
     });
   }
@@ -1597,13 +1602,19 @@
     ntLeadMin = Number(e.target.value);
     ntSchedule();
     renderNotify();
-    try {
-      const { failed } = await (await fetch('/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ notifyLeadMin: ntLeadMin }) })).json();
-      if (failed.length > 0) tell(`설정 안 바뀜: ${failed.join(', ')}`);
-    } catch (err) {
-      tell(`설정 저장 실패: ${err && err.message ? err.message : err}`);
+    const undo = () => {
       ntLeadMin = before;
       e.target.value = String(before);
+      ntSchedule();
+      renderNotify();
+      메뉴다시그리기();
+    };
+    try {
+      const { failed } = await (await fetch('/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ notifyLeadMin: ntLeadMin }) })).json();
+      if (failed.length > 0) { tell(`설정 안 바뀜: ${failed.join(', ')}`); undo(); }
+    } catch (err) {
+      tell(`설정 저장 실패: ${err && err.message ? err.message : err}`);
+      undo();
     }
   });
   void 기능읽기();
@@ -1799,6 +1810,12 @@
       for (const page of menu.querySelectorAll('.menu-page')) page.hidden = page.dataset.page !== b.dataset.page;
       reportHitAreas();
     });
+  }
+
+  /** 값 칸이 밖에서 바뀌었을 때 (저장 실패로 되돌림) 열린 원형과 판을 다시 그림 */
+  function 메뉴다시그리기() {
+    if (!ring.hidden) 원형그리기();
+    if (!menu.hidden) 판그리기();
   }
 
   function closeMenu() {

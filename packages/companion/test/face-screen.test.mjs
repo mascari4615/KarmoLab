@@ -174,6 +174,19 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('저장이 실패하면 원형 버튼도 원래 값으로 돌아온다', async () => {
+      // 이 시험 서버는 설정 저장 자리가 없어 저장이 늘 실패함
+      const page = await openWindow();
+      await page.locator('.stage').click({ button: 'right' });
+      const before = await page.evaluate(() => document.getElementById('optScreen').checked);
+      await page.locator('#ring .ring-btn').nth(1).click();
+      await page.waitForTimeout(600);
+      const state = await page.evaluate(() => ({ box: document.getElementById('optScreen').checked, on: document.querySelectorAll('#ring .ring-btn')[1].classList.contains('on') }));
+      assert.equal(state.box, before, '저장이 실패했는데 값 칸이 안 돌아왔다');
+      assert.equal(state.on, before, '값 칸은 돌아왔는데 원형 버튼은 바뀐 채로 남았다');
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
