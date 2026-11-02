@@ -1112,6 +1112,8 @@ function openOwnWindow(
           COMPANION_WIDTH: String(screen?.width ?? size?.width ?? 420),
           COMPANION_HEIGHT: String(screen?.height ?? size?.height ?? 640),
           COMPANION_MARGIN: '0',
+          // 커서 모니터의 작업 영역에 맞춤, 끌어서 모니터 옮김. 위 크기는 옛 창 프로그램용
+          COMPANION_FIT: 'work',
         },
       });
       child.unref();
