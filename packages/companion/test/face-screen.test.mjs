@@ -101,6 +101,17 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
+      const page = await openWindow();
+      await page.locator('.stage').click({ button: 'right' });
+      // 켜고 끄기 순서: 듣기, 화면 보기, 소리, 먼저 말 걸기, 아이콘 모드, 알림, 더보기
+      await page.locator('#ring .ring-btn').nth(4).click();
+      assert.equal(await page.locator('#ring').isVisible(), false, '아이콘 모드를 켰는데 원형이 빈자리에 남았다');
+      assert.equal(await page.evaluate(() => document.body.classList.contains('iconmode')), true, '아이콘 모드가 안 켜졌다');
+      await page.evaluate(() => localStorage.setItem('companion.iconMode', '0'));
+      await page.close();
+    });
+
     await t.test('창을 여는 것만으로 터지는 자리가 없다. body3d 가 TDZ 로 터지던 자리', () => {
       assert.deepEqual(consoleMask, [], `창이 열리다 터졌다: ${consoleMask.join(', ')}`);
     });

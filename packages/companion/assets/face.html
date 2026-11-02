@@ -1720,6 +1720,8 @@
         e.stopPropagation();
         if (t.more) { 판열기(); return; }
         t.flip();
+        // 아이콘 모드를 바꾸면 몸 (또는 아이콘) 이 사라져 원형의 중심이 없어짐
+        if (t.box === 'optIcon') { closeMenu(); return; }
         원형그리기();
       });
       ring.appendChild(b);
@@ -1728,6 +1730,9 @@
   }
   function 원형열기(rect, small) {
     menu.hidden = true;
+    // 걷거나 춤추던 중이면 그 자리에 멈춤. 원형은 연 순간의 몸 자리에 그림
+    stopRoam();
+    endActivity();
     원형자리 = small
       ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, r: 84 }
       : { x: rect.x + rect.width / 2, y: rect.y + rect.height * 0.4, r: Math.max(120, Math.min(170, rect.height * 0.5)) };
@@ -2531,6 +2536,8 @@
       // 한가할 때만. 말하고 생각하고 화면 보는 중, 마이크가 켜졌거나 대화창이 열렸거나 잡혀 있을 때는 안 걷는다.
       // 글 입력칸에 초점만 있는 'listening' 은 막지 않는다 (시작하자마자 그 상태로 남아 영영 안 걸었다)
       if (['speaking', 'thinking', 'looking'].includes(currentMood) || listening || chatOpen || grabbed !== null || fall.active || document.hidden) return;
+      // 메뉴가 열린 동안 걸어가면 원형 버튼과 판이 빈자리에 남음
+      if (ring.hidden === false || menu.hidden === false) return;
       pickActivity();
     }, 1000);
   }
