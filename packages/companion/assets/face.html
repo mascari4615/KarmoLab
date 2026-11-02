@@ -1383,6 +1383,8 @@
       몸알리기(body3d === null ? '큐브' : '3D');
       if (body3d !== null) {
         몸크기적용(); // 껐다 켜도 아까 맞춰 둔 크기로 선다
+        // 아이콘 모드는 저장값으로 몸보다 먼저 켜짐. 그때 없던 몸도 멈춤 (안 그러면 안 보이는 몸을 계속 그림)
+        if (아이콘모드) body3d.pause(true);
         cube.classList.add('retired');
         // 3D 몸은 제 그림자를 발밑에 직접 깐다. 큐브 시절의 그림자를 남겨 두면 둘이 겹친다.
         document.querySelector('.shadow')?.remove();
@@ -2278,6 +2280,7 @@
         el.innerHTML = '<div class="stage"><canvas class="body3d"></canvas></div>';
         document.body.appendChild(el);
         const body = await mountModel(el.querySelector('canvas'), '욘', (e) => tell(`분신 몸을 못 세웠다: ${e}`));
+        if (아이콘모드) body?.pause?.(true);
         if (body === null) {
           el.remove();
           continue;
