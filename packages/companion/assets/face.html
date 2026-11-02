@@ -203,7 +203,7 @@
     import('/desk.js').then((m) => m.mountDesk()).catch((e) => tell(`방을 못 깔았다: ${e}`));
   }
   // 화면 걷기 상태 (full 모드). setState 가 먼저 돌 수 있어 여기서 미리 잡아 둔다
-  const roam = { active: false, dir: 0, target: 0, speed: 0, last: 0, nextAt: Date.now() + 5000, reportedAt: 0 };
+  const roam = { active: false, dir: 0, target: 0, speed: 0, last: 0, nextAt: Date.now() + 5000, reportedAt: 0, crossing: false, hopping: false };
   let currentMood = '';
   // 한가할 때 하는 일(앉아 졸기, 춤). null 이면 안 하는 중
   const act = { kind: null, until: 0 };
@@ -1942,6 +1942,9 @@
     if (Math.abs(target - x) < minDistance) target = x < (minX + maxX) / 2 ? maxX : minX;
     // 창 위에서는 가끔 가장자리를 넘어 걸어 내려간다
     if (on !== undefined && Math.random() < 0.15) target = target > x ? on.r + 90 : on.l - 90;
+    // 바닥에서는 가끔 화면 끝까지 걸어가 옆 모니터로 넘어감. 옆 모니터가 없으면 끝에서 멈춤
+    roam.crossing = on === undefined && inDesktopWindow && Math.random() < 0.2;
+    if (roam.crossing) target = target > x ? innerWidth + 100 : -100;
     roam.dir = Math.sign(target - x) || 1;
     roam.target = target;
     // 뜀(30%)은 걸음과 한 바퀴 거리와 시간이 다름
@@ -1960,10 +1963,27 @@
     if (!roam.active) return;
     const dt = Math.min(0.05, (now - roam.last) / 1000);
     roam.last = now;
+    if (roam.hopping) { requestAnimationFrame(roamStep); return; }
     방자리.x += roam.dir * roam.speed * dt;
     const arrived = roam.dir > 0 ? 방자리.x >= roam.target : 방자리.x <= roam.target;
     if (arrived) 방자리.x = roam.target;
     방자리적용();
+    // 화면 끝에 막힘 (방자리적용이 붙잡은 자리). 옆 모니터로 창을 옮기고 이어서 걸음
+    if (roam.crossing && (roam.dir < 0 ? 방자리.x <= 40 : 방자리.x >= innerWidth - 40)) {
+      roam.crossing = false;
+      roam.hopping = true;
+      window.__TAURI__.core.invoke('hop_monitor', { dir: roam.dir }).then((moved) => {
+        roam.hopping = false;
+        if (!roam.active) return;
+        if (moved === null) { stopRoam(); return; }
+        방자리.x += moved[0];
+        방자리.y += moved[1];
+        roam.target = 방자리.x + roam.dir * (250 + Math.random() * 300);
+        roam.last = performance.now();
+      }).catch(() => { roam.hopping = false; stopRoam(); });
+      requestAnimationFrame(roamStep);
+      return;
+    }
     // 누를 자리가 따라와야 한다. 500ms 마다만 알리면 걷는 몸 뒤로 클릭 구멍이 남는다
     if (now - roam.reportedAt > 100) {
       roam.reportedAt = now;
