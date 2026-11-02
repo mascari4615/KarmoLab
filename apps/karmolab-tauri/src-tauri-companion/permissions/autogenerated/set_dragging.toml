@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-dragging"
+description = "Enables the set_dragging command without any pre-configured scope."
+commands.allow = ["set_dragging"]
+
+[[permission]]
+identifier = "deny-set-dragging"
+description = "Denies the set_dragging command without any pre-configured scope."
+commands.deny = ["set_dragging"]

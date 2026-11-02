@@ -10,6 +10,9 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 /// 창에서 「눌러야 하는 자리」. 화면이 알려준 값을 여기 담아 둔다.
 struct HitArea(std::sync::Mutex<Vec<(f64, f64, f64, f64)>>);
 
+/// 몸을 끄는 중인지. 끄는 중 커서가 다른 모니터로 넘어가면 창을 그 모니터로 옮김
+struct Dragging(std::sync::atomic::AtomicBool);
+
 /**
  * 화면이 「여기는 눌러야 한다」고 알려주는 자리.
  *
@@ -35,6 +38,11 @@ fn set_hit_areas(areas: Vec<(f64, f64, f64, f64)>, state: tauri::State<HitArea>)
  * 실제로 그랬다. 눌렀는데 안 꺼지는 것보다 나쁜 건 없으므로 확실한 길을 하나 더 둔다.
  */
 #[tauri::command]
+fn set_dragging(on: bool, state: tauri::State<Dragging>) {
+    state.0.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+#[tauri::command]
 fn quit(app: tauri::AppHandle) {
     app.exit(0);
 }
@@ -45,6 +53,8 @@ fn main() {
     let width: f64 = env_number("COMPANION_WIDTH", 380.0);
     let height: f64 = env_number("COMPANION_HEIGHT", 560.0);
     let margin: f64 = env_number("COMPANION_MARGIN", 24.0);
+    // 한 모니터의 작업 영역을 채우는 모드. 시작은 커서 모니터, 끌어서 넘기면 그 모니터
+    let fit_monitor = std::env::var("COMPANION_FIT").is_ok_and(|v| v == "work");
 
     // 어디서든 말 걸 수 있게 하는 단축키. 창을 찾아 앞으로 꺼내는 게 아니라,
     // 하던 일 위에서 그냥 말하면 되게 하는 게 목적이다.
@@ -52,7 +62,8 @@ fn main() {
 
     tauri::Builder::default()
         .manage(HitArea(std::sync::Mutex::new(Vec::new())))
-        .invoke_handler(tauri::generate_handler![set_hit_areas, quit])
+        .manage(Dragging(std::sync::atomic::AtomicBool::new(false)))
+        .invoke_handler(tauri::generate_handler![set_hit_areas, set_dragging, quit])
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
@@ -89,8 +100,17 @@ fn main() {
                 .resizable(true)
                 .build()?;
 
-            // 화면 오른쪽 아래에 앉힌다. 작업표시줄을 덮지 않게 작업 영역 기준으로.
-            if let Some(monitor) = window.primary_monitor()? {
+            if fit_monitor {
+                let monitor = window
+                    .cursor_position()
+                    .ok()
+                    .and_then(|c| window.monitor_from_point(c.x, c.y).ok().flatten())
+                    .or(window.primary_monitor()?);
+                if let Some(monitor) = monitor {
+                    fit_to(&window, &monitor)?;
+                }
+            } else if let Some(monitor) = window.primary_monitor()? {
+                // 화면 오른쪽 아래에 앉힌다. 작업표시줄을 덮지 않게 작업 영역 기준으로.
                 let screen = monitor.size().to_logical::<f64>(monitor.scale_factor());
                 // 작업표시줄 높이를 정확히 알 수 없으므로 여백을 넉넉히 둔다.
                 let x = screen.width - width - margin;
@@ -109,7 +129,13 @@ fn main() {
                     std::thread::sleep(std::time::Duration::from_millis(70));
                     let Some(window) = handle.get_webview_window("companion") else { continue };
                     let Ok(cursor) = window.cursor_position() else { continue };
-                    let Ok(origin) = window.outer_position() else { continue };
+                    let Ok(mut origin) = window.outer_position() else { continue };
+
+                    if fit_monitor && handle.state::<Dragging>().0.load(std::sync::atomic::Ordering::Relaxed) {
+                        if let Some(moved) = follow_cursor_monitor(&window, cursor.x, cursor.y, origin) {
+                            origin = moved;
+                        }
+                    }
                     let scale = window.scale_factor().unwrap_or(1.0);
 
                     let local_x = (cursor.x - origin.x as f64) / scale;
@@ -142,6 +168,53 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("동반자 창을 띄우지 못했다");
+}
+
+/// 창을 그 모니터의 작업 영역 (작업표시줄 뺀 자리) 에 맞춤
+fn fit_to(window: &tauri::WebviewWindow, monitor: &tauri::Monitor) -> tauri::Result<()> {
+    let area = monitor.work_area();
+    window.set_position(area.position)?;
+    window.set_size(area.size)?;
+    Ok(())
+}
+
+/**
+ * 커서가 창 밖 다른 모니터에 있으면 창을 그 모니터로 옮김. 옮겼으면 새 원점.
+ *
+ * 화면에 창 원점 이동량을 알림. 화면은 그만큼 몸 자리를 되돌려 몸을 커서 아래에 유지
+ */
+fn follow_cursor_monitor(
+    window: &tauri::WebviewWindow,
+    x: f64,
+    y: f64,
+    origin: tauri::PhysicalPosition<i32>,
+) -> Option<tauri::PhysicalPosition<i32>> {
+    let target = window.monitor_from_point(x, y).ok().flatten()?;
+    let area = target.work_area();
+    let size = window.outer_size().ok()?;
+    let already = area.position == origin && area.size == size;
+    if already {
+        return None;
+    }
+    // 커서가 아직 창 안이면 그대로 (모니터 경계 근처에서 창이 겹친 경우)
+    let inside = x >= origin.x as f64
+        && x < origin.x as f64 + size.width as f64
+        && y >= origin.y as f64
+        && y < origin.y as f64 + size.height as f64;
+    if inside {
+        return None;
+    }
+    fit_to(window, &target).ok()?;
+    let scale = target.scale_factor();
+    let _ = window.emit(
+        "companion://moved",
+        serde_json::json!({
+            "dx": (origin.x - area.position.x) as f64 / scale,
+            "dy": (origin.y - area.position.y) as f64 / scale,
+        }),
+    );
+    eprintln!("[창] 모니터 옮김: {:?} -> {:?}", origin, area.position);
+    Some(area.position)
 }
 
 fn env_number(key: &str, fallback: f64) -> f64 {
