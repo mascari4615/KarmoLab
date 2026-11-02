@@ -236,6 +236,8 @@ button:hover { border-color: rgba(110, 231, 255, 0.5); color: var(--accent); }
 .ring-btn:hover small, .ring-btn:focus-visible small { display: block; }
 .ring-btn:focus-visible { outline: 2px solid #e8c77a; outline-offset: 3px; }
 body.ring-open .nt-dock { visibility: hidden; }
+/* 대화창이 열리면 몸 옆 같은 자리라 알림 칸이 대화 줄을 덮었음 (2026-11-03 실측). 대화 중에는 숨김 */
+body:has(.talk.on) .nt-dock { visibility: hidden; }
 
 .menu {
   position: fixed; z-index: 9; width: 380px; display: flex;

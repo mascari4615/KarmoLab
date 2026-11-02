@@ -1805,6 +1805,8 @@
     }
     const add = (el) => {
       if (el === null || el === undefined || el.hidden === true) return;
+      // 안 보이게 숨긴 칸 (원형이나 대화창이 열린 동안의 알림 칸) 은 누를 자리가 아님
+      if (getComputedStyle(el).visibility === 'hidden') return;
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) areas.push([r.x, r.y, r.width, r.height]);
     };
