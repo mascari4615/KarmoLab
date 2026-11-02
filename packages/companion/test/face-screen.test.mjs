@@ -92,7 +92,7 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.locator('.stage').click({ button: 'right' });
       assert.equal(await page.locator('#ring .ring-btn').count(), 7, '우클릭했는데 원형 버튼 7개 (켜고 끄기 6, 더보기) 가 안 떴다');
       await page.locator('#ring .ring-btn.more').click();
-      assert.equal(await page.locator('#ring').isVisible(), false, '더보기를 눌렀는데 원형이 남아 있다');
+      assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), false, '더보기를 눌렀는데 원형이 남아 있다');
       assert.equal(await page.locator('#menu').isVisible(), true, '더보기를 눌렀는데 판이 안 열렸다');
       assert.equal(await page.locator('#menuTiles .menu-tile').count(), 6, '판의 켜고 끄기 칸이 6개가 아니다');
       assert.equal(await page.locator('#menuClose').isVisible(), true, '닫는 단추가 눈에 안 보인다');
@@ -119,7 +119,7 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       assert.equal((before === 'off') !== (after === 'off'), true, `Enter 로 듣기가 안 바뀐다 (${before} -> ${after})`);
       assert.equal(await focused(), 0, '바꾼 뒤 포커스가 같은 버튼에 안 남았다');
       await page.keyboard.press('Escape');
-      assert.equal(await page.locator('#ring').isVisible(), false, 'Esc 로 원형이 안 닫힌다');
+      assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), false, 'Esc 로 원형이 안 닫힌다');
       await page.close();
     });
 
@@ -146,12 +146,29 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('원형이 열린 채로 몸을 끌면 원형이 닫힌다. 빈자리에 남지 않게', async () => {
+      const page = await openWindow('?full=1&roam=0&gravity=0');
+      await page.evaluate(() => { localStorage.setItem('companion.roomX', '260'); localStorage.setItem('companion.roomY', '200'); });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1200);
+      await page.locator('.stage').click({ button: 'right', force: true });
+      assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), true, '원형이 안 열렸다');
+      const box = await page.locator('.stage').boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 - 60, box.y + box.height / 2, { steps: 6 });
+      await page.mouse.up();
+      assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), false, '끌었는데 원형이 옛 자리에 남았다');
+      await page.evaluate(() => { localStorage.removeItem('companion.roomX'); localStorage.removeItem('companion.roomY'); });
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
       // 켜고 끄기 순서: 듣기, 화면 보기, 소리, 먼저 말 걸기, 아이콘 모드, 알림, 더보기
       await page.locator('#ring .ring-btn').nth(4).click();
-      assert.equal(await page.locator('#ring').isVisible(), false, '아이콘 모드를 켰는데 원형이 빈자리에 남았다');
+      assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), false, '아이콘 모드를 켰는데 원형이 빈자리에 남았다');
       assert.equal(await page.evaluate(() => document.body.classList.contains('iconmode')), true, '아이콘 모드가 안 켜졌다');
       await page.evaluate(() => localStorage.setItem('companion.iconMode', '0'));
       await page.close();

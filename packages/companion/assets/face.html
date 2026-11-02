@@ -327,6 +327,8 @@
   방자리적용();
   addEventListener('resize', () => {
     방자리적용();
+    // 창 크기가 바뀌면 (다른 모니터로 옮김, 해상도 변경) 원형과 판의 자리가 맞지 않음
+    if (!ring.hidden || !menu.hidden) closeMenu();
     // 창이 작은 모니터로 옮겨 가면 분신이 새 창 밖에 남지 않게
     for (const pet of pets) pet.place();
   });
@@ -2054,6 +2056,7 @@
   ntIcon.addEventListener('pointermove', (e) => {
     if (ntDrag === null) return;
     if (!ntDrag.moved && Math.hypot(e.clientX - ntDrag.sx, e.clientY - ntDrag.sy) < 4) return;
+    if (!ntDrag.moved) closeMenu();
     ntDrag.moved = true;
     ntIcon.classList.add('dragging');
     ntIconAt = { x: e.clientX - ntDrag.ox, y: e.clientY - ntDrag.oy };
@@ -2593,6 +2596,8 @@
     if (grabbed.moved === false) {
       if (Math.abs(e.clientX - grabbed.x) + Math.abs(e.clientY - grabbed.y) < 4) return;
       grabbed.moved = true;
+      // 원형과 판은 연 순간의 몸 자리에 그렸음. 끌고 가면 빈자리에 남으므로 닫음
+      closeMenu();
       // 잡아 끌면 서 있던 면에서 떨어진 것. 놓으면 새로 받침을 찾는다
       stand.id = 'floor';
       stand.y = null;
@@ -2658,6 +2663,7 @@
      몸이 커서 아래에 남게 함. 끌기 기준의 커서 좌표도 같은 만큼 바뀜 */
   window.__TAURI__?.event.listen('companion://moved', ({ payload }) => {
     const { dx, dy } = payload;
+    closeMenu();
     if (방자리.x !== null) { 방자리.x += dx; 방자리.y += dy; }
     if (grabbed?.from !== undefined) {
       grabbed.from.x += dx; grabbed.from.y += dy;
