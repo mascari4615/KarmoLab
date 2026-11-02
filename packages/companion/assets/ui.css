@@ -271,6 +271,7 @@ body:has(.talk.on) .nt-dock { visibility: hidden; }
 .menu-tile:hover { background: rgba(255, 255, 255, 0.09); color: #ece5d8; }
 .menu-tile.on { background: linear-gradient(180deg, rgba(232, 199, 122, 0.18), rgba(232, 199, 122, 0.07)); border-color: rgba(232, 199, 122, 0.4); color: #ece5d8; }
 .menu-tile.on svg { color: #e8c77a; }
+.menu-tile:focus-visible, .menu-rail button:focus-visible { outline: 2px solid #e8c77a; outline-offset: 2px; }
 .menu-bar { display: flex; align-items: center; gap: 10px; height: 30px; color: #a59c8c; }
 .menu-bar svg { width: 16px; height: 16px; flex: none; }
 .menu-bar input[type="range"] { flex: 1; min-width: 0; height: 18px; accent-color: #d3bc8e; background: transparent; cursor: pointer; }

@@ -1671,7 +1671,14 @@
       b.className = 'menu-tile' + (t.on() ? ' on' : '');
       b.dataset.icon = t.icon;
       b.append(이름(t));
-      b.addEventListener('click', () => { t.flip(); 판그리기(); 원형그리기(); });
+      b.addEventListener('click', (e) => {
+        const at = [...menuTiles.children].indexOf(b);
+        t.flip();
+        판그리기();
+        원형그리기();
+        // 다시 그리면 칸이 새로 생겨 포커스가 빠짐. 키보드로 누른 것이면 같은 칸으로
+        if (e.detail === 0) menuTiles.children[at]?.focus({ preventScroll: true });
+      });
       menuTiles.appendChild(b);
     }
     const who = document.getElementById('whoPick');
@@ -1774,7 +1781,18 @@
     menu.style.left = `${Math.max(6, Math.min(left, innerWidth - box.width - 6))}px`;
     menu.style.top = `${Math.max(6, Math.min(원형자리.y - box.height / 2, innerHeight - box.height - 6))}px`;
     reportHitAreas();
+    // 원형에서 키보드로 더보기를 눌렀으면 포커스가 사라진 원형에 남음. 판의 첫 칸으로
+    menuTiles.children[0]?.focus({ preventScroll: true });
   }
+  // 판의 칸은 3열. 좌우 화살표 1칸, 위아래 3칸
+  menuTiles.addEventListener('keydown', (e) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 3, ArrowUp: -3 }[e.key];
+    if (step === undefined) return;
+    e.preventDefault();
+    const tiles = [...menuTiles.children];
+    const at = tiles.indexOf(document.activeElement);
+    tiles[(at + step + tiles.length) % tiles.length]?.focus({ preventScroll: true });
+  });
   for (const b of menu.querySelectorAll('.menu-rail button[data-page]')) {
     b.addEventListener('click', () => {
       for (const x of menu.querySelectorAll('.menu-rail button[data-page]')) x.classList.toggle('cur', x === b);

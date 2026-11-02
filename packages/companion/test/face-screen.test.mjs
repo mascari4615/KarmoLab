@@ -118,6 +118,17 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       const after = await page.evaluate(() => document.getElementById('earMode').value);
       assert.equal((before === 'off') !== (after === 'off'), true, `Enter 로 듣기가 안 바뀐다 (${before} -> ${after})`);
       assert.equal(await focused(), 0, '바꾼 뒤 포커스가 같은 버튼에 안 남았다');
+      // 더보기도 키보드로. 판이 열리면 첫 칸에 포커스, 칸은 3열이라 아래 화살표가 3칸
+      await page.keyboard.press('ArrowLeft');
+      await page.keyboard.press('Enter');
+      const tile = () => page.evaluate(() => [...document.querySelectorAll('#menuTiles .menu-tile')].indexOf(document.activeElement));
+      assert.equal(await page.locator('#menu').isVisible(), true, '키보드로 더보기를 눌렀는데 판이 안 열렸다');
+      assert.equal(await tile(), 0, '판이 열렸는데 첫 칸에 포커스가 없다');
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await tile(), 3, '아래 화살표가 다음 줄 같은 칸으로 안 간다');
+      await page.keyboard.press('ArrowUp');
+      await page.keyboard.press('Enter');
+      assert.equal(await tile(), 0, '칸을 바꾼 뒤 포커스가 같은 칸에 안 남았다');
       await page.keyboard.press('Escape');
       assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), false, 'Esc 로 원형이 안 닫힌다');
       await page.close();
