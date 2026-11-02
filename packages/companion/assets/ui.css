@@ -233,7 +233,8 @@ button:hover { border-color: rgba(110, 231, 255, 0.5); color: var(--accent); }
   display: none; position: absolute; top: 56px; white-space: nowrap; font-size: 12px;
   color: #ece5d8; background: rgba(0, 0, 0, 0.7); padding: 2px 8px; border-radius: 6px; pointer-events: none;
 }
-.ring-btn:hover small { display: block; }
+.ring-btn:hover small, .ring-btn:focus-visible small { display: block; }
+.ring-btn:focus-visible { outline: 2px solid #e8c77a; outline-offset: 3px; }
 body.ring-open .nt-dock { visibility: hidden; }
 
 .menu {

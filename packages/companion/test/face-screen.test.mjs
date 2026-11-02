@@ -101,6 +101,28 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('원형은 키보드로 고른다. 첫 버튼에 포커스, 화살표로 이동, Enter 로 바꾼 뒤에도 같은 버튼', async () => {
+      const page = await openWindow();
+      await page.locator('.stage').click({ button: 'right' });
+      const focused = () => page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn')].indexOf(document.activeElement));
+      assert.equal(await focused(), 0, '원형을 열었는데 첫 버튼에 포커스가 없다');
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await focused(), 1, '오른쪽 화살표로 다음 버튼에 안 간다');
+      await page.keyboard.press('ArrowLeft');
+      await page.keyboard.press('ArrowLeft');
+      assert.equal(await focused(), 6, '처음에서 왼쪽 화살표면 마지막 (더보기) 으로 돌아야 한다');
+      // 듣기 버튼은 서버를 거치지 않는 값 (earMode) 이라 시험 서버에서도 그대로 남음
+      await page.keyboard.press('ArrowRight');
+      const before = await page.evaluate(() => document.getElementById('earMode').value);
+      await page.keyboard.press('Enter');
+      const after = await page.evaluate(() => document.getElementById('earMode').value);
+      assert.equal((before === 'off') !== (after === 'off'), true, `Enter 로 듣기가 안 바뀐다 (${before} -> ${after})`);
+      assert.equal(await focused(), 0, '바꾼 뒤 포커스가 같은 버튼에 안 남았다');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#ring').isVisible(), false, 'Esc 로 원형이 안 닫힌다');
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
