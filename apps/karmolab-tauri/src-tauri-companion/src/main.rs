@@ -42,6 +42,42 @@ fn set_dragging(on: bool, state: tauri::State<Dragging>) {
     state.0.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/**
+ * 창이 어느 모니터 작업 영역과도 정확히 맞지 않으면 다시 맞춤.
+ *
+ * 창 가운데가 든 모니터, 없으면 (그 모니터를 뺐음) 주 모니터. 이미 맞으면 아무것도 안 함
+ */
+fn refit_if_layout_changed(window: &tauri::WebviewWindow) {
+    let (Ok(origin), Ok(size), Ok(monitors)) =
+        (window.outer_position(), window.outer_size(), window.available_monitors())
+    else {
+        return;
+    };
+    let current = (origin.x, origin.y, size.width as i32, size.height as i32);
+    let areas: Vec<Rect> = monitors.iter().map(work_rect).collect();
+    if areas.contains(&current) {
+        return;
+    }
+    let target = containing(current, &areas)
+        .and_then(|i| monitors.get(i).cloned())
+        .or_else(|| window.primary_monitor().ok().flatten());
+    if let Some(target) = target {
+        eprintln!("[창] 모니터 구성 바뀜, 다시 맞춤: {:?} -> {:?}", current, work_rect(&target));
+        let _ = fit_to(window, &target);
+    }
+}
+
+fn work_rect(m: &tauri::Monitor) -> Rect {
+    let a = m.work_area();
+    (a.position.x, a.position.y, a.size.width as i32, a.size.height as i32)
+}
+
+/// 창 가운데가 든 영역의 번호
+fn containing(current: Rect, areas: &[Rect]) -> Option<usize> {
+    let (cx, cy) = (current.0 + current.2 / 2, current.1 + current.3 / 2);
+    areas.iter().position(|&(l, t, w, h)| cx >= l && cx < l + w && cy >= t && cy < t + h)
+}
+
 /// (x, y, 너비, 높이), 물리 px
 type Rect = (i32, i32, i32, i32);
 
@@ -65,13 +101,7 @@ fn hop_monitor(dir: i32, window: tauri::WebviewWindow) -> Option<(f64, f64)> {
     let origin = window.outer_position().ok()?;
     let size = window.outer_size().ok()?;
     let monitors = window.available_monitors().ok()?;
-    let areas: Vec<Rect> = monitors
-        .iter()
-        .map(|m| {
-            let a = m.work_area();
-            (a.position.x, a.position.y, a.size.width as i32, a.size.height as i32)
-        })
-        .collect();
+    let areas: Vec<Rect> = monitors.iter().map(work_rect).collect();
     let current = (origin.x, origin.y, size.width as i32, size.height as i32);
     let target = monitors.get(neighbor(dir, current, &areas)?)?;
     fit_to(&window, &target).ok()?;
@@ -169,9 +199,15 @@ fn main() {
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 let mut passing_through = false;
+                let mut tick: u32 = 0;
                 loop {
                     std::thread::sleep(std::time::Duration::from_millis(70));
+                    tick = tick.wrapping_add(1);
                     let Some(window) = handle.get_webview_window("companion") else { continue };
+                    // 2초마다 모니터 구성 확인. 모니터를 빼거나 해상도, 작업 표시줄이 바뀌면 다시 맞춤
+                    if fit_monitor && tick % 30 == 0 {
+                        refit_if_layout_changed(&window);
+                    }
                     let Ok(cursor) = window.cursor_position() else { continue };
                     let Ok(mut origin) = window.outer_position() else { continue };
 
@@ -305,7 +341,7 @@ fn env_number(key: &str, fallback: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::neighbor;
+    use super::{containing, neighbor};
 
     // 이 PC 실측 배치: 주 모니터 2560x1392 (작업 영역), 왼쪽 1920x1032 가 y 156 에서 시작
     const PRIMARY: (i32, i32, i32, i32) = (0, 0, 2560, 1392);
@@ -330,6 +366,18 @@ mod tests {
     fn not_neighbor_without_vertical_overlap() {
         let below = (-1920, 1400, 1920, 1032);
         assert_eq!(neighbor(-1, PRIMARY, &[PRIMARY, below]), None);
+    }
+
+    #[test]
+    fn containing_picks_monitor_under_window_center() {
+        let areas = [PRIMARY, LEFT];
+        assert_eq!(containing(PRIMARY, &areas), Some(0));
+        assert_eq!(containing(LEFT, &areas), Some(1));
+        // 해상도가 줄어 창이 옛 크기로 남은 경우도 가운데로 찾음
+        assert_eq!(containing((0, 0, 3840, 2112), &[(0, 0, 2560, 1392)]), Some(0));
+        assert_eq!(containing((0, 0, 2560, 1440), &[(0, 0, 2560, 1392)]), Some(0));
+        // 그 모니터를 뺐으면 없음, 호출부가 주 모니터로
+        assert_eq!(containing(LEFT, &[PRIMARY]), None);
     }
 
     #[test]
