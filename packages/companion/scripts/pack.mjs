@@ -109,8 +109,11 @@ for (const dep of KEEP_DEPS) {
     skipped.push(dep);
     continue;
   }
+  /* dereference: `@karmo/ai` 는 `file:../ai` 라 링크다. 링크째 복사하면 받은 사람 컴퓨터에는 가리킬 곳이 없고,
+     이 PC 에서는 링크 만들기 권한이 없어 EPERM 으로 죽었다 (2026-11-03) */
   cpSync(from, join(nm, dep), {
     recursive: true,
+    dereference: true,
     filter: (src) => !relative(from, src).split(/[\\/]/).includes('node_modules'),
   });
 }
@@ -142,7 +145,9 @@ writeFileSync(
 
 cpSync(join(root, 'scripts', 'live.mjs'), join(out, 'scripts', 'live.mjs'), { recursive: true });
 cpSync(join(root, 'scripts', 'get-voice.mjs'), join(out, 'scripts', 'get-voice.mjs'), { recursive: true });
-cpSync(join(root, 'scripts', 'start.cmd'), join(out, 'scripts', 'start.cmd'), { recursive: true });
+/* start.cmd 는 CRLF 로. 저장소에는 LF 로 들어 있고, LF 와 UTF-8 한글이 겹치면 cmd 가 줄을 잘못 끊어
+   한글 조각을 명령으로 실행했다 (2026-11-03 런처에서 실행, "'諛곕떎.'은(는) 내부 또는 외부 명령...") */
+writeFileSync(join(out, 'scripts', 'start.cmd'), readFileSync(join(root, 'scripts', 'start.cmd'), 'utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
 cpSync(join(root, 'scripts', 'check-node.mjs'), join(out, 'scripts', 'check-node.mjs'), { recursive: true });
 
 /* **받은 사람이 처음 보는 글.** 저장소 README 는 만드는 사람 것이라 여기선 쓸모가 없다 . 
@@ -175,5 +180,11 @@ for (const part of ['dist', 'demo', 'assets', 'node_modules', 'scripts', 'charac
   console.log(`  ${part.padEnd(14)} ${mb(size(join(out, part)))}`);
 }
 console.log(`  ${'합계'.padEnd(13)} ${mb(size(out))}`);
-if (skipped.length) console.log(`[pack] 못 찾은 꾸러미: ${skipped.join(', ')} (npm i 먼저)`);
+/* 필수 꾸러미가 하나라도 빠지면 실패. 2026-11-02 릴리스 (0.1.139) 는 node_modules 0.00MB 로 조용히 나가
+   받은 사람 쪽에서 msedge-tts 를 못 찾았다 */
+const missingRoots = ROOT_DEPS.filter((d) => !existsSync(join(nm, d, 'package.json')));
+if (skipped.length || missingRoots.length) {
+  console.error(`[pack] 못 찾은 꾸러미: ${[...new Set([...skipped, ...missingRoots])].join(', ')} (npm i 먼저)`);
+  process.exit(1);
+}
 console.log('[pack] Node 런타임은 안 들어 있다. 쓰는 쪽에서 깐다 (필수 구성 요소).');
