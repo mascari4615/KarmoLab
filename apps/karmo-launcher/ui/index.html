@@ -10,6 +10,8 @@
 <!-- 시안 L3 (memo notes/launcher/mock). 투명 창 안에 가장자리가 흐린 판 하나, 욘은 판 오른쪽 -->
 <div class="win">
   <div class="panel"><div class="hero" id="hero"></div><div class="veil"></div><div class="glow"></div></div>
+  <!-- 판 안 내용. 1292x772 기준으로 그린 것을 창 크기에 맞춰 통째로 줄이고 키움 (app.js fitStage) -->
+  <div class="stage" id="stage">
   <header class="titlebar" data-tauri-drag-region>
     <span class="en" data-tauri-drag-region>Karmo Launcher</span>
     <span class="msg" id="msg" data-tauri-drag-region></span>
@@ -23,6 +25,7 @@
   <section class="rel" id="rel" hidden></section>
   <!-- 런처 자신의 새 판. 켜질 때 한 번 물어봄 -->
   <button type="button" class="selfup" id="selfup" hidden></button>
+  <img class="yawn" src="img/yawn-launcher.webp" alt="">
   <div class="acts" id="acts"></div>
   <!-- 설정 모달. 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->
   <div class="modal" id="keys" hidden>
@@ -42,12 +45,12 @@
       </section>
     </div>
   </div>
+  </div>
 </div>
-<img class="yawn" src="img/yawn-launcher.webp" alt="">
-<!-- 크기 조절 손잡이. 투명하고 틀과 그림자 없는 창이라 OS 가 주는 테두리가 없음 -->
+<!-- 크기 조절 손잡이. 투명하고 틀과 그림자 없는 창이라 OS 가 주는 테두리가 없음. 판 가장자리 흐린 띠 전체가 손잡이 -->
 <div class="rz" aria-hidden="true">
   <i data-rz="North"></i><i data-rz="South"></i><i data-rz="West"></i><i data-rz="East"></i>
-  <i data-rz="NorthWest"></i><i data-rz="NorthEast"></i><i data-rz="SouthWest"></i><i data-rz="SouthEast" class="grip"></i>
+  <i data-rz="NorthWest"></i><i data-rz="NorthEast"></i><i data-rz="SouthWest"></i><i data-rz="SouthEast"></i>
 </div>
 <script type="module" src="app.js"></script>
 </body>

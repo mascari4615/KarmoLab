@@ -263,6 +263,18 @@ $('wsSave').addEventListener('click', () => void keyAction(() => invoke('set_wor
 $('min').addEventListener('click', () => void appWindow.minimize());
 /* 닫기는 트레이로 (Steam 처럼). 끝내기는 트레이 메뉴 */
 $('close').addEventListener('click', () => void appWindow.hide());
+/* 판 안 내용 배율. 1292x772 (기본 창 1340x820 에서 여백 24px 씩 뺀 판) 기준으로 그린 배치를
+   창 크기에 맞춰 통째로 줄이고 키움. 기준에서도 0.88 배 (사용자 2026-11-03 "UI 들이 너무 크다") */
+const stageEl = $('stage');
+function fitStage() {
+  const w = Math.max(1, window.innerWidth - 48);
+  const h = Math.max(1, window.innerHeight - 48);
+  const z = Math.min(1.2, Math.max(0.45, Math.min(w / 1292, h / 772) * 0.88));
+  stageEl.style.setProperty('--z', z.toFixed(3));
+}
+window.addEventListener('resize', fitStage);
+fitStage();
+
 /* 크기 조절. 틀 없는 투명 창이라 손잡이에서 OS 크기 조절을 직접 시작 */
 document.querySelectorAll('[data-rz]').forEach((el) => {
   el.addEventListener('mousedown', (e) => {

@@ -38,31 +38,22 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .en { font-family: var(--en); letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; color: var(--ink3); }
 
 .win { position: absolute; inset: 24px 24px 24px 24px; }
-/* 크기 조절 손잡이. 판 가장자리가 흐려 눈에 안 띄니 (사용자 2026-11-03 "어딘지 잘 모르겠어")
-   창 끝에서 판 안쪽 12px 까지 넓게 잡고, 올리면 판 경계에 주황 선, 오른쪽 아래에는 늘 보이는 손잡이 */
-.rz i { position: fixed; z-index: 50; }
-.rz i::after { content: ""; position: absolute; background: var(--acc); opacity: 0; transition: opacity 0.12s; pointer-events: none; }
-.rz i:hover::after { opacity: 0.9; }
-.rz [data-rz="North"] { top: 0; left: 36px; right: 36px; height: 36px; cursor: ns-resize; }
-.rz [data-rz="South"] { bottom: 0; left: 36px; right: 36px; height: 36px; cursor: ns-resize; }
-.rz [data-rz="West"] { left: 0; top: 36px; bottom: 36px; width: 36px; cursor: ew-resize; }
-.rz [data-rz="East"] { right: 0; top: 36px; bottom: 36px; width: 36px; cursor: ew-resize; }
-.rz [data-rz="North"]::after { left: 0; right: 0; top: 23px; height: 2px; }
-.rz [data-rz="South"]::after { left: 0; right: 0; bottom: 23px; height: 2px; }
-.rz [data-rz="West"]::after { top: 0; bottom: 0; left: 23px; width: 2px; }
-.rz [data-rz="East"]::after { top: 0; bottom: 0; right: 23px; width: 2px; }
-.rz [data-rz="NorthWest"] { top: 0; left: 0; width: 36px; height: 36px; cursor: nwse-resize; }
-.rz [data-rz="SouthEast"] { bottom: 0; right: 0; width: 44px; height: 44px; cursor: nwse-resize; }
-.rz [data-rz="NorthEast"] { top: 0; right: 0; width: 36px; height: 36px; cursor: nesw-resize; }
-.rz [data-rz="SouthWest"] { bottom: 0; left: 0; width: 36px; height: 36px; cursor: nesw-resize; }
-.rz [data-rz="NorthWest"]::after { top: 23px; left: 23px; width: 13px; height: 13px; border-top: 2px solid var(--acc); border-left: 2px solid var(--acc); background: none; }
-.rz [data-rz="NorthEast"]::after { top: 23px; right: 23px; width: 13px; height: 13px; border-top: 2px solid var(--acc); border-right: 2px solid var(--acc); background: none; }
-.rz [data-rz="SouthWest"]::after { bottom: 23px; left: 23px; width: 13px; height: 13px; border-bottom: 2px solid var(--acc); border-left: 2px solid var(--acc); background: none; }
-/* 오른쪽 아래 손잡이는 늘 보임 (사선 세 줄) */
-.rz .grip::before { content: ""; position: absolute; right: 28px; bottom: 28px; width: 14px; height: 14px; opacity: 0.7;
-  background: linear-gradient(135deg, transparent 0 45%, var(--ink2) 45% 52%, transparent 52% 65%, var(--ink2) 65% 72%, transparent 72% 85%, var(--ink2) 85% 92%, transparent 92%); }
-.rz .grip:hover::before { opacity: 1; }
-.rz .grip::after { right: 23px; bottom: 23px; width: 13px; height: 13px; border-bottom: 2px solid var(--acc); border-right: 2px solid var(--acc); background: none; }
+/* 크기 조절 손잡이. 판 가장자리가 흐려지는 띠 전체 (창 끝 24px + 판 가로 6%, 세로 8%, .panel mask 와 같은 값).
+   표시 없이 커서만 바뀜 (사용자 2026-11-03 "정말 흐리멍텅해지는 곳에서 조절").
+   판 내용 (.stage) 보다 아래라 띠 안에 걸친 목록과 제목 줄은 그대로 눌림 */
+:root { --rx: calc(24px + (100vw - 48px) * 0.06); --ry: calc(24px + (100vh - 48px) * 0.08); }
+.rz i { position: fixed; z-index: 1; }
+.rz [data-rz="North"] { top: 0; left: var(--rx); right: var(--rx); height: var(--ry); cursor: ns-resize; }
+.rz [data-rz="South"] { bottom: 0; left: var(--rx); right: var(--rx); height: var(--ry); cursor: ns-resize; }
+.rz [data-rz="West"] { left: 0; top: var(--ry); bottom: var(--ry); width: var(--rx); cursor: ew-resize; }
+.rz [data-rz="East"] { right: 0; top: var(--ry); bottom: var(--ry); width: var(--rx); cursor: ew-resize; }
+.rz [data-rz="NorthWest"] { top: 0; left: 0; width: var(--rx); height: var(--ry); cursor: nwse-resize; }
+.rz [data-rz="SouthEast"] { bottom: 0; right: 0; width: var(--rx); height: var(--ry); cursor: nwse-resize; }
+.rz [data-rz="NorthEast"] { top: 0; right: 0; width: var(--rx); height: var(--ry); cursor: nesw-resize; }
+.rz [data-rz="SouthWest"] { bottom: 0; left: 0; width: var(--rx); height: var(--ry); cursor: nesw-resize; }
+/* 판 안 내용. 1292x772 기준 좌표를 --z 배로 (app.js fitStage). 빈 곳은 눌림을 아래 손잡이로 흘림 */
+.stage { position: absolute; left: 0; top: 0; width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); transform: scale(var(--z, 1)); transform-origin: 0 0; z-index: 2; pointer-events: none; }
+.stage > * { pointer-events: auto; }
 /* 판 네 변을 흐리게 (가로 띠와 세로 띠의 교집합) */
 .panel {
   position: absolute; inset: 0; overflow: hidden;
@@ -145,7 +136,7 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .note { color: var(--ink2); font-size: 12px; margin: 0; }
 
 /* 욘은 판 오른쪽 안에 거의 들고, 그림 끝 (허벅지) 은 판 아래 흐림과 같이 흐림 (사용자 "창에서 너무 튀어 나갔잖아") */
-.yawn { position: absolute; right: 120px; bottom: 40px; height: min(660px, 86vh); z-index: 4; pointer-events: none;
+.yawn { position: absolute; right: 96px; bottom: 16px; height: min(660px, 92%); z-index: 4; pointer-events: none;
   -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, #000 82%, transparent 100%); }
 
 /* 런처 자신의 새 판 버튼. 제목 줄 바로 아래 오른쪽 */
