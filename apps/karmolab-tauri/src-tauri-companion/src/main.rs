@@ -42,6 +42,34 @@ fn set_dragging(on: bool, state: tauri::State<Dragging>) {
     state.0.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/**
+ * 걷다가 화면 끝에 닿았을 때 그 방향의 옆 모니터로 창을 옮김. 옮겼으면 원점 이동량 (논리 px).
+ *
+ * 옆 모니터는 지금 모니터와 가로로 맞닿고 세로로 겹치는 것. 없으면 None, 화면은 거기서 멈춤
+ */
+#[tauri::command]
+fn hop_monitor(dir: i32, window: tauri::WebviewWindow) -> Option<(f64, f64)> {
+    let origin = window.outer_position().ok()?;
+    let size = window.outer_size().ok()?;
+    let (left, right) = (origin.x, origin.x + size.width as i32);
+    let (top, bottom) = (origin.y, origin.y + size.height as i32);
+    let target = window.available_monitors().ok()?.into_iter().find(|m| {
+        let a = m.work_area();
+        let (l, r) = (a.position.x, a.position.x + a.size.width as i32);
+        let (t, b) = (a.position.y, a.position.y + a.size.height as i32);
+        let touches = if dir < 0 { (r - left).abs() <= 8 } else { (l - right).abs() <= 8 };
+        touches && t < bottom && b > top
+    })?;
+    fit_to(&window, &target).ok()?;
+    let area = target.work_area();
+    let scale = target.scale_factor();
+    eprintln!("[창] 걸어서 모니터 옮김: {:?} -> {:?}", origin, area.position);
+    Some((
+        (origin.x - area.position.x) as f64 / scale,
+        (origin.y - area.position.y) as f64 / scale,
+    ))
+}
+
 #[tauri::command]
 fn quit(app: tauri::AppHandle) {
     app.exit(0);
@@ -63,7 +91,7 @@ fn main() {
     tauri::Builder::default()
         .manage(HitArea(std::sync::Mutex::new(Vec::new())))
         .manage(Dragging(std::sync::atomic::AtomicBool::new(false)))
-        .invoke_handler(tauri::generate_handler![set_hit_areas, set_dragging, quit])
+        .invoke_handler(tauri::generate_handler![set_hit_areas, set_dragging, hop_monitor, quit])
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {

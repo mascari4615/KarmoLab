@@ -177,6 +177,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the hop_monitor command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-hop-monitor",
+          "markdownDescription": "Enables the hop_monitor command without any pre-configured scope."
+        },
+        {
           "description": "Enables the quit command without any pre-configured scope.",
           "type": "string",
           "const": "allow-quit",
@@ -193,6 +199,12 @@
           "type": "string",
           "const": "allow-set-hit-areas",
           "markdownDescription": "Enables the set_hit_areas command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the hop_monitor command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-hop-monitor",
+          "markdownDescription": "Denies the hop_monitor command without any pre-configured scope."
         },
         {
           "description": "Denies the quit command without any pre-configured scope.",
