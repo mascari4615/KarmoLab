@@ -12,6 +12,7 @@
  */
 import { existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { createServer as createNetServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -271,6 +272,16 @@ function enterRoom(id) {
   return true;
 }
 const port = Number(process.env.COMPANION_PORT ?? '4620');
+// 같은 주소에 이미 떠 있는 동반자 확인. 창을 띄운 뒤 서버가 EADDRINUSE 로 죽던 문제 (2026-11-03 런처 실행)
+const portBusy = await new Promise((done) => {
+  const probe = createNetServer();
+  probe.once('error', (e) => done(e.code === 'EADDRINUSE'));
+  probe.listen(port, () => probe.close(() => done(false)));
+});
+if (portBusy) {
+  console.error(`[주소] ${port} 번을 이미 다른 프로그램이 쓴다. 떠 있는 동반자를 먼저 끄거나 COMPANION_PORT 로 다른 번호를 준다`);
+  process.exit(1);
+}
 const clockMs = Number(process.env.COMPANION_CLOCK_MS ?? '0');
 const screenMs = Number(process.env.COMPANION_SCREEN_MS ?? '120000');
 const cooldownMs = Number(process.env.COMPANION_COOLDOWN_MS ?? '90000');
