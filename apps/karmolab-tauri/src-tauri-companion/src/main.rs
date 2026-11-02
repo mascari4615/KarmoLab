@@ -42,6 +42,19 @@ fn set_dragging(on: bool, state: tauri::State<Dragging>) {
     state.0.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// (x, y, 너비, 높이), 물리 px
+type Rect = (i32, i32, i32, i32);
+
+/// dir 방향 (음수 왼쪽, 양수 오른쪽) 으로 가로로 맞닿고 세로로 겹치는 영역의 번호. 경계 오차 8px 허용
+fn neighbor(dir: i32, current: Rect, areas: &[Rect]) -> Option<usize> {
+    let (left, top, width, height) = current;
+    let (right, bottom) = (left + width, top + height);
+    areas.iter().position(|&(l, t, w, h)| {
+        let touches = if dir < 0 { (l + w - left).abs() <= 8 } else { (l - right).abs() <= 8 };
+        touches && t < bottom && t + h > top
+    })
+}
+
 /**
  * 걷다가 화면 끝에 닿았을 때 그 방향의 옆 모니터로 창을 옮김. 옮겼으면 원점 이동량 (논리 px).
  *
@@ -51,15 +64,16 @@ fn set_dragging(on: bool, state: tauri::State<Dragging>) {
 fn hop_monitor(dir: i32, window: tauri::WebviewWindow) -> Option<(f64, f64)> {
     let origin = window.outer_position().ok()?;
     let size = window.outer_size().ok()?;
-    let (left, right) = (origin.x, origin.x + size.width as i32);
-    let (top, bottom) = (origin.y, origin.y + size.height as i32);
-    let target = window.available_monitors().ok()?.into_iter().find(|m| {
-        let a = m.work_area();
-        let (l, r) = (a.position.x, a.position.x + a.size.width as i32);
-        let (t, b) = (a.position.y, a.position.y + a.size.height as i32);
-        let touches = if dir < 0 { (r - left).abs() <= 8 } else { (l - right).abs() <= 8 };
-        touches && t < bottom && b > top
-    })?;
+    let monitors = window.available_monitors().ok()?;
+    let areas: Vec<Rect> = monitors
+        .iter()
+        .map(|m| {
+            let a = m.work_area();
+            (a.position.x, a.position.y, a.size.width as i32, a.size.height as i32)
+        })
+        .collect();
+    let current = (origin.x, origin.y, size.width as i32, size.height as i32);
+    let target = monitors.get(neighbor(dir, current, &areas)?)?;
     fit_to(&window, &target).ok()?;
     let area = target.work_area();
     let scale = target.scale_factor();
@@ -287,4 +301,40 @@ fn env_number(key: &str, fallback: f64) -> f64 {
         .and_then(|v| v.trim().parse::<f64>().ok())
         .filter(|v| *v > 0.0)
         .unwrap_or(fallback)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::neighbor;
+
+    // 이 PC 실측 배치: 주 모니터 2560x1392 (작업 영역), 왼쪽 1920x1032 가 y 156 에서 시작
+    const PRIMARY: (i32, i32, i32, i32) = (0, 0, 2560, 1392);
+    const LEFT: (i32, i32, i32, i32) = (-1920, 156, 1920, 1032);
+
+    #[test]
+    fn finds_left_and_right_neighbors() {
+        let areas = [PRIMARY, LEFT];
+        assert_eq!(neighbor(-1, PRIMARY, &areas), Some(1));
+        assert_eq!(neighbor(1, LEFT, &areas), Some(0));
+    }
+
+    #[test]
+    fn none_when_no_monitor_that_way() {
+        let areas = [PRIMARY, LEFT];
+        assert_eq!(neighbor(1, PRIMARY, &areas), None);
+        assert_eq!(neighbor(-1, LEFT, &areas), None);
+        assert_eq!(neighbor(-1, PRIMARY, &[PRIMARY]), None);
+    }
+
+    #[test]
+    fn not_neighbor_without_vertical_overlap() {
+        let below = (-1920, 1400, 1920, 1032);
+        assert_eq!(neighbor(-1, PRIMARY, &[PRIMARY, below]), None);
+    }
+
+    #[test]
+    fn tolerates_small_edge_gap() {
+        let gap = (-1925, 0, 1920, 1080);
+        assert_eq!(neighbor(-1, PRIMARY, &[PRIMARY, gap]), Some(1));
+    }
 }
