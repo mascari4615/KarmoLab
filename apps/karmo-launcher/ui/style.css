@@ -38,16 +38,31 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .en { font-family: var(--en); letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; color: var(--ink3); }
 
 .win { position: absolute; inset: 24px 24px 24px 24px; }
-/* 크기 조절 손잡이. 판 가장자리 (창 끝에서 24px) 를 가운데로 안팎 10px 씩 */
+/* 크기 조절 손잡이. 판 가장자리가 흐려 눈에 안 띄니 (사용자 2026-11-03 "어딘지 잘 모르겠어")
+   창 끝에서 판 안쪽 12px 까지 넓게 잡고, 올리면 판 경계에 주황 선, 오른쪽 아래에는 늘 보이는 손잡이 */
 .rz i { position: fixed; z-index: 50; }
-.rz [data-rz="North"] { top: 14px; left: 34px; right: 34px; height: 20px; cursor: ns-resize; }
-.rz [data-rz="South"] { bottom: 14px; left: 34px; right: 34px; height: 20px; cursor: ns-resize; }
-.rz [data-rz="West"] { left: 14px; top: 34px; bottom: 34px; width: 20px; cursor: ew-resize; }
-.rz [data-rz="East"] { right: 14px; top: 34px; bottom: 34px; width: 20px; cursor: ew-resize; }
-.rz [data-rz="NorthWest"] { top: 14px; left: 14px; width: 20px; height: 20px; cursor: nwse-resize; }
-.rz [data-rz="SouthEast"] { bottom: 14px; right: 14px; width: 20px; height: 20px; cursor: nwse-resize; }
-.rz [data-rz="NorthEast"] { top: 14px; right: 14px; width: 20px; height: 20px; cursor: nesw-resize; }
-.rz [data-rz="SouthWest"] { bottom: 14px; left: 14px; width: 20px; height: 20px; cursor: nesw-resize; }
+.rz i::after { content: ""; position: absolute; background: var(--acc); opacity: 0; transition: opacity 0.12s; pointer-events: none; }
+.rz i:hover::after { opacity: 0.9; }
+.rz [data-rz="North"] { top: 0; left: 36px; right: 36px; height: 36px; cursor: ns-resize; }
+.rz [data-rz="South"] { bottom: 0; left: 36px; right: 36px; height: 36px; cursor: ns-resize; }
+.rz [data-rz="West"] { left: 0; top: 36px; bottom: 36px; width: 36px; cursor: ew-resize; }
+.rz [data-rz="East"] { right: 0; top: 36px; bottom: 36px; width: 36px; cursor: ew-resize; }
+.rz [data-rz="North"]::after { left: 0; right: 0; top: 23px; height: 2px; }
+.rz [data-rz="South"]::after { left: 0; right: 0; bottom: 23px; height: 2px; }
+.rz [data-rz="West"]::after { top: 0; bottom: 0; left: 23px; width: 2px; }
+.rz [data-rz="East"]::after { top: 0; bottom: 0; right: 23px; width: 2px; }
+.rz [data-rz="NorthWest"] { top: 0; left: 0; width: 36px; height: 36px; cursor: nwse-resize; }
+.rz [data-rz="SouthEast"] { bottom: 0; right: 0; width: 44px; height: 44px; cursor: nwse-resize; }
+.rz [data-rz="NorthEast"] { top: 0; right: 0; width: 36px; height: 36px; cursor: nesw-resize; }
+.rz [data-rz="SouthWest"] { bottom: 0; left: 0; width: 36px; height: 36px; cursor: nesw-resize; }
+.rz [data-rz="NorthWest"]::after { top: 23px; left: 23px; width: 13px; height: 13px; border-top: 2px solid var(--acc); border-left: 2px solid var(--acc); background: none; }
+.rz [data-rz="NorthEast"]::after { top: 23px; right: 23px; width: 13px; height: 13px; border-top: 2px solid var(--acc); border-right: 2px solid var(--acc); background: none; }
+.rz [data-rz="SouthWest"]::after { bottom: 23px; left: 23px; width: 13px; height: 13px; border-bottom: 2px solid var(--acc); border-left: 2px solid var(--acc); background: none; }
+/* 오른쪽 아래 손잡이는 늘 보임 (사선 세 줄) */
+.rz .grip::before { content: ""; position: absolute; right: 28px; bottom: 28px; width: 14px; height: 14px; opacity: 0.7;
+  background: linear-gradient(135deg, transparent 0 45%, var(--ink2) 45% 52%, transparent 52% 65%, var(--ink2) 65% 72%, transparent 72% 85%, var(--ink2) 85% 92%, transparent 92%); }
+.rz .grip:hover::before { opacity: 1; }
+.rz .grip::after { right: 23px; bottom: 23px; width: 13px; height: 13px; border-bottom: 2px solid var(--acc); border-right: 2px solid var(--acc); background: none; }
 /* 판 네 변을 흐리게 (가로 띠와 세로 띠의 교집합) */
 .panel {
   position: absolute; inset: 0; overflow: hidden;
@@ -66,13 +81,21 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .titlebar .msg { flex: 1; text-align: right; padding-right: 10px; font-size: 11px; color: var(--ink3); }
 .wb { width: 34px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: var(--ink2); font: 400 15px var(--en); cursor: pointer; }
 .wb:hover { color: var(--ink); background: var(--panel); }
-/* 로그인과 작업 폴더 판. 제목 줄 아래 오른쪽 */
-.keys { position: absolute; top: 76px; right: 40px; width: 360px; z-index: 7; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line, rgba(127,127,127,0.3)); display: grid; gap: 8px; }
-.keys .t { font-size: 11px; color: var(--ink3); letter-spacing: 0.1em; }
-.keys .krow { display: flex; gap: 6px; }
-.keys input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--line, rgba(127,127,127,0.4)); background: transparent; color: var(--ink); font: 12px var(--ko); }
-.keys button { padding: 6px 10px; border: 1px solid var(--line, rgba(127,127,127,0.4)); background: transparent; color: var(--ink); font: 12px var(--ko); cursor: pointer; white-space: nowrap; }
-.keys button:hover { background: var(--bg); }
+/* 설정 모달. 판 전체를 어둡게 덮고 가운데 불투명 상자 */
+.modal { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(0, 0, 0, 0.55); }
+.modal[hidden] { display: none; }
+.dialog { width: min(460px, calc(100% - 80px)); max-height: calc(100% - 80px); overflow: auto; background: var(--bg); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45); padding: 18px 22px 22px; display: grid; gap: 18px; }
+.dialog header { display: flex; align-items: center; justify-content: space-between; }
+.dialog h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.dialog h3 { margin: 0 0 4px; font-size: 13px; font-weight: 700; }
+.dialog section { display: grid; gap: 8px; }
+.dialog .note { margin: 0; color: var(--ink3); font-size: 12px; }
+.dialog .state { margin: 0; font-size: 13px; color: var(--ink2); }
+.dialog .krow { display: flex; gap: 6px; }
+.dialog input { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--line); background: var(--panel2); color: var(--ink); font: 12px var(--ko); }
+.dialog .krow button { padding: 7px 12px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 12px var(--ko); cursor: pointer; white-space: nowrap; }
+.dialog .krow button:hover { background: var(--panel2); }
+.dialog .krow button.primary { background: var(--acc); color: var(--acc-ink); border-color: var(--acc); font-weight: 700; }
 
 .side { position: absolute; left: 40px; top: 84px; bottom: 56px; width: 260px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(16px); padding: 14px 0; z-index: 2; overflow: auto; }
 .side .en { display: block; padding: 0 18px 10px; }

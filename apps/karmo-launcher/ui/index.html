@@ -13,32 +13,41 @@
   <header class="titlebar" data-tauri-drag-region>
     <span class="en" data-tauri-drag-region>Karmo Launcher</span>
     <span class="msg" id="msg" data-tauri-drag-region></span>
-    <button type="button" class="wb" id="keyBtn" title="GitHub 로그인과 작업 폴더" aria-label="GitHub 로그인과 작업 폴더">&#9919;</button>
+    <button type="button" class="wb" id="keyBtn" title="설정" aria-label="설정">&#9881;</button>
     <button type="button" class="wb" id="reload" title="새로고침" aria-label="새로고침">&#8635;</button>
     <button type="button" class="wb" id="min" title="최소화" aria-label="최소화">_</button>
     <button type="button" class="wb" id="close" title="트레이로 닫기" aria-label="트레이로 닫기">&#10005;</button>
   </header>
-  <!-- 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->
-  <section class="keys" id="keys" hidden>
-    <div class="t">GitHub</div>
-    <p class="note" id="ghState">확인 중</p>
-    <div class="krow"><input type="password" id="ghToken" placeholder="토큰 붙여 넣기 (읽기 권한)" autocomplete="off"><button type="button" id="ghSave">저장</button></div>
-    <div class="krow"><button type="button" id="ghGit">이 PC 의 git 로그인 쓰기</button><button type="button" id="ghClear">로그아웃</button></div>
-    <div class="t">작업 폴더</div>
-    <div class="krow"><input type="text" id="ws" spellcheck="false"><button type="button" id="wsSave">저장</button></div>
-  </section>
   <nav class="side" aria-label="라이브러리"><span class="en">Library</span><div id="list"></div></nav>
   <section class="head" id="head"></section>
   <section class="rel" id="rel" hidden></section>
   <!-- 런처 자신의 새 판. 켜질 때 한 번 물어봄 -->
   <button type="button" class="selfup" id="selfup" hidden></button>
   <div class="acts" id="acts"></div>
+  <!-- 설정 모달. 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->
+  <div class="modal" id="keys" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="keysTitle">
+      <header><h2 id="keysTitle">설정</h2><button type="button" class="wb" id="keysClose" title="닫기" aria-label="닫기">&#10005;</button></header>
+      <section>
+        <h3>GitHub 로그인</h3>
+        <p class="note">비공개 항목 (KarmoAI, Witch-Mendokusai) 은 로그인해야 목록에 나옵니다.</p>
+        <p class="state" id="ghState">확인 중</p>
+        <div class="krow"><button type="button" class="primary" id="ghGit">이 PC 의 git 로그인 쓰기</button><button type="button" id="ghClear">로그아웃</button></div>
+        <div class="krow"><input type="password" id="ghToken" placeholder="또는 토큰 붙여 넣기 (읽기 권한)" autocomplete="off"><button type="button" id="ghSave">저장</button></div>
+      </section>
+      <section>
+        <h3>작업 폴더</h3>
+        <p class="note">로컬 항목 (KarmoAI) 을 이 폴더 아래에서 찾습니다.</p>
+        <div class="krow"><input type="text" id="ws" spellcheck="false"><button type="button" id="wsSave">저장</button></div>
+      </section>
+    </div>
+  </div>
 </div>
 <img class="yawn" src="img/yawn-launcher.webp" alt="">
 <!-- 크기 조절 손잡이. 투명하고 틀과 그림자 없는 창이라 OS 가 주는 테두리가 없음 -->
 <div class="rz" aria-hidden="true">
   <i data-rz="North"></i><i data-rz="South"></i><i data-rz="West"></i><i data-rz="East"></i>
-  <i data-rz="NorthWest"></i><i data-rz="NorthEast"></i><i data-rz="SouthWest"></i><i data-rz="SouthEast"></i>
+  <i data-rz="NorthWest"></i><i data-rz="NorthEast"></i><i data-rz="SouthWest"></i><i data-rz="SouthEast" class="grip"></i>
 </div>
 <script type="module" src="app.js"></script>
 </body>

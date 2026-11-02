@@ -242,9 +242,19 @@ async function keyAction(fn) {
   await paintKeys();
   await load();
 }
-$('keyBtn').addEventListener('click', () => {
-  keysEl.hidden = !keysEl.hidden;
-  if (!keysEl.hidden) void paintKeys();
+/* 설정 모달. 톱니로 열고, 닫기 버튼, 바깥 누르기, Esc 로 닫음 */
+function openKeys() {
+  keysEl.hidden = false;
+  void paintKeys();
+}
+const closeKeys = () => (keysEl.hidden = true);
+$('keyBtn').addEventListener('click', () => (keysEl.hidden ? openKeys() : closeKeys()));
+$('keysClose').addEventListener('click', closeKeys);
+keysEl.addEventListener('mousedown', (e) => {
+  if (e.target === keysEl) closeKeys();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !keysEl.hidden) closeKeys();
 });
 $('ghSave').addEventListener('click', () => void keyAction(() => invoke('github_set_token', { token: $('ghToken').value })));
 $('ghGit').addEventListener('click', () => void keyAction(() => invoke('github_use_git_login')));
