@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { groupsByMaterial } from './mesh-groups.js';
 import { applyToon } from '/toon.js';
 import { paintableFace } from '/face-paint.js';
 
@@ -285,6 +286,19 @@ function shareSkeleton(model, pairs) {
   console.log(`[3D] 스켈레톤을 합쳤다. 메시 ${skinned.length}개 중 ${moved}개를 하나에 묶음`);
 }
 
+/** 같은 재질 그룹을 모아 그리기 호출 감소. 주소에 mergegroups 값 0 이면 끔(비교용) */
+function mergeGroupsByMaterial(geometry) {
+  if (new URLSearchParams(location.search).get('mergegroups') === '0') return;
+  // FBX 는 인덱스 없는 기하. 정점 번호 그대로를 인덱스로
+  const count = geometry.attributes.position.count;
+  const index = geometry.index?.array ?? (count > 65535 ? Uint32Array : Uint16Array).from({ length: count }, (_, i) => i);
+  const merged = groupsByMaterial(index, geometry.groups);
+  if (merged === null) return;
+  geometry.setIndex(new THREE.BufferAttribute(merged.index, 1));
+  geometry.clearGroups();
+  for (const g of merged.groups) geometry.addGroup(g.start, g.count, g.materialIndex);
+}
+
 export async function mountModel(canvas, modelName, onFail) {
   let renderer;
   try {
@@ -331,6 +345,7 @@ export async function mountModel(canvas, modelName, onFail) {
   model.traverse((node) => {
     if (node.isMesh !== true) return;
     node.frustumCulled = false;
+    if (Array.isArray(node.material)) mergeGroupsByMaterial(node.geometry);
     for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
       if (material === undefined || material === null) continue;
       material.side = THREE.DoubleSide;
