@@ -1708,6 +1708,8 @@
       b.type = 'button';
       b.className = 'menu-tile' + (t.on() ? ' on' : '');
       b.dataset.icon = t.icon;
+      // 순환 (알림) 은 켜짐 꺼짐이 아니라 값이라 aria-pressed 를 안 붙임
+      if (!t.tip) b.setAttribute('aria-pressed', String(t.on()));
       b.append(이름(t));
       b.addEventListener('click', (e) => {
         const at = [...menuTiles.children].indexOf(b);
@@ -1778,6 +1780,8 @@
       b.type = 'button';
       b.className = 'ring-btn' + (t.more ? ' more' : t.on() ? ' on' : '');
       b.dataset.icon = t.icon;
+      if (!t.more && !t.tip) b.setAttribute('aria-pressed', String(t.on()));
+      b.setAttribute('aria-label', t.more ? '더보기' : t.tip ? t.tip() : 이름(t));
       b.style.left = `${pts[i][0] + shiftX}px`;
       b.style.top = `${pts[i][1] + shiftY}px`;
       const tip = document.createElement('small');

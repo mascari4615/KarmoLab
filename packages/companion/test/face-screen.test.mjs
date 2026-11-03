@@ -195,6 +195,11 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       assert.match(tips[5], /^알림 .+, 누르면 .+$/, `알림 이름표에 다음 값이 없다: ${tips[5]}`);
       assert.doesNotMatch(tips[5], /켜짐|꺼짐/, `알림은 순환이라 켜짐 꺼짐이 아니다: ${tips[5]}`);
       assert.equal(tips[6], '더보기');
+      const pressed = await page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn')].map((b) => [b.getAttribute('aria-pressed'), b.classList.contains('on'), b.getAttribute('aria-label')]));
+      for (const i of [0, 1, 2, 3, 4]) assert.equal(pressed[i][0], String(pressed[i][1]), `켜고 끄기 버튼 ${i} 의 aria-pressed 가 모양과 다르다`);
+      assert.equal(pressed[5][0], null, '순환 (알림) 버튼에 aria-pressed 가 붙었다');
+      assert.equal(pressed[6][0], null, '더보기 버튼에 aria-pressed 가 붙었다');
+      assert.ok(pressed.every((p) => p[2]), '이름 (aria-label) 없는 원형 버튼이 있다');
       await page.close();
     });
 
