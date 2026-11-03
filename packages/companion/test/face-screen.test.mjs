@@ -300,6 +300,31 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('원형 이름표는 화면 끝에서도 화면 안에 들어온다', async () => {
+      const page = await openWindow('?full=1&roam=0&gravity=0');
+      for (const at of [{ x: 480, y: 830 }, { x: 10, y: 830 }]) {
+        await page.evaluate((p) => { localStorage.setItem('companion.iconMode', '1'); localStorage.setItem('companion.iconAt', JSON.stringify(p)); }, at);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1200);
+        await page.locator('#ntIcon').click({ button: 'right', force: true });
+        const out = await page.evaluate(() => {
+          const res = [];
+          for (const b of document.querySelectorAll('#ring .ring-btn')) {
+            const tip = b.querySelector('small');
+            tip.style.display = 'block';
+            const r = tip.getBoundingClientRect();
+            if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight) res.push([tip.textContent, Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]);
+            tip.style.display = '';
+          }
+          return res;
+        });
+        assert.deepEqual(out, [], `화면 밖 이름표 (${JSON.stringify(at)}): ${JSON.stringify(out)}`);
+        await page.keyboard.press('Escape');
+      }
+      await page.evaluate(() => { localStorage.setItem('companion.iconMode', '0'); localStorage.removeItem('companion.iconAt'); });
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });

@@ -1797,6 +1797,11 @@
       b.setAttribute('aria-label', t.more ? '더보기' : t.tip ? t.tip() : 이름(t));
       b.style.left = `${pts[i][0] + shiftX}px`;
       b.style.top = `${pts[i][1] + shiftY}px`;
+      // 이름표가 화면 밖으로 잘리지 않게. 아래쪽 버튼은 위에, 좌우 끝 버튼은 안쪽으로 붙임
+      const bx = pts[i][0] + shiftX, by = pts[i][1] + shiftY;
+      if (by > innerHeight - 110) b.classList.add('tip-up');
+      if (bx > innerWidth - 160) b.classList.add('tip-left');
+      else if (bx < 160) b.classList.add('tip-right');
       const tip = document.createElement('small');
       tip.textContent = t.more ? '더보기' : t.tip ? t.tip() : `${이름(t)} ${t.on() ? '켜짐' : '꺼짐'}`;
       b.appendChild(tip);
