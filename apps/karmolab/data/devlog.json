@@ -2,7 +2,7 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1789,
+    "commits": 1797,
     "days": 14,
     "shown": 60
   },
@@ -10,6 +10,34 @@
     {
       "date": "2026-11-02",
       "entries": [
+        {
+          "sha": "8440e630",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "combat",
+          "text": "기본 검과 공명 강화에 두 참격 셰이더 연결"
+        },
+        {
+          "sha": "dccf09de",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "cards",
+          "text": "검의 공명 연출을 기존 픽셀 검과 참격으로 통일"
+        },
+        {
+          "sha": "62d647e2",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "cards",
+          "text": "검의 공명 선택에 칼날 집결과 확산 연출"
+        },
+        {
+          "sha": "ad2a3c38",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "equipment",
+          "text": "비활성 정령 무기의 강화 구독 해제"
+        },
         {
           "sha": "58e37401",
           "type": "fix",
@@ -23,38 +51,10 @@
           "typeLabel": "고친 것",
           "scope": "movement",
           "text": "중첩 충돌에서 다른 캐릭터의 접촉 목록 덮어쓰기 방지"
-        },
-        {
-          "sha": "6bb7b5e0",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ai",
-          "text": "생성자 대기 시간이 사라져 돌진이 즉시 취소되던 문제 수정"
-        },
-        {
-          "sha": "cef31804",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "movement",
-          "text": "재사용 접촉 누락과 충돌 조회 배열 생성 제거"
-        },
-        {
-          "sha": "1d135ed9",
-          "type": "perf",
-          "typeLabel": "빨라진 것",
-          "scope": "movement",
-          "text": "접지 최근접 조회와 자기 몸 필터 통합"
-        },
-        {
-          "sha": "a395569b",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "survival",
-          "text": "재사용 공격의 타격 누락과 접촉 기록 잔류 제거"
         }
       ],
-      "quiet": 1,
-      "more": 6
+      "quiet": 5,
+      "more": 10
     },
     {
       "date": "2026-11-01",
