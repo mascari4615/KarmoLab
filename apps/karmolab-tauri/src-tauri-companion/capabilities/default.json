@@ -16,6 +16,7 @@
     "core:event:default",
     "allow-set-hit-areas",
     "allow-set-dragging",
+    "allow-hop-monitor",
     "allow-quit"
   ],
   "remote": {

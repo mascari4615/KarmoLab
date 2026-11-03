@@ -42,6 +42,126 @@ fn set_dragging(on: bool, state: tauri::State<Dragging>) {
     state.0.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/**
+ * 창이 어느 모니터 작업 영역과도 정확히 맞지 않으면 다시 맞춤.
+ *
+ * 창 가운데가 든 모니터, 없으면 (그 모니터를 뺐음) 주 모니터. 이미 맞으면 아무것도 안 함
+ */
+fn refit_if_layout_changed(window: &tauri::WebviewWindow) {
+    let (Ok(origin), Ok(size), Ok(monitors)) =
+        (window.outer_position(), window.outer_size(), window.available_monitors())
+    else {
+        return;
+    };
+    let current = (origin.x, origin.y, size.width as i32, size.height as i32);
+    let areas: Vec<Rect> = monitors.iter().map(work_rect).collect();
+    if areas.contains(&current) {
+        return;
+    }
+    let target = containing(current, &areas)
+        .and_then(|i| monitors.get(i).cloned())
+        .or_else(|| window.primary_monitor().ok().flatten());
+    if let Some(target) = target {
+        eprintln!("[창] 모니터 구성 바뀜, 다시 맞춤: {:?} -> {:?}", current, work_rect(&target));
+        let _ = fit_to(window, &target);
+    }
+}
+
+fn work_rect(m: &tauri::Monitor) -> Rect {
+    let a = m.work_area();
+    (a.position.x, a.position.y, a.size.width as i32, a.size.height as i32)
+}
+
+/// 창 가운데가 든 영역의 번호
+fn containing(current: Rect, areas: &[Rect]) -> Option<usize> {
+    let (cx, cy) = (current.0 + current.2 / 2, current.1 + current.3 / 2);
+    areas.iter().position(|&(l, t, w, h)| cx >= l && cx < l + w && cy >= t && cy < t + h)
+}
+
+/// 커서 (물리 px), 창 원점 (물리 px), 배율
+#[cfg(windows)]
+fn pointer_and_window(
+    hwnd: isize,
+    _window: &tauri::WebviewWindow,
+) -> Option<(tauri::PhysicalPosition<f64>, tauri::PhysicalPosition<i32>, f64)> {
+    #[repr(C)]
+    struct Point {
+        x: i32,
+        y: i32,
+    }
+    #[repr(C)]
+    struct WinRect {
+        left: i32,
+        top: i32,
+        right: i32,
+        bottom: i32,
+    }
+    #[link(name = "user32")]
+    extern "system" {
+        fn GetCursorPos(point: *mut Point) -> i32;
+        fn GetWindowRect(hwnd: isize, rect: *mut WinRect) -> i32;
+        fn GetDpiForWindow(hwnd: isize) -> u32;
+    }
+    let mut point = Point { x: 0, y: 0 };
+    let mut rect = WinRect { left: 0, top: 0, right: 0, bottom: 0 };
+    unsafe {
+        if GetCursorPos(&mut point) == 0 || GetWindowRect(hwnd, &mut rect) == 0 {
+            return None;
+        }
+        let dpi = GetDpiForWindow(hwnd);
+        let scale = if dpi == 0 { 1.0 } else { dpi as f64 / 96.0 };
+        Some((
+            tauri::PhysicalPosition::new(point.x as f64, point.y as f64),
+            tauri::PhysicalPosition::new(rect.left, rect.top),
+            scale,
+        ))
+    }
+}
+
+#[cfg(not(windows))]
+fn pointer_and_window(
+    _hwnd: isize,
+    window: &tauri::WebviewWindow,
+) -> Option<(tauri::PhysicalPosition<f64>, tauri::PhysicalPosition<i32>, f64)> {
+    Some((window.cursor_position().ok()?, window.outer_position().ok()?, window.scale_factor().unwrap_or(1.0)))
+}
+
+/// (x, y, 너비, 높이), 물리 px
+type Rect = (i32, i32, i32, i32);
+
+/// dir 방향 (음수 왼쪽, 양수 오른쪽) 으로 가로로 맞닿고 세로로 겹치는 영역의 번호. 경계 오차 8px 허용
+fn neighbor(dir: i32, current: Rect, areas: &[Rect]) -> Option<usize> {
+    let (left, top, width, height) = current;
+    let (right, bottom) = (left + width, top + height);
+    areas.iter().position(|&(l, t, w, h)| {
+        let touches = if dir < 0 { (l + w - left).abs() <= 8 } else { (l - right).abs() <= 8 };
+        touches && t < bottom && t + h > top
+    })
+}
+
+/**
+ * 걷다가 화면 끝에 닿았을 때 그 방향의 옆 모니터로 창을 옮김. 옮겼으면 원점 이동량 (논리 px).
+ *
+ * 옆 모니터는 지금 모니터와 가로로 맞닿고 세로로 겹치는 것. 없으면 None, 화면은 거기서 멈춤
+ */
+#[tauri::command]
+fn hop_monitor(dir: i32, window: tauri::WebviewWindow) -> Option<(f64, f64)> {
+    let origin = window.outer_position().ok()?;
+    let size = window.outer_size().ok()?;
+    let monitors = window.available_monitors().ok()?;
+    let areas: Vec<Rect> = monitors.iter().map(work_rect).collect();
+    let current = (origin.x, origin.y, size.width as i32, size.height as i32);
+    let target = monitors.get(neighbor(dir, current, &areas)?)?;
+    fit_to(&window, &target).ok()?;
+    let area = target.work_area();
+    let scale = target.scale_factor();
+    eprintln!("[창] 걸어서 모니터 옮김: {:?} -> {:?}", origin, area.position);
+    Some((
+        (origin.x - area.position.x) as f64 / scale,
+        (origin.y - area.position.y) as f64 / scale,
+    ))
+}
+
 #[tauri::command]
 fn quit(app: tauri::AppHandle) {
     app.exit(0);
@@ -63,7 +183,7 @@ fn main() {
     tauri::Builder::default()
         .manage(HitArea(std::sync::Mutex::new(Vec::new())))
         .manage(Dragging(std::sync::atomic::AtomicBool::new(false)))
-        .invoke_handler(tauri::generate_handler![set_hit_areas, set_dragging, quit])
+        .invoke_handler(tauri::generate_handler![set_hit_areas, set_dragging, hop_monitor, quit])
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
@@ -125,20 +245,31 @@ fn main() {
             // 화면 쪽에서 커서를 좇을 수는 없다 — 클릭을 통과시키는 동안에는 창이 마우스
             // 움직임 자체를 못 받기 때문이다. 그래서 여기서 커서 위치를 직접 들여다본다.
             let handle = app.handle().clone();
+            // 창 핸들은 한 번만 물음. 이것도 메인 스레드를 거침
+            #[cfg(windows)]
+            let hwnd = window.hwnd().map(|h| h.0 as isize).unwrap_or(0);
+            #[cfg(not(windows))]
+            let hwnd = 0isize;
             std::thread::spawn(move || {
                 let mut passing_through = false;
+                let mut tick: u32 = 0;
                 loop {
                     std::thread::sleep(std::time::Duration::from_millis(70));
+                    tick = tick.wrapping_add(1);
                     let Some(window) = handle.get_webview_window("companion") else { continue };
-                    let Ok(cursor) = window.cursor_position() else { continue };
-                    let Ok(mut origin) = window.outer_position() else { continue };
+                    // 2초마다 모니터 구성 확인. 모니터를 빼거나 해상도, 작업 표시줄이 바뀌면 다시 맞춤
+                    if fit_monitor && tick % 30 == 0 {
+                        refit_if_layout_changed(&window);
+                    }
+                    // 커서, 창 자리, 배율은 Win32 로 바로 읽음. Tauri 창 함수는 매번 메인 스레드를
+                    // 거쳐 70ms 마다 세 번 오갔음 (아이콘 모드에서 20초당 141ms)
+                    let Some((cursor, mut origin, scale)) = pointer_and_window(hwnd, &window) else { continue };
 
                     if fit_monitor && handle.state::<Dragging>().0.load(std::sync::atomic::Ordering::Relaxed) {
                         if let Some(moved) = follow_cursor_monitor(&window, cursor.x, cursor.y, origin) {
                             origin = moved;
                         }
                     }
-                    let scale = window.scale_factor().unwrap_or(1.0);
 
                     let local_x = (cursor.x - origin.x as f64) / scale;
                     let local_y = (cursor.y - origin.y as f64) / scale;
@@ -259,4 +390,52 @@ fn env_number(key: &str, fallback: f64) -> f64 {
         .and_then(|v| v.trim().parse::<f64>().ok())
         .filter(|v| *v > 0.0)
         .unwrap_or(fallback)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{containing, neighbor};
+
+    // 이 PC 실측 배치: 주 모니터 2560x1392 (작업 영역), 왼쪽 1920x1032 가 y 156 에서 시작
+    const PRIMARY: (i32, i32, i32, i32) = (0, 0, 2560, 1392);
+    const LEFT: (i32, i32, i32, i32) = (-1920, 156, 1920, 1032);
+
+    #[test]
+    fn finds_left_and_right_neighbors() {
+        let areas = [PRIMARY, LEFT];
+        assert_eq!(neighbor(-1, PRIMARY, &areas), Some(1));
+        assert_eq!(neighbor(1, LEFT, &areas), Some(0));
+    }
+
+    #[test]
+    fn none_when_no_monitor_that_way() {
+        let areas = [PRIMARY, LEFT];
+        assert_eq!(neighbor(1, PRIMARY, &areas), None);
+        assert_eq!(neighbor(-1, LEFT, &areas), None);
+        assert_eq!(neighbor(-1, PRIMARY, &[PRIMARY]), None);
+    }
+
+    #[test]
+    fn not_neighbor_without_vertical_overlap() {
+        let below = (-1920, 1400, 1920, 1032);
+        assert_eq!(neighbor(-1, PRIMARY, &[PRIMARY, below]), None);
+    }
+
+    #[test]
+    fn containing_picks_monitor_under_window_center() {
+        let areas = [PRIMARY, LEFT];
+        assert_eq!(containing(PRIMARY, &areas), Some(0));
+        assert_eq!(containing(LEFT, &areas), Some(1));
+        // 해상도가 줄어 창이 옛 크기로 남은 경우도 가운데로 찾음
+        assert_eq!(containing((0, 0, 3840, 2112), &[(0, 0, 2560, 1392)]), Some(0));
+        assert_eq!(containing((0, 0, 2560, 1440), &[(0, 0, 2560, 1392)]), Some(0));
+        // 그 모니터를 뺐으면 없음, 호출부가 주 모니터로
+        assert_eq!(containing(LEFT, &[PRIMARY]), None);
+    }
+
+    #[test]
+    fn tolerates_small_edge_gap() {
+        let gap = (-1925, 0, 1920, 1080);
+        assert_eq!(neighbor(-1, PRIMARY, &[PRIMARY, gap]), Some(1));
+    }
 }
