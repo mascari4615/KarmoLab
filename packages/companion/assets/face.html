@@ -1826,6 +1826,8 @@
     아이콘채우기(ring);
   }
   function 원형열기(rect, small) {
+    // 판이 열려 있었으면 판 옆에 붙인 아는 것 판도 같이 닫음 (판만 원형으로 바뀌고 혼자 남았음)
+    if (menu.hidden === false) sheet.hidden = true;
     menu.hidden = true;
     // 걷거나 춤추던 중이면 그 자리에 멈춤. 원형은 연 순간의 몸 자리에 그림
     stopRoam();
