@@ -2222,14 +2222,11 @@
      full 모드에서 한가할 때 가끔 화면 바닥을 가로질러 걷는다. 동작은 제자리 걸음이라
      방 위치(--방x)를 옮긴다. 주소 뒤에 roam=0 이면 끈다. */
   const roamEnabled = 전체화면 && new URLSearchParams(location.search).get('roam') !== '0';
-  const WALK_CYCLE_SEC = 1.33; // Walk_Loop 한 바퀴
-  const JOG_CYCLE_SEC = 0.93; // Jog_Fwd_Loop 한 바퀴
-  const JOG_STRIDE_PER_HEIGHT = 1.1; // 뜀은 한 바퀴에 더 나아감 (눈으로 조정)
-  const STRIDE_PER_HEIGHT = 0.8; // 한 바퀴에 몸 키의 이만큼 나아가야 발이 안 미끄러짐 (눈으로 조정)
+  // 걷기 속도 (보폭과 한 바퀴 시간) 는 분신과 공용 surfaces.js 의 walkSpeed
 
   function startRoam() {
     const box = body3d?.screenBox?.();
-    if (!box) return;
+    if (!box || surfaceMod === null) return;
     // 걸을 수 있는 범위. 바닥이면 화면 가로 전체, 창 위면 그 윗면 안쪽
     let minX = 100;
     let maxX = innerWidth - 100;
@@ -2255,9 +2252,7 @@
     roam.target = target;
     // 뜀(30%)은 걸음과 한 바퀴 거리와 시간이 다름
     const jog = Math.random() < 0.3;
-    roam.speed = jog
-      ? (JOG_STRIDE_PER_HEIGHT * box.height) / JOG_CYCLE_SEC
-      : (STRIDE_PER_HEIGHT * box.height) / WALK_CYCLE_SEC;
+    roam.speed = surfaceMod.walkSpeed(box.height, jog);
     roam.active = true;
     roam.last = performance.now();
     body3d.setFacing(roam.dir);

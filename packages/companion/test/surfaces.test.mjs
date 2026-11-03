@@ -105,3 +105,11 @@ test('던지는 속도: 빠르고 막 놓았으면 던지고, 느리거나 멈�
   // 표본 하나면 없음
   assert.equal(throwVelocity([[1000, 0, 0]], 1000), null);
 });
+
+test('걷기 속도는 몸 키에 비례하고 뜀이 더 빠르다', async () => {
+  const { walkSpeed } = await import('../assets/surfaces.js');
+  // 키 300px 이면 걸음 0.8 x 300 / 1.33 로 180.45, 뜀 1.1 x 300 / 0.93 으로 354.84
+  assert.ok(Math.abs(walkSpeed(300, false) - 180.45) < 0.1);
+  assert.ok(Math.abs(walkSpeed(300, true) - 354.84) < 0.1);
+  assert.equal(walkSpeed(600, false), walkSpeed(300, false) * 2);
+});

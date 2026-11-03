@@ -147,3 +147,14 @@ export function throwVelocity(samples, now) {
   if (Math.hypot(vx, vy) <= 350 || now - last[0] >= 80) return null;
   return { vx, vy };
 }
+
+// 걷기와 뜀. 한 바퀴 시간 (초) 과 한 바퀴에 몸 키의 몇 배를 나아가야 발이 안 미끄러지는지 (눈으로 조정)
+export const WALK_CYCLE_SEC = 1.33; // Walk_Loop
+export const JOG_CYCLE_SEC = 0.93; // Jog_Fwd_Loop
+export const STRIDE_PER_HEIGHT = 0.8;
+export const JOG_STRIDE_PER_HEIGHT = 1.1;
+
+/** 몸 키 (px) 에 맞춘 걷기, 뜀 속도 (px/s). 본체와 분신 공용 */
+export function walkSpeed(height, jog) {
+  return jog ? (JOG_STRIDE_PER_HEIGHT * height) / JOG_CYCLE_SEC : (STRIDE_PER_HEIGHT * height) / WALK_CYCLE_SEC;
+}
