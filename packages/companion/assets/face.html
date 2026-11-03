@@ -1823,6 +1823,9 @@
   });
   function 판열기() {
     ring.hidden = true;
+    // 늘 빠른 설정 탭으로. 지난번 탭이 남으면 첫 칸 포커스가 숨은 칸으로 가서 키보드가 막혔음
+    for (const x of menu.querySelectorAll('.menu-rail button[data-page]')) x.classList.toggle('cur', x.dataset.page === 'quick');
+    for (const page of menu.querySelectorAll('.menu-page')) page.hidden = page.dataset.page !== 'quick';
     document.body.classList.remove('ring-open');
     판그리기();
     menu.hidden = false;

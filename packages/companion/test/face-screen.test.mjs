@@ -253,6 +253,23 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('판은 다른 탭에서 닫았어도 빠른 설정 탭으로 다시 열리고 첫 칸에 포커스', async () => {
+      const page = await openWindow();
+      await page.locator('.stage').click({ button: 'right' });
+      await page.locator('#ring .ring-btn.more').click();
+      await page.click('.menu-rail button[data-page=voice]');
+      await page.click('#menuClose');
+      await page.locator('.stage').click({ button: 'right' });
+      await page.locator('#ring .ring-btn.more').click();
+      const state = await page.evaluate(() => ({
+        quick: document.querySelector('.menu-page[data-page=quick]').hidden === false,
+        focus: [...document.querySelectorAll('#menuTiles .menu-tile')].indexOf(document.activeElement),
+      }));
+      assert.equal(state.quick, true, '지난번 탭 (목소리와 듣기) 이 남았다');
+      assert.equal(state.focus, 0, '다시 연 판의 첫 칸에 포커스가 없다');
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
