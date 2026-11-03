@@ -325,6 +325,21 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('원형의 듣기는 끈 채로 다시 켜도 끄기 전 방식으로 돌아간다', async () => {
+      const page = await openWindow();
+      await page.evaluate(() => { const box = document.getElementById('earMode'); box.value = 'push'; box.dispatchEvent(new Event('change')); });
+      await page.locator('.stage').click({ button: 'right' });
+      await page.locator('#ring .ring-btn').nth(0).click();
+      assert.equal(await page.evaluate(() => document.getElementById('earMode').value), 'off', '듣기가 안 꺼졌다');
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1200);
+      await page.locator('.stage').click({ button: 'right' });
+      await page.locator('#ring .ring-btn').nth(0).click();
+      assert.equal(await page.evaluate(() => document.getElementById('earMode').value), 'push', '다시 켰는데 끄기 전 방식 (push) 이 아니다');
+      await page.evaluate(() => { localStorage.removeItem('companion.earModeOn'); localStorage.removeItem('companion.earMode'); });
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });

@@ -1672,14 +1672,20 @@
     }
   }
   const 알림단계 = [0, 5, 10, 15, 30];
+  // 원형의 듣기를 끄기 전 방식. 끈 채로 다시 켜도 그 방식으로 돌아가게 저장 (전에는 늘 듣기로 돌아갔음)
   let 듣기켤방식 = 'always';
+  try { 듣기켤방식 = localStorage.getItem('companion.earModeOn') || 'always'; } catch { /* 늘 듣기 */ }
   const 켜고끄기 = [
     { icon: 'ear', name: '듣기',
       on: () => (document.getElementById('earMode')?.value ?? 'off') !== 'off',
       flip: () => {
         const box = document.getElementById('earMode');
         if (!box) return;
-        if (box.value !== 'off') { 듣기켤방식 = box.value; box.value = 'off'; } else box.value = 듣기켤방식;
+        if (box.value !== 'off') {
+          듣기켤방식 = box.value;
+          try { localStorage.setItem('companion.earModeOn', 듣기켤방식); } catch { /* 이번만 기억 */ }
+          box.value = 'off';
+        } else box.value = 듣기켤방식;
         box.dispatchEvent(new Event('change'));
       } },
     { icon: 'monitor', name: '화면 보기', box: 'optScreen' },
