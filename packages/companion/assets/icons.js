@@ -1,4 +1,4 @@
-/* 메뉴 아이콘. Lucide v0.469.0 (ISC, https://lucide.dev) 에서 받은 그대로. 새 아이콘은 lucide-static 의 같은 판에서 */
+/* 메뉴 아이콘. Lucide v0.469.0 (ISC, https://lucide.dev) 에서 받은 그대로. 새 아이콘은 face.html 에 이름을 쓰고 scripts/make-icons.mjs */
 const PATHS = {
   'audio-lines': '<path d="M2 10v3" /> <path d="M6 6v11" /> <path d="M10 3v18" /> <path d="M14 8v7" /> <path d="M18 5v13" /> <path d="M22 10v3" />',
   'bell': '<path d="M10.268 21a2 2 0 0 0 3.464 0" /> <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />',

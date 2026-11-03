@@ -20,7 +20,8 @@
     "page:talk": "npm run build && node demo/launch.mjs talk",
     "page:grok": "npm run build && node demo/launch.mjs grok",
     "page:preview": "npm run build && node demo/launch.mjs preview",
-    "pack": "npm run build && node scripts/pack.mjs"
+    "pack": "npm run build && node scripts/pack.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
