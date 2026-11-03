@@ -198,6 +198,23 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('판에서 연 "나에 대해 아는 것" 은 판 옆에 판 폭으로 뜬다. 화면 아래를 가로로 덮지 않게', async () => {
+      const page = await openWindow('?full=1&roam=0&gravity=0');
+      await page.setViewportSize({ width: 1600, height: 900 });
+      await page.evaluate(() => { localStorage.setItem('companion.roomX', '1300'); localStorage.setItem('companion.roomY', '300'); });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1200);
+      await page.locator('.stage').click({ button: 'right', force: true });
+      await page.locator('#ring .ring-btn.more').click();
+      await page.click('.menu-rail button[data-page=more]');
+      await page.click('#knownBtn');
+      const [m, k] = await page.evaluate(() => [document.getElementById('menu'), document.getElementById('sheet')].map((el) => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, width: r.width }; }));
+      assert.ok(k.width <= m.width + 1, `아는 것 판이 메뉴 판보다 넓다 (${k.width} > ${m.width})`);
+      assert.ok(k.right <= m.left || k.left >= m.right, `아는 것 판이 메뉴 판을 덮는다 (${JSON.stringify({ m, k })})`);
+      await page.evaluate(() => { localStorage.removeItem('companion.roomX'); localStorage.removeItem('companion.roomY'); });
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });

@@ -1023,6 +1023,14 @@
   knownBtn.addEventListener('click', async () => {
     if (sheet.hidden === false) { sheet.hidden = true; return; }
     sheet.hidden = false;
+    // 화면 전체로 편 창에서 기본 배치 (좌우 10px, 아래 10px) 면 모니터 아래를 가로로 다 덮음. 메뉴 판 옆에 같은 폭으로
+    if (전체화면 && menu.hidden === false) {
+      const m = menu.getBoundingClientRect();
+      const width = m.width;
+      const left = m.left - width - 10 >= 6 ? m.left - width - 10 : Math.min(m.right + 10, innerWidth - width - 6);
+      sheet.style.cssText = `box-sizing:border-box; left:${left}px; right:auto; width:${width}px; top:${Math.max(6, m.top)}px; bottom:auto; max-height:${Math.max(200, innerHeight - Math.max(6, m.top) - 16)}px`;
+    } else sheet.style.cssText = '';
+    reportHitAreas();
     knownBody.textContent = '읽는 중...';
     try {
       const { known } = await (await fetch('/known')).json();
