@@ -14,7 +14,7 @@
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, relative } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -115,7 +115,8 @@ for (const dep of KEEP_DEPS) {
   cpSync(from, join(nm, dep), {
     recursive: true,
     dereference: true,
-    filter: (src) => !relative(from, src).split(/[\\/]/).includes('node_modules'),
+    /* 중첩 node_modules 만 뺌. Node 20 은 filter 에 긴 경로 접두사 (//?/) 붙은 경로를 넘겨 relative 판정이 뿌리까지 걸렀음 (CI 0.00MB 원인, 2026-11-03 재현) */
+    filter: (src) => basename(src) !== 'node_modules',
   });
 }
 
