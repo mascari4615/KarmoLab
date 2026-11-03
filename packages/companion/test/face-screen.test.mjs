@@ -148,7 +148,7 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
         for (let i = 0; i < pts.length; i += 1) {
           for (let j = i + 1; j < pts.length; j += 1) {
             const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
-            assert.ok(d >= 44, `버튼 ${i}, ${j} 이 겹친다 (거리 ${d.toFixed(0)}px, roomX ${roomX}) ${JSON.stringify(pts.map((p) => p.map(Math.round)))}`);
+            assert.ok(d >= 58, `버튼 ${i}, ${j} 이 겹친다 (거리 ${d.toFixed(0)}px, roomX ${roomX}) ${JSON.stringify(pts.map((p) => p.map(Math.round)))}`);
           }
         }
         await page.keyboard.press('Escape');
@@ -224,6 +224,27 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       assert.ok(r.width <= 361, `물어보기 판 폭이 ${r.width}px`);
       assert.doesNotMatch(r.text, /\?\./, `문구에 ?. 이 남았다: ${r.text}`);
       await page.unroute('**/permission');
+      await page.close();
+    });
+
+    await t.test('아이콘 모드 원형도 버튼이 붙지 않는다 (가운데, 왼쪽 위 구석)', async () => {
+      const page = await openWindow('?full=1&roam=0&gravity=0');
+      for (const at of [{ x: 230, y: 420 }, { x: 10, y: 10 }]) {
+        await page.evaluate((p) => { localStorage.setItem('companion.iconMode', '1'); localStorage.setItem('companion.iconAt', JSON.stringify(p)); }, at);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1200);
+        await page.locator('#ntIcon').click({ button: 'right', force: true });
+        const pts = await page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+        assert.equal(pts.length, 7, `원형 버튼이 7개가 아니다 (${JSON.stringify(at)})`);
+        for (let i = 0; i < pts.length; i += 1) {
+          for (let j = i + 1; j < pts.length; j += 1) {
+            const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+            assert.ok(d >= 58, `버튼 ${i}, ${j} 간격 ${d.toFixed(0)}px (${JSON.stringify(at)})`);
+          }
+        }
+        await page.keyboard.press('Escape');
+      }
+      await page.evaluate(() => { localStorage.setItem('companion.iconMode', '0'); localStorage.removeItem('companion.iconAt'); });
       await page.close();
     });
 

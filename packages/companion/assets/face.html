@@ -1752,20 +1752,34 @@
     // 기본은 위로 220도 부채꼴. 화면 끝에 붙으면 반대쪽으로 펼쳐 버튼이 밖으로 나가 겹치지 않게.
     // 좌우 끝에서는 반원을 넘으면 몸 너머 화면 밖까지 감기므로 170도
     const room = r + 40;
-    const near = { right: innerWidth - x < room, left: x < room, top: y < room };
+    const near = { right: innerWidth - x < room, left: x < room, top: y < room, bottom: innerHeight - y < room };
     let mid = near.top ? 90 : -90;
     let half = 110;
-    if (near.right) { mid = 180; half = 85; } else if (near.left) { mid = 0; half = 85; }
+    const side = near.right ? 180 : near.left ? 0 : null;
+    // 구석은 화면 안쪽 사분면으로 100도. 좌우 끝은 반대쪽 170도
+    if (side !== null && (near.top || near.bottom)) {
+      mid = side === 0 ? (near.top ? 45 : -45) : (near.top ? 135 : -135);
+      half = 50;
+    } else if (side !== null) { mid = side; half = 85; }
     const from = mid - half, to = mid + half;
-    items.forEach((t, i) => {
+    // 이웃 버튼 중심 간격이 60px 이상 (버튼 52px) 되게 반지름을 늘림. 좁게 펼칠수록 더 멀리
+    const step = ((to - from) / (items.length - 1)) * Math.PI / 180;
+    const radius = Math.max(r, 60 / (2 * Math.sin(step / 2)));
+    // 버튼마다 화면 안으로 붙잡으면 서로 다시 붙음. 원형 전체를 화면 안으로 옮김
+    const pts = items.map((_, i) => {
       const a = (from + (to - from) * (i / (items.length - 1))) * Math.PI / 180;
+      return [x + Math.cos(a) * radius, y + Math.sin(a) * radius];
+    });
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const shiftX = Math.max(0, 30 - Math.min(...xs)) - Math.max(0, Math.max(...xs) - (innerWidth - 30));
+    const shiftY = Math.max(0, 30 - Math.min(...ys)) - Math.max(0, Math.max(...ys) - (innerHeight - 50));
+    items.forEach((t, i) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'ring-btn' + (t.more ? ' more' : t.on() ? ' on' : '');
       b.dataset.icon = t.icon;
-      // 화면 밖 버튼은 안쪽으로 붙잡음
-      b.style.left = `${Math.min(innerWidth - 30, Math.max(30, x + Math.cos(a) * r))}px`;
-      b.style.top = `${Math.min(innerHeight - 50, Math.max(30, y + Math.sin(a) * r))}px`;
+      b.style.left = `${pts[i][0] + shiftX}px`;
+      b.style.top = `${pts[i][1] + shiftY}px`;
       const tip = document.createElement('small');
       tip.textContent = t.more ? '더보기' : t.tip ? t.tip() : `${이름(t)} ${t.on() ? '켜짐' : '꺼짐'}`;
       b.appendChild(tip);
