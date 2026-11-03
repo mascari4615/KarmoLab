@@ -1,4 +1,6 @@
-import type { Sensation, Sense } from './types';
+import { isConversation } from './conversation';
+import type { MemoryEntry, Sensation, Sense } from './types';
+import { reactionTo, type Landing, type LandingOptions } from './what-landed';
 
 /**
  * 스스로 말 걸기. 아무도 안 물었을 때.
@@ -68,6 +70,77 @@ export function reasonToSpeak(input: NudgeInput): Reason | null {
   }
 
   return null;
+}
+
+/**
+ * 먼저 건 말에 사람이 어떻게 받았나. 오래된 것이 앞.
+ *
+ * 먼저 건 말: 먼저 걸기 감각 뒤 얘의 첫 말. 그 뒤 첫 사람 말로 판정
+ * 답 전에 다시 먼저 걸면 앞의 것은 판정 없음. 침묵은 식음 아님
+ */
+export function firstWordReactions(
+  entries: readonly MemoryEntry[],
+  options: LandingOptions & { channel?: string } = {},
+): Landing[] {
+  const channel = options.channel ?? 'nudge';
+  const out: Landing[] = [];
+  let woke = false;
+  let first: MemoryEntry | null = null;
+  for (const e of entries) {
+    if (e.role === 'sensed' && e.channel === channel) {
+      woke = true;
+      first = null;
+      continue;
+    }
+    if (e.role === 'said') {
+      if (woke) {
+        first = e;
+        woke = false;
+      }
+      continue;
+    }
+    if (first !== null && isConversation(e, options)) {
+      const measured = reactionTo(first, e, options);
+      if (measured !== null) out.push(measured);
+      first = null;
+    }
+  }
+  return out;
+}
+
+/** 먼저 걸기 쉬는 단계. 식은 말이 이어질수록 길게 쉰다. */
+export const NUDGE_REST_MS: readonly number[] = [0, 60 * 60_000, 3 * 60 * 60_000];
+
+/**
+ * 다음 먼저 걸기까지 쉴 시간.
+ *
+ * 최근 여섯 번, 오래된 것부터. 식음은 한 단계 위, 통함은 한 단계 아래
+ * 연달아 둘 식으면 세 시간, 한 번 통하면 단축
+ */
+export function nudgeRestMs(reactions: readonly Landing[], steps: readonly number[] = NUDGE_REST_MS): number {
+  let level = 0;
+  for (const r of reactions.slice(-6)) {
+    level = Math.max(0, Math.min(steps.length - 1, level + (r.landed ? -1 : 1)));
+  }
+  return steps[level] ?? 0;
+}
+
+/**
+ * 지금 먼저 걸기를 쉬어야 하면 남은 시간 (ms), 아니면 0.
+ *
+ * 마지막 먼저 걸기 시각은 기억에서 읽음, 재시작에도 유지
+ */
+export function nudgeRestLeftMs(
+  entries: readonly MemoryEntry[],
+  now: number,
+  options: LandingOptions & { channel?: string; steps?: readonly number[] } = {},
+): number {
+  const channel = options.channel ?? 'nudge';
+  let lastAt = 0;
+  for (const e of entries) if (e.role === 'sensed' && e.channel === channel && e.at > lastAt) lastAt = e.at;
+  if (lastAt === 0) return 0;
+  const rest = nudgeRestMs(firstWordReactions(entries, options), options.steps);
+  return Math.max(0, lastAt + rest - now);
 }
 
 export interface NudgeSenseOptions {

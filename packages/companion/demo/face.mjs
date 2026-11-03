@@ -167,6 +167,7 @@ import {
   dayMark,
   avoidanceWarning,
   reasonToSpeak,
+  nudgeRestLeftMs,
   nudgeSense,
   readRapport,
   asksAboutSelf,
@@ -943,6 +944,12 @@ if (process.env.COMPANION_NUDGE !== '0') {
         // 하루의 매듭은 다른 어떤 이유보다 먼저다. 오늘 처음 만난 순간은 한 번뿐이다.
         const knot = dayMark(typeof conversationMemory?.recent === 'function' ? conversationMemory.recent(4000) : []);
         if (knot !== null) return { why: knot.note, key: `${knot.kind}-${new Date().toDateString()}` };
+        // 먼저 건 말이 연달아 식으면 쉬기, 한 번 통하면 단축
+        const restLeft = nudgeRestLeftMs(typeof conversationMemory?.recent === 'function' ? conversationMemory.recent(4000) : [], Date.now());
+        if (restLeft > 0) {
+          console.log(`[먼저] 쉰다. 먼저 건 말이 식어서 ${Math.ceil(restLeft / 60000)}분 더`);
+          return null;
+        }
         // 바라는 것은 **다른 이유가 없을 때만**, 하루에 한 번만 슬쩍. 조르면 잔소리가 된다.
         const presentReason = reasonToSpeak({
           sinceTalkedMs: lastSpokenToAt === 0 ? null : Date.now() - lastSpokenToAt,

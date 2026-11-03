@@ -15,7 +15,17 @@ export { listGrokLanes, roomLane, workLane, talkLane, folderTitle, type Lane, ty
 export { chatSegments, type ChatSegment } from './chat/markup';
 export { grokStreamPart } from './brain/grok-cli';
 export { previewBrain } from './brain/preview';
-export { reasonToSpeak, nudgeSense, type Reason, type NudgeInput, type NudgeSenseOptions } from './nudge';
+export {
+  reasonToSpeak,
+  nudgeSense,
+  firstWordReactions,
+  nudgeRestMs,
+  nudgeRestLeftMs,
+  NUDGE_REST_MS,
+  type Reason,
+  type NudgeInput,
+  type NudgeSenseOptions,
+} from './nudge';
 export { dayMark, type DayMark, type DayMarkOptions } from './day-mark';
 export { promptParts } from './prompt-parts';
 export { voiceShape, usualVoice, type VoiceShape, type VoiceShapeOptions } from './voice-shape';

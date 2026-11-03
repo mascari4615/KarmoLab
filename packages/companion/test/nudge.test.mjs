@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { nudgeSense, reasonToSpeak } from '../dist/index.js';
+import { firstWordReactions, nudgeRestLeftMs, nudgeRestMs, NUDGE_REST_MS, nudgeSense, reasonToSpeak } from '../dist/index.js';
 
 const minutes = 60_000;
 const time = 60 * minutes;
@@ -91,4 +91,51 @@ test('이유를 보다 터져도 조용히 넘어간다. 깨우는 일이 멈추
   await new Promise((r) => setTimeout(r, 50));
   sense.stop();
   assert.ok(problems.length > 0, '조용히 삼키지 않고 남긴다');
+});
+
+const at0 = Date.parse('2026-11-03T10:00:00+09:00');
+const nudged = (at) => ({ role: 'sensed', channel: 'nudge', text: '이유', at });
+const said = (at, text = '조수님 뭐 해요') => ({ role: 'said', channel: 'web', text, at });
+const heard = (at, text) => ({ role: 'sensed', channel: 'web', text, at });
+
+test('먼저 건 말에 한 마디로 넘기면 식은 것, 웃으면 통한 것으로 잰다', () => {
+  const r = firstWordReactions([
+    nudged(at0), said(at0 + 1000), heard(at0 + 5000, 'ㅇㅇ'),
+    nudged(at0 + time), said(at0 + time + 1000), heard(at0 + time + 4000, 'ㅋㅋㅋ 그거'),
+  ]);
+  assert.deepEqual(r.map((x) => x.landed), [false, true]);
+});
+
+test('사람이 먼저 꺼낸 대화의 반응은 먼저 걸기 반응으로 세지 않는다', () => {
+  const r = firstWordReactions([heard(at0, '안녕'), said(at0 + 1000), heard(at0 + 3000, 'ㅇㅇ')]);
+  assert.deepEqual(r, []);
+});
+
+test('답이 오기 전에 또 먼저 걸었으면 앞의 말은 잴 것이 없다', () => {
+  const r = firstWordReactions([
+    nudged(at0), said(at0 + 1000, '첫 말'),
+    nudged(at0 + time), said(at0 + time + 1000, '둘째 말'), heard(at0 + time + 3000, 'ㅇㅇ'),
+  ]);
+  assert.deepEqual(r.map((x) => x.said), ['둘째 말']);
+});
+
+test('먼저 건 말이 연달아 식으면 쉬는 시간이 늘고 한 번 통하면 줄어든다', () => {
+  const cold = { said: 'a', landed: false, why: '' };
+  const warm = { said: 'a', landed: true, why: '' };
+  assert.equal(nudgeRestMs([]), 0);
+  assert.equal(nudgeRestMs([cold]), NUDGE_REST_MS[1]);
+  assert.equal(nudgeRestMs([cold, cold, cold]), NUDGE_REST_MS[2]);
+  assert.equal(nudgeRestMs([cold, cold, warm]), NUDGE_REST_MS[1]);
+  assert.equal(nudgeRestMs([cold, warm]), 0);
+});
+
+test('쉬는 시간은 기억 속 마지막 먼저 걸기 시각부터 잰다', () => {
+  const entries = [
+    nudged(at0), said(at0 + 1000), heard(at0 + 5000, 'ㅇㅇ'),
+    nudged(at0 + time), said(at0 + time + 1000), heard(at0 + time + 5000, '응'),
+  ];
+  const last = at0 + time;
+  assert.equal(nudgeRestLeftMs(entries, last + 30 * minutes), NUDGE_REST_MS[2] - 30 * minutes);
+  assert.equal(nudgeRestLeftMs(entries, last + NUDGE_REST_MS[2]), 0);
+  assert.equal(nudgeRestLeftMs([], at0), 0);
 });
