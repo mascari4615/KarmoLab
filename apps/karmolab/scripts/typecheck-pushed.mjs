@@ -94,7 +94,7 @@ for (const pkg of buildableLocalPackages) {
 const tmp = mkdtempSync(join(tmpdir(), 'kl-tc-'));
 const work = join(tmp, 'w');
 /* 정리는 finally 가 아니라 exit 에. 아래 판정이 모두 process.exit 로 끝나는데 process.exit 는
-   finally 를 건너뛴다. finally 였을 때 실행마다 checkout 한 벌이 %TEMP% 에 남아 두 달에 753개, 약 70GB (2026-11-03 실측).
+   finally 를 건너뛴다. finally 였을 때 실행마다 checkout 한 벌이 %TEMP% 에 남아 두 달에 753개, 실제 약 10GB (2026-11-03 실측).
    node_modules 연결을 먼저 끊어 원래 의존 폴더를 지울 위험을 없앤다. */
 process.on('exit', () => {
   for (const dir of [work, join(tmp, 'base')]) {
