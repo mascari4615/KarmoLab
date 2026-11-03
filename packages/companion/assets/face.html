@@ -2615,6 +2615,12 @@
         const pet = new Pet({ el, body, env, x: 150 + Math.random() * Math.max(1, innerWidth - 300), y: 0, mode });
         pet.start();
         pets.push(pet);
+        // 분신을 우클릭해도 같은 원형 메뉴 (설정은 본체와 공용). 처리하지 않으면 기본 메뉴가 떴음
+        el.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          const box = pet.hitBox();
+          원형열기(box ? { x: box[0], y: box[1], width: box[2], height: box[3] } : el.getBoundingClientRect(), false);
+        });
       }
       tell(`분신 ${pets.length}마리`);
     } catch (e) {
