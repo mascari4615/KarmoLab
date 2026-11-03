@@ -1469,6 +1469,17 @@
   const askWhat = document.getElementById('askWhat');
   let askingId = null;
 
+  /** 작은 창 시절 바닥 띠 판 (물어보기) 을 몸 옆에. 몸 왼쪽, 자리가 없으면 오른쪽. 아랫선은 몸 아랫선 */
+  function 몸옆에두기(el, width) {
+    const box = 아이콘모드 ? ntIcon.getBoundingClientRect() : body3d?.screenBox?.();
+    // 몸 자리를 못 읽으면 (3D 몸이 아직 없음) 오른쪽 아래에 같은 폭으로
+    if (!box) { el.style.cssText = `box-sizing:border-box; left:auto; right:20px; width:${width}px; bottom:20px`; return; }
+    const x = box.x ?? box.left;
+    const y = box.y ?? box.top;
+    const left = x - width - 12 >= 6 ? x - width - 12 : Math.min(x + box.width + 12, innerWidth - width - 6);
+    el.style.cssText = `box-sizing:border-box; left:${left}px; right:auto; width:${width}px; bottom:${Math.max(6, innerHeight - (y + box.height))}px`;
+  }
+
   async function checkAsking() {
     try {
       const pending = await (await fetch('/permission')).json();
@@ -1478,8 +1489,11 @@
       }
       if (pending.id === askingId) return;
       askingId = pending.id;
-      askWhat.textContent = `이거 해도 될까?. ${pending.what}`;
+      askWhat.textContent = `이거 해도 될까? ${pending.what}`;
       ask.hidden = false;
+      // 전체 화면 창에서 기본 배치 (좌우 10px, 아래 10px) 면 모니터 아래를 가로로 다 덮음. 몸 옆에
+      if (전체화면) 몸옆에두기(ask, 360);
+      reportHitAreas();
     } catch {
       // 못 물어보면 조용히 넘어간다.
     }

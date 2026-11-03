@@ -215,6 +215,18 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('물어보기 판은 전체 화면 창에서 몸 옆 360px. 모니터 아래를 가로로 덮지 않게', async () => {
+      const page = await openWindow('?full=1&roam=0&gravity=0');
+      await page.setViewportSize({ width: 1600, height: 900 });
+      await page.route('**/permission', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ id: 'test-1', what: '화면 보기' }) }));
+      await page.waitForSelector('#ask:not([hidden])', { timeout: 5000 });
+      const r = await page.evaluate(() => { const b = document.getElementById('ask').getBoundingClientRect(); return { width: b.width, left: b.left, text: document.getElementById('askWhat').textContent }; });
+      assert.ok(r.width <= 361, `물어보기 판 폭이 ${r.width}px`);
+      assert.doesNotMatch(r.text, /\?\./, `문구에 ?. 이 남았다: ${r.text}`);
+      await page.unroute('**/permission');
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
