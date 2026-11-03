@@ -361,6 +361,8 @@ export class Pet {
       if (!grab.moved) {
         if (Math.abs(e.clientX - grab.x) + Math.abs(e.clientY - grab.y) < 4) return;
         grab.moved = true;
+        // 이 분신 둘레에 연 원형 메뉴는 끌고 가면 빈자리에 남으므로 본체가 닫음
+        this.env.dragStarted?.();
         this.stand.id = 'floor';
         this.stand.y = null;
       }
