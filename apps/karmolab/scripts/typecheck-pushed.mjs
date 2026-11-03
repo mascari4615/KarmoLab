@@ -14,7 +14,7 @@
  * exit: 0 = 초록 / 1 = 그 커밋이 타입검사에서 선다 / 2 = 못 돌림(빨강 아님)
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { SOURCE_ONLY } from './lib/gate-sets.mjs';
@@ -93,7 +93,18 @@ for (const pkg of buildableLocalPackages) {
 
 const tmp = mkdtempSync(join(tmpdir(), 'kl-tc-'));
 const work = join(tmp, 'w');
-try {
+/* 정리는 finally 가 아니라 exit 에. 아래 판정이 모두 process.exit 로 끝나는데 process.exit 는
+   finally 를 건너뛴다. finally 였을 때 실행마다 checkout 한 벌이 %TEMP% 에 남아 두 달에 753개, 약 70GB (2026-11-03 실측).
+   node_modules 연결을 먼저 끊어 원래 의존 폴더를 지울 위험을 없앤다. */
+process.on('exit', () => {
+  for (const dir of [work, join(tmp, 'base')]) {
+    try { unlinkSync(join(dir, 'apps/karmolab/node_modules')); } catch { /* 연결이 없으면 그만 */ }
+  }
+  try {
+    rmSync(tmp, { recursive: true, force: true });
+  } catch { /* 지워지면 좋고. tmp 다 */ }
+});
+{
   /* 독립 clone 의 sparse 설정은 원본 저장소 설정을 건드리지 않는다. `git archive | tar` 는
      Windows bsdtar 가 한글 파일명을 풀지 못하므로 Git checkout 으로 커밋을 재현한다. */
   if (!materializeCommit(sha, work)) cannotRun('그 커밋을 독립 checkout 하지 못했다');
@@ -176,8 +187,4 @@ function linesToShow(out) {
   }
   console.error('  내 폴더에서는 초록일 수 있다. 남이 아직 안 올린 파일에 기대고 있으면 그렇다.');
   process.exit(1);
-} finally {
-  try {
-    rmSync(tmp, { recursive: true, force: true });
-  } catch { /* 지워지면 좋고. tmp 다 */ }
 }
