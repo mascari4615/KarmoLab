@@ -211,6 +211,11 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       const [m, k] = await page.evaluate(() => [document.getElementById('menu'), document.getElementById('sheet')].map((el) => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, width: r.width }; }));
       assert.ok(k.width <= m.width + 1, `아는 것 판이 메뉴 판보다 넓다 (${k.width} > ${m.width})`);
       assert.ok(k.right <= m.left || k.left >= m.right, `아는 것 판이 메뉴 판을 덮는다 (${JSON.stringify({ m, k })})`);
+      // 누르지 않고 판이 닫히는 경로 (창 크기 변경, 모니터 옮김, 끌기). 바깥 누르기 처리가 못 닫음
+      await page.setViewportSize({ width: 1500, height: 900 });
+      await page.waitForTimeout(200);
+      assert.equal(await page.evaluate(() => document.getElementById('menu').hidden), true, '창 크기가 바뀌었는데 판이 안 닫혔다');
+      assert.equal(await page.evaluate(() => document.getElementById('sheet').hidden), true, '판은 닫혔는데 아는 것 판이 혼자 남았다');
       await page.evaluate(() => { localStorage.removeItem('companion.roomX'); localStorage.removeItem('companion.roomY'); });
       await page.close();
     });

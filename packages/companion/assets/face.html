@@ -1860,6 +1860,8 @@
   }
 
   function closeMenu() {
+    // 판 옆에 붙여 연 아는 것 판은 판과 함께 닫음. 안 그러면 혼자 떠 있음
+    if (menu.hidden === false) sheet.hidden = true;
     menu.hidden = true;
     ring.hidden = true;
     document.body.classList.remove('ring-open');
