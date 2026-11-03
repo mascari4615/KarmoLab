@@ -540,65 +540,91 @@ fn registry(_key: &str) -> Option<std::collections::HashMap<String, String>> {
     None
 }
 
-/// 이름이 exe 인 프로세스 id 들 (대소문자 무시). ToolHelp 스냅샷 한 번
+/// 전체 프로세스 (id, 부모 id, 소문자 이름). ToolHelp 스냅샷 한 번
 #[cfg(windows)]
-fn pids_of(exe: &str) -> Vec<u32> {
+fn procs() -> Vec<(u32, u32, String)> {
     use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
     use windows_sys::Win32::System::Diagnostics::ToolHelp::{
         CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
     };
-    let want = exe.to_lowercase();
-    let mut pids = Vec::new();
+    let mut out = Vec::new();
     unsafe {
         let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if snap == INVALID_HANDLE_VALUE {
-            return pids;
+            return out;
         }
         let mut e: PROCESSENTRY32W = std::mem::zeroed();
         e.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
         let mut ok = Process32FirstW(snap, &mut e) != 0;
         while ok {
             let len = e.szExeFile.iter().position(|&c| c == 0).unwrap_or(e.szExeFile.len());
-            if String::from_utf16_lossy(&e.szExeFile[..len]).to_lowercase() == want {
-                pids.push(e.th32ProcessID);
-            }
+            let name = String::from_utf16_lossy(&e.szExeFile[..len]).to_lowercase();
+            out.push((e.th32ProcessID, e.th32ParentProcessID, name));
             ok = Process32NextW(snap, &mut e) != 0;
         }
         CloseHandle(snap);
     }
-    pids
+    out
 }
 
 #[cfg(not(windows))]
-fn pids_of(_exe: &str) -> Vec<u32> {
+fn procs() -> Vec<(u32, u32, String)> {
     Vec::new()
 }
 
-/// 강제 종료. 하나라도 못 끄면 false
-#[cfg(windows)]
-fn kill_all(exe: &str) -> bool {
-    use windows_sys::Win32::Foundation::CloseHandle;
-    use windows_sys::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
-    let mut all = true;
-    for pid in pids_of(exe) {
-        unsafe {
-            let h = OpenProcess(PROCESS_TERMINATE, 0, pid);
-            if h.is_null() {
-                all = false;
-                continue;
+/// 이름이 exe 인 프로세스 id 들 (대소문자 무시)
+fn pids_of(exe: &str) -> Vec<u32> {
+    let want = exe.to_lowercase();
+    procs().into_iter().filter(|p| p.2 == want).map(|p| p.0).collect()
+}
+
+/// exe 를 띄운 실행기 (start.cmd 의 cmd, 서버 node). 부모 쪽으로 최대 3단, 이 두 이름만
+/// 창만 끄면 컴패니언 node 서버가 포트를 쥔 채 남던 문제 (2026-11-03)
+fn launcher_chain(exe: &str) -> Vec<u32> {
+    let all = procs();
+    let want = exe.to_lowercase();
+    let mut out = Vec::new();
+    for child in all.iter().filter(|p| p.2 == want) {
+        let mut ppid = child.1;
+        for _ in 0..3 {
+            match all.iter().find(|p| p.0 == ppid && p.0 != 0) {
+                Some(p) if p.2 == "node.exe" || p.2 == "cmd.exe" => {
+                    if !out.contains(&p.0) {
+                        out.push(p.0);
+                    }
+                    ppid = p.1;
+                }
+                _ => break,
             }
-            if TerminateProcess(h, 1) == 0 {
-                all = false;
-            }
-            CloseHandle(h);
         }
     }
-    all
+    out
+}
+
+/// 강제 종료. 못 끄면 false
+#[cfg(windows)]
+fn kill_pid(pid: u32) -> bool {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+    unsafe {
+        let h = OpenProcess(PROCESS_TERMINATE, 0, pid);
+        if h.is_null() {
+            return false;
+        }
+        let ok = TerminateProcess(h, 1) != 0;
+        CloseHandle(h);
+        ok
+    }
 }
 
 #[cfg(not(windows))]
-fn kill_all(_exe: &str) -> bool {
+fn kill_pid(_pid: u32) -> bool {
     false
+}
+
+/// 이름이 exe 인 것 전부 강제 종료. 하나라도 못 끄면 false
+fn kill_all(exe: &str) -> bool {
+    pids_of(exe).into_iter().fold(true, |all, pid| kill_pid(pid) && all)
 }
 
 fn is_running(exe: &str) -> bool {
@@ -613,7 +639,7 @@ fn running_status(app: Value) -> bool {
 
 /// 끄기. 창 닫기만으로는 트레이로 숨는 앱이 실행 중으로 남음 (2026-09-25 KarmoLab)
 /// nsis 앱은 먼저 `<exe> --quit` 로 트레이 끝내기와 같은 길, 그 인자를 모르는 옛 판은 3초 뒤 강제 종료.
-/// zip 앱은 바로 강제 종료
+/// zip 앱은 바로 강제 종료, 띄운 cmd 와 node 도 같이
 #[tauri::command]
 async fn stop_app(app: Value) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || stop_blocking(&app))
@@ -633,6 +659,11 @@ fn stop_blocking(app: &Value) -> Result<(), String> {
                 return Ok(());
             }
             std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+    }
+    if format_of(app) == "zip" {
+        for pid in launcher_chain(&exe) {
+            kill_pid(pid);
         }
     }
     kill_all(&exe);
@@ -1069,6 +1100,26 @@ mod tests {
     }
 
     /// 이름이 겹치지 않는 ping 사본을 띄워 실행 중으로 읽고, 강제 종료 뒤 사라지는지 (Windows API 경로)
+    #[cfg(windows)]
+    #[test]
+    fn chain_finds_cmd_parent() {
+        let exe = "karmo-launcher-chain-test.exe";
+        let path = std::env::temp_dir().join(exe);
+        std::fs::copy(r"C:\Windows\System32\PING.EXE", &path).unwrap();
+        let mut cmd = Command::new("cmd.exe").arg("/c").arg(&path).args(["-n", "30", "127.0.0.1"]).spawn().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        let chain = launcher_chain(exe);
+        assert!(chain.contains(&cmd.id()), "cmd {} not in {:?}", cmd.id(), chain);
+        for pid in chain {
+            kill_pid(pid);
+        }
+        assert!(kill_all(exe));
+        let _ = cmd.wait();
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        assert!(!is_running(exe));
+        let _ = std::fs::remove_file(&path);
+    }
+
     #[cfg(windows)]
     #[test]
     fn kill_spawned_copy() {
