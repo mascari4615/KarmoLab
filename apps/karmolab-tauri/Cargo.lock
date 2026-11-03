@@ -2915,7 +2915,7 @@ dependencies = [
 
 [[package]]
 name = "karmolab-desktop"
-version = "0.1.141"
+version = "0.1.142"
 dependencies = [
  "base64 0.22.1",
  "chrono",
