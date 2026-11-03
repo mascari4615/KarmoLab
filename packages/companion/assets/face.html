@@ -2460,12 +2460,14 @@
   function fallStep(now) {
     if (!fall.active) return;
     if (fall.hopping) { fall.last = now; requestAnimationFrame(fallStep); return; }
+    // 벽과 마찰 계산은 분신과 공용 (surfaces.js). 아직 안 왔으면 다음 프레임까지 기다림
+    if (surfaceMod === null) { fall.last = now; requestAnimationFrame(fallStep); return; }
     const dt = Math.min(0.05, (now - fall.last) / 1000);
     fall.last = now;
 
     if (fall.sliding) {
       // 착지 뒤 미끄러짐. 마찰로 속도가 줄고 멈추면 끝
-      fall.vx *= Math.exp(-4 * dt);
+      fall.vx = surfaceMod.slideStep(fall.vx, dt);
       방자리.x += fall.vx * dt;
       방자리적용();
       // 서 있던 창 가장자리를 벗어나면 그대로 떨어진다
@@ -2476,7 +2478,7 @@
         stand.id = 'floor';
         stand.y = null;
         body3d?.setMood('falling');
-      } else if (Math.abs(fall.vx) < 25) {
+      } else if (Math.abs(fall.vx) < surfaceMod.SLIDE_STOP) {
         fall.active = false;
         fall.sliding = false;
         body3d?.setFacing(0);
@@ -2492,9 +2494,9 @@
       if (방자리.y <= 0 && fall.vy < 0) fall.vy = 0; // 천장
       방자리적용();
       // 벽에 닿으면 반쯤 튕긴다. 세게 던졌으면 옆 모니터로 날아감 (없으면 튕김)
-      if ((방자리.x <= 41 && fall.vx < 0) || (방자리.x >= innerWidth - 41 && fall.vx > 0)) {
+      if (surfaceMod.hitsWall(방자리.x, fall.vx, innerWidth)) {
         if (fall.thrown && inDesktopWindow && Math.abs(fall.vx) > 600) 던져서넘기(Math.sign(fall.vx));
-        else fall.vx *= -0.5;
+        else fall.vx *= surfaceMod.WALL_BOUNCE;
       }
       const moved = 방자리.y - beforeY;
       fall.feet += moved;

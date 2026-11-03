@@ -158,3 +158,18 @@ export const JOG_STRIDE_PER_HEIGHT = 1.1;
 export function walkSpeed(height, jog) {
   return jog ? (JOG_STRIDE_PER_HEIGHT * height) / JOG_CYCLE_SEC : (STRIDE_PER_HEIGHT * height) / WALK_CYCLE_SEC;
 }
+
+// 떨어지기와 미끄러지기 (본체와 분신 공용). 벽은 창 끝에서 41px, 닿으면 가로 속도를 반대로 반만, 착지 뒤 마찰은 초당 e^-4, 25px/s 밑이면 멈춤
+export const WALL_MARGIN = 41;
+export const WALL_BOUNCE = -0.5;
+export const SLIDE_STOP = 25;
+
+/** 벽 쪽으로 움직이며 벽에 닿았나 */
+export function hitsWall(x, vx, width) {
+  return (x <= WALL_MARGIN && vx < 0) || (x >= width - WALL_MARGIN && vx > 0);
+}
+
+/** 미끄러지는 중 dt 초 뒤의 가로 속도 */
+export function slideStep(vx, dt) {
+  return vx * Math.exp(-4 * dt);
+}

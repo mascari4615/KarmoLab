@@ -4,7 +4,7 @@
 // 중력, 창 윗면 서기, 걷기, 앉기, 춤, 뛰기, 던지기 규칙은 본체와 같은 값 사용
 // (본체 쪽 구현은 face.html 에 있음. 둘을 한 곳으로 합치는 것이 다음 정리 대상)
 
-import { jumpTargets, jumpVelocity, landingSurface, spreadTarget, supportAt, throwVelocity, walkSpeed } from '/surfaces.js';
+import { hitsWall, jumpTargets, jumpVelocity, landingSurface, SLIDE_STOP, slideStep, spreadTarget, supportAt, throwVelocity, walkSpeed, WALL_BOUNCE } from '/surfaces.js';
 
 export const GRAVITY_PX = 2600; // px/s². 본체와 같은 값
 export const FEET_BIAS = 0.039; // 경계 상자 바닥이 보이는 발 끝보다 키의 이만큼 아래
@@ -177,7 +177,7 @@ export class Pet {
     fall.last = now;
 
     if (fall.sliding) {
-      fall.vx *= Math.exp(-4 * dt);
+      fall.vx = slideStep(fall.vx, dt);
       this.x += fall.vx * dt;
       this.place();
       if (this.stand.id !== 'floor' && this.surfaceById(this.stand.id) === undefined) {
@@ -187,7 +187,7 @@ export class Pet {
         this.stand.id = 'floor';
         this.stand.y = null;
         this.body?.setMood('falling');
-      } else if (Math.abs(fall.vx) < 25) {
+      } else if (Math.abs(fall.vx) < SLIDE_STOP) {
         fall.active = false;
         fall.sliding = false;
         this.body?.setFacing(0);
@@ -203,7 +203,7 @@ export class Pet {
       if (this.y <= 0 && fall.vy < 0) fall.vy = 0;
       this.place();
       const width = this.env.width();
-      if ((this.x <= 41 && fall.vx < 0) || (this.x >= width - 41 && fall.vx > 0)) fall.vx *= -0.5;
+      if (hitsWall(this.x, fall.vx, width)) fall.vx *= WALL_BOUNCE;
       const moved = this.y - beforeY;
       fall.feet += moved;
       let hit = null;

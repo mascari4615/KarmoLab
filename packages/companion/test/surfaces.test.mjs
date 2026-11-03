@@ -113,3 +113,17 @@ test('걷기 속도는 몸 키에 비례하고 뜀이 더 빠르다', async () =
   assert.ok(Math.abs(walkSpeed(300, true) - 354.84) < 0.1);
   assert.equal(walkSpeed(600, false), walkSpeed(300, false) * 2);
 });
+
+test('벽 튕김과 미끄러짐 마찰', async () => {
+  const { hitsWall, slideStep, WALL_BOUNCE, SLIDE_STOP } = await import('../assets/surfaces.js');
+  // 왼쪽 벽 쪽으로 가며 닿음, 벽에서 멀어지는 중이면 아님
+  assert.equal(hitsWall(41, -100, 1920), true);
+  assert.equal(hitsWall(41, 100, 1920), false);
+  assert.equal(hitsWall(1879, 100, 1920), true);
+  assert.equal(hitsWall(900, -100, 1920), false);
+  assert.equal(WALL_BOUNCE, -0.5);
+  // 1초 미끄러지면 e^-4 배 (약 1.8%), 0.25초면 e^-1
+  assert.ok(Math.abs(slideStep(1000, 1) - 1000 * Math.exp(-4)) < 1e-9);
+  assert.ok(Math.abs(slideStep(1000, 0.25) - 1000 / Math.E) < 1e-9);
+  assert.equal(SLIDE_STOP, 25);
+});
