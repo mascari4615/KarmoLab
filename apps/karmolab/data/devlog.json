@@ -2,11 +2,60 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1797,
+    "commits": 1810,
     "days": 14,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-11-03",
+      "entries": [
+        {
+          "sha": "12a5c0c4",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "combat",
+          "text": "검 효과를 날아가는 검기, 궤적 확대, 판정 맞춤 획 셋 중 고르게"
+        },
+        {
+          "sha": "0510cbdb",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "combat",
+          "text": "검 휘두르기 궤적이 판정 윤곽을 각도별로 따름"
+        },
+        {
+          "sha": "0b6310b8",
+          "type": "perf",
+          "typeLabel": "빨라진 것",
+          "scope": "player",
+          "text": "조준 최근접 대상 탐색을 프레임당 한 번으로"
+        },
+        {
+          "sha": "e0d3d09a",
+          "type": "perf",
+          "typeLabel": "빨라진 것",
+          "scope": "combat",
+          "text": "검 판정 범위 측정의 공격마다 배열 할당 제거"
+        },
+        {
+          "sha": "400c85e9",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "combat",
+          "text": "검 휘두르기 연출을 실제 판정 범위에 맞춤"
+        },
+        {
+          "sha": "df11524a",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "combat",
+          "text": "실제 검 휘두르기와 짧은 궤적으로 검 공격 연출 교체"
+        }
+      ],
+      "quiet": 7,
+      "more": 0
+    },
     {
       "date": "2026-11-02",
       "entries": [
@@ -475,55 +524,6 @@
       ],
       "quiet": 4,
       "more": 0
-    },
-    {
-      "date": "2026-09-21",
-      "entries": [
-        {
-          "sha": "9bcb8158",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "시작 인형 셋 (욘, 링, 알리사). 편성 바뀐 칸은 다른 인형 뒤에서 시작"
-        },
-        {
-          "sha": "e35090c1",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "반복 토글을 끄면 전멸로 걸린 Repeating 도 푼다. 보스 잡아도 구역이 안 넘어가고 토글이 안 꺼지던 것 (피드백 7, 8)"
-        },
-        {
-          "sha": "c7cc63ef",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "UI 검사기에 겹침, 꽉 참, 안 보임, 빽빽함 추가. 팝업 4 상태, 칸 좌표 덤프"
-        },
-        {
-          "sha": "7ceb7730",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "도감, 연구소, 투자 문구 영문. 검사기 한글 예외에 인형 이름 자리 (도감 줄, 픽업)"
-        },
-        {
-          "sha": "244e512b",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "UI 문법 검사기 (IdleUiGrammarAudit). 글자 넘침, 화면 밖, 금색, 한글을 상태 8개에서 잰다. 잡힌 것 셋 고침 (칩 화면 밖, 반복 램프, 배지)"
-        },
-        {
-          "sha": "ff543adc",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "빈 자리 상태. 자리에 +, EMPTY, 장비 칸 영문 작게, MAX 글자 맞춤"
-        }
-      ],
-      "quiet": 3,
-      "more": 9
     }
   ]
 }
