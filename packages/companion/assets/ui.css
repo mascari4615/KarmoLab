@@ -253,6 +253,7 @@ body:has(.talk.on) .nt-dock { visibility: hidden; }
 .menu-rail button.cur { background: rgba(255, 255, 255, 0.08); color: #d3bc8e; }
 .menu-rail .menu-off { margin-top: auto; }
 .menu-rail .menu-off:hover { color: #ff8098; background: rgba(255, 110, 140, 0.14); }
+.menu-rail .menu-off.armed { color: #fff; background: #e0566f; }
 .menu-main { flex: 1; min-width: 0; padding: 14px 16px 16px; min-height: 280px; }
 .menu-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 .menu-face { width: 46px; height: 46px; flex: none; border-radius: 50%; border: 2px solid #d3bc8e; display: grid; place-items: center; font-size: 18px; font-weight: 700; color: #d3bc8e; background: rgba(211, 188, 142, 0.12); }

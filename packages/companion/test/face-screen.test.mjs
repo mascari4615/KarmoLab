@@ -289,6 +289,17 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('판의 끄기는 두 번 눌러야. 처음엔 빨갛게, 3초 지나면 원래대로', async () => {
+      const page = await openWindow();
+      await page.locator('.stage').click({ button: 'right' });
+      await page.locator('#ring .ring-btn.more').click();
+      await page.click('#gripClose');
+      assert.equal(await page.evaluate(() => document.getElementById('gripClose').classList.contains('armed')), true, '처음 눌렀는데 확인 상태가 아니다');
+      await page.waitForTimeout(3200);
+      assert.equal(await page.evaluate(() => document.getElementById('gripClose').classList.contains('armed')), false, '3초가 지났는데 확인 상태가 안 풀렸다');
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
