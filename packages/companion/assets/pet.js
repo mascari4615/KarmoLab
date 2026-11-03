@@ -8,6 +8,11 @@ import { jumpTargets, jumpVelocity, landingSurface, spreadTarget, supportAt } fr
 
 export const GRAVITY_PX = 2600; // px/s². 본체와 같은 값
 export const FEET_BIAS = 0.039; // 경계 상자 바닥이 보이는 발 끝보다 키의 이만큼 아래
+// 걷기와 뜀. 한 바퀴 시간과 한 바퀴에 몸 키의 몇 배를 나아가야 발이 안 미끄러지는지. 본체 (face.html) 와 같은 값
+export const WALK_CYCLE_SEC = 1.33;
+export const JOG_CYCLE_SEC = 0.93;
+export const STRIDE_PER_HEIGHT = 0.8;
+export const JOG_STRIDE_PER_HEIGHT = 1.1;
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
@@ -255,7 +260,7 @@ export class Pet {
     const roam = this.roam;
     roam.dir = Math.sign(target - this.x) || 1;
     roam.target = target;
-    roam.speed = jog ? (1.1 * box.height) / 0.93 : (0.8 * box.height) / 1.33;
+    roam.speed = jog ? (JOG_STRIDE_PER_HEIGHT * box.height) / JOG_CYCLE_SEC : (STRIDE_PER_HEIGHT * box.height) / WALK_CYCLE_SEC;
     roam.active = true;
     roam.last = performance.now();
     this.body?.setFacing(roam.dir);
