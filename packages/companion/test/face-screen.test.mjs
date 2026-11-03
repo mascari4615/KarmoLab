@@ -90,7 +90,7 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
     await t.test('우클릭은 원형, 더보기는 판, 판은 닫기 버튼으로 닫힌다. Esc, 바깥누르기는 뚫린 창에서 안 먹는다', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
-      assert.equal(await page.locator('#ring .ring-btn').count(), 7, '우클릭했는데 원형 버튼 7개 (켜고 끄기 6, 더보기) 가 안 떴다');
+      assert.equal(await page.locator('#ring .ring-btn').count(), 8, '우클릭했는데 원형 버튼 8개 (켜고 끄기 6, 알림 판, 더보기) 가 안 떴다');
       await page.locator('#ring .ring-btn.more').click();
       assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), false, '더보기를 눌렀는데 원형이 남아 있다');
       assert.equal(await page.locator('#menu').isVisible(), true, '더보기를 눌렀는데 판이 안 열렸다');
@@ -110,7 +110,7 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       assert.equal(await focused(), 1, '오른쪽 화살표로 다음 버튼에 안 간다');
       await page.keyboard.press('ArrowLeft');
       await page.keyboard.press('ArrowLeft');
-      assert.equal(await focused(), 6, '처음에서 왼쪽 화살표면 마지막 (더보기) 으로 돌아야 한다');
+      assert.equal(await focused(), 7, '처음에서 왼쪽 화살표면 마지막 (더보기) 으로 돌아야 한다');
       // 듣기 버튼은 서버를 거치지 않는 값 (earMode) 이라 시험 서버에서도 그대로 남음
       await page.keyboard.press('ArrowRight');
       const before = await page.evaluate(() => document.getElementById('earMode').value);
@@ -142,7 +142,7 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
         await page.waitForTimeout(1200);
         await page.locator('.stage').click({ button: 'right', force: true });
         const pts = await page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
-        assert.equal(pts.length, 7, `원형 버튼이 7개가 아니다 (roomX ${roomX})`);
+        assert.equal(pts.length, 8, `원형 버튼이 8개가 아니다 (roomX ${roomX})`);
         const size = page.viewportSize();
         for (const [x, y] of pts) assert.ok(x >= 26 && x <= size.width - 26 && y >= 26 && y <= size.height - 26, `버튼이 화면 밖 (${x}, ${y}), roomX ${roomX}`);
         for (let i = 0; i < pts.length; i += 1) {
@@ -194,7 +194,8 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       assert.match(tips[1], /^화면 보기 (켜짐|꺼짐)$/, `화면 보기 이름표: ${tips[1]}`);
       assert.match(tips[5], /^알림 .+, 누르면 .+$/, `알림 이름표에 다음 값이 없다: ${tips[5]}`);
       assert.doesNotMatch(tips[5], /켜짐|꺼짐/, `알림은 순환이라 켜짐 꺼짐이 아니다: ${tips[5]}`);
-      assert.equal(tips[6], '더보기');
+      assert.equal(tips[6], '알림 판');
+      assert.equal(tips[7], '더보기');
       const pressed = await page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn')].map((b) => [b.getAttribute('aria-pressed'), b.classList.contains('on'), b.getAttribute('aria-label')]));
       for (const i of [0, 1, 2, 3, 4]) assert.equal(pressed[i][0], String(pressed[i][1]), `켜고 끄기 버튼 ${i} 의 aria-pressed 가 모양과 다르다`);
       assert.equal(pressed[5][0], null, '순환 (알림) 버튼에 aria-pressed 가 붙었다');
@@ -251,7 +252,7 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
         await page.waitForTimeout(1200);
         await page.locator('#ntIcon').click({ button: 'right', force: true });
         const pts = await page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
-        assert.equal(pts.length, 7, `원형 버튼이 7개가 아니다 (${JSON.stringify(at)})`);
+        assert.equal(pts.length, 8, `원형 버튼이 8개가 아니다 (${JSON.stringify(at)})`);
         for (let i = 0; i < pts.length; i += 1) {
           for (let j = i + 1; j < pts.length; j += 1) {
             const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
@@ -349,11 +350,41 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
-      // 켜고 끄기 순서: 듣기, 화면 보기, 소리, 먼저 말 걸기, 아이콘 모드, 알림, 더보기
+      // 원형 순서: 듣기, 화면 보기, 소리, 먼저 말 걸기, 아이콘 모드, 알림, 알림 판, 더보기
       await page.locator('#ring .ring-btn').nth(4).click();
       assert.equal(!(await page.evaluate(() => document.getElementById('ring').hidden)), false, '아이콘 모드를 켰는데 원형이 빈자리에 남았다');
       assert.equal(await page.evaluate(() => document.body.classList.contains('iconmode')), true, '아이콘 모드가 안 켜졌다');
       await page.evaluate(() => localStorage.setItem('companion.iconMode', '0'));
+      await page.close();
+    });
+
+    await t.test('알림 칸은 새 소식 때만. 평소엔 숨고 원형의 알림 판 버튼으로 판을 엶', async () => {
+      const page = await browser.newPage({ viewport: { width: 520, height: 900 } });
+      const later = new Date(Date.now() + 5 * 3600_000).toISOString();
+      const today = { items: [{ id: 'a1', kind: '할 일', title: '우유 사기', sub: '', label: '오늘', tone: '' },
+        { id: 'a2', kind: '일정', title: '저녁 약속', sub: '', label: '저녁', tone: '', startAt: later, endAt: later }], warnings: [], read: [], fetchedAt: new Date().toISOString() };
+      await page.route('**/today', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(today) }));
+      await page.goto(url2 + '/', { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1500);
+      const dockHidden = () => page.evaluate(() => document.getElementById('ntDock').hidden);
+      assert.equal(await dockHidden(), true, '새 소식도 곧 시작할 일정도 없는데 알림 칸이 떠 있다');
+      await page.locator('.stage').click({ button: 'right' });
+      const board = page.locator('#ring .ring-btn[data-icon="inbox"]');
+      assert.equal(await board.count(), 1, '원형에 알림 판 버튼이 없다');
+      assert.equal(await board.getAttribute('aria-pressed'), null, '알림 판은 켜고 끄기가 아닌데 눌림 상태가 붙었다');
+      await board.click();
+      assert.equal(await page.evaluate(() => document.getElementById('ring').hidden), true, '알림 판을 눌렀는데 원형이 남았다');
+      assert.equal(await page.evaluate(() => document.getElementById('ntBoard').hidden), false, '알림 판 버튼으로 판이 안 열렸다');
+      assert.equal(await dockHidden(), false, '판이 열린 동안 칸이 안 보인다 (종류를 고를 수 없음)');
+      await page.click('#ntClose');
+      assert.equal(await dockHidden(), true, '판을 닫았는데 칸이 남았다');
+      // 곧 시작하는 일정이 생기면 그동안은 보임
+      today.items[1].startAt = new Date(Date.now() + 5 * 60_000).toISOString();
+      today.items[1].endAt = new Date(Date.now() + 65 * 60_000).toISOString();
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1500);
+      assert.equal(await dockHidden(), false, '5분 뒤 시작하는 일정이 있는데 칸이 숨었다');
+      await page.unroute('**/today');
       await page.close();
     });
 

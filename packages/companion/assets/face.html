@@ -1768,7 +1768,8 @@
   function 원형그리기() {
     if (ring.hidden) return;
     ring.innerHTML = '';
-    const items = [...켜고끄기, { icon: 'ellipsis', name: '더보기', more: true }];
+    // 알림 칸이 새 소식 때만 떠서 판을 여는 자리가 따로 필요 (2026-11-03)
+    const items = [...켜고끄기, { icon: 'inbox', name: '알림 판', act: () => { closeMenu(); ntOpenBoard(); } }, { icon: 'ellipsis', name: '더보기', more: true }];
     const { x, y, r } = 원형자리;
     // 기본은 위로 220도 부채꼴. 화면 끝에 붙으면 반대쪽으로 펼쳐 버튼이 밖으로 나가 겹치지 않게.
     // 좌우 끝에서는 반원을 넘으면 몸 너머 화면 밖까지 감기므로 170도
@@ -1797,10 +1798,10 @@
     items.forEach((t, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'ring-btn' + (t.more ? ' more' : t.on() ? ' on' : '');
+      b.className = 'ring-btn' + (t.more ? ' more' : t.act ? '' : t.on() ? ' on' : '');
       b.dataset.icon = t.icon;
-      if (!t.more && !t.tip) b.setAttribute('aria-pressed', String(t.on()));
-      b.setAttribute('aria-label', t.more ? '더보기' : t.tip ? t.tip() : 이름(t));
+      if (!t.more && !t.act && !t.tip) b.setAttribute('aria-pressed', String(t.on()));
+      b.setAttribute('aria-label', t.more ? '더보기' : t.act ? 이름(t) : t.tip ? t.tip() : 이름(t));
       b.style.left = `${pts[i][0] + shiftX}px`;
       b.style.top = `${pts[i][1] + shiftY}px`;
       // 이름표가 화면 밖으로 잘리지 않게. 아래쪽 버튼은 위에, 좌우 끝 버튼은 안쪽으로 붙임
@@ -1809,11 +1810,12 @@
       if (bx > innerWidth - 160) b.classList.add('tip-left');
       else if (bx < 160) b.classList.add('tip-right');
       const tip = document.createElement('small');
-      tip.textContent = t.more ? '더보기' : t.tip ? t.tip() : `${이름(t)} ${t.on() ? '켜짐' : '꺼짐'}`;
+      tip.textContent = t.more ? '더보기' : t.act ? 이름(t) : t.tip ? t.tip() : `${이름(t)} ${t.on() ? '켜짐' : '꺼짐'}`;
       b.appendChild(tip);
       b.addEventListener('click', (e) => {
         e.stopPropagation();
         if (t.more) { 판열기(); return; }
+        if (t.act) { t.act(); return; }
         t.flip();
         // 아이콘 모드를 바꾸면 몸 (또는 아이콘) 이 사라져 원형의 중심이 없어짐
         if (t.box === 'optIcon') { closeMenu(); return; }
@@ -1987,10 +1989,30 @@
   }
   const ntOpen = (item) => !ntRead.has(item.id);
 
+  /* 칸은 새 소식 때만. 늘 떠 있어도 잘 안 누름 (사용자 2026-11-03 "새 소식 때만")
+     새 줄이 오면 2분, 곧 시작하거나 진행 중인 일정이 있는 동안, 판이나 카드가 떠 있는 동안, 받기 실패 때만 보임
+     그 밖에는 원형 메뉴의 알림 판 버튼으로 판을 엶 */
+  const NT_FRESH_MS = 2 * 60_000;
+  let ntShowUntil = 0;
+  function ntDockWanted(now = Date.now()) {
+    if (ntData === null) return false;
+    if (ntData.error) return true;
+    if (now < ntShowUntil || !ntBoard.hidden || !ntToast.hidden) return true;
+    return (ntData.items ?? []).some((i) => ntOpen(i) && ntStatus(i, now).tone === 'now');
+  }
+  function ntDockSync() {
+    const hide = !ntDockWanted();
+    if (ntDock.hidden === hide) return;
+    ntDock.hidden = hide;
+    if (!hide) placeNotify();
+    reportHitAreas();
+  }
+  setInterval(ntDockSync, 15_000);
+
   function renderNotify() {
     const d = ntData;
     if (d === null) return;
-    ntDock.hidden = false;
+    ntDock.hidden = !ntDockWanted();
     if (d.error) {
       ntDock.innerHTML = `<button type="button" class="nt-chip late">알림<b>!</b></button>`;
       ntRows.innerHTML = `<p class="nt-warn">${esc(d.error)}</p>`;
@@ -2054,6 +2076,7 @@
       e.stopPropagation();
       ntToast.classList.remove('on');
       ntToast.hidden = true;
+      ntDockSync();
       reportHitAreas();
       setTimeout(() => {
         // 그사이 원본에서 사라졌거나 끝난 일정이면 다시 안 띄움
@@ -2070,7 +2093,7 @@
     clearTimeout(ntToastTimer);
     ntToastTimer = setTimeout(() => {
       ntToast.classList.remove('on');
-      setTimeout(() => { ntToast.hidden = true; reportHitAreas(); }, 260);
+      setTimeout(() => { ntToast.hidden = true; ntDockSync(); reportHitAreas(); }, 260);
     }, 6000);
   }
 
@@ -2100,11 +2123,16 @@
     renderNotify();
     ntSchedule();
     const first = (ntData.items ?? []).find((i) => fresh.includes(i.id));
+    if (first) {
+      ntShowUntil = Date.now() + NT_FRESH_MS;
+      ntDockSync();
+    }
     if (first) void ntToastOrHold(first, fresh.length > 1 ? `새 ${fresh.length}개` : ntStatus(first).label);
   }
 
   function ntOpenBoard(kind) {
     ntBoard.hidden = false;
+    ntDockSync();
     placeNotify();
     reportHitAreas();
     if (kind) document.getElementById('nt-sec-' + kind.replace(' ', ''))?.scrollIntoView({ block: 'nearest' });
@@ -2113,7 +2141,7 @@
     const chip = e.target.closest('.nt-chip');
     if (!chip) return;
     e.stopPropagation();
-    if (!ntBoard.hidden && ntBoard.dataset.kind === chip.dataset.kind) { ntBoard.hidden = true; reportHitAreas(); return; }
+    if (!ntBoard.hidden && ntBoard.dataset.kind === chip.dataset.kind) { ntBoard.hidden = true; ntDockSync(); reportHitAreas(); return; }
     ntBoard.dataset.kind = chip.dataset.kind ?? '';
     ntOpenBoard(chip.dataset.kind);
   });
@@ -2122,7 +2150,7 @@
     ntToast.hidden = true;
     ntOpenBoard(ntToast.dataset.kind);
   });
-  document.getElementById('ntClose').addEventListener('click', () => { ntBoard.hidden = true; reportHitAreas(); });
+  document.getElementById('ntClose').addEventListener('click', () => { ntBoard.hidden = true; ntDockSync(); reportHitAreas(); });
   document.getElementById('ntDash').addEventListener('click', (e) => {
     e.preventDefault();
     fetch('/open-dash', { method: 'POST' }).catch((err) => tell(`Dash 못 엶: ${err && err.message ? err.message : err}`));
@@ -2206,7 +2234,7 @@
   ntIcon.addEventListener('pointerup', () => {
     // 제자리에서 뗀 것만 누르기 (판 열고 닫기)
     if (!ntDrop(false)) return;
-    if (ntBoard.hidden) ntOpenBoard(); else { ntBoard.hidden = true; reportHitAreas(); }
+    if (ntBoard.hidden) ntOpenBoard(); else { ntBoard.hidden = true; ntDockSync(); reportHitAreas(); }
   });
   // 두 번 눌러 몸으로 돌아가기는 뺌. 판을 열고 닫는 두 번 누르기가 아이콘 모드를 풀었음 (사용자 2026-11-02)
   // 몸으로는 판 머리의 몸으로 버튼이나 우클릭 설정에서
