@@ -1653,6 +1653,11 @@
     { icon: 'minimize-2', name: '아이콘 모드', box: 'optIcon' },
     { icon: 'bell',
       name: () => (ntLeadMin > 0 ? `알림 ${ntLeadMin}분 전` : '알림 시작 때만'),
+      // 켜고 끄기가 아니라 순환이라 켜짐 꺼짐 대신 다음 값을 보임
+      tip: () => {
+        const next = 알림단계[(알림단계.indexOf(ntLeadMin) + 1) % 알림단계.length];
+        return `${ntLeadMin > 0 ? `알림 ${ntLeadMin}분 전` : '알림 시작 때만'}, 누르면 ${next > 0 ? `${next}분 전` : '시작 때만'}`;
+      },
       on: () => ntLeadMin > 0,
       flip: () => {
         const box = document.getElementById('optLead');
@@ -1740,7 +1745,7 @@
       b.style.left = `${Math.min(innerWidth - 30, Math.max(30, x + Math.cos(a) * r))}px`;
       b.style.top = `${Math.min(innerHeight - 50, Math.max(30, y + Math.sin(a) * r))}px`;
       const tip = document.createElement('small');
-      tip.textContent = t.more ? '더보기' : `${이름(t)} ${t.on() ? '켜짐' : '꺼짐'}`;
+      tip.textContent = t.more ? '더보기' : t.tip ? t.tip() : `${이름(t)} ${t.on() ? '켜짐' : '꺼짐'}`;
       b.appendChild(tip);
       b.addEventListener('click', (e) => {
         e.stopPropagation();

@@ -187,6 +187,17 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('원형 이름표: 켜고 끄기는 켜짐 꺼짐, 알림은 지금 값과 누르면 바뀔 값', async () => {
+      const page = await openWindow();
+      await page.locator('.stage').click({ button: 'right' });
+      const tips = await page.evaluate(() => [...document.querySelectorAll('#ring .ring-btn small')].map((s) => s.textContent));
+      assert.match(tips[1], /^화면 보기 (켜짐|꺼짐)$/, `화면 보기 이름표: ${tips[1]}`);
+      assert.match(tips[5], /^알림 .+, 누르면 .+$/, `알림 이름표에 다음 값이 없다: ${tips[5]}`);
+      assert.doesNotMatch(tips[5], /켜짐|꺼짐/, `알림은 순환이라 켜짐 꺼짐이 아니다: ${tips[5]}`);
+      assert.equal(tips[6], '더보기');
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
