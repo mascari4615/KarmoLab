@@ -1839,6 +1839,20 @@
     // 원형에서 키보드로 더보기를 눌렀으면 포커스가 사라진 원형에 남음. 판의 첫 칸으로
     menuTiles.children[0]?.focus({ preventScroll: true });
   }
+  // 탭줄은 위아래 화살표로 탭 사이 (끄기 포함), 오른쪽 화살표로 지금 탭의 첫 조작으로
+  menu.querySelector('.menu-rail').addEventListener('keydown', (e) => {
+    const rail = [...menu.querySelectorAll('.menu-rail button')];
+    const at = rail.indexOf(document.activeElement);
+    if (at < 0) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      rail[(at + (e.key === 'ArrowDown' ? 1 : -1) + rail.length) % rail.length].focus({ preventScroll: true });
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const page = [...menu.querySelectorAll('.menu-page')].find((p) => !p.hidden);
+      page?.querySelector('button, select, input')?.focus({ preventScroll: true });
+    }
+  });
   // 판의 칸은 3열. 좌우 화살표 1칸, 위아래 3칸
   menuTiles.addEventListener('keydown', (e) => {
     const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 3, ArrowUp: -3 }[e.key];

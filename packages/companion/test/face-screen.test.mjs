@@ -270,6 +270,20 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('판의 탭줄도 키보드로. 위아래로 탭 사이, Enter 로 탭 바꿈, 오른쪽으로 그 탭의 첫 조작', async () => {
+      const page = await openWindow();
+      await page.locator('.stage').click({ button: 'right' });
+      await page.locator('#ring .ring-btn.more').click();
+      await page.focus('.menu-rail button[data-page=quick]');
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.page), 'voice', '아래 화살표로 다음 탭에 안 간다');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => document.querySelector('.menu-page[data-page=voice]').hidden), false, 'Enter 로 목소리와 듣기 탭이 안 열렸다');
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'whoPick', '오른쪽 화살표로 그 탭의 첫 조작 (누구) 에 안 간다');
+      await page.close();
+    });
+
     await t.test('원형에서 아이콘 모드를 켜면 원형이 닫힌다. 몸이 사라져 원형의 중심이 없어짐', async () => {
       const page = await openWindow();
       await page.locator('.stage').click({ button: 'right' });
