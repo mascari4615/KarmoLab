@@ -131,3 +131,19 @@ export function spreadTarget(want, occupied, minX, maxX, gap = 110) {
   }
   return best;
 }
+
+/**
+ * 놓을 때 던지는 속도. samples 는 최근 움직임 [시각 ms, x, y] (0.12초 분량). 속도는 ±2500 px/s 로 자름.
+ * 350 px/s 넘고 마지막 움직임이 80ms 안이면 던짐, 아니면 null (본체와 분신 공용, 2026-11-03)
+ */
+export function throwVelocity(samples, now) {
+  if (samples.length < 2) return null;
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  const span = Math.max(0.03, (last[0] - first[0]) / 1000);
+  const clamp = (v) => Math.max(-2500, Math.min(2500, v));
+  const vx = clamp((last[1] - first[1]) / span);
+  const vy = clamp((last[2] - first[2]) / span);
+  if (Math.hypot(vx, vy) <= 350 || now - last[0] >= 80) return null;
+  return { vx, vy };
+}

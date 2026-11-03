@@ -90,3 +90,18 @@ test('걸어갈 자리는 다른 몸 바로 옆을 피한다', async () => {
   // 다른 몸이 없으면 그대로
   assert.equal(spreadTarget(640, [], 100, 1800), 640);
 });
+
+test('던지는 속도: 빠르고 막 놓았으면 던지고, 느리거나 멈췄다 놓으면 안 던짐', async () => {
+  const { throwVelocity } = await import('../assets/surfaces.js');
+  // 0.1초에 120px 오른쪽 = 1200 px/s
+  const fast = [[1000, 0, 0], [1100, 120, 0]];
+  assert.deepEqual(throwVelocity(fast, 1120), { vx: 1200, vy: 0 });
+  // 느림 (0.1초에 20px = 200 px/s)
+  assert.equal(throwVelocity([[1000, 0, 0], [1100, 20, 0]], 1110), null);
+  // 빠르게 움직였어도 멈췄다 놓음 (마지막 움직임에서 80ms 넘음)
+  assert.equal(throwVelocity(fast, 1200), null);
+  // 너무 빠르면 2500 으로 자름
+  assert.deepEqual(throwVelocity([[1000, 0, 0], [1030, 300, -300]], 1040), { vx: 2500, vy: -2500 });
+  // 표본 하나면 없음
+  assert.equal(throwVelocity([[1000, 0, 0]], 1000), null);
+});

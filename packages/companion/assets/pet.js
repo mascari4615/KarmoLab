@@ -4,7 +4,7 @@
 // 중력, 창 윗면 서기, 걷기, 앉기, 춤, 뛰기, 던지기 규칙은 본체와 같은 값 사용
 // (본체 쪽 구현은 face.html 에 있음. 둘을 한 곳으로 합치는 것이 다음 정리 대상)
 
-import { jumpTargets, jumpVelocity, landingSurface, spreadTarget, supportAt } from '/surfaces.js';
+import { jumpTargets, jumpVelocity, landingSurface, spreadTarget, supportAt, throwVelocity } from '/surfaces.js';
 
 export const GRAVITY_PX = 2600; // px/s². 본체와 같은 값
 export const FEET_BIAS = 0.039; // 경계 상자 바닥이 보이는 발 끝보다 키의 이만큼 아래
@@ -385,16 +385,8 @@ export class Pet {
         if (this.act.kind === null && !this.roam.active && !this.fall.active) this.body?.setMood('poked');
         return;
       }
-      const samples = grab.samples;
-      if (samples.length >= 2) {
-        const first = samples[0];
-        const last = samples[samples.length - 1];
-        const span = Math.max(0.03, (last[0] - first[0]) / 1000);
-        const clamp = (v) => Math.max(-2500, Math.min(2500, v));
-        const vx = clamp((last[1] - first[1]) / span);
-        const vy = clamp((last[2] - first[2]) / span);
-        if (Math.hypot(vx, vy) > 350 && performance.now() - last[0] < 80) this.startFall(vx, vy, true);
-      }
+      const thrown = throwVelocity(grab.samples, performance.now());
+      if (thrown !== null) this.startFall(thrown.vx, thrown.vy, true);
     };
     stage.addEventListener('pointerup', release);
     stage.addEventListener('pointercancel', release);

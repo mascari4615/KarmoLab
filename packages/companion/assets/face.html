@@ -2740,17 +2740,11 @@
     }
     touched(wasClick ? 'poke' : 'drag');
     // 놓을 때 속도가 있으면 던져진다
-    if (wasClick === false && gravityEnabled && samples.length >= 2) {
-      const first = samples[0];
-      const last = samples[samples.length - 1];
-      const span = Math.max(0.03, (last[0] - first[0]) / 1000);
-      const clampSpeed = (v) => Math.max(-2500, Math.min(2500, v));
-      const vx = clampSpeed((last[1] - first[1]) / span);
-      const vy = clampSpeed((last[2] - first[2]) / span);
-      if (Math.hypot(vx, vy) > 350 && performance.now() - last[0] < 80) {
-        startFall(vx, vy, true);
-        return;
-      }
+    // 계산은 분신과 공용 (surfaces.js). 규칙 파일이 아직 안 왔으면 던지지 않고 그냥 놓음
+    const thrown = wasClick === false && gravityEnabled ? surfaceMod?.throwVelocity(samples, performance.now()) ?? null : null;
+    if (thrown !== null) {
+      startFall(thrown.vx, thrown.vy, true);
+      return;
     }
     // 눌렀을 때 움찔. 한가할 때만 (말하는 중이면 그 동작을 끊지 않는다)
     if (wasClick && body3d !== null && ['', 'listening'].includes(currentMood) && !fall.active && !roam.active && act.kind === null) {
