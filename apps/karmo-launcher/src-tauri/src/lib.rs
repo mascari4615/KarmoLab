@@ -686,6 +686,12 @@ fn str_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a str> {
 
 /* ---------- 설치, 실행, 제거 ---------- */
 
+/// 설치 프로그램과 제거 프로그램은 한 번에 하나. 받기와 zip 풀기는 앱마다 동시에 돎
+fn native_setup_turn() -> std::sync::MutexGuard<'static, ()> {
+    static TURN: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    TURN.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 #[derive(Serialize, Clone)]
 struct Progress {
     id: String,
@@ -794,8 +800,8 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
             let _ = std::fs::remove_file(&file);
             return Err(e);
         }
-        say(got, total, "install");
         if format == "zip" {
+            say(got, total, "install");
             let dest = zip_dir(&handle, &app)?;
             if let Some(exe) = exe_of(&app) {
                 if is_running(&exe) {
@@ -814,7 +820,11 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
                 .and_then(|a| a.as_array())
                 .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
                 .unwrap_or_default();
+            say(got, total, "wait");
+            let turn = native_setup_turn();
+            say(got, total, "install");
             let status = Command::new(&file).args(&args).status().map_err(|e| e.to_string())?;
+            drop(turn);
             let _ = std::fs::remove_file(&file);
             if !status.success() {
                 return Err(format!("설치 프로그램이 {:?} 로 끝남", status.code()));
@@ -894,6 +904,7 @@ async fn uninstall_app(handle: AppHandle, app: Value) -> Result<(), String> {
         _ => {
             let reg = registry(str_at(&app, &["install", "registry"]).ok_or("install.registry 없음")?).ok_or("설치 안 됨")?;
             let un = reg.get("UninstallString").ok_or("제거 프로그램 모름")?;
+            let _turn = native_setup_turn();
             let status = Command::new(un).arg("/S").status().map_err(|e| e.to_string())?;
             if !status.success() {
                 return Err(format!("제거 프로그램이 {:?} 로 끝남", status.code()));

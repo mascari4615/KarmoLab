@@ -9,5 +9,6 @@
 - 설치 형식 (`install.format`): `nsis` (설치 프로그램, 상태는 HKCU Uninstall 레지스트리, 런처 밖에서 깐 것도 보임, minisign 서명 필수), `zip` (런처 데이터 폴더 `apps/<id>` 에 풂, 상태는 `.karmo-version`, GitHub 자산 sha256 필수, 끄기는 `install.exe` 와 그것을 띄운 `cmd.exe`, `node.exe` 부모까지 강제 종료), `local` (받지 않음, 작업 폴더 아래 `local.path` 가 있으면 `local.run` 실행)
 - 최신 판 (`source.type`): `tauri-latest` (catalog 먼저, 없으면 latest.json), `gh-release` (`repo` 릴리스에서 `tag_prefix`, `asset_prefix`, `asset_suffix` 가 맞는 첫 자산)
 - 비공개 목록: memo 저장소 `data/launcher/apps.json`. 런처에 GitHub 토큰이 있을 때만 받아 공개 목록 뒤에 붙임. 토큰은 자격 증명 관리자 `karmo-launcher:github`. 화면 오른쪽 위 열쇠에서 붙여 넣기 또는 이 PC 의 git 로그인 (`git:https://github.com`) 복사
+- 동시 작업: 진행 상태는 앱별. 한 앱을 받는 동안 다른 앱을 조작할 수 있음. NSIS 설치와 제거 프로그램만 한 번에 하나 (`native_setup_turn`). 런처 자체 업데이트는 앱 작업이 다 끝난 뒤
 - 외부 명령을 창 없이 띄우지 않음. 레지스트리, 프로세스, 자격 증명은 Windows API (Defender 오탐 2026-11-02, memo `changes/launcher.md`)
 - 창 크기 조절: 틀 없는 투명 창이라 판 가장자리 손잡이 (`.rz`) 가 `startResizeDragging` 을 부름

@@ -17,8 +17,14 @@ let apps = [];
 const status = new Map();
 const fmt = (a) => (a.install && a.install.format) || 'nsis';
 let current = null;
-let busy = null;
-let progress = { got: 0, total: 0, phase: '' };
+/** 설치, 업데이트, 제거 중인 앱. id -> { got, total, phase }. 앱마다 따로라 한 앱을 받는 동안 다른 앱을 조작할 수 있음 */
+const busy = new Map();
+
+function phaseText(job) {
+  const pct = job.total ? Math.round((job.got / job.total) * 100) : 0;
+  const words = { verify: '파일 확인 중', wait: '설치 차례 기다리는 중', install: '설치 중', done: '마무리 중', uninstall: '제거 중' };
+  return words[job.phase] || '받는 중 ' + pct + '%';
+}
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -40,7 +46,8 @@ function paintList() {
   listEl.innerHTML = apps
     .map((a) => {
       const st = status.get(a.id);
-      const tag = a.soon ? '<em class="soon">준비 중</em>' : st && st.running ? '<em class="run">실행 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : a.access === 'private' ? '<em class="soon">비공개</em>' : '';
+      const job = busy.get(a.id);
+      const tag = job ? '<em class="run" data-job>' + esc(phaseText(job)) + '</em>' : a.soon ? '<em class="soon">준비 중</em>' : st && st.running ? '<em class="run">실행 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : a.access === 'private' ? '<em class="soon">비공개</em>' : '';
       const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
       return (
         '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
@@ -100,14 +107,11 @@ function paintMain() {
     if (!st.running && st.installed && hasUpdate(st)) sub.push('<button type="button" data-act="launch">실행</button>');
     if (!st.running && st.installed) sub.push('<button type="button" data-act="uninstall">제거</button>');
   }
-  const pct = progress.total ? Math.round((progress.got / progress.total) * 100) : 0;
-  const bar =
-    busy === app.id
-      ? '<div class="bar"><i style="width:' + pct + '%"></i></div><p class="note">' +
-        esc(progress.phase === 'verify' ? '파일 확인 중' : progress.phase === 'install' ? '설치 중' : progress.phase === 'uninstall' ? '제거 중' : '받는 중 ' + pct + '%') + '</p>'
-      : '';
+  const job = busy.get(app.id);
+  const pct = job && job.total ? Math.round((job.got / job.total) * 100) : 0;
+  const bar = job ? '<div class="bar"><i style="width:' + pct + '%"></i></div><p class="note">' + esc(phaseText(job)) + '</p>' : '';
   actsEl.innerHTML = bar + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
-  actsEl.querySelectorAll('button').forEach((b) => (b.disabled = !!busy));
+  actsEl.querySelectorAll('button').forEach((b) => (b.disabled = !!job));
 }
 
 function paint() {
@@ -142,7 +146,12 @@ async function load() {
 
 async function act(kind) {
   const app = apps.find((a) => a.id === current);
-  if (!app || busy) return;
+  if (!app || busy.has(app.id)) return;
+  /* 런처 업데이트는 끝나면 다시 켜지므로 새 설치를 시작하지 않음 */
+  if (selfBusy && (kind === 'install' || kind === 'uninstall')) {
+    msgEl.textContent = '런처 업데이트 중. 다시 켜진 뒤에 해 주세요';
+    return;
+  }
   const st = status.get(app.id) || {};
   try {
     if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
@@ -160,20 +169,19 @@ async function act(kind) {
       await pollRunning();
       return;
     }
-    busy = app.id;
     if (kind === 'install') {
-      progress = { got: 0, total: 0, phase: 'download' };
-      paintMain();
+      busy.set(app.id, { got: 0, total: 0, phase: 'download' });
+      paint();
       await invoke('install_app', { app, url: st.download, version: st.latest || '', signature: st.signature || '', sha256: st.sha256 || '' });
     } else if (kind === 'uninstall') {
-      progress = { got: 0, total: 0, phase: 'uninstall' };
-      paintMain();
+      busy.set(app.id, { got: 0, total: 0, phase: 'uninstall' });
+      paint();
       await invoke('uninstall_app', { app });
     }
   } catch (e) {
     status.set(app.id, { ...st, error: String(e) });
   } finally {
-    busy = null;
+    busy.delete(app.id);
     await refreshStatus(app);
     paint();
   }
@@ -195,7 +203,7 @@ async function pollRunning() {
       /* 다음 차례에 다시 */
     }
   }
-  if (changed && !busy) paint();
+  if (changed) paint();
 }
 /* 1초마다 (3초는 켜고 끈 뒤 표시가 늦다, 사용자 2026-09-25 "기다리는 텀이 너무 길지 않나") */
 window.setInterval(() => {
@@ -308,7 +316,7 @@ async function checkSelf() {
   try {
     const v = await invoke('self_update_check');
     if (!v) return;
-    if (busy) {
+    if (busy.size) {
       window.setTimeout(() => void checkSelf(), 60 * 1000);
       return;
     }
@@ -317,7 +325,13 @@ async function checkSelf() {
     /* 오프라인이거나 아직 릴리스가 없음. 다음 차례에 다시 */
   }
 }
-selfEl.addEventListener('click', () => void installSelf());
+selfEl.addEventListener('click', () => {
+  if (busy.size) {
+    selfEl.textContent = '앱 작업이 끝난 뒤에 눌러 주세요';
+    return;
+  }
+  void installSelf();
+});
 window.setInterval(() => void checkSelf(), SELF_EVERY_MS);
 void listen('self-update-progress', (ev) => {
   const [got, total] = ev.payload;
@@ -325,7 +339,12 @@ void listen('self-update-progress', (ev) => {
 });
 void checkSelf();
 void listen('install-progress', (ev) => {
-  progress = ev.payload;
-  paintMain();
+  const job = ev.payload;
+  if (!busy.has(job.id)) return;
+  busy.set(job.id, job);
+  /* 목록은 글자만 바꿈. 통째로 다시 그리면 누르는 사이 단추가 바뀌어 클릭이 사라짐 */
+  const tag = listEl.querySelector('[data-id="' + CSS.escape(job.id) + '"] [data-job]');
+  if (tag) tag.textContent = phaseText(job);
+  if (job.id === current) paintMain();
 });
 void load();
