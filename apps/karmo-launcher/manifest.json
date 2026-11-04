@@ -21,7 +21,8 @@
       },
       "art": {
         "bg": "sky-twilight",
-        "icon": "tool"
+        "icon": "tool",
+        "mascot": "karmolab"
       }
     },
     {
@@ -34,10 +35,17 @@
         "url": "https://github.com/mascari4615/KarmoLab/releases/download/dash-updater/latest.json",
         "platform": "windows-x86_64-nsis"
       },
-      "install": { "format": "nsis", "args": ["/S"], "registry": "KarmoDash" },
+      "install": {
+        "format": "nsis",
+        "args": [
+          "/S"
+        ],
+        "registry": "KarmoDash"
+      },
       "art": {
         "bg": "sky-village",
-        "icon": "dash"
+        "icon": "dash",
+        "mascot": "dash"
       }
     },
     {
@@ -52,10 +60,18 @@
         "asset_prefix": "companion-",
         "asset_suffix": ".zip"
       },
-      "install": { "format": "zip", "entry": "scripts/start.cmd", "exe": "companion-window.exe", "env": { "COMPANION_WORKSPACE": "{workspace}" } },
+      "install": {
+        "format": "zip",
+        "entry": "scripts/start.cmd",
+        "exe": "companion-window.exe",
+        "env": {
+          "COMPANION_WORKSPACE": "{workspace}"
+        }
+      },
       "art": {
         "bg": "sky-twilight",
-        "icon": "set"
+        "icon": "set",
+        "mascot": "companion"
       }
     },
     {
@@ -66,7 +82,8 @@
       "open": "https://files.mascari4615.com/",
       "art": {
         "bg": "sky-village",
-        "icon": "dash"
+        "icon": "dash",
+        "mascot": "files"
       }
     }
   ]
