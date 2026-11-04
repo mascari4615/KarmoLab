@@ -108,6 +108,11 @@ export function visibleApps(apps, status, prefs, view) {
   });
 }
 
+/** 지난 확인 뒤 지난 초. 첫 확인은 0 (켜자마자 시간이 더해지지 않게), 오래 멈췄으면 상한까지만 */
+export function tickSeconds(now, last, max = 120) {
+  return last ? Math.min((now - last) / 1000, max) : 0;
+}
+
 /** 실행 옵션 칸을 인자 배열로. 큰따옴표로 공백을 묶음 */
 export function parseArgs(text) {
   const out = [];

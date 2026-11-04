@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, MODES, appPref, autoPlan, fmtAgo, fmtDuration, hasUpdate, modeOf, parseArgs, visibleApps } from './updates.js';
+import { BLOCK_TEXT, MODES, appPref, autoPlan, fmtAgo, fmtDuration, hasUpdate, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -332,7 +332,6 @@ let polling = false;
 let lastPoll = 0;
 let lastSave = 0;
 let dirty = false;
-const MAX_TICK_S = 120;
 
 /** 설치된 앱들의 실행 여부만 다시 (최신 판은 다시 안 받음). 꺼지는 순간 미룬 업데이트를 바로 받음 */
 async function pollRunning(force) {
@@ -340,7 +339,7 @@ async function pollRunning(force) {
   /* 창이 보일 때 1초 (사용자 2026-09-25 "기다리는 텀이 너무 길지 않나"), 트레이에 있으면 15초 */
   if (polling || (!force && now - lastPoll < 15000 && !shown)) return;
   polling = true;
-  const elapsed = Math.min((now - lastPoll) / 1000, MAX_TICK_S);
+  const elapsed = tickSeconds(now, lastPoll);
   lastPoll = now;
   let changed = false;
   let stopped = false;

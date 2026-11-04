@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, visibleApps } from '../ui/updates.js';
+import { autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
@@ -86,6 +86,12 @@ test('목록 검색, 거르기, 정렬, 즐겨찾기', () => {
   assert.deepEqual(ids({}, { filter: 'updates' }), ['a']);
   assert.deepEqual(ids({ apps: { c: { favorite: true } } }, { sort: 'name' }), ['c', 'a', 'b']);
   assert.deepEqual(ids({ apps: { a: { last: 5 }, c: { last: 9 } } }, { sort: 'recent' }), ['c', 'a', 'b']);
+});
+
+test('실행 시간 한 칸. 첫 확인은 0, 긴 공백은 상한', () => {
+  assert.equal(tickSeconds(1793819834749, 0), 0);
+  assert.equal(tickSeconds(10000, 9000), 1);
+  assert.equal(tickSeconds(1000000, 1000), 120);
 });
 
 test('실행 옵션 나누기', () => {
