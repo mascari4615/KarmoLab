@@ -338,6 +338,7 @@ void listen('self-update-progress', (ev) => {
   if (total) selfEl.textContent = '런처 받는 중 ' + Math.round((got / total) * 100) + '%';
 });
 void checkSelf();
+void window.__TAURI__.app.getVersion().then((v) => ($('ver').textContent = 'v' + v));
 void listen('install-progress', (ev) => {
   const job = ev.payload;
   if (!busy.has(job.id)) return;

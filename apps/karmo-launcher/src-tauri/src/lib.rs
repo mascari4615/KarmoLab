@@ -927,6 +927,10 @@ fn open_url(url: String) -> Result<(), String> {
 /// 런처 자신의 새 판. 있으면 판 번호, 없으면 None (tauri-plugin-updater, 엔드포인트는 tauri.conf 의 launcher-updater 릴리스)
 #[tauri::command]
 async fn self_update_check(app: AppHandle) -> Result<Option<String>, String> {
+    /* 로컬 개발 판이 공개 판으로 설치본을 덮어쓰지 않게 */
+    if cfg!(debug_assertions) {
+        return Ok(None);
+    }
     use tauri_plugin_updater::UpdaterExt;
     let updater = app.updater().map_err(|e| e.to_string())?;
     match updater.check().await {

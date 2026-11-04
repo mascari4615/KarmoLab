@@ -69,6 +69,7 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 /* 판 위쪽 흐림 (높이의 8%) 아래에 두어야 글자가 읽힘 */
 .titlebar { position: absolute; left: 40px; right: 40px; top: 30px; height: 40px; display: flex; align-items: center; gap: 6px; z-index: 6; }
 .titlebar .en { color: var(--ink2); }
+.titlebar .ver { margin-left: 4px; font: 600 12px var(--en); letter-spacing: 0.06em; color: var(--ink); }
 .titlebar .msg { flex: 1; text-align: right; padding-right: 10px; font-size: 11px; color: var(--ink3); }
 .wb { width: 34px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: var(--ink2); font: 400 15px var(--en); cursor: pointer; }
 .wb:hover { color: var(--ink); background: var(--panel); }
