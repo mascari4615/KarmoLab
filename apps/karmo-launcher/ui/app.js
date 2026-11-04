@@ -24,11 +24,13 @@ const canDownload = (a) => !a.soon && a.kind !== 'web' && fmt(a) !== 'local';
 let current = null;
 const view = { q: '', filter: 'all', sort: 'list' };
 
-/* 받기 줄. Steam 처럼 한 번에 하나, 나머지는 대기. 앱을 받는 동안에도 다른 앱은 실행 가능 */
+/** 설치, 업데이트, 제거 중인 앱. id -> { got, total, phase, auto, thenLaunch }. 앱마다 따로라 한 앱을 받는 동안 다른 앱을 조작할 수 있음.
+    손으로 누른 것은 바로 시작 (큰 WM zip 이 나머지를 막지 않게, 2026-11-04 앱별 동시 작업).
+    자동 업데이트만 줄을 서서 AUTO_AT_ONCE 개씩 (Hub Concurrent downloads) */
+const busy = new Map();
 const queue = [];
-let active = null;
-let removing = null;
-let progress = { got: 0, total: 0, phase: '' };
+const AUTO_AT_ONCE = 2;
+let selfBusy = false;
 let blocked = {};
 const failures = {};
 let lastCheck = 0;
@@ -48,9 +50,11 @@ function setAppPref(id, patch) {
 }
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const pctOf = () => (progress.total ? Math.round((progress.got / progress.total) * 100) : 0);
-const phaseText = () =>
-  progress.phase === 'verify' ? '파일 확인 중' : progress.phase === 'install' || progress.phase === 'done' ? '설치 중' : '받는 중 ' + pctOf() + '%';
+const pctOf = (job) => (job && job.total ? Math.round((job.got / job.total) * 100) : 0);
+function phaseText(job) {
+  const words = { verify: '파일 확인 중', wait: '설치 차례 기다리는 중', install: '설치 중', done: '마무리 중', uninstall: '제거 중' };
+  return words[job.phase] || '받는 중 ' + pctOf(job) + '%';
+}
 const isQueued = (id) => queue.some((j) => j.id === id);
 
 function paintList() {
@@ -60,8 +64,8 @@ function paintList() {
         .map((a) => {
           const st = status.get(a.id);
           const tag =
-            a.soon ? '<em class="soon">준비 중</em>'
-            : active && active.id === a.id ? '<em>' + pctOf() + '%</em>'
+            busy.has(a.id) ? '<em class="run" data-job>' + esc(phaseText(busy.get(a.id))) + '</em>'
+            : a.soon ? '<em class="soon">준비 중</em>'
             : isQueued(a.id) ? '<em class="soon">대기</em>'
             : st && st.running ? '<em class="run">실행 중</em>'
             : hasUpdate(st) ? '<em>업데이트</em>'
@@ -76,9 +80,15 @@ function paintList() {
         })
         .join('')
     : '<p class="empty">없음</p>';
+  paintDlBtn();
+}
+
+function paintDlBtn() {
+  const jobs = [...busy.values()];
   const waiting = queue.length;
-  dlBtn.textContent = active ? phaseText() + (waiting ? ', 대기 ' + waiting : '') : waiting ? '다운로드 대기 ' + waiting : '다운로드';
-  dlBtn.classList.toggle('on', !!active || !!waiting);
+  const now = jobs.length === 1 ? phaseText(jobs[0]) : jobs.length ? '작업 ' + jobs.length + '개' : '';
+  dlBtn.textContent = now ? now + (waiting ? ', 대기 ' + waiting : '') : waiting ? '다운로드 대기 ' + waiting : '다운로드';
+  dlBtn.classList.toggle('on', !!jobs.length || !!waiting);
 }
 
 function paintMain() {
@@ -123,7 +133,7 @@ function paintMain() {
 
   const sub = [];
   let start = '';
-  const mine = active && active.id === app.id;
+  const job = busy.get(app.id);
   const waiting = isQueued(app.id);
   const mode = modeOf(prefs, app.id);
   if (app.soon) start = '<p class="note">아직 받을 수 있는 판이 없습니다.</p>';
@@ -132,9 +142,11 @@ function paintMain() {
     start = st.installed
       ? '<button type="button" class="start' + (st.running ? ' running' : '') + '" data-act="launch">' + (st.running ? '브라우저로 열기<small>실행 중</small>' : '실행') + '</button>'
       : '<p class="note">이 PC 의 작업 폴더에 없습니다. 설정에서 작업 폴더를 바꿀 수 있습니다.</p>';
-  } else if (mine) {
-    start = '<button type="button" class="start" disabled>' + (active.auto ? '자동 업데이트' : st.installed ? '업데이트' : '설치') + '</button>';
-    sub.push('<button type="button" data-act="cancel">취소</button>');
+  } else if (job) {
+    const word = job.phase === 'uninstall' ? '제거' : job.auto ? '자동 업데이트' : st.installed ? '업데이트' : '설치';
+    start = '<button type="button" class="start" disabled>' + word + '</button>';
+    /* 설치 프로그램이 돌기 시작하면 못 멈춤 */
+    if (job.phase === 'download') sub.push('<button type="button" data-act="cancel">취소</button>');
   } else if (waiting) {
     start = '<button type="button" class="start" disabled>대기 중</button>';
     sub.push('<button type="button" data-act="dequeue">빼기</button>');
@@ -153,12 +165,11 @@ function paintMain() {
   } else if (st.installed) {
     start = '<button type="button" class="start" data-act="launch">실행</button>';
   }
-  if (st.installed && !mine && !app.soon && app.kind !== 'web') sub.push('<button type="button" data-act="props">속성</button>');
-  const why = blocked[app.id] && !mine && !waiting ? BLOCK_TEXT[blocked[app.id]] : '';
-  const bar = mine ? '<div class="bar"><i style="width:' + pctOf() + '%"></i></div><p class="note">' + esc(phaseText()) + '</p>' : '';
+  if (st.installed && !job && !app.soon && app.kind !== 'web') sub.push('<button type="button" data-act="props">속성</button>');
+  const why = blocked[app.id] && !job && !waiting ? BLOCK_TEXT[blocked[app.id]] : '';
+  const bar = job ? '<div class="bar"><i style="width:' + pctOf(job) + '%"></i></div><p class="note">' + esc(phaseText(job)) + '</p>' : '';
   actsEl.innerHTML =
     bar + (why && !st.running ? '<p class="note">' + esc(why) + '</p>' : '') + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
-  if (removing === app.id) actsEl.querySelectorAll('button').forEach((b) => (b.disabled = true));
 }
 
 function paint() {
@@ -204,11 +215,11 @@ async function load() {
 function planAuto() {
   const plan = autoPlan(apps, status, prefs, new Date(), failures);
   blocked = plan.blocked;
-  for (const id of plan.ready) if (!isQueued(id) && !(active && active.id === id)) queue.push({ id, auto: true });
-  /* 먼저 받기 앱은 줄 앞으로. 손으로 넣은 것은 그대로 맨 앞 */
-  const rank = (j) => (!j.auto ? 0 : modeOf(prefs, j.id) === 'priority' ? 1 : 2);
+  for (const id of plan.ready) if (!isQueued(id) && !busy.has(id)) queue.push({ id, auto: true });
+  /* 먼저 받기 앱은 줄 앞으로 */
+  const rank = (j) => (modeOf(prefs, j.id) === 'priority' ? 0 : 1);
   queue.sort((a, b) => rank(a) - rank(b));
-  void pump();
+  pump();
 }
 
 function addLog(entry) {
@@ -216,17 +227,20 @@ function addLog(entry) {
   savePrefs();
 }
 
-async function pump() {
-  if (active || !queue.length) return;
-  const job = queue.shift();
-  const app = apps.find((a) => a.id === job.id);
-  const st = app && status.get(app.id);
-  if (!app || !st || !st.download || st.running) {
-    void pump();
-    return;
+/** 줄의 앞에서부터 자리가 나는 만큼 시작. 런처 자체 업데이트 중에는 새로 안 시작 */
+function pump() {
+  const running = () => [...busy.values()].filter((j) => j.auto).length;
+  while (!selfBusy && queue.length && running() < AUTO_AT_ONCE) {
+    const next = queue.shift();
+    const app = apps.find((a) => a.id === next.id);
+    const st = app && status.get(app.id);
+    if (app && st && st.download && !st.running && !busy.has(app.id)) void runInstall(app, { auto: true });
   }
-  active = job;
-  progress = { got: 0, total: 0, phase: 'download' };
+}
+
+async function runInstall(app, opts = {}) {
+  const st = status.get(app.id) || {};
+  busy.set(app.id, { got: 0, total: 0, phase: 'download', ...opts });
   paint();
   let error = null;
   try {
@@ -234,19 +248,19 @@ async function pump() {
   } catch (e) {
     error = String(e);
   }
-  active = null;
+  busy.delete(app.id);
   const version = st.latest;
-  addLog({ id: app.id, name: app.name, version, at: Date.now(), ok: !error, error, auto: !!job.auto });
+  addLog({ id: app.id, name: app.name, version, at: Date.now(), ok: !error, error, auto: !!opts.auto });
   if (error) {
     const old = failures[app.id];
     failures[app.id] = { at: Date.now(), count: old && old.version === version ? old.count + 1 : 1, version };
   } else {
     delete failures[app.id];
-    msgEl.textContent = app.name + ' ' + version + (job.auto ? ' 자동 업데이트' : ' 설치') + ' 끝';
+    msgEl.textContent = app.name + ' ' + version + (opts.auto ? ' 자동 업데이트' : ' 설치') + ' 끝';
   }
   await refreshStatus(app);
   if (error) status.set(app.id, { ...status.get(app.id), error });
-  else if (job.thenLaunch) await launch(app);
+  else if (opts.thenLaunch) await launch(app);
   planAuto();
   paint();
 }
@@ -265,14 +279,18 @@ async function launch(app) {
   window.setTimeout(() => void pollRunning(true), 1500);
 }
 
-function enqueue(id, opts = {}) {
-  if (active && active.id === id) return;
+/** 손으로 누른 설치와 업데이트. 줄을 안 서고 바로 시작 */
+function installNow(id, opts = {}) {
+  const app = apps.find((a) => a.id === id);
+  if (!app || busy.has(id)) return;
+  if (selfBusy) {
+    msgEl.textContent = '런처 업데이트 중. 다시 켜진 뒤에 해 주세요';
+    return;
+  }
   const at = queue.findIndex((j) => j.id === id);
   if (at >= 0) queue.splice(at, 1);
   delete failures[id];
-  queue.unshift({ id, ...opts });
-  void pump();
-  paint();
+  void runInstall(app, opts);
 }
 
 async function act(kind) {
@@ -281,9 +299,9 @@ async function act(kind) {
   const st = status.get(app.id) || {};
   if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
   if (kind === 'launch') return void (await launch(app));
-  if (kind === 'install') return enqueue(app.id);
-  if (kind === 'update-launch') return enqueue(app.id, { thenLaunch: true });
-  if (kind === 'cancel') return void (await invoke('cancel_install'));
+  if (kind === 'install') return installNow(app.id);
+  if (kind === 'update-launch') return installNow(app.id, { thenLaunch: true });
+  if (kind === 'cancel') return void (await invoke('cancel_install', { id: app.id }));
   if (kind === 'props') return openProps(app);
   if (kind === 'dequeue') {
     queue.splice(queue.findIndex((j) => j.id === app.id), 1);
@@ -432,17 +450,19 @@ function paintDownloads() {
   const row = (app, right, extra = '') => '<div class="drow"><span class="dn">' + esc(app) + '</span><span class="dx">' + extra + '</span>' + right + '</div>';
   const name = (id) => (apps.find((a) => a.id === id) || { name: id }).name;
   const parts = [];
-  if (active) {
+  if (busy.size) {
     parts.push(
-      '<section><h3>받는 중</h3>' +
-        row(name(active.id), '<button type="button" data-dl="cancel">취소</button>', esc(phaseText())) +
-        '<div class="bar wide"><i style="width:' + pctOf() + '%"></i></div></section>',
+      '<section><h3>작업 중</h3>' +
+        [...busy].map(([id, job]) =>
+          row(name(id), job.phase === 'download' ? '<button type="button" data-dl="cancel" data-id="' + esc(id) + '">취소</button>' : '', esc(phaseText(job))) +
+          '<div class="bar wide"><i style="width:' + pctOf(job) + '%"></i></div>').join('') +
+        '</section>',
     );
   }
   if (queue.length) {
     parts.push('<section><h3>대기</h3>' + queue.map((j) => row(name(j.id), '<button type="button" data-dl="remove" data-id="' + esc(j.id) + '">빼기</button>')).join('') + '</section>');
   }
-  const later = Object.keys(blocked).filter((id) => !isQueued(id) && !(active && active.id === id));
+  const later = Object.keys(blocked).filter((id) => !isQueued(id) && !busy.has(id));
   if (later.length) {
     parts.push(
       '<section><h3>새 판 있음</h3>' +
@@ -473,8 +493,8 @@ $('dlBody').addEventListener('click', (e) => {
   const b = e.target.closest('[data-dl]');
   if (!b) return;
   const kind = b.dataset.dl;
-  if (kind === 'cancel') void invoke('cancel_install');
-  if (kind === 'now') enqueue(b.dataset.id);
+  if (kind === 'cancel') void invoke('cancel_install', { id: b.dataset.id });
+  if (kind === 'now') installNow(b.dataset.id);
   if (kind === 'remove') {
     queue.splice(queue.findIndex((j) => j.id === b.dataset.id), 1);
     const st = status.get(b.dataset.id) || {};
@@ -521,7 +541,7 @@ $('pArgs').addEventListener('change', (e) => setAppPref(propsApp.id, { args: e.t
 $('pOpen').addEventListener('click', () => void invoke('open_location', { app: propsApp }).catch((e) => ($('pWhere').textContent = String(e))));
 $('pReinstall').addEventListener('click', () => {
   closeModal($('props'));
-  enqueue(propsApp.id);
+  installNow(propsApp.id);
 });
 $('pRemove').addEventListener('click', async (e) => {
   const b = e.currentTarget;
@@ -533,14 +553,18 @@ $('pRemove').addEventListener('click', async (e) => {
   }
   const app = propsApp;
   closeModal($('props'));
-  removing = app.id;
+  if (selfBusy) {
+    msgEl.textContent = '런처 업데이트 중. 다시 켜진 뒤에 해 주세요';
+    return;
+  }
+  busy.set(app.id, { got: 0, total: 0, phase: 'uninstall' });
   paint();
   try {
     await invoke('uninstall_app', { app });
   } catch (err) {
     status.set(app.id, { ...status.get(app.id), error: String(err) });
   }
-  removing = null;
+  busy.delete(app.id);
   await refreshStatus(app);
   paint();
 });
@@ -676,7 +700,6 @@ document.querySelectorAll('[data-rz]').forEach((el) => {
    버튼으로만 받게 했더니 0.1.3 이 그대로 남아 끄기 수정이 안 들어왔다. 켜자마자 한 번, 트레이에 오래 있으니 30분마다.
    앱을 받는 중이면 다시 켜면 끊기니 다음 차례로 */
 const selfEl = $('selfup');
-let selfBusy = false;
 async function installSelf() {
   selfBusy = true;
   selfEl.hidden = false;
@@ -695,7 +718,7 @@ async function checkSelf() {
   try {
     const v = await invoke('self_update_check');
     if (!v) return;
-    if (active || queue.length || removing) {
+    if (busy.size || queue.length) {
       window.setTimeout(() => void checkSelf(), 60 * 1000);
       return;
     }
@@ -704,16 +727,29 @@ async function checkSelf() {
     /* 오프라인이거나 아직 릴리스가 없음. 다음 차례에 다시 */
   }
 }
-selfEl.addEventListener('click', () => void installSelf());
+selfEl.addEventListener('click', () => {
+  if (busy.size) {
+    selfEl.textContent = '앱 작업이 끝난 뒤에 눌러 주세요';
+    return;
+  }
+  void installSelf();
+});
 window.setInterval(() => void checkSelf(), CHECK_EVERY_MS);
 void listen('self-update-progress', (ev) => {
   const [got, total] = ev.payload;
   if (total) selfEl.textContent = '런처 받는 중 ' + Math.round((got / total) * 100) + '%';
 });
 void listen('install-progress', (ev) => {
-  progress = ev.payload;
-  paintList();
-  paintMain();
+  const old = busy.get(ev.payload.id);
+  /* 끝난 뒤 늦게 온 이벤트는 무시 */
+  if (!old) return;
+  const job = { ...old, ...ev.payload };
+  busy.set(job.id, job);
+  /* 목록은 글자만 바꿈. 통째로 다시 그리면 누르는 사이 단추가 바뀌어 클릭이 사라짐 */
+  const tag = listEl.querySelector('[data-id="' + CSS.escape(job.id) + '"] [data-job]');
+  if (tag) tag.textContent = phaseText(job);
+  paintDlBtn();
+  if (job.id === current) paintMain();
   if (!$('dl').hidden) paintDownloads();
 });
 

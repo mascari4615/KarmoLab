@@ -867,11 +867,16 @@ fn extract_zip(file: &Path, dest: &Path, version: &str) -> Result<(), String> {
 }
 
 /// 받는 중인 것을 멈춤. 설치 단계에 들어간 뒤에는 안 멈춤
-static CANCEL_INSTALL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static CANCEL_INSTALL: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
 
+fn cancel_list() -> std::sync::MutexGuard<'static, Vec<String>> {
+    CANCEL_INSTALL.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// 앱마다 따로 받으므로 취소도 앱별
 #[tauri::command]
-fn cancel_install() {
-    CANCEL_INSTALL.store(true, std::sync::atomic::Ordering::SeqCst);
+fn cancel_install(id: String) {
+    cancel_list().push(id);
 }
 
 /// 받기 (진행을 `install-progress` 로), 확인, 설치.
@@ -897,7 +902,7 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
         return Err(format!("허용 안 된 주소: {}", url));
     }
     let id = safe_id(&app)?;
-    CANCEL_INSTALL.store(false, std::sync::atomic::Ordering::SeqCst);
+    cancel_list().retain(|x| x != &id);
     tauri::async_runtime::spawn_blocking(move || {
         let say = |got: u64, total: u64, phase: &str| {
             let _ = handle.emit("install-progress", Progress { id: id.clone(), got, total, phase: phase.to_string() });
@@ -916,7 +921,7 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
         let mut got: u64 = 0;
         let mut last: u64 = 0;
         loop {
-            if CANCEL_INSTALL.load(std::sync::atomic::Ordering::SeqCst) {
+            if cancel_list().contains(&id) {
                 drop(out);
                 let _ = std::fs::remove_file(&file);
                 return Err("취소함".into());
