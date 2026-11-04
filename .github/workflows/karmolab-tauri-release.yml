@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -164,7 +164,7 @@ jobs:
 
       - name: Setup Node
         if: steps.contract.outputs.changed == 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -212,7 +212,7 @@ jobs:
       - name: ML sidecar 캐시
         id: ml_cache
         if: steps.contract.outputs.changed == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: apps/karmolab-tauri/target/release/karmolab-life-ml.exe
           key: ml-sidecar-${{ steps.part_keys.outputs.base }}-${{ hashFiles('apps/karmolab-tauri/Cargo.toml', 'apps/karmolab-tauri/src-tauri-ml/**', 'apps/karmolab-tauri/src-tauri-shared/**', 'vendor/**') }}
@@ -220,7 +220,7 @@ jobs:
       - name: 동반자 창 캐시
         id: companion_cache
         if: steps.contract.outputs.changed == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: apps/karmolab-tauri/target/release/companion-window.exe
           key: companion-window-${{ steps.part_keys.outputs.base }}-${{ hashFiles('apps/karmolab-tauri/Cargo.toml', 'apps/karmolab-tauri/src-tauri-companion/**', 'apps/karmolab-tauri/src-tauri-shared/**', 'vendor/**') }}
