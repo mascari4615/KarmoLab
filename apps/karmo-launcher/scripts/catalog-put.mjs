@@ -22,7 +22,7 @@ try {
   /* 첫 판. 빈 목록부터 */
 }
 catalog.apps = catalog.apps || {};
-catalog.apps[id] = { version: latest.version, pub_date: latest.pub_date, url: p.url, signature: p.signature };
+catalog.apps[id] = { version: latest.version, pub_date: latest.pub_date, url: p.url, signature: p.signature, notes: latest.notes || undefined };
 catalog.updated = new Date().toISOString();
 fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2) + '\n');
 console.log('catalog', id, latest.version);

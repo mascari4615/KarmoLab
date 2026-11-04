@@ -220,29 +220,99 @@ fn default_workspace() -> String {
     Path::new(&home).join("repos").join("karmoddrine").to_string_lossy().to_string()
 }
 
-/// 로컬 항목을 찾는 뿌리. 기본은 `%USERPROFILE%\repos\karmoddrine`
-fn workspace(handle: &AppHandle) -> String {
+fn read_settings(handle: &AppHandle) -> Value {
     settings_path(handle)
         .ok()
         .and_then(|p| std::fs::read_to_string(p).ok())
         .and_then(|t| serde_json::from_str::<Value>(&t).ok())
-        .and_then(|v| str_at(&v, &["workspace"]).map(String::from))
+        .filter(|v| v.is_object())
+        .unwrap_or_else(|| serde_json::json!({}))
+}
+
+/// 설정 한 칸만 바꿈. 임시 파일 뒤 이름 바꾸기라 도중에 꺼져도 옛 파일이 남음
+fn write_setting(handle: &AppHandle, key: &str, value: Value) -> Result<(), String> {
+    let p = settings_path(handle)?;
+    if let Some(dir) = p.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    let mut all = read_settings(handle);
+    all[key] = value;
+    let tmp = p.with_extension("tmp");
+    std::fs::write(&tmp, all.to_string()).map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, &p).map_err(|e| e.to_string())
+}
+
+/// 로컬 항목을 찾는 뿌리. 기본은 `%USERPROFILE%\repos\karmoddrine`
+fn workspace(handle: &AppHandle) -> String {
+    str_at(&read_settings(handle), &["workspace"])
+        .map(String::from)
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(default_workspace)
 }
 
 #[tauri::command]
 fn get_settings(handle: AppHandle) -> Value {
-    serde_json::json!({ "workspace": workspace(&handle) })
+    let all = read_settings(&handle);
+    serde_json::json!({
+        "workspace": workspace(&handle),
+        "prefs": all.get("prefs").cloned().unwrap_or_else(|| serde_json::json!({})),
+        "autostart": autostart_enabled(),
+    })
 }
 
 #[tauri::command]
 fn set_workspace(handle: AppHandle, path: String) -> Result<(), String> {
-    let p = settings_path(&handle)?;
-    if let Some(dir) = p.parent() {
-        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    write_setting(&handle, "workspace", Value::from(path.trim()))
+}
+
+/// 화면 쪽 설정 (자동 업데이트, 앱별 값, 실행 기록). 뜻은 ui/updates.js 와 app.js 가 앎
+#[tauri::command]
+fn save_prefs(handle: AppHandle, prefs: Value) -> Result<(), String> {
+    write_setting(&handle, "prefs", prefs)
+}
+
+/* ---------- Windows 시작 시 켜기 ---------- */
+
+const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
+const RUN_VALUE: &str = "Karmo Launcher";
+/// 이 인자로 켜지면 창 없이 트레이로
+const TRAY_ARG: &str = "--tray";
+
+#[cfg(windows)]
+fn autostart_enabled() -> bool {
+    use winreg::{enums::HKEY_CURRENT_USER, RegKey};
+    RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey(RUN_KEY)
+        .and_then(|k| k.get_value::<String, _>(RUN_VALUE))
+        .is_ok()
+}
+
+#[cfg(not(windows))]
+fn autostart_enabled() -> bool {
+    false
+}
+
+/// 사용자가 켤 때만 등록 (기본 꺼짐). 시작 프로그램 등록은 백신이 눈여겨보는 행동이라 기본값으로 두지 않음
+#[cfg(windows)]
+#[tauri::command]
+fn set_autostart(enabled: bool) -> Result<(), String> {
+    use winreg::{enums::HKEY_CURRENT_USER, RegKey};
+    let (key, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(RUN_KEY).map_err(|e| e.to_string())?;
+    if enabled {
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        key.set_value(RUN_VALUE, &format!("\"{}\" {}", exe.display(), TRAY_ARG)).map_err(|e| e.to_string())
+    } else {
+        match key.delete_value(RUN_VALUE) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
+            _ => Ok(()),
+        }
     }
-    std::fs::write(&p, serde_json::json!({ "workspace": path.trim() }).to_string()).map_err(|e| e.to_string())
+}
+
+#[cfg(not(windows))]
+#[tauri::command]
+fn set_autostart(_enabled: bool) -> Result<(), String> {
+    Err("Windows 전용".into())
 }
 
 /* ---------- 받기 ---------- */
@@ -329,6 +399,19 @@ struct Latest {
     url: Option<String>,
     signature: Option<String>,
     sha256: Option<String>,
+    notes: Option<String>,
+    page: Option<String>,
+}
+
+/// 릴리스 글. WM 은 커밋 목록이라 10만 자가 넘어 앞만 보임
+const NOTES_MAX_CHARS: usize = 1500;
+fn short_notes(text: Option<&str>) -> Option<String> {
+    let t = text?.trim();
+    if t.is_empty() {
+        return None;
+    }
+    let cut: String = t.chars().take(NOTES_MAX_CHARS).collect();
+    Some(if cut.len() < t.len() { cut + "..." } else { cut })
 }
 
 /// `source.type`: `tauri-latest` (목록 catalog 먼저, 없으면 앱 latest.json) 또는 `gh-release` (저장소 릴리스의 자산 하나)
@@ -345,7 +428,8 @@ fn latest_of(app: &Value) -> Result<Latest, String> {
                     pub_date: str_at(e, &["pub_date"]).map(String::from),
                     url: str_at(e, &["url"]).map(String::from),
                     signature: str_at(e, &["signature"]).map(String::from),
-                    sha256: None,
+                    notes: short_notes(str_at(e, &["notes"])),
+                    ..Default::default()
                 });
             }
         }
@@ -358,7 +442,8 @@ fn latest_of(app: &Value) -> Result<Latest, String> {
         pub_date: str_at(&latest, &["pub_date"]).map(String::from),
         url: str_at(&latest, &["platforms", platform, "url"]).map(String::from),
         signature: str_at(&latest, &["platforms", platform, "signature"]).map(String::from),
-        sha256: None,
+        notes: short_notes(str_at(&latest, &["notes"])),
+        ..Default::default()
     })
 }
 
@@ -391,6 +476,8 @@ fn latest_gh_release(app: &Value) -> Result<Latest, String> {
                     url: str_at(a, &["url"]).map(String::from),
                     signature: None,
                     sha256: str_at(a, &["digest"]).and_then(|d| d.strip_prefix("sha256:")).map(String::from),
+                    notes: short_notes(str_at(r, &["body"])),
+                    page: str_at(r, &["html_url"]).map(String::from),
                 });
             }
         }
@@ -411,6 +498,8 @@ struct Status {
     signature: Option<String>,
     sha256: Option<String>,
     location: Option<String>,
+    notes: Option<String>,
+    page: Option<String>,
     error: Option<String>,
 }
 
@@ -447,6 +536,35 @@ fn local_path(handle: &AppHandle, app: &Value) -> Result<PathBuf, String> {
 
 const VERSION_FILE: &str = ".karmo-version";
 
+/// 로컬 서버 항목의 포트 (`local.port`). 떠 있으면 다시 안 켜고 브라우저만 엶
+fn local_port(app: &Value) -> Option<u16> {
+    app.get("local")?.get("port")?.as_u64().and_then(|p| u16::try_from(p).ok())
+}
+
+fn port_open(port: u16) -> bool {
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+    std::net::TcpStream::connect_timeout(&addr, std::time::Duration::from_millis(150)).is_ok()
+}
+
+/// `local.open` 주소를 포트가 열리면 엶 (최대 30초). 이 PC 주소만
+fn open_when_ready(app: &Value) {
+    let (Some(url), Some(port)) = (str_at(app, &["local", "open"]).map(String::from), local_port(app)) else {
+        return;
+    };
+    if !url.starts_with("http://127.0.0.1:") && !url.starts_with("http://localhost:") {
+        return;
+    }
+    std::thread::spawn(move || {
+        for _ in 0..150 {
+            if port_open(port) {
+                let _ = open::that(&url);
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+    });
+}
+
 /// 실행 중을 볼 프로세스 이름. nsis 는 레지스트리의 MainBinaryName, zip 은 `install.exe`
 fn exe_of(app: &Value) -> Option<String> {
     match format_of(app) {
@@ -473,6 +591,7 @@ fn status_blocking(handle: &AppHandle, app: &Value) -> Status {
             Ok(p) => {
                 st.installed = p.exists();
                 st.location = Some(p.to_string_lossy().to_string());
+                st.running = local_port(app).map(port_open).unwrap_or(false);
             }
             Err(e) => st.error = Some(e),
         },
@@ -486,7 +605,7 @@ fn status_blocking(handle: &AppHandle, app: &Value) -> Status {
             }
         }
     }
-    if st.installed {
+    if st.installed && format_of(app) != "local" {
         st.running = exe_of(app).map(|exe| is_running(&exe)).unwrap_or(false);
     }
     if app.get("source").is_some() {
@@ -497,6 +616,8 @@ fn status_blocking(handle: &AppHandle, app: &Value) -> Status {
                 st.download = l.url;
                 st.signature = l.signature;
                 st.sha256 = l.sha256;
+                st.notes = l.notes;
+                st.page = l.page;
             }
             Err(e) => st.error = Some(e),
         }
@@ -633,8 +754,15 @@ fn is_running(exe: &str) -> bool {
 
 /// 실행 중인 것만 가볍게. 화면이 1초마다 부름 (최신 판은 다시 안 받음)
 #[tauri::command]
-fn running_status(app: Value) -> bool {
-    exe_of(&app).map(|exe| is_running(&exe)).unwrap_or(false)
+async fn running_status(app: Value) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || running_blocking(&app)).await.map_err(|e| e.to_string())
+}
+
+fn running_blocking(app: &Value) -> bool {
+    if format_of(app) == "local" {
+        return local_port(app).map(port_open).unwrap_or(false);
+    }
+    exe_of(app).map(|exe| is_running(&exe)).unwrap_or(false)
 }
 
 /// 끄기. 창 닫기만으로는 트레이로 숨는 앱이 실행 중으로 남음 (2026-09-25 KarmoLab)
@@ -709,7 +837,8 @@ fn zip_name(raw: &[u8]) -> String {
 }
 
 /// 옆 폴더에 다 풀고 나서 바꿔 끼움. 중간에 실패하면 깔린 판은 그대로
-fn extract_zip(file: &Path, dest: &Path) -> Result<(), String> {
+/// 새 폴더에 다 풀고 판 번호까지 적은 뒤 바꿔 끼움. 도중에 꺼져도 옛 판이 멀쩡하거나, 새 판이 완전함
+fn extract_zip(file: &Path, dest: &Path, version: &str) -> Result<(), String> {
     let tmp = dest.with_extension("new");
     let _ = std::fs::remove_dir_all(&tmp);
     std::fs::create_dir_all(&tmp).map_err(|e| e.to_string())?;
@@ -730,10 +859,19 @@ fn extract_zip(file: &Path, dest: &Path) -> Result<(), String> {
         let mut f = std::fs::File::create(&out).map_err(|e| e.to_string())?;
         std::io::copy(&mut e, &mut f).map_err(|e| e.to_string())?;
     }
+    std::fs::write(tmp.join(VERSION_FILE), version).map_err(|e| e.to_string())?;
     if dest.exists() {
         std::fs::remove_dir_all(dest).map_err(|e| format!("옛 판을 못 지움 (실행 중인지 확인): {}", e))?;
     }
     std::fs::rename(&tmp, dest).map_err(|e| e.to_string())
+}
+
+/// 받는 중인 것을 멈춤. 설치 단계에 들어간 뒤에는 안 멈춤
+static CANCEL_INSTALL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[tauri::command]
+fn cancel_install() {
+    CANCEL_INSTALL.store(true, std::sync::atomic::Ordering::SeqCst);
 }
 
 /// 받기 (진행을 `install-progress` 로), 확인, 설치.
@@ -759,6 +897,7 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
         return Err(format!("허용 안 된 주소: {}", url));
     }
     let id = safe_id(&app)?;
+    CANCEL_INSTALL.store(false, std::sync::atomic::Ordering::SeqCst);
     tauri::async_runtime::spawn_blocking(move || {
         let say = |got: u64, total: u64, phase: &str| {
             let _ = handle.emit("install-progress", Progress { id: id.clone(), got, total, phase: phase.to_string() });
@@ -777,6 +916,11 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
         let mut got: u64 = 0;
         let mut last: u64 = 0;
         loop {
+            if CANCEL_INSTALL.load(std::sync::atomic::Ordering::SeqCst) {
+                drop(out);
+                let _ = std::fs::remove_file(&file);
+                return Err("취소함".into());
+            }
             let n = res.read(&mut buf).map_err(|e| e.to_string())?;
             if n == 0 {
                 break;
@@ -809,10 +953,9 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
                     return Err("실행 중. 끈 뒤에 다시".into());
                 }
             }
-            let r = extract_zip(&file, &dest);
+            let r = extract_zip(&file, &dest, version.trim());
             let _ = std::fs::remove_file(&file);
             r?;
-            std::fs::write(dest.join(VERSION_FILE), version.trim()).map_err(|e| e.to_string())?;
         } else {
             let args: Vec<String> = app
                 .get("install")
@@ -840,13 +983,14 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
 /// 실행. nsis 는 레지스트리의 설치 자리와 본 실행 파일, zip 은 풀린 폴더의 `install.entry`,
 /// local 은 `local.run` (명령과 인자, `{path}` 자리에 찾은 파일). 모두 보이는 창으로
 #[tauri::command]
-fn launch_app(handle: AppHandle, app: Value) -> Result<(), String> {
+fn launch_app(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Result<(), String> {
+    let args = args.unwrap_or_default();
     match format_of(&app) {
         "zip" => {
             let dir = zip_dir(&handle, &app)?;
             let entry = safe_rel(str_at(&app, &["install", "entry"]).ok_or("install.entry 없음")?)?;
             let mut c = Command::new(dir.join(entry));
-            c.current_dir(&dir);
+            c.current_dir(&dir).args(&args);
             /* `install.env`: 앱에 넘길 환경 변수. `{workspace}` 는 설정의 작업 폴더, `{dir}` 은 풀린 폴더.
                컴패니언은 저장소 밖에 풀려 이웃 (memo, 게임 저장소) 을 못 찾아서 작업 폴더를 알려 줌 */
             if let Some(env) = app.get("install").and_then(|i| i.get("env")).and_then(|e| e.as_object()) {
@@ -865,6 +1009,11 @@ fn launch_app(handle: AppHandle, app: Value) -> Result<(), String> {
             if !path.exists() {
                 return Err(format!("이 PC 에 없음: {}", path.display()));
             }
+            /* 서버가 이미 떠 있으면 또 켜면 포트 충돌. 브라우저만 */
+            if local_port(&app).map(port_open).unwrap_or(false) {
+                open_when_ready(&app);
+                return Ok(());
+            }
             let p = path.to_string_lossy().to_string();
             let run: Vec<String> = app
                 .get("local")
@@ -879,12 +1028,13 @@ fn launch_app(handle: AppHandle, app: Value) -> Result<(), String> {
                 c.current_dir(d);
             }
             c.spawn().map_err(|e| e.to_string())?;
+            open_when_ready(&app);
         }
         _ => {
             let reg = registry(str_at(&app, &["install", "registry"]).ok_or("install.registry 없음")?).ok_or("설치 안 됨")?;
             let dir = reg.get("InstallLocation").ok_or("설치 자리 모름")?;
             let exe = reg.get("MainBinaryName").ok_or("실행 파일 이름 모름")?;
-            Command::new(PathBuf::from(dir).join(exe)).spawn().map_err(|e| e.to_string())?;
+            Command::new(PathBuf::from(dir).join(exe)).args(&args).spawn().map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -924,6 +1074,33 @@ fn open_url(url: String) -> Result<(), String> {
     open::that(url).map_err(|e| e.to_string())
 }
 
+/// 앱이 깔린 폴더 열기 (Steam 로컬 파일 보기, Hub Show in Explorer)
+#[tauri::command]
+async fn open_location(handle: AppHandle, app: Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = match format_of(&app) {
+            "zip" => zip_dir(&handle, &app)?,
+            "local" => local_path(&handle, &app)?.parent().ok_or("상위 폴더 없음")?.to_path_buf(),
+            _ => {
+                let reg = registry(str_at(&app, &["install", "registry"]).ok_or("install.registry 없음")?).ok_or("설치 안 됨")?;
+                PathBuf::from(reg.get("InstallLocation").ok_or("설치 자리 모름")?)
+            }
+        };
+        if !dir.exists() {
+            return Err(format!("폴더 없음: {}", dir.display()));
+        }
+        open::that(dir).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// 닫기 버튼을 "끝내기" 로 설정했을 때
+#[tauri::command]
+fn quit_app(handle: AppHandle) {
+    handle.exit(0);
+}
+
 /// 런처 자신의 새 판. 있으면 판 번호, 없으면 None (tauri-plugin-updater, 엔드포인트는 tauri.conf 의 launcher-updater 릴리스)
 #[tauri::command]
 async fn self_update_check(app: AppHandle) -> Result<Option<String>, String> {
@@ -944,9 +1121,12 @@ async fn self_update_install(app: AppHandle) -> Result<(), String> {
     let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
         return Err("새 판이 없음".into());
     };
+    /* 설치 프로그램이 다시 켤 때 인자를 못 넘김. 트레이에 숨어 있었으면 다음 한 번도 숨어서 켜짐 */
+    let hidden = app.get_webview_window("main").and_then(|w| w.is_visible().ok()).map(|v| !v).unwrap_or(false);
+    write_setting(&app, "start_hidden_once", Value::from(hidden))?;
     let mut got: u64 = 0;
     let handle = app.clone();
-    update
+    let done = update
         .download_and_install(
             move |chunk, total| {
                 got += chunk as u64;
@@ -954,8 +1134,12 @@ async fn self_update_install(app: AppHandle) -> Result<(), String> {
             },
             || {},
         )
-        .await
-        .map_err(|e| e.to_string())?;
+        .await;
+    if let Err(e) = done {
+        /* 실패하면 표시를 지움. 안 그러면 다음에 손으로 켤 때 창이 안 뜸 */
+        let _ = write_setting(&app, "start_hidden_once", Value::from(false));
+        return Err(e.to_string());
+    }
     app.restart();
 }
 
@@ -985,6 +1169,14 @@ pub fn run() {
             let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/128x128@2x.png"))?;
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.set_icon(icon.clone());
+                /* 창은 숨은 채로 만들어짐 (tauri.conf visible false). 트레이 시작이 아니면 여기서 보임 */
+                let once = read_settings(app.handle()).get("start_hidden_once").and_then(|v| v.as_bool()).unwrap_or(false);
+                if once {
+                    let _ = write_setting(app.handle(), "start_hidden_once", Value::from(false));
+                }
+                if !once && !std::env::args().any(|a| a == TRAY_ARG) {
+                    let _ = w.show();
+                }
             }
             let tray = TrayIconBuilder::with_id("main")
                 .tooltip("Karmo Launcher")
@@ -1020,7 +1212,12 @@ pub fn run() {
             github_use_git_login,
             github_clear,
             get_settings,
-            set_workspace
+            set_workspace,
+            save_prefs,
+            set_autostart,
+            cancel_install,
+            open_location,
+            quit_app
         ])
         .run(tauri::generate_context!())
         .expect("런처를 띄우지 못함");
@@ -1101,7 +1298,7 @@ mod tests {
         let file = base.join("c.zip");
         std::fs::write(&file, &bytes).unwrap();
         let dest = base.join("companion");
-        extract_zip(&file, &dest).unwrap();
+        extract_zip(&file, &dest, "test").unwrap();
         assert!(dest.join("scripts").join("start.cmd").exists());
         assert!(dest.join("companion-window.exe").exists());
         let names: Vec<String> = std::fs::read_dir(dest.join("characters")).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().to_string()).collect();
