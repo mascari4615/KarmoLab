@@ -12,8 +12,6 @@ const headEl = $('head');
 const relEl = $('rel');
 const actsEl = $('acts');
 const heroEl = $('hero');
-const hazeEl = $('haze');
-const veilEl = $('veil');
 const msgEl = $('msg');
 const dlBtn = $('dlBtn');
 
@@ -36,7 +34,7 @@ const failures = {};
 let lastCheck = 0;
 
 /* 설정. 저장은 settings.json 의 prefs 한 칸 */
-let prefs = { autoUpdate: true, closeToTray: true, theme: 'system', edge: 'a', apps: {}, log: [] };
+let prefs = { autoUpdate: true, closeToTray: true, theme: 'system', apps: {}, log: [] };
 let autostart = false;
 let saveTimer = 0;
 function savePrefs() {
@@ -93,7 +91,6 @@ function paintMain() {
   }
   const bg = 'url(img/' + encodeURIComponent((app.art && app.art.bg) || 'sky-village') + '.webp)';
   heroEl.style.backgroundImage = bg;
-  hazeEl.style.backgroundImage = bg;
   const st = status.get(app.id) || {};
   const pref = appPref(prefs, app.id);
   const info = [];
@@ -629,55 +626,26 @@ const MARGIN = 24;
 
 /** 가장자리가 부드럽게 사라지는 마스크. 진짜 흐림 (가우시안) 이라 네 모서리에 사선이 안 생김.
     예전 방식은 가로 띠와 세로 띠의 교집합이라 모서리에 사선 경계가 보였음 */
-function softMask(w, h, inset, blur, rough = 0) {
-  const noise = rough
-    ? '<feTurbulence type="fractalNoise" baseFrequency="0.006" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="' + rough + '" xChannelSelector="R" yChannelSelector="G"/>'
-    : '';
+function softMask(w, h, inset, blur) {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '"><filter id="f" x="-10%" y="-10%" width="120%" height="120%">' +
-    noise + '<feGaussianBlur stdDeviation="' + blur + '"/></filter><rect x="' + inset + '" y="' + inset + '" width="' + (w - inset * 2) + '" height="' + (h - inset * 2) +
+    '<feGaussianBlur stdDeviation="' + blur + '"/></filter><rect x="' + inset + '" y="' + inset + '" width="' + (w - inset * 2) + '" height="' + (h - inset * 2) +
     '" fill="#fff" filter="url(#f)"/></svg>';
   return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
 }
 
-function setMask(el, mask) {
-  el.style.webkitMaskImage = mask;
-  el.style.maskImage = mask;
-}
-
-/* 가장자리 후보 (비교판 notes/launcher/edge-2026-11-04). 판정 뒤 하나만 남김 */
+/* 판 가장자리. 짧게 번지고 끝에 얇은 선과 모서리 괄호 (사용자 2026-11-05 A 선택, 비교판 notes/launcher/edge-2026-11-04) */
 function applyEdge(z) {
-  const edge = prefs.edge || 'a';
   const w = Math.max(1, window.innerWidth - MARGIN * 2);
   const h = Math.max(1, window.innerHeight - MARGIN * 2);
-  document.documentElement.dataset.edge = edge;
   const s = Math.max(z, 0.5);
-  let band = 0;
-  let inner = 'none';
-  if (edge === 'a') {
-    const inset = Math.round(24 * s);
-    setMask(panelEl, softMask(w, h, inset, Math.round(11 * s)));
-    rimEl.style.inset = inset + 'px';
-    band = inset + Math.round(20 * s);
-  } else if (edge === 'b') {
-    const inset = Math.round(36 * s);
-    setMask(panelEl, softMask(w, h, inset, Math.round(15 * s), Math.round(34 * s)));
-    band = inset + Math.round(30 * s);
-  } else if (edge === 'c') {
-    const inset = Math.round(27 * s);
-    setMask(panelEl, softMask(w, h, Math.round(9 * s), Math.round(8 * s)));
-    inner = softMask(w, h, inset, 0.6);
-    rimEl.style.inset = inset + 'px';
-    band = inset + 4;
-  } else {
-    setMask(panelEl, '');
-    band = Math.round(Math.max(w * 0.06, h * 0.08));
-  }
-  /* c 는 그림과 어두운 막을 선 안쪽에서 끊어 띠에는 흐린 그림만 보임 */
-  setMask(heroEl, inner);
-  setMask(veilEl, inner);
+  const inset = Math.round(24 * s);
+  const mask = softMask(w, h, inset, Math.round(11 * s));
+  panelEl.style.webkitMaskImage = mask;
+  panelEl.style.maskImage = mask;
+  rimEl.style.inset = inset + 'px';
   /* 크기 조절 손잡이는 흐린 띠 전체 (사용자 2026-11-03 "정말 흐리멍텅해지는 곳에서 조절") */
-  document.documentElement.style.setProperty('--band', MARGIN + band + 'px');
+  document.documentElement.style.setProperty('--band', MARGIN + inset + Math.round(20 * s) + 'px');
 }
 
 let edgeFrame = 0;

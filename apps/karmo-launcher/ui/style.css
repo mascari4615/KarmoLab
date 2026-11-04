@@ -16,7 +16,6 @@
   --ko: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
   --en: "Bahnschrift", "Arial Narrow", system-ui, sans-serif;
   --rim: rgba(255, 255, 255, 0.42);
-  --haze-veil: rgba(255, 255, 255, 0.14);
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
@@ -32,7 +31,6 @@
     --err: #d9553f;
     --veil: linear-gradient(90deg, rgba(238, 242, 247, 0.92) 0%, rgba(238, 242, 247, 0.45) 45%, rgba(238, 242, 247, 0) 70%);
     --rim: rgba(23, 32, 51, 0.38);
-    --haze-veil: rgba(255, 255, 255, 0.5);
   }
 }
 :root[data-theme="light"] {
@@ -48,7 +46,6 @@
     --err: #d9553f;
     --veil: linear-gradient(90deg, rgba(238, 242, 247, 0.92) 0%, rgba(238, 242, 247, 0.45) 45%, rgba(238, 242, 247, 0) 70%);
     --rim: rgba(23, 32, 51, 0.38);
-    --haze-veil: rgba(255, 255, 255, 0.5);
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; overflow: hidden; }
@@ -73,32 +70,17 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 /* 판 안 내용. 1292x772 기준 좌표를 --z 배로 (app.js fitStage). 빈 곳은 눌림을 아래 손잡이로 흘림 */
 .stage { position: absolute; left: 0; top: 0; width: calc(100% / var(--z, 1)); height: calc(100% / var(--z, 1)); transform: scale(var(--z, 1)); transform-origin: 0 0; z-index: 2; pointer-events: none; }
 .stage > * { pointer-events: auto; }
-/* 판 네 변을 흐리게. 후보별 마스크는 app.js applyEdge (가우시안 SVG) */
+/* 판 네 변을 흐리게. 마스크는 app.js applyEdge (가우시안 SVG) */
 .panel { position: absolute; inset: 0; overflow: hidden; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
-:root[data-edge="now"] .panel {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%), linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%), linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
-  mask-composite: intersect;
-}
-/* 뿌연 띠. 같은 그림을 크게 흐리고 밝힘. c 후보만 보임 */
-.haze { position: absolute; inset: -40px; background: var(--bg) center / cover; filter: blur(22px) saturate(1.15); display: none; }
-.haze::after { content: ""; position: absolute; inset: 0; background: var(--haze-veil); }
-:root[data-edge="c"] .haze { display: block; }
-.hero { -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
 /* 판의 끝을 알리는 얇은 선. 모서리는 주황 괄호 */
-.rim { position: absolute; inset: 16px; border: 1px solid var(--rim); pointer-events: none; display: none; z-index: 1; }
-:root[data-edge="a"] .rim, :root[data-edge="c"] .rim { display: block; }
+.rim { position: absolute; inset: 16px; border: 1px solid var(--rim); pointer-events: none; z-index: 1; }
 .rim i { position: absolute; width: 18px; height: 18px; border: 0 solid var(--acc); }
 .rim i:nth-child(1) { left: -1px; top: -1px; border-width: 2px 0 0 2px; }
 .rim i:nth-child(2) { right: -1px; top: -1px; border-width: 2px 2px 0 0; }
 .rim i:nth-child(3) { left: -1px; bottom: -1px; border-width: 0 0 2px 2px; }
 .rim i:nth-child(4) { right: -1px; bottom: -1px; border-width: 0 2px 2px 0; }
 .hero { position: absolute; inset: 0; background: var(--bg) center / cover; transition: background-image 0.3s; }
-.veil { position: absolute; inset: 0; background: var(--veil); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
-/* 옛 판의 안쪽 그림자. 가장자리를 어둡게 뭉개서 now 후보에만 */
-.glow { position: absolute; inset: 0; box-shadow: inset 0 0 120px 30px var(--bg); opacity: 0.55; display: none; }
-:root[data-edge="now"] .glow { display: block; }
+.veil { position: absolute; inset: 0; background: var(--veil); }
 
 /* 판 위쪽 흐림 (높이의 8%) 아래에 두어야 글자가 읽힘 */
 .titlebar { position: absolute; left: 40px; right: 40px; top: 30px; height: 40px; display: flex; align-items: center; gap: 6px; z-index: 6; }
