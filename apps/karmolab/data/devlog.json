@@ -2,51 +2,121 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1810,
+    "commits": 1822,
     "days": 14,
     "shown": 60
   },
   "days": [
     {
+      "date": "2026-11-05",
+      "entries": [
+        {
+          "sha": "312c33d3f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "unity7",
+          "text": "Work를 코드 가지치기에서 보존"
+        },
+        {
+          "sha": "f8a97c40a",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "unity7",
+          "text": "Work 세이브 복원과 패키지 업데이트"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
+    {
+      "date": "2026-11-04",
+      "entries": [
+        {
+          "sha": "713930757",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "doll",
+          "text": "알리사 스프라이트 밉맵 끄기"
+        },
+        {
+          "sha": "97558750a",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "world",
+          "text": "땅 찾는 광선 높이를 인스펙터 값으로"
+        },
+        {
+          "sha": "ff44e853f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "v0.0.7 플레이 지적 네 건 수정"
+        },
+        {
+          "sha": "988fd7dab",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "alchemy",
+          "text": "솥 지도를 Esc, 닫기 버튼, 메뉴 전환으로 닫을 수 있게"
+        },
+        {
+          "sha": "4ae604ec2",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dev",
+          "text": "디버그 UI를 개발자 뱃지와 개발자 창 탭으로 정리"
+        },
+        {
+          "sha": "5f7c2449f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "world",
+          "text": "로비에서 싱글, 멀티를 나누고 싱글은 서버에 접속 안 함"
+        }
+      ],
+      "quiet": 4,
+      "more": 0
+    },
+    {
       "date": "2026-11-03",
       "entries": [
         {
-          "sha": "12a5c0c4",
+          "sha": "12a5c0c43",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "combat",
           "text": "검 효과를 날아가는 검기, 궤적 확대, 판정 맞춤 획 셋 중 고르게"
         },
         {
-          "sha": "0510cbdb",
+          "sha": "0510cbdbb",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "combat",
           "text": "검 휘두르기 궤적이 판정 윤곽을 각도별로 따름"
         },
         {
-          "sha": "0b6310b8",
+          "sha": "0b6310b87",
           "type": "perf",
           "typeLabel": "빨라진 것",
           "scope": "player",
           "text": "조준 최근접 대상 탐색을 프레임당 한 번으로"
         },
         {
-          "sha": "e0d3d09a",
+          "sha": "e0d3d09a0",
           "type": "perf",
           "typeLabel": "빨라진 것",
           "scope": "combat",
           "text": "검 판정 범위 측정의 공격마다 배열 할당 제거"
         },
         {
-          "sha": "400c85e9",
+          "sha": "400c85e9b",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "combat",
           "text": "검 휘두르기 연출을 실제 판정 범위에 맞춤"
         },
         {
-          "sha": "df11524a",
+          "sha": "df11524a9",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "combat",
@@ -60,42 +130,42 @@
       "date": "2026-11-02",
       "entries": [
         {
-          "sha": "8440e630",
+          "sha": "8440e630c",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "combat",
           "text": "기본 검과 공명 강화에 두 참격 셰이더 연결"
         },
         {
-          "sha": "dccf09de",
+          "sha": "dccf09def",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "cards",
           "text": "검의 공명 연출을 기존 픽셀 검과 참격으로 통일"
         },
         {
-          "sha": "62d647e2",
+          "sha": "62d647e21",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "cards",
           "text": "검의 공명 선택에 칼날 집결과 확산 연출"
         },
         {
-          "sha": "ad2a3c38",
+          "sha": "ad2a3c38f",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "equipment",
           "text": "비활성 정령 무기의 강화 구독 해제"
         },
         {
-          "sha": "58e37401",
+          "sha": "58e374017",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "movement",
           "text": "재사용된 적의 이전 밀림과 피격 정지 초기화"
         },
         {
-          "sha": "2c9a824f",
+          "sha": "2c9a824fd",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "movement",
@@ -109,42 +179,42 @@
       "date": "2026-11-01",
       "entries": [
         {
-          "sha": "a4ee719f",
+          "sha": "a4ee719f6",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "movement",
           "text": "누적 간격 비교에 엔진 부동소수 비교 적용"
         },
         {
-          "sha": "9950cbef",
+          "sha": "9950cbefc",
           "type": "perf",
           "typeLabel": "빨라진 것",
           "scope": "survival",
           "text": "화면 밖 일반 적의 이동 시간을 누적 처리"
         },
         {
-          "sha": "573a3e08",
+          "sha": "573a3e082",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "movement",
           "text": "막힌 턱의 반복 질의와 틱 내부 형상 재조회 제거"
         },
         {
-          "sha": "5c814461",
+          "sha": "5c814461a",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "combat",
           "text": "풀 재사용의 스킬 리스너와 비활성 갱신 누수 제거"
         },
         {
-          "sha": "883863e4",
+          "sha": "883863e47",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "ui",
           "text": "기존 TMP 데미지 글꼴과 재질 스타일 복원"
         },
         {
-          "sha": "73c3e0b1",
+          "sha": "73c3e0b19",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "ui",
@@ -158,14 +228,14 @@
       "date": "2026-10-30",
       "entries": [
         {
-          "sha": "51288f8b",
+          "sha": "51288f8b5",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "dungeon",
           "text": "10분 생존 뒤 보스와 재도전 연결"
         },
         {
-          "sha": "a91e6670",
+          "sha": "a91e66709",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "dungeon",
@@ -179,42 +249,42 @@
       "date": "2026-10-26",
       "entries": [
         {
-          "sha": "ac698b94",
+          "sha": "ac698b949",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "scene",
           "text": "명시한 색과 mip 단계를 보존하는 이미지 리소스"
         },
         {
-          "sha": "43ad0b08",
+          "sha": "43ad0b086",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "pool",
           "text": "소유자 해제 뒤 비활성화 예외 방지"
         },
         {
-          "sha": "284bbb03",
+          "sha": "284bbb038",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "scene",
           "text": "텍스처 반복 설정과 편집 자원 해제 보존"
         },
         {
-          "sha": "26c5998f",
+          "sha": "26c5998f6",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "storage",
           "text": "깊은 유효 경로의 임시 저장 이름 길이 제한"
         },
         {
-          "sha": "07b7c166",
+          "sha": "07b7c1669",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "authoring",
           "text": "연출 묶음 열기 검증 전에 현재 작업 보존"
         },
         {
-          "sha": "2cbcec2f",
+          "sha": "2cbcec2f8",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "authoring",
@@ -228,14 +298,14 @@
       "date": "2026-10-25",
       "entries": [
         {
-          "sha": "56ff3263",
+          "sha": "56ff32632",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "authoring",
           "text": "옷 교체의 장면과 동작 편집 이력을 보존"
         },
         {
-          "sha": "2cb52fa4",
+          "sha": "2cb52fa45",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "authoring",
@@ -249,42 +319,42 @@
       "date": "2026-10-24",
       "entries": [
         {
-          "sha": "66afad3f",
+          "sha": "66afad3f4",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "authoring",
           "text": "expose wardrobe preview distances and tile name height as serialized fields"
         },
         {
-          "sha": "196313c8",
+          "sha": "196313c89",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "scene-content",
           "text": "toon surface v2 in the scene model and loader"
         },
         {
-          "sha": "3b324e87",
+          "sha": "3b324e877",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "authoring",
           "text": "dock the authoring, character view and wardrobe windows in the main window"
         },
         {
-          "sha": "36a943ef",
+          "sha": "36a943ef5",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "shader",
           "text": "toon outline, hair band highlight and richer shade colour (off by default)"
         },
         {
-          "sha": "160198a0",
+          "sha": "160198a0d",
           "type": "perf",
           "typeLabel": "빨라진 것",
           "scope": "authoring",
           "text": "redraw the wardrobe preview only when the scene, worn state, look or size changed"
         },
         {
-          "sha": "fc819240",
+          "sha": "fc8192406",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "authoring",
@@ -298,42 +368,42 @@
       "date": "2026-10-22",
       "entries": [
         {
-          "sha": "a489a0a2",
+          "sha": "a489a0a27",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "authoring",
           "text": "outfit panel rereads worn markers when the scene changes"
         },
         {
-          "sha": "c9e8b640",
+          "sha": "c9e8b640e",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "scene-content",
           "text": "atomic save waits out a short file lock"
         },
         {
-          "sha": "34447a8a",
+          "sha": "34447a8ad",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "wardrobe",
           "text": "read the worn outfit from the scene when an outfit file is opened"
         },
         {
-          "sha": "84f8ac96",
+          "sha": "84f8ac968",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "authoring",
           "text": "a failed outfit change is not shown as worn"
         },
         {
-          "sha": "780d6b58",
+          "sha": "780d6b58f",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "wardrobe",
           "text": "carrier role keeps a part off the body when the anchor bone bends"
         },
         {
-          "sha": "0cfd818f",
+          "sha": "0cfd818fa",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "authoring",
@@ -347,7 +417,7 @@
       "date": "2026-10-21",
       "entries": [
         {
-          "sha": "c4aca5e0",
+          "sha": "c4aca5e04",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "wardrobe",
@@ -361,7 +431,7 @@
       "date": "2026-10-18",
       "entries": [
         {
-          "sha": "839d5355",
+          "sha": "839d53552",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "authoring",
@@ -375,42 +445,42 @@
       "date": "2026-10-16",
       "entries": [
         {
-          "sha": "8e1b976a",
+          "sha": "8e1b976ac",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "sequence",
           "text": "preserve authored lighting during lobby viewing"
         },
         {
-          "sha": "77c95ad7",
+          "sha": "77c95ad7a",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "sequence",
           "text": "preserve limb goals through motion and playback"
         },
         {
-          "sha": "4797978f",
+          "sha": "4797978f7",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "sequence",
           "text": "play authored sequences from the lobby library"
         },
         {
-          "sha": "9f8695cb",
+          "sha": "9f8695cb8",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "boot",
           "text": "use the configured root after prefab migration"
         },
         {
-          "sha": "c93a31e1",
+          "sha": "c93a31e1b",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "sequence",
           "text": "fit motion when exporting parameter variants"
         },
         {
-          "sha": "4514a843",
+          "sha": "4514a843f",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "authoring",
@@ -424,28 +494,28 @@
       "date": "2026-09-24",
       "entries": [
         {
-          "sha": "25160ee4",
+          "sha": "25160ee46",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "test",
           "text": "서버와 연결 종료 뒤 재접속 측정 시작"
         },
         {
-          "sha": "16ac12dc",
+          "sha": "16ac12dc3",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "test",
           "text": "배치 무대 구성과 건설 렌더 검증 전제 분리"
         },
         {
-          "sha": "129d9740",
+          "sha": "129d97409",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "ci",
           "text": "예약 검사와 수동 WM 검증의 취소 경합 분리"
         },
         {
-          "sha": "37cc2e08",
+          "sha": "37cc2e084",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "test",
@@ -453,76 +523,6 @@
         }
       ],
       "quiet": 0,
-      "more": 0
-    },
-    {
-      "date": "2026-09-23",
-      "entries": [
-        {
-          "sha": "b04bbb70",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "build",
-          "text": "Idle 설정 검사 확대와 빌드 전 차단"
-        },
-        {
-          "sha": "dd1dc791",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "build",
-          "text": "Idle 플레이어에서 본편 조립 코드 제외"
-        },
-        {
-          "sha": "8db08a93",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "build",
-          "text": "Idle 빌드 호출을 현재 클래스 이름으로 수정"
-        }
-      ],
-      "quiet": 1,
-      "more": 0
-    },
-    {
-      "date": "2026-09-22",
-      "entries": [
-        {
-          "sha": "a2c028eb",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "카메라 수평 행군 (yaw 0) 과 인형을 화면 아래로, 카드 줄은 전투 창 우하단, 배속과 AUTO 는 위 띠로 (피드백 12, 19)"
-        },
-        {
-          "sha": "2dd98d7e",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "대상 지정 중 오른쪽 메뉴 판도 어둡게 (사용자 2026-09-22 \"어두워질거면 화면 전체가\")"
-        },
-        {
-          "sha": "49888b4d",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "idle",
-          "text": "스킬 대상 지정 표시를 참고 실측대로. 어둡게 + 커서 아래 바닥 타원, 카드 들림 + CANCEL, 한 줄 설명 (피드백 11)"
-        },
-        {
-          "sha": "5ebb6d66",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "사진 한 장의 쓰레기 0. EnsureDeck 의 힙 배열을 스택으로. 왕복 시험에 HasteSecondsLeft 와 덱 (피드백 18)"
-        },
-        {
-          "sha": "e53a52bc",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "반복 토글은 램프 (머무르기 또는 전멸 반복) 를 뒤집는다. 전멸로 켜진 램프가 첫 누름에 안 꺼지던 것 (피드백 8)"
-        }
-      ],
-      "quiet": 4,
       "more": 0
     }
   ]
