@@ -108,6 +108,20 @@ export function visibleApps(apps, status, prefs, view) {
   });
 }
 
+/** 그림이 없는 앱과 그림을 못 읽을 때 서는 기본 마스코트 */
+export const DEFAULT_MASCOT = 'img/yawn-launcher.webp';
+
+/**
+ * 앱의 마스코트 자리. `art.mascot` 은 설치본에 든 그림 이름 (공개 항목),
+ * `art.mascot_private` 는 memo 저장소 경로 (비공개 항목. 공개 저장소에 그림과 이름을 안 남김)
+ */
+export function mascotSource(app) {
+  const art = (app && app.art) || {};
+  if (art.mascot_private) return { private: art.mascot_private };
+  if (/^[a-z0-9-]+$/.test(art.mascot || '')) return { url: 'img/mascot-' + art.mascot + '.webp' };
+  return { url: DEFAULT_MASCOT };
+}
+
 /** 지난 확인 뒤 지난 초. 첫 확인은 0 (켜자마자 시간이 더해지지 않게), 오래 멈췄으면 상한까지만 */
 export function tickSeconds(now, last, max = 120) {
   return last ? Math.min((now - last) / 1000, max) : 0;

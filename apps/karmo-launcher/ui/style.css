@@ -196,7 +196,7 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .note { color: var(--ink2); font-size: 12px; margin: 0; }
 
 /* 욘은 판 오른쪽 안에 거의 들고, 그림 끝 (허벅지) 은 판 아래 흐림과 같이 흐림 (사용자 "창에서 너무 튀어 나갔잖아") */
-.yawn { position: absolute; right: 96px; bottom: 16px; height: min(660px, 92%); z-index: 4; pointer-events: none;
+.yawn { position: absolute; right: 96px; bottom: 16px; height: min(660px, 92%); z-index: 4; pointer-events: none; transition: opacity 0.12s;
   -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, #000 82%, transparent 100%); }
 
 /* 런처 자신의 새 판 버튼. 제목 줄 바로 아래 오른쪽 */

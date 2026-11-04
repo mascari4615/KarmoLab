@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
+import { DEFAULT_MASCOT, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
@@ -92,6 +92,12 @@ test('실행 시간 한 칸. 첫 확인은 0, 긴 공백은 상한', () => {
   assert.equal(tickSeconds(1793819834749, 0), 0);
   assert.equal(tickSeconds(10000, 9000), 1);
   assert.equal(tickSeconds(1000000, 1000), 120);
+});
+
+test('마스코트 자리', () => {
+  assert.deepEqual(mascotSource({ art: { mascot: 'dash' } }), { url: 'img/mascot-dash.webp' });
+  assert.deepEqual(mascotSource({ art: { mascot_private: 'data/launcher/mascots/x.webp' } }), { private: 'data/launcher/mascots/x.webp' });
+  for (const app of [null, {}, { art: {} }, { art: { mascot: '../evil' } }]) assert.deepEqual(mascotSource(app), { url: DEFAULT_MASCOT });
 });
 
 test('실행 옵션 나누기', () => {

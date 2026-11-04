@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, MODES, appPref, autoPlan, fmtAgo, fmtDuration, hasUpdate, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
+import { BLOCK_TEXT, DEFAULT_MASCOT, MODES, appPref, autoPlan, fmtAgo, fmtDuration, hasUpdate, mascotSource, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -91,8 +91,52 @@ function paintDlBtn() {
   dlBtn.classList.toggle('on', !!jobs.length || !!waiting);
 }
 
+/* 마스코트. 고른 앱의 그림으로 바꿈. 못 읽으면 기본. 빠르게 넘기면 마지막 앱만 남김 */
+const mascotEl = $('mascot');
+const privateImages = new Map();
+let mascotKey = DEFAULT_MASCOT;
+let mascotTurn = 0;
+function showMascot(url, turn) {
+  const next = new Image();
+  next.onload = () => {
+    if (turn !== mascotTurn) return;
+    mascotEl.style.opacity = '0';
+    window.setTimeout(() => {
+      if (turn !== mascotTurn) return;
+      mascotEl.src = url;
+      mascotEl.style.opacity = '1';
+    }, 120);
+  };
+  next.onerror = () => {
+    if (turn === mascotTurn && url !== DEFAULT_MASCOT) showMascot(DEFAULT_MASCOT, turn);
+  };
+  next.src = url;
+}
+async function paintMascot(app) {
+  const src = mascotSource(app);
+  const key = src.private || src.url;
+  if (key === mascotKey) return;
+  mascotKey = key;
+  const turn = ++mascotTurn;
+  let url = src.url;
+  if (src.private) {
+    url = privateImages.get(key);
+    if (!url) {
+      try {
+        url = await invoke('private_image', { path: key });
+        privateImages.set(key, url);
+      } catch {
+        url = DEFAULT_MASCOT;
+      }
+    }
+    if (turn !== mascotTurn) return;
+  }
+  showMascot(url, turn);
+}
+
 function paintMain() {
   const app = apps.find((a) => a.id === current);
+  void paintMascot(app);
   if (!app) {
     headEl.innerHTML = '';
     actsEl.innerHTML = '';
