@@ -9,7 +9,8 @@
 <body>
 <!-- 시안 L3 (memo notes/launcher/mock). 투명 창 안에 가장자리가 흐린 판 하나, 욘은 판 오른쪽 -->
 <div class="win">
-  <div class="panel"><div class="hero" id="hero"></div><div class="veil"></div><div class="glow"></div></div>
+  <div class="panel" id="panel"><div class="hero" id="hero"></div><div class="veil"></div><div class="dim" id="dim" hidden></div></div>
+  <div class="rim" id="rim" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <!-- 판 안 내용. 1292x772 기준으로 그린 것을 창 크기에 맞춰 통째로 줄이고 키움 (app.js fitStage) -->
   <div class="stage" id="stage">
   <header class="titlebar" data-tauri-drag-region>
@@ -19,30 +20,86 @@
     <button type="button" class="wb" id="keyBtn" title="설정" aria-label="설정">&#9881;</button>
     <button type="button" class="wb" id="reload" title="새로고침" aria-label="새로고침">&#8635;</button>
     <button type="button" class="wb" id="min" title="최소화" aria-label="최소화">_</button>
-    <button type="button" class="wb" id="close" title="트레이로 닫기" aria-label="트레이로 닫기">&#10005;</button>
+    <button type="button" class="wb" id="close" title="닫기" aria-label="닫기">&#10005;</button>
   </header>
-  <nav class="side" aria-label="라이브러리"><span class="en">Library</span><div id="list"></div></nav>
-  <section class="head" id="head"></section>
-  <section class="rel" id="rel" hidden></section>
+  <nav class="side" aria-label="라이브러리">
+    <input type="search" id="q" placeholder="검색" spellcheck="false" aria-label="검색">
+    <div class="filters">
+      <div id="filters"><button type="button" class="on" data-filter="all">전체</button><button type="button" data-filter="installed">설치됨</button><button type="button" data-filter="updates">업데이트</button></div>
+      <select id="sort" aria-label="정렬"><option value="list">기본</option><option value="name">이름</option><option value="recent">최근 실행</option></select>
+    </div>
+    <div class="scroll" id="list"></div>
+    <button type="button" class="dlbtn" id="dlBtn">다운로드</button>
+  </nav>
+  <div class="col">
+    <section class="head" id="head"></section>
+    <section class="rel" id="rel" hidden></section>
+  </div>
   <!-- 런처 자신의 새 판. 켜질 때 한 번 물어봄 -->
   <button type="button" class="selfup" id="selfup" hidden></button>
   <img class="yawn" src="img/yawn-launcher.webp" alt="">
   <div class="acts" id="acts"></div>
-  <!-- 설정 모달. 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->
+
+  <!-- 설정. 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->
   <div class="modal" id="keys" hidden>
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="keysTitle">
-      <header><h2 id="keysTitle">설정</h2><button type="button" class="wb" id="keysClose" title="닫기" aria-label="닫기">&#10005;</button></header>
+      <header><h2 id="keysTitle">설정</h2><button type="button" class="wb" data-close title="닫기" aria-label="닫기">&#10005;</button></header>
+      <section>
+        <h3>자동 업데이트</h3>
+        <label class="ck"><input type="checkbox" id="sAuto"> 설치한 앱을 자동으로 최신으로 유지</label>
+        <label class="ck"><input type="checkbox" id="sWinOn"> 이 시간에만 받기 <input type="time" id="sWinA"> ~ <input type="time" id="sWinB"></label>
+        <label class="ck"><input type="checkbox" id="sGame"> 게임을 하는 중에도 받기</label>
+      </section>
+      <section>
+        <h3>시작과 닫기</h3>
+        <label class="ck"><input type="checkbox" id="sBoot"> Windows 시작할 때 트레이로 켜기</label>
+        <label class="ck"><input type="checkbox" id="sTray"> 닫기 버튼은 트레이로 (끄면 런처를 끝냄)</label>
+      </section>
+      <section>
+        <h3>화면</h3>
+        <label class="ck">테마 <select id="sTheme"><option value="system">시스템</option><option value="light">밝게</option><option value="dark">어둡게</option></select></label>
+      </section>
       <section>
         <h3>GitHub 로그인</h3>
-        <p class="note">비공개 항목 (KarmoAI, Witch-Mendokusai) 은 로그인해야 목록에 나옵니다.</p>
+        <p class="note">비공개 항목은 로그인해야 목록에 나옵니다.</p>
         <p class="state" id="ghState">확인 중</p>
         <div class="krow"><button type="button" class="primary" id="ghGit">이 PC 의 git 로그인 쓰기</button><button type="button" id="ghClear">로그아웃</button></div>
         <div class="krow"><input type="password" id="ghToken" placeholder="또는 토큰 붙여 넣기 (읽기 권한)" autocomplete="off"><button type="button" id="ghSave">저장</button></div>
       </section>
       <section>
         <h3>작업 폴더</h3>
-        <p class="note">로컬 항목 (KarmoAI) 을 이 폴더 아래에서 찾습니다.</p>
+        <p class="note">로컬 항목을 이 폴더 아래에서 찾습니다.</p>
         <div class="krow"><input type="text" id="ws" spellcheck="false"><button type="button" id="wsSave">저장</button></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 다운로드 (Steam 다운로드 화면). 받는 중, 대기, 미룬 것, 최근 -->
+  <div class="modal" id="dl" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlTitle">
+      <header><h2 id="dlTitle">다운로드</h2><button type="button" class="wb" data-close title="닫기" aria-label="닫기">&#10005;</button></header>
+      <div class="krow between"><span class="note" id="dlChecked"></span><button type="button" id="dlCheck">지금 확인</button></div>
+      <div id="dlBody" class="dlbody"></div>
+    </div>
+  </div>
+
+  <!-- 앱 속성 (Steam 속성, Hub 줄 메뉴). 오른쪽 클릭 또는 속성 버튼 -->
+  <div class="modal" id="props" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="propsTitle">
+      <header><h2 id="propsTitle"></h2><button type="button" class="wb" data-close title="닫기" aria-label="닫기">&#10005;</button></header>
+      <label class="ck"><input type="checkbox" id="pFav"> 즐겨찾기 (목록 맨 위)</label>
+      <section id="pUpdateRow">
+        <h3>자동 업데이트</h3>
+        <div class="krow"><select id="pMode" aria-label="자동 업데이트"></select></div>
+      </section>
+      <section id="pArgsRow">
+        <h3>실행 옵션</h3>
+        <div class="krow"><input type="text" id="pArgs" spellcheck="false" placeholder="실행할 때 넘길 인자"></div>
+      </section>
+      <section>
+        <h3>설치 위치</h3>
+        <p class="note path" id="pWhere"></p>
+        <div class="krow"><button type="button" id="pOpen">폴더 열기</button><button type="button" id="pReinstall">다시 설치</button><button type="button" id="pRemove">제거</button></div>
       </section>
     </div>
   </div>

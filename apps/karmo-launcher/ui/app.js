@@ -1,5 +1,7 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
-// 백엔드는 src-tauri/src/lib.rs. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
+// 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
+import { BLOCK_TEXT, MODES, appPref, autoPlan, fmtAgo, fmtDuration, hasUpdate, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
+
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const appWindow = window.__TAURI__.window.getCurrentWindow();
@@ -11,50 +13,82 @@ const relEl = $('rel');
 const actsEl = $('acts');
 const heroEl = $('hero');
 const msgEl = $('msg');
+const dlBtn = $('dlBtn');
 
 const ICON = { tauri: 'tool', web: 'dash', unity: 'play', tool: 'tool', bot: 'tool' };
+const CHECK_EVERY_MS = 30 * 60 * 1000;
 let apps = [];
 const status = new Map();
 const fmt = (a) => (a.install && a.install.format) || 'nsis';
+const canDownload = (a) => !a.soon && a.kind !== 'web' && fmt(a) !== 'local';
 let current = null;
-/** 설치, 업데이트, 제거 중인 앱. id -> { got, total, phase }. 앱마다 따로라 한 앱을 받는 동안 다른 앱을 조작할 수 있음 */
-const busy = new Map();
+const view = { q: '', filter: 'all', sort: 'list' };
 
-function phaseText(job) {
-  const pct = job.total ? Math.round((job.got / job.total) * 100) : 0;
-  const words = { verify: '파일 확인 중', wait: '설치 차례 기다리는 중', install: '설치 중', done: '마무리 중', uninstall: '제거 중' };
-  return words[job.phase] || '받는 중 ' + pct + '%';
+/** 설치, 업데이트, 제거 중인 앱. id -> { got, total, phase, auto, thenLaunch }. 앱마다 따로라 한 앱을 받는 동안 다른 앱을 조작할 수 있음.
+    손으로 누른 것은 바로 시작 (큰 WM zip 이 나머지를 막지 않게, 2026-11-04 앱별 동시 작업).
+    자동 업데이트만 줄을 서서 AUTO_AT_ONCE 개씩 (Hub Concurrent downloads) */
+const busy = new Map();
+const queue = [];
+const AUTO_AT_ONCE = 2;
+let selfBusy = false;
+let blocked = {};
+const failures = {};
+let lastCheck = 0;
+
+/* 설정. 저장은 settings.json 의 prefs 한 칸 */
+let prefs = { autoUpdate: true, closeToTray: true, theme: 'system', apps: {}, log: [] };
+let autostart = false;
+let saveTimer = 0;
+function savePrefs() {
+  window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => void invoke('save_prefs', { prefs }).catch((e) => (msgEl.textContent = '설정 저장 실패: ' + e)), 400);
+}
+function setAppPref(id, patch) {
+  prefs.apps = prefs.apps || {};
+  prefs.apps[id] = { ...prefs.apps[id], ...patch };
+  savePrefs();
 }
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-/** 버전 비교. 점 단위 숫자만 (0.1.112 < 0.1.116) */
-function newer(a, b) {
-  const pa = String(a || '').split('.').map(Number);
-  const pb = String(b || '').split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] || 0;
-    const y = pb[i] || 0;
-    if (x !== y) return x > y;
-  }
-  return false;
+const pctOf = (job) => (job && job.total ? Math.round((job.got / job.total) * 100) : 0);
+function phaseText(job) {
+  const words = { verify: '파일 확인 중', wait: '설치 차례 기다리는 중', install: '설치 중', done: '마무리 중', uninstall: '제거 중' };
+  return words[job.phase] || '받는 중 ' + pctOf(job) + '%';
 }
-
-const hasUpdate = (st) => !!(st && st.installed && st.latest && newer(st.latest, st.version));
+const isQueued = (id) => queue.some((j) => j.id === id);
 
 function paintList() {
-  listEl.innerHTML = apps
-    .map((a) => {
-      const st = status.get(a.id);
-      const job = busy.get(a.id);
-      const tag = job ? '<em class="run" data-job>' + esc(phaseText(job)) + '</em>' : a.soon ? '<em class="soon">준비 중</em>' : st && st.running ? '<em class="run">실행 중</em>' : hasUpdate(st) ? '<em>업데이트</em>' : a.access === 'private' ? '<em class="soon">비공개</em>' : '';
-      const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
-      return (
-        '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
-        '<img class="ic" src="img/' + esc(icon) + '.png" alt=""><span>' + esc(a.name) + '</span>' + tag + '</button>'
-      );
-    })
-    .join('');
+  const rows = visibleApps(apps, status, prefs, view);
+  listEl.innerHTML = rows.length
+    ? rows
+        .map((a) => {
+          const st = status.get(a.id);
+          const tag =
+            busy.has(a.id) ? '<em class="run" data-job>' + esc(phaseText(busy.get(a.id))) + '</em>'
+            : a.soon ? '<em class="soon">준비 중</em>'
+            : isQueued(a.id) ? '<em class="soon">대기</em>'
+            : st && st.running ? '<em class="run">실행 중</em>'
+            : hasUpdate(st) ? '<em>업데이트</em>'
+            : a.access === 'private' ? '<em class="soon">비공개</em>'
+            : '';
+          const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
+          const star = appPref(prefs, a.id).favorite ? '<b class="star" title="즐겨찾기">&#9733;</b>' : '';
+          return (
+            '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
+            '<img class="ic" src="img/' + esc(icon) + '.png" alt=""><span>' + esc(a.name) + '</span>' + star + tag + '</button>'
+          );
+        })
+        .join('')
+    : '<p class="empty">없음</p>';
+  paintDlBtn();
+}
+
+function paintDlBtn() {
+  const jobs = [...busy.values()];
+  const waiting = queue.length;
+  const now = jobs.length === 1 ? phaseText(jobs[0]) : jobs.length ? '작업 ' + jobs.length + '개' : '';
+  dlBtn.textContent = now ? now + (waiting ? ', 대기 ' + waiting : '') : waiting ? '다운로드 대기 ' + waiting : '다운로드';
+  dlBtn.classList.toggle('on', !!jobs.length || !!waiting);
 }
 
 function paintMain() {
@@ -65,9 +99,10 @@ function paintMain() {
     relEl.hidden = true;
     return;
   }
-  const bg = (app.art && app.art.bg) || 'sky-village';
-  heroEl.style.backgroundImage = 'url(img/' + encodeURIComponent(bg) + '.webp)';
+  const bg = 'url(img/' + encodeURIComponent((app.art && app.art.bg) || 'sky-village') + '.webp)';
+  heroEl.style.backgroundImage = bg;
   const st = status.get(app.id) || {};
+  const pref = appPref(prefs, app.id);
   const info = [];
   if (app.kind !== 'web' && !app.soon) {
     if (fmt(app) === 'local') info.push(['위치', st.installed ? '이 PC' : '이 PC 에 없음']);
@@ -76,47 +111,71 @@ function paintMain() {
       info.push(['최신', st.latest || (st.error ? '못 읽음' : '-')]);
     }
   }
+  const played = fmtDuration(pref.total);
+  const last = fmtAgo(pref.last, Date.now());
+  const history = [];
+  if (last) history.push(['마지막 실행', last]);
+  if (played) history.push(['실행 시간', played]);
   headEl.innerHTML =
     '<h1>' + esc(app.name) + '</h1><p>' + esc(app.summary) + '</p>' +
     (info.length ? '<dl class="info">' + info.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd><b>' + esc(v) + '</b></dd>').join('') + '</dl>' : '') +
+    (history.length ? '<dl class="info hist">' + history.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('') + '</dl>' : '') +
     (st.error ? '<p class="err">' + esc(st.error) + '</p>' : '');
 
   if (st.latest) {
     relEl.hidden = false;
     const day = st.pub_date ? String(st.pub_date).slice(5, 10).replace('-', '.') : '';
-    relEl.innerHTML = '<div class="t">릴리스</div><div class="row"><span>' + esc(app.name + ' v' + st.latest) + '</span><span>' + esc(day) + '</span></div>';
+    relEl.innerHTML =
+      '<div class="t">릴리스</div><div class="row"><span>' + esc(app.name + ' v' + st.latest) + '</span><span>' + esc(day) + '</span></div>' +
+      (st.notes ? '<div class="notes">' + esc(st.notes) + '</div>' : '') +
+      (st.page ? '<button type="button" class="more" data-page="' + esc(st.page) + '">전체 보기</button>' : '');
   } else relEl.hidden = true;
 
   const sub = [];
   let start = '';
+  const job = busy.get(app.id);
+  const waiting = isQueued(app.id);
+  const mode = modeOf(prefs, app.id);
   if (app.soon) start = '<p class="note">아직 받을 수 있는 판이 없습니다.</p>';
   else if (app.kind === 'web') start = '<button type="button" class="start" data-act="open">브라우저로 열기</button>';
   else if (fmt(app) === 'local') {
     start = st.installed
-      ? '<button type="button" class="start" data-act="launch">실행</button>'
-      : '<p class="note">이 PC 의 작업 폴더에 없습니다. 오른쪽 위 열쇠에서 작업 폴더를 바꿀 수 있습니다.</p>';
-  } else {
-    /* 실행 중이면 Steam 처럼 끄기가 주 버튼. 떠 있는 동안 설치 프로그램이 파일을 못 바꾸니 업데이트, 제거는 막음 */
-    if (st.running) {
-      start = '<button type="button" class="start running" data-act="stop">끄기<small>실행 중</small></button>';
-      if (hasUpdate(st)) sub.push('<p class="note">끈 뒤에 업데이트할 수 있습니다</p>');
-    } else if (!st.installed && st.download) start = '<button type="button" class="start" data-act="install">설치</button>';
-    else if (hasUpdate(st) && st.download)
-      start = '<button type="button" class="start" data-act="install">업데이트<small>' + esc(st.version) + ' → ' + esc(st.latest) + '</small></button>';
-    else if (st.installed) start = '<button type="button" class="start" data-act="launch">실행</button>';
-    if (!st.running && st.installed && hasUpdate(st)) sub.push('<button type="button" data-act="launch">실행</button>');
-    if (!st.running && st.installed) sub.push('<button type="button" data-act="uninstall">제거</button>');
+      ? '<button type="button" class="start' + (st.running ? ' running' : '') + '" data-act="launch">' + (st.running ? '브라우저로 열기<small>실행 중</small>' : '실행') + '</button>'
+      : '<p class="note">이 PC 의 작업 폴더에 없습니다. 설정에서 작업 폴더를 바꿀 수 있습니다.</p>';
+  } else if (job) {
+    const word = job.phase === 'uninstall' ? '제거' : job.auto ? '자동 업데이트' : st.installed ? '업데이트' : '설치';
+    start = '<button type="button" class="start" disabled>' + word + '</button>';
+    /* 설치 프로그램이 돌기 시작하면 못 멈춤 */
+    if (job.phase === 'download') sub.push('<button type="button" data-act="cancel">취소</button>');
+  } else if (waiting) {
+    start = '<button type="button" class="start" disabled>대기 중</button>';
+    sub.push('<button type="button" data-act="dequeue">빼기</button>');
+  } else if (st.running) {
+    /* 실행 중이면 Steam 처럼 끄기가 주 버튼. 떠 있는 동안 파일을 못 바꾸니 업데이트, 제거는 막음 */
+    start = '<button type="button" class="start running" data-act="stop">끄기<small>실행 중</small></button>';
+    if (hasUpdate(st)) sub.push('<p class="note">끄면 ' + esc(st.latest) + ' 받음</p>');
+  } else if (!st.installed && st.download) {
+    start = '<button type="button" class="start" data-act="install">설치</button>';
+  } else if (hasUpdate(st) && st.download && mode === 'launch') {
+    start = '<button type="button" class="start" data-act="update-launch">실행<small>먼저 ' + esc(st.latest) + ' 받음</small></button>';
+    sub.push('<button type="button" data-act="launch">업데이트 없이 실행</button>');
+  } else if (hasUpdate(st) && st.download) {
+    start = '<button type="button" class="start" data-act="install">업데이트<small>' + esc(st.version) + ' → ' + esc(st.latest) + '</small></button>';
+    sub.push('<button type="button" data-act="launch">업데이트 없이 실행</button>');
+  } else if (st.installed) {
+    start = '<button type="button" class="start" data-act="launch">실행</button>';
   }
-  const job = busy.get(app.id);
-  const pct = job && job.total ? Math.round((job.got / job.total) * 100) : 0;
-  const bar = job ? '<div class="bar"><i style="width:' + pct + '%"></i></div><p class="note">' + esc(phaseText(job)) + '</p>' : '';
-  actsEl.innerHTML = bar + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
-  actsEl.querySelectorAll('button').forEach((b) => (b.disabled = !!job));
+  if (st.installed && !job && !app.soon && app.kind !== 'web') sub.push('<button type="button" data-act="props">속성</button>');
+  const why = blocked[app.id] && !job && !waiting ? BLOCK_TEXT[blocked[app.id]] : '';
+  const bar = job ? '<div class="bar"><i style="width:' + pctOf(job) + '%"></i></div><p class="note">' + esc(phaseText(job)) + '</p>' : '';
+  actsEl.innerHTML =
+    bar + (why && !st.running ? '<p class="note">' + esc(why) + '</p>' : '') + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
 }
 
 function paint() {
   paintList();
   paintMain();
+  if (!$('dl').hidden) paintDownloads();
 }
 
 async function refreshStatus(app) {
@@ -126,6 +185,13 @@ async function refreshStatus(app) {
   } catch (e) {
     status.set(app.id, { error: String(e) });
   }
+}
+
+async function checkAll() {
+  await Promise.all(apps.map(refreshStatus));
+  lastCheck = Date.now();
+  planAuto();
+  paint();
 }
 
 async function load() {
@@ -140,75 +206,183 @@ async function load() {
   }
   if (!current && apps[0]) current = apps[0].id;
   paint();
-  await Promise.all(apps.map(refreshStatus));
+  await checkAll();
+}
+
+/* ---------- 자동 업데이트 ---------- */
+
+/** 받을 수 있는 앱을 대기에 넣고, 못 받는 이유를 기록 */
+function planAuto() {
+  const plan = autoPlan(apps, status, prefs, new Date(), failures);
+  blocked = plan.blocked;
+  for (const id of plan.ready) if (!isQueued(id) && !busy.has(id)) queue.push({ id, auto: true });
+  /* 먼저 받기 앱은 줄 앞으로 */
+  const rank = (j) => (modeOf(prefs, j.id) === 'priority' ? 0 : 1);
+  queue.sort((a, b) => rank(a) - rank(b));
+  pump();
+}
+
+function addLog(entry) {
+  prefs.log = [entry, ...(prefs.log || [])].slice(0, 20);
+  savePrefs();
+}
+
+/** 줄의 앞에서부터 자리가 나는 만큼 시작. 런처 자체 업데이트 중에는 새로 안 시작 */
+function pump() {
+  const running = () => [...busy.values()].filter((j) => j.auto).length;
+  while (!selfBusy && queue.length && running() < AUTO_AT_ONCE) {
+    const next = queue.shift();
+    const app = apps.find((a) => a.id === next.id);
+    const st = app && status.get(app.id);
+    if (app && st && st.download && !st.running && !busy.has(app.id)) void runInstall(app, { auto: true });
+  }
+}
+
+async function runInstall(app, opts = {}) {
+  const st = status.get(app.id) || {};
+  busy.set(app.id, { got: 0, total: 0, phase: 'download', ...opts });
   paint();
+  let error = null;
+  try {
+    await invoke('install_app', { app, url: st.download, version: st.latest || '', signature: st.signature || '', sha256: st.sha256 || '' });
+  } catch (e) {
+    error = String(e);
+  }
+  busy.delete(app.id);
+  const version = st.latest;
+  addLog({ id: app.id, name: app.name, version, at: Date.now(), ok: !error, error, auto: !!opts.auto });
+  if (error) {
+    const old = failures[app.id];
+    failures[app.id] = { at: Date.now(), count: old && old.version === version ? old.count + 1 : 1, version };
+  } else {
+    delete failures[app.id];
+    msgEl.textContent = app.name + ' ' + version + (opts.auto ? ' 자동 업데이트' : ' 설치') + ' 끝';
+  }
+  await refreshStatus(app);
+  if (error) status.set(app.id, { ...status.get(app.id), error });
+  else if (opts.thenLaunch) await launch(app);
+  planAuto();
+  paint();
+}
+
+async function launch(app) {
+  const st = status.get(app.id) || {};
+  try {
+    await invoke('launch_app', { app, args: fmt(app) === 'local' ? [] : parseArgs(appPref(prefs, app.id).args) });
+    if (fmt(app) !== 'web') setAppPref(app.id, { last: Date.now() });
+  } catch (e) {
+    status.set(app.id, { ...st, error: String(e) });
+    paint();
+    return;
+  }
+  /* 창이 뜨기까지 잠깐. 바로 한 번, 조금 뒤 한 번 다시 잼 */
+  window.setTimeout(() => void pollRunning(true), 1500);
+}
+
+/** 손으로 누른 설치와 업데이트. 줄을 안 서고 바로 시작 */
+function installNow(id, opts = {}) {
+  const app = apps.find((a) => a.id === id);
+  if (!app || busy.has(id)) return;
+  if (selfBusy) {
+    msgEl.textContent = '런처 업데이트 중. 다시 켜진 뒤에 해 주세요';
+    return;
+  }
+  const at = queue.findIndex((j) => j.id === id);
+  if (at >= 0) queue.splice(at, 1);
+  delete failures[id];
+  void runInstall(app, opts);
 }
 
 async function act(kind) {
   const app = apps.find((a) => a.id === current);
-  if (!app || busy.has(app.id)) return;
-  /* 런처 업데이트는 끝나면 다시 켜지므로 새 설치를 시작하지 않음 */
-  if (selfBusy && (kind === 'install' || kind === 'uninstall')) {
-    msgEl.textContent = '런처 업데이트 중. 다시 켜진 뒤에 해 주세요';
-    return;
-  }
+  if (!app) return;
   const st = status.get(app.id) || {};
-  try {
-    if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
-    if (kind === 'launch') {
-      await invoke('launch_app', { app });
-      /* 창이 뜨기까지 잠깐. 바로 한 번, 조금 뒤 한 번 다시 잼 */
-      window.setTimeout(() => void pollRunning(), 1500);
-      return;
-    }
-    if (kind === 'stop') {
-      /* 누르는 즉시 꺼진 것으로 그림. stop_app 은 꺼진 뒤에 돌아오고, 그때 실제 상태로 다시 잼 (사용자 "끄기가 바로바로") */
-      status.set(app.id, { ...st, running: false });
-      paint();
-      await invoke('stop_app', { app });
-      await pollRunning();
-      return;
-    }
-    if (kind === 'install') {
-      busy.set(app.id, { got: 0, total: 0, phase: 'download' });
-      paint();
-      await invoke('install_app', { app, url: st.download, version: st.latest || '', signature: st.signature || '', sha256: st.sha256 || '' });
-    } else if (kind === 'uninstall') {
-      busy.set(app.id, { got: 0, total: 0, phase: 'uninstall' });
-      paint();
-      await invoke('uninstall_app', { app });
-    }
-  } catch (e) {
-    status.set(app.id, { ...st, error: String(e) });
-  } finally {
-    busy.delete(app.id);
-    await refreshStatus(app);
+  if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
+  if (kind === 'launch') return void (await launch(app));
+  if (kind === 'install') return installNow(app.id);
+  if (kind === 'update-launch') return installNow(app.id, { thenLaunch: true });
+  if (kind === 'cancel') return void (await invoke('cancel_install', { id: app.id }));
+  if (kind === 'props') return openProps(app);
+  if (kind === 'dequeue') {
+    queue.splice(queue.findIndex((j) => j.id === app.id), 1);
+    /* 빼 둔 판을 바로 다시 넣지 않게 실패와 같은 대기를 줌 */
+    failures[app.id] = { at: Date.now(), count: 1, version: st.latest };
+    planAuto();
+    return paint();
+  }
+  if (kind === 'stop') {
+    /* 누르는 즉시 꺼진 것으로 그림. stop_app 은 꺼진 뒤에 돌아오고, 그때 실제 상태로 다시 잼 (사용자 "끄기가 바로바로") */
+    status.set(app.id, { ...st, running: false });
     paint();
+    try {
+      await invoke('stop_app', { app });
+    } catch (e) {
+      status.set(app.id, { ...st, error: String(e) });
+    }
+    await pollRunning(true);
   }
 }
 
-/** 설치된 앱들의 실행 여부만 다시. 3초마다, 창이 보일 때만 (최신 판은 다시 안 받음) */
-async function pollRunning() {
+/* ---------- 실행 중과 실행 시간 ---------- */
+
+/* 트레이로 숨겨도 document.hidden 은 false (WebView2 실측). 창 상태를 직접 물음 */
+let shown = true;
+window.setInterval(() => void appWindow.isVisible().then((v) => (shown = v)).catch(() => {}), 2000);
+let polling = false;
+let lastPoll = 0;
+let lastSave = 0;
+let dirty = false;
+
+/** 설치된 앱들의 실행 여부만 다시 (최신 판은 다시 안 받음). 꺼지는 순간 미룬 업데이트를 바로 받음 */
+async function pollRunning(force) {
+  const now = Date.now();
+  /* 창이 보일 때 1초 (사용자 2026-09-25 "기다리는 텀이 너무 길지 않나"), 트레이에 있으면 15초 */
+  if (polling || (!force && now - lastPoll < 15000 && !shown)) return;
+  polling = true;
+  const elapsed = tickSeconds(now, lastPoll);
+  lastPoll = now;
   let changed = false;
+  let stopped = false;
   for (const app of apps) {
     const st = status.get(app.id);
-    if (!st || !st.installed || fmt(app) === 'local') continue;
+    if (!st || !st.installed) continue;
     try {
-      const now = await invoke('running_status', { app });
-      if (now !== st.running) {
-        st.running = now;
+      const running = await invoke('running_status', { app });
+      if (running && st.running) {
+        /* 1초마다 파일에 쓰지 않게 메모리만 고치고, 저장은 아래에서 1분에 한 번 */
+        prefs.apps = prefs.apps || {};
+        const p = (prefs.apps[app.id] = prefs.apps[app.id] || {});
+        p.total = (p.total || 0) + elapsed;
+        p.last = now;
+        dirty = true;
+      }
+      if (running !== st.running) {
+        if (!running) stopped = true;
+        st.running = running;
         changed = true;
       }
     } catch {
       /* 다음 차례에 다시 */
     }
   }
+  polling = false;
+  if (stopped) planAuto();
   if (changed) paint();
+  if (dirty && (stopped || now - lastSave > 60000)) {
+    lastSave = now;
+    dirty = false;
+    savePrefs();
+  }
 }
-/* 1초마다 (3초는 켜고 끈 뒤 표시가 늦다, 사용자 2026-09-25 "기다리는 텀이 너무 길지 않나") */
+window.setInterval(() => void pollRunning(false), 1000);
+window.setInterval(() => void checkAll(), CHECK_EVERY_MS);
+/* 허용 시간대가 열리는 때와 실패 대기가 끝나는 때를 놓치지 않게 (네트워크 없음) */
 window.setInterval(() => {
-  if (!document.hidden) void pollRunning();
-}, 1000);
+  planAuto();
+  if (shown) paintList();
+}, 60 * 1000);
+
+/* ---------- 왼쪽 목록 ---------- */
 
 listEl.addEventListener('click', (e) => {
   const b = e.target.closest('[data-id]');
@@ -216,15 +390,192 @@ listEl.addEventListener('click', (e) => {
   current = b.dataset.id;
   paint();
 });
+listEl.addEventListener('contextmenu', (e) => {
+  const b = e.target.closest('[data-id]');
+  if (!b) return;
+  e.preventDefault();
+  current = b.dataset.id;
+  paint();
+  const app = apps.find((a) => a.id === current);
+  if (app && !app.soon && app.kind !== 'web') openProps(app);
+});
 actsEl.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (b) void act(b.dataset.act);
 });
+relEl.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-page]');
+  if (b) void invoke('open_url', { url: b.dataset.page });
+});
+$('q').addEventListener('input', (e) => {
+  view.q = e.target.value;
+  paintList();
+});
+$('filters').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-filter]');
+  if (!b) return;
+  view.filter = b.dataset.filter;
+  $('filters').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+  paintList();
+});
+$('sort').addEventListener('change', (e) => {
+  view.sort = e.target.value;
+  paintList();
+});
 $('reload').addEventListener('click', () => void load());
 
-/* GitHub 로그인과 작업 폴더. 토큰은 백엔드가 자격 증명 관리자에 보관하고 화면은 이름만 받음 */
-const keysEl = $('keys');
+/* ---------- 모달 공통 ---------- */
+
+const modals = [$('keys'), $('dl'), $('props')];
+const closeModal = (el) => (el.hidden = true);
+modals.forEach((el) => {
+  el.addEventListener('mousedown', (e) => {
+    if (e.target === el) closeModal(el);
+  });
+  el.querySelector('[data-close]').addEventListener('click', () => closeModal(el));
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') modals.forEach(closeModal);
+});
+new MutationObserver(() => {
+  const open = modals.some((el) => !el.hidden);
+  $('dim').hidden = !open;
+  $('stage').classList.toggle('dimmed', open);
+}).observe($('stage'), { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+
+/* ---------- 다운로드 ---------- */
+
+function paintDownloads() {
+  const row = (app, right, extra = '') => '<div class="drow"><span class="dn">' + esc(app) + '</span><span class="dx">' + extra + '</span>' + right + '</div>';
+  const name = (id) => (apps.find((a) => a.id === id) || { name: id }).name;
+  const parts = [];
+  if (busy.size) {
+    parts.push(
+      '<section><h3>작업 중</h3>' +
+        [...busy].map(([id, job]) =>
+          row(name(id), job.phase === 'download' ? '<button type="button" data-dl="cancel" data-id="' + esc(id) + '">취소</button>' : '', esc(phaseText(job))) +
+          '<div class="bar wide"><i style="width:' + pctOf(job) + '%"></i></div>').join('') +
+        '</section>',
+    );
+  }
+  if (queue.length) {
+    parts.push('<section><h3>대기</h3>' + queue.map((j) => row(name(j.id), '<button type="button" data-dl="remove" data-id="' + esc(j.id) + '">빼기</button>')).join('') + '</section>');
+  }
+  const later = Object.keys(blocked).filter((id) => !isQueued(id) && !busy.has(id));
+  if (later.length) {
+    parts.push(
+      '<section><h3>새 판 있음</h3>' +
+        later.map((id) => {
+          const st = status.get(id) || {};
+          return row(name(id) + ' ' + (st.latest || ''), st.running ? '' : '<button type="button" data-dl="now" data-id="' + esc(id) + '">지금 받기</button>', esc(BLOCK_TEXT[blocked[id]]));
+        }).join('') +
+        '</section>',
+    );
+  }
+  const log = prefs.log || [];
+  parts.push(
+    '<section><h3>최근</h3>' +
+      (log.length
+        ? log.slice(0, 8).map((l) => row(l.name + ' ' + (l.version || ''), '', esc(l.ok ? (l.auto ? '자동, ' : '') + fmtAgo(l.at, Date.now()) : l.error || '실패'))).join('')
+        : '<p class="note">기록 없음</p>') +
+      '</section>',
+  );
+  $('dlBody').innerHTML = parts.join('');
+  $('dlChecked').textContent = lastCheck ? '마지막 확인 ' + new Date(lastCheck).toTimeString().slice(0, 5) : '';
+}
+dlBtn.addEventListener('click', () => {
+  $('dl').hidden = false;
+  paintDownloads();
+});
+$('dlCheck').addEventListener('click', () => void checkAll());
+$('dlBody').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-dl]');
+  if (!b) return;
+  const kind = b.dataset.dl;
+  if (kind === 'cancel') void invoke('cancel_install', { id: b.dataset.id });
+  if (kind === 'now') installNow(b.dataset.id);
+  if (kind === 'remove') {
+    queue.splice(queue.findIndex((j) => j.id === b.dataset.id), 1);
+    const st = status.get(b.dataset.id) || {};
+    failures[b.dataset.id] = { at: Date.now(), count: 1, version: st.latest };
+    planAuto();
+    paint();
+  }
+});
+
+/* ---------- 앱 속성 (Steam 속성, Hub 줄 메뉴). 오른쪽 클릭 또는 속성 버튼 ---------- */
+
+let propsApp = null;
+function openProps(app) {
+  propsApp = app;
+  const st = status.get(app.id) || {};
+  const pref = appPref(prefs, app.id);
+  $('propsTitle').textContent = app.name;
+  $('pFav').checked = !!pref.favorite;
+  const dl = canDownload(app);
+  $('pUpdateRow').hidden = !dl;
+  $('pArgsRow').hidden = !dl;
+  $('pMode').innerHTML = Object.entries(MODES).map(([k, v]) => '<option value="' + k + '">' + esc(v) + '</option>').join('');
+  $('pMode').value = modeOf(prefs, app.id);
+  $('pArgs').value = pref.args || '';
+  $('pWhere').textContent = st.location || '';
+  $('pOpen').hidden = !st.installed;
+  $('pReinstall').hidden = !dl || !st.installed || !st.download || st.running;
+  const rm = $('pRemove');
+  rm.hidden = !dl || !st.installed || st.running;
+  rm.textContent = '제거';
+  delete rm.dataset.sure;
+  $('props').hidden = false;
+}
+$('pFav').addEventListener('change', (e) => {
+  setAppPref(propsApp.id, { favorite: e.target.checked });
+  paintList();
+});
+$('pMode').addEventListener('change', (e) => {
+  setAppPref(propsApp.id, { update: e.target.value });
+  planAuto();
+  paint();
+});
+$('pArgs').addEventListener('change', (e) => setAppPref(propsApp.id, { args: e.target.value }));
+$('pOpen').addEventListener('click', () => void invoke('open_location', { app: propsApp }).catch((e) => ($('pWhere').textContent = String(e))));
+$('pReinstall').addEventListener('click', () => {
+  closeModal($('props'));
+  installNow(propsApp.id);
+});
+$('pRemove').addEventListener('click', async (e) => {
+  const b = e.currentTarget;
+  /* 두 번 눌러야 지움 (Hub 의 확인 창 자리) */
+  if (!b.dataset.sure) {
+    b.dataset.sure = '1';
+    b.textContent = '정말 제거';
+    return;
+  }
+  const app = propsApp;
+  closeModal($('props'));
+  if (selfBusy) {
+    msgEl.textContent = '런처 업데이트 중. 다시 켜진 뒤에 해 주세요';
+    return;
+  }
+  busy.set(app.id, { got: 0, total: 0, phase: 'uninstall' });
+  paint();
+  try {
+    await invoke('uninstall_app', { app });
+  } catch (err) {
+    status.set(app.id, { ...status.get(app.id), error: String(err) });
+  }
+  busy.delete(app.id);
+  await refreshStatus(app);
+  paint();
+});
+
+/* ---------- 설정 ---------- */
+
 const ghStateEl = $('ghState');
+function applyTheme() {
+  const t = prefs.theme;
+  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+}
 async function paintKeys() {
   try {
     const login = await invoke('github_status');
@@ -232,11 +583,14 @@ async function paintKeys() {
   } catch (e) {
     ghStateEl.textContent = '토큰 확인 실패: ' + e;
   }
-  try {
-    $('ws').value = (await invoke('get_settings')).workspace || '';
-  } catch {
-    /* 기본값 그대로 */
-  }
+  $('sAuto').checked = prefs.autoUpdate !== false;
+  $('sGame').checked = !!prefs.duringGame;
+  $('sWinOn').checked = !!prefs.window;
+  $('sWinA').value = (prefs.window && prefs.window.start) || '02:00';
+  $('sWinB').value = (prefs.window && prefs.window.end) || '07:00';
+  $('sTray').checked = prefs.closeToTray !== false;
+  $('sBoot').checked = autostart;
+  $('sTheme').value = prefs.theme || 'system';
 }
 async function keyAction(fn) {
   ghStateEl.textContent = '확인 중';
@@ -250,35 +604,82 @@ async function keyAction(fn) {
   await paintKeys();
   await load();
 }
-/* 설정 모달. 톱니로 열고, 닫기 버튼, 바깥 누르기, Esc 로 닫음 */
-function openKeys() {
-  keysEl.hidden = false;
+$('keyBtn').addEventListener('click', () => {
+  $('keys').hidden = false;
   void paintKeys();
-}
-const closeKeys = () => (keysEl.hidden = true);
-$('keyBtn').addEventListener('click', () => (keysEl.hidden ? openKeys() : closeKeys()));
-$('keysClose').addEventListener('click', closeKeys);
-keysEl.addEventListener('mousedown', (e) => {
-  if (e.target === keysEl) closeKeys();
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !keysEl.hidden) closeKeys();
+  void invoke('get_settings').then((s) => ($('ws').value = s.workspace || '')).catch(() => {});
 });
 $('ghSave').addEventListener('click', () => void keyAction(() => invoke('github_set_token', { token: $('ghToken').value })));
 $('ghGit').addEventListener('click', () => void keyAction(() => invoke('github_use_git_login')));
 $('ghClear').addEventListener('click', () => void keyAction(() => invoke('github_clear')));
 $('wsSave').addEventListener('click', () => void keyAction(() => invoke('set_workspace', { path: $('ws').value })));
+function onPrefChange() {
+  prefs.autoUpdate = $('sAuto').checked;
+  prefs.duringGame = $('sGame').checked;
+  prefs.window = $('sWinOn').checked ? { start: $('sWinA').value, end: $('sWinB').value } : null;
+  prefs.closeToTray = $('sTray').checked;
+  prefs.theme = $('sTheme').value;
+  applyTheme();
+  savePrefs();
+  planAuto();
+  paint();
+}
+['sAuto', 'sGame', 'sWinOn', 'sWinA', 'sWinB', 'sTray', 'sTheme'].forEach((id) => $(id).addEventListener('change', onPrefChange));
+$('sBoot').addEventListener('change', async (e) => {
+  try {
+    await invoke('set_autostart', { enabled: e.target.checked });
+    autostart = e.target.checked;
+  } catch (err) {
+    e.target.checked = autostart;
+    ghStateEl.textContent = '시작 프로그램 등록 실패: ' + err;
+  }
+});
 $('min').addEventListener('click', () => void appWindow.minimize());
-/* 닫기는 트레이로 (Steam 처럼). 끝내기는 트레이 메뉴 */
-$('close').addEventListener('click', () => void appWindow.hide());
+/* 닫기는 기본 트레이로 (Steam 처럼). 설정에서 끝내기로 바꿀 수 있음 */
+$('close').addEventListener('click', () => void (prefs.closeToTray === false ? invoke('quit_app') : appWindow.hide()));
+
+/* ---------- 배치와 가장자리 ---------- */
+
 /* 판 안 내용 배율. 1292x772 (기본 창 1340x820 에서 여백 24px 씩 뺀 판) 기준으로 그린 배치를
    창 크기에 맞춰 통째로 줄이고 키움. 기준에서도 0.88 배 (사용자 2026-11-03 "UI 들이 너무 크다") */
 const stageEl = $('stage');
+const panelEl = $('panel');
+const rimEl = $('rim');
+const MARGIN = 24;
+
+/** 가장자리가 부드럽게 사라지는 마스크. 진짜 흐림 (가우시안) 이라 네 모서리에 사선이 안 생김.
+    예전 방식은 가로 띠와 세로 띠의 교집합이라 모서리에 사선 경계가 보였음 */
+function softMask(w, h, inset, blur) {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '"><filter id="f" x="-10%" y="-10%" width="120%" height="120%">' +
+    '<feGaussianBlur stdDeviation="' + blur + '"/></filter><rect x="' + inset + '" y="' + inset + '" width="' + (w - inset * 2) + '" height="' + (h - inset * 2) +
+    '" fill="#fff" filter="url(#f)"/></svg>';
+  return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+}
+
+/* 판 가장자리. 짧게 번지고 끝에 얇은 선과 모서리 괄호 (사용자 2026-11-05 A 선택, 비교판 notes/launcher/edge-2026-11-04) */
+function applyEdge(z) {
+  const w = Math.max(1, window.innerWidth - MARGIN * 2);
+  const h = Math.max(1, window.innerHeight - MARGIN * 2);
+  const s = Math.max(z, 0.5);
+  const inset = Math.round(24 * s);
+  const mask = softMask(w, h, inset, Math.round(11 * s));
+  panelEl.style.webkitMaskImage = mask;
+  panelEl.style.maskImage = mask;
+  rimEl.style.inset = inset + 'px';
+  /* 크기 조절 손잡이는 흐린 띠 전체 (사용자 2026-11-03 "정말 흐리멍텅해지는 곳에서 조절") */
+  document.documentElement.style.setProperty('--band', MARGIN + inset + Math.round(20 * s) + 'px');
+}
+
+let edgeFrame = 0;
 function fitStage() {
-  const w = Math.max(1, window.innerWidth - 48);
-  const h = Math.max(1, window.innerHeight - 48);
+  const w = Math.max(1, window.innerWidth - MARGIN * 2);
+  const h = Math.max(1, window.innerHeight - MARGIN * 2);
   const z = Math.min(1.2, Math.max(0.45, Math.min(w / 1292, h / 772) * 0.88));
   stageEl.style.setProperty('--z', z.toFixed(3));
+  /* 마스크 다시 그리기는 끌기 중 프레임마다 한 번만 */
+  window.cancelAnimationFrame(edgeFrame);
+  edgeFrame = window.requestAnimationFrame(() => applyEdge(z));
 }
 window.addEventListener('resize', fitStage);
 fitStage();
@@ -292,12 +693,12 @@ document.querySelectorAll('[data-rz]').forEach((el) => {
   });
 });
 
-/* 런처 자신의 업데이트. 새 판이 있으면 묻지 않고 받아 설치하고 다시 켬 (Steam 처럼, 사용자 2026-09-25 "런처는 그래야지").
+/* ---------- 런처 자신의 업데이트 ---------- */
+
+/* 새 판이 있으면 묻지 않고 받아 설치하고 다시 켬 (Steam 처럼, 사용자 2026-09-25 "런처는 그래야지").
    버튼으로만 받게 했더니 0.1.3 이 그대로 남아 끄기 수정이 안 들어왔다. 켜자마자 한 번, 트레이에 오래 있으니 30분마다.
-   앱을 설치하는 중이면 다시 켜면 끊기니 다음 차례로 */
+   앱을 받는 중이면 다시 켜면 끊기니 다음 차례로 */
 const selfEl = $('selfup');
-const SELF_EVERY_MS = 30 * 60 * 1000;
-let selfBusy = false;
 async function installSelf() {
   selfBusy = true;
   selfEl.hidden = false;
@@ -316,7 +717,7 @@ async function checkSelf() {
   try {
     const v = await invoke('self_update_check');
     if (!v) return;
-    if (busy.size) {
+    if (busy.size || queue.length) {
       window.setTimeout(() => void checkSelf(), 60 * 1000);
       return;
     }
@@ -332,20 +733,37 @@ selfEl.addEventListener('click', () => {
   }
   void installSelf();
 });
-window.setInterval(() => void checkSelf(), SELF_EVERY_MS);
+window.setInterval(() => void checkSelf(), CHECK_EVERY_MS);
 void listen('self-update-progress', (ev) => {
   const [got, total] = ev.payload;
   if (total) selfEl.textContent = '런처 받는 중 ' + Math.round((got / total) * 100) + '%';
 });
-void checkSelf();
 void window.__TAURI__.app.getVersion().then((v) => ($('ver').textContent = 'v' + v));
 void listen('install-progress', (ev) => {
-  const job = ev.payload;
-  if (!busy.has(job.id)) return;
+  const old = busy.get(ev.payload.id);
+  /* 끝난 뒤 늦게 온 이벤트는 무시 */
+  if (!old) return;
+  const job = { ...old, ...ev.payload };
   busy.set(job.id, job);
   /* 목록은 글자만 바꿈. 통째로 다시 그리면 누르는 사이 단추가 바뀌어 클릭이 사라짐 */
   const tag = listEl.querySelector('[data-id="' + CSS.escape(job.id) + '"] [data-job]');
   if (tag) tag.textContent = phaseText(job);
+  paintDlBtn();
   if (job.id === current) paintMain();
+  if (!$('dl').hidden) paintDownloads();
 });
-void load();
+
+async function boot() {
+  try {
+    const s = await invoke('get_settings');
+    prefs = { ...prefs, ...s.prefs };
+    autostart = !!s.autostart;
+  } catch {
+    /* 기본값으로 */
+  }
+  applyTheme();
+  fitStage();
+  await load();
+  void checkSelf();
+}
+void boot();

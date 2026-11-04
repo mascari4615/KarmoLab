@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-11-03",
+  "updated": "2026-11-05",
   "apps": [
     {
       "id": "karmolab",
@@ -56,6 +56,17 @@
       "art": {
         "bg": "sky-twilight",
         "icon": "set"
+      }
+    },
+    {
+      "id": "files",
+      "name": "Files",
+      "kind": "web",
+      "summary": "개인 파일 화면. 노트북 파일과 암호화 클라우드",
+      "open": "https://files.mascari4615.com/",
+      "art": {
+        "bg": "sky-village",
+        "icon": "dash"
       }
     }
   ]

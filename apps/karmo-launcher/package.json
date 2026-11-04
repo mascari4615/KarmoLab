@@ -1,11 +1,11 @@
 {
   "name": "karmo-launcher",
   "private": true,
-  "version": "0.1.17",
+  "version": "0.1.19",
   "scripts": {
     "dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "build": "tauri build",
-    "test": "cd src-tauri && cargo test"
+    "test": "node --test scripts/updates.test.mjs && cd src-tauri && cargo test"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
