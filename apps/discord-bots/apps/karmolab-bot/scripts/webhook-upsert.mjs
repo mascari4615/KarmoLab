@@ -93,8 +93,11 @@ export function upsertHook(repo, webhookUrl) {
     (h) => typeof h?.config?.url === 'string' && h.config.url.endsWith(HOOK_PATH),
   );
 
+  const webhookSecret = process.env.KARMOLAB_BOT_GITHUB_WEBHOOK_SECRET ?? '';
+  const secretArgs = webhookSecret ? ['-f', `config[secret]=${webhookSecret}`] : [];
+
   if (existing) {
-    if (existing.config.url === webhookUrl) {
+    if (existing.config.url === webhookUrl && !webhookSecret) {
       console.log(`[webhook-upsert] ${repo}: hook URL 동일. 갱신 생략`);
       return;
     }
@@ -108,6 +111,7 @@ export function upsertHook(repo, webhookUrl) {
         `config[url]=${webhookUrl}`,
         '-f',
         'config[content_type]=json',
+        ...secretArgs,
       ]);
       console.log(`[webhook-upsert] ${repo}: hook ${existing.id} 갱신 → ${webhookUrl}`);
     } catch (e) {
@@ -129,6 +133,7 @@ export function upsertHook(repo, webhookUrl) {
     `config[url]=${webhookUrl}`,
     '-f',
     'config[content_type]=json',
+    ...secretArgs,
   ];
   for (const ev of EVENTS) {
     args.push('-f', `events[]=${ev}`);

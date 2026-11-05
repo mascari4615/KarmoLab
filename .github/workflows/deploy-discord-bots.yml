@@ -79,8 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '20'
       - name: npm install (workspace)
@@ -258,6 +258,7 @@ jobs:
           YB_PROD_VERTEX_API_KEY: ${{ secrets.YB_PROD_VERTEX_API_KEY }}
           YB_PROD_VERTEX_PROJECT_ID: ${{ secrets.YB_PROD_VERTEX_PROJECT_ID }}
           YB_PROD_DISCORD_SUMMARY_WEBHOOK_URL: ${{ secrets.YB_PROD_DISCORD_SUMMARY_WEBHOOK_URL }}
+          YB_PROD_GITHUB_WEBHOOK_SECRET: ${{ secrets.YB_PROD_GITHUB_WEBHOOK_SECRET }}
           # KAR-004: digest-webhook 이 private memo digest 본문 fetch (인증). 없으면 송신0.
           # TASK-YB-021: heartbeat sender 도 이 동일 PAT 으로 memo 기록 (새 secret 불요).
           YB_PROD_MEMO_GITHUB_PAT: ${{ secrets.MEMO_GITHUB_PAT }}
@@ -298,7 +299,7 @@ jobs:
 
           # ③ 비밀+준-비밀 키 list. 빈 secret 라인 skip (.env load 가 빈값=undefined 라 정합).
           $keys = @(
-            'DISCORD_TOKEN', 'GEMINI_API_KEY', 'VERTEX_API_KEY', 'VERTEX_PROJECT_ID', 'DISCORD_SUMMARY_WEBHOOK_URL', 'MEMO_GITHUB_PAT', 'GH_TOKEN', 'GH_APP_ID', 'GH_APP_PRIVATE_KEY', 'WM_GITHUB_PAT', 'DEVICE_LOG_TOKEN', 'DISCORD_CLIENT_SECRET', 'KL_MAIL_HOOK_TOKEN', 'KL_MAIL_DOMAIN'
+            'DISCORD_TOKEN', 'GEMINI_API_KEY', 'VERTEX_API_KEY', 'VERTEX_PROJECT_ID', 'DISCORD_SUMMARY_WEBHOOK_URL', 'MEMO_GITHUB_PAT', 'GH_TOKEN', 'GH_APP_ID', 'GH_APP_PRIVATE_KEY', 'WM_GITHUB_PAT', 'DEVICE_LOG_TOKEN', 'DISCORD_CLIENT_SECRET', 'KL_MAIL_HOOK_TOKEN', 'KL_MAIL_DOMAIN', 'GITHUB_WEBHOOK_SECRET'
           )
 
           # 필수 검증. DISCORD_TOKEN 없으면 deploy fail (CLIENT_ID 등은 이제 ② 프로파일 소관)
@@ -549,6 +550,7 @@ jobs:
         env:
           KARMOLAB_BOT_WEBHOOK_URL: 'https://bot.mascari4615.com/webhook/github'
           GH_TOKEN: ${{ secrets.YB_PROD_GH_WEBHOOK_TOKEN }}
+          KARMOLAB_BOT_GITHUB_WEBHOOK_SECRET: ${{ secrets.YB_PROD_GITHUB_WEBHOOK_SECRET }}
         run: |
           $ErrorActionPreference = 'Continue'
           # 이 단계는 **배포의 곁가지**다 (웹훅 주소 등록). 여기서 실패했다고 배포를 빨갛게

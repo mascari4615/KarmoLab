@@ -7,6 +7,9 @@ import type { GameDataService } from '../services/gamedata';
 import { getChannelsForRepo } from '../services/webhook-routes';
 import { isDigestCommit, handleDigestCommit, type GitHubCommit } from '../services/digest-webhook';
 import { syncTaskStatusOnPrMerge } from '../services/task-status-sync';
+import { githubWebhookSecret, isValidGithubSignature } from './github-signature';
+
+type RawBodyRequest = express.Request & { rawBody?: Buffer };
 
 export function createGithubWebhookApp(client: Client, gameData: GameDataService) {
   const app = express();
@@ -19,8 +22,15 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
   /* 방 라우트는 **16kb** 로 좁힌다 (change.copresence-hardening 3단계). 커서 좌표와 편집
      연산은 몇 백 바이트다. 기본 100kb 는 그 자리에서 상한이 아니라 여유다. */
   const roomJson = express.json({ limit: '16kb' });
+  // 서명은 파싱 전 원본 바이트로만 검증 가능
+  const githubJson = express.json({
+    verify: (req, _res, buf) => {
+      (req as RawBodyRequest).rawBody = Buffer.from(buf);
+    },
+  });
   app.use((req, res, next) => {
     if (req.path === '/kl/uploads') return next();
+    if (req.path === '/webhook/github') return githubJson(req, res, next);
     return req.path.startsWith('/kl/room/') ? roomJson(req, res, next) : express.json()(req, res, next);
   });
 
@@ -49,6 +59,12 @@ export function createGithubWebhookApp(client: Client, gameData: GameDataService
   });
 
   app.post('/webhook/github', async (req, res) => {
+    const webhookSecret = githubWebhookSecret();
+    if (webhookSecret && !isValidGithubSignature((req as RawBodyRequest).rawBody, req.headers['x-hub-signature-256'], webhookSecret)) {
+      console.warn('[Webhook] 서명 불일치로 거절');
+      res.sendStatus(401);
+      return;
+    }
     try {
       const event = req.headers['x-github-event'];
       const payload = req.body;
