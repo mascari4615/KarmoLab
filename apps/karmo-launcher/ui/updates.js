@@ -136,13 +136,19 @@ export function castLine(app, state, turn, st) {
   return line.replace('{latest}', (st && st.latest) || '').replace('{version}', (st && st.version) || '');
 }
 
-/** 얼굴 그림. 공개는 설치본, 비공개는 memo. 없으면 null */
-export function faceSource(app) {
+/** 앱 로고 (단색 마스크). 공개는 설치본, 비공개는 memo. 없으면 null. 마스코트와 별개 */
+export function logoSource(app) {
   const art = (app && app.art) || {};
-  if (art.mascot_private) return { private: art.mascot_private.replace(/\.webp$/, '-face.webp') };
-  if (/^[a-z0-9-]+$/.test(art.mascot || '')) return { url: bundledImage('face-' + art.mascot) };
+  if (art.logo_private) return { private: art.logo_private };
+  if (/^[a-z0-9-]+$/.test(art.logo || '')) return { url: bundledImage('logo-' + art.logo) };
   return null;
 }
+
+/** 대표색. 목록 데이터가 화면 스타일로 들어가므로 6자리 색만 받음 */
+export const accentOf = (app) => {
+  const c = app && app.art && app.art.accent;
+  return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : '';
+};
 
 /**
  * 앱의 마스코트 자리. `art.mascot` 은 설치본에 든 그림 이름 (공개 항목),

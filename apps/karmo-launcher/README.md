@@ -16,4 +16,5 @@
 - 로컬 서버 항목: `local.port` 가 열려 있으면 다시 안 켜고 `local.open` 만 엶. 주소는 이 PC 만
 - 트레이 시작: 인자 `--tray`. Windows 시작 등록은 설정에서 켤 때만 (HKCU Run)
 - 마스코트: `art.mascot` 은 `ui/img/mascot-<이름>.webp` (공개), `art.mascot_private` 는 memo `data/launcher/mascots/` 경로 (비공개, 토큰으로 받아 하루 캐시). 없거나 못 읽으면 그림 없음 (기본 캐릭터 없음). 그림 규격 1024x1536 투명
+- 로고와 대표색: 마스코트와 별개. `art.logo` 는 `ui/img/logo-<이름>.webp`, `art.logo_private` 는 memo `data/launcher/mascots/` 경로. 128x128 단색 마스크, 색은 화면에서 입힘. `art.accent` 는 6자리 색, 정본은 이 목록 자체. 목록 줄 왼쪽 색 띠, 고른 줄과 시작 버튼 색. 캐릭터를 꺼도 유지. 로고 없는 앱은 `art.icon`
 - 창 크기 조절: 틀 없는 투명 창이라 판 가장자리 손잡이 (`.rz`) 가 `startResizeDragging` 을 부름

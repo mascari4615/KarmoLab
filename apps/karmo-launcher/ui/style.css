@@ -11,6 +11,8 @@
   --panel2: rgba(13, 17, 24, 0.82);
   --acc: #f0a04b;
   --acc-ink: #101418;
+  --logo-mix: 55%;
+  --acc-fg: color-mix(in srgb, var(--acc) 55%, #fff);
   --err: #f07a66;
   --veil: linear-gradient(90deg, rgba(13, 17, 24, 0.86) 0%, rgba(13, 17, 24, 0.35) 45%, rgba(13, 17, 24, 0) 70%);
   --ko: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
@@ -28,6 +30,8 @@
     --panel2: rgba(255, 255, 255, 0.9);
     --acc: #e8862e;
     --acc-ink: #ffffff;
+    --logo-mix: 100%;
+    --acc-fg: var(--acc);
     --err: #d9553f;
     --veil: linear-gradient(90deg, rgba(238, 242, 247, 0.92) 0%, rgba(238, 242, 247, 0.45) 45%, rgba(238, 242, 247, 0) 70%);
     --rim: rgba(23, 32, 51, 0.38);
@@ -43,6 +47,8 @@
     --panel2: rgba(255, 255, 255, 0.9);
     --acc: #e8862e;
     --acc-ink: #ffffff;
+    --logo-mix: 100%;
+    --acc-fg: var(--acc);
     --err: #d9553f;
     --veil: linear-gradient(90deg, rgba(238, 242, 247, 0.92) 0%, rgba(238, 242, 247, 0.45) 45%, rgba(238, 242, 247, 0) 70%);
     --rim: rgba(23, 32, 51, 0.38);
@@ -132,14 +138,14 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .filters { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 12px 8px; }
 .filters button { padding: 2px 6px; border: 0; background: transparent; color: var(--ink3); font: 700 12px var(--ko); cursor: pointer; }
 .filters button:hover { color: var(--ink); }
-.filters button.on { color: var(--acc); }
+.filters button.on { color: var(--acc-fg); }
 .filters select { width: 74px; padding: 2px 4px; border: 1px solid var(--line); background: var(--panel2); color: var(--ink2); font: 12px var(--ko); }
 .empty { margin: 12px 18px; color: var(--ink3); font-size: 13px; }
-.star { color: var(--acc); font-size: 12px; font-weight: 400; flex: none; }
+.star { color: var(--acc-fg); font-size: 12px; font-weight: 400; flex: none; }
 .li.on .star { color: var(--acc-ink); }
 .dlbtn { flex: none; height: 38px; padding: 0 18px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--ink2); font: 700 13px var(--ko); text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dlbtn:hover { color: var(--ink); }
-.dlbtn.on { color: var(--acc); }
+.dlbtn.on { color: var(--acc-fg); }
 .li { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 18px; border: 0; background: transparent; color: var(--ink2); font: 700 14px var(--ko); cursor: pointer; text-align: left; }
 .li:hover { color: var(--ink); }
 .li .ic { width: 20px; height: 20px; flex: none; }
@@ -173,7 +179,7 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .rel { flex: 0 1 auto; min-height: 0; width: 380px; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(14px); }
 .rel[hidden] { display: none; }
 .rel .notes { flex: 0 1 auto; min-height: 0; overflow: auto; padding: 0 14px 10px; font-size: 12px; line-height: 1.55; color: var(--ink3); white-space: pre-wrap; word-break: break-word; }
-.rel .more { flex: none; align-self: flex-start; margin: 0 14px 10px; padding: 0; border: 0; background: transparent; color: var(--acc); font: 700 12px var(--ko); cursor: pointer; }
+.rel .more { flex: none; align-self: flex-start; margin: 0 14px 10px; padding: 0; border: 0; background: transparent; color: var(--acc-fg); font: 700 12px var(--ko); cursor: pointer; }
 .rel .t { padding: 10px 14px; border-bottom: 1px solid var(--line); font-weight: 700; }
 .rel .row { padding: 9px 14px; display: flex; justify-content: space-between; font-size: 13px; color: var(--ink2); }
 .rel .row span:last-child { font-family: var(--en); color: var(--ink3); }
@@ -203,13 +209,18 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .selfup { position: absolute; right: 40px; top: 76px; z-index: 6; height: 30px; padding: 0 14px; border: 1px solid var(--acc); background: var(--panel2); color: var(--ink); font: 700 12px var(--ko); cursor: pointer; }
 .selfup:disabled { opacity: 0.7; cursor: default; }
 
-/* MDD. 앱마다 캐릭터 얼굴, 대사, 표정. 끄면 전부 사라지고 일반 런처 (rules/mdd.md) */
-.li .face { width: 30px; height: 30px; flex: none; object-fit: cover; display: block; margin: -4px 0; }
+/* 앱 로고와 대표색. 시안 notes/launcher/logos 표시 방식 C (사용자 판정 2026-11-05). 왼쪽 색 띠와 단색 문양 */
+.li.brand { position: relative; }
+.li.brand:not(.on)::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+.li .logo { width: 30px; height: 30px; flex: none; display: block; margin: -4px 0; background: color-mix(in srgb, var(--c) var(--logo-mix), #fff); -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; }
+.li.on .logo { background: var(--acc-ink); }
+
+/* MDD. 앱마다 캐릭터, 대사, 표정. 끄면 전부 사라지고 일반 런처 (rules/mdd.md) */
 .mascot-hit { position: absolute; right: 196px; bottom: 170px; width: 300px; height: 470px; z-index: 4; border: 0; padding: 0; background: transparent; cursor: pointer; }
 /* 말풍선 없이 한 줄 (사용자 판정 "캐릭터 대사 말풍선, 꾸밈 어색"). 캐릭터 발치 */
 .say { position: absolute; right: 56px; bottom: 60px; width: 440px; margin: 0; padding: 9px 14px; display: flex; gap: 12px; align-items: baseline; z-index: 5; background: var(--panel2); border-left: 3px solid var(--acc); color: var(--ink); font-size: 14px; line-height: 1.4; }
 .say[hidden] { display: none; }
-.say b { flex: none; color: var(--acc); font-weight: 900; }
+.say b { flex: none; color: var(--acc-fg); font-weight: 900; }
 .yawn.enter { animation: mascot-enter 0.28s ease-out; }
 .yawn.hop { animation: mascot-hop 0.3s ease-out; }
 @keyframes mascot-enter { from { transform: translateX(26px); } to { transform: none; } }
