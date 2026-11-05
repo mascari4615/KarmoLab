@@ -617,7 +617,10 @@ dlBtn.addEventListener('click', () => {
   $('dl').hidden = false;
   paintDownloads();
 });
-$('dlCheck').addEventListener('click', () => void checkAll());
+$('dlCheck').addEventListener('click', () => {
+  void checkAll();
+  void checkSelf();
+});
 $('dlBody').addEventListener('click', (e) => {
   const b = e.target.closest('[data-dl]');
   if (!b) return;
@@ -867,6 +870,36 @@ selfEl.addEventListener('click', () => {
   void installSelf();
 });
 window.setInterval(() => void checkSelf(), CHECK_EVERY_MS);
+/* 창을 열 때도 확인, 1분에 한 번까지. 30분 주기만 두면 릴리스 직후 연 창에 옛 판이 최대 30분 남음 (사용자 2026-11-05) */
+let selfFocusAt = 0;
+window.addEventListener('focus', () => {
+  if (Date.now() - selfFocusAt < 60 * 1000) return;
+  selfFocusAt = Date.now();
+  void checkSelf();
+});
+/* 손으로 확인. 자동 확인과 달리 최신, 실패를 화면에 표시. 자동이 있어도 사용자가 바로 확인 가능 (사용자 2026-11-05) */
+const selfStateEl = $('selfState');
+const selfCheckEl = $('selfCheck');
+selfCheckEl.addEventListener('click', async () => {
+  if (selfBusy) return;
+  selfCheckEl.disabled = true;
+  selfStateEl.textContent = '확인 중';
+  try {
+    const v = await invoke('self_update_check');
+    if (!v) {
+      selfStateEl.textContent = '최신 판입니다 (' + $('ver').textContent + ')';
+    } else if (busy.size) {
+      selfStateEl.textContent = 'v' + v + ' 있음. 앱 작업이 끝난 뒤 설치';
+      window.setTimeout(() => void checkSelf(), 60 * 1000);
+    } else {
+      selfStateEl.textContent = 'v' + v + ' 받는 중';
+      await installSelf();
+    }
+  } catch (e) {
+    selfStateEl.textContent = '확인 실패: ' + e;
+  }
+  selfCheckEl.disabled = false;
+});
 void listen('self-update-progress', (ev) => {
   const [got, total] = ev.payload;
   if (total) selfEl.textContent = '런처 받는 중 ' + Math.round((got / total) * 100) + '%';
