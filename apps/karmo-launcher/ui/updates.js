@@ -28,10 +28,16 @@ export const modeOf = (prefs, id) => appPref(prefs, id).update || 'auto';
 /** 이 판을 일시정지했나. 새 판이 나오면 풀림 */
 export const isPaused = (prefs, id, latest) => !!(prefs && prefs.paused && prefs.paused[id] && prefs.paused[id].version === latest);
 
+/** 로컬 항목의 원격 주소 (`local.remote`). 이 PC 에 없어도 https 로 엶. 없으면 빈 값 */
+export const remoteOf = (app) => {
+  const url = app && app.local && app.local.remote;
+  return typeof url === 'string' && url.startsWith('https://') ? url : '';
+};
+
 /** 트레이 실행 목록. 준비 중이 아니고 실행할 수 있는 앱만 */
 export function trayApps(apps, status) {
   return apps
-    .filter((a) => !a.soon && (a.kind === 'web' || status.get(a.id)?.installed))
+    .filter((a) => !a.soon && (a.kind === 'web' || remoteOf(a) || status.get(a.id)?.installed))
     .map((a) => ({ id: a.id, name: a.name }));
 }
 
@@ -133,7 +139,7 @@ export function castState(app, st, job, fresh) {
   if (st && st.error) return 'error';
   if (st && st.running) return hasUpdate(st) ? 'waiting' : 'running';
   if (hasUpdate(st)) return 'update';
-  if (app && !app.soon && app.kind !== 'web' && st && !st.installed) return 'missing';
+  if (app && !app.soon && app.kind !== 'web' && !remoteOf(app) && st && !st.installed) return 'missing';
   return 'idle';
 }
 

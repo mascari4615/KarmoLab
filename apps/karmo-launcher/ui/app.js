@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, isPaused, logoSource, mascotSource, modeOf, parseArgs, tickSeconds, trayApps, visibleApps } from './updates.js';
+import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, isPaused, logoSource, mascotSource, modeOf, parseArgs, remoteOf, tickSeconds, trayApps, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -256,9 +256,15 @@ function paintMain() {
   if (app.soon) start = '<p class="note">아직 받을 수 있는 판이 없습니다.</p>';
   else if (app.kind === 'web') start = '<button type="button" class="start" data-act="open">브라우저로 열기</button>';
   else if (fmt(app) === 'local') {
-    start = st.installed
-      ? '<button type="button" class="start' + (st.running ? ' running' : '') + '" data-act="launch">' + (st.running ? '브라우저로 열기<small>실행 중</small>' : '실행') + '</button>'
-      : '<p class="note">이 PC 의 작업 폴더에 없습니다. 설정에서 작업 폴더를 바꿀 수 있습니다.</p>';
+    const remote = remoteOf(app);
+    if (st.installed) {
+      start = '<button type="button" class="start' + (st.running ? ' running' : '') + '" data-act="launch">' + (st.running ? '브라우저로 열기<small>실행 중</small>' : '이 PC 에서 실행') + '</button>';
+      if (remote) sub.push('<button type="button" data-act="remote">원격으로 열기</button>');
+    } else if (remote) {
+      start = '<button type="button" class="start" data-act="remote">원격으로 열기<small>로그인 필요</small></button>';
+    } else {
+      start = '<p class="note">이 PC 의 작업 폴더에 없습니다. 설정에서 작업 폴더를 바꿀 수 있습니다.</p>';
+    }
   } else if (job) {
     const word = job.phase === 'uninstall' ? '제거' : job.auto ? '자동 업데이트' : st.installed ? '업데이트' : '설치';
     start = '<button type="button" class="start" disabled>' + word + '</button>';
@@ -481,6 +487,7 @@ async function act(kind) {
   const st = status.get(app.id) || {};
   if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
   if (kind === 'launch') return void (await launch(app));
+  if (kind === 'remote') return void (await invoke('open_url', { url: remoteOf(app) }));
   if (kind === 'install') return installNow(app.id);
   if (kind === 'update-launch') return installNow(app.id, { thenLaunch: true });
   if (kind === 'cancel') return void (await invoke('cancel_install', { id: app.id }));
@@ -991,6 +998,7 @@ void listen('tray-run', (ev) => {
   const app = apps.find((a) => a.id === ev.payload);
   if (!app) return;
   if (app.kind === 'web') void invoke('open_url', { url: app.open });
+  else if (remoteOf(app) && !status.get(app.id)?.installed) void invoke('open_url', { url: remoteOf(app) });
   else void launch(app);
 });
 void listen('self-update-progress', (ev) => {

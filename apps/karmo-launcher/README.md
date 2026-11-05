@@ -17,7 +17,7 @@
 - 로그: 앱 로그 폴더 `launcher.log` (1MB 넘으면 `launcher.old.log`). 시작, 자체 업데이트, 설치. 설정의 "로그 폴더 열기". 토큰을 남기지 않음
 - 알림: 창을 안 볼 때 앱 업데이트 끝과 판마다 첫 실패. 설정으로 끔. 트레이: 열기, 실행, 업데이트 확인, 끝내기
 - 자동 업데이트: 판단은 `ui/updates.js` (시험 `node --test scripts/updates.test.mjs`), 실행은 `ui/app.js` 받기 줄. 30분마다 확인, 자동은 줄을 서서 동시에 둘, 손으로 누른 것은 바로 시작, 앱이 떠 있으면 꺼질 때까지 미룸. 앱별 방식 `auto`, `priority`, `launch`, `off`. 설정은 `settings.json` 의 `prefs`. 실측 memo `notes/launcher/e2e-auto-update-2026-11-05.ps1`
-- 로컬 서버 항목: `local.port` 가 열려 있으면 다시 안 켜고 `local.open` 만 엶. 주소는 이 PC 만
+- 로컬 서버 항목: `local.port` 가 열려 있으면 다시 안 켜고 `local.open` 만 엶. 주소는 이 PC 만. `local.remote` 는 https 원격 주소, 이 PC 에 파일이 없으면 주 버튼, 있으면 보조 버튼
 - 트레이 시작: 인자 `--tray`. Windows 시작 등록은 설정에서 켤 때만 (HKCU Run)
 - 마스코트: `art.mascot` 은 `ui/img/mascot-<이름>.webp` (공개), `art.mascot_private` 는 memo `data/launcher/mascots/` 경로 (비공개, 토큰으로 받아 하루 캐시). 없거나 못 읽으면 그림 없음 (기본 캐릭터 없음). 그림 규격 1024x1536 투명
 - 로고와 대표색: 마스코트와 별개. `art.logo` 는 `ui/img/logo-<이름>.webp`, `art.logo_private` 는 memo `data/launcher/mascots/` 경로. 128x128 단색 마스크, 색은 화면에서 입힘. `art.accent` 는 6자리 색, 정본은 이 목록 자체. 목록 줄 왼쪽 색 띠, 고른 줄과 시작 버튼 색. 캐릭터를 꺼도 유지. 로고 없는 앱은 `art.icon`

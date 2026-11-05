@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { accentOf, castLine, castState, logoSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
+import { accentOf, castLine, castState, logoSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, remoteOf, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
@@ -14,6 +14,15 @@ test('일시정지한 판은 자동으로 안 받고, 새 판이 나오면 다�
   assert.deepEqual(plan(apps, st('1.0.1'), prefs).ready, []);
   assert.equal(plan(apps, st('1.0.1'), prefs).blocked.wm, 'paused');
   assert.deepEqual(plan(apps, st('1.0.2'), prefs).ready, ['wm']);
+});
+
+test('원격 주소가 있는 로컬 항목은 이 PC 에 없어도 쓸 수 있음', () => {
+  const ai = { id: 'ai', name: 'AI', install: { format: 'local' }, local: { remote: 'https://ai.example.com/' } };
+  assert.equal(remoteOf(ai), 'https://ai.example.com/');
+  assert.equal(remoteOf({ local: { remote: 'http://x/' } }), '');
+  assert.equal(remoteOf({}), '');
+  assert.deepEqual(trayApps([ai], new Map([['ai', { installed: false }]])), [{ id: 'ai', name: 'AI' }]);
+  assert.equal(castState(ai, { installed: false }), 'idle');
 });
 
 test('트레이 실행 목록은 설치된 앱과 웹 앱만', () => {
