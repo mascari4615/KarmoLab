@@ -16,6 +16,15 @@ test('일시정지한 판은 자동으로 안 받고, 새 판이 나오면 다�
   assert.deepEqual(plan(apps, st('1.0.2'), prefs).ready, ['wm']);
 });
 
+test('되돌린 판은 자동으로 다시 안 받고, 더 새 판이 나오면 받음', () => {
+  const apps = [{ id: 'wm', kind: 'unity', install: { format: 'zip' } }];
+  const st = (latest) => [['wm', { installed: true, version: '1.0.0', latest, download: 'x' }]];
+  const prefs = { apps: { wm: { skip: '1.0.1' } } };
+  assert.equal(plan(apps, st('1.0.1'), prefs).blocked.wm, 'skipped');
+  assert.deepEqual(plan(apps, st('1.0.1'), prefs).ready, []);
+  assert.deepEqual(plan(apps, st('1.0.2'), prefs).ready, ['wm']);
+});
+
 test('원격 주소가 있는 로컬 항목은 이 PC 에 없어도 쓸 수 있음', () => {
   const ai = { id: 'ai', name: 'AI', install: { format: 'local' }, local: { remote: 'https://ai.example.com/' } };
   assert.equal(remoteOf(ai), 'https://ai.example.com/');

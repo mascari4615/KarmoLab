@@ -484,6 +484,7 @@ function installNow(id, opts = {}) {
   const at = queue.findIndex((j) => j.id === id);
   if (at >= 0) queue.splice(at, 1);
   delete failures[id];
+  if (appPref(prefs, id).skip) setAppPref(id, { skip: null });
   void runInstall(app, opts);
 }
 
@@ -757,6 +758,10 @@ function openProps(app) {
   $('pWhere').textContent = st.location || '';
   $('pOpen').hidden = !st.installed;
   $('pReinstall').hidden = !dl || !st.installed || !st.download || st.running;
+  const rb = $('pRollback');
+  rb.hidden = !st.prev || st.running || busy.has(app.id);
+  rb.textContent = st.prev ? 'v' + st.prev + ' 로 되돌리기' : '';
+  delete rb.dataset.sure;
   const rm = $('pRemove');
   rm.hidden = !dl || !st.installed || st.running;
   rm.textContent = '제거';
@@ -777,6 +782,28 @@ $('pOpen').addEventListener('click', () => void invoke('open_location', { app: p
 $('pReinstall').addEventListener('click', () => {
   closeModal($('props'));
   installNow(propsApp.id);
+});
+$('pRollback').addEventListener('click', async (e) => {
+  const b = e.currentTarget;
+  if (!b.dataset.sure) {
+    b.dataset.sure = '1';
+    b.textContent = '정말 되돌리기';
+    return;
+  }
+  const app = propsApp;
+  const st = status.get(app.id) || {};
+  try {
+    await invoke('rollback_app', { app });
+    /* 되돌린 판을 자동 업데이트가 바로 덮지 않게 */
+    if (st.latest) setAppPref(app.id, { skip: st.latest });
+    closeModal($('props'));
+    msgEl.textContent = app.name + ' v' + st.prev + ' 로 되돌림';
+    await refreshStatus(app);
+    planAuto();
+    paint();
+  } catch (err) {
+    $('pWhere').textContent = String(err);
+  }
 });
 $('pRemove').addEventListener('click', async (e) => {
   const b = e.currentTarget;

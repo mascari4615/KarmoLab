@@ -499,6 +499,7 @@ fn latest_gh_release(app: &Value) -> Result<Latest, String> {
 struct Status {
     installed: bool,
     version: Option<String>,
+    prev: Option<String>,
     latest: Option<String>,
     pub_date: Option<String>,
     running: bool,
@@ -591,6 +592,7 @@ fn status_blocking(handle: &AppHandle, app: &Value) -> Status {
                     st.installed = true;
                     st.version = Some(v.trim().to_string());
                     st.location = Some(dir.to_string_lossy().to_string());
+                    st.prev = std::fs::read_to_string(prev_dir(&dir).join(VERSION_FILE)).ok().map(|p| p.trim().to_string());
                 }
             }
             Err(e) => st.error = Some(e),
@@ -910,9 +912,57 @@ fn extract_zip(file: &Path, dest: &Path, version: &str) -> Result<(), String> {
     }
     std::fs::write(tmp.join(VERSION_FILE), version).map_err(|e| e.to_string())?;
     if dest.exists() {
-        std::fs::remove_dir_all(dest).map_err(|e| format!("옛 판을 못 지움 (실행 중인지 확인): {}", e))?;
+        /* 판이 바뀔 때만 옛 판 보관. 같은 판 다시 설치로 더 옛 판을 잃지 않게 */
+        let same = std::fs::read_to_string(dest.join(VERSION_FILE)).map(|v| v.trim() == version).unwrap_or(false);
+        if same {
+            std::fs::remove_dir_all(dest).map_err(|e| format!("옛 판을 못 지움 (실행 중인지 확인): {}", e))?;
+        } else {
+            let prev = prev_dir(dest);
+            let _ = std::fs::remove_dir_all(&prev);
+            std::fs::rename(dest, &prev).map_err(|e| format!("옛 판을 못 옮김 (실행 중인지 확인): {}", e))?;
+        }
     }
     std::fs::rename(&tmp, dest).map_err(|e| e.to_string())
+}
+
+/// 바로 전 판을 보관하는 폴더. `apps/<id>.prev`
+fn prev_dir(dest: &Path) -> PathBuf {
+    dest.with_extension("prev")
+}
+
+/// 지금 판과 보관한 판을 맞바꿈. 중간에 실패하면 원래대로 되돌림
+fn swap_with_prev(dest: &Path) -> Result<(), String> {
+    let prev = prev_dir(dest);
+    if !prev.join(VERSION_FILE).is_file() {
+        return Err("되돌릴 판이 없음".into());
+    }
+    let hold = dest.with_extension("swap");
+    let _ = std::fs::remove_dir_all(&hold);
+    std::fs::rename(dest, &hold).map_err(|e| format!("지금 판을 못 옮김 (실행 중인지 확인): {}", e))?;
+    if let Err(e) = std::fs::rename(&prev, dest) {
+        let _ = std::fs::rename(&hold, dest);
+        return Err(e.to_string());
+    }
+    std::fs::rename(&hold, &prev).map_err(|e| e.to_string())
+}
+
+/// 바로 전 판으로 되돌리기. zip 앱만, 꺼져 있을 때만
+#[tauri::command]
+async fn rollback_app(handle: AppHandle, app: Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if format_of(&app) != "zip" {
+            return Err("zip 앱만 되돌릴 수 있음".into());
+        }
+        if exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+            return Err("실행 중. 끈 뒤에 다시".into());
+        }
+        let dest = zip_dir(&handle, &app)?;
+        let result = swap_with_prev(&dest);
+        log_line(&handle, &format!("rollback {}: {:?}", safe_id(&app).unwrap_or_default(), result));
+        result
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// 받는 중인 것을 멈춤. 설치 단계에 들어간 뒤에는 안 멈춤
@@ -1277,6 +1327,7 @@ async fn uninstall_app(handle: AppHandle, app: Value) -> Result<(), String> {
                 return Err("실행 중. 끈 뒤에 다시".into());
             }
             let dir = zip_dir(&handle, &app)?;
+            let _ = std::fs::remove_dir_all(prev_dir(&dir));
             std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())
         }
         "local" => Err("로컬 항목은 런처가 지우지 않음".into()),
@@ -1548,6 +1599,7 @@ pub fn run() {
             cancel_install,
             pause_install,
             discard_partial,
+            rollback_app,
             log_event,
             open_logs,
             notify_user,
@@ -1563,6 +1615,43 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn zip_with(path: &Path, name: &str, body: &[u8]) {
+        let f = std::fs::File::create(path).unwrap();
+        let mut z = zip::ZipWriter::new(f);
+        z.start_file(name, zip::write::SimpleFileOptions::default()).unwrap();
+        z.write_all(body).unwrap();
+        z.finish().unwrap();
+    }
+
+    #[test]
+    fn update_keeps_previous_version_and_swaps_back() {
+        let root = std::env::temp_dir().join(format!("karmo-prev-test-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let dest = root.join("app");
+        let file = root.join("a.zip");
+        let read = |d: &Path| std::fs::read_to_string(d.join(VERSION_FILE)).unwrap();
+
+        zip_with(&file, "x.txt", b"one");
+        extract_zip(&file, &dest, "1").unwrap();
+        assert!(!prev_dir(&dest).exists());
+        assert!(swap_with_prev(&dest).is_err());
+
+        zip_with(&file, "x.txt", b"two");
+        extract_zip(&file, &dest, "2").unwrap();
+        assert_eq!(read(&dest), "2");
+        assert_eq!(read(&prev_dir(&dest)), "1");
+
+        /* 같은 판을 다시 깔아도 옛 판은 남음 */
+        extract_zip(&file, &dest, "2").unwrap();
+        assert_eq!(read(&prev_dir(&dest)), "1");
+
+        swap_with_prev(&dest).unwrap();
+        assert_eq!(read(&dest), "1");
+        assert_eq!(std::fs::read(dest.join("x.txt")).unwrap(), b"one");
+        assert_eq!(read(&prev_dir(&dest)), "2");
+        std::fs::remove_dir_all(&root).unwrap();
+    }
 
     #[test]
     fn space_needed_counts_left_and_install() {

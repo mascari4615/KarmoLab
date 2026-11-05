@@ -80,6 +80,7 @@ export function autoPlan(apps, status, prefs, date, failures = {}) {
     if (!hasUpdate(st) || !st.download) continue;
     const mode = modeOf(prefs, app.id);
     if (isPaused(prefs, app.id, st.latest)) blocked[app.id] = 'paused';
+    else if (appPref(prefs, app.id).skip === st.latest) blocked[app.id] = 'skipped';
     else if (mode === 'off') blocked[app.id] = 'off';
     else if (mode === 'launch') blocked[app.id] = 'launch';
     else if (prefs.autoUpdate === false) blocked[app.id] = 'global-off';
@@ -103,6 +104,7 @@ export const BLOCK_TEXT = {
   window: '허용 시간대에 받음',
   retry: '실패, 잠시 뒤 다시',
   paused: '일시정지',
+  skipped: '되돌린 판, 다음 새 판까지 안 받음',
 };
 
 /** 목록에 보일 앱. 검색 (이름과 설명), 거르기, 정렬. 즐겨찾기는 늘 위로 */
