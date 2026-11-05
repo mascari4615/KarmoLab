@@ -45,7 +45,9 @@
   <!-- 설정. 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->
   <div class="modal" id="keys" hidden>
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="keysTitle">
-      <header><h2 id="keysTitle">설정</h2><button type="button" class="wb" data-close title="닫기" aria-label="닫기">&#10005;</button></header>
+      <header data-tauri-drag-region><h2 id="keysTitle" data-tauri-drag-region>설정</h2><p class="setsay" id="setSay" data-tauri-drag-region hidden></p><button type="button" class="wb" data-close title="닫기" aria-label="닫기">&#10005;</button></header>
+      <img class="setart" id="setArt" src="img/mascot-launcher.webp" alt="">
+      <div class="setbody">
       <section>
         <h3>자동 업데이트</h3>
         <label class="ck"><input type="checkbox" id="sAuto"> 설치한 앱을 자동으로 최신으로 유지</label>
@@ -80,6 +82,7 @@
         <p class="note">로컬 항목을 이 폴더 아래에서 찾습니다.</p>
         <div class="krow"><input type="text" id="ws" spellcheck="false"><button type="button" id="wsSave">저장</button></div>
       </section>
+      </div>
     </div>
   </div>
 

@@ -121,6 +121,28 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .dialog .ck input[type="checkbox"] { flex: none; accent-color: var(--acc); }
 .dialog .ck input[type="time"], .dialog .ck select { flex: none; padding: 3px 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--ink); font: 12px var(--en); color-scheme: dark light; }
 .dialog .path { word-break: break-all; user-select: text; }
+/* 설정은 팝업이 아니라 판 전체 화면 (사용자 2026-11-05). 바탕은 판 안의 막이라 흐린 가장자리를 같이 받음 */
+.dim.solid { background: var(--bg); }
+.stage.settings > :not(#keys) { visibility: hidden; }
+/* 끝선 (.rim) 은 배율을 안 받아서 안쪽 16px 을 배율로 되돌림 */
+#keys { inset: calc(16px / var(--z, 1)); display: block; }
+#keys[hidden] { display: none; }
+#keys .dialog { position: absolute; inset: 0; width: auto; max-height: none; overflow: hidden; background: transparent; border: 0; box-shadow: none; padding: 26px 30px 0; grid-template-rows: auto minmax(0, 1fr); gap: 20px; }
+#keys .dialog header { justify-content: flex-start; gap: 18px; position: relative; z-index: 2; }
+#keys .dialog header .wb { margin-left: auto; }
+#keys .dialog h2 { font-size: 26px; font-weight: 900; }
+#keys .dialog section { align-content: start; }
+.setsay { margin: 0; color: var(--ink2); font-size: 15px; font-weight: 700; }
+.setsay[hidden] { display: none; }
+/* 그림 아래 잘린 면을 판 끝선에 붙임 */
+.setart { position: absolute; right: -14px; bottom: 0; width: 500px; pointer-events: none; z-index: 0; }
+:root[data-mdd="off"] .setart { display: none; }
+.setbody { position: relative; z-index: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; align-content: start; padding: 0 440px 30px 0; }
+:root[data-mdd="off"] .setbody { padding-right: 0; }
+#keys .dialog h3 { margin: 0 0 6px; font-size: 15px; font-weight: 800; }
+#keys .dialog .ck, #keys .dialog .state { font-size: 14px; }
+#keys .dialog .note { font-size: 13px; }
+#keys .dialog input, #keys .dialog .krow button { font-size: 13px; }
 .dlbody { display: grid; gap: 16px; }
 .dlbody section { display: grid; gap: 6px; }
 .drow { display: flex; align-items: center; gap: 10px; font-size: 13px; }

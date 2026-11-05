@@ -338,6 +338,7 @@ async function load() {
   try {
     const m = await invoke('fetch_manifest');
     apps = Array.isArray(m.apps) ? m.apps : [];
+    launcherCast = (m.launcher && m.launcher.cast) || null;
     msgEl.textContent = m.private && m.private.state === 'error' ? '비공개 목록을 못 받음: ' + m.private.error : '';
   } catch (e) {
     msgEl.textContent = '목록을 못 받음: ' + e;
@@ -630,7 +631,8 @@ const modals = [$('keys'), $('dl'), $('props')];
 const closeModal = (el) => (el.hidden = true);
 modals.forEach((el) => {
   el.addEventListener('mousedown', (e) => {
-    if (e.target === el) closeModal(el);
+    /* 설정은 전체 화면이라 바깥이 없음 */
+    if (e.target === el && el !== $('keys')) closeModal(el);
   });
   el.querySelector('[data-close]').addEventListener('click', () => closeModal(el));
 });
@@ -639,8 +641,11 @@ document.addEventListener('keydown', (e) => {
 });
 new MutationObserver(() => {
   const open = modals.some((el) => !el.hidden);
+  const full = !$('keys').hidden;
   $('dim').hidden = !open;
-  $('stage').classList.toggle('dimmed', open);
+  $('dim').classList.toggle('solid', full);
+  $('stage').classList.toggle('dimmed', open && !full);
+  $('stage').classList.toggle('settings', full);
 }).observe($('stage'), { subtree: true, attributes: true, attributeFilter: ['hidden'] });
 
 /* ---------- 다운로드 ---------- */
@@ -820,8 +825,18 @@ async function keyAction(fn) {
   await paintKeys();
   await load();
 }
+/* 관리인 대사. 설정을 열 때마다 다음 줄. 원본 characters/mascot-launcher/launcher.json, 목록의 launcher.cast */
+let launcherCast = null;
+let setSayTurn = 0;
+function paintSetSay() {
+  const lines = (launcherCast && launcherCast.lines && launcherCast.lines.settings) || [];
+  const line = mddOn() && lines.length ? lines[setSayTurn++ % lines.length] : '';
+  $('setSay').textContent = line;
+  $('setSay').hidden = !line;
+}
 $('keyBtn').addEventListener('click', () => {
   $('keys').hidden = false;
+  paintSetSay();
   void paintKeys();
   void invoke('get_settings').then((s) => ($('ws').value = s.workspace || '')).catch(() => {});
 });
@@ -839,6 +854,7 @@ function onPrefChange() {
   prefs.mdd = $('sMdd').checked;
   applyTheme();
   applyMdd();
+  $('setSay').hidden = !mddOn() || !$('setSay').textContent;
   savePrefs();
   planAuto();
   paint();
