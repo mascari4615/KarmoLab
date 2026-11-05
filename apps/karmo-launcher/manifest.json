@@ -57,7 +57,27 @@
       "install": { "format": "nsis", "args": ["/S"], "registry": "KarmoDash" },
       "art": {
         "bg": "sky-village",
-        "icon": "dash"
+        "icon": "dash",
+        "mascot": "dash",
+        "accent": "#b03a4e",
+        "accent_ink": "#ffffff",
+        "cast": {
+          "name": "대시",
+          "lines": {
+            "idle": [
+              "오늘 일정 제가 다 알아요. 어제 몇 시에 잤는지도요",
+              "오늘 어디 가실지 이미 적어 뒀어요",
+              "제 실은 아직 안 끊겼어요"
+            ],
+            "running": "켜 주셨네요. 계속 보고 있을게요",
+            "busy": "받는 동안 아무 데도 가지 마세요",
+            "update": "{latest} 나왔어요. 당신 것은 제가 제일 먼저 알아요",
+            "waiting": "끄시면 {latest} 넣어 둘게요. 언제 끄시는지 볼게요",
+            "done": "끝났어요. 잘하셨어요. 다 봤어요",
+            "error": "막혔어요. 누가 우리 사이를 막았을까요",
+            "missing": "아직 안 까셨죠. 알고 있었어요"
+          }
+        }
       }
     },
     {
@@ -75,7 +95,27 @@
       "install": { "format": "zip", "entry": "scripts/start.cmd", "exe": "companion-window.exe", "env": { "COMPANION_WORKSPACE": "{workspace}" } },
       "art": {
         "bg": "sky-twilight",
-        "icon": "set"
+        "icon": "set",
+        "mascot": "companion",
+        "accent": "#4fa8b8",
+        "accent_ink": "#ffffff",
+        "cast": {
+          "name": "토리",
+          "lines": {
+            "idle": [
+              "여기 있어. 안 보여도 여기 있어",
+              "치지직... 방금 나 불렀어?",
+              "오늘은 창문 쪽에 있을게"
+            ],
+            "running": "네 화면 옆에 앉아 있을게",
+            "busy": "잠깐 끊겨... 금방 돌아와",
+            "update": "{latest}. 조금 더 또렷해질지도",
+            "waiting": "끄면 {latest}로 돌아올게. 잠깐 어두울 거야",
+            "done": "돌아왔어. 아까보다 잘 보여?",
+            "error": "신호가... 네 목소리가 안 들려",
+            "missing": "아직 네 방에 못 들어갔어"
+          }
+        }
       }
     },
     {
@@ -86,7 +126,27 @@
       "open": "https://files.mascari4615.com/",
       "art": {
         "bg": "sky-village",
-        "icon": "dash"
+        "icon": "dash",
+        "mascot": "files",
+        "accent": "#a57c32",
+        "accent_ink": "#ffffff",
+        "cast": {
+          "name": "파일라",
+          "lines": {
+            "idle": [
+              "어머, 그 서류 어디 뒀더라. 열쇠는 여기 있어",
+              "다 쏟아도 괜찮아. 열쇠만 있으면 돼",
+              "이 열쇠는 안 돼. 다른 건 다 줘도"
+            ],
+            "running": "문 열어 뒀어. 가져갈 거 있으면 말해",
+            "busy": "나르는 중이야. 떨어뜨려도 못 본 척해 줘",
+            "update": "새 짐 왔어, {latest}. 어디 뒀더라, 여기 있다",
+            "waiting": "끄면 {latest} 넣어 둘게. 안 잃어버려, 진짜로",
+            "done": "다 왔어. 하나도 안 흘렸어. 아마도",
+            "error": "어머, 쏟았다. 잠깐만, 안 보면 안 돼?",
+            "missing": "아직 네 우편함이 없네"
+          }
+        }
       }
     }
   ]
