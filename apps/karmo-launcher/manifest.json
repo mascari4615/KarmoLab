@@ -23,7 +23,7 @@
         "bg": "sky-twilight",
         "icon": "tool",
         "mascot": "karmolab",
-        "accent": "#2f9c95",
+        "accent": "#2563c9",
         "accent_ink": "#ffffff",
         "cast": {
           "name": "라보",
@@ -41,7 +41,8 @@
             "error": "터졌네. 잠깐, 고칠 거 어디 뒀더라",
             "missing": "아직 안 깔았어? 자리 치워 둘게. 아마"
           }
-        }
+        },
+        "logo": "karmolab"
       }
     },
     {
@@ -54,12 +55,18 @@
         "url": "https://github.com/mascari4615/KarmoLab/releases/download/dash-updater/latest.json",
         "platform": "windows-x86_64-nsis"
       },
-      "install": { "format": "nsis", "args": ["/S"], "registry": "KarmoDash" },
+      "install": {
+        "format": "nsis",
+        "args": [
+          "/S"
+        ],
+        "registry": "KarmoDash"
+      },
       "art": {
         "bg": "sky-village",
         "icon": "dash",
         "mascot": "dash",
-        "accent": "#b03a4e",
+        "accent": "#c9501f",
         "accent_ink": "#ffffff",
         "cast": {
           "name": "대시",
@@ -77,7 +84,8 @@
             "error": "막혔어요. 누가 우리 사이를 막았을까요",
             "missing": "아직 안 까셨죠. 알고 있었어요"
           }
-        }
+        },
+        "logo": "dash"
       }
     },
     {
@@ -92,12 +100,19 @@
         "asset_prefix": "companion-",
         "asset_suffix": ".zip"
       },
-      "install": { "format": "zip", "entry": "scripts/start.cmd", "exe": "companion-window.exe", "env": { "COMPANION_WORKSPACE": "{workspace}" } },
+      "install": {
+        "format": "zip",
+        "entry": "scripts/start.cmd",
+        "exe": "companion-window.exe",
+        "env": {
+          "COMPANION_WORKSPACE": "{workspace}"
+        }
+      },
       "art": {
         "bg": "sky-twilight",
         "icon": "set",
         "mascot": "companion",
-        "accent": "#4fa8b8",
+        "accent": "#0b7f83",
         "accent_ink": "#ffffff",
         "cast": {
           "name": "토리",
@@ -115,7 +130,8 @@
             "error": "신호가... 네 목소리가 안 들려",
             "missing": "아직 네 방에 못 들어갔어"
           }
-        }
+        },
+        "logo": "companion"
       }
     },
     {
@@ -128,7 +144,7 @@
         "bg": "sky-village",
         "icon": "dash",
         "mascot": "files",
-        "accent": "#a57c32",
+        "accent": "#96700f",
         "accent_ink": "#ffffff",
         "cast": {
           "name": "파일라",
@@ -146,7 +162,8 @@
             "error": "어머, 쏟았다. 잠깐만, 안 보면 안 돼?",
             "missing": "아직 네 우편함이 없네"
           }
-        }
+        },
+        "logo": "files"
       }
     }
   ]

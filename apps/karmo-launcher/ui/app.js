@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, MODES, appPref, autoPlan, castLine, castState, faceSource, fmtAgo, fmtDuration, hasUpdate, mascotSource, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
+import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, logoSource, mascotSource, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -72,11 +72,12 @@ function paintList() {
             : a.access === 'private' ? '<em class="soon">비공개</em>'
             : '';
           const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
-          const face = faceUrl(a);
+          const logo = logoUrl(a);
+          const accent = accentOf(a);
           const star = appPref(prefs, a.id).favorite ? '<b class="star" title="즐겨찾기">&#9733;</b>' : '';
           return (
-            '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
-            (face ? '<img class="face" src="' + esc(face) + '" alt="">' : '<img class="ic" src="img/' + esc(icon) + '.png" alt="">') + '<span>' + esc(a.name) + '</span>' + star + tag + '</button>'
+            '<button type="button" class="li' + (accent ? ' brand' : '') + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '"' + (accent ? ' style="--c:' + accent + '"' : '') + '>' +
+            (logo ? '<i class="logo" style="' + esc('-webkit-mask-image:url("' + logo + '");mask-image:url("' + logo + '")') + '"></i>' : '<img class="ic" src="img/' + esc(icon) + '.png" alt="">') + '<span>' + esc(a.name) + '</span>' + star + tag + '</button>'
           );
         })
         .join('')
@@ -133,11 +134,13 @@ let sayTurn = 0;
 function applyMdd() {
   document.documentElement.dataset.mdd = mddOn() ? 'on' : 'off';
 }
+/* 대표색은 앱 정체라 캐릭터를 꺼도 유지 */
 function applyAccent(app) {
   const art = (app && app.art) || {};
+  const accent = accentOf(app);
   const root = document.documentElement.style;
-  if (mddOn() && art.accent) {
-    root.setProperty('--acc', art.accent);
+  if (accent) {
+    root.setProperty('--acc', accent);
     root.setProperty('--acc-ink', art.accent_ink || '#ffffff');
   } else {
     root.removeProperty('--acc');
@@ -156,16 +159,15 @@ function paintSay(app, state, st) {
   sayKey = key;
   sayEl.innerHTML = '<b>' + esc(app.art.cast.name) + '</b><span>' + esc(line) + '</span>';
 }
-/** 얼굴 주소. 비공개 그림은 받은 뒤 다시 그림 */
-const facePending = new Set();
-function faceUrl(app) {
-  if (!mddOn()) return '';
-  const src = faceSource(app);
+/** 로고 주소. 비공개 그림은 받은 뒤 다시 그림 */
+const logoPending = new Set();
+function logoUrl(app) {
+  const src = logoSource(app);
   if (!src) return '';
   if (src.url) return src.url;
   if (privateImages.has(src.private)) return privateImages.get(src.private);
-  if (!facePending.has(src.private)) {
-    facePending.add(src.private);
+  if (!logoPending.has(src.private)) {
+    logoPending.add(src.private);
     void invoke('private_image', { path: src.private })
       .then((url) => {
         privateImages.set(src.private, url);

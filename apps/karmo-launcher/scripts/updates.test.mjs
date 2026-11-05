@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { castLine, castState, faceSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
+import { accentOf, castLine, castState, logoSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
@@ -122,9 +122,13 @@ test('표정 그림은 있는 것만, 없으면 평소', () => {
   assert.deepEqual(mascotSource({ art }, 'update'), { url: 'img/mascot-x.webp' });
   const priv = { mascot_private: 'data/launcher/mascots/y.webp', poses: ['busy'] };
   assert.deepEqual(mascotSource({ art: priv }, 'busy'), { private: 'data/launcher/mascots/y-busy.webp' });
-  assert.deepEqual(faceSource({ art: priv }), { private: 'data/launcher/mascots/y-face.webp' });
-  assert.deepEqual(faceSource({ art }), { url: 'img/face-x.webp' });
-  assert.equal(faceSource({ art: {} }), null);
+  assert.deepEqual(logoSource({ art: { logo_private: 'data/launcher/mascots/y-logo.webp' } }), { private: 'data/launcher/mascots/y-logo.webp' });
+  assert.deepEqual(logoSource({ art: { logo: 'x' } }), { url: 'img/logo-x.webp' });
+  assert.equal(logoSource({ art: { mascot: 'x' } }), null, '마스코트가 있어도 로고가 없으면 없음');
+  assert.equal(logoSource({ art: { logo: '../x' } }), null);
+  assert.equal(accentOf({ art: { accent: '#2563c9' } }), '#2563c9');
+  assert.equal(accentOf({ art: { accent: 'red;x:y' } }), '');
+  assert.equal(accentOf({}), '');
 });
 
 test('대사 고르기', () => {
