@@ -1,11 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { accentOf, castLine, castState, logoSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
+import { accentOf, castLine, castState, logoSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
 const old = (extra = {}) => ({ installed: true, version: '1.0.0', latest: '1.0.1', download: 'https://x', ...extra });
 const plan = (apps, entries, prefs = {}, date = NOON, failures) => autoPlan(apps, new Map(entries), prefs, date, failures);
+
+test('일시정지한 판은 자동으로 안 받고, 새 판이 나오면 다시 받음', () => {
+  const apps = [{ id: 'wm', kind: 'unity', install: { format: 'zip' } }];
+  const st = (latest) => [['wm', { installed: true, version: '1.0.0', latest, download: 'x' }]];
+  const prefs = { paused: { wm: { version: '1.0.1' } } };
+  assert.deepEqual(plan(apps, st('1.0.1'), prefs).ready, []);
+  assert.equal(plan(apps, st('1.0.1'), prefs).blocked.wm, 'paused');
+  assert.deepEqual(plan(apps, st('1.0.2'), prefs).ready, ['wm']);
+});
+
+test('트레이 실행 목록은 설치된 앱과 웹 앱만', () => {
+  const apps = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C', kind: 'web' }, { id: 'd', name: 'D', soon: true, kind: 'web' }];
+  const status = new Map([['a', { installed: true }], ['b', { installed: false }]]);
+  assert.deepEqual(trayApps(apps, status), [{ id: 'a', name: 'A' }, { id: 'c', name: 'C' }]);
+});
 
 test('newer 는 숫자로 비교', () => {
   assert.equal(newer('0.1.116', '0.1.112'), true);

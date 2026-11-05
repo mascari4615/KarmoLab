@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, logoSource, mascotSource, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
+import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, isPaused, logoSource, mascotSource, modeOf, parseArgs, tickSeconds, trayApps, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -263,7 +263,7 @@ function paintMain() {
     const word = job.phase === 'uninstall' ? '제거' : job.auto ? '자동 업데이트' : st.installed ? '업데이트' : '설치';
     start = '<button type="button" class="start" disabled>' + word + '</button>';
     /* 설치 프로그램이 돌기 시작하면 못 멈춤 */
-    if (job.phase === 'download') sub.push('<button type="button" data-act="cancel">취소</button>');
+    if (job.phase === 'download') sub.push('<button type="button" data-act="pause">일시정지</button>', '<button type="button" data-act="cancel">취소</button>');
   } else if (waiting) {
     start = '<button type="button" class="start" disabled>대기 중</button>';
     sub.push('<button type="button" data-act="dequeue">빼기</button>');
@@ -272,6 +272,10 @@ function paintMain() {
     start = '<button type="button" class="start running" data-act="stop">끄기<small>실행 중</small></button>';
     /* 캐릭터가 대사로 말하면 안내를 또 쓰지 않음 */
     if (hasUpdate(st) && sayEl.hidden) sub.push('<p class="note">끄면 ' + esc(st.latest) + ' 받음</p>');
+  } else if (st.download && isPaused(prefs, app.id, st.latest)) {
+    start = '<button type="button" class="start" data-act="install">이어 받기<small>' + esc(pausedText(app.id)) + '</small></button>';
+    sub.push('<button type="button" data-act="discard">받은 것 버리기</button>');
+    if (st.installed) sub.push('<button type="button" data-act="launch">업데이트 없이 실행</button>');
   } else if (!st.installed && st.download) {
     start = '<button type="button" class="start" data-act="install">설치</button>';
   } else if (hasUpdate(st) && st.download && mode === 'launch') {
@@ -284,13 +288,24 @@ function paintMain() {
     start = '<button type="button" class="start" data-act="launch">실행</button>';
   }
   if (st.installed && !job && !app.soon && app.kind !== 'web') sub.push('<button type="button" data-act="props">속성</button>');
-  const why = blocked[app.id] && !job && !waiting ? BLOCK_TEXT[blocked[app.id]] : '';
+  const why = blocked[app.id] && blocked[app.id] !== 'paused' && !job && !waiting ? BLOCK_TEXT[blocked[app.id]] : '';
   const bar = job ? '<div class="bar"><i style="width:' + pctOf(job) + '%"></i></div><p class="note">' + esc(phaseText(job)) + '</p>' : '';
   actsEl.innerHTML =
     bar + (why && !st.running ? '<p class="note">' + esc(why) + '</p>' : '') + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
 }
 
+/** 트레이 실행 목록. 바뀔 때만 메뉴를 다시 만듦 */
+let trayKey = '';
+function syncTray() {
+  const list = trayApps(apps, status);
+  const key = JSON.stringify(list);
+  if (key === trayKey) return;
+  trayKey = key;
+  void invoke('set_tray_apps', { apps: list }).catch((e) => void invoke('log_event', { text: 'tray menu failed: ' + e }));
+}
+
 function paint() {
+  syncTray();
   paintList();
   paintMain();
   if (!$('dl').hidden) paintDownloads();
@@ -345,6 +360,36 @@ function addLog(entry) {
   savePrefs();
 }
 
+/** 창을 보고 있으면 화면으로 충분. 숨었거나 다른 창을 볼 때만 알림 */
+function notifyUser(title, body, always = false) {
+  if (prefs.notify === false && !always) return;
+  if (document.hasFocus() && !always) return;
+  void invoke('notify_user', { title, body }).catch((e) => void invoke('log_event', { text: 'notify failed: ' + e }));
+}
+
+const PAUSED_TEXT = '일시정지함';
+const sizeText = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(1) + 'GB' : Math.round(n / 1024 ** 2) + 'MB');
+function pausedText(id) {
+  const p = (prefs.paused && prefs.paused[id]) || {};
+  return p.total ? sizeText(p.got || 0) + ' / ' + sizeText(p.total) : '일시정지';
+}
+function clearPaused(id) {
+  if (prefs.paused && prefs.paused[id]) {
+    delete prefs.paused[id];
+    savePrefs();
+  }
+}
+async function discardPaused(id) {
+  const app = apps.find((a) => a.id === id);
+  clearPaused(id);
+  if (app) await invoke('discard_partial', { app }).catch((e) => (msgEl.textContent = String(e)));
+  /* 버린 판을 바로 다시 받지 않게 실패와 같은 대기를 줌 */
+  const st = status.get(id) || {};
+  failures[id] = { at: Date.now(), count: 1, version: st.latest };
+  planAuto();
+  paint();
+}
+
 /** 줄의 앞에서부터 자리가 나는 만큼 시작. 런처 자체 업데이트 중에는 새로 안 시작 */
 function pump() {
   const running = () => [...busy.values()].filter((j) => j.auto).length;
@@ -366,14 +411,28 @@ async function runInstall(app, opts = {}) {
   } catch (e) {
     error = String(e);
   }
+  const lastJob = busy.get(app.id) || {};
   busy.delete(app.id);
   const version = st.latest;
+  if (error === PAUSED_TEXT) {
+    prefs.paused = { ...prefs.paused, [app.id]: { version, got: lastJob.got || 0, total: lastJob.total || 0 } };
+    savePrefs();
+    await refreshStatus(app);
+    planAuto();
+    paint();
+    return;
+  }
+  clearPaused(app.id);
   addLog({ id: app.id, name: app.name, version, at: Date.now(), ok: !error, error, auto: !!opts.auto });
   if (error) {
     const old = failures[app.id];
-    failures[app.id] = { at: Date.now(), count: old && old.version === version ? old.count + 1 : 1, version };
+    const count = old && old.version === version ? old.count + 1 : 1;
+    failures[app.id] = { at: Date.now(), count, version };
+    /* 재시도마다 울리지 않게 판마다 첫 실패만 */
+    if (count === 1 && error !== '취소함') notifyUser(app.name + ' 업데이트 실패', error);
   } else {
     delete failures[app.id];
+    notifyUser(app.name + ' ' + version, opts.auto ? '자동 업데이트 끝' : '설치 끝');
     msgEl.textContent = app.name + ' ' + version + (opts.auto ? ' 자동 업데이트' : ' 설치') + ' 끝';
     fresh.set(app.id, 'done');
     window.setTimeout(() => {
@@ -425,6 +484,8 @@ async function act(kind) {
   if (kind === 'install') return installNow(app.id);
   if (kind === 'update-launch') return installNow(app.id, { thenLaunch: true });
   if (kind === 'cancel') return void (await invoke('cancel_install', { id: app.id }));
+  if (kind === 'pause') return void (await invoke('pause_install', { id: app.id }));
+  if (kind === 'discard') return void (await discardPaused(app.id));
   if (kind === 'props') return openProps(app);
   if (kind === 'dequeue') {
     queue.splice(queue.findIndex((j) => j.id === app.id), 1);
@@ -585,7 +646,7 @@ function paintDownloads() {
     parts.push(
       '<section><h3>작업 중</h3>' +
         [...busy].map(([id, job]) =>
-          row(name(id), job.phase === 'download' ? '<button type="button" data-dl="cancel" data-id="' + esc(id) + '">취소</button>' : '', esc(phaseText(job))) +
+          row(name(id), job.phase === 'download' ? '<button type="button" data-dl="pause" data-id="' + esc(id) + '">일시정지</button><button type="button" data-dl="cancel" data-id="' + esc(id) + '">취소</button>' : '', esc(phaseText(job))) +
           '<div class="bar wide"><i style="width:' + pctOf(job) + '%"></i></div>').join('') +
         '</section>',
     );
@@ -593,7 +654,16 @@ function paintDownloads() {
   if (queue.length) {
     parts.push('<section><h3>대기</h3>' + queue.map((j) => row(name(j.id), '<button type="button" data-dl="remove" data-id="' + esc(j.id) + '">빼기</button>')).join('') + '</section>');
   }
-  const later = Object.keys(blocked).filter((id) => !isQueued(id) && !busy.has(id));
+  const pausedIds = apps.filter((a) => !busy.has(a.id) && status.get(a.id)?.download && isPaused(prefs, a.id, status.get(a.id).latest)).map((a) => a.id);
+  if (pausedIds.length) {
+    parts.push(
+      '<section><h3>일시정지</h3>' +
+        pausedIds.map((id) =>
+          row(name(id), '<button type="button" data-dl="now" data-id="' + esc(id) + '">이어 받기</button><button type="button" data-dl="discard" data-id="' + esc(id) + '">버리기</button>', esc(pausedText(id)))).join('') +
+        '</section>',
+    );
+  }
+  const later = Object.keys(blocked).filter((id) => !isQueued(id) && !busy.has(id) && blocked[id] !== 'paused');
   if (later.length) {
     parts.push(
       '<section><h3>새 판 있음</h3>' +
@@ -628,6 +698,8 @@ $('dlBody').addEventListener('click', (e) => {
   if (!b) return;
   const kind = b.dataset.dl;
   if (kind === 'cancel') void invoke('cancel_install', { id: b.dataset.id });
+  if (kind === 'pause') void invoke('pause_install', { id: b.dataset.id });
+  if (kind === 'discard') void discardPaused(b.dataset.id);
   if (kind === 'now') installNow(b.dataset.id);
   if (kind === 'remove') {
     queue.splice(queue.findIndex((j) => j.id === b.dataset.id), 1);
@@ -719,6 +791,7 @@ async function paintKeys() {
     ghStateEl.textContent = '토큰 확인 실패: ' + e;
   }
   $('sAuto').checked = prefs.autoUpdate !== false;
+  $('sNotify').checked = prefs.notify !== false;
   $('sGame').checked = !!prefs.duringGame;
   $('sWinOn').checked = !!prefs.window;
   $('sWinA').value = (prefs.window && prefs.window.start) || '02:00';
@@ -751,6 +824,7 @@ $('ghClear').addEventListener('click', () => void keyAction(() => invoke('github
 $('wsSave').addEventListener('click', () => void keyAction(() => invoke('set_workspace', { path: $('ws').value })));
 function onPrefChange() {
   prefs.autoUpdate = $('sAuto').checked;
+  prefs.notify = $('sNotify').checked;
   prefs.duringGame = $('sGame').checked;
   prefs.window = $('sWinOn').checked ? { start: $('sWinA').value, end: $('sWinB').value } : null;
   prefs.closeToTray = $('sTray').checked;
@@ -762,7 +836,7 @@ function onPrefChange() {
   planAuto();
   paint();
 }
-['sAuto', 'sGame', 'sWinOn', 'sWinA', 'sWinB', 'sTray', 'sTheme', 'sMdd'].forEach((id) => $(id).addEventListener('change', onPrefChange));
+['sAuto', 'sNotify', 'sGame', 'sWinOn', 'sWinA', 'sWinB', 'sTray', 'sTheme', 'sMdd'].forEach((id) => $(id).addEventListener('change', onPrefChange));
 $('sBoot').addEventListener('change', async (e) => {
   try {
     await invoke('set_autostart', { enabled: e.target.checked });
@@ -861,7 +935,7 @@ async function checkSelf() {
     }
     await installSelf();
   } catch {
-    /* 오프라인이거나 아직 릴리스가 없음. 다음 차례에 다시 */
+    /* 오프라인이거나 아직 릴리스가 없음. 다음 차례에 다시. 원인은 백엔드 로그 */
   }
 }
 selfEl.addEventListener('click', () => {
@@ -882,25 +956,42 @@ window.addEventListener('focus', () => {
 /* 손으로 확인. 자동 확인과 달리 최신, 실패를 화면에 표시. 자동이 있어도 사용자가 바로 확인 가능 (사용자 2026-11-05) */
 const selfStateEl = $('selfState');
 const selfCheckEl = $('selfCheck');
-selfCheckEl.addEventListener('click', async () => {
-  if (selfBusy) return;
+/** 결과 글을 돌려줌. 설정의 버튼과 트레이 메뉴가 같이 씀 */
+async function manualSelfCheck() {
+  if (selfBusy) return '런처 받는 중';
   selfCheckEl.disabled = true;
   selfStateEl.textContent = '확인 중';
+  let text;
   try {
     const v = await invoke('self_update_check');
     if (!v) {
-      selfStateEl.textContent = '최신 판입니다 (' + $('ver').textContent + ')';
+      text = '최신 판입니다 (' + $('ver').textContent + ')';
     } else if (busy.size) {
-      selfStateEl.textContent = 'v' + v + ' 있음. 앱 작업이 끝난 뒤 설치';
+      text = 'v' + v + ' 있음. 앱 작업이 끝난 뒤 설치';
       window.setTimeout(() => void checkSelf(), 60 * 1000);
     } else {
-      selfStateEl.textContent = 'v' + v + ' 받는 중';
+      text = 'v' + v + ' 받는 중';
+      selfStateEl.textContent = text;
       await installSelf();
     }
   } catch (e) {
-    selfStateEl.textContent = '확인 실패: ' + e;
+    text = '확인 실패: ' + e;
   }
+  selfStateEl.textContent = text;
   selfCheckEl.disabled = false;
+  return text;
+}
+selfCheckEl.addEventListener('click', () => void manualSelfCheck());
+$('openLogs').addEventListener('click', () => void invoke('open_logs').catch((e) => (selfStateEl.textContent = String(e))));
+void listen('tray-check', async () => {
+  void checkAll();
+  notifyUser('Karmo Launcher', await manualSelfCheck(), true);
+});
+void listen('tray-run', (ev) => {
+  const app = apps.find((a) => a.id === ev.payload);
+  if (!app) return;
+  if (app.kind === 'web') void invoke('open_url', { url: app.open });
+  else void launch(app);
 });
 void listen('self-update-progress', (ev) => {
   const [got, total] = ev.payload;

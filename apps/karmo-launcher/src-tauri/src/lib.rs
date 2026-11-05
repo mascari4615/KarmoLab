@@ -326,9 +326,17 @@ fn client() -> Result<reqwest::blocking::Client, String> {
 
 /// GET. 내 저장소 API 주소면 토큰을 붙임 (비공개 저장소, 시간당 제한 완화)
 fn request(url: &str, accept: Option<&str>) -> Result<reqwest::blocking::Response, String> {
+    request_from(url, accept, 0)
+}
+
+/// GET, `from` 바이트부터. 서버가 Range 를 무시하면 200 으로 처음부터 옴
+fn request_from(url: &str, accept: Option<&str>, from: u64) -> Result<reqwest::blocking::Response, String> {
     let mut rq = client()?.get(url);
     if let Some(a) = accept {
         rq = rq.header("Accept", a);
+    }
+    if from > 0 {
+        rq = rq.header("Range", format!("bytes={}-", from));
     }
     if url.starts_with(OWNER_API) {
         if let Some(t) = token() {
@@ -879,6 +887,136 @@ fn cancel_install(id: String) {
     cancel_list().push(id);
 }
 
+/// 일시정지 요청. 받은 조각을 남기고 멈춤
+static PAUSE_INSTALL: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+/// 화면이 이 글자로 일시정지와 실패를 가름
+const PAUSED_TEXT: &str = "일시정지함";
+
+fn pause_list() -> std::sync::MutexGuard<'static, Vec<String>> {
+    PAUSE_INSTALL.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+#[tauri::command]
+fn pause_install(id: String) {
+    pause_list().push(id);
+}
+
+fn downloads_dir(handle: &AppHandle) -> Result<PathBuf, String> {
+    /* %TEMP% 에 exe 를 받아 실행하는 것도 다운로더 모양이라 런처 자기 캐시 폴더에 받음 */
+    Ok(handle.path().app_cache_dir().map_err(|e| e.to_string())?.join("downloads"))
+}
+
+/// 파일 이름용 판 번호. 숫자, 글자, 점, 하이픈만
+fn safe_version(version: &str) -> String {
+    version.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '.' || *c == '-').collect()
+}
+
+/// 앱의 받다 만 조각 삭제. `keep` 은 남길 파일 이름
+fn remove_parts(dir: &Path, id: &str, keep: Option<&str>) {
+    let prefix = format!("{}-", id);
+    for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.starts_with(&prefix) && name.ends_with(".part") && Some(name.as_str()) != keep {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+}
+
+/// 일시정지한 앱의 조각 버리기
+#[tauri::command]
+fn discard_partial(handle: AppHandle, app: Value) -> Result<(), String> {
+    remove_parts(&downloads_dir(&handle)?, &safe_id(&app)?, None);
+    Ok(())
+}
+
+/// 드라이브 남은 공간. 못 재면 None
+#[cfg(windows)]
+fn free_space(dir: &Path) -> Option<u64> {
+    use windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
+    let path = wide(&dir.to_string_lossy());
+    let mut free: u64 = 0;
+    let ok = unsafe { GetDiskFreeSpaceExW(path.as_ptr(), &mut free, std::ptr::null_mut(), std::ptr::null_mut()) };
+    (ok != 0).then_some(free)
+}
+
+#[cfg(not(windows))]
+fn free_space(_dir: &Path) -> Option<u64> {
+    None
+}
+
+/// zip 을 풀면 커지는 만큼의 여유. 실제 압축률은 받기 전에 모름
+const ZIP_EXTRACT_FACTOR: u64 = 3;
+
+/// 받기와 설치에 필요한 공간. nsis 는 받을 나머지와 전체 크기만큼 (설치 프로그램이 풀 자리), zip 은 풀 자리까지
+fn space_needed(format: &str, total: u64, have: u64) -> u64 {
+    let left = total.saturating_sub(have);
+    if format == "zip" {
+        left + total.saturating_mul(ZIP_EXTRACT_FACTOR)
+    } else {
+        left + total
+    }
+}
+
+fn fmt_size(bytes: u64) -> String {
+    const GB: f64 = 1024.0 * 1024.0 * 1024.0;
+    const MB: f64 = 1024.0 * 1024.0;
+    let b = bytes as f64;
+    if b >= GB { format!("{:.1}GB", b / GB) } else { format!("{:.0}MB", b / MB) }
+}
+
+/// 런처 로그. 토큰과 비밀값은 넘기지 않음
+const LOG_MAX_BYTES: u64 = 1024 * 1024;
+
+/// 유닉스 초를 UTC 시각 글자로
+fn utc_stamp(secs: u64) -> String {
+    let days = (secs / 86400) as i64;
+    let rest = secs % 86400;
+    let z = days + 719468;
+    let era = z.div_euclid(146097);
+    let doe = z.rem_euclid(146097);
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = yoe + era * 400 + i64::from(month <= 2);
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, rest / 3600, rest % 3600 / 60, rest % 60)
+}
+
+fn log_line(handle: &AppHandle, text: &str) {
+    let Ok(dir) = handle.path().app_log_dir() else { return };
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let file = dir.join("launcher.log");
+    if std::fs::metadata(&file).map(|m| m.len() > LOG_MAX_BYTES).unwrap_or(false) {
+        let _ = std::fs::rename(&file, dir.join("launcher.old.log"));
+    }
+    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    let clean: String = text.chars().map(|c| if c.is_control() { ' ' } else { c }).take(2000).collect();
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&file) {
+        let _ = writeln!(f, "{} {}", utc_stamp(secs), clean);
+    }
+}
+
+#[tauri::command]
+fn log_event(handle: AppHandle, text: String) {
+    log_line(&handle, &text);
+}
+
+#[tauri::command]
+fn open_logs(handle: AppHandle) -> Result<(), String> {
+    let dir = handle.path().app_log_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    open::that(dir).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn notify_user(handle: AppHandle, title: String, body: String) -> Result<(), String> {
+    use tauri_plugin_notification::NotificationExt;
+    handle.notification().builder().title(title).body(body).show().map_err(|e| e.to_string())
+}
+
 /// 받기 (진행을 `install-progress` 로), 확인, 설치.
 /// nsis 는 릴리스 서명 (minisign) 이 맞을 때만 설치 프로그램을 인자와 함께 실행, zip 은 sha256 이 맞을 때만 풂.
 /// GitHub 자산 API 주소는 `Accept: application/octet-stream` 이라야 파일이 옴
@@ -903,28 +1041,70 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
     }
     let id = safe_id(&app)?;
     cancel_list().retain(|x| x != &id);
-    tauri::async_runtime::spawn_blocking(move || {
+    pause_list().retain(|x| x != &id);
+    let log_handle = handle.clone();
+    let log_id = id.clone();
+    let version_for_log = version.clone();
+    log_line(&log_handle, &format!("install start {} {}", log_id, version));
+    let done = tauri::async_runtime::spawn_blocking(move || {
         let say = |got: u64, total: u64, phase: &str| {
             let _ = handle.emit("install-progress", Progress { id: id.clone(), got, total, phase: phase.to_string() });
         };
-        let mut res = request(&url, Some("application/octet-stream"))?;
-        let total = res.content_length().unwrap_or(0);
-        /* %TEMP% 에 exe 를 받아 실행하는 것도 다운로더 모양이라 런처 자기 캐시 폴더에 받음 */
-        let dir = handle.path().app_cache_dir().map_err(|e| e.to_string())?.join("downloads");
+        let dir = downloads_dir(&handle)?;
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let file: PathBuf = dir.join(if format == "zip" { format!("{}.zip", id) } else { format!("{}-setup.exe", id) });
-        let mut out = std::fs::File::create(&file).map_err(|e| e.to_string())?;
+        /* 판마다 조각 하나. 다른 판 조각은 이어 쓰면 안 됨 */
+        let part_name = format!("{}-{}.part", id, safe_version(&version));
+        let part = dir.join(&part_name);
+        remove_parts(&dir, &id, Some(&part_name));
+        let mut have = std::fs::metadata(&part).map(|m| m.len()).unwrap_or(0);
+        let mut res = match request_from(&url, Some("application/octet-stream"), have) {
+            Ok(r) => r,
+            Err(e) if have > 0 && e.starts_with("416") => {
+                /* 조각이 이미 전체거나 어긋남. 처음부터 */
+                let _ = std::fs::remove_file(&part);
+                have = 0;
+                request_from(&url, Some("application/octet-stream"), 0)?
+            }
+            Err(e) => return Err(e),
+        };
+        if res.status().as_u16() != 206 {
+            have = 0;
+        }
+        log_line(&handle, &format!("download {} from {} status {}", id, have, res.status().as_u16()));
+        let total = res.content_length().map(|n| n + have).unwrap_or(0);
+        if let Some(free) = free_space(&dir) {
+            let need = space_needed(&format, total, have);
+            if total > 0 && free < need {
+                return Err(format!("디스크 공간 부족. 필요 약 {}, 남음 {}", fmt_size(need), fmt_size(free)));
+            }
+        }
         /* sha256 은 받으면서 잼. WM zip 은 2GB 가까이라 통째로 메모리에 올리지 않음 */
         use sha2::Digest;
         let mut hasher = sha2::Sha256::new();
+        if have > 0 && format == "zip" {
+            let mut old = std::fs::File::open(&part).map_err(|e| e.to_string())?;
+            std::io::copy(&mut old, &mut hasher).map_err(|e| e.to_string())?;
+        }
+        let mut out = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(have > 0)
+            .truncate(have == 0)
+            .open(&part)
+            .map_err(|e| e.to_string())?;
         let mut buf = vec![0u8; 256 * 1024];
-        let mut got: u64 = 0;
-        let mut last: u64 = 0;
+        let mut got: u64 = have;
+        let mut last: u64 = have;
+        say(got, total, "download");
         loop {
             if cancel_list().contains(&id) {
                 drop(out);
-                let _ = std::fs::remove_file(&file);
+                let _ = std::fs::remove_file(&part);
                 return Err("취소함".into());
+            }
+            if pause_list().contains(&id) {
+                return Err(PAUSED_TEXT.into());
             }
             let n = res.read(&mut buf).map_err(|e| e.to_string())?;
             if n == 0 {
@@ -939,6 +1119,10 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
             }
         }
         drop(out);
+        if total > 0 && got < total {
+            return Err(format!("받기가 끊김 ({} / {}). 다음에 이어 받음", fmt_size(got), fmt_size(total)));
+        }
+        std::fs::rename(&part, &file).map_err(|e| e.to_string())?;
         say(got, total, "verify");
         let checked = if format == "zip" {
             same_sha256(hasher.finalize().as_slice(), &sha256)
@@ -982,7 +1166,12 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
         Ok(())
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())?;
+    match &done {
+        Ok(()) => log_line(&log_handle, &format!("install done {} {}", log_id, version_for_log)),
+        Err(e) => log_line(&log_handle, &format!("install stop {} {}: {}", log_id, version_for_log, e)),
+    }
+    done
 }
 
 /// 실행. nsis 는 레지스트리의 설치 자리와 본 실행 파일, zip 은 풀린 폴더의 `install.entry`,
@@ -1170,9 +1359,15 @@ async fn self_update_check(app: AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_updater::UpdaterExt;
     let updater = app.updater().map_err(|e| e.to_string())?;
     match updater.check().await {
-        Ok(Some(u)) => Ok(Some(u.version.clone())),
+        Ok(Some(u)) => {
+            log_line(&app, &format!("self update found {}", u.version));
+            Ok(Some(u.version.clone()))
+        }
         Ok(None) => Ok(None),
-        Err(e) => Err(e.to_string()),
+        Err(e) => {
+            log_line(&app, &format!("self update check failed: {}", e));
+            Err(e.to_string())
+        }
     }
 }
 
@@ -1201,8 +1396,10 @@ async fn self_update_install(app: AppHandle) -> Result<(), String> {
     if let Err(e) = done {
         /* 실패하면 표시를 지움. 안 그러면 다음에 손으로 켤 때 창이 안 뜸 */
         let _ = write_setting(&app, "start_hidden_once", Value::from(false));
+        log_line(&app, &format!("self update install failed: {}", e));
         return Err(e.to_string());
     }
+    log_line(&app, "self update installed, restart");
     app.restart();
 }
 
@@ -1214,19 +1411,47 @@ fn show_main(app: &AppHandle) {
     }
 }
 
+#[derive(serde::Deserialize)]
+struct TrayApp {
+    id: String,
+    name: String,
+}
+
+/// 트레이 메뉴. 열기, 실행 (설치된 앱), 업데이트 확인, 끝내기
+fn tray_menu(app: &AppHandle, apps: &[TrayApp]) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
+    let open = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
+    let check = MenuItem::with_id(app, "check", "업데이트 확인", true, None::<&str>)?;
+    let line = PredefinedMenuItem::separator(app)?;
+    let quit = MenuItem::with_id(app, "quit", "끝내기", true, None::<&str>)?;
+    let items: Vec<MenuItem<tauri::Wry>> = apps
+        .iter()
+        .map(|a| MenuItem::with_id(app, format!("run:{}", a.id), &a.name, true, None::<&str>))
+        .collect::<tauri::Result<_>>()?;
+    let refs: Vec<&dyn IsMenuItem<tauri::Wry>> = items.iter().map(|i| i as &dyn IsMenuItem<tauri::Wry>).collect();
+    let run = Submenu::with_items(app, "실행", !refs.is_empty(), &refs)?;
+    Menu::with_items(app, &[&open, &run, &check, &line, &quit])
+}
+
+#[tauri::command]
+fn set_tray_apps(handle: AppHandle, apps: Vec<TrayApp>) -> Result<(), String> {
+    let menu = tray_menu(&handle, &apps).map_err(|e| e.to_string())?;
+    let tray = handle.tray_by_id("main").ok_or("트레이 없음")?;
+    tray.set_menu(Some(menu)).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         /* 두 번째로 켜면 새 창 대신 떠 있는 창을 앞으로 */
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
-            use tauri::menu::{Menu, MenuItem};
             use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-            /* 트레이 (Steam 처럼 창을 닫아도 남음). 왼쪽 누르기는 창 열기, 메뉴는 열기와 끝내기 */
-            let open = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "끝내기", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &quit])?;
+            /* 트레이 (Steam 처럼 창을 닫아도 남음). 왼쪽 누르기는 창 열기. 실행 목록은 화면이 set_tray_apps 로 채움 */
+            log_line(app.handle(), &format!("start v{}", app.package_info().version));
+            let menu = tray_menu(app.handle(), &[])?;
             /* 창과 트레이 아이콘을 파일에서 직접 박음. 기본 창 아이콘에 맡겼더니 작업 표시줄이 옛 별 아이콘으로
                돌아갔다 (사용자 2026-09-25 "계속 예전 아이콘으로 돌아가") */
             let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/128x128@2x.png"))?;
@@ -1249,7 +1474,14 @@ pub fn run() {
             tray.on_menu_event(|app, event| match event.id.as_ref() {
                 "open" => show_main(app),
                 "quit" => app.exit(0),
-                _ => {}
+                "check" => {
+                    let _ = app.emit("tray-check", ());
+                }
+                other => {
+                    if let Some(id) = other.strip_prefix("run:") {
+                        let _ = app.emit("tray-run", id.to_string());
+                    }
+                }
             })
             .on_tray_icon_event(|tray, event| {
                 if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
@@ -1279,6 +1511,12 @@ pub fn run() {
             save_prefs,
             set_autostart,
             cancel_install,
+            pause_install,
+            discard_partial,
+            log_event,
+            open_logs,
+            notify_user,
+            set_tray_apps,
             open_location,
             private_image,
             quit_app
@@ -1290,6 +1528,43 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn space_needed_counts_left_and_install() {
+        const MB: u64 = 1024 * 1024;
+        assert_eq!(space_needed("nsis", 10 * MB, 0), 20 * MB);
+        assert_eq!(space_needed("nsis", 10 * MB, 4 * MB), 16 * MB);
+        assert_eq!(space_needed("zip", 10 * MB, 10 * MB), 30 * MB);
+        assert_eq!(space_needed("zip", 10 * MB, 20 * MB), 30 * MB);
+    }
+
+    #[test]
+    fn utc_stamp_known_values() {
+        assert_eq!(utc_stamp(0), "1970-01-01T00:00:00Z");
+        assert_eq!(utc_stamp(1793883626), "2026-11-05T13:00:26Z");
+        assert_eq!(utc_stamp(951782400), "2000-02-29T00:00:00Z");
+    }
+
+    #[test]
+    fn safe_version_keeps_only_file_safe_chars() {
+        assert_eq!(safe_version("0.1.21"), "0.1.21");
+        assert_eq!(safe_version("..\\x/y v1"), "..xyv1");
+    }
+
+    #[test]
+    fn remove_parts_only_touches_this_app() {
+        let dir = std::env::temp_dir().join(format!("karmo-parts-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        for name in ["wm-1.part", "wm-2.part", "wm-setup.exe", "dash-1.part"] {
+            std::fs::write(dir.join(name), b"x").unwrap();
+        }
+        remove_parts(&dir, "wm", Some("wm-2.part"));
+        assert!(!dir.join("wm-1.part").exists());
+        assert!(dir.join("wm-2.part").exists());
+        assert!(dir.join("wm-setup.exe").exists());
+        assert!(dir.join("dash-1.part").exists());
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 
     /// 이 PC 의 KarmoLab 설치 기록과 최신 판 읽기 (네트워크, 레지스트리 실측). `cargo test -- --ignored`
     #[test]

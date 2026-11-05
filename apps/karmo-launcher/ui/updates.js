@@ -25,6 +25,16 @@ export const hasUpdate = (st) => !!(st && st.installed && st.latest && newer(st.
 export const appPref = (prefs, id) => (prefs && prefs.apps && prefs.apps[id]) || {};
 export const modeOf = (prefs, id) => appPref(prefs, id).update || 'auto';
 
+/** 이 판을 일시정지했나. 새 판이 나오면 풀림 */
+export const isPaused = (prefs, id, latest) => !!(prefs && prefs.paused && prefs.paused[id] && prefs.paused[id].version === latest);
+
+/** 트레이 실행 목록. 준비 중이 아니고 실행할 수 있는 앱만 */
+export function trayApps(apps, status) {
+  return apps
+    .filter((a) => !a.soon && (a.kind === 'web' || status.get(a.id)?.installed))
+    .map((a) => ({ id: a.id, name: a.name }));
+}
+
 const minutes = (hhmm) => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
@@ -63,7 +73,8 @@ export function autoPlan(apps, status, prefs, date, failures = {}) {
     if (app.soon || app.kind === 'web' || format === 'local') continue;
     if (!hasUpdate(st) || !st.download) continue;
     const mode = modeOf(prefs, app.id);
-    if (mode === 'off') blocked[app.id] = 'off';
+    if (isPaused(prefs, app.id, st.latest)) blocked[app.id] = 'paused';
+    else if (mode === 'off') blocked[app.id] = 'off';
     else if (mode === 'launch') blocked[app.id] = 'launch';
     else if (prefs.autoUpdate === false) blocked[app.id] = 'global-off';
     else if (st.running) blocked[app.id] = 'running';
@@ -85,6 +96,7 @@ export const BLOCK_TEXT = {
   game: '게임을 끈 뒤에 받음',
   window: '허용 시간대에 받음',
   retry: '실패, 잠시 뒤 다시',
+  paused: '일시정지',
 };
 
 /** 목록에 보일 앱. 검색 (이름과 설명), 거르기, 정렬. 즐겨찾기는 늘 위로 */

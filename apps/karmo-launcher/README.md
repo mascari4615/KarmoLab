@@ -13,6 +13,9 @@
 - 동시 작업: 진행 상태는 앱별. 한 앱을 받는 동안 다른 앱을 조작할 수 있음. NSIS 설치와 제거 프로그램만 한 번에 하나 (`native_setup_turn`). 런처 자체 업데이트는 앱 작업이 다 끝난 뒤. 켤 때, 30분마다, 창을 열 때 (1분 간격) 확인, 설정의 "업데이트 확인" 과 다운로드 창의 "지금 확인" 으로 손으로도 확인
 - 외부 명령을 창 없이 띄우지 않음. 레지스트리, 프로세스, 자격 증명은 Windows API (Defender 오탐 2026-11-02, memo `changes/launcher.md`)
 - 설치 화면: `setup/`. 자체 창이 안에 넣은 NSIS 설치 파일을 숨겨 실행. 릴리스 첨부 `Karmo-Launcher-Setup.exe`, NSIS 설치 파일도 유지. 런처 자체 업데이트는 `installMode` `quiet`
+- 받기: 판마다 조각 파일 `<id>-<판>.part`. 끊기거나 일시정지하면 Range 로 이어 받고, 다 받은 뒤 이름을 바꿔 서명과 해시 확인. 받기 전 남은 공간 확인 (nsis 나머지 + 전체, zip 나머지 + 전체 3배, 추정). 일시정지 상태는 `prefs.paused`
+- 로그: 앱 로그 폴더 `launcher.log` (1MB 넘으면 `launcher.old.log`). 시작, 자체 업데이트, 설치. 설정의 "로그 폴더 열기". 토큰을 남기지 않음
+- 알림: 창을 안 볼 때 앱 업데이트 끝과 판마다 첫 실패. 설정으로 끔. 트레이: 열기, 실행, 업데이트 확인, 끝내기
 - 자동 업데이트: 판단은 `ui/updates.js` (시험 `node --test scripts/updates.test.mjs`), 실행은 `ui/app.js` 받기 줄. 30분마다 확인, 자동은 줄을 서서 동시에 둘, 손으로 누른 것은 바로 시작, 앱이 떠 있으면 꺼질 때까지 미룸. 앱별 방식 `auto`, `priority`, `launch`, `off`. 설정은 `settings.json` 의 `prefs`. 실측 memo `notes/launcher/e2e-auto-update-2026-11-05.ps1`
 - 로컬 서버 항목: `local.port` 가 열려 있으면 다시 안 켜고 `local.open` 만 엶. 주소는 이 PC 만
 - 트레이 시작: 인자 `--tray`. Windows 시작 등록은 설정에서 켤 때만 (HKCU Run)
