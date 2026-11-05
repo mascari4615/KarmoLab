@@ -37,6 +37,11 @@ on:
         description: '릴리스 이름 앞머리 (예 Karmo Launcher)'
         required: true
         type: string
+      setup_dir:
+        description: '자체 설치 화면 폴더. 빈 값이면 생략'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   publish:
@@ -150,6 +155,21 @@ jobs:
             gh release create "$UP" --repo "${{ github.repository }}" --prerelease --title "$UP" --notes "업데이트 주소 고정 자리. latest.json 만 둠" --target main
           fi
           gh release upload "$UP" updater/latest.json --repo "${{ github.repository }}" --clobber
+
+      # latest.json 뒤에 둠. 이 단계가 실패해도 자동 업데이트는 이미 나간 상태
+      - name: 자체 설치 화면을 굽고 릴리스에 올림
+        if: inputs.setup_dir != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          APP="$GITHUB_WORKSPACE/${{ inputs.app_dir }}"
+          PAYLOAD="$(ls -t "$APP/src-tauri/target/release/bundle/nsis/"*.exe | head -n 1)"
+          cd "$GITHUB_WORKSPACE/${{ inputs.setup_dir }}"
+          KARMO_SETUP_PAYLOAD="$PAYLOAD" "$APP/node_modules/.bin/tauri" build --no-bundle
+          cp src-tauri/target/release/karmo-launcher-setup.exe "$RUNNER_TEMP/Karmo-Launcher-Setup.exe"
+          gh release upload "${{ inputs.tag_prefix }}${VERSION}" "$RUNNER_TEMP/Karmo-Launcher-Setup.exe" --repo "${{ github.repository }}" --clobber
 
       - name: 옛 판 릴리스 치우기 (최신 하나만, 태그는 남김)
         # 첫 판은 치울 것이 없어 grep 이 1 로 끝나고 pipefail 로 판 전체가 빨강이었다 (2026-09-25 launcher-v0.1.1)

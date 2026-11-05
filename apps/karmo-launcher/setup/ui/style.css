@@ -1,0 +1,52 @@
+:root {
+  color-scheme: light dark;
+  --paper: rgba(255, 255, 255, 0.92);
+  --ink: #172033;
+  --ink2: #3d4760;
+  --ink3: #6f7890;
+  --line: rgba(23, 32, 51, 0.16);
+  --track: rgba(23, 32, 51, 0.14);
+  --acc: #e8862e;
+  --acc-ink: #101418;
+  --ko: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: rgba(13, 17, 24, 0.88);
+    --ink: #f2f4f7;
+    --ink2: #c3cad6;
+    --ink3: #8993a6;
+    --line: rgba(255, 255, 255, 0.18);
+    --track: rgba(255, 255, 255, 0.18);
+    --acc: #f0a04b;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { position: relative; background: #101a33; color: var(--ink); font: 15px/1.5 var(--ko); user-select: none; }
+.sky { position: absolute; inset: 0; background: url(sky-dusk.webp) center / cover no-repeat; }
+.pane { position: absolute; top: 0; right: 0; bottom: 0; width: 320px; padding: 54px 28px 28px; background: var(--paper); }
+h1 { margin: 0 0 26px; font-size: 26px; font-weight: 900; line-height: 1.25; }
+.label { margin: 0 0 4px; color: var(--ink3); font-size: 13px; }
+.path { margin: 0; color: var(--ink2); font-size: 14px; overflow-wrap: anywhere; user-select: text; }
+.state { margin: 0 0 10px; font-size: 18px; font-weight: 800; }
+.bar { position: relative; height: 6px; overflow: hidden; background: var(--track); }
+.bar i { position: absolute; top: 0; bottom: 0; width: 40%; background: var(--acc); animation: slide 1.1s ease-in-out infinite alternate; }
+@keyframes slide { from { left: 0; } to { left: 60%; } }
+@media (prefers-reduced-motion: reduce) { .bar i { width: 100%; animation: none; } }
+.acts { position: absolute; left: 28px; right: 28px; bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+button { font-family: var(--ko); cursor: pointer; }
+.go, .sub { width: 100%; height: 44px; }
+.go { border: 0; background: var(--acc); color: var(--acc-ink); font-size: 16px; font-weight: 900; }
+.sub { border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 14px; font-weight: 700; }
+.go:hover, .sub:hover { filter: brightness(1.08); }
+button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.wb { position: absolute; top: 0; right: 0; display: flex; }
+.wb button { width: 40px; height: 34px; border: 0; background: transparent; color: var(--ink); font-size: 14px; }
+.wb button:hover { background: var(--track); }
+.only { display: none; }
+body[data-step="start"] .only.start,
+body[data-step="run"] .only.run,
+body[data-step="done"] .only.done,
+body[data-step="fail"] .only.fail { display: block; }
+[hidden] { display: none !important; }

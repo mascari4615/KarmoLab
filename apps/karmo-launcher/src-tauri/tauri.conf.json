@@ -47,7 +47,7 @@
         "https://github.com/mascari4615/KarmoLab/releases/download/launcher-updater/latest.json"
       ],
       "windows": {
-        "installMode": "passive"
+        "installMode": "quiet"
       }
     }
   }

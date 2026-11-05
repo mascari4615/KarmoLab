@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Karmo Launcher 설치</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-step="start">
+  <div class="sky" data-tauri-drag-region></div>
+  <main class="pane" data-tauri-drag-region>
+    <h1 data-tauri-drag-region>Karmo Launcher</h1>
+    <section class="only start">
+      <p class="label">설치 위치</p>
+      <p class="path" id="path"></p>
+    </section>
+    <section class="only run">
+      <p class="state">설치 중</p>
+      <div class="bar" role="progressbar" aria-label="설치 중"><i></i></div>
+    </section>
+    <section class="only done"><p class="state">설치했습니다</p></section>
+    <section class="only fail">
+      <p class="state">설치하지 못했습니다</p>
+      <p class="path" id="error"></p>
+    </section>
+    <div class="acts">
+      <button type="button" class="go only start fail" id="install">설치</button>
+      <button type="button" class="sub only start" id="change">위치 변경</button>
+      <button type="button" class="go only done" id="launch">실행</button>
+    </div>
+  </main>
+  <div class="wb">
+    <button type="button" id="min" title="최소화" aria-label="최소화">_</button>
+    <button type="button" id="close" title="닫기" aria-label="닫기">&#10005;</button>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
