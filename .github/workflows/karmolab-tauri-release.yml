@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -164,7 +164,7 @@ jobs:
 
       - name: Setup Node
         if: steps.contract.outputs.changed == 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
           cache: npm
@@ -172,11 +172,11 @@ jobs:
 
       - name: Setup Rust
         if: steps.contract.outputs.changed == 'true'
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
 
       - name: Rust 캐시 (같은 의존성을 매판 다시 안 굽는다)
         if: steps.contract.outputs.changed == 'true'
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         # 왜: 여기서 굽는 것은 두 벌이다. ML sidecar(candle/tokenizers 등 대형 트리)와
         # 본체. 실측 sidecar 만 8분13초였고, 그 대부분이 **한 번도 안 바뀐 남의 크레이트**다.
         # 워크스페이스 하나(멤버 4개)에 target 도 하나라 캐시도 하나면 된다.
@@ -212,7 +212,7 @@ jobs:
       - name: ML sidecar 캐시
         id: ml_cache
         if: steps.contract.outputs.changed == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: apps/karmolab-tauri/target/release/karmolab-life-ml.exe
           key: ml-sidecar-${{ steps.part_keys.outputs.base }}-${{ hashFiles('apps/karmolab-tauri/Cargo.toml', 'apps/karmolab-tauri/src-tauri-ml/**', 'apps/karmolab-tauri/src-tauri-shared/**', 'vendor/**') }}
@@ -220,7 +220,7 @@ jobs:
       - name: 동반자 창 캐시
         id: companion_cache
         if: steps.contract.outputs.changed == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: apps/karmolab-tauri/target/release/companion-window.exe
           key: companion-window-${{ steps.part_keys.outputs.base }}-${{ hashFiles('apps/karmolab-tauri/Cargo.toml', 'apps/karmolab-tauri/src-tauri-companion/**', 'apps/karmolab-tauri/src-tauri-shared/**', 'vendor/**') }}
@@ -245,7 +245,7 @@ jobs:
         # 재시도는 일시적 업로드 오류 복구용이며 권한 불일치 해결 수단이 아님.
         continue-on-error: true
         if: steps.contract.outputs.changed == 'true'
-        uses: tauri-apps/tauri-action@action-v1.0.0
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -265,7 +265,7 @@ jobs:
 
       - name: Retry build or upload after a transient failure
         if: steps.contract.outputs.changed == 'true' && steps.publish.outcome == 'failure'
-        uses: tauri-apps/tauri-action@action-v1.0.0
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

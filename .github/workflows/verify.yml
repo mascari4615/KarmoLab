@@ -90,10 +90,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45  # 멈춘 판이 6시간 도는 것을 막는다 (기본값 360분)
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '20'
           cache: npm
@@ -119,7 +119,7 @@ jobs:
 
       - name: Setup Rust toolchain
         if: steps.tauri.outputs.run == 'always'
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
 
       - name: Install Linux deps (Tauri / WebKit / ALSA)
         if: steps.tauri.outputs.run == 'always'
@@ -130,7 +130,7 @@ jobs:
 
       - name: Cache Cargo
         if: steps.tauri.outputs.run == 'always'
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             ~/.cargo/registry
@@ -187,11 +187,11 @@ jobs:
         # strict 게이트 (TASK-KL-032). _typos.toml 이 false-positive 정의 + 데이터/외부 라이브러리 exclude.
         # master 가지가 main 으로 바뀌어 2026-09-18 부터 잡이 뜨지도 못함. 릴리스 태그로 고정
         # 진짜 typo 일 가능성 큰 단어들도 임시 false-positive 등록. 점진 fix 는 KL-032 backlog.
-        uses: crate-ci/typos@v1.50.2
+        uses: crate-ci/typos@512fc24f32f44ab01972217aaaf3dc86ec234d53 # v1.50.2
 
       - name: Typos check (다시)
         if: steps.typos1.outcome == 'failure'
-        uses: crate-ci/typos@v1.50.2
+        uses: crate-ci/typos@512fc24f32f44ab01972217aaaf3dc86ec234d53 # v1.50.2
 
       # ★ **한 판으로 합쳤다** (2026-08-13). 이 셋은 `contrast` 라는 딴 잡에 있었는데, 그 잡은
       #   채비도 산출물 짓기도 처음부터 다시 했다. push 마다 러너 자리를 하나 더 먹었다.

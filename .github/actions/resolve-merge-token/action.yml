@@ -33,7 +33,7 @@ runs:
     - name: Generate GitHub App token (App 설정 시만)
       id: app
       if: ${{ inputs.app-id != '' }}
-      uses: actions/create-github-app-token@v1
+      uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
       with:
         app-id: ${{ inputs.app-id }}
         private-key: ${{ inputs.private-key }}

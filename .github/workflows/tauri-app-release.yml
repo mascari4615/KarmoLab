@@ -55,7 +55,7 @@ jobs:
         working-directory: ${{ inputs.app_dir }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -101,7 +101,7 @@ jobs:
           test -n "$PUSHED" || { echo "bump push 6회 실패" >&2; exit 1; }
           echo "VERSION=$NEW" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
           cache: npm
@@ -112,9 +112,9 @@ jobs:
         shell: bash
         run: echo "tag=${{ inputs.tag_prefix }}${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: ${{ inputs.app_dir }}/src-tauri -> target
           cache-on-failure: true
@@ -123,7 +123,7 @@ jobs:
         run: npm ci
 
       - name: Build and publish (prerelease, latest 로 안 잡힘)
-        uses: tauri-apps/tauri-action@action-v1.0.0
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
