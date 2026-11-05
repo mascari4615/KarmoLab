@@ -31,6 +31,7 @@ const busy = new Map();
 const queue = [];
 const AUTO_AT_ONCE = 2;
 let selfBusy = false;
+let localStopArmed = null;
 let blocked = {};
 const failures = {};
 let lastCheck = 0;
@@ -259,6 +260,10 @@ function paintMain() {
     const remote = remoteOf(app);
     if (st.installed) {
       start = '<button type="button" class="start' + (st.running ? ' running' : '') + '" data-act="launch">' + (st.running ? '브라우저로 열기<small>실행 중</small>' : '이 PC 에서 실행') + '</button>';
+      if (st.running && app.local && Array.isArray(app.local.stop)) {
+        /* 진행 중인 작업이 끊길 수 있어 두 번 누름 */
+        sub.push(localStopArmed === app.id ? '<button type="button" data-act="stop">한 번 더 누르면 서버 끄기</button>' : '<button type="button" data-act="stop-arm">서버 끄기</button>');
+      }
       if (remote) sub.push('<button type="button" data-act="remote">원격으로 열기</button>');
     } else if (remote) {
       start = '<button type="button" class="start" data-act="remote">원격으로 열기<small>로그인 필요</small></button>';
@@ -488,6 +493,17 @@ async function act(kind) {
   const st = status.get(app.id) || {};
   if (kind === 'open') return void (await invoke('open_url', { url: app.open }));
   if (kind === 'launch') return void (await launch(app));
+  if (kind === 'stop-arm') {
+    localStopArmed = app.id;
+    paintMain();
+    window.setTimeout(() => {
+      if (localStopArmed === app.id) {
+        localStopArmed = null;
+        paintMain();
+      }
+    }, 4000);
+    return;
+  }
   if (kind === 'remote') return void (await invoke('open_url', { url: remoteOf(app) }));
   if (kind === 'install') return installNow(app.id);
   if (kind === 'update-launch') return installNow(app.id, { thenLaunch: true });
@@ -503,6 +519,7 @@ async function act(kind) {
     return paint();
   }
   if (kind === 'stop') {
+    localStopArmed = null;
     /* 누르는 즉시 꺼진 것으로 그림. stop_app 은 꺼진 뒤에 돌아오고, 그때 실제 상태로 다시 잼 (사용자 "끄기가 바로바로") */
     status.set(app.id, { ...st, running: false });
     paint();

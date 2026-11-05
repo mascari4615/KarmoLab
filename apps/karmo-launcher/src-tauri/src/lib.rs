@@ -777,10 +777,51 @@ fn running_blocking(app: &Value) -> bool {
 /// nsis 앱은 먼저 `<exe> --quit` 로 트레이 끝내기와 같은 길, 그 인자를 모르는 옛 판은 3초 뒤 강제 종료.
 /// zip 앱은 바로 강제 종료, 띄운 cmd 와 node 도 같이
 #[tauri::command]
-async fn stop_app(app: Value) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || stop_blocking(&app))
-        .await
-        .map_err(|e| e.to_string())?
+async fn stop_app(handle: AppHandle, app: Value) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if format_of(&app) == "local" {
+            stop_local(&handle, &app)
+        } else {
+            stop_blocking(&app)
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// 로컬 항목의 명령 (`local.run`, `local.stop`). `{path}` 자리에 찾은 파일. 없으면 None
+fn local_command(app: &Value, key: &str, path: &Path) -> Option<Vec<String>> {
+    let p = path.to_string_lossy();
+    let list = app.get("local")?.get(key)?.as_array()?;
+    let out: Vec<String> = list.iter().filter_map(|x| x.as_str()).map(|s| s.replace("{path}", &p)).collect();
+    (!out.is_empty()).then_some(out)
+}
+
+/// 로컬 서버 끄기. 목록의 `local.stop` 명령을 돌리고 포트가 닫히길 기다림 (최대 15초)
+fn stop_local(handle: &AppHandle, app: &Value) -> Result<(), String> {
+    let path = local_path(handle, app)?;
+    let run = local_command(app, "stop", &path).ok_or("이 항목은 끄는 명령이 목록에 없음")?;
+    let port = local_port(app).ok_or("이 항목은 포트가 목록에 없음")?;
+    let (cmd, args) = run.split_first().ok_or("local.stop 이 비어 있음")?;
+    let mut c = Command::new(cmd);
+    c.args(args);
+    if let Some(d) = path.parent() {
+        c.current_dir(d);
+    }
+    let status = c.status().map_err(|e| e.to_string())?;
+    if !status.success() {
+        log_line(handle, &format!("local stop failed: {:?}", status.code()));
+        return Err(format!("끄기 명령이 {:?} 로 끝남", status.code()));
+    }
+    for _ in 0..150 {
+        if !port_open(port) {
+            log_line(handle, &format!("local stop done, port {}", port));
+            return Ok(());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    log_line(handle, &format!("local stop timeout, port {}", port));
+    Err(format!("끄기 명령은 끝났지만 {} 포트가 아직 열려 있음", port))
 }
 
 fn stop_blocking(app: &Value) -> Result<(), String> {
@@ -1208,13 +1249,7 @@ fn launch_app(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Resul
                 open_when_ready(&app);
                 return Ok(());
             }
-            let p = path.to_string_lossy().to_string();
-            let run: Vec<String> = app
-                .get("local")
-                .and_then(|l| l.get("run"))
-                .and_then(|r| r.as_array())
-                .map(|a| a.iter().filter_map(|x| x.as_str()).map(|s| s.replace("{path}", &p)).collect())
-                .unwrap_or_else(|| vec![p.clone()]);
+            let run = local_command(&app, "run", &path).unwrap_or_else(|| vec![path.to_string_lossy().to_string()]);
             let (cmd, args) = run.split_first().ok_or("local.run 이 비어 있음")?;
             let mut c = Command::new(cmd);
             c.args(args);
