@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_MASCOT, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
+import { DEFAULT_MASCOT, castLine, castState, faceSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, retryAt, tickSeconds, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
@@ -98,6 +98,42 @@ test('마스코트 자리', () => {
   assert.deepEqual(mascotSource({ art: { mascot: 'dash' } }), { url: 'img/mascot-dash.webp' });
   assert.deepEqual(mascotSource({ art: { mascot_private: 'data/launcher/mascots/x.webp' } }), { private: 'data/launcher/mascots/x.webp' });
   for (const app of [null, {}, { art: {} }, { art: { mascot: '../evil' } }]) assert.deepEqual(mascotSource(app), { url: DEFAULT_MASCOT });
+});
+
+test('캐릭터 상태', () => {
+  const app = { id: 'a', kind: 'tauri' };
+  const inst = { installed: true, version: '1', latest: '1' };
+  assert.equal(castState(app, inst), 'idle');
+  assert.equal(castState(app, { ...inst, running: true }), 'running');
+  assert.equal(castState(app, { ...inst, running: true, latest: '2' }), 'waiting');
+  assert.equal(castState(app, { ...inst, latest: '2' }), 'update');
+  assert.equal(castState(app, { installed: false }), 'missing');
+  assert.equal(castState(app, { ...inst, error: 'x' }), 'error');
+  assert.equal(castState(app, inst, { phase: 'download' }), 'busy');
+  assert.equal(castState(app, { ...inst, error: 'x' }, null, 'done'), 'done');
+  assert.equal(castState({ kind: 'web' }, undefined), 'idle');
+});
+
+test('표정 그림은 있는 것만, 없으면 평소', () => {
+  const art = { mascot: 'x', poses: ['running', 'busy'] };
+  assert.deepEqual(mascotSource({ art }, 'running'), { url: 'img/mascot-x-running.webp' });
+  assert.deepEqual(mascotSource({ art }, 'done'), { url: 'img/mascot-x-running.webp' });
+  assert.deepEqual(mascotSource({ art }, 'error'), { url: 'img/mascot-x.webp' });
+  assert.deepEqual(mascotSource({ art }, 'update'), { url: 'img/mascot-x.webp' });
+  const priv = { mascot_private: 'data/launcher/mascots/y.webp', poses: ['busy'] };
+  assert.deepEqual(mascotSource({ art: priv }, 'busy'), { private: 'data/launcher/mascots/y-busy.webp' });
+  assert.deepEqual(faceSource({ art: priv }), { private: 'data/launcher/mascots/y-face.webp' });
+  assert.deepEqual(faceSource({ art }), { url: 'img/face-x.webp' });
+  assert.equal(faceSource({ art: {} }), null);
+});
+
+test('대사 고르기', () => {
+  const app = { art: { cast: { lines: { idle: ['가', '나'], waiting: '끄면 {latest} 받을게' } } } };
+  assert.equal(castLine(app, 'idle', 0), '가');
+  assert.equal(castLine(app, 'idle', 3), '나');
+  assert.equal(castLine(app, 'busy', 0), '가');
+  assert.equal(castLine(app, 'waiting', 0, { latest: '1.2' }), '끄면 1.2 받을게');
+  assert.equal(castLine({}, 'idle', 0), '');
 });
 
 test('실행 옵션 나누기', () => {

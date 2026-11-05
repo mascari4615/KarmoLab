@@ -38,6 +38,8 @@
   <!-- 런처 자신의 새 판. 켜질 때 한 번 물어봄 -->
   <button type="button" class="selfup" id="selfup" hidden></button>
   <img class="yawn" id="mascot" src="img/yawn-launcher.webp" alt="">
+  <button type="button" class="mascot-hit" id="mascotHit" title="말 걸기" aria-label="말 걸기"></button>
+  <p class="say" id="say" hidden></p>
   <div class="acts" id="acts"></div>
 
   <!-- 설정. 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->
@@ -58,6 +60,7 @@
       <section>
         <h3>화면</h3>
         <label class="ck">테마 <select id="sTheme"><option value="system">시스템</option><option value="light">밝게</option><option value="dark">어둡게</option></select></label>
+        <label class="ck"><input type="checkbox" id="sMdd"> 캐릭터 표시 (끄면 그림과 대사 없는 일반 화면)</label>
       </section>
       <section>
         <h3>GitHub 로그인</h3>

@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, DEFAULT_MASCOT, MODES, appPref, autoPlan, fmtAgo, fmtDuration, hasUpdate, mascotSource, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
+import { BLOCK_TEXT, DEFAULT_MASCOT, MODES, appPref, autoPlan, castLine, castState, faceSource, fmtAgo, fmtDuration, hasUpdate, mascotSource, modeOf, parseArgs, tickSeconds, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -72,10 +72,11 @@ function paintList() {
             : a.access === 'private' ? '<em class="soon">비공개</em>'
             : '';
           const icon = (a.art && a.art.icon) || ICON[a.kind] || 'tool';
+          const face = faceUrl(a);
           const star = appPref(prefs, a.id).favorite ? '<b class="star" title="즐겨찾기">&#9733;</b>' : '';
           return (
             '<button type="button" class="li' + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '">' +
-            '<img class="ic" src="img/' + esc(icon) + '.png" alt=""><span>' + esc(a.name) + '</span>' + star + tag + '</button>'
+            (face ? '<img class="face" src="' + esc(face) + '" alt="">' : '<img class="ic" src="img/' + esc(icon) + '.png" alt="">') + '<span>' + esc(a.name) + '</span>' + star + tag + '</button>'
           );
         })
         .join('')
@@ -105,6 +106,9 @@ function showMascot(url, turn) {
       if (turn !== mascotTurn) return;
       mascotEl.src = url;
       mascotEl.style.opacity = '1';
+      mascotEl.classList.remove('enter');
+      void mascotEl.offsetWidth;
+      mascotEl.classList.add('enter');
     }, 120);
   };
   next.onerror = () => {
@@ -112,8 +116,59 @@ function showMascot(url, turn) {
   };
   next.src = url;
 }
-async function paintMascot(app) {
-  const src = mascotSource(app);
+/* MDD. 끄면 캐릭터 없는 일반 런처가 그대로 남음 (rules/mdd.md 계약). 대사와 표정은 목록 데이터에서 옴, 정본 characters/mascot-* */
+const mddOn = () => prefs.mdd !== false;
+const sayEl = $('say');
+const fresh = new Map();
+let sayKey = '';
+let sayTurn = 0;
+function applyMdd() {
+  document.documentElement.dataset.mdd = mddOn() ? 'on' : 'off';
+}
+function applyAccent(app) {
+  const art = (app && app.art) || {};
+  const root = document.documentElement.style;
+  if (mddOn() && art.accent) {
+    root.setProperty('--acc', art.accent);
+    root.setProperty('--acc-ink', art.accent_ink || '#ffffff');
+  } else {
+    root.removeProperty('--acc');
+    root.removeProperty('--acc-ink');
+  }
+}
+function paintSay(app, state, st) {
+  const line = mddOn() ? castLine(app, state, sayTurn, st) : '';
+  sayEl.hidden = !line;
+  if (!line) {
+    sayKey = '';
+    return;
+  }
+  const key = app.id + ':' + state + ':' + sayTurn + ':' + line;
+  if (key === sayKey) return;
+  sayKey = key;
+  sayEl.innerHTML = '<b>' + esc(app.art.cast.name) + '</b><span>' + esc(line) + '</span>';
+}
+/** 얼굴 주소. 비공개 그림은 받은 뒤 다시 그림 */
+const facePending = new Set();
+function faceUrl(app) {
+  if (!mddOn()) return '';
+  const src = faceSource(app);
+  if (!src) return '';
+  if (src.url) return src.url;
+  if (privateImages.has(src.private)) return privateImages.get(src.private);
+  if (!facePending.has(src.private)) {
+    facePending.add(src.private);
+    void invoke('private_image', { path: src.private })
+      .then((url) => {
+        privateImages.set(src.private, url);
+        paintList();
+      })
+      .catch(() => {});
+  }
+  return '';
+}
+async function paintMascot(app, state) {
+  const src = mascotSource(app, state);
   const key = src.private || src.url;
   if (key === mascotKey) return;
   mascotKey = key;
@@ -136,7 +191,10 @@ async function paintMascot(app) {
 
 function paintMain() {
   const app = apps.find((a) => a.id === current);
-  void paintMascot(app);
+  const castNow = castState(app, app && status.get(app.id), app && busy.get(app.id), app && fresh.get(app.id));
+  void paintMascot(app, castNow);
+  applyAccent(app);
+  paintSay(app, castNow, app && status.get(app.id));
   if (!app) {
     headEl.innerHTML = '';
     actsEl.innerHTML = '';
@@ -197,7 +255,8 @@ function paintMain() {
   } else if (st.running) {
     /* 실행 중이면 Steam 처럼 끄기가 주 버튼. 떠 있는 동안 파일을 못 바꾸니 업데이트, 제거는 막음 */
     start = '<button type="button" class="start running" data-act="stop">끄기<small>실행 중</small></button>';
-    if (hasUpdate(st)) sub.push('<p class="note">끄면 ' + esc(st.latest) + ' 받음</p>');
+    /* 캐릭터가 대사로 말하면 안내를 또 쓰지 않음 */
+    if (hasUpdate(st) && sayEl.hidden) sub.push('<p class="note">끄면 ' + esc(st.latest) + ' 받음</p>');
   } else if (!st.installed && st.download) {
     start = '<button type="button" class="start" data-act="install">설치</button>';
   } else if (hasUpdate(st) && st.download && mode === 'launch') {
@@ -301,6 +360,11 @@ async function runInstall(app, opts = {}) {
   } else {
     delete failures[app.id];
     msgEl.textContent = app.name + ' ' + version + (opts.auto ? ' 자동 업데이트' : ' 설치') + ' 끝';
+    fresh.set(app.id, 'done');
+    window.setTimeout(() => {
+      fresh.delete(app.id);
+      paint();
+    }, 6000);
   }
   await refreshStatus(app);
   if (error) status.set(app.id, { ...status.get(app.id), error });
@@ -425,6 +489,15 @@ window.setInterval(() => {
   planAuto();
   if (shown) paintList();
 }, 60 * 1000);
+
+/* 캐릭터를 누르면 다음 대사와 반응 (벽람항로 비서함의 터치) */
+$('mascotHit').addEventListener('click', () => {
+  sayTurn++;
+  paintMain();
+  mascotEl.classList.remove('hop', 'enter');
+  void mascotEl.offsetWidth;
+  mascotEl.classList.add('hop');
+});
 
 /* ---------- 왼쪽 목록 ---------- */
 
@@ -635,6 +708,7 @@ async function paintKeys() {
   $('sTray').checked = prefs.closeToTray !== false;
   $('sBoot').checked = autostart;
   $('sTheme').value = prefs.theme || 'system';
+  $('sMdd').checked = mddOn();
 }
 async function keyAction(fn) {
   ghStateEl.textContent = '확인 중';
@@ -663,12 +737,14 @@ function onPrefChange() {
   prefs.window = $('sWinOn').checked ? { start: $('sWinA').value, end: $('sWinB').value } : null;
   prefs.closeToTray = $('sTray').checked;
   prefs.theme = $('sTheme').value;
+  prefs.mdd = $('sMdd').checked;
   applyTheme();
+  applyMdd();
   savePrefs();
   planAuto();
   paint();
 }
-['sAuto', 'sGame', 'sWinOn', 'sWinA', 'sWinB', 'sTray', 'sTheme'].forEach((id) => $(id).addEventListener('change', onPrefChange));
+['sAuto', 'sGame', 'sWinOn', 'sWinA', 'sWinB', 'sTray', 'sTheme', 'sMdd'].forEach((id) => $(id).addEventListener('change', onPrefChange));
 $('sBoot').addEventListener('change', async (e) => {
   try {
     await invoke('set_autostart', { enabled: e.target.checked });
@@ -806,6 +882,7 @@ async function boot() {
     /* 기본값으로 */
   }
   applyTheme();
+  applyMdd();
   fitStage();
   await load();
   void checkSelf();

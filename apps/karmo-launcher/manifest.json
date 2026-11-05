@@ -22,7 +22,26 @@
       "art": {
         "bg": "sky-twilight",
         "icon": "tool",
-        "mascot": "karmolab"
+        "mascot": "karmolab",
+        "accent": "#2f9c95",
+        "accent_ink": "#ffffff",
+        "cast": {
+          "name": "라보",
+          "lines": {
+            "idle": [
+              "오늘은 뭘 만들어 볼까",
+              "도구 하나 더 늘었어. 써 볼래?",
+              "고장 나면 말해. 더 좋게 다시 만들게"
+            ],
+            "running": "켜 뒀어. 필요한 거 있으면 불러",
+            "busy": "새 부품 끼우는 중이야. 금방 돼",
+            "update": "{latest} 나왔어. 바로 끼워 줄까?",
+            "waiting": "끄면 바로 {latest} 로 갈아 끼울게",
+            "done": "다 됐어. 더 좋아졌을걸?",
+            "error": "어, 이거 안 되네. 다시 해 볼게",
+            "missing": "아직 안 깔았네. 공구함부터 열자"
+          }
+        }
       }
     },
     {
@@ -45,7 +64,26 @@
       "art": {
         "bg": "sky-village",
         "icon": "dash",
-        "mascot": "dash"
+        "mascot": "dash",
+        "accent": "#5b7fd6",
+        "accent_ink": "#ffffff",
+        "cast": {
+          "name": "대시",
+          "lines": {
+            "idle": [
+              "오늘 할 일 하나만 먼저 볼까요",
+              "일정표 펴 뒀어요",
+              "급한 것부터요. 하나씩이요"
+            ],
+            "running": "옆에 켜 뒀어요. 일정은 제가 볼게요",
+            "busy": "수첩 새로 정리 중이에요",
+            "update": "{latest} 나왔어요. 지금 바꿀까요?",
+            "waiting": "끄시면 바로 {latest} 로 바꿔 둘게요",
+            "done": "바꿔 뒀어요. 다음 일정 가요",
+            "error": "앗, 일정이 꼬였어요. 다시 해 볼게요",
+            "missing": "아직 설치 전이에요. 오늘 일정에 넣을까요?"
+          }
+        }
       }
     },
     {
@@ -71,7 +109,26 @@
       "art": {
         "bg": "sky-twilight",
         "icon": "set",
-        "mascot": "companion"
+        "mascot": "companion",
+        "accent": "#6fbf9f",
+        "accent_ink": "#10231b",
+        "cast": {
+          "name": "토리",
+          "lines": {
+            "idle": [
+              "여기 있어",
+              "말 안 해도 돼",
+              "오늘은 조용하네"
+            ],
+            "running": "듣고 있어",
+            "busy": "귀 좀 닦는 중. 잠깐만",
+            "update": "{latest} 있대. 바꿔 줄까",
+            "waiting": "쉬면 {latest} 받아 둘게",
+            "done": "됐어. 잘 들려",
+            "error": "안 들려. 다시 해 볼게",
+            "missing": "아직 없어. 부르면 올게"
+          }
+        }
       }
     },
     {
@@ -83,7 +140,19 @@
       "art": {
         "bg": "sky-village",
         "icon": "dash",
-        "mascot": "files"
+        "mascot": "files",
+        "accent": "#b9814a",
+        "accent_ink": "#ffffff",
+        "cast": {
+          "name": "파일라",
+          "lines": {
+            "idle": [
+              "어디 뒀더라. 아, 여기 있다",
+              "가방에 다 있어. 아마도",
+              "열쇠는 절대 안 잃어버려"
+            ]
+          }
+        }
       }
     }
   ]
