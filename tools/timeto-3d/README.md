@@ -60,11 +60,13 @@
      CUDA 12.9 와 호환되지 않는다. 이 조합으로 `custom_rasterizer` · `mesh_processor` 컴파일 성공.
 4. **ComfyUI Portable** = `C:\AI\ComfyUI_windows_portable` (컴파일 회피 경로. prebuilt wheel 사용)
 
+위 2번과 4번의 `C:\AI` 설치본은 2026-11-05 사용자 결정으로 폐기. 재설치가 필요하면 이 순서를 다시 밟는다.
+버전 목록과 작은 결과물은 이 PC의 `~/.karmoddrine/salvage/c-ai-20261105/` (`hunyuan-pip-freeze.txt`, `timeto_*.glb`, `manifest.json`).
+
 ## ⏸ 현재 상태 (2026-08-09)
 
 **보류.** 마스코트는 KarmoLab 에서 기본 비활성(`apps/karmolab/src/mdd.ts` → `PREF_DEFAULTS.enabled = false`)
-이고, 3D 시도는 5판 전부 사용자 반려로 멈췄다. 경위, 실측, 재개 경로 정본 =
-`memo/projects/karmolab/tasks/TASK-KL-134-마스코트-벡터-재제작.md` 맨 아래 § 2026-08-09.
+이고, 3D 시도는 5판 전부 사용자 반려로 멈췄다. 옛 경위 문서 `TASK-KL-134`는 memo 커밋 `d449dd2ff7`에서 삭제됨, git 이력으로 확인.
 
 재개 시 첫 두 단계만 기억하면 된다: **① 목표 화풍 레퍼런스 확보 ② 클라우드 3D(Tripo/Meshy/ComfyUI API)**.
 로컬 8GB 로 텍스처를 굽는 길은 1장 15분+ 로 폐기했다.
