@@ -2,31 +2,108 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1822,
-    "days": 14,
+    "commits": 1840,
+    "days": 13,
     "shown": 60
   },
   "days": [
     {
+      "date": "2026-11-06",
+      "entries": [
+        {
+          "sha": "6ccdbfdf4",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "save",
+          "text": "데이터 로드 전 종료가 저장 파일을 비우는 문제 수정"
+        },
+        {
+          "sha": "a692091e0",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "build",
+          "text": "릴리스 zip 에서 배포 금지 폴더 제외"
+        },
+        {
+          "sha": "bcf64ce8e",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "audio",
+          "text": "Unity 7에서 FMOD 이벤트 GUID가 0이 되는 저장 문제 수정"
+        },
+        {
+          "sha": "0587f4cd6",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "컷 스타일 검은 띠와 패널 사이 틈 메움"
+        },
+        {
+          "sha": "4e6fd0e4d",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "怨좎꽌 ?쒖빟 泥댄겕 洹몃┝怨?而??볦? ?붾㈃ ???섏젙"
+        },
+        {
+          "sha": "7b94a8317",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "idle",
+          "text": "硫덉땄?좎뿉 嫄몃┛ ?명삎???쒖옄由?嫄룰린 ?섏? ?딄쾶"
+        }
+      ],
+      "quiet": 1,
+      "more": 1
+    },
+    {
       "date": "2026-11-05",
       "entries": [
         {
-          "sha": "312c33d3f",
+          "sha": "bff47a801",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "unity7",
-          "text": "Work를 코드 가지치기에서 보존"
+          "scope": "dungeon",
+          "text": "보상 재화를 냥으로 표시, 상단 줄 위치 조정"
         },
         {
-          "sha": "f8a97c40a",
+          "sha": "34df3d63c",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "unity7",
-          "text": "Work 세이브 복원과 패키지 업데이트"
+          "scope": "dungeon",
+          "text": "입장 화면 세 스타일 재현도 조정"
+        },
+        {
+          "sha": "c4b3372ab",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "입장 화면 스타일을 고서, 밤유리, 컷 셋으로 교체 가능하게"
+        },
+        {
+          "sha": "5bd82c130",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "입장 화면 보상 숫자가 아이콘에 겹치지 않게"
+        },
+        {
+          "sha": "b8e0be20e",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "입장 화면 안개 경계와 보상 숫자 수정"
+        },
+        {
+          "sha": "0ae2a6086",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "입장 화면 첫 캡처 지적 반영"
         }
       ],
-      "quiet": 0,
-      "more": 0
+      "quiet": 1,
+      "more": 5
     },
     {
       "date": "2026-11-04",
@@ -436,90 +513,6 @@
           "typeLabel": "새로 생긴 것",
           "scope": "authoring",
           "text": "add portable secondary motion and collision"
-        }
-      ],
-      "quiet": 0,
-      "more": 0
-    },
-    {
-      "date": "2026-10-16",
-      "entries": [
-        {
-          "sha": "8e1b976ac",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "sequence",
-          "text": "preserve authored lighting during lobby viewing"
-        },
-        {
-          "sha": "77c95ad7a",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "sequence",
-          "text": "preserve limb goals through motion and playback"
-        },
-        {
-          "sha": "4797978f7",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "sequence",
-          "text": "play authored sequences from the lobby library"
-        },
-        {
-          "sha": "9f8695cb8",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "boot",
-          "text": "use the configured root after prefab migration"
-        },
-        {
-          "sha": "c93a31e1b",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "sequence",
-          "text": "fit motion when exporting parameter variants"
-        },
-        {
-          "sha": "4514a843f",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "authoring",
-          "text": "add calibrated scene parameter controls"
-        }
-      ],
-      "quiet": 1,
-      "more": 15
-    },
-    {
-      "date": "2026-09-24",
-      "entries": [
-        {
-          "sha": "25160ee46",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "test",
-          "text": "서버와 연결 종료 뒤 재접속 측정 시작"
-        },
-        {
-          "sha": "16ac12dc3",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "test",
-          "text": "배치 무대 구성과 건설 렌더 검증 전제 분리"
-        },
-        {
-          "sha": "129d97409",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ci",
-          "text": "예약 검사와 수동 WM 검증의 취소 경합 분리"
-        },
-        {
-          "sha": "37cc2e084",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "test",
-          "text": "WM 검증 전제와 옮겨진 Idle 카탈로그 경로 복구"
         }
       ],
       "quiet": 0,
