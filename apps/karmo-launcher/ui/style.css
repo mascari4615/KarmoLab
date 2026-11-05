@@ -250,3 +250,5 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 @media (prefers-reduced-motion: reduce) { .yawn.enter, .yawn.hop { animation: none; } }
 :root[data-mdd="off"] .yawn, :root[data-mdd="off"] .mascot-hit, :root[data-mdd="off"] .say { display: none; }
 :root[data-mdd="off"] .acts, :root[data-figure="none"] .acts { right: 56px; }
+/* 런처 자체 로고. --acc 는 고른 앱 색으로 바뀌므로 고정색 */
+.brand-logo { flex: none; width: 22px; height: 22px; margin-right: 4px; background: #d9701a; -webkit-mask: url("img/logo-launcher.webp") center / contain no-repeat; mask: url("img/logo-launcher.webp") center / contain no-repeat; }
