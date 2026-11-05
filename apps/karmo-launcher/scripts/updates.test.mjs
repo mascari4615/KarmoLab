@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { accentOf, castLine, castState, logoSource, mascotSource, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, remoteOf, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
+import { accentOf, castLine, castState, logoSource, mascotSource, mergeSync, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, remoteOf, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
@@ -14,6 +14,28 @@ test('일시정지한 판은 자동으로 안 받고, 새 판이 나오면 다�
   assert.deepEqual(plan(apps, st('1.0.1'), prefs).ready, []);
   assert.equal(plan(apps, st('1.0.1'), prefs).blocked.wm, 'paused');
   assert.deepEqual(plan(apps, st('1.0.2'), prefs).ready, ['wm']);
+});
+
+test('PC 간 설정은 앱별로 나중에 바꾼 쪽이 이김', () => {
+  const m = mergeSync(
+    { a: { favorite: true, syncAt: 200, total: 5 }, b: { favorite: false, syncAt: 100, total: 9 }, c: { total: 3 } },
+    { a: { favorite: false, update: 'auto', syncAt: 100 }, b: { favorite: true, update: 'off', syncAt: 300 } },
+  );
+  assert.equal(m.apps.a.favorite, true);
+  assert.equal(m.apps.b.favorite, true);
+  assert.equal(m.apps.b.update, 'off');
+  assert.equal(m.apps.b.total, 9, '실행 시간은 PC 마다 유지');
+  assert.equal(m.remote.a.favorite, true);
+  assert.equal(m.remote.c, undefined, '기본값뿐인 앱은 안 올림');
+  assert.equal(m.remote.a.total, undefined, '실행 시간은 안 올림');
+  assert.equal(m.localChanged, true);
+  assert.equal(m.remoteChanged, true);
+});
+
+test('PC 간 설정이 같으면 쓰지 않음', () => {
+  const m = mergeSync({ a: { favorite: true, syncAt: 5 } }, { a: { favorite: true, update: 'auto', syncAt: 5 } });
+  assert.equal(m.localChanged, false);
+  assert.equal(m.remoteChanged, false);
 });
 
 test('되돌린 판은 자동으로 다시 안 받고, 더 새 판이 나오면 받음', () => {

@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, isPaused, logoSource, mascotSource, modeOf, parseArgs, remoteOf, tickSeconds, trayApps, visibleApps } from './updates.js';
+import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, isPaused, logoSource, mascotSource, mergeSync, modeOf, parseArgs, remoteOf, tickSeconds, trayApps, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -353,6 +353,46 @@ async function load() {
   paint();
   await checkAll();
 }
+
+/* ---------- PC 간 설정 맞추기. 즐겨찾기와 앱별 업데이트 방식만, 기기 현황은 Dash 몫 ---------- */
+
+let syncBusy = false;
+let syncTimer = 0;
+function setSyncState(text) {
+  const el = document.getElementById('syncState');
+  if (el) el.textContent = text;
+}
+/** 받아서 합치고 달라졌으면 올림. 다른 PC 와 겹쳐 409 면 한 번 더 */
+async function syncPrefs(retry = true) {
+  if (prefs.sync === false || syncBusy) return;
+  syncBusy = true;
+  try {
+    const got = await invoke('sync_pull');
+    const remote = (got.data && got.data.apps) || {};
+    const m = mergeSync(prefs.apps, remote);
+    if (m.localChanged) {
+      prefs.apps = m.apps;
+      savePrefs();
+      planAuto();
+      paint();
+    }
+    if (m.remoteChanged) await invoke('sync_push', { data: { schema: 1, apps: m.remote }, sha: got.sha || null });
+    setSyncState('맞춤 ' + new Date().toTimeString().slice(0, 5));
+  } catch (e) {
+    const text = String(e);
+    syncBusy = false;
+    if (text === '409' && retry) return void (await syncPrefs(false));
+    setSyncState(text === '403' ? '쓰기 권한 없음. 토큰 권한 확인 필요' : '맞추기 실패: ' + text);
+    void invoke('log_event', { text: 'sync failed: ' + text });
+  }
+  syncBusy = false;
+}
+function scheduleSync() {
+  window.clearTimeout(syncTimer);
+  /* 연달아 바꿔도 커밋 하나 */
+  syncTimer = window.setTimeout(() => void syncPrefs(), 20 * 1000);
+}
+window.setInterval(() => void syncPrefs(), CHECK_EVERY_MS);
 
 /* ---------- 자동 업데이트 ---------- */
 
@@ -769,11 +809,13 @@ function openProps(app) {
   $('props').hidden = false;
 }
 $('pFav').addEventListener('change', (e) => {
-  setAppPref(propsApp.id, { favorite: e.target.checked });
+  setAppPref(propsApp.id, { favorite: e.target.checked, syncAt: Date.now() });
+  scheduleSync();
   paintList();
 });
 $('pMode').addEventListener('change', (e) => {
-  setAppPref(propsApp.id, { update: e.target.value });
+  setAppPref(propsApp.id, { update: e.target.value, syncAt: Date.now() });
+  scheduleSync();
   planAuto();
   paint();
 });
@@ -848,6 +890,7 @@ async function paintKeys() {
   }
   $('sAuto').checked = prefs.autoUpdate !== false;
   $('sNotify').checked = prefs.notify !== false;
+  $('sSync').checked = prefs.sync !== false;
   $('sGame').checked = !!prefs.duringGame;
   $('sWinOn').checked = !!prefs.window;
   $('sWinA').value = (prefs.window && prefs.window.start) || '02:00';
@@ -891,6 +934,9 @@ $('wsSave').addEventListener('click', () => void keyAction(() => invoke('set_wor
 function onPrefChange() {
   prefs.autoUpdate = $('sAuto').checked;
   prefs.notify = $('sNotify').checked;
+  const syncWasOff = prefs.sync === false;
+  prefs.sync = $('sSync').checked;
+  if (syncWasOff && prefs.sync) void syncPrefs();
   prefs.duringGame = $('sGame').checked;
   prefs.window = $('sWinOn').checked ? { start: $('sWinA').value, end: $('sWinB').value } : null;
   prefs.closeToTray = $('sTray').checked;
@@ -903,7 +949,7 @@ function onPrefChange() {
   planAuto();
   paint();
 }
-['sAuto', 'sNotify', 'sGame', 'sWinOn', 'sWinA', 'sWinB', 'sTray', 'sTheme', 'sMdd'].forEach((id) => $(id).addEventListener('change', onPrefChange));
+['sAuto', 'sNotify', 'sSync', 'sGame', 'sWinOn', 'sWinA', 'sWinB', 'sTray', 'sTheme', 'sMdd'].forEach((id) => $(id).addEventListener('change', onPrefChange));
 $('sBoot').addEventListener('change', async (e) => {
   try {
     await invoke('set_autostart', { enabled: e.target.checked });
@@ -1093,5 +1139,6 @@ async function boot() {
   fitStage();
   await load();
   void checkSelf();
+  void syncPrefs();
 }
 void boot();

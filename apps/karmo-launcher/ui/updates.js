@@ -28,6 +28,36 @@ export const modeOf = (prefs, id) => appPref(prefs, id).update || 'auto';
 /** 이 판을 일시정지했나. 새 판이 나오면 풀림 */
 export const isPaused = (prefs, id, latest) => !!(prefs && prefs.paused && prefs.paused[id] && prefs.paused[id].version === latest);
 
+/**
+ * PC 간 설정 합치기. 맞추는 값은 즐겨찾기와 업데이트 방식뿐, 앱별로 syncAt 이 큰 쪽이 이김.
+ * 결과: apps 는 합친 뒤 로컬 prefs.apps, remote 는 올릴 내용, localChanged 와 remoteChanged 는 변경 여부
+ */
+export function mergeSync(localApps = {}, remote = {}) {
+  const pick = (p = {}) => ({ favorite: !!p.favorite, update: p.update || 'auto', syncAt: p.syncAt || 0 });
+  const same = (a, b) => a.favorite === b.favorite && a.update === b.update;
+  const blank = (p) => !p.favorite && p.update === 'auto';
+  const apps = { ...localApps };
+  const out = {};
+  let localChanged = false;
+  let remoteChanged = false;
+  for (const id of new Set([...Object.keys(localApps), ...Object.keys(remote)])) {
+    const l = pick(localApps[id]);
+    const r = remote[id] ? pick(remote[id]) : null;
+    if (r && r.syncAt > l.syncAt) {
+      out[id] = r;
+      if (!same(l, r) || r.syncAt !== l.syncAt) {
+        apps[id] = { ...localApps[id], ...r };
+        localChanged = localChanged || !same(l, r);
+      }
+    } else {
+      /* 실행 시간만 있는 앱은 안 올림 */
+      if (r || !blank(l)) out[id] = l;
+      if (out[id] && (!r || !same(l, r) || r.syncAt !== l.syncAt)) remoteChanged = true;
+    }
+  }
+  return { apps, remote: out, localChanged, remoteChanged };
+}
+
 /** 로컬 항목의 원격 주소 (`local.remote`). 이 PC 에 없어도 https 로 엶. 없으면 빈 값 */
 export const remoteOf = (app) => {
   const url = app && app.local && app.local.remote;

@@ -15,6 +15,7 @@
 - 설치 화면: `setup/`. 자체 창이 안에 넣은 NSIS 설치 파일을 숨겨 실행. 릴리스 첨부 `Karmo-Launcher-Setup.exe`, NSIS 설치 파일도 유지. 런처 자체 업데이트는 `installMode` `quiet`
 - 받기: 판마다 조각 파일 `<id>-<판>.part`. 끊기거나 일시정지하면 Range 로 이어 받고, 다 받은 뒤 이름을 바꿔 서명과 해시 확인. 받기 전 남은 공간 확인 (nsis 나머지 + 전체, zip 나머지 + 전체 3배, 추정). 일시정지 상태는 `prefs.paused`
 - 되돌리기: zip 앱은 판이 바뀔 때 옛 판을 `apps/<id>.prev` 에 하나 보관 (디스크를 그만큼 더 씀), 속성에서 맞바꿈. 되돌린 판의 최신 판은 `apps.<id>.skip` 으로 자동 업데이트 제외, 더 새 판이나 손 설치로 풀림. nsis 앱은 옛 릴리스를 안 남겨서 아직 안 됨
+- PC 간 설정: 즐겨찾기와 앱별 업데이트 방식만 memo `data/launcher/sync.json` 에 (GitHub API, 앱별 `syncAt` 이 큰 쪽이 이김). 켤 때, 30분마다, 바꾸고 20초 뒤. 쓰기 권한 있는 토큰 필요. 실행 시간과 머신 현황은 안 올림 (현황은 Dash)
 - 로그: 앱 로그 폴더 `launcher.log` (1MB 넘으면 `launcher.old.log`). 시작, 자체 업데이트, 설치. 설정의 "로그 폴더 열기". 토큰을 남기지 않음
 - 알림: 창을 안 볼 때 앱 업데이트 끝과 판마다 첫 실패. 설정으로 끔. 트레이: 열기, 실행, 업데이트 확인, 끝내기
 - 자동 업데이트: 판단은 `ui/updates.js` (시험 `node --test scripts/updates.test.mjs`), 실행은 `ui/app.js` 받기 줄. 30분마다 확인, 자동은 줄을 서서 동시에 둘, 손으로 누른 것은 바로 시작, 앱이 떠 있으면 꺼질 때까지 미룸. 앱별 방식 `auto`, `priority`, `launch`, `off`. 설정은 `settings.json` 의 `prefs`. 실측 memo `notes/launcher/e2e-auto-update-2026-11-05.ps1`

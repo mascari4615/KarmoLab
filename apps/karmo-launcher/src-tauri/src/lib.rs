@@ -1497,6 +1497,67 @@ fn show_main(app: &AppHandle) {
     }
 }
 
+/// PC 간 런처 설정. 비공개 memo 의 파일 하나, 토큰이 있을 때만. 기기 현황은 Dash 몫이라 여기 안 넣음
+const SYNC_API: &str = "https://api.github.com/repos/mascari4615/memo/contents/data/launcher/sync.json";
+
+/// 파일 내용과 sha. 파일이 아직 없으면 data 와 sha 모두 null
+#[tauri::command]
+async fn sync_pull() -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        if token().is_none() {
+            return Err("GitHub 로그인이 없음".to_string());
+        }
+        let res = match request(SYNC_API, Some("application/vnd.github+json")) {
+            Ok(r) => r,
+            Err(e) if e.starts_with("404") => return Ok(serde_json::json!({ "data": null, "sha": null })),
+            Err(e) => return Err(e),
+        };
+        let body: Value = serde_json::from_str(&res.text().map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        let sha = body.get("sha").cloned().unwrap_or(Value::Null);
+        use base64::Engine;
+        let b64: String = body.get("content").and_then(|c| c.as_str()).unwrap_or("").chars().filter(|c| !c.is_whitespace()).collect();
+        let bytes = base64::engine::general_purpose::STANDARD.decode(b64).map_err(|e| e.to_string())?;
+        let data: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+        Ok(serde_json::json!({ "data": data, "sha": sha }))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// 파일 쓰기. sha 가 어긋나면 GitHub 가 409 를 돌려줘 화면이 다시 합침
+#[tauri::command]
+async fn sync_push(handle: AppHandle, data: Value, sha: Option<String>) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let t = token().ok_or("GitHub 로그인이 없음")?;
+        use base64::Engine;
+        let text = serde_json::to_string_pretty(&data).map_err(|e| e.to_string())? + "\n";
+        let mut body = serde_json::json!({
+            "message": "chore(launcher): PC 간 설정 맞춤",
+            "content": base64::engine::general_purpose::STANDARD.encode(text),
+        });
+        if let Some(s) = sha {
+            body["sha"] = Value::from(s);
+        }
+        let res = client()?
+            .put(SYNC_API)
+            .bearer_auth(t)
+            .header("Content-Type", "application/json")
+            .body(body.to_string())
+            .send()
+            .map_err(|e| e.to_string())?;
+        let code = res.status().as_u16();
+        if !res.status().is_success() {
+            log_line(&handle, &format!("sync push failed {}", code));
+            return Err(format!("{}", code));
+        }
+        log_line(&handle, "sync push done");
+        let out: Value = serde_json::from_str(&res.text().map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        out.get("content").and_then(|c| c.get("sha")).and_then(|s| s.as_str()).map(String::from).ok_or("sha 없음".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(serde::Deserialize)]
 struct TrayApp {
     id: String,
@@ -1600,6 +1661,8 @@ pub fn run() {
             pause_install,
             discard_partial,
             rollback_app,
+            sync_pull,
+            sync_push,
             log_event,
             open_logs,
             notify_user,
