@@ -196,9 +196,24 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .note { color: var(--ink2); font-size: 12px; margin: 0; }
 
 /* 욘은 판 오른쪽 안에 거의 들고, 그림 끝 (허벅지) 은 판 아래 흐림과 같이 흐림 (사용자 "창에서 너무 튀어 나갔잖아") */
-.yawn { position: absolute; right: 96px; bottom: 16px; height: min(660px, 92%); z-index: 4; pointer-events: none;
+.yawn { position: absolute; right: 96px; bottom: 16px; height: min(660px, 92%); z-index: 4; pointer-events: none; transition: opacity 0.12s;
   -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%); mask-image: linear-gradient(180deg, #000 82%, transparent 100%); }
 
 /* 런처 자신의 새 판 버튼. 제목 줄 바로 아래 오른쪽 */
 .selfup { position: absolute; right: 40px; top: 76px; z-index: 6; height: 30px; padding: 0 14px; border: 1px solid var(--acc); background: var(--panel2); color: var(--ink); font: 700 12px var(--ko); cursor: pointer; }
 .selfup:disabled { opacity: 0.7; cursor: default; }
+
+/* MDD. 앱마다 캐릭터 얼굴, 대사, 표정. 끄면 전부 사라지고 일반 런처 (rules/mdd.md) */
+.li .face { width: 30px; height: 30px; flex: none; object-fit: cover; display: block; margin: -4px 0; }
+.mascot-hit { position: absolute; right: 196px; bottom: 170px; width: 300px; height: 470px; z-index: 4; border: 0; padding: 0; background: transparent; cursor: pointer; }
+/* 말풍선 없이 한 줄 (사용자 판정 "캐릭터 대사 말풍선, 꾸밈 어색"). 캐릭터 발치 */
+.say { position: absolute; right: 56px; bottom: 60px; width: 440px; margin: 0; padding: 9px 14px; display: flex; gap: 12px; align-items: baseline; z-index: 5; background: var(--panel2); border-left: 3px solid var(--acc); color: var(--ink); font-size: 14px; line-height: 1.4; }
+.say[hidden] { display: none; }
+.say b { flex: none; color: var(--acc); font-weight: 900; }
+.yawn.enter { animation: mascot-enter 0.28s ease-out; }
+.yawn.hop { animation: mascot-hop 0.3s ease-out; }
+@keyframes mascot-enter { from { transform: translateX(26px); } to { transform: none; } }
+@keyframes mascot-hop { 40% { transform: translateY(-12px); } }
+@media (prefers-reduced-motion: reduce) { .yawn.enter, .yawn.hop { animation: none; } }
+:root[data-mdd="off"] .yawn, :root[data-mdd="off"] .mascot-hit, :root[data-mdd="off"] .say { display: none; }
+:root[data-mdd="off"] .acts, :root[data-figure="none"] .acts { right: 56px; }

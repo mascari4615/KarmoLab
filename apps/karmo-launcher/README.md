@@ -15,4 +15,5 @@
 - 자동 업데이트: 판단은 `ui/updates.js` (시험 `node --test scripts/updates.test.mjs`), 실행은 `ui/app.js` 받기 줄. 30분마다 확인, 자동은 줄을 서서 동시에 둘, 손으로 누른 것은 바로 시작, 앱이 떠 있으면 꺼질 때까지 미룸. 앱별 방식 `auto`, `priority`, `launch`, `off`. 설정은 `settings.json` 의 `prefs`. 실측 memo `notes/launcher/e2e-auto-update-2026-11-05.ps1`
 - 로컬 서버 항목: `local.port` 가 열려 있으면 다시 안 켜고 `local.open` 만 엶. 주소는 이 PC 만
 - 트레이 시작: 인자 `--tray`. Windows 시작 등록은 설정에서 켤 때만 (HKCU Run)
+- 마스코트: `art.mascot` 은 `ui/img/mascot-<이름>.webp` (공개), `art.mascot_private` 는 memo `data/launcher/mascots/` 경로 (비공개, 토큰으로 받아 하루 캐시). 없거나 못 읽으면 그림 없음 (기본 캐릭터 없음). 그림 규격 1024x1536 투명
 - 창 크기 조절: 틀 없는 투명 창이라 판 가장자리 손잡이 (`.rz`) 가 `startResizeDragging` 을 부름

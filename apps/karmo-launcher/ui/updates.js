@@ -108,6 +108,55 @@ export function visibleApps(apps, status, prefs, view) {
   });
 }
 
+/** 설치본에 든 그림 주소 */
+export const bundledImage = (name) => 'img/' + name + '.webp';
+
+/** 없는 표정 그림은 이 순서로 대신함 */
+const POSE_OF = { done: 'running', waiting: 'running', update: 'idle', missing: 'idle' };
+
+/** 앱의 지금 상태를 캐릭터 상태로. fresh 는 방금 끝난 일 (done) */
+export function castState(app, st, job, fresh) {
+  if (fresh) return fresh;
+  if (job) return 'busy';
+  if (st && st.error) return 'error';
+  if (st && st.running) return hasUpdate(st) ? 'waiting' : 'running';
+  if (hasUpdate(st)) return 'update';
+  if (app && !app.soon && app.kind !== 'web' && st && !st.installed) return 'missing';
+  return 'idle';
+}
+
+/** 상태의 대사. 여러 줄이면 turn 번째, 없으면 평소 대사. {latest}, {version} 은 판 번호로 */
+export function castLine(app, state, turn, st) {
+  const cast = app && app.art && app.art.cast;
+  if (!cast || !cast.lines) return '';
+  const raw = cast.lines[state] || cast.lines.idle;
+  if (!raw) return '';
+  const list = Array.isArray(raw) ? raw : [raw];
+  const line = list[Math.abs(turn) % list.length];
+  return line.replace('{latest}', (st && st.latest) || '').replace('{version}', (st && st.version) || '');
+}
+
+/** 얼굴 그림. 공개는 설치본, 비공개는 memo. 없으면 null */
+export function faceSource(app) {
+  const art = (app && app.art) || {};
+  if (art.mascot_private) return { private: art.mascot_private.replace(/\.webp$/, '-face.webp') };
+  if (/^[a-z0-9-]+$/.test(art.mascot || '')) return { url: bundledImage('face-' + art.mascot) };
+  return null;
+}
+
+/**
+ * 앱의 마스코트 자리. `art.mascot` 은 설치본에 든 그림 이름 (공개 항목),
+ * `art.mascot_private` 는 memo 저장소 경로 (비공개 항목. 공개 저장소에 그림과 이름을 안 남김). 그림 없는 앱은 null
+ */
+export function mascotSource(app, state = 'idle') {
+  const art = (app && app.art) || {};
+  const pose = POSE_OF[state] || state;
+  const suffix = pose !== 'idle' && Array.isArray(art.poses) && art.poses.includes(pose) ? '-' + pose : '';
+  if (art.mascot_private) return { private: art.mascot_private.replace(/\.webp$/, suffix + '.webp') };
+  if (/^[a-z0-9-]+$/.test(art.mascot || '')) return { url: bundledImage('mascot-' + art.mascot + suffix) };
+  return null;
+}
+
 /** 지난 확인 뒤 지난 초. 첫 확인은 0 (켜자마자 시간이 더해지지 않게), 오래 멈췄으면 상한까지만 */
 export function tickSeconds(now, last, max = 120) {
   return last ? Math.min((now - last) / 1000, max) : 0;

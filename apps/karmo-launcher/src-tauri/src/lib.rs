@@ -1079,6 +1079,60 @@ fn open_url(url: String) -> Result<(), String> {
     open::that(url).map_err(|e| e.to_string())
 }
 
+/// 비공개 그림 경로는 memo 의 마스코트 폴더 바로 아래 파일만
+fn private_image_path(path: &str) -> Result<(String, &'static str), String> {
+    const ROOT: &str = "data/launcher/mascots/";
+    let rel = safe_rel(path)?;
+    let name = rel.strip_prefix(ROOT).ok_or_else(|| format!("허용 안 된 경로: {}", path))?;
+    if name.is_empty() || name.contains('/') {
+        return Err(format!("허용 안 된 경로: {}", path));
+    }
+    let mime = if name.ends_with(".webp") {
+        "image/webp"
+    } else if name.ends_with(".png") {
+        "image/png"
+    } else {
+        return Err(format!("그림 파일이 아님: {}", path));
+    };
+    Ok((rel, mime))
+}
+
+/// 비공개 항목의 마스코트. 토큰으로 받아 하루 동안 캐시, 못 받으면 옛 캐시. 화면에는 data 주소로 줌
+#[tauri::command]
+async fn private_image(handle: AppHandle, path: String) -> Result<String, String> {
+    use base64::Engine;
+    tauri::async_runtime::spawn_blocking(move || {
+        const FRESH: std::time::Duration = std::time::Duration::from_secs(24 * 60 * 60);
+        let (rel, mime) = private_image_path(&path)?;
+        let name = rel.rsplit('/').next().ok_or("파일 이름 없음")?;
+        let dir = handle.path().app_cache_dir().map_err(|e| e.to_string())?.join("mascots");
+        let file = dir.join(name);
+        let fresh = std::fs::metadata(&file)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.elapsed().ok())
+            .map(|age| age < FRESH)
+            .unwrap_or(false);
+        let bytes = if fresh {
+            std::fs::read(&file).map_err(|e| e.to_string())?
+        } else {
+            let got = request(&format!("{}memo/contents/{}", OWNER_API, rel), Some("application/vnd.github.raw"))
+                .and_then(|r| r.bytes().map_err(|e| e.to_string()));
+            match got {
+                Ok(b) => {
+                    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+                    std::fs::write(&file, &b).map_err(|e| e.to_string())?;
+                    b.to_vec()
+                }
+                Err(e) => std::fs::read(&file).map_err(|_| e)?,
+            }
+        };
+        Ok(format!("data:{};base64,{}", mime, base64::engine::general_purpose::STANDARD.encode(bytes)))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// 앱이 깔린 폴더 열기 (Steam 로컬 파일 보기, Hub Show in Explorer)
 #[tauri::command]
 async fn open_location(handle: AppHandle, app: Value) -> Result<(), String> {
@@ -1226,6 +1280,7 @@ pub fn run() {
             set_autostart,
             cancel_install,
             open_location,
+            private_image,
             quit_app
         ])
         .run(tauri::generate_context!())
@@ -1355,6 +1410,22 @@ mod tests {
     #[test]
     fn registry_missing_is_none() {
         assert!(registry("karmo-launcher-no-such-app").is_none());
+    }
+
+    #[test]
+    fn private_image_only_from_mascot_folder() {
+        assert_eq!(private_image_path("data/launcher/mascots/wm.webp").unwrap().1, "image/webp");
+        assert_eq!(private_image_path("data/launcher/mascots/wm.png").unwrap().1, "image/png");
+        for bad in [
+            "data/launcher/apps.json",
+            "characters/yawn/card.md",
+            "data/launcher/mascots/",
+            "data/launcher/mascots/a/b.webp",
+            "data/launcher/mascots/../secret.webp",
+            "data/launcher/mascots/note.txt",
+        ] {
+            assert!(private_image_path(bad).is_err(), "{}", bad);
+        }
     }
 
     #[test]
