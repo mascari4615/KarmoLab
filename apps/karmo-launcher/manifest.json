@@ -21,7 +21,27 @@
       },
       "art": {
         "bg": "sky-twilight",
-        "icon": "tool"
+        "icon": "tool",
+        "mascot": "karmolab",
+        "accent": "#2f9c95",
+        "accent_ink": "#ffffff",
+        "cast": {
+          "name": "라보",
+          "lines": {
+            "idle": [
+              "밟지 마, 거기 다 어디 있는지 아니까",
+              "이것도 내가 만들었어. 어디 뒀더라",
+              "치우라고? 치우면 못 찾아"
+            ],
+            "running": "켜 놨어. 더 어질러도 돼",
+            "busy": "지금 뜯는 중. 그 상자 위에 앉지 마",
+            "update": "{latest} 만들었어. 또 하나 늘었지",
+            "waiting": "끄면 {latest} 넣어 줄게. 자리는 만들어 볼게",
+            "done": "다 됐어. 어디 뒀는지도 알아",
+            "error": "터졌네. 잠깐, 고칠 거 어디 뒀더라",
+            "missing": "아직 안 깔았어? 자리 치워 둘게. 아마"
+          }
+        }
       }
     },
     {
