@@ -55,7 +55,12 @@
             "missing": "아직 안 깔았어? 자리 치워 둘게. 아마"
           }
         },
-        "logo": "karmolab"
+        "logo": "karmolab",
+        "poses": [
+          "running",
+          "busy",
+          "error"
+        ]
       }
     },
     {
@@ -98,7 +103,12 @@
             "missing": "아직 안 까셨죠. 알고 있었어요"
           }
         },
-        "logo": "dash"
+        "logo": "dash",
+        "poses": [
+          "error",
+          "running",
+          "busy"
+        ]
       }
     },
     {
@@ -144,7 +154,12 @@
             "missing": "아직 네 방에 못 들어갔어"
           }
         },
-        "logo": "companion"
+        "logo": "companion",
+        "poses": [
+          "running",
+          "busy",
+          "error"
+        ]
       }
     },
     {

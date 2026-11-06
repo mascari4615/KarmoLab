@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { accentOf, castLine, castState, logoSource, mascotSource, mergeSync, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, remoteOf, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
@@ -210,4 +211,14 @@ test('시간 글', () => {
   assert.equal(fmtAgo(now - 86400000, now), '어제');
   assert.equal(fmtAgo(now - 3 * 86400000, now), '3일 전');
   assert.equal(fmtAgo(new Date(2026, 0, 2).getTime(), now), '2026.01.02');
+});
+
+test('공개 목록의 표정은 그림 파일이 있음', () => {
+  const { apps } = JSON.parse(fs.readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
+  for (const app of apps) {
+    for (const pose of app.art?.poses || []) {
+      const src = mascotSource(app, pose);
+      assert.ok(fs.existsSync(new URL('../ui/' + src.url, import.meta.url)), app.id + ' ' + pose);
+    }
+  }
 });
