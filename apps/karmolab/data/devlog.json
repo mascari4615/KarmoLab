@@ -2,59 +2,80 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1840,
-    "days": 13,
+    "commits": 1882,
+    "days": 12,
     "shown": 60
   },
   "days": [
     {
+      "date": "2026-11-07",
+      "entries": [
+        {
+          "sha": "f06bc53ff",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "설정 슬라이더 무늬를 시안의 막대 타일 42px로"
+        },
+        {
+          "sha": "d0c00b974",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "ui",
+          "text": "상점, 가방, 인형 창, 보스 바, 설정 슬라이더, 선택 빛 줄을 3차 결로 교체"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
+    {
       "date": "2026-11-06",
       "entries": [
         {
-          "sha": "6ccdbfdf4",
+          "sha": "b8ae0d501",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "save",
-          "text": "데이터 로드 전 종료가 저장 파일을 비우는 문제 수정"
+          "scope": "test",
+          "text": "모드 퀘스트 시험 asmdef 참조 누락 수정"
         },
         {
-          "sha": "a692091e0",
+          "sha": "6f3469478",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "build",
-          "text": "릴리스 zip 에서 배포 금지 폴더 제외"
+          "scope": "quest",
+          "text": "모드 퀘스트가 실행마다 저장에 1개씩 쌓이던 문제 수정"
         },
         {
-          "sha": "bcf64ce8e",
+          "sha": "b60bde231",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "audio",
-          "text": "Unity 7에서 FMOD 이벤트 GUID가 0이 되는 저장 문제 수정"
+          "scope": "ui",
+          "text": "상점 격자가 화면 밖으로 나가던 줄바꿈 수정"
         },
         {
-          "sha": "0587f4cd6",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "컷 스타일 검은 띠와 패널 사이 틈 메움"
+          "sha": "35215f2db",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "equipment",
+          "text": "장비 22종 연출 자산과 추가 3종 자산"
         },
         {
-          "sha": "4e6fd0e4d",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "怨좎꽌 ?쒖빟 泥댄겕 洹몃┝怨?而??볦? ?붾㈃ ???섏젙"
+          "sha": "163535c36",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "ui",
+          "text": "리롤, 스킵, 차단 버튼, 상자 보상 패널, 진화 진행 표시"
         },
         {
-          "sha": "7b94a8317",
+          "sha": "4d8441b37",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "idle",
-          "text": "硫덉땄?좎뿉 嫄몃┛ ?명삎???쒖옄由?嫄룰린 ?섏? ?딄쾶"
+          "scope": "doll",
+          "text": "인형 창 장비 칸이 비던 문제, 같은 장비 중복과 장비 아닌 물건 차단"
         }
       ],
-      "quiet": 1,
-      "more": 1
+      "quiet": 6,
+      "more": 36
     },
     {
       "date": "2026-11-05",
@@ -489,34 +510,6 @@
       ],
       "quiet": 1,
       "more": 8
-    },
-    {
-      "date": "2026-10-21",
-      "entries": [
-        {
-          "sha": "c4aca5e04",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "wardrobe",
-          "text": "add portable outfit composition with part attachment"
-        }
-      ],
-      "quiet": 0,
-      "more": 0
-    },
-    {
-      "date": "2026-10-18",
-      "entries": [
-        {
-          "sha": "839d53552",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "authoring",
-          "text": "add portable secondary motion and collision"
-        }
-      ],
-      "quiet": 0,
-      "more": 0
     }
   ]
 }
