@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { accentOf, castLine, castState, logoSource, mascotSource, mergeSync, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, remoteOf, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
+import { accentOf, castLine, castState, logoSource, mascotSource, mergeSync, nextPose, autoPlan, fmtAgo, fmtDuration, hasUpdate, inWindow, newer, parseArgs, remoteOf, retryAt, tickSeconds, trayApps, visibleApps } from '../ui/updates.js';
 
 const NOON = new Date(2026, 10, 5, 12, 0);
 const app = (id, extra = {}) => ({ id, name: id, kind: 'tauri', install: { format: 'nsis' }, ...extra });
@@ -221,4 +221,17 @@ test('공개 목록의 표정은 그림 파일이 있음', () => {
       assert.ok(fs.existsSync(new URL('../ui/' + src.url, import.meta.url)), app.id + ' ' + pose);
     }
   }
+});
+
+test('누를 때 표정은 있는 그림만 차례로 돎', () => {
+  const all = { art: { mascot: 'x', poses: ['error', 'running', 'busy'] } };
+  assert.equal(nextPose(all, 'idle'), 'running');
+  assert.equal(nextPose(all, 'running'), 'busy');
+  assert.equal(nextPose(all, 'busy'), 'error');
+  assert.equal(nextPose(all, 'error'), 'idle');
+  assert.equal(nextPose(all, 'done'), 'busy');
+  assert.equal(nextPose(all, 'update'), 'running');
+  assert.equal(nextPose({ art: { mascot: 'x', poses: ['busy'] } }, 'idle'), 'busy');
+  assert.equal(nextPose({ art: { mascot: 'x' } }, 'idle'), 'idle');
+  assert.equal(nextPose(null), 'idle');
 });

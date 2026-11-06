@@ -1,6 +1,6 @@
 // 런처 화면 (시안 L3). 목록 받기, 왼쪽 목록, 고른 앱의 그림과 제목, 버전, 릴리스, 시작 버튼.
 // 백엔드는 src-tauri/src/lib.rs, 판단은 updates.js. 창은 투명이고 틀이 없어 제목 줄의 끌기, 최소화, 닫기를 여기서
-import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, isPaused, logoSource, mascotSource, mergeSync, modeOf, parseArgs, remoteOf, tickSeconds, trayApps, visibleApps } from './updates.js';
+import { BLOCK_TEXT, MODES, accentOf, appPref, autoPlan, castLine, castState, fmtAgo, fmtDuration, hasUpdate, isPaused, logoSource, mascotSource, mergeSync, modeOf, nextPose, parseArgs, remoteOf, tickSeconds, trayApps, visibleApps } from './updates.js';
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -132,6 +132,9 @@ const sayEl = $('say');
 const fresh = new Map();
 let sayKey = '';
 let sayTurn = 0;
+const POKE_MS = 6000;
+let poke = null;
+let pokeTimer = 0;
 function applyMdd() {
   document.documentElement.dataset.mdd = mddOn() ? 'on' : 'off';
 }
@@ -208,7 +211,7 @@ async function paintMascot(app, state) {
 function paintMain() {
   const app = apps.find((a) => a.id === current);
   const castNow = castState(app, app && status.get(app.id), app && busy.get(app.id), app && fresh.get(app.id));
-  void paintMascot(app, castNow);
+  void paintMascot(app, app && poke && poke.id === app.id ? poke.pose : castNow);
   applyAccent(app);
   paintSay(app, castNow, app && status.get(app.id));
   if (!app) {
@@ -632,9 +635,19 @@ window.setInterval(() => {
   if (shown) paintList();
 }, 60 * 1000);
 
-/* 캐릭터를 누르면 다음 대사와 반응 (벽람항로 비서함의 터치) */
+/* 캐릭터를 누르면 다음 대사와 표정, 반응 (벽람항로 비서함의 터치). 표정은 잠깐만, 대사는 실제 상태를 따름 */
 mascotHitEl.addEventListener('click', () => {
   sayTurn++;
+  const app = apps.find((a) => a.id === current);
+  if (app) {
+    const shown = poke && poke.id === app.id ? poke.pose : castState(app, status.get(app.id), busy.get(app.id), fresh.get(app.id));
+    poke = { id: app.id, pose: nextPose(app, shown) };
+    window.clearTimeout(pokeTimer);
+    pokeTimer = window.setTimeout(() => {
+      poke = null;
+      paintMain();
+    }, POKE_MS);
+  }
   paintMain();
   mascotEl.classList.remove('hop', 'enter');
   void mascotEl.offsetWidth;

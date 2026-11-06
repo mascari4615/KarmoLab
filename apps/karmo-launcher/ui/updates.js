@@ -213,6 +213,14 @@ export function mascotSource(app, state = 'idle') {
   return null;
 }
 
+/** 캐릭터를 누를 때 다음 표정. 평소, 실행 중, 받는 중, 실패 순으로 있는 그림만 돌고, 그림이 없으면 평소 */
+export function nextPose(app, shown = 'idle') {
+  const poses = (app && app.art && app.art.poses) || [];
+  const order = ['idle', ...['running', 'busy', 'error'].filter((p) => Array.isArray(poses) && poses.includes(p))];
+  const at = order.indexOf(POSE_OF[shown] || shown);
+  return order[(at + 1) % order.length];
+}
+
 /** 지난 확인 뒤 지난 초. 첫 확인은 0 (켜자마자 시간이 더해지지 않게), 오래 멈췄으면 상한까지만 */
 export function tickSeconds(now, last, max = 120) {
   return last ? Math.min((now - last) / 1000, max) : 0;

@@ -191,7 +191,12 @@
             "missing": "아직 네 우편함이 없네"
           }
         },
-        "logo": "files"
+        "logo": "files",
+        "poses": [
+          "running",
+          "busy",
+          "error"
+        ]
       }
     }
   ]
