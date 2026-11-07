@@ -2,7 +2,7 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1882,
+    "commits": 1971,
     "days": 12,
     "shown": 60
   },
@@ -11,22 +11,50 @@
       "date": "2026-11-07",
       "entries": [
         {
-          "sha": "f06bc53ff",
+          "sha": "e1ff4fe3f",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "ui",
-          "text": "설정 슬라이더 무늬를 시안의 막대 타일 42px로"
+          "scope": "world",
+          "text": "세계 끌어당김과 placed 가 실제로 플레이어 자리를 옮김"
         },
         {
-          "sha": "d0c00b974",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "ui",
-          "text": "상점, 가방, 인형 창, 보스 바, 설정 슬라이더, 선택 빛 줄을 3차 결로 교체"
+          "sha": "40fb87057",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "survival",
+          "text": "몬스터 체력 바 채움을 화면 왼쪽 끝 기준으로 줄임"
+        },
+        {
+          "sha": "187ea810c",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "world",
+          "text": "게임 창이 세계가 옮긴 내 자리(placed)를 따라감"
+        },
+        {
+          "sha": "612915205",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "equipment",
+          "text": "SpawnerInitializer OnDisable 은 구독한 스탯에서 해제"
+        },
+        {
+          "sha": "d2a51a64c",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "survival",
+          "text": "처치 X 그림, 정예 체력 바, 처치 조각 산포, 글꼴 크레딧"
+        },
+        {
+          "sha": "2c0063b66",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "skilltree",
+          "text": "강화 수를 마름모 오른쪽 꼭짓점 바깥, 세로 가운데로"
         }
       ],
-      "quiet": 0,
-      "more": 0
+      "quiet": 12,
+      "more": 73
     },
     {
       "date": "2026-11-06",
@@ -478,38 +506,10 @@
           "typeLabel": "고친 것",
           "scope": "scene-content",
           "text": "atomic save waits out a short file lock"
-        },
-        {
-          "sha": "34447a8ad",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "wardrobe",
-          "text": "read the worn outfit from the scene when an outfit file is opened"
-        },
-        {
-          "sha": "84f8ac968",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "a failed outfit change is not shown as worn"
-        },
-        {
-          "sha": "780d6b58f",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "wardrobe",
-          "text": "carrier role keeps a part off the body when the anchor bone bends"
-        },
-        {
-          "sha": "0cfd818fa",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "authoring",
-          "text": "edit spring inertia in the dynamics panel"
         }
       ],
       "quiet": 1,
-      "more": 8
+      "more": 12
     }
   ]
 }
