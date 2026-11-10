@@ -2,11 +2,60 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1971,
+    "commits": 1982,
     "days": 12,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-11-10",
+      "entries": [
+        {
+          "sha": "014cff790",
+          "type": "perf",
+          "typeLabel": "빨라진 것",
+          "scope": "motor",
+          "text": "자기 충돌체 제외와 Transform 조회 공유"
+        },
+        {
+          "sha": "6aef74c91",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "world",
+          "text": "베이크 연결과 방향별 환경광 복원 및 청크 장식 추가"
+        },
+        {
+          "sha": "aa1066012",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "exp",
+          "text": "큰 오브의 장벽 보너스가 다음 레벨로 새지 않게 계산"
+        },
+        {
+          "sha": "5e97c41ab",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "doll",
+          "text": "인형 염색 시 모자와 부위별 원래 색 보존"
+        },
+        {
+          "sha": "dfc5c1464",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "덱과 카드 내용을 기준 화면 중앙에 유지"
+        },
+        {
+          "sha": "18b421d31",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "환경설정도 화면 높이에 맞춰 중앙 배치"
+        }
+      ],
+      "quiet": 1,
+      "more": 2
+    },
     {
       "date": "2026-11-07",
       "entries": [
@@ -457,59 +506,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "scene-content",
           "text": "toon surface v2 in the scene model and loader"
-        },
-        {
-          "sha": "3b324e877",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "authoring",
-          "text": "dock the authoring, character view and wardrobe windows in the main window"
-        },
-        {
-          "sha": "36a943ef5",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "shader",
-          "text": "toon outline, hair band highlight and richer shade colour (off by default)"
-        },
-        {
-          "sha": "160198a0d",
-          "type": "perf",
-          "typeLabel": "빨라진 것",
-          "scope": "authoring",
-          "text": "redraw the wardrobe preview only when the scene, worn state, look or size changed"
-        },
-        {
-          "sha": "fc8192406",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "authoring",
-          "text": "plain and toon look choice for the wardrobe window preview"
         }
       ],
       "quiet": 0,
-      "more": 6
-    },
-    {
-      "date": "2026-10-22",
-      "entries": [
-        {
-          "sha": "a489a0a27",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "outfit panel rereads worn markers when the scene changes"
-        },
-        {
-          "sha": "c9e8b640e",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "scene-content",
-          "text": "atomic save waits out a short file lock"
-        }
-      ],
-      "quiet": 1,
-      "more": 12
+      "more": 10
     }
   ]
 }
