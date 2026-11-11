@@ -318,16 +318,27 @@ import { listTasks } from '../planner/local-store';
     window.addEventListener('planner-local-change', repaintTasks);
     window.addEventListener('planner-remote-change', repaintTasks);
     window.addEventListener('storage', repaintTasks);
-    /* 시계. 분이 바뀌는 것만 보이면 되니 20초마다 */
-    const tick = window.setInterval(() => {
+    /* 시계. 분이 바뀌는 것만 보이면 되니 20초마다. 숨은 탭에서는 멈추고 돌아오면 바로 다시 그린다 */
+    const paintClock = (): void => {
       if (!ctx.isCurrent()) return;
       const c = clockText();
       const clock = root.querySelector('.mydh-clock');
       const day = root.querySelector('.mydh-day');
       if (clock) clock.textContent = c.time;
       if (day) day.innerHTML = esc(c.date) + '<br>' + esc(c.day);
-    }, 20000);
+    };
+    let tick = 0;
+    const armClock = (): void => {
+      window.clearInterval(tick);
+      tick = 0;
+      if (document.hidden) return;
+      paintClock();
+      tick = window.setInterval(paintClock, 20000);
+    };
+    document.addEventListener('visibilitychange', armClock);
+    armClock();
     ctx.onDispose(() => {
+      document.removeEventListener('visibilitychange', armClock);
       window.clearInterval(tick);
       window.removeEventListener('planner-local-change', repaintTasks);
       window.removeEventListener('planner-remote-change', repaintTasks);
