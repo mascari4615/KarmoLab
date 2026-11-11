@@ -1903,7 +1903,7 @@ dependencies = [
 
 [[package]]
 name = "karmo-dash"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "open",
  "serde_json",
