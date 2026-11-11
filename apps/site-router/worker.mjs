@@ -9,20 +9,25 @@
 import { originPath, kindOf, originFor } from './src/route.mjs';
 import { landingHtml } from './src/landing.mjs';
 import { privacyHtml } from './src/privacy.mjs';
+import { securityHeaders, httpsRedirect } from './src/headers.mjs';
 
 const PASS_REQ = ['accept', 'accept-language', 'accept-encoding', 'if-none-match', 'if-modified-since', 'range', 'user-agent'];
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // 평문 HTTP 는 https 로 (2026-11-11 실측: dash, lab, blog 의 http 응답 200)
+    const secure = httpsRedirect(url);
+    if (secure) return Response.redirect(secure, 301);
+    const sec = securityHeaders(kindOf(url.host));
     // apex 는 안내 한 장. www 는 apex 로
     if (kindOf(url.host) === 'home') {
       if (url.host.startsWith('www.')) return Response.redirect('https://mascari4615.com' + url.pathname + url.search, 301);
       /* Google OAuth 게시용 개인정보처리방침. 링크 없는 경로 */
       if (url.pathname === '/privacy' || url.pathname === '/privacy/') {
-        return new Response(privacyHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'privacy' } });
+        return new Response(privacyHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'privacy', ...sec } });
       }
-      return new Response(landingHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'home' } });
+      return new Response(landingHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'home', ...sec } });
     }
     const fallback = String(env.ORIGIN || 'https://karmolab-lab.pages.dev').replace(/\/$/, '');
     const origin = originFor(url.host, fallback);
@@ -35,6 +40,7 @@ export default {
     const loc = out.get('location');
     if (loc && loc.startsWith(origin)) out.set('location', url.origin + loc.slice(origin.length));
     out.set('x-site-router', url.host.split('.')[0]);
+    for (const [k, v] of Object.entries(sec)) out.set(k, v);
     return new Response(res.body, { status: res.status, headers: out });
   },
 };

@@ -88,6 +88,8 @@ const CLIENT = `
 </script>
 `;
 
+const CLIENT_HASH = `'sha256-${createHash('sha256').update(CLIENT.match(/<script>([\s\S]*)<\/script>/)[1]).digest('base64')}'`;
+
 /* Jekyll 앞머리(--- ... ---)는 실제 사이트에서는 서버가 떼고 준다. 여기서도 떼야 화면이 같다. */
 function stripFrontMatter(text) {
   if (!text.startsWith('---')) return text;
@@ -231,6 +233,8 @@ ${body}
     let html = stripFrontMatter(fs.readFileSync(file, 'utf8'));
     // 개발용 조각은 </body> 바로 앞에. 없으면 끝에 붙인다.
     html = html.includes('</body>') ? html.replace('</body>', CLIENT + '</body>') : html + CLIENT;
+    // 지문으로 잠근 CSP (dash 장) 면 이 조각의 지문도 허락. 없으면 핫리로드 차단
+    html = html.replace(/(<meta http-equiv="Content-Security-Policy" content="[^"]*script-src )/, `$1${CLIENT_HASH} `);
     body = Buffer.from(html, 'utf8');
   } else {
     body = fs.readFileSync(file);
