@@ -128,7 +128,7 @@ Discord, Gemini, Cursor, 카카오 익스포트 키 목록은 [.env.template](./
 | `YT_DLP_COOKIES_PATH` / `KARMOLAB_BOT_YOUTUBE_COOKIES_PATH` | Netscape `cookies.txt` (연령, 로그인 제한 완화) |
 | `KARMOLAB_BOT_PLAYLIST_MAX_TRACKS` | 플레이리스트에서 가져올 **최대 곡 수**. 기본 `40`. **`0` 이하**면 **한도 없음**(페이지 끝까지; 대형 목록은 로드, 디스코드 응답 시간이 길어질 수 있음). 양수면 그 개수만큼만. |
 
-내장 `ffmpeg-static`이 `FFMPEG_PATH`를 잡습니다. 무음이면 봇이 음성 채널에서 음소거되지 않았는지 확인하세요.
+내장 `ffmpeg-static`이 `FFMPEG_PATH`를 잡습니다. `.npmrc`가 설치 스크립트를 막으므로 ffmpeg와 yt-dlp 실행 파일은 `apps/discord-bots`에서 `npm run install:binaries`로 받습니다 (노트북 배포는 자동). 무음이면 봇이 음성 채널에서 음소거되지 않았는지 확인하세요.
 
 ### 음성 연결, DAVE(E2EE)
 

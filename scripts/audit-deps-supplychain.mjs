@@ -30,6 +30,26 @@ const ALLOW = path.join(root, 'data', 'install-scripts-allow.json');
    목록을 두 벌로 만들지 않으려고 검사를 저장소 자리로 올렸다. */
 const WORKSPACES = ['apps/karmolab', 'apps/discord-bots'];
 
+/* ⓪ 설치 스크립트 기본 차단 (2026-11-11). npm 은 package.json 이 있는 가장 가까운 폴더의 .npmrc 만
+   읽는다. 루트 한 장으로는 apps 아래 설치가 안 막힌다. 그래서 lockfile 이 있는 폴더마다 두 줄을 요구한다.
+   필요한 설치 스크립트는 그 프로젝트가 명시 실행한다 (discord-bots 의 install:binaries).
+   node_modules 없이 잴 수 있으므로 맨 앞에서 본다. 정본: memo systems/security.md 공급망 절. */
+const REQUIRED_NPMRC = [/^\s*ignore-scripts\s*=\s*true\s*$/m, /^\s*min-release-age\s*=\s*\d+\s*$/m];
+const lockDirs = execFileSync('git', ['ls-files', '--', '*package-lock.json', 'package-lock.json'], { cwd: root, encoding: 'utf8' })
+  .split('\n').filter(Boolean).map((f) => path.dirname(f));
+const npmrcMissing = [];
+for (const dir of ['.', ...lockDirs]) {
+  const rc = path.join(root, dir, '.npmrc');
+  const text = fs.existsSync(rc) ? fs.readFileSync(rc, 'utf8') : '';
+  if (REQUIRED_NPMRC.some((re) => re.test(text) === false)) npmrcMissing.push(dir);
+}
+if (npmrcMissing.length > 0) {
+  console.error(`[deps] **설치 스크립트가 기본으로 돈다** ${npmrcMissing.length}곳 (.npmrc 에 ignore-scripts=true, min-release-age=7 필요):`);
+  for (const d of npmrcMissing) console.error(`  - ${d}/.npmrc`);
+  console.error('  본보기: apps/karmolab/.npmrc');
+  process.exit(1);
+}
+
 function scanInstallScripts(ws) {
   const NM = path.join(root, ws, 'node_modules');
   if (fs.existsSync(NM) === false) return null;   // 안 깔린 곳은 못 쟀다

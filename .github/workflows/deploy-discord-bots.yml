@@ -395,6 +395,13 @@ jobs:
           & npm install --prefer-offline --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { $failed = 'npm install failed' }
 
+          # .npmrc 의 ignore-scripts 설정으로 설치 스크립트 안 돎. 음성용 실행 파일 (ffmpeg, yt-dlp) 은
+          # 빠졌을 때만 명시 실행으로 받음. 정본 memo systems/security.md 공급망 절
+          if (-not $failed) {
+            & npm run install:binaries
+            if ($LASTEXITCODE -ne 0) { $failed = 'install:binaries failed' }
+          }
+
           # === 곁 꾸러미의 연장도 챙긴다 (2026-08-24, prod 30분 정지) ===
           # `build:karmolab-bot` 은 `npm --prefix ../../packages/ai run build` 를 부르는데, 그 폴더는
           # 이 워크스페이스 **밖**이라 위 `npm install` 이 손대지 않는다. 여태 안 터진 건 노트북에
