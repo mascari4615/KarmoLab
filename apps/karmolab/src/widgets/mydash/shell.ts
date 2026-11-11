@@ -35,6 +35,7 @@ import kakaoDailyCss from './kakao-daily.css';
 import discordChannelsCss from './discord-channels.css';
 import byeoruCss from './byeoru.css';
 import automationsCss from './automations.css';
+import careerCss from './career.css';
 import { t, loadNamespace } from '../../lib/i18n';
 import { startPlannerSync } from '../planner/sync-store';
 
@@ -890,7 +891,7 @@ import { startPlannerSync } from '../planner/sync-store';
     /* 오락실(`arcade.css`)과 같은 방식. 위젯 옆의 `.css` 를 글자로 묶어 여기서 삽입
        위젯이 지연 로드라 셸의 캐시 목록을 안 건드리고 같이 실려 온다. */
     /* dash 장은 셸 CSS 가 없어 토큰과 공용 부품을 dash.css 가 채운다 */
-    el.textContent = mydashCss + dashCss + kakaoDailyCss + discordChannelsCss + byeoruCss + automationsCss;
+    el.textContent = mydashCss + dashCss + kakaoDailyCss + discordChannelsCss + byeoruCss + automationsCss + careerCss;
     document.head.appendChild(el);
   }
 
@@ -944,6 +945,8 @@ import { startPlannerSync } from '../planner/sync-store';
           { id: 'machines', label: t('mydash.nav.machines', undefined, '머신'), panel: 'machines' },
           /* 목표 방. 옛 커리어 방 자리 (사용자 2026-09-25 "커리어 대신 내 인생 목표", 2026-09-26 로비 L4) */
           { id: 'goals', label: t('mydash.nav.goals', undefined, '목표'), panel: 'goals' },
+          /* 커리어 방. 지원서별 자소서 시안과 합격 사례 (사용자 2026-11-11). 정본 memo data/career */
+          { id: 'career', label: '커리어', panel: 'career' },
           /* 플래너 (캘린더, 일기, 칸반, 연속일). 옛 캘린더 방 자리 (사용자 2026-09-23) */
           { id: 'planner', label: t('widgets.planner.title', undefined, '플래너'), panel: 'planner' },
           { id: 'discovery', label: '행사와 AI 소식', panel: 'discovery' },
@@ -996,6 +999,7 @@ import { startPlannerSync } from '../planner/sync-store';
     ai: 'stat',
     machines: 'dash',
     goals: 'me',
+    career: 'memo',
     planner: 'cal',
     discovery: 'book',
   };

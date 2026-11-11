@@ -18,6 +18,7 @@ import './widgets/mydash/byeoru';
 import './widgets/mydash/automations';
 import './widgets/mydash/machines';
 import './widgets/mydash/goals';
+import './widgets/mydash/career';
 /* 플래너 (캘린더, 일기, 칸반, 연속일). 2026-09-23 lab 도구에서 옮겨 옴 */
 import './widgets/planner/planner';
 import './widgets/mydash/shell';
