@@ -1,11 +1,11 @@
 /**
  * 개인 대시보드 홈. 목록의 **오늘** 자리.
  *
- * 무엇인가: 다른 방으로 가는 카드 여섯. 카드는 아이콘과 이름만 (D2b 시안, 사용자 통과 2026-09-23.
- * memo notes/mydash/design/skill-bench/D2b-mydash-tight-{light,dark}.html). 수는 방 안에서
+ * 무엇인가: R3 폰 메뉴 결 (2026-11-11 사용자 통과, memo notes/mydash/design/redesign-20261111/). 욘 가운데 크게,
+ * 오른쪽 세로 판에 시계, 방 칸 격자, 아래 수 셋. 왼쪽 위 작은 오늘 판. 옛 D2b 카드 일곱 (2026-09-23) 은 대체됨
  *
  * ★ **카드는 데이터를 기다리지 않는다.** 이름과 아이콘은 바로 그리고, 출처마다 따로 읽어
- * 왼쪽 목록의 작은 수만 채운다 (`ctx.setCount`). 읽기에 실패하면 **그 카드만** 못 읽음 한 줄.
+ * 칸 오른쪽 위 작은 수와 왼쪽 목록의 수를 채운다 (`ctx.setCount`). 읽기에 실패하면 **그 카드만** 못 읽음 한 줄.
  * 아직 안 구운 생성기 하나 때문에 홈 전체가 오류 카드가 되지 않게
  *
  * ★ **목록의 작은 수는 여기서 채운다.** 목록이 제 숫자를 따로 받아 오면 같은 파일을 두 번 읽고
@@ -17,6 +17,8 @@ import { t, loadNamespace } from '../../lib/i18n';
 import { ensureToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents } from '../planner/gcal';
 import { applyLobbyLook } from './lobby-look';
+import { ROOM_ICON_BASE, roomIcon } from './room-icons';
+import { listTasks } from '../planner/local-store';
 
 (function (): void {
   'use strict';
@@ -29,16 +31,14 @@ import { applyLobbyLook } from './lobby-look';
   const DATA_BRANCH = 'machines-data';
   /** 캘린더 수 상한. 구글 중계가 늦어도 그 카드만 비고 끝남 */
   const CAL_TIMEOUT_MS = 10000;
-  /** 아이콘은 ESC 메뉴와 같은 그림 (Codex image_gen 자작). CSS mask 로 글자색을 입힌다 */
-  const ICON_BASE = '/apps/karmolab/img/shell/menu/';
+  const CAREER_PATH = 'data/career/applications.json';
 
   /** 카드 한 장. 목록 항목 하나로 간다 */
   type Tile = {
     item: string;
     title: string;
-    icon: string;
-    /** 큰 카드. 두 칸, 주황. 화면에서 주황은 이것 하나 (북마크) */
-    hero?: boolean;
+    /** 주황 수. 화면에서 주황은 이것 하나 (커리어 마감) */
+    accent?: boolean;
     /** 목록 오른쪽 작은 수를 읽어 온다. 캘린더는 저장소가 아니라 구글 */
     count: (repo: DashRepoRead) => Promise<string | null>;
   };
@@ -194,22 +194,44 @@ import { applyLobbyLook } from './lobby-look';
     return Promise.race([calendarCountRaw(), late]).finally(() => window.clearTimeout(timer));
   }
 
+  /** 커리어 방의 작은 수는 작성 중이거나 제출한 지원서 중 가장 가까운 마감 D-day */
+  type CareerApp = { company?: string; status?: string; deadline?: string };
+  async function careerNext(repo: DashRepoRead): Promise<{ left: number; company: string } | null> {
+    const j = await repo.readJson<{ applications?: CareerApp[] }>(CAREER_PATH);
+    let best: { left: number; company: string } | null = null;
+    for (const a of j.applications || []) {
+      if (a.status !== 'drafting' && a.status !== 'submitted') continue;
+      const end = Date.parse(a.deadline || '');
+      if (!Number.isFinite(end) || end < Date.now()) continue;
+      const left = Math.floor((end - Date.now()) / 86400000);
+      if (!best || left < best.left) best = { left, company: a.company || '' };
+    }
+    return best;
+  }
+  async function careerCount(repo: DashRepoRead): Promise<string | null> {
+    const n = await careerNext(repo);
+    return n ? 'D-' + n.left : null;
+  }
+
+  /** 홈 칸 순서. R3 시안 (memo notes/mydash/design/redesign-20261111/drafts/R3-phone.html, 2026-11-11 통과) */
   function tiles(): Tile[] {
+    const none = async (): Promise<string | null> => null;
     return [
-      { item: 'daily', title: '오늘', icon: 'memo', count: async () => null },
+      { item: 'daily', title: '오늘', count: none },
+      { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), count: calendarCount },
+      { item: 'career', title: '커리어', accent: true, count: careerCount },
+      { item: 'goals', title: t('mydash.nav.goals', undefined, '목표'), count: goalsCount },
       /* 판정 대기와 북마크는 한 방 (사용자 2026-09-23). 방이 판정 대기부터 열려 목록 수도 대기 수 */
-      {
-        item: 'bookmarks',
-        title: t('mydash.nav.bookmarks', undefined, '북마크'),
-        icon: 'book',
-        hero: true,
-        count: async (r) => short(num((await bmCounts(r)).pending)),
-      },
-      { item: 'goals', title: t('mydash.nav.goals', undefined, '목표'), icon: 'me', count: goalsCount },
-      { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), icon: 'stat', count: aiCount },
-      { item: 'machines', title: t('mydash.nav.machines', undefined, '머신'), icon: 'dash', count: pcCount },
-      { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), icon: 'cal', count: calendarCount },
-      { item: 'appearance', title: '꾸미기', icon: 'set', count: async () => null },
+      { item: 'bookmarks', title: t('mydash.nav.bookmarks', undefined, '북마크'), count: async (r) => short(num((await bmCounts(r)).pending)) },
+      { item: 'kakao-daily', title: '카톡 정리', count: none },
+      { item: 'discord-channels', title: '디코 채널', count: none },
+      { item: 'discovery', title: '행사와 AI 소식', count: none },
+      { item: 'machines', title: t('mydash.nav.machines', undefined, '머신'), count: pcCount },
+      { item: 'ai', title: t('mydash.nav.ai', undefined, 'AI 사용'), count: aiCount },
+      { item: 'automations', title: '자동화', count: none },
+      { item: 'byeoru', title: '벼루 관리', count: none },
+      { item: 'user-presence', title: '내 상태', count: none },
+      { item: 'appearance', title: '꾸미기', count: none },
     ];
   }
 
@@ -217,31 +239,57 @@ import { applyLobbyLook } from './lobby-look';
 
   function tileHtml(c: Tile): string {
     return (
-      '<button type="button" data-open="' + esc(c.item) + '" class="mydh-card' + (c.hero ? ' mydh-card--hero' : '') + '" data-item="' + esc(c.item) + '"' +
-      ' style="--mydh-icon:url(' + ICON_BASE + esc(c.icon) + '.png)">' +
+      '<button type="button" data-open="' + esc(c.item) + '" class="mydh-cell" data-item="' + esc(c.item) + '"' +
+      ' style="--mydh-icon:url(' + ROOM_ICON_BASE + esc(roomIcon(c.item)) + '.png)">' +
+      '<em class="mydh-n' + (c.accent ? ' mydh-n--acc' : '') + '"></em>' +
       '<span class="mydh-ic" aria-hidden="true"></span>' +
       '<b>' + esc(c.title) + '</b>' +
       '</button>'
     );
   }
 
-  /** 오른쪽 위 날짜. `TUE 2026` 위, `9 / 23` 아래. 요일은 영문 석 자 (표시 글꼴이 대문자와 숫자만) */
-  function dateHtml(): string {
+  const WEEKDAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+  function clockText(): { time: string; date: string; day: string } {
     const d = kstNow();
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    return (
-      '<p class="mydh-date"><span>' + days[d.getUTCDay()] + ' ' + d.getUTCFullYear() + '</span>' +
-      '<b>' + (d.getUTCMonth() + 1) + ' / ' + d.getUTCDate() + '</b></p>'
-    );
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const mm = String(d.getUTCMinutes()).padStart(2, '0');
+    return { time: hh + ':' + mm, date: d.getUTCMonth() + 1 + '월 ' + d.getUTCDate() + '일', day: WEEKDAYS[d.getUTCDay()] };
   }
 
   function frameHtml(): string {
+    const c = clockText();
     return (
       '<div class="mydh-bg"></div>' +
       '<img class="mydh-yawn" src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true">' +
-      dateHtml() +
-      '<div class="mydh-grid">' + tiles().map(tileHtml).join('') + '</div>'
+      '<section class="mydh-today" aria-label="오늘 할 일"><h2>오늘</h2><ul class="mydh-tasks"></ul></section>' +
+      '<aside class="mydh-side">' +
+      '<div class="mydh-hd"><b class="mydh-clock">' + c.time + '</b><span class="mydh-day">' + c.date + '<br>' + c.day + '</span></div>' +
+      '<div class="mydh-cells">' + tiles().map(tileHtml).join('') + '</div>' +
+      '<div class="mydh-ft">' +
+      '<div data-foot="tasks"><b>-</b><span>오늘 할 일</span></div>' +
+      '<div data-foot="career"><b class="mydh-acc">-</b><span>지원 마감</span></div>' +
+      '<div data-foot="bookmarks"><b>-</b><span>북마크 판정 대기</span></div>' +
+      '</div></aside>'
     );
+  }
+
+  /** 왼쪽 위 오늘 판. 플래너 할 일 (기기 저장) 중 아직 안 한 것 넷까지. 오늘 방과 같은 원본 */
+  function paintTasks(root: HTMLElement): void {
+    let open: Array<{ title: string }> = [];
+    try {
+      const local = listTasks();
+      open = [...local.inProgress, ...local.todo];
+    } catch {
+      open = [];
+    }
+    const ul = root.querySelector('.mydh-tasks');
+    if (ul) {
+      ul.innerHTML = open.length
+        ? open.slice(0, 4).map((x) => '<li>' + esc(x.title) + '</li>').join('')
+        : '<li class="mydh-empty">남은 할 일이 없어요</li>';
+    }
+    const foot = root.querySelector('[data-foot="tasks"] b');
+    if (foot) foot.textContent = String(open.length);
   }
 
   async function render(ctx: DashPanelCtx): Promise<void> {
@@ -263,6 +311,38 @@ import { applyLobbyLook } from './lobby-look';
       const el = (ev.target as HTMLElement | null)?.closest('[data-open]') as HTMLElement | null;
       if (el) ctx.openItem(el.getAttribute('data-open') || '');
     });
+
+    /* 왼쪽 위 오늘 판과 아래 할 일 수. 다른 탭이나 오늘 방에서 바뀌면 다시 */
+    const repaintTasks = (): void => { if (ctx.isCurrent()) paintTasks(root); };
+    repaintTasks();
+    window.addEventListener('planner-local-change', repaintTasks);
+    window.addEventListener('planner-remote-change', repaintTasks);
+    window.addEventListener('storage', repaintTasks);
+    /* 시계. 분이 바뀌는 것만 보이면 되니 20초마다 */
+    const tick = window.setInterval(() => {
+      if (!ctx.isCurrent()) return;
+      const c = clockText();
+      const clock = root.querySelector('.mydh-clock');
+      const day = root.querySelector('.mydh-day');
+      if (clock) clock.textContent = c.time;
+      if (day) day.innerHTML = esc(c.date) + '<br>' + esc(c.day);
+    }, 20000);
+    ctx.onDispose(() => {
+      window.clearInterval(tick);
+      window.removeEventListener('planner-local-change', repaintTasks);
+      window.removeEventListener('planner-remote-change', repaintTasks);
+      window.removeEventListener('storage', repaintTasks);
+    });
+    /* 아래 줄 지원 마감은 회사 이름까지 */
+    void careerNext(repo)
+      .then((n) => {
+        if (!ctx.isCurrent()) return;
+        const box = root.querySelector('[data-foot="career"]');
+        if (!box) return;
+        box.querySelector('b')!.textContent = n ? 'D-' + n.left : '-';
+        box.querySelector('span')!.textContent = n && n.company ? n.company + ' 마감' : '지원 마감';
+      })
+      .catch(() => undefined);
 
     /* 방마다 따로 읽는다. **하나가 죽어도 나머지는 산다** */
     const jobs: Array<{ item: string; count: () => Promise<string | null> }> = tiles().map((c) => ({
@@ -290,7 +370,15 @@ import { applyLobbyLook } from './lobby-look';
           return false;
         }
         /* 못 읽은 자리와 수가 없는 자리는 빈칸 (0 이 아니다) */
-        if (ctx.isCurrent() && value) ctx.setCount(j.item, value);
+        if (ctx.isCurrent() && value) {
+          ctx.setCount(j.item, value);
+          const n = root.querySelector('[data-item="' + j.item + '"] .mydh-n');
+          if (n) n.textContent = value;
+          if (j.item === 'bookmarks') {
+            const foot = root.querySelector('[data-foot="bookmarks"] b');
+            if (foot) foot.textContent = value;
+          }
+        }
         return true;
       })
     );
@@ -304,7 +392,7 @@ import { applyLobbyLook } from './lobby-look';
       return t('mydash.nav.home', undefined, '홈');
     },
     access: 'read',
-    paths: [BOOKMARKS_PATH, GOALS_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
+    paths: [BOOKMARKS_PATH, GOALS_PATH, CAREER_PATH, AI_DIR + '/<host>/rollups.json', PC_DIR + '/<host>/summary.json'],
     render,
   });
 })();

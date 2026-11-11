@@ -217,9 +217,9 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   word-break: break-all;
 }
 
-/* ── 홈. D2b 하늘 로비 (memo notes/mydash/design/skill-bench/D2b-mydash-tight-{light,dark}.html, 2026-09-23 통과) ──
-   하늘 그림 위에 흰 유리 카드 일곱. 카드는 아이콘과 이름만, 칸 높이 120. 주황은 판정 대기 하나.
-   욘은 오른쪽에 크게 잘려서. 배경 그림은 첫 화면과 같은 넷 (img/home/sky-*.webp), 설정의 첫 화면 배경을 따른다.
+/* ── 홈. R3 폰 메뉴 결 (memo notes/mydash/design/redesign-20261111/drafts/R3-phone.html, 2026-11-11 통과) ──
+   하늘 그림 위에 욘 가운데 크게, 오른쪽 흰 유리 세로 판 (시계, 방 칸 격자, 아래 수 셋), 왼쪽 위 오늘 판. 주황은 커리어 마감 하나.
+   욘은 아래가 잘리게. 배경 그림은 첫 화면과 같은 넷 (img/home/sky-*.webp), 설정의 첫 화면 배경을 따른다.
    색은 시안 토큰 그대로. 스킨 토큰을 안 쓰는 화면이라 여기 직접 적고, 어두운 판은 토큰만 바꾼다 */
 .myd-main:has(.mydh) {
   display: flex;
@@ -241,7 +241,7 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-glass: rgba(255, 255, 255, 0.78);
   --mydh-edge: rgba(255, 255, 255, 0.95);
   --mydh-acc: #e8862e;
-  --mydh-acc-ink: #fff;
+  --mydh-blue: #2f6fdc;
   --mydh-veil: rgba(255, 255, 255, 0.42);
   --mydh-shadow: 0 20px 50px -30px rgba(24, 34, 56, 0.5);
   --mydh-page: #c9d6e4;
@@ -252,8 +252,6 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-icon: none;
   --mydh-font-ko: var(--font-sans);
   --mydh-font-en: var(--font-display);
-  --mydh-fs-en: 10px;
-  --mydh-fs-date: 28px;
   --mydh-fs-name: 18px;
   --mydh-fs-bad: 12px;
   position: relative;
@@ -273,7 +271,7 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-glass: rgba(20, 26, 36, 0.72);
   --mydh-edge: rgba(255, 255, 255, 0.18);
   --mydh-acc: #f0a04b;
-  --mydh-acc-ink: #101418;
+  --mydh-blue: #7fb0ff;
   --mydh-veil: rgba(10, 14, 20, 0.55);
   --mydh-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.8);
   --mydh-page: #0f141c;
@@ -383,129 +381,168 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 }
 .mydh-yawn {
   position: absolute;
-  right: -80px;
-  bottom: -42%;
+  left: 20%;
+  top: 2%;
   z-index: -1;
-  height: 131%;
+  height: 120%;
   pointer-events: none;
-  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.3));
 }
-.mydh-date {
+.mydh-today,
+.mydh-side {
   position: absolute;
-  right: var(--mydh-pad);
-  top: 36px;
-  margin: 0;
-  text-align: right;
+  border: 1px solid var(--mydh-edge);
+  background: var(--mydh-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--mydh-shadow);
 }
-.mydh-date span {
-  display: block;
-  font-family: var(--mydh-font-en);
-  font-size: var(--mydh-fs-en);
-  letter-spacing: 0.24em;
+.mydh-today {
+  left: var(--mydh-pad);
+  top: 100px;
+  width: min(420px, 28vw);
+  padding: 20px 24px;
+}
+.mydh-today h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.mydh-tasks {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+.mydh-tasks li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mydh-line);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.mydh-tasks .mydh-empty {
   color: var(--mydh-ink3);
 }
-.mydh-date b {
-  display: block;
-  font-family: var(--mydh-font-en);
-  font-size: var(--mydh-fs-date);
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: 0.04em;
-}
-.mydh-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: var(--mydh-row);
-  gap: 10px;
-  max-width: min(760px, 60%);
-}
-.mydh-card {
-  position: relative;
+.mydh-side {
+  right: var(--mydh-pad);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(620px, 40vw);
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-start;
-  min-width: 0;
-  padding: 14px 18px;
-  border: 1px solid var(--mydh-edge);
-  border-radius: 0;
-  background: var(--mydh-glass);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--mydh-shadow);
+}
+.mydh-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 26px 30px 20px;
+  border-bottom: 1px solid var(--mydh-line);
+}
+.mydh-clock {
+  font-family: var(--mydh-font-en);
+  font-size: 58px;
+  font-weight: 300;
+  line-height: 0.9;
+}
+.mydh-day {
+  text-align: right;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mydh-ink3);
+}
+.mydh-cells {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 22px 26px;
+}
+.mydh-cell {
+  position: relative;
+  height: var(--mydh-row);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--mydh-line);
+  background: var(--mydh-edge);
   color: var(--mydh-ink);
   font: inherit;
-  text-align: left;
-}
-/* 왼쪽 아래 작은 삼각 */
-.mydh-card::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  border-style: solid;
-  border-width: 0 0 10px 10px;
-  border-color: transparent transparent var(--mydh-line) transparent;
-}
-button.mydh-card {
   cursor: pointer;
 }
-button.mydh-card:hover,
-button.mydh-card:focus-visible {
+.mydh-cell:hover,
+.mydh-cell:focus-visible {
   border-color: var(--mydh-ink);
 }
-/* 아이콘. 칸 짧은 변의 1/3 이상 (공통 요청). 그림의 밝기가 알파라 글자색을 입는다 */
 .mydh-ic {
-  position: absolute;
-  left: 18px;
-  top: 14px;
-  width: 40px;
-  height: 40px;
-  background: currentColor;
+  width: 44px;
+  height: 44px;
+  background: var(--mydh-blue);
   -webkit-mask: var(--mydh-icon) center / contain no-repeat;
   mask: var(--mydh-icon) center / contain no-repeat;
 }
-.mydh-card b {
+.mydh-cell b {
   font-size: var(--mydh-fs-name);
-  font-weight: 900;
+  font-weight: 700;
+  text-align: center;
+  word-break: keep-all;
+}
+.mydh-n {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-style: normal;
+  font-family: var(--mydh-font-en);
+  font-size: 14px;
+  color: var(--mydh-ink3);
+}
+.mydh-n--acc,
+.mydh-acc {
+  color: var(--mydh-acc);
 }
 .mydh-bad {
   position: absolute;
-  right: 18px;
-  top: 14px;
+  left: 8px;
+  bottom: 4px;
   font-size: var(--mydh-fs-bad);
   color: var(--mydh-ink3);
 }
-/* 판정 대기. 두 칸, 주황 */
-.mydh-card--hero {
-  grid-column: span 2;
-  border-color: transparent;
-  background: var(--mydh-acc);
-  color: var(--mydh-acc-ink);
+.mydh-ft {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--mydh-line);
 }
-.mydh-card--hero::after {
-  display: none;
+.mydh-ft div {
+  padding: 18px 26px;
+  border-right: 1px solid var(--mydh-line);
 }
-button.mydh-card--hero:hover,
-button.mydh-card--hero:focus-visible {
-  border-color: var(--mydh-acc-ink);
+.mydh-ft div:last-child {
+  border-right: 0;
 }
-.mydh-card--hero .mydh-bad {
-  color: var(--mydh-acc-ink);
+.mydh-ft b {
+  display: block;
+  font-family: var(--mydh-font-en);
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 1.05;
 }
-/* 좁아지면 두 열, 폰은 두 열에 칸을 줄인다. 욘은 위로 */
+.mydh-ft span {
+  font-size: 13px;
+  color: var(--mydh-ink3);
+}
 @media (max-width: 1099px) {
-  .mydh { --mydh-pad: 24px; height: auto; overflow: visible; padding-top: 96px; }
-  .mydh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
-  .mydh-yawn { right: -140px; bottom: auto; top: -60px; height: 900px; }
-  .mydh-date { top: 28px; }
+  .mydh { --mydh-pad: 24px; height: auto; overflow: visible; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .mydh-yawn { left: auto; right: -160px; top: -40px; height: 900px; }
+  .mydh-today, .mydh-side { position: relative; left: auto; right: auto; top: auto; transform: none; width: auto; max-width: 640px; }
 }
 @media (max-width: 599px) {
-  .mydh { --mydh-pad: 14px; --mydh-row: 104px; padding: 76px 14px 24px; }
-  .mydh-grid { gap: 8px; }
-  .mydh-card { padding: 12px 14px; }
-  .mydh-ic { left: 14px; top: 12px; width: 36px; height: 36px; }
-  .mydh { --mydh-fs-name: 16px; }
-  .mydh-date { top: 20px; }
+  .mydh { --mydh-pad: 14px; --mydh-row: 96px; padding: 14px; }
+  .mydh-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 14px; }
+  .mydh-hd { padding: 18px 18px 14px; }
+  .mydh-clock { font-size: 44px; }
+  .mydh-ft div { padding: 14px; }
+  .mydh-ft b { font-size: 30px; }
+  .mydh-ic { width: 36px; height: 36px; }
+  .mydh { --mydh-fs-name: 14px; }
   .mydh-yawn { right: -130px; top: 30px; height: 560px; }
 }
 

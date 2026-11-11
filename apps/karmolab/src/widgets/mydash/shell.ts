@@ -30,6 +30,7 @@ import type { DashEntry, DashPanel, DashPanelCtx, DashReadOpts, DashRepoWrite } 
 import { cachedEtag, cachedRead, clearReads, saveRead } from './read-cache';
 import mydashCss from './mydash.css';
 import { LOBBY_BACKGROUNDS, applyLobbyLook } from './lobby-look';
+import { roomIcon } from './room-icons';
 import dashCss from './dash.css';
 import kakaoDailyCss from './kakao-daily.css';
 import discordChannelsCss from './discord-channels.css';
@@ -987,22 +988,6 @@ import { startPlannerSync } from '../planner/sync-store';
     }
   }
 
-  /** ESC 메뉴 칸의 아이콘 (`img/shell/menu/*.png`). 홈 카드와 같은 매핑, 나 는 소개 그림 */
-  const MENU_ICONS: Record<string, string> = {
-    today: 'home',
-    daily: 'memo',
-    appearance: 'set',
-    'user-presence': 'me',
-    bookmarks: 'book',
-    'kakao-daily': 'book',
-    'discord-channels': 'book',
-    ai: 'stat',
-    machines: 'dash',
-    goals: 'me',
-    career: 'memo',
-    planner: 'cal',
-    discovery: 'book',
-  };
   type EscMenuCells = {
     title: string;
     cells: Array<{ id: string; icon: string; label: string }>;
@@ -1511,7 +1496,7 @@ import { startPlannerSync } from '../planner/sync-store';
       {
         setMenuCells({
           title: t('shell.menu.dashboard', undefined, '대시보드'),
-          cells: navItems().map((it) => ({ id: it.id, icon: MENU_ICONS[it.id] || 'dash', label: it.label })),
+          cells: navItems().map((it) => ({ id: it.id, icon: roomIcon(it.id), label: it.label })),
           pick: (id) => {
             setUrlItem(id, false);
             openItem(id);
