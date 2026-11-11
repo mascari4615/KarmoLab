@@ -253,6 +253,8 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   --mydh-font-ko: var(--font-sans);
   --mydh-font-en: var(--font-display);
   --mydh-fs-name: 18px;
+  --mydh-fs-clock: 58px;
+  --mydh-fs-big: 42px;
   --mydh-fs-bad: 12px;
   position: relative;
   isolation: isolate;
@@ -405,7 +407,7 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 }
 .mydh-today h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--font-size-md);
 }
 .mydh-tasks {
   list-style: none;
@@ -415,7 +417,7 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 .mydh-tasks li {
   padding: 10px 0;
   border-bottom: 1px solid var(--mydh-line);
-  font-size: 16px;
+  font-size: var(--font-size-sm);
   overflow-wrap: anywhere;
 }
 .mydh-tasks .mydh-empty {
@@ -438,13 +440,13 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 }
 .mydh-clock {
   font-family: var(--mydh-font-en);
-  font-size: 58px;
+  font-size: var(--mydh-fs-clock);
   font-weight: 300;
   line-height: 0.9;
 }
 .mydh-day {
   text-align: right;
-  font-size: 14px;
+  font-size: var(--font-size-xs);
   line-height: 1.5;
   color: var(--mydh-ink3);
 }
@@ -492,7 +494,7 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
   right: 8px;
   font-style: normal;
   font-family: var(--mydh-font-en);
-  font-size: 14px;
+  font-size: var(--font-size-xs);
   color: var(--mydh-ink3);
 }
 .mydh-n--acc,
@@ -521,12 +523,12 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 .mydh-ft b {
   display: block;
   font-family: var(--mydh-font-en);
-  font-size: 42px;
+  font-size: var(--mydh-fs-big);
   font-weight: 400;
   line-height: 1.05;
 }
 .mydh-ft span {
-  font-size: 13px;
+  font-size: var(--font-size-2xs);
   color: var(--mydh-ink3);
 }
 @media (max-width: 1099px) {
@@ -538,9 +540,8 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
   .mydh { --mydh-pad: 14px; --mydh-row: 96px; padding: 14px; }
   .mydh-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 14px; }
   .mydh-hd { padding: 18px 18px 14px; }
-  .mydh-clock { font-size: 44px; }
+  .mydh { --mydh-fs-clock: 44px; --mydh-fs-big: 30px; }
   .mydh-ft div { padding: 14px; }
-  .mydh-ft b { font-size: 30px; }
   .mydh-ic { width: 36px; height: 36px; }
   .mydh { --mydh-fs-name: 14px; }
   .mydh-yawn { right: -130px; top: 30px; height: 560px; }
