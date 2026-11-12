@@ -4,6 +4,7 @@
  * 정본은 private memo 하나 (Claude, Codex 공통, 스킬 `career`):
  *  - `data/career/applications.json` 지원 목록, 문항, 시안 파일 자리, 고른 안 (`picks`)
  *  - `data/career/cases.json` 합격 사례 요약
+ *  - `data/career/industry-intel.json` 업계 커뮤니티 정보 (생성물. 정본 `career/goal/research/industry-intel/*.md`, 생성기 `career/tools/intel-to-json.mjs`)
  *  - 시안 본문은 `<draftsDir>/<file>` 의 `<!-- answer:X -->` 주석 사이
  * 형식: memo `data/career/README.md`. 지원별 HTML 생성기 (`build-viewer.mjs`) 와 같은 규칙
  *
@@ -65,6 +66,21 @@ interface CaseItem {
   takeaway?: string;
   answers: CaseAnswer[];
 }
+interface IntelItem {
+  text: string;
+  level: string;
+  sub: string[];
+}
+interface IntelGroup {
+  name: string;
+  sections: Array<{ title: string; items: IntelItem[] }>;
+}
+interface IntelDoc {
+  updated?: string;
+  lastRun?: string;
+  source?: { companies?: string; industry?: string; readme?: string; log?: string };
+  groups: IntelGroup[];
+}
 interface Variant {
   id: string;
   title: string;
@@ -82,6 +98,10 @@ interface PickEvent {
 
 const APPS = 'data/career/applications.json';
 const CASES = 'data/career/cases.json';
+const INTEL = 'data/career/industry-intel.json';
+const DC_POST = 'https://gall.dcinside.com/mgallery/board/view/?id=gamejob&no=';
+/** 확인 수준. 정본 memo industry-intel README 의 확인 수준 표 */
+const LEVELS = ['공식', '반복', '현직 표시', '한 명'];
 const PICKS_DIR = 'career/picks';
 const STATUS: Record<string, string> = {
   drafting: '작성 중',
@@ -90,8 +110,8 @@ const STATUS: Record<string, string> = {
   failed: '불합격',
   closed: '마감',
 };
-type Tab = 'drafts' | 'points' | 'cases' | 'links';
-const TABS: Tab[] = ['drafts', 'points', 'cases', 'links'];
+type Tab = 'drafts' | 'points' | 'cases' | 'intel' | 'links';
+const TABS: Tab[] = ['drafts', 'points', 'cases', 'intel', 'links'];
 const asTab = (v: string | undefined): Tab => (TABS as string[]).indexOf(v || '') >= 0 ? (v as Tab) : 'drafts';
 
 /** 시안 파일 하나에서 `## X. 제목` 과 answer 주석 사이 본문. 생성기 `parseVariants` 와 같은 규칙 */
@@ -145,6 +165,26 @@ function kst(iso?: string): string {
   return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Seoul' }).format(new Date(iso));
 }
 
+/** 정리 문서 한 줄을 HTML 로. 확인 수준 표시는 뱃지로 따로 빼고, md 링크, 코드, 디시 글 번호 (gj78707) 만 살림 */
+export function intelLine(text: string, relUrl: (path: string) => string | null = () => null): string {
+  const plain = text.replace(/\s*`?\[(공식|반복|현직 표시|한 명)\]`?/g, '');
+  const parts = plain.split(/(\[[^\]]+\]\([^)\s]+\)|`[^`]+`|\bgj\d{4,6}\b)/g);
+  return parts
+    .map((p) => {
+      const md = p.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
+      if (md) {
+        // 상대 경로 (memo 안 다른 문서) 는 relUrl 이 GitHub 주소로 바꿈
+        const url = /^https?:/i.test(md[2]) ? safeLinkUrl(md[2]) : /^[\w./-]+\.md$/.test(md[2]) ? relUrl(md[2]) : null;
+        return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(md[1])}</a>` : esc(md[1]);
+      }
+      if (/^gj\d{4,6}$/.test(p)) return `<a href="${esc(DC_POST + p.slice(2))}" target="_blank" rel="noopener">${esc(p)}</a>`;
+      const code = p.match(/^`([^`]+)`$/);
+      if (code) return `<code>${esc(code[1])}</code>`;
+      return esc(p);
+    })
+    .join('');
+}
+
 /** 문항 제목 뒤 괄호 메모 ("(시안만, 확정 보류)") 는 판 아래 작은 줄로 */
 function splitTitle(title: string): { name: string; memo: string } {
   const m = title.match(/^(.*?)\s*\((.+)\)$/);
@@ -179,6 +219,9 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
   let show = '';
   let note = '';
   const variantsCache = new Map<string, Variant[] | Error>();
+  let intel: IntelDoc | Error | null = null;
+  let intelGroup = -1;
+  let intelLevel = '';
   const pickEvents: PickEvent[] = [];
 
   async function loadPickEvents(): Promise<void> {
@@ -265,6 +308,7 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
           <button type="button" role="tab" data-tab="drafts" aria-selected="${tab === 'drafts'}">자소서 시안</button>
           <button type="button" role="tab" data-tab="points" aria-selected="${tab === 'points'}">채용 강조점<span>${(app.emphasis || []).length}</span></button>
           <button type="button" role="tab" data-tab="cases" aria-selected="${tab === 'cases'}">합격 사례<span>${(app.caseIds || []).length}</span></button>
+          <button type="button" role="tab" data-tab="intel" aria-selected="${tab === 'intel'}">회사 소문</button>
           <button type="button" role="tab" data-tab="links" aria-selected="${tab === 'links'}">공고와 자료</button>
         </nav></div>
       <div class="cr-dday"><small>마감 ${esc(kst(app.deadline))}</small><b>${esc(left.big)}</b><span>${esc(left.sub || (app.opens ? '공고 ' + kst(app.opens) : ''))}</span></div>
@@ -313,6 +357,75 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
       <div class="cr-points">${sorted
         .map((e, i) => `<article class="cr-point${e.warn ? ' cr-warn' : ''}"><span class="cr-pno">${e.warn ? '!' : i + 1 - sorted.filter((x) => x.warn).length}</span><div><h3>${esc(e.title)}</h3><p>${esc(e.body)}</p>${e.from ? `<small>${esc(e.from)}</small>` : ''}</div></article>`)
         .join('')}</div>`;
+  }
+
+  async function loadIntel(): Promise<void> {
+    if (intel) return;
+    try {
+      const doc = await repo.readJson<IntelDoc>(INTEL);
+      intel = doc && Array.isArray(doc.groups) ? doc : new Error('형식이 다름');
+    } catch (e) {
+      intel = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+
+  /** 지원 중인 회사와 이름이 겹치는 묶음을 먼저. 넷마블네오 지원이면 "넷마블, 넷마블네오" */
+  function defaultGroup(doc: IntelDoc): number {
+    const key = app.company.replace(/\s+/g, '');
+    const i = doc.groups.findIndex((g) =>
+      g.name
+        .replace(/\s+/g, '')
+        .split(/[,(]/)
+        .some((n) => !!n && (key.indexOf(n) === 0 || n.indexOf(key) === 0))
+    );
+    return i >= 0 ? i : 0;
+  }
+
+  function intelNav(doc: IntelDoc): string {
+    const items = doc.groups
+      .map((g, i) => {
+        const all = g.sections.reduce((n, s) => n + s.items.length, 0);
+        const official = g.sections.reduce((n, s) => n + s.items.filter((x) => x.level === '공식').length, 0);
+        return `<button type="button" class="cr-qbtn" data-ig="${i}" aria-current="${i === intelGroup}"><span class="cr-no">${all}</span><span class="cr-qt"><b>${esc(g.name)}</b><small>공식 ${official}</small></span></button>`;
+      })
+      .join('');
+    return `<nav class="cr-qnav" aria-label="회사">${items}</nav>`;
+  }
+
+  function intelView(doc: IntelDoc): string {
+    const g = doc.groups[intelGroup] || doc.groups[0];
+    const filters = ['', ...LEVELS]
+      .map((l) => `<button type="button" data-il="${esc(l)}" aria-pressed="${intelLevel === l}">${esc(l || '전체')}</button>`)
+      .join('');
+    const src = doc.source || {};
+    // 정리 문서 안 상대 링크의 기준 폴더. companies.md 와 industry.md 는 같은 폴더
+    const baseDir = (src.companies || '').replace(/[^/]*$/, '');
+    const rel = (p: string): string | null => {
+      const out: string[] = baseDir.split('/').filter(Boolean);
+      for (const seg of p.split('/')) {
+        if (seg === '..') out.pop();
+        else if (seg && seg !== '.') out.push(seg);
+      }
+      return baseDir ? gh(out.join('/')) : null;
+    };
+    const line = (t: string): string => intelLine(t, rel);
+    const sections = g.sections
+      .map((s) => {
+        const items = s.items.filter((x) => !intelLevel || x.level === intelLevel);
+        if (!items.length) return '';
+        const lis = items
+          .map(
+            (x) =>
+              `<li>${x.level ? `<span class="cr-lv" data-lv="${esc(x.level)}">${esc(x.level)}</span>` : ''}<p>${line(x.text)}</p>${x.sub.length ? `<ul>${x.sub.map((t) => `<li>${line(t)}</li>`).join('')}</ul>` : ''}</li>`
+          )
+          .join('');
+        return `<article class="cr-intel-sec">${s.title ? `<h3>${esc(s.title)}</h3>` : ''}<ul>${lis}</ul></article>`;
+      })
+      .join('');
+    const links = [ghLink(src.companies, '회사별 원문'), ghLink(src.industry, '업계 전반 원문'), ghLink(src.log, '최근 수집 기록'), ghLink(src.readme, '수집 방법')].filter(Boolean).join(' / ');
+    return `<p class="cr-band">디시 게임업계 갤, 블라인드 회사 페이지의 공개 글 정리. 카더라와 개인 의견 포함. 뱃지는 확인 수준: 공식 (기사, 공시), 반복 (다른 글 2건 이상), 현직 표시 (블라인드 그 회사 이름표), 한 명 (글 하나). 마지막 수집 ${esc(doc.lastRun || '-')}. ${links}</p>
+      <div class="cr-ifilter" role="group" aria-label="확인 수준">${filters}</div>
+      <div class="cr-intel">${sections || '<p class="cr-empty">이 확인 수준의 항목이 없어요.</p>'}</div>`;
   }
 
   function linksView(): string {
@@ -404,6 +517,27 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
     setHash();
     const picks = picksOf(app);
     ctx.status(app.company + ' ' + daysLeft(app.deadline).big);
+    if (tab === 'intel') {
+      await loadIntel();
+      if (!ctx.isCurrent()) return;
+      const doc = intel;
+      if (!doc || doc instanceof Error) {
+        ctx.root.innerHTML = top(picks) + qnav(picks) + `<section class="cr-main cr-body"><p class="cr-empty">업계 정보 파일을 못 읽었어요: <code>${INTEL}</code></p></section>`;
+        return;
+      }
+      if (intelGroup < 0) intelGroup = defaultGroup(doc);
+      ctx.root.innerHTML = top(picks) + intelNav(doc) + `<section class="cr-main cr-body">${intelView(doc)}</section>`;
+      // 고른 회사가 목록 밖이면 보이게. 폰은 가로 목록이라 지원 회사가 셋째 칸 뒤로 밀림
+      const nav = ctx.root.querySelector<HTMLElement>('.cr-qnav');
+      const cur = nav && nav.querySelector<HTMLElement>('[aria-current="true"]');
+      if (nav && cur) {
+        const a = nav.getBoundingClientRect();
+        const b = cur.getBoundingClientRect();
+        if (b.right > a.right || b.left < a.left) nav.scrollLeft += b.left - a.left - 12;
+        if (b.bottom > a.bottom || b.top < a.top) nav.scrollTop += b.top - a.top - 12;
+      }
+      return;
+    }
     ctx.root.innerHTML = top(picks) + qnav(picks) + '<section class="cr-main cr-body"></section>';
     const body = ctx.root.querySelector<HTMLElement>('.cr-main')!;
     if (tab === 'cases') body.innerHTML = casesView();
@@ -436,6 +570,8 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
     }
     note = '';
     if (t.dataset.tab) tab = asTab(t.dataset.tab);
+    else if (t.dataset.ig) intelGroup = Number(t.dataset.ig) || 0;
+    else if (t.dataset.il !== undefined) intelLevel = t.dataset.il;
     else if (t.dataset.q) {
       qid = Number(t.dataset.q) || 0;
       tab = 'drafts';
@@ -449,6 +585,7 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
     if (!s.classList.contains('cr-app')) return;
     app = apps.find((a) => a.id === s.value) || app;
     qid = 0;
+    intelGroup = -1;
     show = '';
     void paint();
   });
@@ -457,4 +594,4 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
   await paint();
 }
 
-dashRegistry().register({ id: 'career', title: '커리어', access: 'write', paths: [APPS, CASES, 'career/goal/research/', PICKS_DIR + '/'], render: renderCareer });
+dashRegistry().register({ id: 'career', title: '커리어', access: 'write', paths: [APPS, CASES, INTEL, 'career/goal/research/', PICKS_DIR + '/'], render: renderCareer });

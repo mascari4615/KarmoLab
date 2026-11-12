@@ -119,6 +119,7 @@ test('real memo canon renders when MEMO_DIR is given', { skip: !process.env.MEMO
   const read = async (p) => readFile(`${dir}/${p}`, 'utf8');
   const apps = JSON.parse(await read('data/career/applications.json'));
   const files = { 'data/career/applications.json': apps, 'data/career/cases.json': JSON.parse(await read('data/career/cases.json')) };
+  if (existsSync(`${dir}/data/career/industry-intel.json`)) files['data/career/industry-intel.json'] = JSON.parse(await read('data/career/industry-intel.json'));
   for (const a of apps.applications) for (const q of a.questions) if (q.file && existsSync(`${dir}/${a.draftsDir}/${q.file}`)) files[`${a.draftsDir}/${q.file}`] = await read(`${a.draftsDir}/${q.file}`);
   const { root, ctx, panel } = screen(t, files);
   await panel.render(ctx);
@@ -130,6 +131,48 @@ test('real memo canon renders when MEMO_DIR is given', { skip: !process.env.MEMO
     total.variants += root.querySelectorAll('.cr-variant').length;
     assert.equal(root.querySelectorAll('.cr-over').length, 0);
   }
+  if (files['data/career/industry-intel.json']) {
+    root.querySelector('[data-tab="intel"]').click();
+    await settle();
+    const cur = root.querySelector('[data-ig][aria-current="true"] b');
+    console.log('real intel groups', root.querySelectorAll('[data-ig]').length, 'default', cur && cur.textContent, 'items', root.querySelectorAll('.cr-intel-sec > ul > li').length);
+    assert.ok(root.querySelectorAll('.cr-intel-sec > ul > li').length > 0);
+  }
   console.log('real canon variants', total.variants);
   assert.ok(total.variants > 0);
+});
+
+test('intel tab lists groups, filters by level, links posts and escapes text', async (t) => {
+  const intel = { lastRun: '2026-11-12', source: { companies: 'career/i/companies.md' }, groups: [
+    { name: '업계 전반', sections: [{ title: '채용', items: [{ text: '공고 절반 `[한 명]` (gj78226)', level: '한 명', sub: [] }] }] },
+    { name: 'Acme, 다른곳', sections: [{ title: '소식', items: [
+      { text: '감축 보도 `[공식]` ([기사](https://example.com/n)) [조사](../other.md)', level: '공식', sub: ['세부 <img src=x>'] },
+      { text: '야근 많음 [반복] [bad](javascript:alert(1))', level: '반복', sub: [] },
+    ] }] },
+  ] };
+  const { w, root, ctx, panel } = screen(t, { ...fixture, 'data/career/industry-intel.json': intel });
+  await panel.render(ctx);
+  await settle();
+  root.querySelector('[data-tab="intel"]').click();
+  await settle();
+  assert.equal(root.querySelectorAll('[data-ig]').length, 2);
+  root.querySelector('[data-ig="1"]').click();
+  await settle();
+  assert.equal(root.querySelector('[data-ig][aria-current="true"] b').textContent, 'Acme, 다른곳');
+  assert.equal(root.querySelectorAll('.cr-intel-sec > ul > li').length, 2);
+  assert.equal(root.querySelector('.cr-lv').textContent, '공식');
+  assert.doesNotMatch(root.querySelector('.cr-intel').textContent, /\[공식\]/);
+  assert.equal(root.querySelector('.cr-intel a').getAttribute('href'), 'https://example.com/n');
+  assert.equal(root.querySelectorAll('.cr-intel a')[1].getAttribute('href'), 'https://github.com/o/memo/blob/main/career/other.md');
+  assert.equal(root.querySelectorAll('img[src=x], a[href^="javascript"]').length, 0);
+  root.querySelector('[data-il="반복"]').click();
+  await settle();
+  assert.equal(root.querySelectorAll('.cr-intel-sec > ul > li').length, 1);
+  root.querySelector('[data-ig="0"]').click();
+  await settle();
+  assert.equal(root.querySelectorAll('.cr-empty').length, 1);
+  root.querySelector('[data-il=""]').click();
+  await settle();
+  assert.match(root.querySelector('.cr-intel a').getAttribute('href'), /no=78226$/);
+  assert.equal(decodeURIComponent(w.location.hash), '#career/acme-2026/intel');
 });
