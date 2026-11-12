@@ -2,11 +2,109 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1982,
-    "days": 12,
+    "commits": 1999,
+    "days": 10,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-11-12",
+      "entries": [
+        {
+          "sha": "e2fc12e28",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "unit",
+          "text": "피격 점멸을 더하기에서 섞기로, 보스 0.5에서 형태가 남게"
+        },
+        {
+          "sha": "324d4bccd",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "survival",
+          "text": "밝은 맵 C안, 풀은 빛 받는 재질, 지면 색 1.25배, 판 하늘 낮 고정"
+        },
+        {
+          "sha": "d8fefedce",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "demo",
+          "text": "데모 판정 반영, 멀티 숨김, 원격 로그 끔, 보스 점멸 절반, 복셀 월드 끔"
+        },
+        {
+          "sha": "eb96f8646",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dialogue",
+          "text": "검은 띠 장면에서 큰 인물 자막이 띠에 잘리던 것"
+        },
+        {
+          "sha": "0e912dcc9",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "release",
+          "text": "실험실은 시작 스테이지라 포털 숨김 해제, 개발 상점 NPC만 숨김"
+        },
+        {
+          "sha": "81a9a2449",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "sky",
+          "text": "생존 판 동안 하늘 시각을 따로 정하는 설정 (기본 꺼짐)"
+        }
+      ],
+      "quiet": 1,
+      "more": 2
+    },
+    {
+      "date": "2026-11-11",
+      "entries": [
+        {
+          "sha": "cbc9cf7eb",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "perf",
+          "text": "IL2CPP 측정 보고서를 명시적 키로 기록"
+        },
+        {
+          "sha": "2a446d186",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "survival",
+          "text": "시간 정지 남은 시간과 적 고리 표시"
+        },
+        {
+          "sha": "cf172b779",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "대화와 상자 보상을 화면 비율 안에 맞춤"
+        },
+        {
+          "sha": "fec836183",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "survival",
+          "text": "기본 강화 선택 폭과 정지 상태 수명 수정"
+        },
+        {
+          "sha": "d3ec475b9",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "skilltree",
+          "text": "IL2CPP JSON 트리 생성자와 목록 보존"
+        },
+        {
+          "sha": "722ee11c7",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "화면 전환 뒤 남는 원형 가림막 숨김"
+        }
+      ],
+      "quiet": 4,
+      "more": 0
+    },
     {
       "date": "2026-11-10",
       "entries": [
@@ -398,118 +496,6 @@
       ],
       "quiet": 0,
       "more": 6
-    },
-    {
-      "date": "2026-10-30",
-      "entries": [
-        {
-          "sha": "51288f8b5",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "dungeon",
-          "text": "10분 생존 뒤 보스와 재도전 연결"
-        },
-        {
-          "sha": "a91e66709",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "생존 전투의 성장과 재도전 흐름 복구"
-        }
-      ],
-      "quiet": 0,
-      "more": 0
-    },
-    {
-      "date": "2026-10-26",
-      "entries": [
-        {
-          "sha": "ac698b949",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "scene",
-          "text": "명시한 색과 mip 단계를 보존하는 이미지 리소스"
-        },
-        {
-          "sha": "43ad0b086",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "pool",
-          "text": "소유자 해제 뒤 비활성화 예외 방지"
-        },
-        {
-          "sha": "284bbb038",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "scene",
-          "text": "텍스처 반복 설정과 편집 자원 해제 보존"
-        },
-        {
-          "sha": "26c5998f6",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "storage",
-          "text": "깊은 유효 경로의 임시 저장 이름 길이 제한"
-        },
-        {
-          "sha": "07b7c1669",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "연출 묶음 열기 검증 전에 현재 작업 보존"
-        },
-        {
-          "sha": "2cbcec2f8",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "액터 추가 시 연출 편집 기록을 유지"
-        }
-      ],
-      "quiet": 2,
-      "more": 3
-    },
-    {
-      "date": "2026-10-25",
-      "entries": [
-        {
-          "sha": "56ff32632",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "옷 교체의 장면과 동작 편집 이력을 보존"
-        },
-        {
-          "sha": "2cb52fa45",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "창 종료 시 옷장 썸네일 해제"
-        }
-      ],
-      "quiet": 0,
-      "more": 0
-    },
-    {
-      "date": "2026-10-24",
-      "entries": [
-        {
-          "sha": "66afad3f4",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "authoring",
-          "text": "expose wardrobe preview distances and tile name height as serialized fields"
-        },
-        {
-          "sha": "196313c89",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "scene-content",
-          "text": "toon surface v2 in the scene model and loader"
-        }
-      ],
-      "quiet": 0,
-      "more": 10
     }
   ]
 }
