@@ -104,7 +104,7 @@ test('failed appearance save preserves the previous selection', async t => {
 
 test('every selectable built-in image exists in the app', async t => {
   const ui = await screen(t, 'appearance');
-  assert.equal(ui.window.Look.LOBBY_CHARACTERS.length, 8);
+  assert.equal(ui.window.Look.LOBBY_CHARACTERS.length, 9);
   /* 세계관 셋은 의상 둘 이상, 무릎 구도 (티메토, 마스코트) 는 half */
   for (const character of ui.window.Look.LOBBY_CHARACTERS.slice(0, 3)) assert.ok(character.outfits.length >= 2, character.id);
   for (const character of ui.window.Look.LOBBY_CHARACTERS.slice(3)) assert.ok(character.outfits.every(o => o.half), character.id);

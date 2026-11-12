@@ -33,6 +33,7 @@ export const LOBBY_CHARACTERS: LobbyCharacter[] = [
   { id: 'dashie', name: '대시', outfits: [{ id: 'dashie-dash', name: 'Dash', image: IMG + 'chars/mascot-dash.webp', half: true }] },
   { id: 'tori', name: '토리', outfits: [{ id: 'tori-companion', name: '동반자', image: IMG + 'chars/mascot-companion.webp', half: true }] },
   { id: 'fila', name: '파일라', outfits: [{ id: 'fila-files', name: 'Files', image: IMG + 'chars/mascot-files.webp', half: true }] },
+  { id: 'caretaker', name: '관리인', outfits: [{ id: 'caretaker-launcher', name: '런처', image: IMG + 'chars/mascot-launcher.webp', half: true }] },
 ];
 export const LOBBY_OUTFIT_KEY = 'dash.lobby.outfit';
 /** 홈을 열 때마다 의상 전부 중 하나 (2026-11-12 사용자 요청). 기본값 */
