@@ -101,10 +101,12 @@ html[data-theme="light"] .cr { --cr-dark: rgba(24, 32, 46, .8); }
 .cr .cr-lim { flex: none; margin-left: auto; font: 500 17px var(--cr-num); color: var(--cr-text2); }
 .cr .cr-defs { display: flex; flex-wrap: wrap; gap: 8px; }
 .cr .cr-defs span { padding: 6px 10px; background: var(--cr-dark); color: var(--cr-text2); font-size: var(--font-size-xs); }
-.cr .cr-vtabs { display: none; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cr .cr-vtabs { display: none; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 6px; }
 .cr .cr-vtabs button { min-height: 44px; background: var(--cr-dark); color: var(--cr-text2); font: 600 18px var(--cr-num); text-align: center; }
 .cr .cr-vtabs button[aria-selected="true"] { background: var(--cr-paper); color: var(--cr-ink); box-shadow: inset 0 -4px 0 var(--cr-acc); }
-.cr .cr-variants { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+/* 시안은 한 줄. 셋까지 칸을 채우고 넷부터는 옆으로 넘김 (2026-11-12 6번 시안 다섯에서 두 줄로 갈라져 본문 높이 0) */
+.cr .cr-variants { flex: 1; min-height: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, calc((100% - 24px) / 3)); gap: 12px; overflow-x: auto; }
+.cr .cr-variants > .cr-empty, .cr .cr-variants > .cr-muted { grid-column: 1 / -1; }
 .cr .cr-variant { position: relative; display: flex; flex-direction: column; min-height: 0; background: var(--cr-paper); color: var(--cr-ink); box-shadow: 0 10px 30px var(--cr-shadow); }
 .cr .cr-variant header { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; padding: 16px 20px 12px; border-bottom: 1px solid var(--cr-line); }
 .cr .cr-id { font: 700 48px var(--cr-num); line-height: .9; }
@@ -113,7 +115,7 @@ html[data-theme="light"] .cr { --cr-dark: rgba(24, 32, 46, .8); }
 .cr .cr-variant .cr-note { margin: 4px 0 0; font-size: var(--font-size-xs); line-height: 1.5; color: var(--cr-ink2); }
 .cr .cr-text { flex: 1; min-height: 0; overflow: auto; padding: 16px 22px; font-size: var(--font-size-sm); line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
 .cr .cr-variant footer { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 12px 16px 14px 20px; border-top: 1px solid var(--cr-line); }
-.cr .cr-cnt { font-size: var(--myd-meta); color: var(--cr-ink2); }
+.cr .cr-cnt { font-size: var(--myd-meta); color: var(--cr-ink2); white-space: nowrap; }
 .cr .cr-cnt b { font: 600 19px var(--cr-num); color: var(--cr-ink); }
 .cr .cr-over, .cr .cr-over b { color: var(--cr-warn); font-weight: 700; }
 .cr .cr-bar { display: block; height: 4px; margin-top: 6px; background: var(--cr-paper2); }
@@ -173,7 +175,7 @@ html[data-theme="light"] .cr { --cr-dark: rgba(24, 32, 46, .8); }
   .cr .cr-ask p { font-size: var(--myd-body); }
   .cr .cr-defs span { font-size: var(--myd-meta); }
   .cr .cr-vtabs { display: grid; }
-  .cr .cr-variants { grid-template-columns: minmax(0, 1fr); }
+  .cr .cr-variants { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-auto-columns: auto; overflow-x: visible; }
   .cr .cr-variant { display: none; }
   .cr .cr-variant.cr-show { display: flex; }
   .cr .cr-id { font-size: 2.375rem; }
