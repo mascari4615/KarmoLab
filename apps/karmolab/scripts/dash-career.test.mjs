@@ -19,7 +19,7 @@ const fixture = {
   'career/x/q3.md': md(['A'], ' 긴 본문이라 제한 초과'),
 };
 
-function screen(t, files) {
+function screen(t, files, extraRepo = {}) {
   const dom = new JSDOM('<html lang="ko"><main id="root"></main></html>', { url: 'http://localhost/dash/#career', runScripts: 'outside-only', pretendToBeVisual: true });
   const dispose = [];
   t.after(() => { dispose.forEach((fn) => fn()); dom.window.close(); });
@@ -30,7 +30,7 @@ function screen(t, files) {
   const get = (path) => { if (!(path in files)) throw Object.assign(Error('notfound ' + path), { kind: 'notfound' }); return files[path]; };
   const ctx = {
     root,
-    repo: { readJson: async (p) => structuredClone(get(p)), readText: async (p) => get(p) },
+    repo: { readJson: async (p) => structuredClone(get(p)), readText: async (p) => get(p), ...extraRepo },
     repoInfo: { owner: 'o', repo: 'memo', branch: 'main' },
     status() {}, setCount() {}, openItem() {}, isCurrent: () => true, onDispose: (fn) => dispose.push(fn), ghToken: async () => null,
   };
@@ -50,9 +50,10 @@ test('drafts tab shows questions, picks, counts and escapes data', async (t) => 
   const { root, ctx, panel } = screen(t, fixture);
   await panel.render(ctx);
   await settle();
-  assert.equal(root.querySelectorAll('.cr-qnav button').length, 3);
+  assert.equal(root.querySelectorAll('.cr-qbtn').length, 3);
   assert.equal(root.querySelectorAll('.cr-variant').length, 3);
-  assert.ok(root.querySelector('.cr-picked h4').textContent.startsWith('B.'));
+  assert.equal(root.querySelector('.cr-picked .cr-id').textContent, 'B');
+  assert.match(root.querySelector('.cr-prog').textContent, /1\s*\/ 2/);
   assert.equal(root.querySelectorAll('b b, img[src=x], a[href^="javascript"]').length, 0);
   assert.match(root.querySelector('.cr-head').textContent, /D-\d+/);
   root.querySelector('[data-q="1"]').click();
@@ -61,6 +62,31 @@ test('drafts tab shows questions, picks, counts and escapes data', async (t) => 
   root.querySelector('[data-q="2"]').click();
   await settle();
   assert.match(root.querySelector('.cr-variant footer').textContent, /초과/);
+});
+
+test('picking writes one event and earlier events override the canon', async (t) => {
+  const events = { 'career/picks/acme-2026/1-aaaaaa-0001.json': { type: 'career-pick', app: 'acme-2026', q: 1, pick: 'C', at: 1 } };
+  const put = [];
+  const { root, ctx, panel } = screen(t, { ...fixture, ...events }, {
+    eventsBranch: 'ev', deviceId: 'abcdef', nonce: '0a0b',
+    tree: async () => Object.keys(events).map((path) => ({ path, name: path.split('/').pop(), type: 'file', size: 1 })),
+    putNewJson: async (path, value) => { put.push({ path, value }); },
+    enqueueJson() { throw new Error('should not queue'); },
+  });
+  await panel.render(ctx);
+  await settle();
+  assert.equal(root.querySelector('.cr-picked .cr-id').textContent, 'C');
+  root.querySelector('.cr-variant:not(.cr-picked) [data-pick="A"]').click();
+  await settle(); await settle();
+  assert.equal(put.length, 1);
+  assert.match(put[0].path, /^career\/picks\/acme-2026\/\d+-abcdef-0a0b\.json$/);
+  assert.deepEqual({ ...put[0].value, at: 0 }, { type: 'career-pick', app: 'acme-2026', q: 1, pick: 'A', at: 0 });
+  assert.equal(root.querySelector('.cr-picked .cr-id').textContent, 'A');
+  assert.match(root.querySelector('.cr-status').textContent, /저장함/);
+  root.querySelector('.cr-picked [data-pick="A"]').click();
+  await settle(); await settle();
+  assert.equal(put[1].value.pick, null);
+  assert.equal(root.querySelectorAll('.cr-picked').length, 0);
 });
 
 test('cases tab lists linked cases and the hash keeps the tab', async (t) => {
