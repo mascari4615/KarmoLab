@@ -80,6 +80,11 @@
         <div class="krow"><input type="password" id="ghToken" placeholder="또는 토큰 붙여 넣기 (읽기 권한)" autocomplete="off"><button type="button" id="ghSave">저장</button></div>
       </section>
       <section>
+        <h3>노트북 빌드 받기</h3>
+        <p class="note">속성의 빌드 목록에서 노트북 빌드를 받을 때 쓰는 다운로드 비밀번호. <span id="dlPwState"></span></p>
+        <div class="krow"><input type="password" id="dlPw" placeholder="다운로드 비밀번호" autocomplete="off"><button type="button" id="dlPwSave">저장</button></div>
+      </section>
+      <section>
         <h3>작업 폴더</h3>
         <p class="note">로컬 항목을 이 폴더 아래에서 찾습니다.</p>
         <div class="krow"><input type="text" id="ws" spellcheck="false"><button type="button" id="wsSave">저장</button></div>
@@ -105,6 +110,13 @@
       <section id="pUpdateRow">
         <h3>자동 업데이트</h3>
         <div class="krow"><select id="pMode" aria-label="자동 업데이트"></select></div>
+      </section>
+      <!-- Steam 속성의 베타 탭 자리. 비공개 목록에서 builds: "laptop" 인 항목만 (노트북에 남은 빌드) -->
+      <section id="pBuildRow" hidden>
+        <h3>빌드</h3>
+        <p class="note" id="pBuildNote"></p>
+        <div class="blist" id="pBuilds" role="radiogroup" aria-label="빌드"></div>
+        <div class="krow"><button type="button" class="primary" id="pBuildGet" disabled>이 빌드 받기</button></div>
       </section>
       <section id="pArgsRow">
         <h3>실행 옵션</h3>

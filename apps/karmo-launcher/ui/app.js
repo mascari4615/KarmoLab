@@ -328,7 +328,14 @@ function paint() {
 async function refreshStatus(app) {
   if (app.soon || app.kind === 'web') return;
   try {
-    status.set(app.id, await invoke('app_status', { app }));
+    const st = await invoke('app_status', { app });
+    /* 노트북 빌드를 고른 동안은 최신 릴리스로 덮지 않음 (Steam 베타 고정). 기본으로 돌리면 풀림 */
+    const pin = appPref(prefs, app.id).build;
+    if (pin && st.installed) {
+      st.pinned = pin;
+      st.latest = st.version;
+    }
+    status.set(app.id, st);
   } catch (e) {
     status.set(app.id, { error: String(e) });
   }
@@ -461,14 +468,18 @@ async function runInstall(app, opts = {}) {
   busy.set(app.id, { got: 0, total: 0, phase: 'download', ...opts });
   paint();
   let error = null;
+  /* opts.pick: 속성의 빌드 목록에서 고른 노트북 빌드 { url, version, sha256 } */
+  const pick = opts.pick;
+  const version = pick ? pick.version : st.latest;
   try {
-    await invoke('install_app', { app, url: st.download, version: st.latest || '', signature: st.signature || '', sha256: st.sha256 || '' });
+    await invoke('install_app', pick
+      ? { app, url: pick.url, version: pick.version, signature: '', sha256: pick.sha256 }
+      : { app, url: st.download, version: st.latest || '', signature: st.signature || '', sha256: st.sha256 || '' });
   } catch (e) {
     error = String(e);
   }
   const lastJob = busy.get(app.id) || {};
   busy.delete(app.id);
-  const version = st.latest;
   if (error === PAUSED_TEXT) {
     prefs.paused = { ...prefs.paused, [app.id]: { version, got: lastJob.got || 0, total: lastJob.total || 0 } };
     savePrefs();
@@ -811,6 +822,7 @@ function openProps(app) {
   $('pWhere').textContent = st.location || '';
   $('pOpen').hidden = !st.installed;
   $('pReinstall').hidden = !dl || !st.installed || !st.download || st.running;
+  void paintBuilds(app);
   const rb = $('pRollback');
   rb.hidden = !st.prev || st.running || busy.has(app.id);
   rb.textContent = st.prev ? 'v' + st.prev + ' 로 되돌리기' : '';
@@ -833,6 +845,108 @@ $('pMode').addEventListener('change', (e) => {
   paint();
 });
 $('pArgs').addEventListener('change', (e) => setAppPref(propsApp.id, { args: e.target.value }));
+
+/* ---------- 빌드 고르기 (Steam 속성 베타 탭). 첫 줄 기본 = 최신 릴리스, 아래는 노트북에 남은 빌드 ---------- */
+
+let buildRows = [];
+let buildPick = null;
+/** 설치 판 이름. 노트북 빌드는 버전 + 실행 번호 (같은 버전 여러 판 구분) */
+const buildVersion = (r) => (r.version || '0.0.0') + '+' + (r.runNumber || 0);
+const kstShort = (ms) => {
+  const d = new Date(ms + 9 * 3600000);
+  const two = (n) => String(n).padStart(2, '0');
+  return two(d.getUTCMonth() + 1) + '-' + two(d.getUTCDate()) + ' ' + two(d.getUTCHours()) + ':' + two(d.getUTCMinutes());
+};
+async function paintBuilds(app) {
+  const row = $('pBuildRow');
+  row.hidden = app.builds !== 'laptop';
+  if (row.hidden) return;
+  buildPick = null;
+  $('pBuildGet').disabled = true;
+  $('pBuildGet').textContent = '이 빌드 받기';
+  $('pBuildNote').textContent = '노트북 빌드 목록 받는 중';
+  $('pBuilds').innerHTML = '';
+  let failed = '';
+  try {
+    buildRows = await invoke('laptop_builds');
+  } catch (e) {
+    buildRows = [];
+    failed = String(e);
+  }
+  if (propsApp !== app) return;
+  const st = status.get(app.id) || {};
+  const pin = appPref(prefs, app.id).build || '';
+  $('pBuildNote').textContent = failed
+    ? '노트북 빌드 목록을 못 받음: ' + failed
+    : '노트북에 남은 최근 빌드. 고르면 그 빌드에 머물고, 기본으로 돌리면 최신 릴리스를 따라감';
+  const items = [{ key: '', name: '기본', tag: '', meta: '최신 릴리스' + (!st.pinned && st.latest ? ' v' + st.latest : ''), side: '', ok: true }];
+  for (const r of buildRows) {
+    const ready = r.state === 'done' && r.artifact && r.artifact.sha256;
+    items.push({
+      key: r.name,
+      name: 'v' + (r.version || '?') + ' #' + (r.runNumber || '?'),
+      tag: r.buildType || '',
+      meta: [r.ref, r.commit, kstShort(r.builtAt)].filter(Boolean).join('  '),
+      side: r.state === 'running' || r.state === 'stalling' ? '굽는 중' : !r.artifact ? '산출물 없음' : ready ? sizeText(r.artifact.size) : '확인 중',
+      ok: !!ready,
+    });
+  }
+  $('pBuilds').innerHTML = items.map((it) => '<label class="' + (it.ok ? '' : 'off') + (it.key === pin ? ' on' : '') + '">' +
+    '<input type="radio" name="pb" value="' + esc(it.key) + '"' + (it.key === pin ? ' checked' : '') + (it.ok ? '' : ' disabled') + '>' +
+    '<span class="bn">' + esc(it.name) + (it.tag ? '<span class="bt' + (it.tag === 'development' ? ' dev' : '') + '">' + esc(it.tag) + '</span>' : '') +
+    (it.key === pin && st.installed ? '<span class="bt">설치됨</span>' : '') + '</span>' +
+    '<span class="bs">' + esc(it.side) + '</span><span class="bm">' + esc(it.meta) + '</span></label>').join('');
+}
+$('pBuilds').addEventListener('change', (e) => {
+  const key = e.target.value;
+  buildPick = key;
+  for (const l of $('pBuilds').querySelectorAll('label')) l.classList.toggle('on', l.querySelector('input').value === key);
+  const pin = appPref(prefs, propsApp.id).build || '';
+  $('pBuildGet').disabled = key === pin;
+  $('pBuildGet').textContent = key ? '이 빌드 받기' : '기본으로 돌리기';
+});
+$('pBuildGet').addEventListener('click', async () => {
+  const app = propsApp;
+  if (buildPick === null) return;
+  if (busy.has(app.id) || selfBusy) {
+    msgEl.textContent = '받는 중인 작업이 끝난 뒤에 다시';
+    return;
+  }
+  closeModal($('props'));
+  if (!buildPick) {
+    setAppPref(app.id, { build: null });
+    await refreshStatus(app);
+    if ((status.get(app.id) || {}).download) installNow(app.id);
+    else paint();
+    return;
+  }
+  const r = buildRows.find((x) => x.name === buildPick);
+  if (!r) return;
+  const version = buildVersion(r);
+  /* 고정을 먼저. 설치 끝에 도는 자동 업데이트 계획이 방금 깐 빌드를 릴리스로 덮지 않게. 실패하면 되돌림 */
+  const before = appPref(prefs, app.id).build || null;
+  setAppPref(app.id, { build: r.name });
+  await runInstall(app, { pick: { url: r.download, version, sha256: r.artifact.sha256 } });
+  if ((status.get(app.id) || {}).version !== version) {
+    setAppPref(app.id, { build: before });
+    await refreshStatus(app);
+    planAuto();
+    paint();
+  }
+});
+
+const paintDlPw = () => void invoke('laptop_dl_status').then((ok) => ($('dlPwState').textContent = ok ? '저장됨' : '없음')).catch(() => {});
+$('dlPwSave').addEventListener('click', async () => {
+  try {
+    await invoke('laptop_dl_set', { password: $('dlPw').value });
+    $('dlPw').value = '';
+  } catch (e) {
+    $('dlPwState').textContent = String(e);
+    return;
+  }
+  paintDlPw();
+});
+paintDlPw();
 $('pOpen').addEventListener('click', () => void invoke('open_location', { app: propsApp }).catch((e) => ($('pWhere').textContent = String(e))));
 $('pReinstall').addEventListener('click', () => {
   closeModal($('props'));

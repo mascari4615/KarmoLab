@@ -30,6 +30,13 @@ const OWNER_API: &str = "https://api.github.com/repos/mascari4615/";
 /// 자격 증명 관리자 항목 이름
 const TOKEN_TARGET: &str = "karmo-launcher:github";
 
+/// 노트북 빌드 목록 (laptop-ops, memo `laptop-ops/README.md` 의 `/dash/builds`). GitHub 로그인 본인만 통과
+const LAPTOP_BUILDS_URL: &str = "https://laptop.mascari4615.com/dash/builds";
+/// 노트북 빌드 받기. 서명 만료 링크 + 다운로드 비밀번호 (HTTP Basic). ops 토큰은 런처에 없음
+const LAPTOP_DL: &str = "https://laptop.mascari4615.com/dl/";
+/// 다운로드 비밀번호 자리
+const LAPTOP_DL_TARGET: &str = "karmo-launcher:laptop-dl";
+
 /// 이 PC 의 git 로그인 (Git Credential Manager 가 남기는 항목). 사용자가 버튼을 눌렀을 때만 읽음
 const GIT_LOGIN_TARGET: &str = "git:https://github.com";
 
@@ -209,6 +216,54 @@ fn github_clear() {
     cred_delete(TOKEN_TARGET);
 }
 
+fn laptop_dl_password() -> Option<String> {
+    cred_read(LAPTOP_DL_TARGET).map(|b| decode_secret(&b)).filter(|t| !t.is_empty())
+}
+
+/// 다운로드 비밀번호가 들어 있나
+#[tauri::command]
+fn laptop_dl_status() -> bool {
+    laptop_dl_password().is_some()
+}
+
+/// 다운로드 비밀번호 저장. 빈 글자면 지움. 맞는지는 첫 받기에서 확인 (401 이면 그 자리에서 알림)
+#[tauri::command]
+fn laptop_dl_set(password: String) -> Result<(), String> {
+    let p = password.trim();
+    if p.is_empty() {
+        cred_delete(LAPTOP_DL_TARGET);
+        return Ok(());
+    }
+    cred_write(LAPTOP_DL_TARGET, "launcher", p)
+}
+
+/// 노트북 빌드 목록에서 런처가 받을 수 있는 줄 (PC zip, 받기 링크 있음)
+fn laptop_rows(list: &Value) -> Vec<Value> {
+    list.get("rows")
+        .and_then(|r| r.as_array())
+        .into_iter()
+        .flatten()
+        .filter(|r| str_at(r, &["platform"]) == Some("windows"))
+        .filter(|r| str_at(r, &["artifact", "file"]).map(|f| f.to_ascii_lowercase().ends_with(".zip")).unwrap_or(false))
+        .filter(|r| str_at(r, &["download"]).map(|d| d.starts_with(LAPTOP_DL)).unwrap_or(false))
+        .cloned()
+        .collect()
+}
+
+/// 노트북에 남은 빌드 (Steam 베타 목록 자리). GitHub 로그인이 있어야 함
+#[tauri::command]
+async fn laptop_builds() -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        if token().is_none() {
+            return Err("GitHub 로그인이 필요함".to_string());
+        }
+        let list: Value = serde_json::from_str(&get_text(LAPTOP_BUILDS_URL)?).map_err(|e| e.to_string())?;
+        Ok(laptop_rows(&list))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /* ---------- 설정 (작업 폴더) ---------- */
 
 fn settings_path(handle: &AppHandle) -> Result<PathBuf, String> {
@@ -338,14 +393,27 @@ fn request_from(url: &str, accept: Option<&str>, from: u64) -> Result<reqwest::b
     if from > 0 {
         rq = rq.header("Range", format!("bytes={}-", from));
     }
-    if url.starts_with(OWNER_API) {
+    if url.starts_with(OWNER_API) || url == LAPTOP_BUILDS_URL {
         if let Some(t) = token() {
             rq = rq.bearer_auth(t);
         }
     }
+    let laptop_dl = url.starts_with(LAPTOP_DL);
+    if laptop_dl {
+        let pw = laptop_dl_password().ok_or("노트북 빌드 받기 비밀번호가 없음. 설정에서 넣어 주세요")?;
+        rq = rq.basic_auth("launcher", Some(pw));
+    }
     let res = rq.send().map_err(|e| e.to_string())?;
     if !res.status().is_success() {
         let code = res.status().as_u16();
+        if laptop_dl {
+            /* 서명 링크를 화면과 로그에 남기지 않음 */
+            return Err(match code {
+                401 => "노트북 빌드 받기 비밀번호가 맞지 않음 (설정)".into(),
+                403 | 410 => "받기 링크가 만료됨. 목록을 다시 열어 주세요".into(),
+                _ => format!("{} 노트북 빌드 받기 실패", code),
+            });
+        }
         if code == 404 && url.starts_with(OWNER_API) && token().is_none() {
             return Err("비공개 저장소. GitHub 로그인이 필요함".into());
         }
@@ -1123,9 +1191,10 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
     if format != "nsis" && format != "zip" {
         return Err(format!("받아서 까는 형식이 아님: {}", format));
     }
-    const ALLOWED: [&str; 2] = [
+    const ALLOWED: [&str; 3] = [
         "https://github.com/mascari4615/",
         "https://api.github.com/repos/mascari4615/",
+        LAPTOP_DL,
     ];
     if !ALLOWED.iter().any(|p| url.starts_with(p)) {
         return Err(format!("허용 안 된 주소: {}", url));
@@ -1653,6 +1722,9 @@ pub fn run() {
             github_set_token,
             github_use_git_login,
             github_clear,
+            laptop_dl_status,
+            laptop_dl_set,
+            laptop_builds,
             get_settings,
             set_workspace,
             save_prefs,
@@ -1678,6 +1750,19 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn laptop_rows_keeps_pc_zip_only() {
+        let list = serde_json::json!({ "rows": [
+            { "platform": "windows", "artifact": { "file": "WitchMendokusai-windows.zip" }, "download": "https://laptop.mascari4615.com/dl/a/WitchMendokusai-windows.zip?exp=1&sig=x" },
+            { "platform": "android", "artifact": { "file": "WitchMendokusai.apk" }, "download": "https://laptop.mascari4615.com/dl/b/WitchMendokusai.apk?exp=1&sig=x" },
+            { "platform": "windows", "artifact": null, "download": null },
+            { "platform": "windows", "artifact": { "file": "x.zip" }, "download": "https://evil.example/dl/x.zip" }
+        ]});
+        let rows = laptop_rows(&list);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(str_at(&rows[0], &["platform"]), Some("windows"));
+    }
 
     fn zip_with(path: &Path, name: &str, body: &[u8]) {
         let f = std::fs::File::create(path).unwrap();
