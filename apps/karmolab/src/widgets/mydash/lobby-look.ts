@@ -7,18 +7,22 @@ export const LOBBY_BACKGROUNDS = [
   { id: 'winter', name: '겨울 들판', image: '/apps/karmolab/img/home/winter-meadow.png' },
 ] as const;
 
-/** 의상 하나. half 는 무릎까지 오는 구도 (마스코트, 티메토). 홈에서 작게, 아래에 붙인다 */
-export type LobbyOutfit = { id: string; name: string; image: string; half?: boolean };
+/**
+ * 의상 하나. image 는 io 공개 그림, memo 는 memo `data/dash/lobby/` 의 파일 이름 (로그인 토큰으로 받음).
+ * half 는 무릎까지 오는 구도 (마스코트, 티메토). 홈에서 작게, 아래에 붙임
+ */
+export type LobbyOutfit = { id: string; name: string; image?: string; memo?: string; half?: boolean };
 export type LobbyCharacter = { id: string; name: string; outfits: LobbyOutfit[] };
 
 const IMG = '/apps/karmolab/img/widgets/mydash/';
-/* 세계관 캐릭터와 공개 프로그램 마스코트 (memo characters/, notes/launcher/mascots/mascots.json 의 access public).
-   비공개 마스코트 (WM 욘, KarmoAI, Tactics Lab, 증강 디펜스) 는 공개 저장소라 넣지 않는다 */
+/* 세계관 캐릭터와 프로그램 마스코트 (memo characters/, notes/launcher/mascots/mascots.json).
+   io 에 이미 있던 욘, 알리사, 링 그림만 공개 경로. 나머지는 memo 에서 받음 (2026-11-12 사용자 지시) */
 export const LOBBY_CHARACTERS: LobbyCharacter[] = [
   { id: 'yon', name: '욘', outfits: [
     { id: 'yon-original', name: '잠옷', image: IMG + 'yawn-stand.webp' },
     { id: 'yon-casual', name: '일상복', image: IMG + 'wardrobe/yon-casual.png' },
     { id: 'yon-casual-manga', name: '일상복 (만화풍)', image: IMG + 'wardrobe/yon-casual-manga-v1.png' },
+    { id: 'yon-wm', name: 'WM 로브', memo: 'wm.webp', half: true },
   ] },
   { id: 'alisa', name: '알리사', outfits: [
     { id: 'alisa-original', name: '메이드', image: IMG + 'goals/alisa.webp' },
@@ -28,18 +32,53 @@ export const LOBBY_CHARACTERS: LobbyCharacter[] = [
     { id: 'ling-casual', name: '평상복', image: IMG + 'wardrobe/ling-casual.png' },
     { id: 'ling-winter', name: '겨울옷', image: IMG + 'wardrobe/ling-winter.png' },
   ] },
-  { id: 'timeto', name: '티메토', outfits: [{ id: 'timeto-lab', name: '연구소장', image: IMG + 'chars/timeto.webp', half: true }] },
-  { id: 'labo', name: '라보', outfits: [{ id: 'labo-karmolab', name: 'KarmoLab', image: IMG + 'chars/mascot-karmolab.webp', half: true }] },
-  { id: 'dashie', name: '대시', outfits: [{ id: 'dashie-dash', name: 'Dash', image: IMG + 'chars/mascot-dash.webp', half: true }] },
-  { id: 'tori', name: '토리', outfits: [{ id: 'tori-companion', name: '동반자', image: IMG + 'chars/mascot-companion.webp', half: true }] },
-  { id: 'fila', name: '파일라', outfits: [{ id: 'fila-files', name: 'Files', image: IMG + 'chars/mascot-files.webp', half: true }] },
-  { id: 'caretaker', name: '관리인', outfits: [{ id: 'caretaker-launcher', name: '런처', image: IMG + 'chars/mascot-launcher.webp', half: true }] },
+  { id: 'timeto', name: '티메토', outfits: [{ id: 'timeto-lab', name: '연구소장', memo: 'timeto.webp', half: true }] },
+  { id: 'labo', name: '라보', outfits: [{ id: 'labo-karmolab', name: 'KarmoLab', memo: 'karmolab.webp', half: true }] },
+  { id: 'dashie', name: '대시', outfits: [{ id: 'dashie-dash', name: 'Dash', memo: 'dash.webp', half: true }] },
+  { id: 'tori', name: '토리', outfits: [{ id: 'tori-companion', name: '동반자', memo: 'companion.webp', half: true }] },
+  { id: 'fila', name: '파일라', outfits: [{ id: 'fila-files', name: 'Files', memo: 'files.webp', half: true }] },
+  { id: 'caretaker', name: '관리인', outfits: [{ id: 'caretaker-launcher', name: '런처', memo: 'launcher.webp', half: true }] },
+  { id: 'art', name: '아트', outfits: [{ id: 'art-karmo-ai', name: 'KarmoAI', memo: 'karmo-ai.webp', half: true }] },
+  { id: 'tack', name: '택', outfits: [{ id: 'tack-tactics', name: 'Tactics Lab', memo: 'tactics-lab.webp', half: true }] },
+  { id: 'ibul', name: '이불', outfits: [{ id: 'ibul-augment', name: '증강 디펜스', memo: 'augment-defense.webp', half: true }] },
 ];
 export const LOBBY_OUTFIT_KEY = 'dash.lobby.outfit';
 /** 홈을 열 때마다 의상 전부 중 하나 (2026-11-12 사용자 요청). 기본값 */
 export const LOBBY_RANDOM = 'random';
 const BG_KEY = 'toolbox_home_bg';
 const ALL_OUTFITS = (): LobbyOutfit[] => LOBBY_CHARACTERS.flatMap(character => character.outfits);
+const MEMO_DIR = 'data/dash/lobby/';
+let readBlob: ((path: string) => Promise<Blob>) | null = null;
+const blobUrls = new Map<string, Promise<string>>();
+/** memo 그림을 받을 저장소. 홈과 꾸미기 방이 render 때 넘김 */
+export function setLobbyRepo(repo: { readBlob?(path: string): Promise<Blob> }): void {
+  if (repo.readBlob) readBlob = path => repo.readBlob!(path);
+}
+/** 의상 그림 주소. memo 그림은 받은 뒤 data 주소 (내려받기용 object URL 과 수명 관리 분리), 저장소가 없으면 빈 글자 */
+export function outfitSrc(outfit: LobbyOutfit): Promise<string> {
+  if (!outfit.memo) return Promise.resolve(outfit.image || '');
+  if (!readBlob) return Promise.resolve('');
+  let url = blobUrls.get(outfit.memo);
+  if (!url) {
+    const name = outfit.memo;
+    url = readBlob(MEMO_DIR + name).then(blob => new Promise<string>((done, fail) => {
+      const reader = new FileReader();
+      reader.onload = () => done(String(reader.result));
+      reader.onerror = () => fail(reader.error);
+      reader.readAsDataURL(blob);
+    }));
+    url.catch(() => blobUrls.delete(name));
+    blobUrls.set(name, url);
+  }
+  return url;
+}
+/** img 하나에 의상 그림. 받는 사이 다른 의상으로 바뀌면 늦게 온 그림은 버림 */
+export function paintOutfit(image: HTMLImageElement, outfit: LobbyOutfit): void {
+  image.dataset.want = outfit.id;
+  if (!outfit.memo) { image.src = outfit.image || ''; return; }
+  image.removeAttribute('src');
+  outfitSrc(outfit).then(src => { if (src && image.dataset.want === outfit.id) image.src = src; }).catch(() => undefined);
+}
 const known = (id: string): boolean => id === 'none' || id === LOBBY_RANDOM || ALL_OUTFITS().some(item => item.id === id);
 export function lobbyLook(): { background: string; outfit: string } {
   const background = localStorage.getItem(BG_KEY) || 'auto';
@@ -72,7 +111,7 @@ function outfitFor(image: HTMLImageElement, choice: string): LobbyOutfit | undef
   if (choice !== LOBBY_RANDOM) return findOutfit(choice)?.outfit;
   const kept = image.dataset.random && findOutfit(image.dataset.random);
   if (kept) return kept.outfit;
-  const all = ALL_OUTFITS();
+  const all = ALL_OUTFITS().filter(item => !item.memo || readBlob);
   const pick = all[Math.floor(Math.random() * all.length)];
   image.dataset.random = pick.id;
   return pick;
@@ -94,7 +133,7 @@ export function applyLobbyLook(): void {
     image.hidden = hidden;
     const outfit = hidden ? undefined : outfitFor(image, look.outfit);
     if (outfit) {
-      if (image.dataset.outfit !== outfit.id) image.src = outfit.image;
+      if (image.dataset.outfit !== outfit.id) paintOutfit(image, outfit);
       image.dataset.outfit = outfit.id;
       image.classList.toggle('mydh-yawn--half', !!outfit.half);
     }

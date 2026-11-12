@@ -773,8 +773,45 @@ import { startPlannerSync } from '../planner/sync-store';
       return p;
     }
 
+    /** 그림 판 보관함. Cache Storage 가 없거나 막힌 창은 매번 받음 */
+    const BLOB_CACHE = 'dash-repo-blobs-v1';
+    async function blobCache(): Promise<Cache | null> {
+      try {
+        return typeof caches === 'undefined' ? null : await caches.open(BLOB_CACHE);
+      } catch {
+        return null;
+      }
+    }
+    async function fetchBlob(path: string, key: string, box: Cache | null, etag?: string): Promise<Blob | null> {
+      const res = await callUrl(contentsUrl(path), 'application/vnd.github.raw', path, false, etag);
+      if (res.status === 304) return null;
+      const blob = await res.blob();
+      if (box) {
+        const headers: Record<string, string> = { 'content-type': blob.type || 'application/octet-stream' };
+        const tag = res.headers.get('etag');
+        if (tag) headers.etag = tag;
+        void box.put('https://dash.cache/' + encodeURIComponent(key), new Response(blob, { headers })).catch(() => undefined);
+      }
+      return blob;
+    }
+    async function readBlob(path: string): Promise<Blob> {
+      const key = cacheKey(cfg, path);
+      const box = await blobCache();
+      const hit = box ? await box.match('https://dash.cache/' + encodeURIComponent(key)).catch(() => undefined) : undefined;
+      if (!hit) {
+        revalidated.add(key);
+        return (await fetchBlob(path, key, box))!;
+      }
+      if (!revalidated.has(key)) {
+        revalidated.add(key);
+        void fetchBlob(path, key, box, hit.headers.get('etag') || undefined).catch(() => undefined);
+      }
+      return hit.blob();
+    }
+
     return {
       readText,
+      readBlob,
       async readJson<T>(path: string, opts?: DashReadOpts): Promise<T> {
         const text = await readText(path, opts);
         try {

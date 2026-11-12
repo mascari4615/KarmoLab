@@ -17,7 +17,7 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
 import { ensureToken } from '../planner/gauth';
 import { fetchCalendars, fetchEvents } from '../planner/gcal';
-import { applyLobbyLook } from './lobby-look';
+import { applyLobbyLook, setLobbyRepo } from './lobby-look';
 import { ROOM_ICON_BASE, roomIcon } from './room-icons';
 import { listTasks } from '../planner/local-store';
 
@@ -305,6 +305,7 @@ import { listTasks } from '../planner/local-store';
 
     root.className += ' mydh';
     root.innerHTML = frameHtml();
+    setLobbyRepo(repo);
     applyLobbyLook();
     const changedLook = (): void => { if (ctx.isCurrent()) applyLobbyLook(); };
     window.addEventListener('dash-lobby-change', changedLook);

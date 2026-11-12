@@ -43,6 +43,12 @@ export interface DashRepoRead {
    * `path` 는 폴더 경로 없이 저장소 뿌리 기준 전체 목록을 준다. 거르는 것은 부르는 쪽.
    */
   tree(ref?: string): Promise<DashEntry[]>;
+  /**
+   * 그림 같은 바이너리 파일 하나. 공개 저장소에 둘 수 없는 그림 (홈 캐릭터) 을 memo 에서 받음.
+   * 받은 판은 브라우저 Cache Storage 에 두고, 이 화면 수명에 한 번 뒤에서 새 판 확인.
+   * 셸 밖 시험 저장소에는 없을 수 있어 선택 항목
+   */
+  readBlob?(path: string): Promise<Blob>;
 }
 
 export interface DashEntry {

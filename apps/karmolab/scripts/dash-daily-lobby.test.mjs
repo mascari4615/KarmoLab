@@ -104,11 +104,11 @@ test('failed appearance save preserves the previous selection', async t => {
 
 test('every selectable built-in image exists in the app', async t => {
   const ui = await screen(t, 'appearance');
-  assert.equal(ui.window.Look.LOBBY_CHARACTERS.length, 9);
+  assert.equal(ui.window.Look.LOBBY_CHARACTERS.length, 12);
   /* 세계관 셋은 의상 둘 이상, 무릎 구도 (티메토, 마스코트) 는 half */
   for (const character of ui.window.Look.LOBBY_CHARACTERS.slice(0, 3)) assert.ok(character.outfits.length >= 2, character.id);
   for (const character of ui.window.Look.LOBBY_CHARACTERS.slice(3)) assert.ok(character.outfits.every(o => o.half), character.id);
-  const files = [...ui.window.Look.LOBBY_BACKGROUNDS.map(item => item.image), ...ui.window.Look.LOBBY_CHARACTERS.flatMap(character => character.outfits.map(outfit => outfit.image))];
+  const files = [...ui.window.Look.LOBBY_BACKGROUNDS.map(item => item.image), ...ui.window.Look.LOBBY_CHARACTERS.flatMap(character => character.outfits.filter(outfit => outfit.image).map(outfit => outfit.image))];
   for (const file of files) assert.ok(existsSync(join(app, file.replace('/apps/karmolab/', ''))), file);
   ui.window.Look.saveLobbyLook('background', 'winter');
   assert.match(ui.window.document.documentElement.style.getPropertyValue('--dash-photo'), /winter-meadow/);
@@ -133,7 +133,27 @@ test('random is the default and keeps one pick per home sprite until the choice 
   assert.equal(image.dataset.outfit, first);
   ui.get('[data-outfit="random"]').click();
   assert.equal(ui.window.localStorage.getItem('dash.lobby.outfit'), 'random');
-  ui.window.Look.saveLobbyLook('outfit', 'labo-karmolab');
-  assert.equal(image.dataset.outfit, 'labo-karmolab');
-  assert.ok(image.classList.contains('mydh-yawn--half'));
+  ui.window.Look.saveLobbyLook('outfit', 'alisa-coat');
+  assert.equal(image.dataset.outfit, 'alisa-coat');
+  assert.equal(image.classList.contains('mydh-yawn--half'), false);
+});
+
+test('memo characters load from the private repo, never from io paths', async t => {
+  const ui = await screen(t, 'appearance');
+  const memo = ui.window.Look.LOBBY_CHARACTERS.flatMap(c => c.outfits).filter(o => o.memo);
+  assert.equal(memo.length, 10);
+  for (const o of memo) assert.equal(o.image, undefined, o.id);
+  const asked = [];
+  ui.window.Look.setLobbyRepo({ readBlob: async path => { asked.push(path); return new ui.window.Blob(['x'], { type: 'image/webp' }); } });
+  const home = ui.window.document.createElement('div'); home.className = 'mydh';
+  home.innerHTML = '<img class="mydh-yawn"><div class="mydh-plate" hidden><b></b><span></span></div>';
+  ui.root.appendChild(home);
+  ui.window.Look.saveLobbyLook('outfit', 'caretaker-launcher');
+  const image = home.querySelector('.mydh-yawn');
+  await new Promise(r => setTimeout(r, 50));
+  assert.ok(asked.includes('data/dash/lobby/launcher.webp'), asked.join());
+  assert.ok(asked.every(p => p.startsWith('data/dash/lobby/')));
+  assert.equal(new Set(asked).size, asked.length);
+  assert.equal(image.getAttribute('src'), 'data:image/webp;base64,eA==');
+  assert.equal(home.querySelector('.mydh-plate b').textContent, '관리인');
 });

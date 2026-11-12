@@ -1,9 +1,10 @@
 import { dashRegistry, esc, type DashPanelCtx } from './kit';
-import { LOBBY_BACKGROUNDS, LOBBY_CHARACTERS, LOBBY_RANDOM, lobbyLook, saveLobbyLook } from './lobby-look';
+import { LOBBY_BACKGROUNDS, LOBBY_CHARACTERS, LOBBY_RANDOM, lobbyLook, paintOutfit, saveLobbyLook, setLobbyRepo } from './lobby-look';
 
 function renderAppearance(ctx: DashPanelCtx): void {
   ctx.root.classList.add('mydl');
-  ctx.root.innerHTML = `<div class="mydl-layout"><div class="mydl-preview" aria-label="로비 미리보기"><img class="mydl-backdrop" src="${LOBBY_BACKGROUNDS[1].image}" alt=""><img class="mydl-character" src="${LOBBY_CHARACTERS[0].outfits[0].image}" alt=""><span class="mydl-caption"></span></div><div class="mydl-options"><h3>캐릭터</h3><div class="mydl-characters" role="group" aria-label="캐릭터"></div><h3>의상</h3><div class="mydl-outfits" role="group" aria-label="의상"></div><h3>배경</h3><div class="mydl-backgrounds" role="group" aria-label="배경"></div><p class="mydl-status" role="status" aria-live="polite"></p><button type="button" class="mydl-home">홈에서 보기</button></div></div>`;
+  setLobbyRepo(ctx.repo);
+  ctx.root.innerHTML = `<div class="mydl-layout"><div class="mydl-preview" aria-label="로비 미리보기"><img class="mydl-backdrop" src="${LOBBY_BACKGROUNDS[1].image}" alt=""><img class="mydl-character" alt=""><span class="mydl-caption"></span></div><div class="mydl-options"><h3>캐릭터</h3><div class="mydl-characters" role="group" aria-label="캐릭터"></div><h3>의상</h3><div class="mydl-outfits" role="group" aria-label="의상"></div><h3>배경</h3><div class="mydl-backgrounds" role="group" aria-label="배경"></div><p class="mydl-status" role="status" aria-live="polite"></p><button type="button" class="mydl-home">홈에서 보기</button></div></div>`;
   const status = ctx.root.querySelector<HTMLElement>('.mydl-status')!;
   let selectedCharacter = 'yon';
   function paint(): void {
@@ -20,9 +21,10 @@ function renderAppearance(ctx: DashPanelCtx): void {
     ctx.root.querySelector<HTMLImageElement>('.mydl-backdrop')!.src = background.image;
     const preview = ctx.root.querySelector<HTMLImageElement>('.mydl-character')!;
     preview.hidden = look.outfit === 'none';
-    if (outfit) { preview.src = outfit.image; preview.alt = `${(currentCharacter || character).name} ${outfit.name}`; }
+    if (outfit) { if (preview.dataset.want !== outfit.id) paintOutfit(preview, outfit); preview.alt = `${(currentCharacter || character).name} ${outfit.name}`; }
     ctx.root.querySelector<HTMLElement>('.mydl-caption')!.textContent = random ? '랜덤. 홈을 열 때마다 바뀜' : outfit && look.outfit !== 'none' ? `${currentCharacter?.name} / ${outfit.name}` : '캐릭터 숨김';
-    ctx.root.querySelector<HTMLElement>('.mydl-characters')!.innerHTML = LOBBY_CHARACTERS.map(item => `<button type="button" data-character="${item.id}" aria-pressed="${item.id === currentCharacter?.id}"><img src="${item.outfits[0].image}" alt="" loading="lazy"><span>${esc(item.name)}</span></button>`).join('') + `<button type="button" data-outfit="${LOBBY_RANDOM}" aria-pressed="${random}">랜덤</button><button type="button" data-outfit="none" aria-pressed="${look.outfit === 'none'}">숨김</button>`;
+    ctx.root.querySelector<HTMLElement>('.mydl-characters')!.innerHTML = LOBBY_CHARACTERS.map(item => `<button type="button" data-character="${item.id}" aria-pressed="${item.id === currentCharacter?.id}"><img alt="" loading="lazy"><span>${esc(item.name)}</span></button>`).join('') + `<button type="button" data-outfit="${LOBBY_RANDOM}" aria-pressed="${random}">랜덤</button><button type="button" data-outfit="none" aria-pressed="${look.outfit === 'none'}">숨김</button>`;
+    ctx.root.querySelectorAll<HTMLImageElement>('.mydl-characters [data-character] img').forEach((img, i) => paintOutfit(img, LOBBY_CHARACTERS[i].outfits[0]));
     ctx.root.querySelector<HTMLElement>('.mydl-outfits')!.innerHTML = character.outfits.map(item => `<button type="button" data-outfit="${item.id}" aria-pressed="${item.id === look.outfit}">${esc(item.name)}</button>`).join('');
     ctx.root.querySelector<HTMLElement>('.mydl-backgrounds')!.innerHTML = LOBBY_BACKGROUNDS.map(item => `<button type="button" data-background="${item.id}" aria-pressed="${item.id === look.background}"><img src="${item.id === 'auto' ? (LOBBY_BACKGROUNDS.find(bg => bg.id === auto)!.image) : item.image}" alt="" loading="lazy"><span>${esc(item.name)}</span></button>`).join('');
   }
