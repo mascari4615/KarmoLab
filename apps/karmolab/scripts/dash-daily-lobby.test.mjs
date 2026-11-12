@@ -90,7 +90,7 @@ test('character, outfit and background choices persist and update the home sprit
   ui.get('[data-outfit="none"]').click();
   assert.equal(image.hidden, true);
   ui.window.localStorage.setItem('dash.lobby.outfit', 'not-a-script');
-  assert.equal(ui.window.Look.lobbyLook().outfit, 'yon-original');
+  assert.equal(ui.window.Look.lobbyLook().outfit, 'random');
   assert.throws(() => ui.window.Look.saveLobbyLook('outfit', 'javascript:alert(1)'));
 });
 
@@ -98,18 +98,42 @@ test('failed appearance save preserves the previous selection', async t => {
   const ui = await screen(t, 'appearance');
   ui.window.Storage.prototype.setItem = () => { throw new Error('quota'); };
   ui.get('[data-character="alisa"]').click();
-  assert.equal(ui.window.Look.lobbyLook().outfit, 'yon-original');
+  assert.equal(ui.window.Look.lobbyLook().outfit, 'random');
   assert.match(ui.get('.mydl-status').textContent, /저장하지 못했어요/);
 });
 
 test('every selectable built-in image exists in the app', async t => {
   const ui = await screen(t, 'appearance');
-  assert.equal(ui.window.Look.LOBBY_CHARACTERS.length, 3);
-  for (const character of ui.window.Look.LOBBY_CHARACTERS) assert.ok(character.outfits.length >= 2, character.id);
+  assert.equal(ui.window.Look.LOBBY_CHARACTERS.length, 8);
+  /* 세계관 셋은 의상 둘 이상, 무릎 구도 (티메토, 마스코트) 는 half */
+  for (const character of ui.window.Look.LOBBY_CHARACTERS.slice(0, 3)) assert.ok(character.outfits.length >= 2, character.id);
+  for (const character of ui.window.Look.LOBBY_CHARACTERS.slice(3)) assert.ok(character.outfits.every(o => o.half), character.id);
   const files = [...ui.window.Look.LOBBY_BACKGROUNDS.map(item => item.image), ...ui.window.Look.LOBBY_CHARACTERS.flatMap(character => character.outfits.map(outfit => outfit.image))];
   for (const file of files) assert.ok(existsSync(join(app, file.replace('/apps/karmolab/', ''))), file);
   ui.window.Look.saveLobbyLook('background', 'winter');
   assert.match(ui.window.document.documentElement.style.getPropertyValue('--dash-photo'), /winter-meadow/);
   ui.window.Look.saveLobbyLook('background', 'auto');
   assert.equal(ui.window.document.documentElement.style.getPropertyValue('--dash-photo'), '');
+});
+
+test('random is the default and keeps one pick per home sprite until the choice changes', async t => {
+  const ui = await screen(t, 'appearance');
+  assert.equal(ui.window.Look.lobbyLook().outfit, 'random');
+  const home = ui.window.document.createElement('div'); home.className = 'mydh';
+  home.innerHTML = '<img class="mydh-yawn"><div class="mydh-plate" hidden><b></b><span></span></div>';
+  ui.root.appendChild(home);
+  ui.window.Look.applyLobbyLook();
+  const image = home.querySelector('.mydh-yawn');
+  const first = image.dataset.outfit;
+  assert.ok(ui.window.Look.findOutfit(first), first);
+  assert.equal(home.querySelector('.mydh-plate').hidden, false);
+  assert.equal(home.querySelector('.mydh-plate b').textContent, ui.window.Look.findOutfit(first).character.name);
+  assert.equal(image.classList.contains('mydh-yawn--half'), !!ui.window.Look.findOutfit(first).outfit.half);
+  for (let i = 0; i < 5; i++) ui.window.Look.applyLobbyLook();
+  assert.equal(image.dataset.outfit, first);
+  ui.get('[data-outfit="random"]').click();
+  assert.equal(ui.window.localStorage.getItem('dash.lobby.outfit'), 'random');
+  ui.window.Look.saveLobbyLook('outfit', 'labo-karmolab');
+  assert.equal(image.dataset.outfit, 'labo-karmolab');
+  assert.ok(image.classList.contains('mydh-yawn--half'));
 });

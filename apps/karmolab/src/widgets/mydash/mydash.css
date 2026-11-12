@@ -217,10 +217,11 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   word-break: break-all;
 }
 
-/* ── 홈. R3 폰 메뉴 결 (memo notes/mydash/design/redesign-20261111/drafts/R3-phone.html, 2026-11-11 통과) ──
-   하늘 그림 위에 욘 가운데 크게, 오른쪽 흰 유리 세로 판 (시계, 방 칸 격자, 아래 수 셋), 왼쪽 위 오늘 판. 주황은 커리어 마감 하나.
-   욘은 아래가 잘리게. 배경 그림은 첫 화면과 같은 넷 (img/home/sky-*.webp), 설정의 첫 화면 배경을 따른다.
-   색은 시안 토큰 그대로. 스킨 토큰을 안 쓰는 화면이라 여기 직접 적고, 어두운 판은 토큰만 바꾼다 */
+/* ── 홈. S5 어두운 로비 결 (memo notes/mydash/design/redesign-20261111/drafts3/, 2026-11-12 통과) ──
+   배치는 R3 (2026-11-11 통과). 흐린 장면 위 가로줄, 가운데 캐릭터 (꾸미기 기본 랜덤), 오른쪽에 크게 기운 메뉴 판.
+   흰 판 셋 (주 메뉴), 파랑 채움 판 (수가 있는 방), 어두운 반투명 판 (나머지). 판 안 흐린 큰 아이콘, 굵은 압축 숫자.
+   치수는 시안의 FHD 단위 그대로 (--u 는 홈 폭 / 1920). 홈이 inline-size 컨테이너라 사이드바가 있어도 비율 유지.
+   장면은 테마를 따른다 (밝은 판은 마을, 어두운 판은 해질녘, 설정의 첫 화면 배경 우선). 메뉴 판 색은 두 판 공통 */
 .myd-main:has(.mydh) {
   display: flex;
   flex-direction: column;
@@ -235,48 +236,56 @@ html[data-sidebar="rail"] .myd-head [data-logout="1"] {
   min-height: 0;
 }
 .mydh {
-  --mydh-ink: #182238;
-  --mydh-ink3: #96a0b8;
-  --mydh-line: rgba(24, 34, 56, 0.14);
-  --mydh-glass: rgba(255, 255, 255, 0.78);
-  --mydh-edge: rgba(255, 255, 255, 0.95);
-  --mydh-acc: #e8862e;
-  --mydh-blue: #2f6fdc;
-  --mydh-veil: rgba(255, 255, 255, 0.42);
-  --mydh-shadow: 0 20px 50px -30px rgba(24, 34, 56, 0.5);
-  --mydh-page: #c9d6e4;
+  --u: calc(100cqw / 1920);
+  --mydh-white: #f2f3f5;
+  --mydh-white2: #e4e6ea;
+  --mydh-ink: #16181d;
+  --mydh-ink2: #6a707c;
+  --mydh-blue: #1f8fe6;
+  --mydh-blue2: #0b5fb0;
+  --mydh-blue-ink: #dff0ff;
+  --mydh-dark: rgba(22, 26, 34, 0.82);
+  --mydh-darkline: rgba(255, 255, 255, 0.12);
+  --mydh-text: #f4f6f9;
+  --mydh-text2: #9ea6b4;
+  --mydh-acc: #f5a623;
+  --mydh-scan: rgba(255, 255, 255, 0.035);
+  --mydh-shade: rgba(20, 30, 48, 0.32);
+  --mydh-shade-mid: rgba(0, 0, 0, 0.1);
+  --mydh-shade-edge: rgba(6, 8, 14, 0.75);
+  --mydh-drop: rgba(0, 0, 0, 0.5);
+  --mydh-cast: rgba(0, 0, 0, 0.28);
+  --mydh-page: #0c0f15;
   --mydh-photo: url('/apps/karmolab/img/home/sky-village.webp');
-  --mydh-pad: 56px;
-  --mydh-top: clamp(84px, 12vh, 110px);
-  --mydh-row: 120px;
   --mydh-icon: none;
   --mydh-font-ko: var(--font-sans);
   --mydh-font-en: var(--font-display);
-  --mydh-fs-name: 18px;
-  --mydh-fs-clock: 58px;
-  --mydh-fs-big: 42px;
-  --mydh-fs-bad: 12px;
+  --mydh-fs-clock: calc(84 * var(--u));
+  --mydh-fs-day: max(11px, calc(15 * var(--u)));
+  --mydh-fs-name: max(12px, calc(19 * var(--u)));
+  --mydh-fs-small: max(11px, calc(12 * var(--u)));
+  --mydh-fs-n: max(11px, calc(17 * var(--u)));
+  --mydh-fs-n-blue: calc(28 * var(--u));
+  --mydh-fs-big-name: calc(34 * var(--u));
+  --mydh-fs-big-sub: max(11px, calc(14 * var(--u)));
+  --mydh-fs-big-n: calc(118 * var(--u));
+  --mydh-fs-today-h: max(13px, calc(18 * var(--u)));
+  --mydh-fs-today: max(12px, calc(16 * var(--u)));
+  --mydh-fs-plate: calc(34 * var(--u));
+  --mydh-fs-plate-sub: max(11px, calc(15 * var(--u)));
+  --mydh-fs-bad: 11px;
+  container-type: inline-size;
   position: relative;
   isolation: isolate;
   min-height: 100%;
   height: 100%;
   overflow: hidden;
-  padding: var(--mydh-top) var(--mydh-pad) 24px;
   background: var(--mydh-page);
-  color: var(--mydh-ink);
+  color: var(--mydh-text);
   font-family: var(--mydh-font-ko);
 }
 [data-theme="dark"] .mydh {
-  --mydh-ink: #f2f4f7;
-  --mydh-ink3: #6f7a8c;
-  --mydh-line: rgba(255, 255, 255, 0.14);
-  --mydh-glass: rgba(20, 26, 36, 0.72);
-  --mydh-edge: rgba(255, 255, 255, 0.18);
-  --mydh-acc: #f0a04b;
-  --mydh-blue: #7fb0ff;
-  --mydh-veil: rgba(10, 14, 20, 0.55);
-  --mydh-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.8);
-  --mydh-page: #0f141c;
+  --mydh-shade: rgba(8, 11, 18, 0.58);
   --mydh-photo: url('/apps/karmolab/img/home/sky-dusk.webp');
 }
 html[data-home-bg="village"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky-village.webp'); }
@@ -372,179 +381,278 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 .mydh-bg {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: -3;
+  overflow: hidden;
+}
+.mydh-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: var(--mydh-photo) center / cover;
+  filter: blur(calc(3 * var(--u))) saturate(0.7);
+  transform: scale(1.04);
 }
 .mydh-bg::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--mydh-veil);
+  background: linear-gradient(90deg, var(--mydh-shade) 0%, var(--mydh-shade-mid) 35%, var(--mydh-shade) 70%, var(--mydh-shade-edge) 100%);
+}
+.mydh-deco {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, var(--mydh-scan) 0 1px, transparent 1px calc(4 * var(--u)));
 }
 .mydh-yawn {
   position: absolute;
-  left: 20%;
-  top: 2%;
   z-index: -1;
-  height: 120%;
+  left: 50%;
+  top: calc(10 * var(--u));
+  height: calc(1420 * var(--u));
+  max-width: none;
+  transform: translateX(-62%);
   pointer-events: none;
-  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 0 calc(30 * var(--u)) rgba(0, 0, 0, 0.45));
 }
-.mydh-today,
-.mydh-side {
+/* 무릎까지 오는 구도 (마스코트, 티메토). 전신 그림과 같은 높이면 판과 겹쳐 작게, 아래에 붙임 */
+.mydh-yawn--half {
+  top: auto;
+  bottom: 0;
+  height: calc(1040 * var(--u));
+  transform: translateX(-72%);
+}
+.mydh-plate {
   position: absolute;
-  border: 1px solid var(--mydh-edge);
-  background: var(--mydh-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--mydh-shadow);
+  left: calc(64 * var(--u));
+  bottom: calc(64 * var(--u));
+  display: flex;
+  align-items: baseline;
+  gap: calc(12 * var(--u));
+  padding: calc(14 * var(--u)) calc(22 * var(--u)) calc(14 * var(--u)) calc(18 * var(--u));
+  background: var(--mydh-dark);
+  border-left: calc(5 * var(--u)) solid var(--mydh-blue);
+}
+.mydh-plate[hidden] { display: none; }
+.mydh-plate b {
+  font-size: var(--mydh-fs-plate);
+  font-weight: 900;
+}
+.mydh-plate span {
+  font-size: var(--mydh-fs-plate-sub);
+  color: var(--mydh-text2);
 }
 .mydh-today {
-  left: var(--mydh-pad);
-  top: 100px;
-  width: min(420px, 28vw);
-  padding: 20px 24px;
+  position: absolute;
+  left: calc(64 * var(--u));
+  top: calc(100 * var(--u));
+  width: calc(420 * var(--u));
+  padding: calc(18 * var(--u)) calc(22 * var(--u));
+  background: var(--mydh-dark);
+  clip-path: polygon(0 0, calc(100% - 22 * var(--u)) 0, 100% calc(22 * var(--u)), 100% 100%, 0 100%);
 }
 .mydh-today h2 {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
   margin: 0;
-  font-size: var(--font-size-md);
+  font-size: var(--mydh-fs-today-h);
+  font-weight: 900;
+}
+.mydh-today h2::before {
+  content: "";
+  width: calc(6 * var(--u));
+  height: calc(18 * var(--u));
+  background: var(--mydh-blue);
 }
 .mydh-tasks {
   list-style: none;
-  margin: 10px 0 0;
+  margin: calc(8 * var(--u)) 0 0;
   padding: 0;
 }
 .mydh-tasks li {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--mydh-line);
-  font-size: var(--font-size-sm);
+  padding: calc(10 * var(--u)) 0;
+  border-bottom: 1px solid var(--mydh-darkline);
+  font-size: var(--mydh-fs-today);
   overflow-wrap: anywhere;
 }
 .mydh-tasks .mydh-empty {
-  color: var(--mydh-ink3);
+  color: var(--mydh-text2);
 }
 .mydh-side {
-  right: var(--mydh-pad);
+  position: absolute;
+  right: calc(56 * var(--u));
   top: 50%;
-  transform: translateY(-50%);
-  width: min(620px, 40vw);
-  display: flex;
-  flex-direction: column;
+  width: calc(780 * var(--u));
+  transform: translateY(-50%) perspective(calc(1600 * var(--u))) rotateY(-11deg);
+  transform-origin: right center;
 }
 .mydh-hd {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 26px 30px 20px;
-  border-bottom: 1px solid var(--mydh-line);
+  padding: 0 calc(6 * var(--u)) calc(12 * var(--u));
 }
 .mydh-clock {
   font-family: var(--mydh-font-en);
   font-size: var(--mydh-fs-clock);
-  font-weight: 300;
+  font-weight: 600;
   line-height: 0.9;
+  text-shadow: 0 calc(4 * var(--u)) calc(18 * var(--u)) var(--mydh-drop);
 }
 .mydh-day {
   text-align: right;
-  font-size: var(--font-size-xs);
+  font-size: var(--mydh-fs-day);
   line-height: 1.5;
-  color: var(--mydh-ink3);
+  color: var(--mydh-text2);
 }
 .mydh-cells {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  padding: 22px 26px;
+  grid-auto-rows: calc(124 * var(--u));
+  gap: calc(8 * var(--u));
 }
 .mydh-cell {
   position: relative;
-  height: var(--mydh-row);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 8px;
-  border: 1px solid var(--mydh-line);
-  background: var(--mydh-edge);
-  color: var(--mydh-ink);
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: calc(12 * var(--u)) calc(14 * var(--u));
+  border: 0;
+  background: var(--mydh-dark);
+  color: var(--mydh-text);
   font: inherit;
+  text-align: left;
   cursor: pointer;
+  box-shadow: calc(8 * var(--u)) calc(10 * var(--u)) 0 var(--mydh-cast);
 }
 .mydh-cell:hover,
 .mydh-cell:focus-visible {
-  border-color: var(--mydh-ink);
+  outline: calc(3 * var(--u)) solid var(--mydh-acc);
+  outline-offset: calc(-3 * var(--u));
 }
 .mydh-ic {
-  width: 44px;
-  height: 44px;
-  background: var(--mydh-blue);
+  position: absolute;
+  left: calc(14 * var(--u));
+  top: calc(12 * var(--u));
+  width: calc(28 * var(--u));
+  height: calc(28 * var(--u));
+  background: var(--mydh-text2);
   -webkit-mask: var(--mydh-icon) center / contain no-repeat;
   mask: var(--mydh-icon) center / contain no-repeat;
 }
+.mydh-ic--wm {
+  left: auto;
+  top: auto;
+  right: calc(-18 * var(--u));
+  bottom: calc(-22 * var(--u));
+  width: calc(110 * var(--u));
+  height: calc(110 * var(--u));
+  background: var(--mydh-text);
+  opacity: 0.06;
+}
 .mydh-cell b {
+  position: relative;
   font-size: var(--mydh-fs-name);
-  font-weight: 700;
-  text-align: center;
+  font-weight: 900;
   word-break: keep-all;
+}
+.mydh-sub {
+  position: relative;
+  font-size: var(--mydh-fs-small);
+  color: var(--mydh-text2);
 }
 .mydh-n {
   position: absolute;
-  top: 6px;
-  right: 8px;
+  right: calc(12 * var(--u));
+  top: calc(10 * var(--u));
   font-style: normal;
   font-family: var(--mydh-font-en);
-  font-size: var(--font-size-xs);
-  color: var(--mydh-ink3);
+  font-size: var(--mydh-fs-n);
+  font-weight: 500;
+  color: var(--mydh-text2);
 }
-.mydh-n--acc,
-.mydh-acc {
-  color: var(--mydh-acc);
+/* 주 메뉴 흰 판 셋 (커리어, 플래너, 목표) */
+.mydh-cell:nth-child(-n + 3) {
+  background: linear-gradient(180deg, var(--mydh-white), var(--mydh-white2));
+  color: var(--mydh-ink);
+}
+.mydh-cell:nth-child(-n + 3) .mydh-ic { background: var(--mydh-ink); }
+.mydh-cell:nth-child(-n + 3) .mydh-ic--wm { opacity: 0.07; }
+.mydh-cell:nth-child(-n + 3) .mydh-sub,
+.mydh-cell:nth-child(-n + 3) .mydh-n { color: var(--mydh-ink2); }
+/* 커리어 2x2. 마감 D-day 를 큰 숫자로, 왼쪽 주황 띠. 화면의 주황은 이것과 칸 선택 테두리 둘 */
+.mydh-cell--big {
+  grid-column: span 2;
+  grid-row: span 2;
+  justify-content: flex-start;
+  padding: calc(16 * var(--u)) calc(20 * var(--u));
+}
+.mydh-cell--big::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(8 * var(--u));
+  height: 100%;
+  background: var(--mydh-acc);
+}
+.mydh-cell--big .mydh-ic:not(.mydh-ic--wm) {
+  position: static;
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  margin-bottom: calc(6 * var(--u));
+}
+.mydh-cell--big .mydh-ic--wm {
+  width: calc(240 * var(--u));
+  height: calc(240 * var(--u));
+  right: calc(-30 * var(--u));
+  bottom: calc(-40 * var(--u));
+}
+.mydh-cell--big b { order: 1; font-size: var(--mydh-fs-big-name); }
+.mydh-cell--big .mydh-sub { order: 2; font-size: var(--mydh-fs-big-sub); margin-top: calc(4 * var(--u)); }
+.mydh-cells .mydh-cell--big .mydh-n {
+  order: 3;
+  position: relative;
+  right: auto;
+  top: auto;
+  margin-top: auto;
+  font-size: var(--mydh-fs-big-n);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--mydh-ink);
+}
+/* 파랑 채움 판 (오늘, 북마크) */
+.mydh-cell--blue { background: linear-gradient(135deg, var(--mydh-blue), var(--mydh-blue2)); }
+.mydh-cell--blue .mydh-ic:not(.mydh-ic--wm) { background: var(--mydh-blue-ink); }
+.mydh-cell--blue .mydh-n {
+  font-size: var(--mydh-fs-n-blue);
+  font-weight: 600;
+  color: var(--mydh-text);
 }
 .mydh-bad {
   position: absolute;
-  left: 8px;
-  bottom: 4px;
+  right: calc(12 * var(--u));
+  bottom: calc(8 * var(--u));
   font-size: var(--mydh-fs-bad);
-  color: var(--mydh-ink3);
+  color: var(--mydh-text2);
 }
-.mydh-ft {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid var(--mydh-line);
-}
-.mydh-ft div {
-  padding: 18px 26px;
-  border-right: 1px solid var(--mydh-line);
-}
-.mydh-ft div:last-child {
-  border-right: 0;
-}
-.mydh-ft b {
-  display: block;
-  font-family: var(--mydh-font-en);
-  font-size: var(--mydh-fs-big);
-  font-weight: 400;
-  line-height: 1.05;
-}
-.mydh-ft span {
-  font-size: var(--font-size-2xs);
-  color: var(--mydh-ink3);
-}
+/* 좁은 화면은 기울기 없이 세로로 쌓는다. 단위는 고정 (폭 비례면 글자가 너무 작아짐) */
 @media (max-width: 1099px) {
-  .mydh { --mydh-pad: 24px; height: auto; overflow: visible; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-  .mydh-yawn { left: auto; right: -160px; top: -40px; height: 900px; }
-  .mydh-today, .mydh-side { position: relative; left: auto; right: auto; top: auto; transform: none; width: auto; max-width: 640px; }
+  .mydh { --u: 0.8px; height: auto; overflow: visible; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .mydh-yawn { left: auto; right: -120px; top: 40px; height: 820px; transform: none; }
+  .mydh-yawn--half { top: 80px; bottom: auto; height: 640px; transform: none; }
+  .mydh-today, .mydh-side, .mydh-plate { position: relative; left: auto; right: auto; top: auto; bottom: auto; transform: none; width: auto; max-width: 640px; }
+  .mydh-plate { align-self: flex-start; order: 3; }
 }
 @media (max-width: 599px) {
-  .mydh { --mydh-pad: 14px; --mydh-row: 96px; padding: 14px; }
-  .mydh-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 14px; }
-  .mydh-hd { padding: 18px 18px 14px; }
-  .mydh { --mydh-fs-clock: 44px; --mydh-fs-big: 30px; }
-  .mydh-ft div { padding: 14px; }
-  .mydh-ic { width: 36px; height: 36px; }
-  .mydh { --mydh-fs-name: 14px; }
-  .mydh-yawn { right: -130px; top: 30px; height: 560px; }
+  .mydh { --u: 0.72px; padding: 14px; }
+  .mydh-yawn { right: -150px; height: 620px; }
+  .mydh-yawn--half { height: 480px; }
 }
 
 /* ── 좁은 화면. 가로 줄이 뜨고 내용 여백이 줄어든다 ─────────── */

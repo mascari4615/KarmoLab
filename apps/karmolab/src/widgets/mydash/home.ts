@@ -1,8 +1,9 @@
 /**
  * 개인 대시보드 홈. 목록의 **오늘** 자리.
  *
- * 무엇인가: R3 폰 메뉴 결 (2026-11-11 사용자 통과, memo notes/mydash/design/redesign-20261111/). 욘 가운데 크게,
- * 오른쪽 세로 판에 시계, 방 칸 격자, 아래 수 셋. 왼쪽 위 작은 오늘 판. 옛 D2b 카드 일곱 (2026-09-23) 은 대체됨
+ * 무엇인가: R3 배치 (2026-11-11 통과) 에 S5 어두운 로비 결 (2026-11-12 통과, memo notes/mydash/design/redesign-20261111/drafts3/).
+ * 어두운 장면 가운데 캐릭터 (꾸미기 기본 랜덤), 오른쪽에 크게 기운 메뉴 판 (시계, 방 칸 격자). 커리어는 2x2 큰 칸에 마감 D-day.
+ * 흰 판 셋은 주 메뉴, 파랑 판은 수가 있는 방 (오늘, 북마크), 나머지는 어두운 판. 왼쪽 위 오늘 판, 왼쪽 아래 캐릭터 이름표
  *
  * ★ **카드는 데이터를 기다리지 않는다.** 이름과 아이콘은 바로 그리고, 출처마다 따로 읽어
  * 칸 오른쪽 위 작은 수와 왼쪽 목록의 수를 채운다 (`ctx.setCount`). 읽기에 실패하면 **그 카드만** 못 읽음 한 줄.
@@ -37,8 +38,8 @@ import { listTasks } from '../planner/local-store';
   type Tile = {
     item: string;
     title: string;
-    /** 주황 수. 화면에서 주황은 이것 하나 (커리어 마감) */
-    accent?: boolean;
+    /** big 은 2x2 커리어 칸, blue 는 파랑 채움 칸. 흰 판은 앞 셋 (CSS nth-child) */
+    kind?: 'big' | 'blue';
     /** 목록 오른쪽 작은 수를 읽어 온다. 캘린더는 저장소가 아니라 구글 */
     count: (repo: DashRepoRead) => Promise<string | null>;
   };
@@ -213,16 +214,16 @@ import { listTasks } from '../planner/local-store';
     return n ? 'D-' + n.left : null;
   }
 
-  /** 홈 칸 순서. R3 시안 (memo notes/mydash/design/redesign-20261111/drafts/R3-phone.html, 2026-11-11 통과) */
+  /** 홈 칸 순서. S5 시안 (memo notes/mydash/design/redesign-20261111/drafts3/body.js, 2026-11-12 통과) */
   function tiles(): Tile[] {
     const none = async (): Promise<string | null> => null;
     return [
-      { item: 'daily', title: '오늘', count: none },
+      { item: 'career', title: '커리어', kind: 'big', count: careerCount },
       { item: 'planner', title: t('widgets.planner.title', undefined, '플래너'), count: calendarCount },
-      { item: 'career', title: '커리어', accent: true, count: careerCount },
       { item: 'goals', title: t('mydash.nav.goals', undefined, '목표'), count: goalsCount },
+      { item: 'daily', title: '오늘', kind: 'blue', count: async () => String(openTasks().length) },
       /* 판정 대기와 북마크는 한 방 (사용자 2026-09-23). 방이 판정 대기부터 열려 목록 수도 대기 수 */
-      { item: 'bookmarks', title: t('mydash.nav.bookmarks', undefined, '북마크'), count: async (r) => short(num((await bmCounts(r)).pending)) },
+      { item: 'bookmarks', title: t('mydash.nav.bookmarks', undefined, '북마크'), kind: 'blue', count: async (r) => short(num((await bmCounts(r)).pending)) },
       { item: 'kakao-daily', title: '카톡 정리', count: none },
       { item: 'discord-channels', title: '디코 채널', count: none },
       { item: 'discovery', title: '행사와 AI 소식', count: none },
@@ -237,13 +238,16 @@ import { listTasks } from '../planner/local-store';
 
   /* ── 그리기 ─────────────────────────────────────────────────── */
 
+  /** 칸 하나. 흐린 큰 아이콘 (wm) 은 칸 오른쪽 아래에서 잘리는 장식, 작은 아이콘은 왼쪽 위 */
   function tileHtml(c: Tile): string {
     return (
-      '<button type="button" data-open="' + esc(c.item) + '" class="mydh-cell" data-item="' + esc(c.item) + '"' +
+      '<button type="button" data-open="' + esc(c.item) + '" class="mydh-cell' + (c.kind ? ' mydh-cell--' + c.kind : '') + '" data-item="' + esc(c.item) + '"' +
       ' style="--mydh-icon:url(' + ROOM_ICON_BASE + esc(roomIcon(c.item)) + '.png)">' +
-      '<em class="mydh-n' + (c.accent ? ' mydh-n--acc' : '') + '"></em>' +
+      '<span class="mydh-ic mydh-ic--wm" aria-hidden="true"></span>' +
       '<span class="mydh-ic" aria-hidden="true"></span>' +
+      '<em class="mydh-n"></em>' +
       '<b>' + esc(c.title) + '</b>' +
+      (c.kind === 'big' ? '<small class="mydh-sub"></small>' : '') +
       '</button>'
     );
   }
@@ -260,36 +264,38 @@ import { listTasks } from '../planner/local-store';
     const c = clockText();
     return (
       '<div class="mydh-bg"></div>' +
-      '<img class="mydh-yawn" src="/apps/karmolab/img/widgets/mydash/yawn-stand.webp" alt="" aria-hidden="true">' +
+      '<div class="mydh-deco"></div>' +
+      '<img class="mydh-yawn" alt="" aria-hidden="true">' +
+      '<div class="mydh-plate" hidden><b></b><span></span></div>' +
       '<section class="mydh-today" aria-label="오늘 할 일"><h2>오늘</h2><ul class="mydh-tasks"></ul></section>' +
       '<aside class="mydh-side">' +
       '<div class="mydh-hd"><b class="mydh-clock">' + c.time + '</b><span class="mydh-day">' + c.date + '<br>' + c.day + '</span></div>' +
       '<div class="mydh-cells">' + tiles().map(tileHtml).join('') + '</div>' +
-      '<div class="mydh-ft">' +
-      '<div data-foot="tasks"><b>-</b><span>오늘 할 일</span></div>' +
-      '<div data-foot="career"><b class="mydh-acc">-</b><span>지원 마감</span></div>' +
-      '<div data-foot="bookmarks"><b>-</b><span>북마크 판정 대기</span></div>' +
-      '</div></aside>'
+      '</aside>'
     );
   }
 
-  /** 왼쪽 위 오늘 판. 플래너 할 일 (기기 저장) 중 아직 안 한 것 넷까지. 오늘 방과 같은 원본 */
-  function paintTasks(root: HTMLElement): void {
-    let open: Array<{ title: string }> = [];
+  /** 플래너 할 일 (기기 저장) 중 아직 안 한 것. 오늘 방과 같은 원본 */
+  function openTasks(): Array<{ title: string }> {
     try {
       const local = listTasks();
-      open = [...local.inProgress, ...local.todo];
+      return [...local.inProgress, ...local.todo];
     } catch {
-      open = [];
+      return [];
     }
+  }
+
+  /** 왼쪽 위 오늘 판은 넷까지, 오늘 칸의 수는 전부 */
+  function paintTasks(root: HTMLElement): void {
+    const open = openTasks();
     const ul = root.querySelector('.mydh-tasks');
     if (ul) {
       ul.innerHTML = open.length
         ? open.slice(0, 4).map((x) => '<li>' + esc(x.title) + '</li>').join('')
         : '<li class="mydh-empty">남은 할 일이 없어요</li>';
     }
-    const foot = root.querySelector('[data-foot="tasks"] b');
-    if (foot) foot.textContent = String(open.length);
+    const n = root.querySelector('[data-item="daily"] .mydh-n');
+    if (n) n.textContent = String(open.length);
   }
 
   async function render(ctx: DashPanelCtx): Promise<void> {
@@ -344,14 +350,12 @@ import { listTasks } from '../planner/local-store';
       window.removeEventListener('planner-remote-change', repaintTasks);
       window.removeEventListener('storage', repaintTasks);
     });
-    /* 아래 줄 지원 마감은 회사 이름까지 */
+    /* 커리어 큰 칸 아래 줄은 가장 가까운 마감의 회사 이름 */
     void careerNext(repo)
       .then((n) => {
         if (!ctx.isCurrent()) return;
-        const box = root.querySelector('[data-foot="career"]');
-        if (!box) return;
-        box.querySelector('b')!.textContent = n ? 'D-' + n.left : '-';
-        box.querySelector('span')!.textContent = n && n.company ? n.company + ' 마감' : '지원 마감';
+        const sub = root.querySelector('[data-item="career"] .mydh-sub');
+        if (sub) sub.textContent = n && n.company ? n.company + ' 마감' : '열린 지원 없음';
       })
       .catch(() => undefined);
 
@@ -385,10 +389,6 @@ import { listTasks } from '../planner/local-store';
           ctx.setCount(j.item, value);
           const n = root.querySelector('[data-item="' + j.item + '"] .mydh-n');
           if (n) n.textContent = value;
-          if (j.item === 'bookmarks') {
-            const foot = root.querySelector('[data-foot="bookmarks"] b');
-            if (foot) foot.textContent = value;
-          }
         }
         return true;
       })

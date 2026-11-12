@@ -1,5 +1,5 @@
 import { dashRegistry, esc, type DashPanelCtx } from './kit';
-import { LOBBY_BACKGROUNDS, LOBBY_CHARACTERS, lobbyLook, saveLobbyLook } from './lobby-look';
+import { LOBBY_BACKGROUNDS, LOBBY_CHARACTERS, LOBBY_RANDOM, lobbyLook, saveLobbyLook } from './lobby-look';
 
 function renderAppearance(ctx: DashPanelCtx): void {
   ctx.root.classList.add('mydl');
@@ -13,15 +13,16 @@ function renderAppearance(ctx: DashPanelCtx): void {
     const currentCharacter = LOBBY_CHARACTERS.find(character => character.outfits.some(outfit => outfit.id === look.outfit));
     if (currentCharacter) selectedCharacter = currentCharacter.id;
     const character = LOBBY_CHARACTERS.find(item => item.id === selectedCharacter) || LOBBY_CHARACTERS[0];
-    const outfit = LOBBY_CHARACTERS.flatMap(item => item.outfits).find(item => item.id === look.outfit);
+    const random = look.outfit === LOBBY_RANDOM;
+    const outfit = LOBBY_CHARACTERS.flatMap(item => item.outfits).find(item => item.id === look.outfit) || (random ? character.outfits[0] : undefined);
     const auto = document.documentElement.dataset.theme === 'dark' ? 'dusk' : 'village';
     const background = LOBBY_BACKGROUNDS.find(item => item.id === (look.background === 'auto' ? auto : look.background)) || LOBBY_BACKGROUNDS[1];
     ctx.root.querySelector<HTMLImageElement>('.mydl-backdrop')!.src = background.image;
     const preview = ctx.root.querySelector<HTMLImageElement>('.mydl-character')!;
     preview.hidden = look.outfit === 'none';
-    if (outfit) { preview.src = outfit.image; preview.alt = `${currentCharacter?.name || ''} ${outfit.name}`; }
-    ctx.root.querySelector<HTMLElement>('.mydl-caption')!.textContent = outfit && look.outfit !== 'none' ? `${currentCharacter?.name} / ${outfit.name}` : '캐릭터 숨김';
-    ctx.root.querySelector<HTMLElement>('.mydl-characters')!.innerHTML = LOBBY_CHARACTERS.map(item => `<button type="button" data-character="${item.id}" aria-pressed="${item.id === currentCharacter?.id}"><img src="${item.outfits[0].image}" alt="" loading="lazy"><span>${esc(item.name)}</span></button>`).join('') + `<button type="button" data-outfit="none" aria-pressed="${look.outfit === 'none'}">숨김</button>`;
+    if (outfit) { preview.src = outfit.image; preview.alt = `${(currentCharacter || character).name} ${outfit.name}`; }
+    ctx.root.querySelector<HTMLElement>('.mydl-caption')!.textContent = random ? '랜덤. 홈을 열 때마다 바뀜' : outfit && look.outfit !== 'none' ? `${currentCharacter?.name} / ${outfit.name}` : '캐릭터 숨김';
+    ctx.root.querySelector<HTMLElement>('.mydl-characters')!.innerHTML = LOBBY_CHARACTERS.map(item => `<button type="button" data-character="${item.id}" aria-pressed="${item.id === currentCharacter?.id}"><img src="${item.outfits[0].image}" alt="" loading="lazy"><span>${esc(item.name)}</span></button>`).join('') + `<button type="button" data-outfit="${LOBBY_RANDOM}" aria-pressed="${random}">랜덤</button><button type="button" data-outfit="none" aria-pressed="${look.outfit === 'none'}">숨김</button>`;
     ctx.root.querySelector<HTMLElement>('.mydl-outfits')!.innerHTML = character.outfits.map(item => `<button type="button" data-outfit="${item.id}" aria-pressed="${item.id === look.outfit}">${esc(item.name)}</button>`).join('');
     ctx.root.querySelector<HTMLElement>('.mydl-backgrounds')!.innerHTML = LOBBY_BACKGROUNDS.map(item => `<button type="button" data-background="${item.id}" aria-pressed="${item.id === look.background}"><img src="${item.id === 'auto' ? (LOBBY_BACKGROUNDS.find(bg => bg.id === auto)!.image) : item.image}" alt="" loading="lazy"><span>${esc(item.name)}</span></button>`).join('');
   }
