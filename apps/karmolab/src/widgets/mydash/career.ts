@@ -21,6 +21,15 @@ interface Question {
   file?: string;
   paused?: boolean;
   definitions?: string[];
+  /** 채용 쪽이 이 문항에서 보는 것 한 줄 */
+  hint?: string;
+}
+interface Emphasis {
+  title: string;
+  body: string;
+  from?: string;
+  /** 지원 가능 여부나 합격 취소에 걸리는 확인 항목 */
+  warn?: boolean;
 }
 interface Application {
   id: string;
@@ -35,6 +44,8 @@ interface Application {
   caseIds?: string[];
   picks?: Record<string, string>;
   questions: Question[];
+  emphasis?: Emphasis[];
+  emphasisSource?: string;
 }
 interface CaseAnswer {
   question: string;
@@ -79,7 +90,9 @@ const STATUS: Record<string, string> = {
   failed: '불합격',
   closed: '마감',
 };
-type Tab = 'drafts' | 'cases' | 'links';
+type Tab = 'drafts' | 'points' | 'cases' | 'links';
+const TABS: Tab[] = ['drafts', 'points', 'cases', 'links'];
+const asTab = (v: string | undefined): Tab => (TABS as string[]).indexOf(v || '') >= 0 ? (v as Tab) : 'drafts';
 
 /** 시안 파일 하나에서 `## X. 제목` 과 answer 주석 사이 본문. 생성기 `parseVariants` 와 같은 규칙 */
 export function parseVariants(source: string): Variant[] {
@@ -161,7 +174,7 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
 
   const sub = decodeURIComponent(location.hash.replace(/^#/, '')).split('/');
   let app = apps.find((a) => a.id === sub[1]) || apps[0];
-  let tab: Tab = sub[2] === 'cases' || sub[2] === 'links' ? sub[2] : 'drafts';
+  let tab: Tab = asTab(sub[2]);
   let qid = 0;
   let show = '';
   let note = '';
@@ -250,6 +263,7 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
       <div class="cr-who"><small>${esc(STATUS[app.status] || app.status)}</small><h2>${esc(app.company)}</h2><p>${esc(app.role)}</p>${appPicker}
         <nav class="cr-tabs" role="tablist">
           <button type="button" role="tab" data-tab="drafts" aria-selected="${tab === 'drafts'}">자소서 시안</button>
+          <button type="button" role="tab" data-tab="points" aria-selected="${tab === 'points'}">채용 강조점<span>${(app.emphasis || []).length}</span></button>
           <button type="button" role="tab" data-tab="cases" aria-selected="${tab === 'cases'}">합격 사례<span>${(app.caseIds || []).length}</span></button>
           <button type="button" role="tab" data-tab="links" aria-selected="${tab === 'links'}">공고와 자료</button>
         </nav></div>
@@ -290,6 +304,17 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
         .join('')}</div>`;
   }
 
+  /** 채용 쪽이 강조하는 것. 확인 항목 (warn) 을 위에, 나머지는 원문 순서 */
+  function pointsView(): string {
+    const list = app.emphasis || [];
+    if (!list.length) return `<p class="cr-muted">정리한 강조점이 없어요. memo <code>${APPS}</code> 의 <code>emphasis</code> 에 넣으세요.</p>`;
+    const sorted = list.filter((e) => e.warn).concat(list.filter((e) => !e.warn));
+    return `<p class="cr-band">공고, FAQ, 채용 담당자 가이드, 현직자 인터뷰, 인턴 선배 대화에서 반복된 것. ${ghLink(app.emphasisSource, '조사 원문')}</p>
+      <div class="cr-points">${sorted
+        .map((e, i) => `<article class="cr-point${e.warn ? ' cr-warn' : ''}"><span class="cr-pno">${e.warn ? '!' : i + 1 - sorted.filter((x) => x.warn).length}</span><div><h3>${esc(e.title)}</h3><p>${esc(e.body)}</p>${e.from ? `<small>${esc(e.from)}</small>` : ''}</div></article>`)
+        .join('')}</div>`;
+  }
+
   function linksView(): string {
     const links = (app.links || [])
       .map((l) => {
@@ -310,7 +335,7 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
     const q = app.questions[qid] || app.questions[0];
     const t = splitTitle(q.title);
     const defs = q.definitions && q.definitions.length ? `<div class="cr-defs">${q.definitions.map((d) => `<span>${esc(d)}</span>`).join('')}</div>` : '';
-    body.innerHTML = `<div class="cr-ask cr-q"><h3>${q.id}. ${esc(t.name)}</h3><p>${esc(q.prompt)}</p><span class="cr-lim">${q.limit}자</span></div>${defs}
+    body.innerHTML = `<div class="cr-ask cr-q"><h3>${q.id}. ${esc(t.name)}</h3><p>${esc(q.prompt)}</p><span class="cr-lim">${q.limit}자</span></div>${q.hint ? `<p class="cr-hint"><b>채용이 보는 것</b>${esc(q.hint)}</p>` : ''}${defs}
       <div class="cr-vtabs" role="tablist"></div><div class="cr-variants"><p class="cr-muted">시안 읽는 중</p></div>
       ${note ? `<p class="cr-status" role="status">${esc(note)}</p>` : ''}`;
     const box = body.querySelector<HTMLElement>('.cr-variants')!;
@@ -383,6 +408,7 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
     const body = ctx.root.querySelector<HTMLElement>('.cr-main')!;
     if (tab === 'cases') body.innerHTML = casesView();
     else if (tab === 'links') body.innerHTML = linksView();
+    else if (tab === 'points') body.innerHTML = pointsView();
     else await draftsView(body, picks);
   }
 
@@ -409,7 +435,7 @@ async function renderCareer(ctx: DashPanelCtx<DashRepoWrite>): Promise<void> {
       return;
     }
     note = '';
-    if (t.dataset.tab) tab = t.dataset.tab === 'cases' || t.dataset.tab === 'links' ? t.dataset.tab : 'drafts';
+    if (t.dataset.tab) tab = asTab(t.dataset.tab);
     else if (t.dataset.q) {
       qid = Number(t.dataset.q) || 0;
       tab = 'drafts';

@@ -13,7 +13,7 @@ const bundle = await build({ stdin: { contents: `import './src/widgets/mydash/ca
 
 const md = (ids, extra = '') => ids.map((id) => `## ${id}. ${id} 제목\n\n- 중심: ${id} 중심\n- 장점: ${id} 장점\n\n<!-- answer:${id} -->\n${id} 본문 첫 줄${extra}\n둘째 줄\n<!-- /answer:${id} -->\n`).join('\n');
 const fixture = {
-  'data/career/applications.json': { applications: [{ id: 'acme-2026', company: '<b>Acme</b>', role: '인턴', status: 'drafting', deadline: '2099-01-01T00:00:00+09:00', links: [{ label: 'bad', url: 'javascript:alert(1)' }, { label: '공고', url: 'https://example.com/a' }], draftsDir: 'career/x', caseIds: ['c1'], picks: { 1: 'B' }, questions: [{ id: 1, title: '동기', limit: 700, prompt: '왜?', file: 'q1.md' }, { id: 2, title: '분석', limit: 700, prompt: '게임', paused: true }, { id: 3, title: '짧게', limit: 10, prompt: '짧게', file: 'q3.md' }] }] },
+  'data/career/applications.json': { applications: [{ id: 'acme-2026', company: '<b>Acme</b>', role: '인턴', status: 'drafting', deadline: '2099-01-01T00:00:00+09:00', links: [{ label: 'bad', url: 'javascript:alert(1)' }, { label: '공고', url: 'https://example.com/a' }], draftsDir: 'career/x', caseIds: ['c1'], picks: { 1: 'B' }, emphasis: [{ title: '일반', body: '본문' }, { title: '확인<b>', body: '조건', warn: true }], questions: [{ id: 1, title: '동기', limit: 700, prompt: '왜?', file: 'q1.md', hint: '보는 것' }, { id: 2, title: '분석', limit: 700, prompt: '게임', paused: true }, { id: 3, title: '짧게', limit: 10, prompt: '짧게', file: 'q3.md' }] }] },
   'data/career/cases.json': { cases: [{ id: 'c1', company: 'Acme', role: '개발', period: '2021', kind: 'essay', stage: '서류', source: '출처', url: 'https://example.com/c', takeaway: '요점', answers: [{ question: 'Q<img src=x>', answer: 'A', note: 'N' }] }] },
   'career/x/q1.md': md(['A', 'B', 'C']),
   'career/x/q3.md': md(['A'], ' 긴 본문이라 제한 초과'),
@@ -87,6 +87,20 @@ test('picking writes one event and earlier events override the canon', async (t)
   await settle(); await settle();
   assert.equal(put[1].value.pick, null);
   assert.equal(root.querySelectorAll('.cr-picked').length, 0);
+});
+
+test('points tab puts warnings first and questions show the hint', async (t) => {
+  const { w, root, ctx, panel } = screen(t, fixture);
+  await panel.render(ctx);
+  await settle();
+  assert.match(root.querySelector('.cr-hint').textContent, /보는 것/);
+  root.querySelector('[data-tab="points"]').click();
+  await settle();
+  const cards = root.querySelectorAll('.cr-point');
+  assert.equal(cards.length, 2);
+  assert.ok(cards[0].classList.contains('cr-warn'));
+  assert.equal(root.querySelectorAll('.cr-point b').length, 0);
+  assert.equal(decodeURIComponent(w.location.hash), '#career/acme-2026/points');
 });
 
 test('cases tab lists linked cases and the hash keeps the tab', async (t) => {

@@ -131,6 +131,20 @@ html[data-theme="light"] .cr { --cr-dark: rgba(24, 32, 46, .8); }
 .cr .cr-empty { display: grid; place-items: center; min-height: 160px; padding: 20px; background: var(--cr-dark); color: var(--cr-text2); font-size: var(--font-size-sm); grid-column: 1 / -1; }
 .cr .cr-status { margin: 0; padding: 10px 16px; background: var(--cr-dark); font-size: var(--font-size-xs); border-left: 4px solid var(--cr-blue); }
 
+/* 문항 아래 한 줄: 채용 쪽이 이 문항에서 보는 것 */
+.cr .cr-hint { margin: 0; padding: 10px 16px; background: var(--cr-dark); border-left: 4px solid var(--cr-acc); font-size: var(--font-size-xs); line-height: 1.6; }
+.cr .cr-hint b { margin-right: 10px; color: var(--cr-acc); }
+
+/* 채용 강조점: 흰 종이 카드, 확인 항목은 주황 띠 */
+.cr .cr-points { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; align-content: start; }
+.cr .cr-point { position: relative; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 14px; padding: 16px 20px 16px 16px; background: var(--cr-paper); color: var(--cr-ink); }
+.cr .cr-pno { font: 700 2.5rem var(--cr-num); line-height: 1; color: var(--cr-ink2); text-align: center; }
+.cr .cr-point h3 { margin: 0 0 6px; font-size: var(--font-size-md); font-weight: 900; }
+.cr .cr-point p { margin: 0; font-size: var(--myd-body); line-height: 1.7; }
+.cr .cr-point small { display: block; margin-top: 8px; font-size: var(--myd-meta); color: var(--cr-ink2); }
+.cr .cr-warn { box-shadow: inset 6px 0 0 var(--cr-acc); }
+.cr .cr-warn .cr-pno { color: var(--cr-acc); }
+
 /* 합격 사례, 링크 */
 .cr .cr-band { margin: 0; padding: 10px 16px; background: var(--cr-dark); color: var(--cr-text2); font-size: var(--font-size-xs); line-height: 1.6; }
 .cr .cr-cases { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; align-content: start; }
