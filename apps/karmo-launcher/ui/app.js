@@ -866,6 +866,8 @@ async function paintBuilds(app) {
   $('pBuildGet').textContent = '이 빌드 받기';
   $('pBuildNote').textContent = '노트북 빌드 목록 받는 중';
   $('pBuilds').innerHTML = '';
+  $('pDlRow').hidden = true;
+  $('pDlPw').value = '';
   let failed = '';
   try {
     buildRows = await invoke('laptop_builds');
@@ -909,8 +911,26 @@ $('pBuildGet').addEventListener('click', async () => {
   const app = propsApp;
   if (buildPick === null) return;
   if (busy.has(app.id) || selfBusy) {
-    msgEl.textContent = '받는 중인 작업이 끝난 뒤에 다시';
+    $('pBuildNote').textContent = '받는 중인 작업이 끝난 뒤에 다시';
     return;
+  }
+  /* 비밀번호가 없으면 창을 닫지 않고 이 자리에서 받음. 닫은 뒤 실패하면 오류가 안 보임 */
+  if (buildPick) {
+    const typed = $('pDlPw').value;
+    try {
+      if (typed.trim()) await invoke('laptop_dl_set', { password: typed });
+      if (!(await invoke('laptop_dl_status'))) {
+        $('pDlRow').hidden = false;
+        $('pBuildNote').textContent = '다운로드 비밀번호를 넣고 다시 받기 (설정에도 저장됨)';
+        $('pDlPw').focus();
+        return;
+      }
+    } catch (e) {
+      $('pBuildNote').textContent = String(e);
+      return;
+    }
+    $('pDlPw').value = '';
+    paintDlPw();
   }
   closeModal($('props'));
   if (!buildPick) {
@@ -927,7 +947,9 @@ $('pBuildGet').addEventListener('click', async () => {
   const before = appPref(prefs, app.id).build || null;
   setAppPref(app.id, { build: r.name });
   await runInstall(app, { pick: { url: r.download, version, sha256: r.artifact.sha256 } });
-  if ((status.get(app.id) || {}).version !== version) {
+  const after = status.get(app.id) || {};
+  if (after.version !== version) {
+    msgEl.textContent = app.name + ' 빌드 받기 실패: ' + (after.error || '설치된 판이 다름');
     setAppPref(app.id, { build: before });
     await refreshStatus(app);
     planAuto();
