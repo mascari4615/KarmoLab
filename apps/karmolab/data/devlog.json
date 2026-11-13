@@ -2,59 +2,80 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 1999,
-    "days": 10,
+    "commits": 2015,
+    "days": 11,
     "shown": 60
   },
   "days": [
     {
+      "date": "2026-11-13",
+      "entries": [
+        {
+          "sha": "a29672b96",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "build",
+          "text": "Android 빌드에 Android JNI 모듈 추가"
+        },
+        {
+          "sha": "aea66e212",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "settings",
+          "text": "환경설정 시스템 항목에 FPS 표시 토글, 릴리스 빌드에서도 켬"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
+    {
       "date": "2026-11-12",
       "entries": [
         {
-          "sha": "e2fc12e28",
+          "sha": "f2cec0686",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "unit",
-          "text": "피격 점멸을 더하기에서 섞기로, 보스 0.5에서 형태가 남게"
+          "scope": "ui",
+          "text": "단축키 안내 첫 자동 열기가 릴리스에서 안 보이던 것"
         },
         {
-          "sha": "324d4bccd",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "survival",
-          "text": "밝은 맵 C안, 풀은 빛 받는 재질, 지면 색 1.25배, 판 하늘 낮 고정"
-        },
-        {
-          "sha": "d8fefedce",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "demo",
-          "text": "데모 판정 반영, 멀티 숨김, 원격 로그 끔, 보스 점멸 절반, 복셀 월드 끔"
-        },
-        {
-          "sha": "eb96f8646",
+          "sha": "0cd2e16f1",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "dialogue",
-          "text": "검은 띠 장면에서 큰 인물 자막이 띠에 잘리던 것"
+          "scope": "settings",
+          "text": "FPS 토글 값을 인스펙터 필드로"
         },
         {
-          "sha": "0e912dcc9",
+          "sha": "3fe281d05",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "settings",
+          "text": "60 FPS 고정 토글을 끄면 30 대신 제한 없음"
+        },
+        {
+          "sha": "b4a6f3671",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "quest",
+          "text": "조건 툴팁 진행 표시를 목표에서 멈춤"
+        },
+        {
+          "sha": "ffa419da3",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "release",
-          "text": "실험실은 시작 스테이지라 포털 숨김 해제, 개발 상점 NPC만 숨김"
+          "text": "퀘스트 조건과 보상 칸의 영문 스탯 키, 날씨 FMOD 키, 조작법 안내"
         },
         {
-          "sha": "81a9a2449",
+          "sha": "cbab67136",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
-          "scope": "sky",
-          "text": "생존 판 동안 하늘 시각을 따로 정하는 설정 (기본 꺼짐)"
+          "scope": "survival",
+          "text": "체력이 낮으면 화면 가장자리를 붉게 맥동"
         }
       ],
-      "quiet": 1,
-      "more": 2
+      "quiet": 3,
+      "more": 14
     },
     {
       "date": "2026-11-11",
@@ -478,24 +499,10 @@
           "typeLabel": "고친 것",
           "scope": "combat",
           "text": "풀 재사용의 스킬 리스너와 비활성 갱신 누수 제거"
-        },
-        {
-          "sha": "883863e47",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ui",
-          "text": "기존 TMP 데미지 글꼴과 재질 스타일 복원"
-        },
-        {
-          "sha": "73c3e0b19",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ui",
-          "text": "기본 데미지 스킨 자산 이름 규약 적용"
         }
       ],
       "quiet": 0,
-      "more": 6
+      "more": 8
     }
   ]
 }
