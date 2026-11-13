@@ -24,9 +24,8 @@
  * 가진 축뿐 (tag 는 intent 와 domain, priority 는 priority, status 는 status, note 는 note).
  * `bundle:<묶음 열쇠>` 대상은 그 묶음 전체에 걸리되 항목 개별 이벤트가 더 늦으면 개별이 승.
  *
- * 파일이 한 벌인 이유는 손이 하나라서. 시트, 선택 모드, 한 장 모드가 모두 같은 `states`
- * 지도와 같은 `sendEvent` 를 씀. 갈라 두면 낙관적 갱신이 세 벌로 갈라져 화면이 어긋남
- * (`memo/rules/quality.md` 의 500줄 상한은 판단 절).
+ * 격자와 분류 편집, 일괄 작업이 같은 states와 이벤트 저장 경로 사용.
+ * 보기 전환 없이 체크박스에서 선택 진입, 필터와 일괄 분류는 top-layer 팝업.
  *
  * 출처 라벨(X, 브라우저, 카톡)만 i18n 소관. `src` 는 축이 아니라 데이터 갈래라
  * axes.json 에 정의 없음. 모르는 갈래는 값 그대로 표시.
@@ -35,6 +34,7 @@ import { dashRegistry, esc, safeLinkUrl } from './kit';
 import type { DashPanelCtx, DashRepoWrite } from './kit';
 import { t, loadNamespace } from '../../lib/i18n';
 import { createMediaViewer, nextItem, type MediaItem } from '../../../../../packages/media-browser/index.js';
+import gridCss from './bookmark-grid.css';
 
 (function (): void {
   'use strict';
@@ -139,8 +139,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
   const DATA_DIR = 'data/bookmarks';
   const SUMMARY_PATH = DATA_DIR + '/summary.json';
   const AXES_PATH = DATA_DIR + '/axes.json';
-  /** Jev 제안. memo scripts/bookmarks/jev-suggest.mjs 파생물, 없어도 됨. 정본 memo projects/dash/apps/dash.md 의 Jev 제안 줄 */
-  const JEV_PATH = DATA_DIR + '/jev-suggestions.json';
   /** 이벤트 뿌리. 이 아래가 `<YYYY-MM>/<epoch-ms>-<device6>-<nonce4>.json` */
   const EVENTS_DIR = 'bookmarks/events';
 
@@ -150,15 +148,9 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
   const EVENT_V = 1;
   /** 한 번에 보이는 줄 수. 묶음은 접힌 채로 한 줄이다 */
   const PAGE = 100;
-  /** 격자 열 폭과 간격. CSS --bm-col, --bm-gap 과 같은 값 */
-  const GRID_COL = 236;
-  const GRID_GAP = 16;
-  /** 재발굴 후보 크기. 여기서 날짜 씨앗으로 하나 뽑는다 */
-  const REVISIT_POOL = 40;
-  /** 이 기기에서 이미 보여 준 재발굴 id. 순수 보기 편의라 기기마다 따로 둔다 */
-  const SEEN_KEY = 'karmolab.mydash.bm.seen';
-  /** 기억할 id 수. 넘치면 오래된 것부터 버린다 */
-  const SEEN_MAX = 200;
+  /** 격자 열 폭과 간격. bookmark-grid.css와 같은 값 */
+  const GRID_COL = 224;
+  const GRID_GAP = 12;
   /** note 로 제목을 대신할 때 잘라 쓰는 길이 */
   const NOTE_HEAD = 40;
   /** 항목 축으로 거르는 칸. 값 목록은 실제 데이터에서 나옴 */
@@ -180,12 +172,9 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
   const KST_OFFSET_MS = 9 * 3600000;
   /** 새로 들어옴 필터의 기간 (일) */
   const FRESH_DAYS = 7;
-  /** 보기 셋. 목록 (묶음 접힘, 옆판), 피드 (한 장씩 세로, 카드 아래 판정), 격자 (그림 타일) */
-  type View = 'list' | 'feed' | 'grid';
-  const VIEWS: View[] = ['list', 'feed', 'grid'];
-  const VIEW_KEY = 'karmolab.mydash.bm.view';
-  /** 피드 카드에 보이는 의도 칩 수. 나머지는 옆판에서 */
-  const FEED_TAGS = 6;
+  type Sort = 'recent' | 'oldest' | 'title' | 'priority';
+  const SORT_KEY = 'karmolab.mydash.bm.sort';
+  const SORTS: Sort[] = ['recent', 'oldest', 'title', 'priority'];
 
   function gap(): Promise<void> {
     return new Promise<void>((done) => window.setTimeout(done, BULK_GAP_MS));
@@ -201,210 +190,9 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
 
   const STYLE_ID = 'mydash-bookmarks-style';
   function ensureStyle(): void {
-    if (document.getElementById(STYLE_ID)) return;
-    const el = document.createElement('style');
-    el.id = STYLE_ID;
-    /* 색, 둥글기, 글자 크기는 전부 스킨 토큰이다. 여기 직접 적는 것은 손가락 표적 하나뿐이고
-       그 값도 이름을 붙여 한 곳에서만 쓴다. */
-    el.textContent = [
-      /* 크기는 레퍼런스 실측 (2026-09-19, notes/mydash/mvp5-design-2026-09-19.md). 본문 15, 메타 13, 캡션 14,
-         그림 모서리 16, 격자 열 236 간격 16. 스킨 토큰에 없는 값은 이 패널 변수로 한 곳에만 */
-      '.bm{--bm-tap:44px;--bm-body:15px;--bm-body-lh:22px;--bm-meta:13px;--bm-cap:14px;--bm-pic-radius:16px;',
-      '--bm-col:236px;--bm-gap:16px;display:flex;flex-direction:column;gap:var(--space-md);height:100%;min-height:0}',
-      '.bm-head-acts{flex-wrap:nowrap}',
-      '.bm-q{flex:1;min-width:0;min-height:var(--bm-tap);padding:0 var(--space-md);border:1px solid var(--border);',
-      'border-radius:var(--radius-pill);background:var(--bg-secondary);color:var(--text-primary);font:inherit;font-size:var(--bm-body)}',
-      '.bm-q:focus{outline:2px solid var(--accent);outline-offset:-1px}',
-      '.bm-filters-acts{display:flex;flex-wrap:wrap;gap:var(--space-sm)}',
-      '.bm-filters-acts .btn[aria-pressed="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
-      /* 폰이 기본. 두 칸이면 숫자가 안 줄어든다. 넓어지면 다섯. */
-      '.bm-nums{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-sm)}',
-      '@media(min-width:560px){.bm-nums{grid-template-columns:repeat(5,1fr)}}',
-      '.bm-num{padding:var(--space-sm);border-radius:var(--radius-lg);background:var(--bg-tertiary)}',
-      '.bm-num b{display:block;font-size:var(--font-size-title);line-height:1.3;font-variant-numeric:tabular-nums}',
-      '.bm-num span{display:block;font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
-      '.bm-groups{display:flex;flex-direction:column;gap:var(--space-sm)}',
-      /* 이 패널의 칩과 버튼은 전부 44px. 필터 줄만 벌려 두니 시트, 선택 띠, 한 장 모드의
-         칩이 폰에서 작았다. 아래 한 줄이 셋을 같이 덮는다. */
-      '.bm .tool-chip{min-height:var(--bm-tap);display:inline-flex;align-items:center}',
-      '.bm .btn{min-height:var(--bm-tap)}',
-      /* 줄 안의 의도 칩과 판정 대기 칩은 누르는 것이 아니라 표식. 킷 크기 그대로 */
-      '.bm .bm-meta .tool-chip{min-height:0}',
-      /* 검색칸은 킷 기본이 38px 언저리다. 폰에서 누르는 것은 전부 같은 표적 크기로 벌린다. */
-      '.bm .field-group input{min-height:var(--bm-tap)}',
-      /* 킷 목록의 기본 높이 제한은 목록 안에 또 스크롤을 만든다. 이 패널은 목록이 본문이라
-         판 전체가 스크롤이어야 한다. */
-      '.bm-list{max-height:none}',
-      '.bm-list .tool-list-row{align-items:flex-start}',
-      /* 킷의 열쇠 칸은 키, 값 표를 위한 폭이다. 여기 열쇠는 출처 표식 한 낱말이라 폭을 안 잡는다. */
-      '.bm-list .tool-list-key{min-width:0;padding-top:var(--space-xs)}',
-      '.bm-body{display:flex;flex-direction:column;gap:var(--space-xs);min-width:0;flex:1}',
-      '.bm-title{display:flex;align-items:center;min-height:var(--bm-tap);',
-      'color:var(--text-primary);word-break:break-word}',
-      /* 열 수 없는 주소 표식. 글자 옆에 붙어 왜 링크가 아닌지 말한다. */
-      '.bm-badurl{margin-left:var(--space-sm);font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
-      '.bm-meta{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center;',
-      'font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
-      '.bm-row .bm-meta .tool-chip{pointer-events:none}',
-      '.bm-kid .tool-list-key{padding-left:var(--space-md)}',
-      /* 원문 미리보기 (MVP 5). 줄 썸네일 96x72, 둘째 줄 두 줄 자름, 옆판 세 층 */
-      '.bm-thumb{width:120px;height:90px;object-fit:cover;border-radius:calc(var(--bm-pic-radius) / 2);flex:none;',
-      'background:var(--bg-tertiary);margin-top:var(--space-xs)}',
-      '.bm-sub{color:var(--text-secondary);font-size:var(--bm-cap);line-height:1.45;overflow:hidden;display:-webkit-box;',
-      '-webkit-line-clamp:2;-webkit-box-orient:vertical}',
-      '.bm-row .bm-title{min-height:0;padding-top:var(--space-xs);font-size:var(--bm-body);line-height:var(--bm-body-lh);font-weight:600;',
-      'overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
-      '.bm-view-list{border:0;background:transparent;font-family:var(--font-sans)}',
-      '.bm-view-list .tool-list-key{font-family:var(--font-sans);font-size:var(--bm-meta);color:var(--text-tertiary)}',
-      '.bm-view-list a.bm-title{text-decoration:none}',
-      '.bm-view-list a.bm-title:hover{text-decoration:underline}',
-      '.bm-view-list .tool-actions.tight .btn{min-height:32px;font-size:var(--bm-meta);padding:0 var(--space-sm)}',
-      '.bm-sheet,.bm-card,.bm-tile{font-family:var(--font-sans)}',
-      '.bm-view-list .tool-list-row{padding:var(--space-md) var(--space-sm);border-bottom:1px solid var(--border)}',
-      '.bm-row .bm-meta{font-size:var(--bm-meta)}',
-      '.bm-layer{display:flex;flex-direction:column;gap:var(--space-xs)}',
-      '.bm-said{padding:var(--space-sm) var(--space-md);background:var(--bg-tertiary);',
-      'border-left:3px solid var(--accent);border-radius:0 var(--radius-md) var(--radius-md) 0;color:var(--text-primary)}',
-      '.bm-said-memo{color:var(--text-secondary)}',
-      '.bm-who{color:var(--text-secondary);font-size:var(--font-size-2xs)}',
-      '.bm-ptitle{color:var(--text-primary);font-weight:600}',
-      '.bm-tw{white-space:pre-wrap;word-break:break-word;color:var(--text-primary);font-size:var(--bm-body);line-height:var(--bm-body-lh)}',
-      '.bm-pic{width:100%;max-width:100%;border-radius:var(--bm-pic-radius);display:block}',
-      '.bm-view-open{display:block;position:relative;width:100%;min-height:var(--bm-tap);padding:0;border:0;background:transparent;color:inherit;cursor:zoom-in}',
-      '.bm-view-open:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
-      '.bm-tile .bm-view-open.is-unavailable{min-height:calc(var(--bm-tap) * 3)}',
-      '.bm-view-open.is-unavailable::after{content:attr(data-error);display:block;padding:var(--space-sm);font:inherit}',
-      'html[data-site="dash"] .kmb-viewer .bm-sheet{position:static;inset:auto;width:100%;height:100%;display:block;padding:0;border:0;overflow:auto;background:var(--bg-secondary);backdrop-filter:none}',
-      '.kmb-viewer .bm-sheet .bm-scrim,.kmb-viewer .bm-sheet .bm-pic,.kmb-viewer .bm-sheet .bm-view-open,.kmb-viewer .bm-sheet .bm-keys{display:none}',
-      '.kmb-viewer .bm-sheet-card{width:100%;max-width:none;max-height:none;border:0;border-radius:0;padding:0;background:var(--bg-secondary);color:var(--text-primary)}',
-      '.kmb-viewer{color-scheme:dark}html[data-site="dash"] .kmb-details input,html[data-site="dash"] .kmb-details textarea,html[data-site="dash"] .kmb-details select{box-sizing:border-box;width:100%;min-height:44px;padding:10px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border)}',
-      '.bm-video{background:var(--bg-tertiary)}',
-      '.bm-yt{width:100%;aspect-ratio:16/9;border:0;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
-      '.bm-sheet-title{font-size:var(--font-size-title);font-weight:600;line-height:1.3}',
-      '.bm-who{font-size:var(--bm-meta)}',
-      '.bm-link{font-size:var(--font-size-2xs)}',
-      '.bm-ai summary{cursor:pointer;list-style:none;display:flex;gap:var(--space-sm);align-items:baseline}',
-      '.bm-ai summary::-webkit-details-marker{display:none}',
-      '.bm-ai-peek{color:var(--text-tertiary);font-size:var(--font-size-3xs)}',
-      /* 보기 전환. 눌린 것만 채움 */
-      '.bm-views{display:inline-flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}',
-      '.bm-views .btn{border-radius:0;border:0}',
-      '.bm-views .btn[aria-pressed="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
-      '.bm-views{flex:none}',
-      /* 피드 (트위터 식). 카드 한 줄, 폭 600 가운데 */
-      '.bm-view-feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:var(--space-md);border:0;background:transparent;align-items:start}',
-      '.bm-card{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-md);border:1px solid var(--border);',
-      'border-radius:calc(var(--bm-pic-radius) - 4px);background:var(--bg-secondary);cursor:pointer}',
-      '.bm-card.is-cur{border-color:var(--accent)}',
-      '.bm-card.is-done,.bm-tile.is-done,.bm-row.is-done{opacity:.45}',
-      /* 고르기 표시. 칸 왼쪽 위 동그라미, 고르면 강조색으로 채우고 테두리 */
-      '.bm-card.is-pick,.bm-tile.is-pick{position:relative;user-select:none}',
-      '.bm-selmark{position:absolute;top:var(--space-sm);left:var(--space-sm);z-index:1;width:24px;height:24px;border-radius:50%;',
-      'border:2px solid var(--text-primary);background:var(--modal-scrim);pointer-events:none}',
-      '.is-sel>.bm-selmark{background:var(--accent);border-color:var(--accent)}',
-      '.bm-tile.is-sel img,.bm-tile.is-sel .bm-tile-text{outline:3px solid var(--accent);outline-offset:-3px}',
-      '.bm-card.is-sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}',
-      '.bm-card.is-sel.is-done,.bm-tile.is-sel.is-done{opacity:.7}',
-      '.bm-card-head{display:flex;justify-content:space-between;gap:var(--space-sm);align-items:baseline}',
-      '.bm-card-who{font-weight:600;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.bm-card-src{color:var(--text-tertiary);font-size:var(--bm-meta);flex:none}',
-      '.bm-card-who{font-size:var(--bm-body)}',
-      '.bm-card-pic{position:relative}',
-      '.bm-card-more{position:absolute;right:var(--space-sm);bottom:var(--space-sm);background:var(--modal-scrim);color:var(--text-primary);',
-      'font-size:var(--font-size-3xs);padding:2px var(--space-sm);border-radius:var(--radius-pill)}',
-      '.bm-card-acts{display:flex;gap:var(--space-sm)}',
-      '.bm-card-acts .bm-act{flex:1;min-height:var(--bm-tap);font-weight:600;border:1px solid var(--border);font-size:var(--bm-cap)}',
-      '.bm-act-drop{color:var(--error)}.bm-act-keep{color:var(--success)}.bm-act-now{color:var(--warning)}',
-      '.bm-card-tags{display:flex;gap:var(--space-xs);overflow-x:auto;scrollbar-width:none;padding-bottom:2px}',
-      '.bm-card-tags .tool-chip{flex:none;min-height:36px}',
-      /* 격자 (핀터레스트 식). 열 240, 폰은 2열 */
-      /* 열은 스크립트가 나눈다 (gridHtml). 열 수만 --bm-ncol 로 받는다 */
-      '.bm-view-grid{display:grid;grid-template-columns:repeat(var(--bm-ncol,4),minmax(0,1fr));gap:var(--bm-gap);align-items:start;border:0;background:transparent}',
-      '.bm-gcol{display:flex;flex-direction:column;gap:var(--bm-gap);min-width:0}',
-      /* figure 의 브라우저 기본 여백 (좌우 40px) 제거. 칸 245px 에 그림 165px 이던 것 (사용자 2026-10-09 "사진 여백이 크다") */
-      '.bm-tile{position:relative;cursor:pointer;margin:0}',
-      '.bm-tile img{width:100%;display:block;border-radius:var(--bm-pic-radius);background:var(--bg-tertiary)}',
-      '.bm-tile.is-cur img,.bm-tile.is-cur .bm-tile-text{outline:2px solid var(--accent);outline-offset:2px}',
-      '.bm-tile-text{padding:var(--space-md);border-radius:var(--bm-pic-radius);background:var(--bg-secondary);font-size:var(--bm-body);',
-      'line-height:var(--bm-body-lh);font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;color:var(--text-primary)}',
-      '.bm-tile figcaption{padding:var(--space-sm) var(--space-xs) 0;display:flex;flex-direction:column;gap:2px}',
-      '.bm-tile-cap{font-size:var(--bm-cap);line-height:1.45;font-weight:500;color:var(--text-primary);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
-      '.bm-tile-meta{font-size:var(--bm-meta);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.bm-tile-meta b{color:var(--warning);font-weight:500}',
-      '.bm-tile-acts{position:absolute;top:var(--space-sm);right:var(--space-sm);display:flex;gap:var(--space-xs);opacity:0;transition:opacity .15s}',
-      '.bm-tile:hover .bm-tile-acts,.bm-tile:focus-within .bm-tile-acts,.bm-tile.is-cur .bm-tile-acts{opacity:1}',
-      '@media(hover:none){.bm-tile-acts{opacity:1}}',
-      '@media(prefers-reduced-motion:reduce){.bm-tile-acts{transition:none}}',
-      '.bm-tile-btn{min-height:36px;padding:0 var(--space-md);border-radius:var(--radius-pill);border:0;background:var(--modal-scrim);color:var(--text-primary);font:inherit;font-size:var(--bm-meta);font-weight:600;cursor:pointer}',
-      /* 목록이 주인공 (MVP 3, 사용자 2026-09-17 "칩 벽"). 수 타일과 칩 34개는 접힌 필터 안 */
-      '.bm-filters{display:flex;flex-direction:column;gap:var(--space-md)}',
-      '.bm-filters[hidden]{display:none}',
-      '.bm-head-acts .btn[aria-expanded="true"]{background:var(--bg-tertiary);color:var(--text-primary)}',
-      '.bm-main{display:flex;flex-direction:column;gap:var(--space-md);min-width:0;min-height:0;height:100%}',
-      '.bm-main>div:not(.bm-scroll){flex-shrink:0}',
-      '.bm-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:var(--space-md)}',
-      '.bm-scroll>div{flex-shrink:0}',
-      '.bm-filters{max-height:35dvh;overflow-y:auto;overscroll-behavior:contain}',
-      '.bm-row.is-cur{background:var(--bg-tertiary)}',
-      '.bm-keys{font-size:var(--font-size-3xs);color:var(--text-tertiary)}',
-      '.bm-keys kbd{font-family:inherit;padding:0 var(--space-xs);border:1px solid var(--border);border-radius:var(--radius-sm)}',
-      /* 옆판이 비었을 때. 줄을 누르라는 한 줄 */
-      '.bm-sheet-empty{color:var(--text-tertiary);padding:var(--space-md)}',
-      '.bm-revisit{display:flex;flex-direction:column;gap:var(--space-xs)}',
-      '.bm-revisit[hidden]{display:none}',
-      /* 머리 버튼 줄. 선택 모드와 한 장 모드로 드는 문 */
-      '.bm-head-acts{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center}',
-      /* 고르기 칸. 손가락 표적이라 칸 전체가 44px */
-      '.bm-check{width:var(--bm-tap);height:var(--bm-tap);flex:none;margin:0}',
-      '.bm-row.is-pick{cursor:pointer}',
-      /* 아래에서 올라오는 시트. 폰은 바닥에 붙고 넓은 화면은 가운데 */
-      '.bm-sheet{position:fixed;inset:0;z-index:3000;display:flex;flex-direction:column;justify-content:flex-end}',
-      /* 닫힌 시트가 화면 전체를 덮어 마우스를 먹던 결함 (2026-09-13 실측 1440x900 전부 차단). UA 의 [hidden] 을 이 규칙이 이겼음 */
-      '.bm-sheet[hidden]{display:none!important}',
-      /* PC 는 두 열. 목록과 옆판 420px 이 나란히, 옆판은 늘 떠 있고 위에 붙어 따라온다 (MVP 3).
-         전에는 fixed 서랍이라 목록 오른쪽을 덮었다 */
-      /* PC 옆판은 화면에 고정 (2026-09-19 사용자: 스크롤이 제대로 안 됨). sticky 는 내용 스크롤과 옆판 스크롤이
-         겹쳐 아래가 잘렸다. 화면 오른쪽에 고정하고 자기만 스크롤. 본문은 그만큼 오른쪽을 비운다 */
-      '@media(min-width:900px){.bm:not(.no-panel){padding-right:436px}',
-      '.bm-sheet{position:fixed;inset:auto;top:var(--header-h,0px);right:0;bottom:0;width:420px;z-index:200;display:block;',
-      'overflow:auto;overscroll-behavior:contain;border-left:1px solid var(--border);padding:var(--space-md);background:var(--bg-primary)}',
-      '.bm-sheet .bm-scrim{display:none}',
-      '.bm-sheet .bm-sheet-card{max-height:none;max-width:none;width:100%;border-radius:0;border-top:0;padding:0;background:transparent}',
-      '.bm-row .bm-open{display:none}',
-      '.bm-row{cursor:pointer}}',
-      '.bm-scrim{position:absolute;inset:0;background:var(--modal-scrim)}',
-      '.bm-sheet-card{position:relative;max-height:85vh;overflow:auto;background:var(--bg-secondary);',
-      'border-top:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;',
-      'padding:var(--space-md);display:flex;flex-direction:column;gap:var(--space-md)}',
-      '@media(min-width:560px){.bm-sheet{justify-content:center;align-items:center}',
-      '.bm-sheet-card{width:100%;max-width:34rem;border-radius:var(--radius-lg);border-top:0}}',
-      '.bm-sheet-head{display:flex;gap:var(--space-sm);align-items:flex-start;justify-content:space-between}',
-      '.bm-sheet-title{color:var(--text-primary);word-break:break-word;flex:1}',
-      '.bm-sheet-foot{display:flex;gap:var(--space-sm);align-items:center;',
-      'justify-content:space-between;flex-wrap:wrap}',
-      '.bm-sheet-sec{display:flex;flex-direction:column;gap:var(--space-xs)}',
-      '.bm-nowlist{display:flex;flex-direction:column;gap:var(--space-xs);',
-      'padding:var(--space-sm);border-radius:var(--radius-md);background:var(--bg-tertiary)}',
-      '.bm-nowrow{display:flex;gap:var(--space-sm);align-items:center;justify-content:space-between}',
-      /* 선택 모드 아래 띠. 목록 끝이 가리지 않게 판에 바닥 여백을 준다 */
-      '.bm-bar{position:fixed;left:0;right:0;bottom:0;z-index:2900;background:var(--bg-secondary);',
-      'border-top:1px solid var(--border);padding:var(--space-sm);display:flex;',
-      'flex-direction:column;gap:var(--space-sm)}',
-      /* 의도, 주제, 영역 세 줄. 이름 칸 고정, 칩은 줄바꿈. 화면 절반을 넘으면 띠 안에서 굴림 */
-      '.bm-bar{max-height:50vh;overflow-y:auto}',
-      '.bm-bar-row{display:flex;gap:var(--space-sm);align-items:center}',
-      '.bm-bar-row>.tool-sublabel{flex:0 0 4.5em}',
-      '.bm.has-bar{padding-bottom:calc(var(--bm-tap) * 9)}',
-      '.bm-judge{display:flex;flex-direction:column;gap:var(--space-md)}',
-      '.bm-judge-title{color:var(--text-primary);word-break:break-word}',
-      /* Jev 제안. 점선 테두리와 작은 글자만, 고르는 것은 사람 */
-      '.tool-chip.bm-jev{border-style:dashed;border-color:var(--accent)}',
-      '.bm-jev-tag{margin-left:4px;font-size:.75em;color:var(--accent)}',
-      '.bm-jev-domain{align-self:flex-start;background:none;border:1px dashed var(--border);',
-      'border-radius:var(--radius-md);padding:var(--space-xs) var(--space-sm);color:var(--text-tertiary);cursor:pointer}',
-      '.bm-jev-domain.active{border-color:var(--accent);color:var(--text-primary)}',
-    ].join('');
-    document.head.appendChild(el);
+    let style = document.getElementById(STYLE_ID);
+    if (!style) { style = document.createElement('style'); style.id = STYLE_ID; document.head.appendChild(style); }
+    style.textContent = gridCss;
   }
 
   /* ── 데이터 읽기. 생성기가 아직 굳지 않아 **둘 다 받는다** ─────────── */
@@ -417,28 +205,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
   function axesOf(raw: AxesFile): Axis[] {
     const list = (raw && raw.axes) || (raw && raw.data && raw.data.axes) || [];
     return Array.isArray(list) ? list : [];
-  }
-
-  type JevAnswer = { picked?: unknown; confidence?: unknown };
-  type JevFile = { items?: Record<string, { id?: unknown; mode?: unknown; jev?: { intent?: JevAnswer; domain?: JevAnswer } }> };
-  /** 한 항목의 Jev 제안. 값을 고른 것만. 비운 것과 null 은 사용자 채점에서 대부분 틀려 버림 (memo projects/dash/apps/dash.md 의 Jev 제안 줄) */
-  type JevHint = { intent: string[]; domain: string; domainConf: number | null };
-
-  function jevOf(raw: JevFile): Map<string, JevHint> {
-    const out = new Map<string, JevHint>();
-    const rows = raw && raw.items && typeof raw.items === 'object' ? Object.values(raw.items) : [];
-    for (const r of rows) {
-      if (!r || r.mode !== 'fill' || !r.jev) continue;
-      const id = text(r.id);
-      if (!id) continue;
-      const ip = r.jev.intent && r.jev.intent.picked;
-      const intent = Array.isArray(ip) ? ip.filter((x): x is string => typeof x === 'string' && !!x) : [];
-      const domain = text(r.jev.domain && r.jev.domain.picked);
-      const c = r.jev.domain && r.jev.domain.confidence;
-      if (!intent.length && !domain) continue;
-      out.set(id, { intent, domain, domainConf: typeof c === 'number' ? c : null });
-    }
-    return out;
   }
 
   function schemaMajor(schema: unknown): number | null {
@@ -505,17 +271,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     return images;
   }
 
-  /** 목록 줄 썸네일 주소. 트윗 첫 장, 영상 포스터, 페이지 대표 그림 순 */
-  function thumbOf(it: Item): string {
-    const m = mediaOf(it);
-    if (!m) return '';
-    const first = m.photos && m.photos.length ? m.photos[0] : null;
-    if (first && first.url) return picUrl(first.url, 'small');
-    if (m.video && m.video.poster) return picUrl(m.video.poster, 'small');
-    if (m.image) return safeLinkUrl(m.image) || '';
-    return '';
-  }
-
   /**
    * 원문 첫 줄. 사용자 2026-09-19: AI 해석보다 원문 그대로가 먼저.
    * 카톡은 라벨이 곧 내가 쓴 말이라 라벨. 트윗은 본문 첫 줄, 페이지는 라벨 (Edge 는 페이지 제목).
@@ -529,20 +284,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     return displayLabel(it, note);
   }
 
-  /** 목록 줄 둘째 줄. 트윗은 누가, 페이지는 설명 한두 문장 (없으면 없음) */
-  function subOf(it: Item): string {
-    const m = mediaOf(it);
-    if (!m) return '';
-    if (m.kind === 'tweet') {
-      const who = m.who ? [text(m.who.name), m.who.handle ? '@' + text(m.who.handle) : ''].filter(Boolean).join(' ') : '';
-      return who;
-    }
-    /* 페이지는 제목이 라벨과 다르면 제목 (카톡은 라벨이 내 말이라 제목이 새 정보), 같으면 설명 */
-    const title = text(m.title).trim();
-    if (title && title !== text(it.label).trim()) return title;
-    return text(m.description).trim();
-  }
-
   function displayLabel(it: Item, note?: string): string {
     const label = text(it.label).trim();
     if (label) return label;
@@ -554,48 +295,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     const host = hostOf(it.url);
     if (host) bits.push(host);
     return bits.join(', ');
-  }
-
-  /* ── 이 기기에서 이미 보여 준 재발굴 ──────────────────
-     쓰기는 저장소가 아니라 이 브라우저다. 사생활 보호 창처럼 저장이 막힌 판에서는
-     읽기도 쓰기도 조용히 실패하고, 재발굴은 미룸 없이 그냥 돈다. */
-
-  function seenIds(): string[] {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(SEEN_KEY) || '[]') as unknown;
-      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function markSeen(id: string): void {
-    if (!id) return;
-    try {
-      const next = seenIds().filter((x) => x !== id);
-      next.push(id);
-      window.localStorage.setItem(SEEN_KEY, JSON.stringify(next.slice(-SEEN_MAX)));
-    } catch {
-      /* 저장이 막힌 브라우저. 다음에도 같은 것이 나올 뿐 화면은 안 죽는다 */
-    }
-  }
-
-  /* ── 날짜 ─────────────────────────────────────────── */
-
-  function kstDayKey(ms: number): string {
-    const d = new Date(ms + KST_OFFSET_MS);
-    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    return d.getUTCFullYear() + '-' + m + '-' + day;
-  }
-
-  /** 기록일이 며칠 전인가. 못 읽으면 -1 */
-  function idleDays(recordedAt: unknown): number {
-    const s = text(recordedAt).slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return -1;
-    const at = Date.parse(s + 'T00:00:00+09:00');
-    if (!isFinite(at)) return -1;
-    return Math.max(0, Math.floor((Date.now() - at) / 86400000));
   }
 
   function bakedAgo(iso: unknown): string {
@@ -675,15 +374,8 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
   /* ── 화면 ─────────────────────────────────────────── */
 
   type Group = { key: string; label: string; values: Array<{ key: string; label: string }> };
-  type Unit = { key: string; items: Item[] };
   /** 시트가 지금 무엇을 고치고 있나. 묶음이면 items 가 그 묶음 전부 */
   type SheetTarget = { target: string; items: Item[]; bundle: boolean };
-
-  function viewLabel(v: string): string {
-    if (v === 'feed') return t('mydash.bm.view.feed', undefined, '피드');
-    if (v === 'grid') return t('mydash.bm.view.grid', undefined, '격자');
-    return t('mydash.bm.view.list', undefined, '목록');
-  }
 
   function srcLabel(key: string): string {
     /* 아는 갈래 셋만 옮긴 말이 있다. 새 갈래는 값 그대로 보인다. */
@@ -752,15 +444,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       '<div class="bm"><div class="tool-status">' +
       esc(t('mydash.bm.loading', undefined, '저장소에서 받는 중...')) +
       '</div></div>';
-
-    /* 필수는 summary 하나. axes 는 칩 라벨과 차례만 정하는 파일이라, 못 받으면 빈 정의로
-       가고 값 자체를 라벨로 보인다 (미아 은닉 금지와 같은 손). summary 실패만 오류다. */
-    const [rawSummary, rawAxes, rawJev] = await Promise.all([
-      repo.readJson<Summary>(SUMMARY_PATH),
-      repo.readJson<AxesFile>(AXES_PATH).catch((): AxesFile => ({})),
-      repo.readJson<JevFile>(JEV_PATH).catch((): JevFile => ({})),
-    ]);
-    const jevById = jevOf(rawJev);
+    const [rawSummary, rawAxes] = await Promise.all([repo.readJson<Summary>(SUMMARY_PATH), repo.readJson<AxesFile>(AXES_PATH).catch((): AxesFile => ({}))]);
 
     const major = schemaMajor(rawSummary.schema);
     if (major !== null && major !== SCHEMA_MAJOR) {
@@ -782,7 +466,9 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     const foldedMs = Date.parse(text(rawSummary.foldedThrough));
     const foldedThrough = isFinite(foldedMs) ? foldedMs : -1;
     status(
-      t('mydash.bm.status', { n: items.length, when: bakedAgo(rawSummary.generatedAt) }, '{n}건, {when}')
+      t('mydash.bm.status.scoped', { n: items.filter(it => it.src !== 'kakao-group').length,
+        m: items.filter(it => it.src === 'kakao-group').length, when: bakedAgo(rawSummary.generatedAt) },
+        '내 자료 {n}건, 단체방 수집 {m}건, {when}')
     );
 
     /* 묶음 열쇠. 항목에 달려 오면 그대로, `data.bundles` 로 오면 표로 뒤집어 붙인다. */
@@ -1007,7 +693,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       const d = text(it.addedAt).slice(0, 10);
       return !!d && d >= freshSince;
     }
-    const freshCount = items.filter(isFresh).length;
 
     function isPending(it: Item): boolean {
       if (!text(it.pending)) return false;
@@ -1071,26 +756,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       return axisValues(it, key);
     }
 
-    const numHtml: string[] = [
-      '<div class="bm-num"><b>' + esc(String(items.length)) + '</b><span>' +
-        esc(t('mydash.bm.num.total', undefined, '전체')) + '</span></div>',
-    ];
-    {
-      const bySrc = new Map<string, number>();
-      for (const it of items) bySrc.set(text(it.src), (bySrc.get(text(it.src)) || 0) + 1);
-      const srcGroup = groups.filter((g) => g.key === 'src')[0];
-      for (const v of (srcGroup && srcGroup.values) || []) {
-        numHtml.push(
-          '<div class="bm-num"><b>' + esc(String(bySrc.get(v.key) || 0)) + '</b><span>' +
-            esc(v.label) + '</span></div>'
-        );
-      }
-    }
-    numHtml.push(
-      '<div class="bm-num" data-pending-num="1"><b>0</b><span>' +
-        esc(t('mydash.bm.num.pending', undefined, '판정 대기')) + '</span></div>'
-    );
-
     const parseFailed = (rawSummary.counts && rawSummary.counts.parseFailed) || 0;
     const notes: string[] = [];
     if (parseFailed > 0) {
@@ -1113,83 +778,59 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
           '</div>'
       );
     }
-
-    const groupHtml = groups
-      .map(
-        (g) =>
-          '<div><div class="tool-sublabel">' + esc(g.label) + '</div><div class="tool-chips">' +
-          g.values
-            .map(
-              (v) =>
-                '<button type="button" class="tool-chip" data-axis="' + esc(g.key) + '" data-value="' +
-                esc(v.key) + '">' + esc(v.label) + ' <span data-n="' + esc(g.key) + ':' +
-                esc(v.key) + '">0</span></button>'
-            )
-            .join('') +
-          '</div>' +
-          (g.key === 'status'
-            ? '<div class="tool-hint">' +
-              esc(
-                t(
-                  'mydash.bm.filter.hiddenNote',
-                  undefined,
-                  '버림과 승격은 기본 목록에서 빠집니다. 칩을 켜야 보입니다'
-                )
-              ) +
-              '</div>'
-            : '') +
-          '</div>'
-      )
-      .join('');
-
     wrap.innerHTML =
-      '<div class="bm-main">' +
-      notes.join('') +
-      '<div class="tool-status" data-evline="1"></div>' +
-      /* 머리 줄 하나 (2026-09-19 실측: 핀터레스트 첫 화면 버튼 19, 블루스카이 23, 우리 34). 보기 셋, 검색, 필터.
-         대기만과 선택과 한 장 모드는 필터 안. 판정 대기 수는 사이드바가 이미 보인다 */
-      '<div class="bm-head-acts">' +
-      '<div class="bm-views" role="group">' +
-      VIEWS.map((v) =>
-        '<button type="button" class="btn btn-ghost" data-act="view" data-view="' + v + '" aria-pressed="false">' +
-        esc(viewLabel(v)) + '</button>').join('') +
-      '</div>' +
-      '<input id="bm-q" class="bm-q" type="search" autocomplete="off" aria-label="' +
-      esc(t('mydash.bm.search.label', undefined, '검색')) + '" placeholder="' +
-      esc(t('mydash.bm.search.ph', undefined, '제목, 작성자, 메모')) + '">' +
-      '<button type="button" class="btn btn-ghost" data-act="filters" data-filters-sum="1" aria-expanded="false"></button>' +
-      /* 선택은 머리 줄로 (사용자 2026-09-24 "한 번에 여러 개"). 필터 안에 있으면 못 찾는다 */
-      '<button type="button" class="btn btn-ghost" data-act="select" aria-pressed="false"></button>' +
-      '</div>' +
-      '<div class="bm-filters" data-filters="1" hidden>' +
-      '<div class="bm-filters-acts">' +
-      '<button type="button" class="btn btn-ghost" data-act="pending" aria-pressed="false"></button>' +
-      '<button type="button" class="btn btn-ghost" data-act="fresh" aria-pressed="false"></button>' +
-      '<button type="button" class="btn btn-ghost" data-act="judge"></button>' +
-      '</div>' +
-      '<div class="bm-nums">' + numHtml.join('') + '</div>' +
-      '<div class="bm-groups">' + groupHtml + '</div>' +
-      '</div>' +
+      '<div class="bm-main">' + notes.join('') +
+      '<header class="bm-toolbar">' +
+      '<div class="bm-browse" data-browse="1">' +
+      '<input id="bm-q" class="bm-q" type="search" autocomplete="off" aria-label="' + esc(t('mydash.bm.search.label', undefined, '검색')) + '" placeholder="' + esc(t('mydash.bm.search.ph', undefined, '제목, 작성자, 메모')) + '">' +
+      '<button type="button" data-act="filters" data-filters-sum="1" popovertarget="bm-filter-menu" aria-expanded="false" aria-controls="bm-filter-menu">' + esc(t('mydash.bm.filter.sum', undefined, '필터')) + '</button>' +
+      '<select class="bm-sort" data-sort="1" aria-label="' + esc(t('mydash.bm.sort.label', undefined, '정렬')) + '">' +
+      SORTS.map(k => '<option value="' + k + '">' + esc(t('mydash.bm.sort.' + k, undefined, ({ recent: '최신순', oldest: '오래된순', title: '제목순', priority: '우선순위순' })[k])) + '</option>').join('') + '</select>' +
+      '<span class="bm-count" data-count="1" role="status"></span></div>' +
+      '<div class="bm-selection" data-bar="1" hidden></div></header>' +
+      '<div class="bm-active" data-active="1" aria-label="' + esc(t('mydash.bm.filter.active', undefined, '적용한 조건')) + '" hidden></div>' +
       '<div class="bm-scroll" tabindex="0" aria-label="' + esc(t('mydash.bm.title', undefined, '북마크')) + '">' +
-      '<div class="bm-revisit" data-revisit="1"></div>' +
-      '<div class="tool-status" data-count="1"></div>' +
-      '<div class="tool-list bm-list" data-list="1"></div>' +
-      '<div class="tool-actions" data-more="1">' +
-      '<button type="button" class="btn btn-ghost" data-act="more"></button></div>' +
-      '<div class="bm-judge" data-judge="1" hidden></div>' +
-      '</div>' +
-      '<div class="bm-bar" data-bar="1" hidden></div>' +
-      '</div>' +
+      '<div class="bm-grid" data-list="1"></div><div class="bm-more" data-more="1"><button type="button" data-act="more"></button></div></div>' +
+      '<div class="bm-live" data-evline="1" role="status" hidden></div></div>' +
+      '<div id="bm-filter-menu" class="bm-popover bm-filter" data-filters="1" popover="auto" role="dialog" aria-label="' + esc(t('mydash.bm.filter.sum', undefined, '필터')) + '">' +
+      '<div class="bm-popover-head"><strong>' + esc(t('mydash.bm.filter.sum', undefined, '필터')) + '</strong><button type="button" data-act="close-filters">' + esc(t('media.viewer.close')) + '</button></div>' +
+      '<div class="bm-filter-layout"><nav class="bm-filter-tabs" role="tablist" aria-orientation="vertical" aria-label="' + esc(t('mydash.bm.grid.categories', undefined, '필터 종류')) + '">' +
+      '<button type="button" role="tab" data-act="filter-tab" data-filter-axis="quick">' + esc(t('mydash.bm.grid.quick', undefined, '빠른 필터')) + '</button>' +
+      groups.map(g => '<button type="button" role="tab" data-act="filter-tab" data-filter-axis="' + esc(g.key) + '">' + esc(g.label) + ' <span data-group-count="' + esc(g.key) + '"></span></button>').join('') +
+      '</nav><section id="bm-filter-values" class="bm-filter-values" role="tabpanel">' +
+      '<input class="bm-filter-search" data-filter-search="1" type="search" aria-label="' + esc(t('mydash.bm.grid.findFilter', undefined, '필터 항목 찾기')) + '" placeholder="' + esc(t('mydash.bm.grid.findFilter', undefined, '필터 항목 찾기')) + '">' +
+      '<div class="bm-options" data-filter-options="1">' +
+      '<div class="bm-quick" data-filter-panel="quick" hidden><button type="button" data-act="pending" aria-pressed="false"></button><button type="button" data-act="fresh" aria-pressed="false"></button></div>' +
+      groups.map(g => '<div data-filter-panel="' + esc(g.key) + '">' + g.values.map(v =>
+        '<label class="bm-option"><input type="checkbox" data-axis="' + esc(g.key) + '" data-value="' + esc(v.key) + '"><span>' + esc(v.label) + '</span><small data-n="' + esc(g.key) + ':' + esc(v.key) + '">0</small></label>').join('') + '</div>').join('') +
+      '</div></section></div>' +
+      '<div class="bm-popover-foot"><label>' + esc(t('mydash.bm.scope.label', undefined, '목록')) + '<select data-scope="1">' +
+      '<option value="personal">' + esc(t('mydash.bm.scope.personal', undefined, '내 북마크')) + '</option><option value="collected">' + esc(t('mydash.bm.scope.collected', undefined, '단체방 수집 링크')) + '</option><option value="all">' + esc(t('mydash.bm.scope.all', undefined, '전체 자료')) + '</option></select></label>' +
+      '<button type="button" data-act="clear-filters">' + esc(t('mydash.bm.filter.clear', undefined, '조건 초기화')) + '</button></div></div>' +
+      '<div id="bm-bulk-menu" class="bm-popover bm-bulk" data-bulk-menu="1" popover="auto" role="dialog" aria-label="' + esc(t('mydash.bm.grid.bulkEdit', undefined, '선택한 항목 분류')) + '">' +
+      '<div class="bm-popover-head"><strong>' + esc(t('mydash.bm.grid.bulkEdit', undefined, '선택한 항목 분류')) + '</strong><button type="button" data-act="close-bulk">' + esc(t('media.viewer.close')) + '</button></div>' +
+      '<div class="bm-bulk-fields"><select data-bulk-axis="1" aria-label="' + esc(t('mydash.bm.grid.categories', undefined, '필터 종류')) + '">' +
+      ['intent', 'topic', 'domain'].map(key => '<option value="' + key + '">' + esc(axisLabel(key)) + '</option>').join('') + '</select><input class="bm-bulk-search" type="search" data-bulk-search="1" aria-label="' + esc(t('mydash.bm.grid.findTag', undefined, '분류 항목 찾기')) + '" placeholder="' + esc(t('mydash.bm.grid.findTag', undefined, '분류 항목 찾기')) + '"></div>' +
+      '<div class="bm-options" data-bulk-options="1"></div><div class="bm-bulk-status" data-bulk-status="1" role="status"></div>' +
+      '<div class="bm-popover-foot"><button type="button" data-act="b-apply">' + esc(t('mydash.bm.grid.addTags', undefined, '선택한 항목에 추가')) + '</button></div></div>' +
       '<div class="bm-sheet" data-sheet="1" hidden></div>';
 
     const qEl = wrap.querySelector('#bm-q') as HTMLInputElement;
     const filtersEl = wrap.querySelector('[data-filters]') as HTMLElement;
     const filtersSumEl = wrap.querySelector('[data-filters-sum]') as HTMLElement;
+    const scopeEl = wrap.querySelector('[data-scope]') as HTMLSelectElement;
+    const sortEl = wrap.querySelector('[data-sort]') as HTMLSelectElement;
+    const activeEl = wrap.querySelector('[data-active]') as HTMLElement;
+    const browseEl = wrap.querySelector('[data-browse]') as HTMLElement;
+    const bulkEl = wrap.querySelector('[data-bulk-menu]') as HTMLElement;
+    const bulkAxisEl = wrap.querySelector('[data-bulk-axis]') as HTMLSelectElement;
+    const bulkSearchEl = wrap.querySelector('[data-bulk-search]') as HTMLInputElement;
+    const filterSearchEl = wrap.querySelector('[data-filter-search]') as HTMLInputElement;
+    let filterAxis = groups[0]?.key || 'quick';
     /** PC 두 열인가. 옆판이 늘 떠 있고 자판으로 훑는 것은 이 폭에서만 */
     const wideMq = window.matchMedia('(min-width:900px)');
     const isWide = (): boolean => wideMq.matches;
     const evLineEl = wrap.querySelector('[data-evline]') as HTMLElement;
-    const revisitEl = wrap.querySelector('[data-revisit]') as HTMLElement;
     const countEl = wrap.querySelector('[data-count]') as HTMLElement;
     const listEl = wrap.querySelector('[data-list]') as HTMLElement;
     const moreEl = wrap.querySelector('[data-more]') as HTMLElement;
@@ -1217,15 +858,12 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         if (entries.some((e) => e.isIntersecting)) autoMore();
       }, { rootMargin: '800px 0px' }).observe(moreEl);
     }
-    const selectBtn = wrap.querySelector('[data-act="select"]') as HTMLElement;
-    const judgeBtn = wrap.querySelector('[data-act="judge"]') as HTMLElement;
-    const judgeEl = wrap.querySelector('[data-judge]') as HTMLElement;
     const barEl = wrap.querySelector('[data-bar]') as HTMLElement;
     const sheetEl = wrap.querySelector('[data-sheet]') as HTMLElement;
     const mediaViewer = createMediaViewer({ parent: wrap, labels: {
       title: t('media.viewer.title'), zoom: t('media.viewer.zoom'), fit: t('media.viewer.fit'),
       close: t('media.viewer.close'), previous: t('media.viewer.previous'), next: t('media.viewer.next'), error: t('media.viewer.error'), loading: t('media.viewer.loading'), retry: t('media.viewer.retry')
-    }, actions: { label: t('media.viewer.settings'), openByDefault: isWide, render: (item, host) => {
+    }, actions: { label: t('media.viewer.settings'), openByDefault: () => false, render: (item, host) => {
       const id = item.id.slice(0, item.id.lastIndexOf('::'));
       if (sheet?.target !== id) openSheet(id);
       host.append(sheetEl);
@@ -1246,23 +884,22 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       });
     } });
     ctx.onDispose(() => mediaViewer.dispose());
-    const searchEl = qEl as HTMLElement;
-    const headActsEl = wrap.querySelector('.bm-head-acts') as HTMLElement;
 
     const picked: Record<string, Set<string>> = {};
     for (const g of groups) picked[g.key] = new Set<string>();
-    const opened = new Set<string>();
     let query = '';
+    let scope = 'personal';
+    let sort: Sort = 'recent';
+    try {
+      const saved = localStorage.getItem(SORT_KEY) as Sort;
+      if (SORTS.includes(saved)) sort = saved;
+    } catch { /* 저장 막힌 브라우저 */ }
+    sortEl.value = sort;
     let shown = PAGE;
     /** 옆판이 보고 있는 줄. 자판 위아래가 이 줄에서 움직인다 */
     let curId = '';
-    /* 보기. 사이드바 "판정 대기" 로 들어오면 대기만 걸러 폰은 피드, PC 는 격자 (사용자 2026-09-19) */
-    const judgeMode = ctx.mode === 'judge';
-    let pendingOnly = judgeMode;
+    let pendingOnly = ctx.mode === 'judge';
     let freshOnly = false;
-    let view: View = judgeMode ? (isWide() ? 'grid' : 'feed') : readView();
-    /** 피드 카드마다 고른 의도. 저장 전까지 여기 */
-    const feedPicks = new Map<string, Set<string>>();
     /** 이 화면에서 방금 판정한 것 (카드, 타일, 선택 일괄). 흐리게 제자리에 둔다 */
     const feedDone = new Set<string>();
     /** 조건이 바뀌면 다시 흐르는 것이 맞다. 그때 제자리 고정을 푼다 */
@@ -1270,30 +907,16 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       feedDone.clear();
     }
 
-    function readView(): View {
-      try {
-        const v = window.localStorage.getItem(VIEW_KEY) as View | null;
-        return v && VIEWS.indexOf(v) >= 0 ? v : 'list';
-      } catch {
-        return 'list';
-      }
-    }
-    function setView(v: View): void {
-      view = v;
-      try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* 저장 막힌 브라우저 */ }
-      shown = PAGE;
-      paint();
-      paintSheet();
-    }
-
     /* 선택 모드. 고른 것과 바에서 고른 의도, 주제, 영역.
        주제와 영역도 한 번에 (사용자 2026-09-24 "성인 이런거 설정하려고 해도 안 보이는데") */
     let selectMode = false;
     const selected = new Set<string>();
+    let lastTileClick: { id: string; selected: Set<string> } | null = null;
     const barIntent = new Set<string>();
     const barTopic = new Set<string>();
     let barDomain: string | null = null;
     let barBusy = '';
+    let bulkSaving = false;
     /** Shift 범위의 시작. 마지막으로 누른 항목 */
     let pickAnchor = '';
     /** 격자가 지금 그린 차례 (열로 나눠 그려 DOM 차례와 다르다). 자판 이동과 Shift 범위가 쓴다 */
@@ -1301,10 +924,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     /** 격자 열 수. 폭이 바뀌어 이 수가 바뀔 때만 다시 나눈다 */
     let gridCols = 0;
 
-    /* 한 장 모드 */
-    /** jevDomain: 이 장에서 Jev 영역 제안을 받았나. 받으면 저장 때 그 값을 domain 으로 */
-    type Judge = { list: Item[]; at: number; picks: Set<string>; lastAuthor: string; lastIntent: string[]; jevDomain: boolean };
-    let judge: Judge | null = null;
 
     /* 시트 */
     let sheet: SheetTarget | null = null;
@@ -1420,7 +1039,8 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     }
 
     /* ── 고르기 ── */
-    function matches(it: Item): boolean {
+    function matches(it: Item, ignoreAxis = ''): boolean {
+      if (!inScope(it)) return false;
       /* 방금 판정한 것은 조건을 벗어나도 제자리에 흐리게 남긴다. 빼면 뒤가 전부 당겨져
          격자가 통째로 다시 흐른다 (사용자 2026-09-24 "하나 판정하면 전체 배치가 바뀐다").
          필터나 검색을 바꿀 때 비운다 (resetDone) */
@@ -1429,10 +1049,11 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       if (freshOnly && !isFresh(it) && !kept) return false;
       const s = stateOf(it);
       /* 버림과 승격은 아카이브다. 필터를 안 켜면 기본 목록에서 뺀다 */
-      if (!kept && (!picked.status || !picked.status.size)) {
+      if (!kept && ignoreAxis !== 'status' && (!picked.status || !picked.status.size)) {
         if (HIDDEN_STATUS.indexOf(s.status) >= 0) return false;
       }
       for (const g of groups) {
+        if (g.key === ignoreAxis) continue;
         const set = picked[g.key];
         if (!set.size) continue;
         const vals = valuesFor(it, g.key);
@@ -1461,119 +1082,37 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       const x = text(a.recordedAt);
       const y = text(b.recordedAt);
       if (x !== y) return x && y ? (x < y ? 1 : -1) : x ? -1 : 1;
-      return text(a.id) < text(b.id) ? -1 : 1;
+      return text(a.id).localeCompare(text(b.id));
     }
 
-    /** 묶음으로 접는다. 크기 2 이상만 묶음이고 나머지는 낱개 */
-    function unitsOf(list: Item[]): Unit[] {
-      const out: Unit[] = [];
-      const at = new Map<string, number>();
-      for (const it of list) {
-        const key = bundleKey(it);
-        if (!key) {
-          out.push({ key: '', items: [it] });
-          continue;
-        }
-        const seen = at.get(key);
-        if (seen === undefined) {
-          at.set(key, out.length);
-          out.push({ key, items: [it] });
-        } else {
-          out[seen].items.push(it);
-        }
+    function inScope(it: Item): boolean {
+      return scope === 'all' || (scope === 'collected' ? it.src === 'kakao-group' : it.src !== 'kakao-group');
+    }
+
+    function bySort(a: Item, b: Item): number {
+      if (sort === 'title') {
+        return displayLabel(a, stateOf(a).note).localeCompare(displayLabel(b, stateOf(b).note), undefined, { numeric: true }) || byRecent(a, b);
       }
-      return out;
-    }
-
-    /* ── 줄 그리기 ── */
-    function titleHtml(it: Item): string {
-      const s = stateOf(it);
-      const label = headOf(it, s.note) || text(it.id);
-      const url = safeLinkUrl(it.url);
-      if (!url) {
-        /* 주소가 있는데 거부된 것과, 애초에 주소가 없는 것을 가른다. 거부는 표식으로 말한다 */
-        const mark = text(it.url).trim()
-          ? '<span class="bm-badurl">' + esc(t('mydash.bm.badUrl', undefined, '주소 열 수 없음')) + '</span>'
-          : '';
-        return '<span class="bm-title">' + esc(label) + mark + '</span>';
+      if (sort === 'priority') {
+        const order = axisPicks('priority').map(v => v.key);
+        const rank = (it: Item): number => {
+          const at = order.indexOf(stateOf(it).priority || '');
+          return at < 0 ? order.length : at;
+        };
+        return rank(a) - rank(b) || byRecent(a, b);
       }
-      return (
-        '<a class="bm-title" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
-        esc(label) + '</a>'
-      );
-    }
-
-    function metaHtml(it: Item): string {
-      const s = stateOf(it);
-      const bits: string[] = [];
-      const author = text(it.author);
-      if (author) bits.push('<span>' + esc(author) + '</span>');
-      const day = text(it.recordedAt).slice(0, 10);
-      if (day) bits.push('<span>' + esc(day) + '</span>');
-      if (isPending(it)) {
-        bits.push(
-          '<span class="tool-chip">' + esc(t('mydash.bm.pendingChip', undefined, '판정 대기')) + '</span>'
-        );
-      } else {
-        for (const v of s.intent) {
-          bits.push('<span class="tool-chip">' + esc(valueLabel('intent', v)) + '</span>');
-        }
+      if (sort === 'oldest') {
+        const x = text(a.recordedAt), y = text(b.recordedAt);
+        if (x !== y) return x && y ? x.localeCompare(y) : x ? -1 : 1;
       }
-      if (s.priority) {
-        bits.push('<span class="tool-chip">' + esc(valueLabel('priority', s.priority)) + '</span>');
-      }
-      if (s.status !== 'unsorted' && s.status !== 'tagged') {
-        bits.push('<span class="tool-chip">' + esc(valueLabel('status', s.status)) + '</span>');
-      }
-      return '<div class="bm-meta">' + bits.join('') + '</div>';
+      return byRecent(a, b);
     }
 
-    /** 시트를 여는 버튼. 선택 모드에서는 칸을 누르는 것이 일이라 안 그린다 */
-    function openBtnHtml(target: string): string {
-      if (selectMode) return '';
-      return (
-        '<div class="tool-actions tight bm-open"><button type="button" class="btn btn-ghost" ' +
-        'data-act="open" data-target="' + esc(target) + '">' +
-        esc(t('mydash.bm.row.open', undefined, '분류')) + '</button></div>'
-      );
-    }
-
-    function checkHtml(it: Item): string {
-      if (!selectMode) return '';
-      const on = selected.has(text(it.id)) ? ' checked' : '';
-      return (
-        '<input type="checkbox" class="bm-check" data-pick="' + esc(text(it.id)) + '"' + on +
-        ' aria-label="' + esc(displayLabel(it, stateOf(it).note)) + '">'
-      );
-    }
-
-    function rowHtml(it: Item, extra: string): string {
-      const cls =
-        'tool-list-row bm-row' + (extra ? ' ' + extra : '') + (selectMode ? ' is-pick' : '') +
-        (curId === text(it.id) ? ' is-cur' : '') + (feedDone.has(text(it.id)) ? ' is-done' : '');
-      const rowAct = selectMode ? ' data-act="pick" data-id="' + esc(text(it.id)) + '"' : ' data-act="row"';
-      return (
-        '<div class="' + cls + '"' + rowAct + ' data-row="' + esc(text(it.id)) + '">' +
-        checkHtml(it) +
-        '<div class="tool-list-key">' + esc(srcLabel(text(it.src))) + '</div>' +
-        thumbHtml(it) +
-        '<div class="tool-list-val bm-body">' + titleHtml(it) + subHtml(it) + metaHtml(it) +
-        openBtnHtml(text(it.id)) + '</div>' +
-        '</div>'
-      );
-    }
-
-    /** 줄 왼쪽 썸네일. 없으면 자리도 없다 (글만 있는 줄이 밀리지 않게) */
-    function thumbHtml(it: Item): string {
-      const u = thumbOf(it);
-      if (!u) return '';
-      return '<img class="bm-thumb" referrerpolicy="no-referrer" src="' + esc(u) + '" alt="" loading="lazy" decoding="async">';
-    }
-
-    function subHtml(it: Item): string {
-      const sub = subOf(it);
-      if (!sub) return '';
-      return '<div class="bm-sub">' + esc(sub) + '</div>';
+    function refreshResults(): void {
+      resetDone();
+      shown = PAGE;
+      paint();
+      wrap.querySelector('.bm-scroll')!.scrollTop = 0;
     }
 
     /** 카드가 보이는 사진 (첫 장) 과 나머지 수 */
@@ -1598,80 +1137,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       return hostOf(it.url);
     }
 
-    /** 선택 모드에서 카드와 타일은 누르면 고르기. 평소엔 옆판 */
-    function tapAct(id: string): string {
-      return selectMode ? ' data-act="pick" data-id="' + esc(id) + '"' : ' data-act="row"';
-    }
-    function selCls(id: string): string {
-      return selectMode ? ' is-pick' + (selected.has(id) ? ' is-sel' : '') : '';
-    }
-    /** 고른 표시. 칸 모서리 동그라미, 고르면 채움 */
-    function selMark(id: string): string {
-      if (!selectMode) return '';
-      return '<span class="bm-selmark" data-selmark="' + esc(id) + '" aria-hidden="true"></span>';
-    }
-
-    /**
-     * 피드 카드 (트위터 식). 누가와 출처, 내가 쓴 말, 원문, 사진, 아래 판정 셋과 의도 칩.
-     * 저장한 카드는 흐려지고 다음 카드로. 카드 어디를 눌러도 옆판 (버튼 제외)
-     */
-    function cardHtml(it: Item): string {
-      const id = text(it.id);
-      const s = stateOf(it);
-      const m = mediaOf(it);
-      const said = text(it.src) === 'kakao' || text(it.src) === 'memo' ? text(it.label).trim() : '';
-      const memo = text(s.note).trim();
-      const body = m && m.kind === 'tweet' ? text(m.text).trim() : m && m.kind === 'page' ? text(m.description).trim() : '';
-      const title = m && m.kind === 'page' ? text(m.title).trim() : '';
-      const pic = firstPic(it, 'medium');
-      const picks = feedPicks.get(id) || new Set(s.intent);
-      const cls = 'bm-card' + (feedDone.has(id) ? ' is-done' : '') + (curId === id ? ' is-cur' : '') + selCls(id);
-      const parts: string[] = [];
-      parts.push(
-        '<div class="bm-card-head"><span class="bm-card-who">' + esc(whoOf(it)) + '</span>' +
-        '<span class="bm-card-src">' + esc(srcLabel(text(it.src))) + ' ' + esc(text(it.recordedAt).slice(0, 10)) + '</span></div>'
-      );
-      if (said) parts.push('<div class="bm-said">' + esc(said) + '</div>');
-      if (memo && memo !== said) parts.push('<div class="bm-said bm-said-memo">' + esc(memo) + '</div>');
-      if (title && title !== said && title !== text(it.label).trim()) parts.push('<div class="bm-ptitle">' + esc(title) + '</div>');
-      if (!said && !title && !body && !pic) parts.push('<div class="bm-ptitle">' + esc(displayLabel(it, s.note)) + '</div>');
-      if (body) parts.push('<div class="bm-tw">' + esc(body) + '</div>');
-      if (m && m.kind === 'tweet' && m.deleted) {
-        parts.push('<div class="tool-hint">' + esc(t('mydash.bm.media.deleted', undefined, 'X 에서 못 받음. 지워졌거나 로그인이 필요한 트윗')) + '</div>');
-      }
-      if (pic) {
-        const ratio = pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
-        parts.push(
-          '<div class="bm-card-pic"><button type="button" class="bm-view-open" data-act="media" data-id="' + esc(text(it.id)) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img class="bm-pic" referrerpolicy="no-referrer" src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '></button>' +
-          (pic.more > 0 ? '<span class="bm-card-more">+' + pic.more + '</span>' : '') + '</div>'
-        );
-      }
-      const url = safeLinkUrl(it.url);
-      if (url) {
-        parts.push('<a class="bm-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
-          esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a>');
-      }
-      if (!selectMode) parts.push(
-        '<div class="bm-card-acts">' +
-        '<button type="button" class="btn btn-ghost bm-act bm-act-drop" data-act="c-drop" data-id="' + esc(id) + '">' +
-        esc(valueLabel('status', 'dropped')) + '</button>' +
-        '<button type="button" class="btn btn-ghost bm-act bm-act-keep" data-act="c-keep" data-id="' + esc(id) + '">' +
-        esc(t('mydash.bm.card.keep', undefined, '둔다')) + '</button>' +
-        '<button type="button" class="btn btn-ghost bm-act bm-act-now" data-act="c-now" data-id="' + esc(id) + '">' +
-        esc(valueLabel('priority', 'now')) + '</button>' +
-        '</div>' +
-        '<div class="bm-card-tags">' +
-        axisPicks('intent').slice(0, FEED_TAGS).map((p) =>
-          '<button type="button" class="tool-chip' + (picks.has(p.key) ? ' active' : '') +
-          '" data-act="c-intent" data-id="' + esc(id) + '" data-value="' + esc(p.key) + '">' + esc(p.label) + '</button>').join('') +
-        '<button type="button" class="tool-chip" data-act="open" data-target="' + esc(id) + '">' +
-        esc(t('mydash.bm.card.more', undefined, '더')) + '</button>' +
-        '</div>' +
-        '<div class="tool-status" data-cmsg="' + esc(id) + '"></div>'
-      );
-      return '<article class="' + cls + '" data-row="' + esc(id) + '"' + tapAct(id) + '>' + selMark(id) + parts.join('') + '</article>';
-    }
-
     /** 격자 타일 (핀터레스트 식). 사진이 타일, 없으면 글 타일. 누르면 옆판, 위에 버림과 지금 */
     /** 카드와 타일의 제목. 트윗은 본문이 없으면 비운다. AI 가 지은 라벨을 원문 자리에 안 놓는다 */
     function capOf(it: Item, note: string): string {
@@ -1679,35 +1144,20 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       if (m && m.kind === 'tweet' && !m.deleted) return text(m.text).trim().split('\n')[0];
       return headOf(it, note);
     }
-
     function tileHtml(it: Item): string {
-      const id = text(it.id);
-      const s = stateOf(it);
-      const pic = firstPic(it, 'small');
-      const head = capOf(it, s.note) || (pic ? '' : headOf(it, s.note));
-      const cls = 'bm-tile' + (pic ? '' : ' is-text') + (curId === id ? ' is-cur' : '') + (feedDone.has(id) ? ' is-done' : '') + selCls(id);
-      const ratio = pic && pic.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
-      return (
-        '<figure class="' + cls + '" data-row="' + esc(id) + '"' + tapAct(id) + '>' + selMark(id) +
-        (pic
-          ? '<button type="button" class="bm-view-open" data-act="media" data-id="' + esc(id) + '" aria-label="' + esc(t('media.viewer.title')) + '"><img src="' + esc(pic.url) + '" alt="" loading="lazy" decoding="async"' + ratio + '></button>'
-          : '<div class="bm-tile-text">' + esc(head) + '</div>') +
-        '<figcaption>' +
-        (pic && head ? '<div class="bm-tile-cap">' + esc(head) + '</div>' : '') +
-        '<div class="bm-tile-meta">' + esc(whoOf(it)) +
-        (isPending(it) ? ' <b>' + esc(t('mydash.bm.pendingChip', undefined, '판정 대기')) + '</b>' : '') +
-        (s.priority ? ' <span>' + esc(valueLabel('priority', s.priority)) + '</span>' : '') +
-        '</div></figcaption>' +
-        (selectMode ? '' :
-        '<div class="bm-tile-acts">' +
-        '<button type="button" class="bm-tile-btn" data-act="c-drop" data-id="' + esc(id) + '" title="' + esc(valueLabel('status', 'dropped')) + '">' +
-        esc(valueLabel('status', 'dropped')) + '</button>' +
-        '<button type="button" class="bm-tile-btn" data-act="c-now" data-id="' + esc(id) + '" title="' + esc(valueLabel('priority', 'now')) + '">' +
-        esc(valueLabel('priority', 'now')) + '</button>' +
-        '</div>') +
-        '</figure>'
-      );
-    }
+          const id = text(it.id), s = stateOf(it), pic = firstPic(it, 'small');
+          const head = capOf(it, s.note) || headOf(it, s.note);
+          const checked = selected.has(id) ? ' checked' : '';
+          const ratio = pic?.w && pic.h ? ' style="aspect-ratio:' + Number(pic.w) + '/' + Number(pic.h) + '"' : '';
+          return '<article class="bm-tile' + (pic ? '' : ' is-text') + (selected.has(id) ? ' is-sel' : '') + (feedDone.has(id) ? ' is-done' : '') + '" data-row="' + esc(id) + '">' +
+            '<label class="bm-check-hit"><input type="checkbox" data-pick="' + esc(id) + '"' + checked + ' aria-label="' + esc(t('mydash.bm.grid.selectItem', { title: head }, '{title} 선택')) + '"></label>' +
+            '<button type="button" class="bm-tile-edit" data-act="open" data-target="' + esc(id) + '" title="' + esc(t('mydash.bm.grid.edit', undefined, '분류와 메모')) + '">' + esc(t('mydash.bm.row.open', undefined, '분류')) + '</button>' +
+            '<button type="button" class="bm-tile-open bm-view-open" data-act="tile" data-id="' + esc(id) + '" aria-label="' + esc(head) + '">' +
+            (pic ? '<img src="' + esc(pic.url) + '" referrerpolicy="no-referrer" alt="" loading="lazy" decoding="async"' + ratio + '>' : '<span class="bm-tile-text">' + esc(head) + '</span>') +
+            '<span class="bm-tile-caption">' + (pic ? '<span class="bm-tile-cap">' + esc(head) + '</span>' : '') +
+            '<span class="bm-tile-meta">' + esc(whoOf(it) || srcLabel(text(it.src))) + (isPending(it) ? ' · ' + esc(t('mydash.bm.pendingChip', undefined, '판정 대기')) : '') + '</span></span></button>' +
+            (s.priority ? '<span class="bm-tile-badge">' + esc(valueLabel('priority', s.priority)) + '</span>' : '') + '</article>';
+        }
 
     /** 격자 열 수. CSS 의 열 폭 (--bm-col) 과 같은 셈. 폰은 2열 */
     function gridColCount(): number {
@@ -1745,160 +1195,6 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       return body + 0.35;
     }
 
-    /** 피드와 격자의 한 손 판정. 보내고, 카드를 흐리게, 다음 카드로 */
-    async function cardJudge(id: string, out: Outgoing): Promise<void> {
-      const r = await sendEvent(out);
-      const msgEl = listEl.querySelector('[data-cmsg="' + id + '"]') as HTMLElement | null;
-      if (isBad(r)) {
-        if (msgEl) { msgEl.textContent = sendWord(r); msgEl.classList.add('error'); }
-        return;
-      }
-      feedDone.add(id);
-      feedPicks.delete(id);
-      const ids = visibleRowIds();
-      const at = ids.indexOf(id);
-      paint();
-      paintHead();
-      if (at >= 0 && at + 1 < ids.length) {
-        const next = listEl.querySelector('[data-row="' + ids[at + 1] + '"]') as HTMLElement | null;
-        if (next && typeof next.scrollIntoView === 'function') next.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      }
-    }
-
-    function unitHtml(u: Unit): string {
-      if (u.items.length < 2) return rowHtml(u.items[0], '');
-      const isOpen = opened.has(u.key);
-      const head0 = u.items[0];
-      /* 머리 줄도 항목 하나. 자식과 같은 meta (날짜, 작성자, 의도 칩, 판정 대기 칩) 를 부착.
-         접힌 상태에서 보이는 것이 이 줄뿐이라, 빠지면 묶음 첫 항목만 정보 결여. */
-      const head =
-        '<div class="tool-list-row bm-row' + (selectMode ? ' is-pick' : '') +
-        (curId === text(head0.id) ? ' is-cur' : '') + '"' +
-        (selectMode ? ' data-act="pick" data-id="' + esc(text(head0.id)) + '"' : ' data-act="row"') +
-        ' data-row="' + esc(text(head0.id)) + '">' +
-        checkHtml(head0) +
-        '<div class="tool-list-key">' + esc(srcLabel(text(head0.src))) + '</div>' +
-        thumbHtml(head0) +
-        '<div class="tool-list-val bm-body">' +
-        titleHtml(head0) +
-        subHtml(head0) +
-        metaHtml(head0) +
-        '<div class="tool-actions tight"><button type="button" class="btn btn-ghost" data-act="bundle" ' +
-        'data-key="' + esc(u.key) + '" aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
-        esc(t('mydash.bm.bundle', { n: u.items.length }, '묶음 {n}건')) + ' ' +
-        esc(
-          isOpen
-            ? t('mydash.bm.bundleClose', undefined, '접기')
-            : t('mydash.bm.bundleOpen', undefined, '펼치기')
-        ) +
-        '</button>' +
-        (selectMode
-          ? ''
-          : '<button type="button" class="btn btn-ghost" data-act="open" data-target="bundle:' +
-            esc(u.key) + '">' +
-            esc(t('mydash.bm.row.openBundle', undefined, '묶음 분류')) + '</button>') +
-        '</div></div></div>';
-      if (!isOpen) return head;
-      return head + u.items.slice(1).map((it) => rowHtml(it, 'bm-kid')).join('');
-    }
-
-    /* ── 재발굴 한 칸 ──
-       방치일수는 **날것으로 재면 안 됨**. 출처마다 모은 기간이 다름 (실측 2026-09-10:
-       카톡은 2025-08 부터 1년치, X 와 브라우저는 2026-08 한 주치). 날것 점수로는
-       상위 8건이 영원히 카톡 고정.
-
-       방치일수를 **그 출처 안에서** 0~1 로 정규화하는 것만으로도 미해결. 정규화 점수로
-       한 줄 세워 상위 40 을 끊으면 폭이 좁은 출처가 독점 (실측 2026-09-10: 브라우저
-       82건이 전부 같은 날짜라 폭이 0, 만점 처리 시 후보 40 이 전부 브라우저. 폭 0 을 0.5 로
-       낮추면 이번엔 X 39 에 카톡 1). 한 자로 재서 한 줄로 세우는 한 데이터가 제일 고른
-       출처의 독점.
-
-       그래서 순위는 **출처 안에서만** 매기고, 후보 40 은 출처를 번갈아 채움 (실측 결과
-       브라우저 14, 카톡 13, X 13). 점수는 정규화 방치도 / 공유 횟수, 공유 횟수는 `shared`
-       배열 길이 (없으면 1).
-
-       고르기는 날짜 씨앗이라 같은 후보 목록에서 같은 날 같은 자리를 지정. 다만 보여 준 id 를
-       그 자리에서 기록해, 같은 날 다시 열면 그 다음 것이 노출. 필터와 무관하게 전체 대상.
-       버린 것과 승격한 것은 후보에서 뺌 (다시 파낼 이유 없음). */
-    function revisitPool(): Item[] {
-      const live = items.filter((it) => HIDDEN_STATUS.indexOf(stateOf(it).status) < 0);
-      const lo = new Map<string, number>();
-      const hi = new Map<string, number>();
-      for (const it of live) {
-        const days = idleDays(it.recordedAt);
-        if (days < 0) continue;
-        const src = text(it.src);
-        const a = lo.get(src);
-        const b = hi.get(src);
-        if (a === undefined || days < a) lo.set(src, days);
-        if (b === undefined || days > b) hi.set(src, days);
-      }
-      const bySrc = new Map<string, Array<{ it: Item; score: number }>>();
-      for (const it of live) {
-        const days = idleDays(it.recordedAt);
-        if (days < 0) continue;
-        const src = text(it.src);
-        const a = lo.get(src) as number;
-        const b = hi.get(src) as number;
-        const span = b - a;
-        /* 한 출처의 날짜가 하나뿐이면 나눌 폭이 없다. 그 출처 안에서는 전부 같은 값이고
-           출처끼리는 안 겨루므로 만점으로 둔다 */
-        const norm = span > 0 ? (days - a) / span : 1;
-        const shared = Array.isArray(it.shared) ? it.shared.length : 0;
-        const row = { it, score: norm / (shared > 0 ? shared : 1) };
-        const list = bySrc.get(src);
-        if (list) list.push(row);
-        else bySrc.set(src, [row]);
-      }
-      const srcs = Array.from(bySrc.keys()).sort(bySrcOrder);
-      for (const s of srcs) {
-        (bySrc.get(s) as Array<{ it: Item; score: number }>).sort((x, y) =>
-          y.score !== x.score ? y.score - x.score : text(x.it.id) < text(y.it.id) ? -1 : 1
-        );
-      }
-      const pool: Item[] = [];
-      for (let i = 0; pool.length < REVISIT_POOL; i++) {
-        let added = false;
-        for (const s of srcs) {
-          const list = bySrc.get(s) as Array<{ it: Item; score: number }>;
-          if (i >= list.length) continue;
-          pool.push(list[i].it);
-          added = true;
-          if (pool.length >= REVISIT_POOL) break;
-        }
-        if (!added) break;
-      }
-      return pool;
-    }
-
-    function revisitPick(): Item | null {
-      const pool = revisitPool();
-      if (!pool.length) return null;
-      /* 이 기기에서 이미 보여 준 것은 후보 뒤로. 전부 봤으면 다시 처음부터 돈다 */
-      const seen = new Set(seenIds());
-      const fresh = pool.filter((it) => !seen.has(text(it.id)));
-      const use = fresh.length ? fresh : pool;
-      const seed = kstDayKey(Date.now());
-      let h = 0;
-      for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-      return use[h % use.length];
-    }
-
-    let revisitId = '';
-    function paintRevisit(): void {
-      const it = revisitId ? itemById.get(revisitId) || revisitPick() : revisitPick();
-      if (!it) {
-        revisitEl.textContent = '';
-        return;
-      }
-      revisitId = text(it.id);
-      const days = idleDays(it.recordedAt);
-      revisitEl.innerHTML =
-        '<div class="tool-sublabel">' + esc(t('mydash.bm.revisit', undefined, '재발굴')) + '</div>' +
-        '<div class="tool-list">' + rowHtml(it, '') + '</div>' +
-        '<div class="tool-hint">' + esc(t('mydash.bm.revisitIdle', { n: days }, '{n}일 방치')) + '</div>';
-      markSeen(revisitId);
-    }
 
     /* ── 우선순위 상한 ──
        `now` 는 자리가 여덟이다. 아홉 번째를 올리려 하면 지금 여덟을 보여 하나를 내리게 한다.
@@ -1906,115 +1202,63 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     function nowItems(exclude: Set<string>): Item[] {
       return items.filter((it) => stateOf(it).priority === 'now' && !exclude.has(text(it.id)));
     }
-
-    /* ── 칩 숫자 ── */
     function paintChipCounts(): void {
-      const tally = new Map<string, number>();
-      for (const it of items) {
-        for (const g of groups) {
-          for (const v of valuesFor(it, g.key)) {
-            const k = g.key + ':' + v;
-            tally.set(k, (tally.get(k) || 0) + 1);
+          const tally = new Map<string, number>();
+          for (const g of groups) for (const it of items) {
+            if (!matches(it, g.key)) continue;
+            for (const v of valuesFor(it, g.key)) {
+              const key = g.key + ':' + v;
+              tally.set(key, (tally.get(key) || 0) + 1);
+            }
           }
+          for (const node of filtersEl.querySelectorAll<HTMLElement>('[data-n]')) node.textContent = String(tally.get(node.dataset.n || '') || 0);
         }
-      }
-      const spans = Array.from(wrap.querySelectorAll('[data-n]')) as HTMLElement[];
-      for (const s of spans) s.textContent = String(tally.get(s.getAttribute('data-n') || '') || 0);
-    }
-
     function paintHead(): void {
-      const n = items.filter(isPending).length;
-      const num = wrap.querySelector('[data-pending-num] b') as HTMLElement | null;
-      if (num) num.textContent = String(n);
-      judgeBtn.textContent = t('mydash.bm.act.judge', { n }, '판정 대기 {n}건');
-      (judgeBtn as HTMLButtonElement).disabled = n === 0 && !judge;
-      selectBtn.textContent = selectMode
-        ? t('mydash.bm.act.selectOff', undefined, '선택 끄기')
-        : t('mydash.bm.act.select', undefined, '선택');
-      selectBtn.setAttribute('aria-pressed', selectMode ? 'true' : 'false');
-      let on = 0;
-      for (const g of groups) on += picked[g.key].size;
-      filtersSumEl.textContent = on
-        ? t('mydash.bm.filter.sumOn', { n: on }, '필터 {n}')
-        : t('mydash.bm.filter.sum', undefined, '필터');
-      evLineEl.textContent = eventCount
-        ? t('mydash.bm.events.applied', { n: eventCount }, '이벤트 {n}건 반영')
-        : '';
-      evLineEl.hidden = !eventCount;
-    }
-
+          let count = 0;
+          const chips: string[] = [];
+          const remove = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 4 8 8m0-8-8 8"/></svg>';
+          const chip = (act: string, label: string, attrs = '') => '<button type="button" data-act="' + act + '" ' + attrs + ' aria-label="' + esc(t('mydash.bm.filter.remove', { label }, '{label} 해제')) + '">' + esc(label) + remove + '</button>';
+          for (const g of groups) {
+            const n = picked[g.key].size;
+            count += n;
+            const node = filtersEl.querySelector('[data-group-count="' + g.key + '"]');
+            if (node) node.textContent = n ? String(n) : '';
+            for (const value of picked[g.key]) chips.push(chip('remove-filter', g.values.find(v => v.key === value)?.label || value,
+              'data-remove-axis="' + esc(g.key) + '" data-value="' + esc(value) + '"'));
+          }
+          if (pendingOnly) { count++; chips.push(chip('pending', t('mydash.bm.act.pendingOnly', undefined, '대기만'))); }
+          if (freshOnly) { count++; chips.push(chip('fresh', t('mydash.bm.filter.fresh', undefined, '최근 7일'))); }
+          if (scope !== 'personal') { count++; chips.push(chip('clear-scope', scopeEl.selectedOptions[0].textContent || '')); }
+          if (query) chips.push(chip('clear-query', qEl.value));
+          filtersSumEl.textContent = t('mydash.bm.filter.sum', undefined, '필터') + (count ? ' ' + count : '');
+          activeEl.hidden = !chips.length;
+          activeEl.innerHTML = chips.join('') + (chips.length ? '<button type="button" data-act="clear-filters">' + esc(t('mydash.bm.filter.clear', undefined, '조건 초기화')) + '</button>' : '');
+          const pending = filtersEl.querySelector<HTMLButtonElement>('[data-act="pending"]')!;
+          pending.textContent = t('mydash.bm.act.pendingOnly', undefined, '대기만');
+          pending.setAttribute('aria-pressed', String(pendingOnly));
+          const fresh = filtersEl.querySelector<HTMLButtonElement>('[data-act="fresh"]')!;
+          fresh.textContent = t('mydash.bm.filter.fresh', undefined, '최근 7일');
+          fresh.setAttribute('aria-pressed', String(freshOnly));
+          paintFilterMenu();
+        }
     function paint(): void {
-      const focused = document.activeElement as HTMLElement | null;
-      const focusedMedia = focused?.matches('.bm-view-open') && listEl.contains(focused) ? focused.getAttribute('data-id') : null;
-      const chipEls = Array.from(wrap.querySelectorAll('.bm-groups .tool-chip')) as HTMLElement[];
-      for (const b of chipEls) {
-        const axis = b.getAttribute('data-axis') || '';
-        const value = b.getAttribute('data-value') || '';
-        b.classList.toggle('active', !!picked[axis] && picked[axis].has(value));
-      }
-      const list = items.filter(matches).sort(byRecent);
-      const units = unitsOf(list);
-      /* 건수 줄과 더 보기가 서로 다른 것을 세면 숫자가 안 맞는다 (전에는 항목 수와 묶음 수).
-         둘 다 항목 수와 묶음 수를 같이 보인다. shown 이 세는 것은 묶음이다. */
-      countEl.textContent = t(
-        'mydash.bm.count',
-        { n: list.length, m: units.length },
-        '항목 {n} (묶음 {m})'
-      );
-      const empty =
-        '<div class="tool-list-row"><div class="tool-list-val">' +
-        esc(t('mydash.bm.noMatch', undefined, '조건에 맞는 것이 없습니다')) +
-        '</div></div>';
-      listEl.className = 'tool-list bm-list bm-view-' + view;
-      wrap.classList.toggle('is-feed', view === 'feed');
-      if (view === 'list') {
-        listEl.innerHTML = units.slice(0, shown).map(unitHtml).join('') || empty;
-      } else if (view === 'feed') {
-        /* 피드와 격자는 묶음을 안 접는다. 한 장이 한 항목. 못 받은 트윗 (지워짐, 로그인 필요) 은
-           볼 것이 없어 뒤로. 판정 대기 453 중 142 가 그것이라 앞에 두면 첫 화면이 빈 카드 (2026-09-19 실측) */
-        const gone = (it: Item): boolean => { const m = mediaOf(it); return !!(m && m.kind === 'tweet' && m.deleted); };
-        const live = list.filter((it) => !gone(it));
-        const dead = list.filter(gone);
-        listEl.innerHTML = live.concat(dead).slice(0, shown).map(cardHtml).join('') || empty;
-      } else {
-        /* 격자는 그림이 주인공. 그림 있는 것을 앞에, 글만 있는 것은 뒤에 (각각 최근순 유지) */
-        const withPic = list.filter((it) => !!firstPic(it, 'small'));
-        const noPic = list.filter((it) => !firstPic(it, 'small'));
-        const tiles = withPic.concat(noPic).slice(0, shown);
-        gridOrder = tiles.map((it) => text(it.id));
-        listEl.innerHTML = tiles.length ? gridHtml(tiles) : empty;
-      }
-      if (view !== 'grid') gridOrder = [];
-      /* 재발굴 칸은 목록 보기에서만. 피드와 격자는 넘기는 화면이라 위에 딴 것을 안 둔다 */
-      revisitEl.hidden = view !== 'list' || pendingOnly;
-      const viewBtns = Array.from(wrap.querySelectorAll('[data-act="view"]')) as HTMLElement[];
-      for (const b of viewBtns) b.setAttribute('aria-pressed', b.getAttribute('data-view') === view ? 'true' : 'false');
-      const pendBtn = wrap.querySelector('[data-act="pending"]') as HTMLElement | null;
-      if (pendBtn) {
-        pendBtn.setAttribute('aria-pressed', pendingOnly ? 'true' : 'false');
-        pendBtn.textContent = t('mydash.bm.act.pendingOnly', undefined, '대기만');
-      }
-      const freshBtn = wrap.querySelector('[data-act="fresh"]') as HTMLElement | null;
-      if (freshBtn) {
-        freshBtn.setAttribute('aria-pressed', freshOnly ? 'true' : 'false');
-        freshBtn.textContent = t('mydash.bm.act.freshOnly', { n: freshCount, d: FRESH_DAYS }, '새로 들어옴 {n}');
-        (freshBtn as HTMLButtonElement).disabled = freshCount === 0 && !freshOnly;
-      }
-      const restUnits = (view === 'list' ? units.length : list.length) - shown;
-      const restItems = view === 'list' ? units.slice(shown).reduce((n, u) => n + u.items.length, 0) : Math.max(0, restUnits);
-      moreEl.style.display = restUnits > 0 ? '' : 'none';
-      if (restUnits > 0) {
-        moreBtn.textContent = t(
-          'mydash.bm.more',
-          { n: restItems, m: restUnits },
-          '더 보기 항목 {n} (묶음 {m})'
-        );
-      }
-      paintChipCounts();
-      paintHead();
-      paintBar();
-      if (focusedMedia && !mediaViewer.opened) (listEl.querySelector<HTMLElement>('[data-row="' + CSS.escape(focusedMedia) + '"] .bm-view-open') || wrap.querySelector<HTMLElement>('.bm-scroll'))?.focus({ preventScroll: true });
-    }
+          const focused = document.activeElement as HTMLElement | null;
+          const focusedId = focused?.matches('.bm-tile-open') ? focused.dataset.id : null;
+          const list = items.filter(it => matches(it)).sort(bySort);
+          const tiles = list.slice(0, shown);
+          gridOrder = tiles.map(it => text(it.id));
+          countEl.textContent = t('mydash.bm.grid.resultCount', { n: list.length }, '{n}개');
+          listEl.innerHTML = tiles.length ? gridHtml(tiles) : '<div class="bm-empty">' + esc(t('mydash.bm.noMatch', undefined, '조건에 맞는 것이 없습니다')) +
+            '<button type="button" data-act="clear-filters">' + esc(t('mydash.bm.filter.clear', undefined, '조건 초기화')) + '</button></div>';
+          const rest = Math.max(0, list.length - shown);
+          moreEl.hidden = !rest;
+          moreEl.style.display = rest ? '' : 'none';
+          moreBtn.textContent = t('mydash.bm.grid.more', { n: rest }, '{n}개 더 보기');
+          paintChipCounts();
+          paintHead();
+          syncPicks();
+          if (focusedId && !mediaViewer.opened) listEl.querySelector<HTMLElement>('[data-row="' + CSS.escape(focusedId) + '"] .bm-tile-open')?.focus({ preventScroll: true });
+        }
 
     /* ── 시트 ──
        화면 아래에서 올라오고, 저장은 **바뀐 축만** 이벤트로 낸다. 한 번에 최대 네 벌
@@ -2048,13 +1292,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       const rows = Array.from(wrap.querySelectorAll('[data-row]')) as HTMLElement[];
       for (const r of rows) r.classList.toggle('is-cur', r.getAttribute('data-row') === id);
     }
-
-    /** 지금 화면에 있는 줄의 id 차례 (접힌 묶음은 머리 줄만). 자판 위아래가 도는 줄 */
-    function visibleRowIds(): string[] {
-      if (view === 'grid' && gridOrder.length) return gridOrder.slice();
-      const rows = Array.from(listEl.querySelectorAll('[data-row]')) as HTMLElement[];
-      return rows.map((r) => r.getAttribute('data-row') || '').filter((x) => !!x);
-    }
+    function visibleRowIds(): string[] { return gridOrder.slice(); }
 
     /** 위아래로 한 줄. 끝이면 그대로. 옆판이 그 줄을 보고 목록이 그 줄까지 스크롤 */
     function moveCur(delta: number): void {
@@ -2206,18 +1444,10 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     }
 
     function paintSheet(): void {
-      /* 목록 보기만 옆판이 늘 떠 있다. 피드와 격자는 화면 전체가 카드라 열었을 때만 옆판 (PC 격자 5열) */
-      wrap.classList.toggle('no-panel', view !== 'list' && !sheet);
+      wrap.classList.add('no-panel');
       if (!sheet || !draft || !draftBase) {
-        if (isWide() && view === 'list') {
-          sheetEl.hidden = false;
-          sheetEl.innerHTML =
-            '<div class="bm-sheet-empty">' +
-            esc(t('mydash.bm.sheet.empty', undefined, '줄을 누르면 여기에 뜹니다')) + '</div>' + keysHtml();
-        } else {
-          sheetEl.hidden = true;
-          sheetEl.innerHTML = '';
-        }
+        sheetEl.hidden = true;
+        sheetEl.innerHTML = '';
         return;
       }
       const head = sheet.items[0];
@@ -2435,48 +1665,38 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       closeSheet();
       } finally { sheetSaving = false; controls.forEach(control => { control.disabled = false; }); }
     }
-
-    /* ── 선택 모드 ── */
     function paintBar(): void {
-      if (!selectMode) {
-        barEl.hidden = true;
-        barEl.innerHTML = '';
-        wrap.classList.remove('has-bar');
-        return;
-      }
-      wrap.classList.add('has-bar');
-      barEl.hidden = false;
-      const row = (axisKey: string, act: string, on: (v: string) => boolean): string =>
-        '<div class="bm-bar-row"><span class="tool-sublabel">' + esc(axisLabel(axisKey)) + '</span><div class="tool-chips">' +
-        axisPicks(axisKey)
-          .map(
-            (p) =>
-              '<button type="button" class="tool-chip' + (on(p.key) ? ' active' : '') +
-              '" data-act="' + act + '" data-value="' + esc(p.key) + '">' + esc(p.label) + '</button>'
-          )
-          .join('') +
-        '</div></div>';
-      barEl.innerHTML =
-        row('intent', 'b-intent', (v) => barIntent.has(v)) +
-        row('topic', 'b-topic', (v) => barTopic.has(v)) +
-        row('domain', 'b-domain', (v) => barDomain === v) +
-        '<div class="tool-actions">' +
-        '<button type="button" class="btn btn-primary" data-act="b-apply">' +
-        esc(t('mydash.bm.sel.apply', undefined, '적용')) + '</button>' +
-        '<button type="button" class="btn btn-ghost" data-act="b-drop">' +
-        esc(t('mydash.bm.sel.drop', undefined, '버림')) + '</button>' +
-        '<button type="button" class="btn btn-ghost" data-act="b-now">' +
-        esc(valueLabel('priority', 'now')) + '</button>' +
-        '<button type="button" class="btn btn-ghost" data-act="b-cancel">' +
-        esc(t('mydash.bm.sel.cancel', undefined, '취소')) + '</button>' +
-        '</div>' +
-        '<div class="tool-status">' +
-        esc(
-          barBusy ||
-            t('mydash.bm.sel.picked', { n: selected.size }, '고른 것 {n}건')
-        ) +
-        '</div>';
-    }
+          selectMode = selected.size > 0;
+          browseEl.hidden = selectMode;
+          barEl.hidden = !selectMode;
+          wrap.classList.toggle('is-selecting', selectMode);
+          if (!selectMode) {
+            if (bulkEl.matches(':popover-open')) bulkEl.hidePopover();
+            if (!bulkSaving) { barIntent.clear(); barTopic.clear(); barDomain = null; }
+            if (barBusy) { evLineEl.textContent = barBusy; evLineEl.hidden = false; }
+            return;
+          }
+          const matching = items.filter(it => matches(it));
+          const all = matching.length > 0 && matching.every(it => selected.has(text(it.id)));
+          if (!barEl.children.length) barEl.innerHTML = '<label class="bm-all" title="' + esc(t('mydash.bm.grid.selectAll', undefined, '검색 결과 전체 선택')) + '"><input type="checkbox" data-act="select-all"' + (all ? ' checked' : '') + ' aria-label="' + esc(t('mydash.bm.grid.selectAll', undefined, '검색 결과 전체 선택')) + '"></label>' +
+            '<strong class="bm-selection-count">' + esc(t('mydash.bm.grid.selected', { n: selected.size }, '{n}개 선택')) + '</strong>' +
+            '<button type="button" data-act="bulk-menu" popovertarget="bm-bulk-menu" aria-controls="bm-bulk-menu" aria-expanded="false">' + esc(t('mydash.bm.row.open', undefined, '분류')) + '</button>' +
+            '<button type="button" data-act="b-now">' + esc(valueLabel('priority', 'now')) + '</button>' +
+            '<button type="button" data-act="b-drop">' + esc(valueLabel('status', 'dropped')) + '</button>' +
+            '<button type="button" data-act="b-cancel">' + esc(t('mydash.bm.grid.deselect', undefined, '선택 해제')) + '</button>';
+          const master = barEl.querySelector<HTMLInputElement>('[data-act="select-all"]')!;
+          master.checked = all;
+          master.indeterminate = !all && matching.some(it => selected.has(text(it.id)));
+          barEl.querySelector('.bm-selection-count')!.textContent = t('mydash.bm.grid.selected', { n: selected.size }, '{n}개 선택');
+          for (const input of bulkEl.querySelectorAll<HTMLInputElement>('[data-value]')) {
+            const v = input.dataset.value || '';
+            input.checked = bulkAxisEl.value === 'intent' ? barIntent.has(v) : bulkAxisEl.value === 'topic' ? barTopic.has(v) : barDomain === v;
+          }
+          const total = barIntent.size + barTopic.size + (barDomain ? 1 : 0);
+          bulkEl.querySelector('[data-bulk-status]')!.textContent = barBusy || t('mydash.bm.grid.tagCount', { n: total }, '분류 {n}개 선택');
+          for (const button of barEl.querySelectorAll<HTMLButtonElement>('[data-act="bulk-menu"],[data-act="b-now"],[data-act="b-drop"]')) button.disabled = bulkSaving;
+          bulkEl.querySelector<HTMLButtonElement>('[data-act="b-apply"]')!.disabled = bulkSaving || !total;
+        }
 
     /**
      * 고른 것마다 이벤트 파일 하나. 파일 하나에 이벤트 하나 규약은 그대로지만, 먼저 전부를
@@ -2488,12 +1708,15 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
      * 비움**. 고른 것이 사라지면 다시 고르는 수밖에 없음.
      */
     async function runBulk(make: (it: Item) => Outgoing): Promise<void> {
+      if (bulkSaving) return;
       const ids = Array.from(selected);
       if (!ids.length) {
         barBusy = t('mydash.bm.sel.none', undefined, '고른 것이 없습니다');
         paintBar();
         return;
       }
+      bulkSaving = true;
+      try {
       let sent = 0;
       let queued = 0;
       let failed = 0;
@@ -2518,7 +1741,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
             feedDone.add(o.id);
           }
           barBusy = t('mydash.bm.sel.tally', { n: outs.length, m: 0, k: 0 }, '보냄 {n}, 큐 {m}, 실패 {k}');
-          selected.clear();
+          for (const id of ids) selected.delete(id);
           paint();
           return;
         } catch {
@@ -2550,201 +1773,21 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         '보냄 {n}, 큐 {m}, 실패 {k}'
       );
       barBusy = worst === 'sent' ? tally : tally + '. ' + sendWord(worst);
-      if (!queued && !failed) selected.clear();
+      if (!queued && !failed) for (const id of ids) selected.delete(id);
       paint();
+      } finally { bulkSaving = false; paintBar(); }
     }
-
-    /* ── 한 장 모드 ──
-       판정 대기만 한 장씩. 차례는 작성자별로 모아 같은 작가가 연달아 오게 한다 (같은 그림쟁이
-       스물몇 장을 매번 새로 판단하는 것 방지). 같은 작가면 앞에서 고른 의도를 미리 체크. */
-    function judgeList(): Item[] {
-      return items.filter(isPending).sort((a, b) => {
-        const x = text(a.author);
-        const y = text(b.author);
-        if (x !== y) return x < y ? -1 : 1;
-        return byRecent(a, b);
-      });
-    }
-
-    function enterJudge(): void {
-      const list = judgeList();
-      judge = { list, at: 0, picks: new Set<string>(), lastAuthor: '', lastIntent: [], jevDomain: false };
-      if (selectMode) toggleSelect(false);
-      paintJudge();
-    }
-
-    function exitJudge(): void {
-      judge = null;
-      paintJudge();
-      paint();
-    }
-
-    /** 한 장 모드에서는 목록 쪽을 통째로 감춘다. 화면에 판단할 것 하나만 남기려는 것 */
-    function setListVisible(on: boolean): void {
-      for (const el of [searchEl, revisitEl, countEl, listEl, moreEl]) {
-        if (el) el.hidden = !on;
-      }
-      headActsEl.hidden = !on;
-      /* 필터는 자기 접힘 상태가 있다. 한 장 모드에서는 무조건 숨기고, 나올 때는 접힌 채로 */
-      if (!on) filtersEl.hidden = true;
-      if (on) filtersSumEl.setAttribute('aria-expanded', 'false');
-      /* 옆판도 같이. 한 장 모드에 "줄을 누르면" 안내가 떠 있으면 거짓말 */
-      if (!on) sheetEl.hidden = true;
-      else paintSheet();
-    }
-
-    function paintJudge(): void {
-      if (!judge) {
-        judgeEl.hidden = true;
-        judgeEl.innerHTML = '';
-        setListVisible(true);
-        return;
-      }
-      setListVisible(false);
-      judgeEl.hidden = false;
-      const total = judge.list.length;
-      if (judge.at >= total) {
-        judgeEl.innerHTML =
-          '<div class="tool-status ok">' +
-          esc(t('mydash.bm.judge.done', undefined, '판정 대기를 다 봤습니다')) + '</div>' +
-          '<div class="tool-actions"><button type="button" class="btn btn-primary" data-act="j-exit">' +
-          esc(t('mydash.bm.judge.exit', undefined, '나가기')) + '</button></div>';
-        return;
-      }
-      const it = judge.list[judge.at];
-      const url = safeLinkUrl(it.url);
-      const s = stateOf(it);
-      const hint = jevById.get(text(it.id));
-      const jevIntent = new Set(hint ? hint.intent : []);
-      const jevTag = '<span class="bm-jev-tag">Jev</span>';
-      const domainLine =
-        hint && hint.domain
-          ? '<button type="button" class="bm-jev-domain' + (judge.jevDomain ? ' active' : '') +
-            '" data-act="j-jev-domain" aria-pressed="' + (judge.jevDomain ? 'true' : 'false') + '">' +
-            esc(
-              t(
-                'mydash.bm.judge.jevDomain',
-                {
-                  axis: axisLabel('domain'),
-                  value: valueLabel('domain', hint.domain),
-                  conf: hint.domainConf === null ? '' : ' ' + Math.round(hint.domainConf * 100) + '%',
-                },
-                '{axis}: Jev 추천 {value}{conf}'
-              )
-            ) + '</button>'
-          : '';
-      judgeEl.innerHTML =
-        '<div class="tool-status">' +
-        esc(t('mydash.bm.judge.progress', { k: judge.at + 1, n: total }, '{k}/{n}')) + '</div>' +
-        '<div class="bm-judge-title">' + esc(displayLabel(it, s.note)) + '</div>' +
-        '<div class="bm-meta">' +
-        (text(it.author) ? '<span>' + esc(text(it.author)) + '</span>' : '') +
-        (text(it.subhead) ? '<span>' + esc(text(it.subhead)) + '</span>' : '') +
-        '</div>' +
-        (url
-          ? '<div><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
-            esc(t('mydash.bm.sheet.link', undefined, '링크 열기')) + '</a></div>'
-          : '') +
-        '<div class="tool-chips">' +
-        axisPicks('intent')
-          .map(
-            (p) =>
-              '<button type="button" class="tool-chip' +
-              ((judge as Judge).picks.has(p.key) ? ' active' : '') +
-              (jevIntent.has(p.key) ? ' bm-jev' : '') +
-              '" data-act="j-intent" data-value="' + esc(p.key) + '">' + esc(p.label) +
-              (jevIntent.has(p.key) ? jevTag : '') + '</button>'
-          )
-          .join('') +
-        '</div>' +
-        domainLine +
-        '<div class="tool-actions">' +
-        '<button type="button" class="btn btn-primary" data-act="j-save">' +
-        esc(t('mydash.bm.judge.saveNext', undefined, '저장하고 다음')) + '</button>' +
-        '<button type="button" class="btn btn-ghost" data-act="j-skip">' +
-        esc(t('mydash.bm.judge.skip', undefined, '건너뛰기')) + '</button>' +
-        '<button type="button" class="btn btn-ghost" data-act="j-drop">' +
-        esc(t('mydash.bm.judge.drop', undefined, '버림')) + '</button>' +
-        '<button type="button" class="btn btn-ghost" data-act="j-exit">' +
-        esc(t('mydash.bm.judge.exit', undefined, '나가기')) + '</button>' +
-        '</div>' +
-        '<div class="tool-status" data-jmsg="1"></div>';
-    }
-
-    function judgeAdvance(): void {
-      if (!judge) return;
-      judge.at++;
-      const next = judge.list[judge.at];
-      judge.picks = new Set<string>();
-      judge.jevDomain = false;
-      /* 같은 작가면 앞에서 고른 의도를 미리 체크. 다른 작가면 빈칸에서 시작 */
-      if (next && judge.lastAuthor && text(next.author) === judge.lastAuthor) {
-        for (const v of judge.lastIntent) judge.picks.add(v);
-      }
-      paintJudge();
-    }
-
-    function judgeMsg(msg: string, bad: boolean): void {
-      const el = judgeEl.querySelector('[data-jmsg]') as HTMLElement | null;
-      if (!el) return;
-      el.textContent = msg;
-      el.classList.toggle('error', bad);
-    }
-
-    async function judgeSave(): Promise<void> {
-      if (!judge) return;
-      const it = judge.list[judge.at];
-      if (!it) return;
-      if (!judge.picks.size) {
-        judgeMsg(t('mydash.bm.judge.needIntent', undefined, '의도를 하나 이상 고르세요'), true);
-        return;
-      }
-      const picks = Array.from(judge.picks);
-      const s = stateOf(it);
-      const hint = jevById.get(text(it.id));
-      const domain = judge.jevDomain && hint && hint.domain ? hint.domain : s.domain;
-      const r = await sendEvent(makeEvent('tag', text(it.id), { intent: picks, domain }));
-      if (isBad(r)) {
-        judgeMsg(sendWord(r), true);
-        return;
-      }
-      judge.lastAuthor = text(it.author);
-      judge.lastIntent = picks;
-      judgeAdvance();
-      paintHead();
-    }
-
-    async function judgeDrop(): Promise<void> {
-      if (!judge) return;
-      const it = judge.list[judge.at];
-      if (!it) return;
-      const r = await sendEvent(makeEvent('status', text(it.id), { status: 'dropped' }));
-      if (isBad(r)) {
-        judgeMsg(sendWord(r), true);
-        return;
-      }
-      judgeAdvance();
-      paintHead();
-    }
-
     function toggleSelect(on: boolean): void {
-      selectMode = on;
-      if (!on) {
-        selected.clear();
-        barIntent.clear();
-        barTopic.clear();
-        barDomain = null;
-        barBusy = '';
-        pickAnchor = '';
-      }
-      paint();
-    }
-
+          if (!on) {
+            selected.clear(); barIntent.clear(); barTopic.clear(); barDomain = null; barBusy = ''; pickAnchor = '';
+          }
+          syncPicks();
+          paintHead();
+        }
     function togglePick(id: string): void {
-      if (selected.has(id)) selected.delete(id);
-      else selected.add(id);
-      pickAnchor = id;
-    }
+          if (selected.has(id)) selected.delete(id); else selected.add(id);
+          pickAnchor = id;
+        }
 
     /** 보이는 차례로 a 부터 b 까지 전부 고른다. 격자는 그린 차례 (왼쪽에서 오른쪽) */
     function pickRange(a: string, b: string): void {
@@ -2758,19 +1801,16 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       for (let k = Math.min(i, j); k <= Math.max(i, j); k++) selected.add(ids[k]);
       pickAnchor = b;
     }
-
-    /**
-     * 목록은 안 다시 그림, 칸과 띠만 맞춤.
-     * - 백 줄 다시 그리기는 폰에서 끊김. 안 누른 칸이 새 노드로 갈려 연달아 고르기도 끊김
-     * - 같은 항목이 목록과 재발굴 칸에 둘 다 뜰 수 있어 둘 다 맞춤
-     */
     function syncPicks(): void {
-      const boxes = Array.from(wrap.querySelectorAll('[data-pick]')) as HTMLInputElement[];
-      for (const box of boxes) box.checked = selected.has(box.getAttribute('data-pick') || '');
-      const cells = Array.from(listEl.querySelectorAll('.bm-card[data-row],.bm-tile[data-row]')) as HTMLElement[];
-      for (const c of cells) c.classList.toggle('is-sel', selected.has(c.getAttribute('data-row') || ''));
-      paintBar();
-    }
+          for (const tile of listEl.querySelectorAll<HTMLElement>('[data-row]')) {
+            const on = selected.has(tile.dataset.row || '');
+            tile.classList.toggle('is-sel', on);
+            const box = tile.querySelector<HTMLInputElement>('[data-pick]');
+            if (box) box.checked = on;
+          }
+          paintBar();
+          activeEl.hidden = !activeEl.children.length;
+        }
 
     /* ── 손 ── */
     wrap.addEventListener('click', (ev) => {
@@ -2781,127 +1821,61 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       const el = target.closest('[data-axis],[data-act],[data-pick]') as HTMLElement | null;
       if (!el) return;
       const act = el.getAttribute('data-act');
+      if (act === 'filters') { requestAnimationFrame(() => positionMenu(filtersEl, filtersSumEl)); return; }
+      if (act === 'close-filters') { filtersEl.hidePopover(); filtersSumEl.focus(); return; }
+      if (act === 'filter-tab') {
+        filterAxis = el.dataset.filterAxis || 'quick'; filterSearchEl.value = ''; paintFilterMenu(); return;
+      }
+      if (act === 'bulk-menu') { paintBulkOptions(); requestAnimationFrame(() => positionMenu(bulkEl, el)); return; }
+      if (act === 'close-bulk') { bulkEl.hidePopover(); barEl.querySelector<HTMLElement>('[data-act="bulk-menu"]')?.focus(); return; }
+      if (act === 'select-all') {
+        const matching = items.filter(it => matches(it));
+        if ((el as HTMLInputElement).checked) for (const it of matching) selected.add(text(it.id));
+        else for (const it of matching) selected.delete(text(it.id));
+        syncPicks(); return;
+      }
+      if (act === 'remove-filter') {
+        picked[el.dataset.removeAxis || '']?.delete(el.dataset.value || ''); refreshResults();
+        activeEl.querySelector<HTMLButtonElement>('button')?.focus(); return;
+      }
+      if (act === 'clear-filters' || act === 'clear-query' || act === 'clear-scope') {
+        if (act !== 'clear-scope') { query = ''; qEl.value = ''; }
+        if (act !== 'clear-query') { scope = 'personal'; scopeEl.value = scope; picked.src?.clear(); }
+        if (act === 'clear-filters') {
+          for (const g of groups) picked[g.key].clear(); pendingOnly = false; freshOnly = false;
+        }
+        refreshResults();
+        if (!filtersEl.matches(':popover-open')) qEl.focus();
+        return;
+      }
+      if (act === 'pending' || act === 'fresh') {
+        if (act === 'pending') pendingOnly = !pendingOnly; else freshOnly = !freshOnly;
+        refreshResults(); return;
+      }
+      if (act === 'more') { shown += PAGE; paint(); return; }
+      if (el.hasAttribute('data-pick')) {
+        const id = el.dataset.pick || '';
+        if (ev.shiftKey && pickAnchor) pickRange(pickAnchor, id); else togglePick(id);
+        syncPicks(); return;
+      }
+      if (act === 'tile') {
+        const id = el.dataset.id || '';
+        if (ev.detail === 2 && lastTileClick?.id === id) return;
+        if (selectMode || ev.ctrlKey || ev.metaKey || ev.shiftKey) {
+          lastTileClick = { id, selected: new Set(selected) };
+          if (ev.shiftKey && pickAnchor) pickRange(pickAnchor, id); else togglePick(id);
+          syncPicks();
+        } else { lastTileClick = null; openTile(id, el); }
+        return;
+      }
       if (act === 'media') {
-        const id = el.getAttribute('data-id') || '';
-        if (selectMode) { togglePick(id); syncPicks(); return; }
-        const media = items.filter(matches).sort(byRecent).flatMap(mediaItems);
-        const key = el.getAttribute('data-media-key');
-        const first = key ? media.find(item => item.id === key) : media.find(item => item.id.startsWith(id + '::'));
+        const id = el.dataset.id || '';
+        const media = items.filter(it => matches(it)).sort(bySort).flatMap(mediaItems);
+        const first = el.dataset.mediaKey ? media.find(item => item.id === el.dataset.mediaKey) : media.find(item => item.id.startsWith(id + '::'));
         if (first) mediaViewer.open(media, first.id, el);
         return;
       }
-
-      if (act === 'more') {
-        shown += PAGE;
-        paint();
-        return;
-      }
-      if (act === 'bundle') {
-        const key = el.getAttribute('data-key') || '';
-        if (opened.has(key)) opened.delete(key);
-        else opened.add(key);
-        paint();
-        return;
-      }
-      if (act === 'select') {
-        toggleSelect(!selectMode);
-        return;
-      }
-      if (act === 'view') {
-        setView((el.getAttribute('data-view') as View) || 'list');
-        return;
-      }
-      if (act === 'pending') {
-        pendingOnly = !pendingOnly;
-        if (pendingOnly) freshOnly = false;
-        resetDone();
-        shown = PAGE;
-        paint();
-        return;
-      }
-      if (act === 'fresh') {
-        freshOnly = !freshOnly;
-        if (freshOnly) pendingOnly = false;
-        resetDone();
-        shown = PAGE;
-        paint();
-        return;
-      }
-      if (act === 'c-intent') {
-        const id = el.getAttribute('data-id') || '';
-        const v = el.getAttribute('data-value') || '';
-        const it = itemById.get(id);
-        if (!it) return;
-        const set = feedPicks.get(id) || new Set(stateOf(it).intent);
-        if (set.has(v)) set.delete(v);
-        else set.add(v);
-        feedPicks.set(id, set);
-        el.classList.toggle('active', set.has(v));
-        return;
-      }
-      if (act === 'c-drop' || act === 'c-now' || act === 'c-keep') {
-        const id = el.getAttribute('data-id') || '';
-        const it = itemById.get(id);
-        if (!it) return;
-        if (act === 'c-drop') {
-          void cardJudge(id, makeEvent('status', id, { status: 'dropped' }));
-        } else if (act === 'c-now') {
-          /* 지금 자리 상한. 넘치면 옆판이 내릴 것을 보인다 */
-          if (nowItems(new Set([id])).length + 1 > nowCap()) {
-            openSheet(id);
-            if (draft) { draft.priority = 'now'; showNowList = true; paintSheet(); }
-            return;
-          }
-          void cardJudge(id, makeEvent('priority', id, { priority: 'now' }));
-        } else {
-          const set = feedPicks.get(id) || new Set(stateOf(it).intent);
-          if (!set.size) {
-            const msgEl = listEl.querySelector('[data-cmsg="' + id + '"]') as HTMLElement | null;
-            if (msgEl) { msgEl.textContent = t('mydash.bm.judge.needIntent', undefined, '의도를 하나 이상 고르세요'); msgEl.classList.add('error'); }
-            return;
-          }
-          void cardJudge(id, makeEvent('tag', id, { intent: Array.from(set), domain: stateOf(it).domain }));
-        }
-        return;
-      }
-      if (act === 'filters') {
-        filtersEl.hidden = !filtersEl.hidden;
-        filtersSumEl.setAttribute('aria-expanded', filtersEl.hidden ? 'false' : 'true');
-        return;
-      }
-      if (act === 'judge') {
-        enterJudge();
-        return;
-      }
-      if (act === 'open') {
-        openSheet(el.getAttribute('data-target') || '');
-        return;
-      }
-      /* Ctrl (맥은 Cmd) 은 하나 더 고르기, Shift 는 앞에서 누른 것부터 여기까지.
-         선택 모드가 꺼져 있으면 켜면서 고른다 (사용자 2026-09-24 "Ctrl 선택도") */
-      const mod = ev.ctrlKey || ev.metaKey || ev.shiftKey;
-      if ((act === 'row' || act === 'pick' || el.hasAttribute('data-pick')) && mod) {
-        const id = el.getAttribute('data-id') || el.getAttribute('data-pick') || el.getAttribute('data-row') || '';
-        if (!id) return;
-        const wasOn = selectMode;
-        if (ev.shiftKey && pickAnchor && pickAnchor !== id) pickRange(pickAnchor, id);
-        else togglePick(id);
-        if (!wasOn) toggleSelect(true);
-        else syncPicks();
-        return;
-      }
-      if (act === 'row') {
-        /* 줄 어디를 눌러도 옆판. 링크는 위에서 걸렀고, 버튼은 자기 act 가 먼저 잡힌다 */
-        openSheet(el.getAttribute('data-row') || '');
-        return;
-      }
-      if (act === 'pick' || el.hasAttribute('data-pick')) {
-        const id = el.getAttribute('data-id') || el.getAttribute('data-pick') || '';
-        if (!id) return;
-        togglePick(id);
-        syncPicks();
-        return;
-      }
+      if (act === 'open') { openSheet(el.dataset.target || ''); return; }
       if (act === 'sheet-close') {
         if (mediaViewer.opened) { mediaViewer.showActions(false); return; }
         closeSheet();
@@ -3036,50 +2010,22 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         toggleSelect(false);
         return;
       }
-      if (act === 'j-intent' && judge) {
-        const v = el.getAttribute('data-value') || '';
-        if (judge.picks.has(v)) judge.picks.delete(v);
-        else judge.picks.add(v);
-        paintJudge();
-        return;
-      }
-      if (act === 'j-jev-domain' && judge) {
-        judge.jevDomain = !judge.jevDomain;
-        paintJudge();
-        return;
-      }
-      if (act === 'j-save') {
-        void judgeSave();
-        return;
-      }
-      if (act === 'j-skip') {
-        judgeAdvance();
-        return;
-      }
-      if (act === 'j-drop') {
-        void judgeDrop();
-        return;
-      }
-      if (act === 'j-exit') {
-        exitJudge();
-        return;
-      }
 
       const axis = el.getAttribute('data-axis');
       if (!axis || !picked[axis]) return;
       const value = el.getAttribute('data-value') || '';
       if (picked[axis].has(value)) picked[axis].delete(value);
       else picked[axis].add(value);
-      resetDone();
-      shown = PAGE;
-      paint();
+      refreshResults();
     });
 
     /* ── 자판 (PC) ──
        위아래로 줄, 숫자로 판정, Enter 저장, Esc 닫기. 글 쓰는 칸 안에서는 안 잡는다.
        이 패널이 화면에 없으면 안 잡고, 떠날 때 셸이 떼어 준다 */
     function onKey(e: KeyboardEvent): void {
-      if (!isWide() || !ctx.isCurrent() || selectMode || judge) return;
+      if (!ctx.isCurrent() || mediaViewer.opened || filtersEl.matches(':popover-open') || bulkEl.matches(':popover-open')) return;
+      if (e.key === 'Escape' && selectMode) { e.preventDefault(); toggleSelect(false); return; }
+      if (!isWide() || selectMode) return;
       if (e.altKey || e.ctrlKey || e.metaKey) return;
       const tgt = e.target as HTMLElement | null;
       const tag = tgt ? tgt.tagName : '';
@@ -3128,7 +2074,7 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
     /* 격자 열 수는 폭으로 정해진다. 수가 바뀔 때만 다시 나눈다 (같은 수면 칸이 안 움직인다) */
     if (typeof ResizeObserver === 'function') {
       const ro = new ResizeObserver(() => {
-        if (view === 'grid' && gridOrder.length && gridColCount() !== gridCols) paint();
+        if (gridOrder.length && gridColCount() !== gridCols) paint();
       });
       ro.observe(listEl);
       ctx.onDispose(() => ro.disconnect());
@@ -3138,15 +2084,47 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
       if (e.shiftKey) e.preventDefault();
     });
 
+    sortEl.addEventListener('change', () => {
+      sort = sortEl.value as Sort;
+      try { localStorage.setItem(SORT_KEY, sort); } catch { /* 저장 막힌 브라우저 */ }
+      refreshResults();
+    });
+    scopeEl.addEventListener('change', () => {
+      scope = scopeEl.value;
+      picked.src?.clear();
+      pendingOnly = false;
+      selected.clear();
+      refreshResults();
+    });
     qEl.addEventListener('input', () => {
       query = qEl.value.trim().toLowerCase();
-      resetDone();
-      shown = PAGE;
-      paint();
-      wrap.querySelector('.bm-scroll')!.scrollTop = 0;
+      refreshResults();
     });
 
-    paintRevisit();
+    wrap.addEventListener('dblclick', (event) => {
+      const tile = (event.target as HTMLElement).closest<HTMLElement>('[data-act="tile"]');
+      if (!tile || !lastTileClick || lastTileClick.id !== tile.dataset.id) return;
+      selected.clear();
+      for (const id of lastTileClick.selected) selected.add(id);
+      syncPicks();
+      openTile(tile.dataset.id || '', tile);
+      lastTileClick = null;
+    });
+    filterSearchEl.addEventListener('input', paintFilterMenu);
+    filtersEl.addEventListener('keydown', event => {
+      const current = (event.target as HTMLElement).closest<HTMLElement>('[data-filter-axis]');
+      if (!current || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const tabs = [...filtersEl.querySelectorAll<HTMLElement>('[data-filter-axis]')];
+      const at = tabs.indexOf(current);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (at + (event.key === 'ArrowDown' ? 1 : -1) + tabs.length) % tabs.length;
+      filterAxis = tabs[next].dataset.filterAxis || 'quick'; filterSearchEl.value = '';
+      paintFilterMenu(); tabs[next].focus();
+    });
+    bulkAxisEl.addEventListener('change', () => { bulkSearchEl.value = ''; paintBulkOptions(); });
+    bulkSearchEl.addEventListener('input', paintBulkOptions);
+    filtersEl.addEventListener('toggle', () => filtersSumEl.setAttribute('aria-expanded', String(filtersEl.matches(':popover-open'))));
+    bulkEl.addEventListener('toggle', () => barEl.querySelector('[data-act="bulk-menu"]')?.setAttribute('aria-expanded', String(bulkEl.matches(':popover-open'))));
     paint();
     paintSheet();
 
@@ -3164,6 +2142,47 @@ import { createMediaViewer, nextItem, type MediaItem } from '../../../../../pack
         /* 큐 비우기는 화면을 막지 않는다. 다음 로드나 online 에서 다시 */
       }
     })();
+
+    function paintFilterMenu(): void {
+          for (const tab of filtersEl.querySelectorAll<HTMLElement>('[data-filter-axis]')) {
+            const on = tab.dataset.filterAxis === filterAxis;
+            tab.id = 'bm-filter-tab-' + tab.dataset.filterAxis;
+            tab.setAttribute('aria-controls', 'bm-filter-values');
+            tab.setAttribute('aria-selected', String(on)); tab.tabIndex = on ? 0 : -1;
+          }
+          filtersEl.querySelector('[role="tabpanel"]')!.setAttribute('aria-labelledby', 'bm-filter-tab-' + filterAxis);
+              for (const panel of filtersEl.querySelectorAll<HTMLElement>('[data-filter-panel]')) panel.hidden = panel.dataset.filterPanel !== filterAxis;
+              filterSearchEl.hidden = filterAxis === 'quick';
+              const term = filterSearchEl.value.trim().toLocaleLowerCase();
+              for (const input of filtersEl.querySelectorAll<HTMLInputElement>('[data-axis]')) {
+                const axis = input.dataset.axis || '', value = input.dataset.value || '';
+                input.checked = !!picked[axis]?.has(value);
+                const label = input.closest<HTMLElement>('.bm-option')!;
+                label.hidden = (axis === 'src' && !inScope({ id: '', src: value })) || !(label.textContent || '').toLocaleLowerCase().includes(term);
+              }
+            }
+
+    function paintBulkOptions(): void {
+              const axis = bulkAxisEl.value;
+              const term = bulkSearchEl.value.trim().toLocaleLowerCase();
+              bulkEl.querySelector('[data-bulk-options]')!.innerHTML = axisPicks(axis).filter(v => v.label.toLocaleLowerCase().includes(term)).map(v =>
+                '<label class="bm-option"><input type="checkbox" data-act="b-' + axis + '" data-value="' + esc(v.key) + '"><span>' + esc(v.label) + '</span></label>').join('');
+              paintBar();
+            }
+
+    function positionMenu(panel: HTMLElement, anchor: HTMLElement): void {
+          if (!panel.matches(':popover-open')) return;
+              const a = anchor.getBoundingClientRect(), r = panel.getBoundingClientRect();
+              panel.style.left = Math.max(12, Math.min(a.right - r.width, innerWidth - r.width - 12)) + 'px';
+              panel.style.top = Math.max(12, Math.min(a.bottom + 8, innerHeight - r.height - 12)) + 'px';
+            }
+
+    function openTile(id: string, trigger: HTMLElement): void {
+              setCur(id);
+              const media = items.filter(it => matches(it)).sort(bySort).flatMap(mediaItems);
+              const first = media.find(item => item.id.startsWith(id + '::'));
+              if (first) mediaViewer.open(media, first.id, trigger); else openSheet(id);
+            }
   }
 
   /* 탭 이름은 **등록하는 순간** 셸 소관, 그 자리는 기다릴 곳 없어 되받을 글 동봉 방식.

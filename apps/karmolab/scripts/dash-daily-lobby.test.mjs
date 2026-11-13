@@ -150,7 +150,15 @@ test('memo characters load from the private repo, never from io paths', async t 
   ui.root.appendChild(home);
   ui.window.Look.saveLobbyLook('outfit', 'caretaker-launcher');
   const image = home.querySelector('.mydh-yawn');
-  await new Promise(r => setTimeout(r, 50));
+  await new Promise((resolve, reject) => {
+    if (image.getAttribute('src') !== null) { resolve(); return; }
+    const observer = new ui.window.MutationObserver(() => {
+      if (image.getAttribute('src') === null) return;
+      clearTimeout(timeout); observer.disconnect(); resolve();
+    });
+    const timeout = setTimeout(() => { observer.disconnect(); reject(new Error('Private character image did not load')); }, 5000);
+    observer.observe(image, { attributes: true, attributeFilter: ['src'] });
+  });
   assert.ok(asked.includes('data/dash/lobby/launcher.webp'), asked.join());
   assert.ok(asked.every(p => p.startsWith('data/dash/lobby/')));
   assert.equal(new Set(asked).size, asked.length);

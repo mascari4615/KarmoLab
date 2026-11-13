@@ -399,6 +399,7 @@
     "test:mp3": "node scripts/test-mp3.mjs",
     "test:gauth": "node scripts/test-gauth-refresh.mjs",
     "test:my-ai-web": "node scripts/test-my-ai-web.mjs",
+    "test:bookmark-controls": "node scripts/test-bookmark-controls.mjs",
     "test:names": "node scripts/check-input-names.mjs",
     "test:navigation": "node scripts/smoke-navigation.mjs",
     "test:new-tool": "node scripts/test-new-tool.mjs",
