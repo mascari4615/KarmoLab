@@ -2,8 +2,8 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2015,
-    "days": 11,
+    "commits": 2027,
+    "days": 10,
     "shown": 60
   },
   "days": [
@@ -11,22 +11,50 @@
       "date": "2026-11-13",
       "entries": [
         {
-          "sha": "a29672b96",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "build",
-          "text": "Android 빌드에 Android JNI 모듈 추가"
-        },
-        {
-          "sha": "aea66e212",
+          "sha": "39e60a288",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
-          "scope": "settings",
-          "text": "환경설정 시스템 항목에 FPS 표시 토글, 릴리스 빌드에서도 켬"
+          "scope": "mobile",
+          "text": "왼쪽 떠다니는 스틱, 던전 시점 고정, 상태 전환 때 기울기 복귀"
+        },
+        {
+          "sha": "05d8a1df8",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "mobile",
+          "text": "폰 조작 버튼 글자를 game-icons 그림으로"
+        },
+        {
+          "sha": "9725ef745",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "boss",
+          "text": "슬라임 보스 이름을 아쿠아쿠로"
+        },
+        {
+          "sha": "97006c27f",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "ui",
+          "text": "안전 영역을 공통 부품 하나로, 화면별 계산 4벌 삭제"
+        },
+        {
+          "sha": "72d6a96d7",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "keybind",
+          "text": "데모에 없는 기능 키를 릴리스 단축키 안내에서 숨김"
+        },
+        {
+          "sha": "2786b4d5c",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "text",
+          "text": "TMP 한글 줄바꿈을 띄어쓰기 단위로"
         }
       ],
-      "quiet": 0,
-      "more": 0
+      "quiet": 2,
+      "more": 6
     },
     {
       "date": "2026-11-12",
@@ -468,41 +496,6 @@
       ],
       "quiet": 5,
       "more": 10
-    },
-    {
-      "date": "2026-11-01",
-      "entries": [
-        {
-          "sha": "a4ee719f6",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "movement",
-          "text": "누적 간격 비교에 엔진 부동소수 비교 적용"
-        },
-        {
-          "sha": "9950cbefc",
-          "type": "perf",
-          "typeLabel": "빨라진 것",
-          "scope": "survival",
-          "text": "화면 밖 일반 적의 이동 시간을 누적 처리"
-        },
-        {
-          "sha": "573a3e082",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "movement",
-          "text": "막힌 턱의 반복 질의와 틱 내부 형상 재조회 제거"
-        },
-        {
-          "sha": "5c814461a",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "combat",
-          "text": "풀 재사용의 스킬 리스너와 비활성 갱신 누수 제거"
-        }
-      ],
-      "quiet": 0,
-      "more": 8
     }
   ]
 }
