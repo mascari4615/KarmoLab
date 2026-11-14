@@ -2,11 +2,39 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2027,
-    "days": 10,
+    "commits": 2030,
+    "days": 11,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-11-14",
+      "entries": [
+        {
+          "sha": "2f2b4c97b",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "doll",
+          "text": "캐릭터 3D 모델 표시 끄기 (기본 꺼짐)"
+        },
+        {
+          "sha": "45f70206a",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "시작 화면에서 세계 시계 숨김"
+        },
+        {
+          "sha": "9bd277230",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "title",
+          "text": "시작 화면 C안 (풍경, 넓은 간격 로고, 아무 키 뒤 메뉴)"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
     {
       "date": "2026-11-13",
       "entries": [
@@ -471,31 +499,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "cards",
           "text": "검의 공명 선택에 칼날 집결과 확산 연출"
-        },
-        {
-          "sha": "ad2a3c38f",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "equipment",
-          "text": "비활성 정령 무기의 강화 구독 해제"
-        },
-        {
-          "sha": "58e374017",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "movement",
-          "text": "재사용된 적의 이전 밀림과 피격 정지 초기화"
-        },
-        {
-          "sha": "2c9a824fd",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "movement",
-          "text": "중첩 충돌에서 다른 캐릭터의 접촉 목록 덮어쓰기 방지"
         }
       ],
       "quiet": 5,
-      "more": 10
+      "more": 13
     }
   ]
 }
