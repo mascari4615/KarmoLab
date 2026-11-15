@@ -127,7 +127,9 @@ jobs:
       # 앱 셸이 **뿌리**에 앉는다 (change.karmolab-at-root ②).
       # 아래 Generate blog pages 는 글 장을 apps/blog/posts/ 에 쓴다. 여기를 덮지 않는다.
       - name: Prepare KarmoLab root page
-        run: cp apps/karmolab/index.html apps/blog/index.html
+        run: |
+          cp apps/karmolab/index.html apps/blog/index.html
+          cp apps/karmolab/window-opacity.html apps/blog/window-opacity.html
 
       # dash.mascari4615.com 전용 front (memo change.site-split). 셸을 안 쓰는 제 장이라 그대로 복사
       - name: Prepare dash page

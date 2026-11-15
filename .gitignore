@@ -72,6 +72,7 @@ apps/karmolab/.fontsrc/
 # KarmoLab 앱 셸이 **뿌리**에 앉는다 (change.karmolab-at-root ②) — 배포 시
 # apps/karmolab/index.html 복사. 도구 페이지·일꾼도 같은 켜에 찍힌다 (TASK-KL-088).
 apps/blog/index.html
+apps/blog/window-opacity.html
 apps/blog/t/
 apps/blog/tmd/
 # 커뮤니티 글 정적 장 — gen:community (노트북 서버에서 받아 찍는다).
