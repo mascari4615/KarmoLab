@@ -2,6 +2,8 @@
 mod window_opacity_native;
 #[path = "../../../src-tauri/src/window_opacity_service.rs"]
 mod window_opacity_service;
+#[path = "../../../src-tauri/src/stream_windows.rs"]
+mod stream_windows;
 
 fn main() { window_opacity_service::run_helper_if_requested(); }
 
@@ -33,6 +35,7 @@ mod native_tests {
     #[test]
     fn native_alpha_and_explicit_restore() {
         let window = TestWindow::new(); let original = window.style();
+        assert!(!super::stream_windows::is_pip_window(window.0 as usize));
         let mut saved = SavedWindow::new(window.target()).unwrap();
         assert_eq!(saved.apply(80).unwrap().opacity,80); assert_eq!(window.alpha(),204);
         saved.apply(20).unwrap(); assert_eq!(window.alpha(),51);

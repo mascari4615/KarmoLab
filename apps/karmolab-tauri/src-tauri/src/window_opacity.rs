@@ -9,6 +9,13 @@ pub struct WindowOpacityState {
     starting: Arc<AtomicBool>,
 }
 
+fn selectable_windows() -> Result<Vec<WindowTarget>, String> {
+    let mut windows = window_opacity_native::list_windows()?;
+    #[cfg(windows)]
+    windows.retain(|window| window.id.parse::<usize>().is_ok_and(|id| !crate::stream_windows::is_pip_window(id)));
+    Ok(windows)
+}
+
 async fn operate(state: WindowOpacityState, request: Request, expected: Option<String>) -> Result<OpacityStatus, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let mut session = state.connection.lock().map_err(|_| "투명도 상태 잠금 실패")?;
@@ -27,7 +34,7 @@ async fn operate(state: WindowOpacityState, request: Request, expected: Option<S
 
 #[tauri::command]
 pub async fn window_opacity_list() -> Result<Vec<WindowTarget>, String> {
-    tauri::async_runtime::spawn_blocking(window_opacity_native::list_windows).await.map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(selectable_windows).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -38,7 +45,7 @@ pub async fn window_opacity_connect(app: tauri::AppHandle, state: tauri::State<'
     }
     let starting = state.starting.clone();
     let status = tauri::async_runtime::spawn_blocking(move || {
-        let target = window_opacity_native::list_windows()?.into_iter().find(|w| w.id == id).ok_or("선택한 창을 찾을 수 없습니다. 목록을 새로고침하세요.")?;
+        let target = selectable_windows()?.into_iter().find(|w| w.id == id).ok_or("선택한 창을 찾을 수 없습니다. 영상 PIP는 방송 창 메뉴에서 조절하세요.")?;
         {
             let mut session = state.connection.lock().map_err(|_| "투명도 상태 잠금 실패")?;
             if let Some(previous) = session.as_mut() { previous.request(Request::Close)?; }
@@ -104,4 +111,17 @@ pub async fn window_opacity_open_panel(app: tauri::AppHandle) -> Result<(), Stri
 pub fn shutdown(state: &WindowOpacityState) {
     // 앱 종료에서 소켓을 닫으면 보조 프로세스가 원래 창 효과 복구.
     if let Ok(mut session) = state.connection.try_lock() { *session = None; }
+}
+
+pub fn show_main(app: &tauri::AppHandle) -> Result<(), String> {
+    let mut url = tauri::Url::parse(crate::KARMOLAB_WEB_URL).map_err(|e| e.to_string())?;
+    if cfg!(debug_assertions) {
+        if let Some(dev) = app.config().build.dev_url.as_ref() { url = dev.clone(); }
+    }
+    url.set_fragment(Some("windowopacity"));
+    let window = app.get_webview_window("main").ok_or("앱 창이 없습니다.")?;
+    window.navigate(url).map_err(|e| e.to_string())?;
+    window.unminimize().map_err(|e| e.to_string())?;
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())
 }

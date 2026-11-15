@@ -31,6 +31,8 @@ mod recall;
 mod repo_file;
 mod terminal;
 mod tray_menu;
+mod streaming;
+mod stream_windows;
 mod umbrella;
 mod vault_open;
 mod vault_upload;
@@ -227,6 +229,7 @@ fn build_tray_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let browser_i =
         MenuItem::with_id(app, "tray_browser", "브라우저에서 열기", true, None::<&str>)?;
     let update_i = MenuItem::with_id(app, "tray_update", "업데이트 확인…", true, None::<&str>)?;
+    let opacity_i = MenuItem::with_id(app, "tray_window_opacity", "창 투명도", true, None::<&str>)?;
     // 개발 모드는 켜져 있는 채로 다시 그릴 수 있다 — 글자를 상태에서 되살린다.
     let dev_on = app
         .state::<DevModeState>()
@@ -332,6 +335,9 @@ fn build_tray_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         top.push(&separator);
     }
     top.push(&update_i);
+    top.push(&opacity_i);
+    let streaming_menu = streaming::menu(app)?;
+    top.push(&streaming_menu);
     top.push(&dev_i);
     top.push(&quit_i);
     Menu::with_items(app, &top)
@@ -1214,6 +1220,7 @@ pub fn run() {
         .manage(LocalDevState::default())
         .manage(WindowOpacityState::default())
         .manage(tray_menu::TrayState::default())
+        .manage(streaming::StreamingState::default())
         .manage(DevModeState::default())
         .manage(TerminalState::default())
         .manage(LifeFeaturesState::default())
@@ -1400,6 +1407,7 @@ pub fn run() {
                         .tooltip(tray_tooltip)
                         .show_menu_on_left_click(true)
                         .on_menu_event(move |app, event| {
+                            if streaming::handle(app, event.id.as_ref()) { return; }
                             if event.id == "tray_show" {
                                 if let Some(w) = app.get_webview_window("main") {
                                     let _ = w.unminimize();
@@ -1410,6 +1418,10 @@ pub fn run() {
                                 let _ = open::that(KARMOLAB_WEB_URL);
                             } else if event.id == "tray_update" {
                                 spawn_update_check(app.clone(), UpdateCheckMode::Manual);
+                            } else if event.id == "tray_window_opacity" {
+                                if let Err(error) = window_opacity::show_main(app) {
+                                    let _ = notify_rust::Notification::new().summary("창 투명도").body(&error).show();
+                                }
                             } else if event.id == "tray_dev_mode" {
                                 match toggle_dev_mode(app) {
                                     Ok(on) => {
@@ -1494,12 +1506,13 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_app, event| {
+        .run(|app, event| {
             // KL-052: 앱 종료 시 ML sidecar(karmolab-life-ml) 프로세스
             // 정리 — 좀비 프로세스 방지 (voice disable 은 종료 X, screen
             // 공용. 진짜 정리는 여기).
             if let tauri::RunEvent::Exit = event {
-                window_opacity::shutdown(&_app.state::<WindowOpacityState>());
+                window_opacity::shutdown(&app.state::<WindowOpacityState>());
+                streaming::restore(app);
                 life::sidecar::terminate();
             }
         });
