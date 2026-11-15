@@ -1,4 +1,5 @@
 {
+  "widgets-desc.windowopacity.desc": "ゲームウィンドウの不透明度を調整して背後の動画を見る",
   "widgets-desc.activity.desc": "この PC でどのアプリ・ウィンドウにどれだけ時間を使ったか(デスクトップ版のみ)",
   "widgets-desc.adventure.desc": "GM ティメトの無限テキストアドベンチャー(KL-032)。舞台は KarmoWorld、履歴は Wiki に積み上がります",
   "widgets-desc.alarm.desc": "本気で起こすデスクトップアラーム(TASK-KL-064). 常駐スケジューラ + OS 強制起床(スリープ解除・モニタ点灯・音量固定)と自動起動",

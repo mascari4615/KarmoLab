@@ -3,6 +3,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
+if (process.argv.includes('--fixture')) {
+  const { checkOpacityControls } = await import('./window-opacity-fixture.mjs');
+  await checkOpacityControls();
+  process.exit(0);
+}
+
 const args = process.argv.slice(2);
 const argument = (name) => args[args.indexOf(name) + 1];
 const endpoint = args.includes('--cdp') ? argument('--cdp') : 'http://127.0.0.1:9294';

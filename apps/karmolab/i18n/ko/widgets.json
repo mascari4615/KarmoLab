@@ -1,5 +1,4 @@
 {
-  "widgets.windowopacity.title": "창 투명도",
   "widgets.life.title": "Life 채널",
   "widgets.user.title": "내 정보",
   "widgets.usertool.title": "만든 도구",
@@ -64,6 +63,7 @@
   "widgets.cockpit.title": "Cockpit",
   "widgets.terminal.title": "PowerShell 터미널",
   "widgets.my-ai.title": "내 AI",
+  "widgets.windowopacity.title": "창 투명도",
   "widgets.alarm.title": "알람",
   "widgets.slug.title": "슬러그 만들기",
   "widgets.caseconv.title": "표기법 변환",

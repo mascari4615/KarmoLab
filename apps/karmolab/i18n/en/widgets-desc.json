@@ -1,4 +1,5 @@
 {
+  "widgets-desc.windowopacity.desc": "Adjust a game window's opacity to watch a video behind it",
   "widgets-desc.activity.desc": "Which apps and windows took your time on this PC (desktop app only)",
   "widgets-desc.adventure.desc": "An endless text adventure run by GM Timeto (KL-032). Stage = KarmoWorld, history accumulates into wiki entities",
   "widgets-desc.alarm.desc": "A desktop alarm that actually gets you up (Free Alarm Clock reference, TASK-KL-064). resident scheduler, OS-level wake (sleep wake / monitor on / forced volume) and autostart",
