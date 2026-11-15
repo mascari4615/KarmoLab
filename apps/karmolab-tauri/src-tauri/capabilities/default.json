@@ -25,6 +25,7 @@
     "core:window:allow-start-dragging",
     "core:window:allow-is-maximized",
     "allow-desktop-notify",
+    "allow-window-opacity",
     "allow-desktop-login",
     "allow-localdev",
     "allow-repofile",

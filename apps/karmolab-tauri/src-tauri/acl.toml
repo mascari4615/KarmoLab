@@ -19,6 +19,12 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 [[group]]
+name = "window-opacity"
+identifier = "allow-window-opacity"
+description = "Choose a visible window, adjust its opacity and restore it through a target-bound helper."
+commands = ["window_opacity_list", "window_opacity_connect", "window_opacity_set", "window_opacity_status", "window_opacity_restore", "window_opacity_open_panel"]
+
+[[group]]
 name = "desktop-notify"
 identifier = "allow-desktop-notify"
 description = "Enables the desktop_notify command without any pre-configured scope."

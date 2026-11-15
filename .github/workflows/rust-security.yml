@@ -48,6 +48,8 @@ jobs:
             apps/chat-overlay/src-tauri -> target
             apps/karmolab-tauri -> target
       - run: cargo check --locked --all-targets --manifest-path apps/chat-overlay/src-tauri/Cargo.toml
+      - name: Window opacity native restoration and helper protocol
+        run: cargo test --locked --manifest-path apps/karmolab-tauri/scripts/window-opacity-check/Cargo.toml
       - name: Prepare compile-only sidecar placeholder
         shell: pwsh
         run: |

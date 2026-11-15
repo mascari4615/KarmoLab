@@ -1,0 +1,20 @@
+{
+  "identifier": "com.mascari4615.karmolab.dev.windowopacity",
+  "productName": "KarmoLab Opacity Preview",
+  "build": {
+    "devUrl": "http://127.0.0.1:8899/apps/karmolab/",
+    "frontendDist": "http://127.0.0.1:8899/apps/karmolab/"
+  },
+  "app": {
+    "windows": [{
+      "create": false,
+      "label": "main",
+      "title": "KarmoLab 창 투명도 시험판",
+      "url": "http://127.0.0.1:8899/apps/karmolab/#windowopacity",
+      "width": 1000,
+      "height": 720,
+      "resizable": true,
+      "decorations": false
+    }]
+  }
+}

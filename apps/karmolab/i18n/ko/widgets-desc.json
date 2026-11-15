@@ -1,4 +1,5 @@
 {
+  "widgets-desc.windowopacity.desc": "게임 창의 투명도를 조절하고 영상과 함께 보기",
   "widgets-desc.life.desc": "화면 캡처 / 음성 녹음 기능 on/off. 비활성 시 Whisper 모델 (~3.1GB) RAM 해제.",
   "widgets-desc.user.desc": "프로필, 성과, 활동, 계정",
   "widgets-desc.usertool.desc": "사람들이 만들어 올린 도구. 상자 안에서만 돕니다",

@@ -750,6 +750,17 @@ window.KARMOLAB_LAZY_META = [
     lazyScriptPaths: ['my-ai']
   },
   {
+    id: 'windowopacity',
+    hidden: true,
+    get title() { return t('widgets.windowopacity.title', undefined, '창 투명도'); },
+    category: 'app',
+    desktopOnly: true,
+    get desc() { return t('widgets-desc.windowopacity.desc', undefined, '게임 창의 투명도를 조절하고 영상과 함께 보기'); },
+    layout: 'form',
+    icon: '',
+    lazyScriptPaths: ['window-opacity']
+  },
+  {
     id: 'alarm',
     get title() { return t('widgets.alarm.title', undefined, "알람"); },
     category: 'calc',

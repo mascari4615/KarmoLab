@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>창 투명도 | KarmoLab</title>
+  <link rel="stylesheet" href="/apps/karmolab/css/toolbox.css">
+  <link rel="stylesheet" href="/apps/karmolab/css/tools.css">
+  <link rel="stylesheet" href="/apps/karmolab/css/window-opacity.css" data-window-opacity-style>
+  <style>
+    body { margin: 0; padding: var(--space-md); background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-sans); }
+  </style>
+</head>
+<body>
+  <main aria-label="창 투명도"></main>
+  <script>
+    try {
+      const theme = localStorage.getItem('toolbox_theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
+  <script src="/apps/karmolab/js/window-opacity-panel.js"></script>
+</body>
+</html>

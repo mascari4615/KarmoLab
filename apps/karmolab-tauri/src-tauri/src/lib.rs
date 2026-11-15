@@ -1,4 +1,8 @@
 mod activity;
+mod window_opacity;
+mod window_opacity_native;
+mod window_opacity_service;
+use window_opacity::{window_opacity_list, window_opacity_connect, window_opacity_set, window_opacity_status, window_opacity_restore, window_opacity_open_panel, WindowOpacityState};
 mod ai_quota;
 mod ai_environment;
 mod skill_sync;
@@ -1204,9 +1208,11 @@ fn set_app_user_model_id() {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    if window_opacity_service::run_helper_if_requested() { return; }
     set_app_user_model_id();
     tauri::Builder::default()
         .manage(LocalDevState::default())
+        .manage(WindowOpacityState::default())
         .manage(tray_menu::TrayState::default())
         .manage(DevModeState::default())
         .manage(TerminalState::default())
@@ -1309,7 +1315,8 @@ pub fn run() {
                 // 절전 resume 타이머 — 시스템이 자도 알람 시각에 깨움(OS 강제 기상).
                 alarm::oswake::start_wake_timer(handle.clone());
                 // 재부팅 후 알람 보장 — 저장된 pref(default ON)를 레지스트리 반영.
-                alarm::ensure_autostart(&handle);
+                // 시험 앱이 설치된 앱의 자동 시작 경로를 덮어쓰지 않도록 제한.
+                if !cfg!(debug_assertions) { alarm::ensure_autostart(&handle); }
             }
 
             let window_conf = app
@@ -1492,6 +1499,7 @@ pub fn run() {
             // 정리 — 좀비 프로세스 방지 (voice disable 은 종료 X, screen
             // 공용. 진짜 정리는 여기).
             if let tauri::RunEvent::Exit = event {
+                window_opacity::shutdown(&_app.state::<WindowOpacityState>());
                 life::sidecar::terminate();
             }
         });

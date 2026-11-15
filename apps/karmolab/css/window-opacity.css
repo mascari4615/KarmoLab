@@ -1,0 +1,25 @@
+.window-opacity-controls {
+    display: grid;
+    gap: var(--space-sm);
+}
+.window-opacity-controls .field-group {
+    margin: 0;
+    padding: var(--space-sm) var(--space-md);
+}
+.window-opacity-controls .field-label {
+    display: block;
+    margin-bottom: 0;
+}
+.window-opacity-controls select,
+.window-opacity-controls input[type=range] {
+    width: 100%;
+}
+.window-opacity-controls select { text-overflow: ellipsis; }
+.window-opacity-controls output {
+    float: right;
+    font-variant-numeric: tabular-nums;
+}
+.window-opacity-controls .tool-actions { margin: 0; }
+.window-opacity-controls .btn-primary { width: auto; margin: 0; }
+.window-opacity-controls .tool-status { margin: 0; overflow-wrap: anywhere; }
+.window-opacity-controls[data-compact] .field-group { padding: var(--space-sm); }

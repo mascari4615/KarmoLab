@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "window-opacity",
+  "description": "Only opacity controls and state events for the compact control window.",
+  "windows": ["window-opacity"],
+  "remote": {
+    "urls": [
+      "https://lab.mascari4615.com/window-opacity.html",
+      "https://blog.mascari4615.com/window-opacity.html",
+      "http://127.0.0.1:8898/apps/karmolab/window-opacity.html",
+      "http://127.0.0.1:8899/apps/karmolab/window-opacity.html"
+    ]
+  },
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten", "allow-window-opacity"]
+}
