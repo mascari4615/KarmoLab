@@ -2,11 +2,46 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2030,
+    "commits": 2034,
     "days": 11,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-11-15",
+      "entries": [
+        {
+          "sha": "b29d050a4",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "time",
+          "text": "시작 시각이 하루 길이를 넘지 않게"
+        },
+        {
+          "sha": "cd72c66d7",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "time",
+          "text": "세계 흐름 속도와 기본 달력을 한 곳에서"
+        },
+        {
+          "sha": "11be712c9",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "time",
+          "text": "시작 시각을 WorldClockSO 한 곳에서"
+        },
+        {
+          "sha": "0fee47eec",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "doll",
+          "text": "인형별 임시 2D 머리와 몸 (공유 시험 그림 색 바꿈)"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
     {
       "date": "2026-11-14",
       "entries": [
@@ -464,45 +499,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "combat",
           "text": "검 휘두르기 연출을 실제 판정 범위에 맞춤"
-        },
-        {
-          "sha": "df11524a9",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "combat",
-          "text": "실제 검 휘두르기와 짧은 궤적으로 검 공격 연출 교체"
         }
       ],
       "quiet": 7,
-      "more": 0
-    },
-    {
-      "date": "2026-11-02",
-      "entries": [
-        {
-          "sha": "8440e630c",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "combat",
-          "text": "기본 검과 공명 강화에 두 참격 셰이더 연결"
-        },
-        {
-          "sha": "dccf09def",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "cards",
-          "text": "검의 공명 연출을 기존 픽셀 검과 참격으로 통일"
-        },
-        {
-          "sha": "62d647e21",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "cards",
-          "text": "검의 공명 선택에 칼날 집결과 확산 연출"
-        }
-      ],
-      "quiet": 5,
-      "more": 13
+      "more": 1
     }
   ]
 }
