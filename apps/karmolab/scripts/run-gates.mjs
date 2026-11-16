@@ -299,9 +299,10 @@ let finishedCount = 0;
 let browserActive = 0;
 const pending = [...ordered];
 /* 창을 여럿 띄우는 검사는 브라우저 자리를 더 차지함. 2026-11-16 야추 등급전 (창 최대 4개) 이
-   6판, 브라우저 4판 동시에서 3건 실패, 단독과 CI (브라우저 2판) 에서는 통과 */
+   6판, 브라우저 4판 동시에서 3건 실패, 단독과 CI (브라우저 2판) 에서는 통과.
+   자리가 2개 이하면 가중 없음: CI 에서 2자리를 쥐면 다른 브라우저 검사가 멈춤 (검사 판 664 -> 884초 관측) */
 const BROWSER_SLOTS = { 'test:arcade:yacht-ranked': 2 };
-const slotsOf = (e) => (e.browser ? Math.min(browserLimit, BROWSER_SLOTS[e.gate] || 1) : 0);
+const slotsOf = (e) => (!e.browser ? 0 : browserLimit > 2 ? Math.min(browserLimit, BROWSER_SLOTS[e.gate] || 1) : 1);
 /** 브라우저 자리가 찼으면 그 검사는 건너뛰고 다음 것을 집는다. 순서(긴 것부터)는 그대로다. */
 function takeNext() {
   const idx = pending.findIndex((e) => !e.browser || browserActive + slotsOf(e) <= browserLimit);
