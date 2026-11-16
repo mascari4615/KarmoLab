@@ -384,6 +384,19 @@ export function normalizeProject(input: unknown): StudioProject {
     const track = { ...base, ...source } as StudioTrack;
     track.kind = base.kind;
     track.id = safeId(source.id, 'track');
+    /* 기본 트랙의 숫자, 참거짓 칸: 같은 형태로 강제. 범위가 따로 있는 칸은 아래에서 다시 좁힘 */
+    for (const [key, fallback] of Object.entries(base) as [keyof StudioTrack, unknown][]) {
+      const record = track as unknown as Record<string, unknown>;
+      if (typeof fallback === 'number') {
+        const number = Number(record[key]);
+        record[key] = Number.isFinite(number) ? number : fallback;
+      } else if (typeof fallback === 'boolean') record[key] = record[key] === true;
+    }
+    track.eqLow = Math.max(-12, Math.min(12, track.eqLow));
+    track.eqMid = Math.max(-12, Math.min(12, track.eqMid));
+    track.eqHigh = Math.max(-12, Math.min(12, track.eqHigh));
+    track.compressor = Math.max(0, Math.min(1, track.compressor));
+    track.reverb = Math.max(0, Math.min(0.8, track.reverb));
     track.color = safeColor(source.color) ?? base.color;
     if (typeof track.name !== 'string') track.name = base.name;
     /* 모르는 악기 이름은 톱니로. 옛 저장본과 손으로 고친 파일이 소리를 잃지 않게 */

@@ -15,7 +15,7 @@ const search = await import(`data:text/javascript;base64,${Buffer.from(source).t
 const aliases = JSON.parse(await readFile(new URL('../data/tool-aliases.json', import.meta.url), 'utf8')).aliases;
 
 const tools = [
-  { id: 'image', title: '이미지 도구', description: '이미지 편집과 형식 변환', aliases: String(aliases.image), initials: 'ㅇㅁㅈㄷㄱ' },
+  { id: 'image', title: '이미지 도구', description: '이미지 편집과 형식 변환', aliases: String(JSON.parse(await readFile(new URL('../../karmo-edit/data/tool-aliases.json', import.meta.url), 'utf8')).image), initials: 'ㅇㅁㅈㄷㄱ' },
   { id: 'imgresize', title: '이미지 크기 조절', description: '가로세로 크기를 변경', aliases: String(aliases.imgresize), initials: 'ㅇㅁㅈㅋㄱㅈㅈ' },
   { id: 'pdfmerge', title: 'PDF 합치기', description: 'PDF 파일 병합', aliases: 'pdf merge 문서 합치기', initials: 'pdfㅎㅊㄱ' },
 ];

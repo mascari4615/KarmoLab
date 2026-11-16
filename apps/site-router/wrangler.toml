@@ -9,6 +9,7 @@ routes = [
   { pattern = "lab.mascari4615.com", custom_domain = true },
   { pattern = "blog.mascari4615.com", custom_domain = true },
   { pattern = "dash.mascari4615.com", custom_domain = true },
+  { pattern = "edit.mascari4615.com", custom_domain = true },
   { pattern = "mascari4615.com", custom_domain = true },
   { pattern = "www.mascari4615.com", custom_domain = true },
 ]

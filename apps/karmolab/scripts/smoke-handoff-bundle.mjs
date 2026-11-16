@@ -47,79 +47,7 @@ const madeJpeg = await page.evaluate(async () => {
 });
 check(madeJpeg, '넘길 결과를 만든다');
 
-/* 이어서가 실제로 하는 일 = 받는 도구로 옮겨 가기. 그 도구는 이미지 묶음 안에 숨어 있다. */
-await page.evaluate(() => Toolbox.switchPage('exifclean'));
-
-/* ① 묶음이 열리고 ② 그 할 일이 열리고 ③ 도구가 결과를 집었다 */
-const opened = await page
-  .waitForSelector('#exStatus', { timeout: 20000, state: 'attached' })
-  .then(() => true)
-  .catch(() => false);
-check(opened, '촬영 정보 지우기 화면이 열린다');
-
-const got = await page
-  .waitForFunction(
-    () => {
-      const el = document.querySelector('#exEditor');
-      return !!el && el.style.display !== 'none';
-    }, undefined,
-    { timeout: 20000 }
-  )
-  .then(() => true)
-  .catch(() => false);
-check(got, '넘긴 사진을 **그 도구가 실제로 받았다**(빈 화면이 아니다)');
-
-const status = await page.locator('#exStatus').innerText().catch(() => '');
-check(!/오류|실패|error/i.test(status), `받는 쪽이 오류를 내지 않는다 (지금 ${status.slice(0, 40)})`);
-
-/* ─ 두 번째 판: 받는 도구가 **정말로 묶음 안**인 경우 (audiocut = 소리 묶음) ─
- * 위 판은 단독 도구라 묶음 열기 → 할 일 열기 두 단계를 안 지난다. 이번 판이 그 두 단계를 지난다. */
-await page.evaluate(() => {
-  const rate = 8000;
-  const len = rate;
-  const data = new Int16Array(len);
-  for (let i = 0; i < len; i++) data[i] = Math.sin((2 * Math.PI * 440 * i) / rate) * 20000;
-  const head = new DataView(new ArrayBuffer(44));
-  const put = (o, str) => [...str].forEach((c, i) => head.setUint8(o + i, c.charCodeAt(0)));
-  put(0, 'RIFF');
-  head.setUint32(4, 36 + data.byteLength, true);
-  put(8, 'WAVE');
-  put(12, 'fmt ');
-  head.setUint32(16, 16, true);
-  head.setUint16(20, 1, true);
-  head.setUint16(22, 1, true);
-  head.setUint32(24, rate, true);
-  head.setUint32(28, rate * 2, true);
-  head.setUint16(32, 2, true);
-  head.setUint16(34, 16, true);
-  put(36, 'data');
-  head.setUint32(40, data.byteLength, true);
-  const blob = new Blob([head.buffer, data.buffer], { type: 'audio/wav' });
-  Toolbox.offerResult({ blob, name: '넘긴소리.wav', from: 'voicerec' });
-});
-await page.evaluate(() => Toolbox.switchPage('audiocut'));
-
-const inBundle = await page
-  .waitForSelector('#acStatus', { timeout: 20000, state: 'attached' })
-  .then(() => true)
-  .catch(() => false);
-check(inBundle, '소리 묶음 안에서 자르기가 열린다');
-
-const soundGot = await page
-  .waitForFunction(
-    () => {
-      /* **판이 펴졌는지만** 본다 (2026-08-13). 처음엔 상태 글씨도 같이 봤는데, 그 글씨는
-       * 아무것도 안 받았을 때도 0:00 을 달고 있어서 **넘겨받지 않아도 초록**이었다
-       * (게이트를 일부러 망가뜨려 보고 잡았다. `rules/quality.md § 설명문이 거짓말이면`). */
-      const panel = document.querySelector('#acPanel');
-      return !!panel && panel.style.display !== 'none';
-    }, undefined,
-    { timeout: 20000 }
-  )
-  .then(() => true)
-  .catch(() => false);
-check(soundGot, '넘긴 소리를 **묶음 안 도구가 실제로 받았다**');
-
+/* 받는 쪽 화면 검사는 KarmoEdit e2e-flow 로 이동 (2026-11-06) */
 
 /* ⑦ **밝힌 대로 목적지가 뜨는가** (TASK-KL-299)
  * 받는다고 밝히지 않은 도구는 받을 수 있어도 목록에 안 뜬다 = 사람 눈엔 없는 기능이다.
@@ -127,7 +55,7 @@ check(soundGot, '넘긴 소리를 **묶음 안 도구가 실제로 받았다**')
 /* 여기는 도구 장 (`/t/audiocut/`) 이다. 도구 전환이 제 주소로 가므로 (change.tool-page-navigation)
  * 목록은 셸이 필요할 때 데려온다. 이어서 줄이 그리기 전에 하는 일과 같다 */
 const dests = await page.evaluate(async () => { await Toolbox.ensureToolList(); return (Toolbox.toolsAccepting('image/png', 'barcode') || []).map((t) => t.id); });
-for (const id of ['imgbatch', 'redact', 'palette', 'qrread']) {
+for (const id of ['palette', 'qrread']) {
   check(dests.includes(id), `그림을 내놓으면 ${id} 가 갈 곳으로 뜬다 (지금 ${dests.length}곳)`);
 }
 const pdfDests = await page.evaluate(() => (Toolbox.toolsAccepting('application/pdf', 'pdf') || []).map((t) => t.id));

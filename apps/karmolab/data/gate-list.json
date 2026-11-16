@@ -2,6 +2,7 @@
   "note": "묶음(gates)에서 도는 검사 이름. 한 줄에 하나. 여기가 정본이다 (package.json 이 아니다). 한 줄은 이름 문자열이거나 {이름, 볼것:[glob...]} 이다. 볼것을 적으면 `npm run gates:changed` 가 그 발판이 안 바뀐 판에서 그 검사를 건너뛴다 (TASK-KL-331). 안 적으면 언제나 돈다. 안전 기본값이다. push, CI 는 볼것과 무관하게 통짜로 돈다.",
   "why": "한 줄에 백스물다섯 개를 늘어놓으니, 세션 여럿이 동시에 늘릴 때마다 충돌이 났고 손으로 합치다 승격 하나가 조용히 사라진 적이 있다(2026-08-14). 한 줄에 하나면 서로 다른 줄을 고치므로 자동으로 합쳐진다.",
   "list": [
+    "smoke:bluemarble-air",
     {
       "name": "test:window-opacity",
       "watch": [
@@ -79,53 +80,11 @@
       ]
     },
     {
-      "name": "test:video-first-frame",
-      "watch": [
-        "src/widgets/tools/videorotate.ts",
-        "scripts/video-first-frame.test.mjs"
-      ]
-    },
-    {
-      "name": "test:video-load-state",
-      "watch": [
-        "src/widgets/tools/videotrim.ts",
-        "src/widgets/tools/videocompress.ts",
-        "scripts/video-load-state.test.mjs"
-      ]
-    },
-    {
-      "name": "test:video-stop",
-      "watch": [
-        "src/widgets/tools/videotrim.ts",
-        "src/widgets/tools/videocompress.ts",
-        "scripts/video-stop.test.mjs"
-      ]
-    },
-    {
-      "name": "test:attach-video",
-      "watch": [
-        "src/widgets/tools/shared/video.ts",
-        "src/widgets/tools/videocompress.ts",
-        "src/widgets/tools/videotrim.ts",
-        "src/widgets/tools/video2img.ts",
-        "src/widgets/tools/video2gif.ts",
-        "src/widgets/tools/videobg.ts",
-        "scripts/attach-video.test.mjs"
-      ]
-    },
-    {
       "name": "test:material-preview",
       "watch": [
         "src/widgets/tools/shared/material-shell.ts",
         "src/widgets/tools/shared/media.ts",
         "scripts/material-preview.test.mjs"
-      ]
-    },
-    {
-      "name": "test:sound-seek",
-      "watch": [
-        "src/widgets/tools/sound.ts",
-        "scripts/sound-seek.test.mjs"
       ]
     },
     {
@@ -280,22 +239,6 @@
       ]
     },
     {
-      "name": "test:meok",
-      "watch": [
-        "src/widgets/meok/**",
-        "scripts/test-meok-*.mjs",
-        "src/toolbox.ts",
-        "src/widgets-lazy-meta.ts",
-        "src/lib/**",
-        "scripts/lib/**",
-        "index.html",
-        "build.mjs",
-        "package.json",
-        "data/gate-list.json"
-      ]
-    },
-    "test:meok:screen",
-    {
       "name": "test:karmograph",
       "watch": [
         "src/widgets/karmograph/**",
@@ -439,21 +382,6 @@
     "test:names",
     "audit:cache",
     {
-      "name": "test:asciiart:video",
-      "watch": [
-        "src/widgets/tools/asciiart.ts",
-        "scripts/smoke-asciiart-video.mjs",
-        "src/toolbox.ts",
-        "src/widgets-lazy-meta.ts",
-        "src/lib/**",
-        "scripts/lib/**",
-        "index.html",
-        "build.mjs",
-        "package.json",
-        "data/gate-list.json"
-      ]
-    },
-    {
       "name": "test:badapple:handoff",
       "watch": [
         "src/badapple/**",
@@ -485,8 +413,6 @@
     "test:textcount",
     "test:corecount",
     "test:claims",
-    "test:ibatch",
-    "test:vdur",
     "audit:hidden",
     "test:a11y",
     "test:a11y:ready",
@@ -521,15 +447,12 @@
       ]
     },
     "test:jsontree",
-    "test:dropwell",
-    "test:saylive",
     "audit:saylive",
     "audit:iconbtn",
     "test:copyable",
     "test:chainrec",
     "audit:wait",
     "audit:orphans",
-    "smoke:batchretry",
     "audit:prerender-home",
     {
       "name": "smoke:arcadekeys",
@@ -571,7 +494,6 @@
     "test:pwned",
     "test:fhlookup",
     "test:phash",
-    "test:cutout",
     "test:air",
     "test:xmlfmt",
     "test:reach",
@@ -588,12 +510,10 @@
     "test:calc",
     "test:when",
     "smoke:pdfshell",
-    "smoke:imgshell",
     "smoke:txtshell",
     "smoke:datashell",
     "smoke:calcshell",
     "smoke:timeshell",
-    "smoke:vidshell",
     {
       "name": "test:regionwatch",
       "watch": [
@@ -612,7 +532,6 @@
         "i18n/*/regionwatch.json"
       ]
     },
-    "smoke:newtools",
     "smoke:shell-layout",
     {
       "name": "smoke:tool-page-nav",
@@ -661,7 +580,6 @@
         "data/gate-list.json"
       ]
     },
-    "smoke:sndshell",
     "audit:loose",
     "test:audiorate",
     {
@@ -718,10 +636,7 @@
     "audit:tool-state",
     "audit:unwired",
     "test:tool-search",
-    "test:heung:ux",
-    "smoke:badapple-tool",
     "audit:shared-builds",
-    "test:heung:midi-file",
     "test:shard",
     "test:shell-nav",
     "test:widgets-alive",
@@ -737,7 +652,6 @@
     "audit:i18n-stub",
     "test:new-tool",
     "test:tempmail",
-    "test:vidsum",
     {
       "name": "audit:atlas-fresh",
       "watch": [
@@ -1585,6 +1499,7 @@
         "../karmo-dev-extension/manifest.json",
         "scripts/smoke-ext-tabs.mjs"
       ]
-    }
+    },
+    "test:saylive"
   ]
 }

@@ -143,7 +143,7 @@ const Toolbox = (() => {
      * 저장하는 자리는 하나뿐이라 어디서 꽂든 같은 것을 가리킨다. */
     const PINNED_KEY = 'toolbox_pinned_tools';
     const HEADER_QUICK_LIMIT = 8;
-    const HEADER_QUICK_IDS = ['calc', 'charcount', 'unitconv', 'jsonfmt', 'pdftool', 'imageedit', 'qrgen', 'passgen'];
+    const HEADER_QUICK_IDS = ['calc', 'charcount', 'unitconv', 'jsonfmt', 'pdftool', 'qrgen', 'passgen'];
 
     /* ★ **이 여덟 중 여섯이 화면에 안 나오고 있었다** (2026-08-19 실측).
      * charcount, unitconv, jsonfmt, pdftool, imageedit, qrgen 은 그 뒤 묶음 도구로 흡수되면서
@@ -1563,8 +1563,8 @@ const Toolbox = (() => {
             const SIDEBAR_TAB_KEY = 'toolbox_sidebar_tab';
             const STAR_ICON = '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>';
             /* 만든 것 탭이 첫 자리, 기본 (change.karmolab-axis, 사용자 결정 2026-09-08).
-               첫 화면 카드 다섯과 같은 차례. 유틸 갈래는 그 뒤 */
-            const MADE_IDS = ['meok', 'heung', 'karmograph', 'arcade', 'wm'];
+               첫 화면 카드와 같은 차례. 유틸 갈래는 그 뒤 */
+            const MADE_IDS = ['karmograph', 'arcade', 'wm'];
             const MADE_ICON = '<path d="M4 20l4-1 10-10-3-3L5 16z"/><path d="M13 7l3 3"/>';
             let sidebarTab = localStorage.getItem(SIDEBAR_TAB_KEY) || 'mine';
             function catToolsOf(catId) {

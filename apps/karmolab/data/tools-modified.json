@@ -5,8 +5,8 @@
       "date": "2026-08-29"
     },
     "qrgen": {
-      "print": "1nqzqn3",
-      "date": "2026-08-29"
+      "print": "1e9lbg7",
+      "date": "2026-11-06"
     },
     "lotto": {
       "print": "1rdlj0h",
@@ -38,10 +38,6 @@
     },
     "colorconv": {
       "print": "1l6fomq",
-      "date": "2026-08-29"
-    },
-    "asciiart": {
-      "print": "gy17fn",
       "date": "2026-08-29"
     },
     "specialchar": {
@@ -77,8 +73,8 @@
       "date": "2026-08-29"
     },
     "palette": {
-      "print": "2a4nvv",
-      "date": "2026-08-29"
+      "print": "rwrx7n",
+      "date": "2026-11-06"
     },
     "emoji": {
       "print": "1il96k2",
@@ -240,17 +236,13 @@
       "print": "4gg8ss",
       "date": "2026-08-29"
     },
-    "audiocut": {
-      "print": "1k60ap8",
-      "date": "2026-08-29"
-    },
     "filetool": {
-      "print": "9j3q7l",
-      "date": "2026-08-29"
+      "print": "l1sk7l",
+      "date": "2026-11-06"
     },
     "pdf2img": {
-      "print": "102wjmy",
-      "date": "2026-08-29"
+      "print": "cmr9dg",
+      "date": "2026-11-06"
     },
     "img2pdf": {
       "print": "1amhr7b",
@@ -262,14 +254,6 @@
     },
     "pdfwatermark": {
       "print": "gqeehn",
-      "date": "2026-08-29"
-    },
-    "audiojoin": {
-      "print": "1avseqn",
-      "date": "2026-08-29"
-    },
-    "imgbatch": {
-      "print": "1guf4af",
       "date": "2026-08-29"
     },
     "filehash": {
@@ -284,60 +268,24 @@
       "print": "15fabid",
       "date": "2026-08-29"
     },
-    "imageedit": {
-      "print": "1n2xu54",
-      "date": "2026-08-29"
-    },
     "memo": {
       "print": "1iaq7e0",
       "date": "2026-08-29"
     },
-    "video2gif": {
-      "print": "1sx65j8",
-      "date": "2026-08-29"
-    },
-    "video2audio": {
-      "print": "191magy",
-      "date": "2026-08-29"
-    },
-    "videotool": {
-      "print": "p45qnr",
-      "date": "2026-08-29"
-    },
-    "videotrim": {
-      "print": "zpfuqq",
-      "date": "2026-08-29"
-    },
     "screenrec": {
-      "print": "1kgrb6q",
-      "date": "2026-08-29"
+      "print": "vwjxts",
+      "date": "2026-11-06"
     },
     "voicerec": {
-      "print": "851jn8",
-      "date": "2026-08-29"
+      "print": "60hmki",
+      "date": "2026-11-06"
     },
     "pdfcompress": {
       "print": "1m7i6gp",
       "date": "2026-08-29"
     },
-    "audiolevel": {
-      "print": "h9lfr",
-      "date": "2026-08-29"
-    },
-    "video2img": {
-      "print": "y54wgm",
-      "date": "2026-08-29"
-    },
-    "videocompress": {
-      "print": "1gro8dv",
-      "date": "2026-08-29"
-    },
     "pdf2text": {
       "print": "1dvra1c",
-      "date": "2026-08-29"
-    },
-    "exifclean": {
-      "print": "1m4h9dp",
       "date": "2026-08-29"
     },
     "filesplit": {
@@ -349,27 +297,15 @@
       "date": "2026-08-29"
     },
     "qrread": {
-      "print": "1m88uox",
-      "date": "2026-08-29"
+      "print": "16p7hck",
+      "date": "2026-11-06"
     },
     "qr": {
       "print": "5ryx8t",
       "date": "2026-08-29"
     },
-    "imgmerge": {
-      "print": "1o4zcd1",
-      "date": "2026-08-29"
-    },
     "pdf": {
       "print": "newwli",
-      "date": "2026-08-29"
-    },
-    "sound": {
-      "print": "htfj0h",
-      "date": "2026-08-29"
-    },
-    "favicon": {
-      "print": "3g6es",
       "date": "2026-08-29"
     },
     "passgen": {
@@ -388,21 +324,9 @@
       "print": "1i71omf",
       "date": "2026-08-29"
     },
-    "redact": {
-      "print": "pd7gbj",
-      "date": "2026-08-29"
-    },
     "pdfredact": {
-      "print": "830p9b",
-      "date": "2026-08-29"
-    },
-    "audiospeed": {
-      "print": "g93l0y",
-      "date": "2026-08-29"
-    },
-    "videorotate": {
-      "print": "mts69v",
-      "date": "2026-08-29"
+      "print": "nwqhwx",
+      "date": "2026-11-06"
     },
     "pdfpagenum": {
       "print": "i39ch3",
@@ -412,25 +336,13 @@
       "print": "u7xh2i",
       "date": "2026-08-29"
     },
-    "imgresize": {
-      "print": "gitol5",
-      "date": "2026-08-29"
-    },
-    "audiofade": {
-      "print": "1dz8t43",
-      "date": "2026-08-29"
-    },
-    "subtitle": {
-      "print": "degmcf",
-      "date": "2026-08-29"
-    },
     "icsmake": {
       "print": "1l8ht5c",
       "date": "2026-08-29"
     },
     "barcode": {
-      "print": "1vxpi0o",
-      "date": "2026-08-29"
+      "print": "14plfyo",
+      "date": "2026-11-06"
     },
     "pdfdiff": {
       "print": "12qhv16",
@@ -453,16 +365,16 @@
       "date": "2026-08-29"
     },
     "comparepic": {
-      "print": "10w0u2q",
-      "date": "2026-08-29"
+      "print": "1i969c1",
+      "date": "2026-11-06"
     },
     "livecount": {
       "print": "1v6vs8l",
       "date": "2026-08-29"
     },
     "mesh3d": {
-      "print": "1d3zsh",
-      "date": "2026-08-29"
+      "print": "jiy23o",
+      "date": "2026-11-06"
     },
     "arcade": {
       "print": "1tz6llw",
@@ -492,10 +404,6 @@
       "print": "zrnqp7",
       "date": "2026-08-29"
     },
-    "bgremove": {
-      "print": "1rb3y68",
-      "date": "2026-08-29"
-    },
     "bundlemap": {
       "print": "cfg20c",
       "date": "2026-08-29"
@@ -506,10 +414,6 @@
     },
     "curlkit": {
       "print": "175frm7",
-      "date": "2026-08-29"
-    },
-    "docscan": {
-      "print": "z2mdia",
       "date": "2026-08-29"
     },
     "logview": {
@@ -524,29 +428,25 @@
       "print": "1kcf2qf",
       "date": "2026-08-29"
     },
-    "idphoto": {
-      "print": "1034bsg",
-      "date": "2026-08-29"
-    },
     "ocr": {
-      "print": "orfccr",
-      "date": "2026-08-29"
+      "print": "1pg4x8p",
+      "date": "2026-11-06"
     },
     "payslip": {
       "print": "1djr7l6",
       "date": "2026-08-29"
     },
     "dupphoto": {
-      "print": "sbkfut",
-      "date": "2026-08-29"
+      "print": "fbdy9c",
+      "date": "2026-11-06"
     },
     "photomap": {
-      "print": "mbqgpf",
-      "date": "2026-08-29"
+      "print": "1bt5cv",
+      "date": "2026-11-06"
     },
     "tts": {
-      "print": "e55rsd",
-      "date": "2026-08-29"
+      "print": "ffg7pv",
+      "date": "2026-11-06"
     },
     "codegraph": {
       "print": "1ifdr5x",
@@ -579,10 +479,6 @@
     "recall": {
       "print": "143k9rz",
       "date": "2026-08-30"
-    },
-    "meok": {
-      "print": "qc3wza",
-      "date": "2026-09-05"
     }
   }
 }

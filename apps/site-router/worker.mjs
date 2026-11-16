@@ -6,7 +6,7 @@
  * 캐시: 원본 응답의 cache-control 을 그대로 넘긴다. 여기서 더 잡아 두지 않는다 (배포 직후 옛 판이 남지 않게).
  * 호스트 헤더: 원본에는 origin 호스트로 간다. 응답의 절대 주소 (og:url, canonical) 는 손대지 않는다 (2단계).
  */
-import { originPath, kindOf, originFor } from './src/route.mjs';
+import { originPath, kindOf, originFor, movedToolUrl } from './src/route.mjs';
 import { landingHtml } from './src/landing.mjs';
 import { privacyHtml } from './src/privacy.mjs';
 import { securityHeaders, httpsRedirect } from './src/headers.mjs';
@@ -29,6 +29,8 @@ export default {
       }
       return new Response(landingHtml(), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-site-router': 'home', ...sec } });
     }
+    const moved = movedToolUrl(url.host, url.pathname);
+    if (moved) return Response.redirect(moved, 301);
     const fallback = String(env.ORIGIN || 'https://karmolab-lab.pages.dev').replace(/\/$/, '');
     const origin = originFor(url.host, fallback);
     const target = origin + originPath(url.host, url.pathname) + url.search;

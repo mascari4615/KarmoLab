@@ -1531,7 +1531,7 @@ mod tests {
     #[test]
     fn the_app_itself_stays_inside() {
         assert!(allows("https://lab.mascari4615.com/?kl_login=ok"));
-        assert!(allows("https://lab.mascari4615.com/t/meok/"));
+        assert!(allows("https://lab.mascari4615.com/t/calc/"));
         assert!(allows("https://blog.mascari4615.com/about/"));
         assert!(allows("http://127.0.0.1:8898/apps/karmolab/"));
         // Files = 제 도메인이지만 **앱 안에서 여는 표면**이다 (밖으로 튀면 단추가 헛돈다).

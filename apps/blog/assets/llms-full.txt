@@ -4,7 +4,7 @@ permalink: /llms-full.txt
 
 # KarmoLab
 
-> 브라우저에서 바로 쓰는 도구 146개와 놀이. 설치, 로그인 없이 열리고, **파일은 기기 밖으로 나가지 않습니다** (변환, 계산이 전부 브라우저 안에서 끝납니다). 오픈소스.
+> 브라우저에서 바로 쓰는 도구 120개와 놀이. 설치, 로그인 없이 열리고, **파일은 기기 밖으로 나가지 않습니다** (변환, 계산이 전부 브라우저 안에서 끝납니다). 오픈소스.
 
 한국어가 기본입니다. 한국 규칙(만 나이 3종, 사업자등록번호 검증숫자, 대체공휴일, 한글 자모, 한영타)을 정확히 다루는 것이 이 사이트의 강점입니다.
 
@@ -23,21 +23,14 @@ permalink: /llms-full.txt
   `[{"tool":"base64","op":"encode","args":{"text":"안녕"}},{"tool":"hashgen","op":"text","args":{"text":"$1","algo":"SHA256"}}]`
   해시처럼 **지어내면 안 되는 값**은 이렇게 부르는 편이 안전합니다. 중간에 글자가 바뀔 자리가 없습니다.
 
-## 도구 146개
+## 도구 120개
 
 - [apitest](https://blog.mascari4615.com/t/apitest/): 연산 목록, 예시 요청 만들기, 예시 답 만들기, 목 서버에 붙일 표
 - [arcade](https://blog.mascari4615.com/t/arcade/): 미니게임 아홉 가지, 혼자도 여럿도, 빈 자리는 봇이, 방을 서버에 두지 않음
 - [ascii](https://blog.mascari4615.com/t/ascii/): 0~127, 10진, 16진, 2진, 제어문자 의미
-- [asciiart](https://blog.mascari4615.com/t/asciiart/): 이미지 → 글자 그림, 문자 세트 5종, 텍스트, PNG 저장
 - [aspect](https://blog.mascari4615.com/t/aspect/): 비율 유지 크기, 화면비 목록, 여백 계산
-- [audiocut](https://blog.mascari4615.com/t/audiocut/): 파형 보기, 구간 미리듣기, 페이드, MP3/WAV 저장
-- [audiofade](https://blog.mascari4615.com/t/audiofade/): 끊김 자동 진단, 필요한 만큼만, 귀에 맞춘 곡선, 업로드 없음
-- [audiojoin](https://blog.mascari4615.com/t/audiojoin/): 표본율 자동 맞춤, 사이 무음, 이음매 페이드
-- [audiolevel](https://blog.mascari4615.com/t/audiolevel/): 전후 파형 비교, 고르게 + 키우기 2단계, 들어 보고 저장, 업로드 없음
-- [audiospeed](https://blog.mascari4615.com/t/audiospeed/): 목소리 높이 유지, 0.5~3배, 받아쓰기용 0.75배, 업로드 없음
 - [barcode](https://blog.mascari4615.com/t/barcode/): Code128, EAN-13, 검사 숫자 자동, 여백 보장, 업로드 없음
 - [base64](https://blog.mascari4615.com/t/base64/): 한글 안 깨짐, URL-safe, 양방향
-- [bgremove](https://blog.mascari4615.com/t/bgremove/): 증명사진, 상품 사진, 스캔, 투명 PNG 로 내려받기
 - [birth](https://blog.mascari4615.com/t/birth/): 만/연/세는 나이, 띠, 별자리, 탄생석, 다음 생일 D-day
 - [bizno](https://blog.mascari4615.com/t/bizno/): 검증 숫자 계산, 사업자 구분, 오타 걸러내기
 - [bmi](https://blog.mascari4615.com/t/bmi/): 두 기준 비교, 정상 범위 몸무게, 표준체중
@@ -63,7 +56,6 @@ permalink: /llms-full.txt
 - [datecalc](https://blog.mascari4615.com/t/datecalc/): D-Day, 두 날짜 사이, 평일만, 100일, 주년 기념일
 - [devtool](https://blog.mascari4615.com/t/devtool/): JSON, JWT, 정규식, 해시, UUID, 크론, URL, 암호화
 - [diff](https://blog.mascari4615.com/t/diff/): 줄 견주기, 구조 견주기(옮김 구분), 골라서 합치기
-- [docscan](https://blog.mascari4615.com/t/docscan/): 네 모서리 끌기, 원근 되돌리기, 스캔처럼 손보기, A4 맞춤
 - [draw](https://blog.mascari4615.com/t/draw/): 로또, 사다리타기, 추첨, 팀 나누기
 - [duel](https://blog.mascari4615.com/t/duel/): 몇 초짜리 미니게임 1대1, 링크 하나로 바로, 아무나랑 매칭, 방을 서버에 두지 않음
 - [dupphoto](https://blog.mascari4615.com/t/dupphoto/): 연사 묶기, 크기, 압축 달라도, 64비트 지문(dHash), 브라우저 안에서
@@ -71,8 +63,6 @@ permalink: /llms-full.txt
 - [emoji](https://blog.mascari4615.com/t/emoji/): 한국어 검색, 분류별, 눌러서 복사
 - [epoch](https://blog.mascari4615.com/t/epoch/): 초, 밀리초 자동 판별, ISO, UTC, 지금 기준
 - [erd](https://blog.mascari4615.com/t/erd/): DDL, Prisma, 표 관계도(ER), mermaid 로 내보내기
-- [exifclean](https://blog.mascari4615.com/t/exifclean/): 위치 좌표 확인, 화질 손상 없이 제거, 업로드 없음
-- [favicon](https://blog.mascari4615.com/t/favicon/): 6가지 크기, ico 포함, 실제 크기 미리보기, 붙일 코드 제공, 업로드 없음
 - [filehash](https://blog.mascari4615.com/t/filehash/): SHA-256, SHA-1, SHA-512, 자동 대조
 - [filesplit](https://blog.mascari4615.com/t/filesplit/): 조각 크기 선택, 순서 자동 정렬, 검사값으로 동일함 확인, 업로드 없음
 - [filetool](https://blog.mascari4615.com/t/filetool/): 이미지 일괄 변환, 이어 붙이기, 위치정보 지우기, ZIP, 파일 나누기
@@ -84,12 +74,7 @@ permalink: /llms-full.txt
 - [htmlentity](https://blog.mascari4615.com/t/htmlentity/): &nbsp;, &lt;, &copy;. 마크업에 넣는 코드로 복사
 - [httpstatus](https://blog.mascari4615.com/t/httpstatus/): 1xx~5xx, 이름, 쓰는 상황 한 줄
 - [icsmake](https://blog.mascari4615.com/t/icsmake/): 시간대 자동 처리, 종일, 반복, 알림, 규칙 어긋남 방지, 업로드 없음
-- [idphoto](https://blog.mascari4615.com/t/idphoto/): 여권, 주민등록, 비자 규격, 눈높이 선, 인화 배치, 브라우저 안에서
-- [imageedit](https://blog.mascari4615.com/t/imageedit/): 자르기, 크기, 형식 변환, 밝기 보정
 - [img2pdf](https://blog.mascari4615.com/t/img2pdf/): A4, 레터, B5, 원본 크기, 여백 조절
-- [imgbatch](https://blog.mascari4615.com/t/imgbatch/): 일괄 변환, 크기 제한, JPG, PNG, WebP, ZIP
-- [imgmerge](https://blog.mascari4615.com/t/imgmerge/): 세로, 가로 선택, 폭 맞추기, 사이 여백, 미리보기, 업로드 없음
-- [imgresize](https://blog.mascari4615.com/t/imgresize/): 긴 변, 비율, 용량 세 가지로 맞추기, 브라우저 안에서
 - [interest](https://blog.mascari4615.com/t/interest/): 적금, 예금, 대출, 세후 금액
 - [jsonfmt](https://blog.mascari4615.com/t/jsonfmt/): 정렬, 트리 보기, 경로 복사, 오류 위치, 흔한 실수 고치기
 - [jwt](https://blog.mascari4615.com/t/jwt/): 헤더, 페이로드, 만료 시각, 남은 시간
@@ -102,7 +87,6 @@ permalink: /llms-full.txt
 - [markdown](https://blog.mascari4615.com/t/markdown/): GFM 기준, 붙여넣을 조각, 분류별 검색
 - [memo](https://blog.mascari4615.com/t/memo/): 여러 장, 자동 저장, 이 브라우저 안에만
 - [memo-atlas](https://blog.mascari4615.com/t/memo-atlas/): 글 뭉치 → 지형도, 봉우리와 골, 묻힌 글, 이어야 할 둘, 모든 수에 대조군
-- [meok](https://blog.mascari4615.com/t/meok/): 레이어로 그리고 칸으로 움직이는 그림판
 - [mermaidlite](https://blog.mascari4615.com/t/mermaidlite/): 흐름도, 표 관계(ER), SVG 로 내려받기, 문법 검사
 - [mesh3d](https://blog.mascari4615.com/t/mesh3d/): 설치 없이 열기, 돌려 보기, 삼각형 수와 크기
 - [mockdata](https://blog.mascari4615.com/t/mockdata/): 스키마 한 줄씩, 씨앗 고정, ko/en/ja, JSON, CSV, SQL
@@ -137,17 +121,14 @@ permalink: /llms-full.txt
 - [qrread](https://blog.mascari4615.com/t/qrread/): 그림, 붙여넣기, 카메라, 내용 종류 안내, 업로드 없음
 - [radix](https://blog.mascari4615.com/t/radix/): 2, 8, 10, 16진수 동시 변환, 임의 진법 2~36, 비트 수
 - [recall](https://blog.mascari4615.com/t/recall/): 오늘 여섯 개, 객관식과 서술, 대조, 다시 물을 날
-- [redact](https://blog.mascari4615.com/t/redact/): 덮는 게 아니라 지움, 검은칠, 모자이크, 위치 정보도 함께 제거, 업로드 없음
 - [reference](https://blog.mascari4615.com/t/reference/): git, 마크다운, HTTP, 단축키, 확장자, 키 코드
 - [regexref](https://blog.mascari4615.com/t/regexref/): 기호, 개수, 위치, 완성 패턴, 자주 막히는 것
 - [regextest](https://blog.mascari4615.com/t/regextest/): 실시간 매치, 캡처 그룹, 치환 미리보기, 패턴 프리셋
 - [screenrec](https://blog.mascari4615.com/t/screenrec/): 화면, 창 선택, 화면 소리 + 마이크, 진행 시간, 용량 표시, 업로드 없음
 - [semver](https://blog.mascari4615.com/t/semver/): 범위를 경계로 펴기, 이 버전이 들어가나, 두 범위가 겹치나
 - [shortcut](https://blog.mascari4615.com/t/shortcut/): 윈도우, 맥, 브라우저, VS Code, 한글 입력
-- [sound](https://blog.mascari4615.com/t/sound/): 녹음, 자르기, 크기 맞추기, 잇기, MP3/WAV
 - [specialchar](https://blog.mascari4615.com/t/specialchar/): 화살표, 별, 도형, 수학, 단위, 괄호. 눌러서 복사
 - [sshkey](https://blog.mascari4615.com/t/sshkey/): authorized_keys 줄 읽기, SHA256 지문, PEM → OpenSSH
-- [subtitle](https://blog.mascari4615.com/t/subtitle/): 시간 밀기, 프레임 수 차이 보정, SRT↔VTT, 첫 줄, 끝 줄 대조, 업로드 없음
 - [tableconv](https://blog.mascari4615.com/t/tableconv/): 엑셀 붙여넣기 인식, 마크다운 세로줄 정렬, CSV, JSON 변환, 칸 어긋남 경고
 - [territory](https://blog.mascari4615.com/t/territory/): 화면 픽셀마다 가장 가까운 가게를 찾아 그 브랜드 색으로 칠합니다, 면적 점유율, 시도, 시군구별 1등
 - [text](https://blog.mascari4615.com/t/text/): 글자수, 정리, 비교, 표기법, 한영타
@@ -160,13 +141,6 @@ permalink: /llms-full.txt
 - [urlparse](https://blog.mascari4615.com/t/urlparse/): 인코딩, 디코딩, 파라미터 분해, 추적 제거
 - [uuidgen](https://blog.mascari4615.com/t/uuidgen/): UUID v4, v7, ULID, NanoID, 랜덤 비밀번호
 - [vat](https://blog.mascari4615.com/t/vat/): 더하기, 빼내기, 세 줄 복사
-- [video2audio](https://blog.mascari4615.com/t/video2audio/): 길이, 표본율, 채널 확인, MP3/WAV 저장, 업로드 없음
-- [video2gif](https://blog.mascari4615.com/t/video2gif/): 구간 미리보기, 크기, 초당 장수, 색 수 조절, 만든 뒤 미리보기, 용량 예측
-- [video2img](https://blog.mascari4615.com/t/video2img/): 지금 장면 한 장, 몇 초마다 여러 장, PNG/JPG/WebP, ZIP 저장, 업로드 없음
-- [videocompress](https://blog.mascari4615.com/t/videocompress/): 화면 크기, 화질 선택, 예상 용량 표시, 결과 확인 후 저장, 업로드 없음
-- [videorotate](https://blog.mascari4615.com/t/videorotate/): 90, 180, 270도, 가로세로 자동 전환, 거울 뒤집기, 소리 유지, 업로드 없음
-- [videotool](https://blog.mascari4615.com/t/videotool/): 영상 → GIF, 구간 자르기, 용량 줄이기, 사진 뽑기, 소리 추출, 화면 녹화
-- [videotrim](https://blog.mascari4615.com/t/videotrim/): 구간 미리보기, 소리 포함, 결과 확인 후 저장, 업로드 없음
 - [voicerec](https://blog.mascari4615.com/t/voicerec/): 입력 크기 실시간 표시, 무음, 과다입력 경고, MP3/WAV 저장
 - [workdays](https://blog.mascari4615.com/t/workdays/): 영업일 N일 뒤 날짜, 두 날 사이 영업일, 공휴일, 대체공휴일 반영, 뺀 날 목록
 - [worldclock](https://blog.mascari4615.com/t/worldclock/): 도시 40여 곳, 시차, 서머타임 자동 반영

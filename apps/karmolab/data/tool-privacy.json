@@ -47,13 +47,6 @@
         "설정에서 고른 AI 제공자"
       ]
     },
-    "bgremove": {
-      "where": "assets",
-      "sends": "배경 지우기는 이 기기에서 돕니다. 켤 때 모형 파일을 한 번 내려받습니다. 그림은 안 나갑니다.",
-      "to": [
-        "cdn.jsdelivr.net (모형 파일)"
-      ]
-    },
     "bluemarble": {
       "where": "third-party",
       "sends": "지구, 우주 자료를 공개 API 에서 받아 옵니다. 보내는 입력은 없습니다.",
@@ -128,26 +121,6 @@
         "bot.mascari4615.com"
       ]
     },
-    "heung": {
-      "where": "local",
-      "whyLocal": "`fetch` 가 보이지만 받는 곳이 `data:` 주소다. 브라우저가 자기 메모리에서 읽는다. 밖으로 나가는 것이 아니다.",
-      "sends": "고른 파일은 브라우저 안에서만 다뤄집니다."
-    },
-    "image": {
-      "where": "ai",
-      "sends": "AI 갈래(생성, 편집)를 쓸 때만 그림, 글이 밖으로 나갑니다. 그 밖의 편집은 브라우저 안에서 끝납니다.",
-      "to": [
-        "generativelanguage.googleapis.com (Google)",
-        "laptop.mascari4615.com (내 컴퓨터. Foundry)"
-      ]
-    },
-    "imageedit": {
-      "where": "ai",
-      "sends": "AI 갈래를 쓸 때만 그림이 Google Gemini 로 전송됩니다. 자르기, 크기, 필터 등 나머지 편집은 전부 브라우저 안에서 끝납니다.",
-      "to": [
-        "generativelanguage.googleapis.com (Google)"
-      ]
-    },
     "imagegen": {
       "where": "ai",
       "sends": "적은 글(프롬프트)이 고른 AI 제공자로 전송됩니다.",
@@ -180,13 +153,6 @@
       "whyLocal": "코드에 github.com 이 있지만 **부르는 게 아니라 링크 주소**다. 고른 글의 원문으로 넘어가는 단추를 만들 때만 쓰인다(사용자가 눌러야 이동한다). 임베딩, 자리잡기, 그리기는 전부 브라우저 안에서 끝나고, 지도 파일도 이 기기에서만 읽는다.",
       "sends": "아무것도 안 보낸다.",
       "to": []
-    },
-    "meok": {
-      "where": "ours",
-      "sends": "고른 것이 내 컴퓨터의 Foundry 로 전달됩니다.",
-      "to": [
-        "laptop.mascari4615.com"
-      ]
     },
     "my-ai": {
       "where": "ai",
@@ -250,13 +216,6 @@
         "설정에서 고른 AI 제공자"
       ]
     },
-    "sound": {
-      "where": "assets",
-      "sends": "소리 처리는 이 기기에서 돕니다. 켤 때 모형 파일을 한 번 내려받습니다.",
-      "to": [
-        "cdn.jsdelivr.net (모형 파일)"
-      ]
-    },
     "status": {
       "where": "ours",
       "sends": "서버가 살아 있는지 물어볼 뿐, 넣는 내용이 없습니다.",
@@ -290,13 +249,6 @@
       "sends": "남이 올린 도구 목록, 실행 횟수, 신고가 KarmoLab 서버를 거칩니다. 도구 자체는 모래상자 안에서 돕니다.",
       "to": [
         "bot.mascari4615.com"
-      ]
-    },
-    "videobg": {
-      "where": "assets",
-      "sends": "영상 처리는 이 기기에서 돕니다. 켤 때 모형 파일을 한 번 내려받습니다. 영상은 안 나갑니다.",
-      "to": [
-        "cdn.jsdelivr.net (모형 파일)"
       ]
     },
     "voicerec": {

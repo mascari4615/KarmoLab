@@ -6,7 +6,6 @@
     "src/widgets/bounce.ts",
     "src/widgets/countdown.ts",
     "src/widgets/darkroom.ts",
-    "src/widgets/heung/heung.ts",
     "src/widgets/hourglass.ts",
     "src/widgets/karmograph/karmograph.ts",
     "src/widgets/moon.ts",
@@ -14,11 +13,8 @@
     "src/widgets/orbita.ts",
     "src/widgets/particle.ts",
     "src/widgets/territory/geomap.ts",
-    "src/widgets/tools/asciiart.ts",
     "src/widgets/tools/duel.ts",
     "src/widgets/tools/timer.ts",
-    "src/widgets/tools/videocompress.ts",
-    "src/widgets/tools/videorotate.ts",
     "src/widgets/tools/voicerec.ts"
   ]
 }

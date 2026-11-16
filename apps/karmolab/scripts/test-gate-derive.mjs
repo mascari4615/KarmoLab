@@ -33,7 +33,7 @@ eq(deriveWatch('없는검사', scripts), null, '모르는 이름이면 발판을
 eq(deriveWatch('typecheck', scripts), null, 'mjs 스크립트를 안 부르는 검사는 발판을 안 만든다');
 /* 읽을 수 없는 스크립트도 마찬가지. 못 읽었다를 걸릴 것 없다로 바꾸지 않는다. */
 eq(
-  deriveWatch('test:cutout', scripts, () => {
+  deriveWatch('test:search:quality', scripts, () => {
     throw new Error('못 읽음');
   }),
   null,
@@ -41,7 +41,7 @@ eq(
 );
 /* 아무 경로도 안 적힌 스크립트 = 알아낸 게 없다. 자기 자신만 발판으로 내주면
    그 검사는 자기 파일을 고칠 때 말고는 영영 안 돈다. 소리 없는 고장. */
-eq(deriveWatch('test:cutout', scripts, () => '// 아무 경로도 없다'), null, '알아낸 게 없으면 발판을 안 만든다');
+eq(deriveWatch('test:search:quality', scripts, () => '// 아무 경로도 없다'), null, '알아낸 게 없으면 발판을 안 만든다');
 
 // ── ② 자기 스크립트를 고치면 반드시 돈다 ────────────────────────────────────
 
@@ -93,9 +93,9 @@ check(onlyPkg.skipped.length > 50, `package.json 만 바뀌면 대부분 건너�
 
 // ── ④ 있는 것만 발판이 된다 ─────────────────────────────────────────────────
 
-const real = deriveWatch('test:cutout', scripts);
-check(real.includes('src/lib/ai-cutout.ts'), '스크립트가 글자로 부른 파일이 발판에 든다');
-check(real.includes('src/lib/inpaint.ts'), '여러 개를 부르면 여러 개가 다 든다');
+const real = deriveWatch('test:paperask', scripts);
+check(real.includes('src/lib/paperask.ts'), '스크립트가 글자로 부른 파일이 발판에 든다');
+check(real.includes('src/lib/openalex.ts'), '여러 개를 부르면 여러 개가 다 든다');
 check(
   !real.some((w) => w.startsWith('src/') && w.includes('없는')),
   '없는 경로는 안 넣는다'
@@ -110,7 +110,7 @@ check(shared !== null && matches(shared, ['src/widgets/tools/아무거나.ts']),
 eq(tailOf('test:xmlfmt'), 'xmlfmt', 'name 뒤쪽을 뗀다');
 eq(tailOf('typecheck'), '', '갈래가 없으면 빈 문자열');
 eq(tailOf('test:i18n:pages'), 'pages', '갈래가 여럿이면 마지막 칸');
-eq(scriptOf('test:cutout', scripts), 'scripts/test-cutout.mjs', '부르는 스크립트를 집는다');
+eq(scriptOf('test:paperask', scripts), 'scripts/test-paperask.mjs', '부르는 스크립트를 집는다');
 eq(scriptOf('없는것', scripts), null, '없으면 null');
 check(pathsInside(`const a = '${S}/lib/x.ts'; const b = "data/y.json";`).length === 2, '따옴표 안 경로 둘을 다 집는다');
 check(pathsInside(S + '/lib/x.ts 는 주석이다').length === 0, '따옴표 밖은 안 집는다');

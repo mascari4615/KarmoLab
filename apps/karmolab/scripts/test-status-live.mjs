@@ -39,17 +39,15 @@ await page.evaluate(() => {
 
 /* 재료마다 하나씩 + **손잡이를 안 바꾸고 표시만 붙인 쪽**(`markLive`) 하나.
  * 두 길이 다 읽히는지 봐야 48곳은 손잡이로, 48곳은 표시로가 사실이 된다. */
-for (const id of ['imgresize', 'pdfcrop', 'audiofade', 'aspect']) {
+for (const id of ['pdfcrop', 'aspect']) {
   await page.addScriptTag({ content: read(`js/widgets/tools/${id}.js`) });
 }
 
 const out = await page.evaluate(async () => {
   const res = {};
   for (const [id, sel] of [
-    ['imgresize', '#irStatus'],
-    ['pdfcrop', '#pcStatus'],
-    ['audiofade', '#afStatus'],
-    ['aspect', '#asStatus']
+      ['pdfcrop', '#pcStatus'],
+      ['aspect', '#asStatus']
   ]) {
     const host = document.createElement('div');
     document.body.appendChild(host);

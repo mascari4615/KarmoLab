@@ -30,8 +30,6 @@
 
 /** 작업대 = 도구가 얹히는 자리. 값 = 그 작업대 파일과 할 일 목록의 표식. */
 export const WORKBENCHES = {
-  image: { file: 'src/widgets/tools/image.ts', anchor: "t('image.part." },
-  video: { file: 'src/widgets/tools/videotool.ts', anchor: "t('videotool.part." },
   pdf: { file: 'src/widgets/tools/pdf.ts', anchor: "t('pdf.part." },
   file: { file: 'src/widgets/tools/filetool.ts', anchor: "t('filetool.part." },
   dev: { file: 'src/widgets/tools/devtool.ts', anchor: "t('devtool.part." },

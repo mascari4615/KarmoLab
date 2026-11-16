@@ -1077,8 +1077,6 @@ function buildHub() {
      유틸은 아래 접힌 목록으로 내리고 이름만 남긴다. 주소, 사이트맵, 찾기는 그대로다.
      이름과 한 줄은 위젯 메타와 i18n 에서 읽는다. 여기 손으로 적으면 갈라진다. */
   const AXIS = [
-    { id: 'meok', href: `${BASE_PATH}/meok/` },
-    { id: 'heung', href: `/#heung` },
     { id: 'karmograph', href: `/#karmograph` },
     { id: 'arcade', href: `${BASE_PATH}/arcade/` },
     { id: 'wm', href: `/#wm` }

@@ -151,6 +151,11 @@ for (const value of [safe.markers[0].id, safeTrack.id, safeTrack.color, safeTrac
 assert.equal(safeTrack.clips[0].color, undefined, '색 모양이 아니면 버린다');
 assert.equal(safeTrack.clips[0].trackId, safeTrack.id, '클립은 새 트랙 id 를 따른다');
 assert.ok(Number.isFinite(safeTrack.volume), '볼륨은 숫자');
+const hostileFx = JSON.parse(JSON.stringify(project));
+Object.assign(hostileFx.tracks[0], { eqLow: evil, eqMid: 99, compressor: evil, reverb: 5, mute: evil });
+const fx = normalizeProject(hostileFx).tracks[0];
+assert.ok([fx.eqLow, fx.eqMid, fx.compressor, fx.reverb].every(Number.isFinite), '효과 칸은 숫자');
+assert.equal(fx.eqMid, 12, 'EQ 범위'); assert.equal(fx.reverb, 0.8, '리버브 범위'); assert.equal(fx.mute, false, '참거짓 칸');
 
 // 트랙 순서 바꾸기
 const order = (list) => list.map((item) => item.id).join('');

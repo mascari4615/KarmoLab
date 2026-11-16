@@ -14,10 +14,6 @@ import { t, loadNamespace } from '../../lib/i18n';
    */
   /* 이름은 **쓸 때** 붙인다. 표로 굳히면 말 묶음이 오기 전이라 한국어로 박힌다. */
   const parts = (): Array<[string, string]> => [
-    ['imgbatch', t('filetool.part.imgbatch', undefined, '이미지 일괄 변환')],
-    ['imgmerge', t('filetool.part.imgmerge', undefined, '사진 이어 붙이기')],
-    ['favicon', t('filetool.part.favicon', undefined, '파비콘 만들기')],
-    ['exifclean', t('filetool.part.exifclean', undefined, '사진 정보 지우기')],
     ['ziptool', t('filetool.part.ziptool', undefined, 'ZIP 묶기, 풀기')],
     ['filesplit', t('filetool.part.filesplit', undefined, '큰 파일 나누기')],
     ['filehash', t('filetool.part.filehash', undefined, '파일 검사값')]
@@ -27,7 +23,7 @@ import { t, loadNamespace } from '../../lib/i18n';
     id: 'filetool',
     title: t('widgets.filetool.title', undefined, "파일 도구"),
     category: 'file',
-    desc: t('widgets-desc.filetool.desc', undefined, "사진 변환, 이어 붙이기, 위치정보 지우기, ZIP, 큰 파일 나누기. 파일이 브라우저를 벗어나지 않습니다"),
+    desc: t('widgets-desc.filetool.desc', undefined, "ZIP, 큰 파일 나누기, 파일 검사값. 파일이 브라우저를 벗어나지 않습니다"),
     layout: 'wide',
     lazyTabs: true, // 처리기가 무겁다. 연 탭만 만든다
     icon: '<path d="M4 6a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/>',

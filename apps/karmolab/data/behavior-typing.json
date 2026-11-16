@@ -26,7 +26,6 @@
     "regextest",
     "shortcut",
     "specialchar",
-    "subtitle",
     "tableconv",
     "text",
     "text2img",
@@ -51,15 +50,8 @@
   "needsFile": [
     "filetool",
     "palette",
-    "asciiart",
-    "imgbatch",
     "qrread",
-    "imageedit",
-    "img2pdf",
-    "imgresize",
-    "exifclean",
-    "imgmerge",
-    "redact"
+    "img2pdf"
   ],
   "needsPdf": [
     "pdftool",
@@ -75,23 +67,8 @@
     "filehash",
     "filesplit"
   ],
-  "needsAudio": [
-    "audiocut",
-    "audiojoin",
-    "audiolevel",
-    "audiospeed",
-    "audiofade",
-    "video2audio"
-  ],
-  "needsVideo": [
-    "video2gif",
-    "videotool",
-    "videotrim",
-    "video2img",
-    "videocompress",
-    "videorotate",
-    "subtitle"
-  ],
+  "needsAudio": [],
+  "needsVideo": [],
   "clickOnly": [
     "uuidgen",
     "lorem",

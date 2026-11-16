@@ -25,7 +25,7 @@ const esc = (v: unknown): string =>
   String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
 /** 도구 이름 → 사람이 읽는 이름. 모르는 도구는 이름 그대로 둔다(빈칸보다 낫다). */
-const TOOL_NAME: Record<string, string> = { bon: '본', meok: '먹', imagegen: '그림 생성', heung: '흥' };
+const TOOL_NAME: Record<string, string> = { bon: '본', imagegen: '그림 생성' };
 
 const KST = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'

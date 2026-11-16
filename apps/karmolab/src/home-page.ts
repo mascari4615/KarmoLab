@@ -63,16 +63,14 @@ import { toolIndexPath } from './lib/site-base';
             window.KarmoPalette.mountInline(palette);
         }
 
-        /* 갈 곳 카드: 찾는 칸 **아래** 한 줄 (사용자 요청). 아이콘+이름 한 줄, 다섯 장 한 줄 배치. 검색창이 주인공
+        /* 갈 곳 카드: 찾는 칸 **아래** 한 줄 (사용자 요청). 아이콘+이름 한 줄 배치. 검색창이 주인공
          *
-         * 다섯 장은 **내가 만든 것** (change.karmolab-axis, 사용자 결정 2026-09-08)
+         * 카드는 **내가 만든 것** (change.karmolab-axis, 사용자 결정 2026-09-08). 먹과 흥은 KarmoEdit으로 이동 (2026-11-06)
          * 전: 즐겨찾기, 도구 목록, 커뮤니티, 오락실 -> 유틸 사이트로 읽힘
          * 유틸 도구: 검색과 아래 글자 링크로만. 이름: 위젯 제목 열쇠 그대로 (두 벌 금지) */
         const cta = document.createElement('div');
         cta.className = 'landing-cta';
         const axis = [
-            ['meok', 'widgets.meok.title', '먹', '<path d="M4 20l4-1 10-10-3-3L5 16z"/><path d="M13 7l3 3"/>'],
-            ['heung', 'widgets.heung.title', '흥', '<path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>'],
             ['karmograph', 'widgets.karmograph.title', 'KarmoGraph', '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="10" cy="18" r="2.5"/><path d="M8.3 7l7.4 1M7 8.5l2 7M16.5 10l-5 6"/>'],
             ['arcade', 'widgets.arcade.title', '오락실', '<rect x="3" y="7" width="18" height="11" rx="4"/><path d="M7.5 11v3M6 12.5h3"/><path d="M16 12h.01M18 14.5h.01"/>'],
             ['wm', 'widgets.wm.title', 'Witch-Mendokusai', '<path d="M12 3l2 5h5l-4 3.5 1.5 5.5L12 14l-4.5 3 1.5-5.5L5 8h5z"/>']

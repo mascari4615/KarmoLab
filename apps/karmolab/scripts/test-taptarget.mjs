@@ -21,7 +21,7 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 /* 실제로 22px 이었던 넉 장 + 대조로 잘 되던 것 하나.
    ★ `textdiff`, `textredact` 는 텍스트 도구 작업대(`text`)로 합쳐졌다. 그 이름으로는 위젯이
    등록되지 않으므로(실측: textdiff 위젯이 등록되지 않았다) 그 조작이 사는 작업대를 잰다. */
-const TOOLS = ['text', 'uuidgen', 'hashgen', 'asciiart'];
+const TOOLS = ['text', 'uuidgen', 'hashgen', 'qrgen'];
 
 /* ★ **지어진 것을 보는 검사다** (2026-08-17). 여기서 읽는 `js/widgets/**` 는 빌드 산출물이라
    깨끗한 사본(밀 커밋만 풀어 놓은 자리)에는 없다. 없는 것을 읽다 ENOENT 로 죽으면

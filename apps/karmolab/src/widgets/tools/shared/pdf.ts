@@ -92,7 +92,7 @@ export async function loadPdfJs(): Promise<PdfJs> {
   const lib = (window as unknown as { pdfjsLib?: PdfJs }).pdfjsLib;
   if (!lib) throw new Error('pdfjs-missing');
   /* 일꾼(worker)도 **같은 자리에서** 받아야 한다. 남의 CDN 을 따로 두면 판이 어긋나 조용히 깨진다. */
-  lib.GlobalWorkerOptions.workerSrc = '/apps/karmolab/js/vendor/pdfjs.worker.min.js';
+  lib.GlobalWorkerOptions.workerSrc = (window as unknown as { __KARMO_PDF_WORKER__?: string }).__KARMO_PDF_WORKER__ || '/apps/karmolab/js/vendor/pdfjs.worker.min.js';
   pdfjsCache = lib;
   return lib;
 }

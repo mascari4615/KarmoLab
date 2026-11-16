@@ -11,6 +11,7 @@ const moduleSource = built.outputFiles[0].text;
 const search = await import(`data:text/javascript;base64,${Buffer.from(moduleSource).toString('base64')}`);
 const quality = JSON.parse(await readFile(new URL('../data/search-quality.json', import.meta.url), 'utf8'));
 const aliases = JSON.parse(await readFile(new URL('../data/tool-aliases.json', import.meta.url), 'utf8')).aliases;
+Object.assign(aliases, JSON.parse(await readFile(new URL('../../karmo-edit/data/tool-aliases.json', import.meta.url), 'utf8')));
 const documents = quality.documents.map((document) => ({
   ...document,
   aliases: [document.aliases || '', String(aliases[document.aliasKey] || '')].join(' '),

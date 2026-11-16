@@ -26,7 +26,7 @@ const check = (ok, why) => {
 };
 const eq = (got, want, why) => check(got === want, `${why}. 기대 ${want}, 나온 것 ${got}`);
 
-const plan = planTool({ id: 'wibble', title: '위블', desc: '위블 설명', work: 'image' });
+const plan = planTool({ id: 'wibble', title: '위블', desc: '위블 설명', work: 'file' });
 const paths = plan.map((s) => s.path);
 const has = (p) => paths.includes(p);
 
@@ -41,11 +41,11 @@ check(has('i18n/en/wibble.json'), '말 묶음 (영어)');
 check(has('i18n/ja/wibble.json'), '말 묶음 (일본어)');
 check(has('i18n/en/widgets.json') && has('i18n/ja/widgets.json'), '이름 번역 두 벌');
 check(has('i18n/en/widgets-desc.json') && has('i18n/ja/widgets-desc.json'), '설명 번역 두 벌');
-check(has('src/widgets/tools/image.ts'), '고른 작업대의 할 일 카드');
+check(has('src/widgets/tools/filetool.ts'), '고른 작업대의 할 일 카드');
 
 /* 작업대를 안 고르면 **아무 데도 안 꽂는다**. 엉뚱한 카드는 빠진 것보다 고치기 번거롭다. */
 const noBench = planTool({ id: 'wibble' }).map((s) => s.path);
-check(!noBench.includes('src/widgets/tools/image.ts'), '작업대를 안 고르면 작업대는 안 건드린다');
+check(!noBench.includes('src/widgets/tools/filetool.ts'), '작업대를 안 고르면 작업대는 안 건드린다');
 eq(noBench.length, plan.length - 1, '작업대 말고는 똑같다');
 
 // ── ② 계획이 가리키는 파일이 **실재하나** ────────────────────────────────────

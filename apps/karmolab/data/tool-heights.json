@@ -11,33 +11,9 @@
     "narrow": 8254,
     "wide": 972
   },
-  "asciiart": {
-    "narrow": 1171,
-    "wide": 1333
-  },
   "aspect": {
     "narrow": 1053,
     "wide": 821
-  },
-  "audiocut": {
-    "narrow": 212,
-    "wide": 282
-  },
-  "audiofade": {
-    "narrow": 439,
-    "wide": 502
-  },
-  "audiojoin": {
-    "narrow": 642,
-    "wide": 706
-  },
-  "audiolevel": {
-    "narrow": 212,
-    "wide": 282
-  },
-  "audiospeed": {
-    "narrow": 464,
-    "wide": 502
   },
   "barcode": {
     "narrow": 993,
@@ -46,10 +22,6 @@
   "base64": {
     "narrow": 709,
     "wide": 769
-  },
-  "bgremove": {
-    "narrow": 712,
-    "wide": 624
   },
   "birth": {
     "narrow": 739,
@@ -163,10 +135,6 @@
     "narrow": 1068,
     "wide": 913
   },
-  "docscan": {
-    "narrow": 859,
-    "wide": 626
-  },
   "draw": {
     "narrow": 1637,
     "wide": 1333
@@ -194,14 +162,6 @@
   "erd": {
     "narrow": 1034,
     "wide": 820
-  },
-  "exifclean": {
-    "narrow": 212,
-    "wide": 282
-  },
-  "favicon": {
-    "narrow": 238,
-    "wide": 282
   },
   "filehash": {
     "narrow": 440,
@@ -251,29 +211,9 @@
     "narrow": 1587,
     "wide": 1437
   },
-  "idphoto": {
-    "narrow": 1301,
-    "wide": 803
-  },
-  "imageedit": {
-    "narrow": 368,
-    "wide": 631
-  },
   "img2pdf": {
     "narrow": 638,
     "wide": 630
-  },
-  "imgbatch": {
-    "narrow": 577,
-    "wide": 606
-  },
-  "imgmerge": {
-    "narrow": 810,
-    "wide": 703
-  },
-  "imgresize": {
-    "narrow": 439,
-    "wide": 502
   },
   "interest": {
     "narrow": 1054,
@@ -342,10 +282,6 @@
   "memo-atlas": {
     "narrow": 760,
     "wide": 1043
-  },
-  "meok": {
-    "narrow": 1033,
-    "wide": 592
   },
   "mermaidlite": {
     "narrow": 1220,
@@ -483,10 +419,6 @@
     "narrow": 249,
     "wide": 340
   },
-  "redact": {
-    "narrow": 464,
-    "wide": 502
-  },
   "reference": {
     "narrow": 4401,
     "wide": 1037
@@ -519,10 +451,6 @@
     "narrow": 776,
     "wide": 771
   },
-  "sound": {
-    "narrow": 728,
-    "wide": 564
-  },
   "specialchar": {
     "narrow": 6597,
     "wide": 972
@@ -530,10 +458,6 @@
   "sshkey": {
     "narrow": 867,
     "wide": 924
-  },
-  "subtitle": {
-    "narrow": 1276,
-    "wide": 1282
   },
   "tableconv": {
     "narrow": 1031,
@@ -602,34 +526,6 @@
   "vat": {
     "narrow": 1152,
     "wide": 1016
-  },
-  "video2audio": {
-    "narrow": 511,
-    "wide": 589
-  },
-  "video2gif": {
-    "narrow": 212,
-    "wide": 282
-  },
-  "video2img": {
-    "narrow": 212,
-    "wide": 282
-  },
-  "videocompress": {
-    "narrow": 212,
-    "wide": 282
-  },
-  "videorotate": {
-    "narrow": 439,
-    "wide": 502
-  },
-  "videotool": {
-    "narrow": 784,
-    "wide": 564
-  },
-  "videotrim": {
-    "narrow": 212,
-    "wide": 282
   },
   "voicerec": {
     "narrow": 581,

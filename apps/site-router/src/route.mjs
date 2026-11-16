@@ -12,6 +12,7 @@ export const ROOT_BY_HOST = {
   lab: '/',
   dash: '/',
   blog: '/',
+  edit: '/',
 };
 
 /* 호스트마다 **제 배포**로 (Cloudflare Pages 프로젝트 셋, 2026-09-23).
@@ -21,6 +22,7 @@ export const ORIGIN_BY_HOST = {
   lab: 'https://karmolab-lab.pages.dev',
   blog: 'https://karmolab-blog.pages.dev',
   dash: 'https://karmolab-dash.pages.dev',
+  edit: 'https://karmo-edit.pages.dev',
 };
 
 export function originFor(host, fallback) {
@@ -42,4 +44,16 @@ export function originPath(host, pathname) {
   if (kind === 'home') return null;
   if (pathname === '/' || pathname === '/index.html') return ROOT_BY_HOST[kind];
   return pathname;
+}
+
+/* KarmoEdit 으로 옮긴 도구의 옛 주소 (memo change.karmo-tbd-split, 2026-11-06). 쌓인 검색 평가를 넘기려고 301 */
+export const EDIT_ORIGIN = 'https://edit.mascari4615.com';
+export const EDIT_TOOLS = new Set(["asciiart","audiocut","audiofade","audiojoin","audiolevel","audiospeed","bgremove","cleanup","docscan","exifclean","favicon","heung","idphoto","image","imageedit","imgbatch","imgmerge","imgresize","meok","redact","sound","subtitle","video2audio","video2gif","video2img","videobg","videocompress","videorotate","videotool","videotrim"]);
+
+/** lab 호스트의 옛 도구 주소면 새 주소, 아니면 null */
+export function movedToolUrl(host, pathname) {
+  if (kindOf(host) !== 'lab') return null;
+  if (pathname === '/meok' || pathname === '/meok/' || pathname === '/meok/index.html') return EDIT_ORIGIN + '/#meok';
+  const m = /^(?:\/(?:en|ja))?\/t\/([a-z0-9-]+)(?:\/(?:index\.html)?|\.md)?$/.exec(pathname);
+  return m && EDIT_TOOLS.has(m[1]) ? EDIT_ORIGIN + '/#' + m[1] : null;
 }

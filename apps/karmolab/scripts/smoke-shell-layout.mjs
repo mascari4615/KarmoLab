@@ -39,7 +39,7 @@ try {
 /* 갈래마다 하나씩 + 짜임이 특이한 것. 전부 열면 8분이라 대표만
    새 짜임을 만들면 여기 한 줄 추가 */
 const DEFAULT_IDS = [
-  'devtool', 'text', 'image', 'pdf', 'sound', 'videotool', 'qr',
+  'devtool', 'text', 'pdf', 'qr',
   'calc', 'time', 'color', 'unitconv', 'passgen',
   'recall', 'reference', 'emoji',
   'randomgen', 'tierlist', 'arcade', 'memo', 'checklist',
