@@ -10,6 +10,8 @@
     "askpapers": "논문 paper 연구 abstract 문헌조사 서베이 arxiv",
     "aspect": "aspect ratio 화면비",
     "barcode": "barcode ean code128 바코드",
+    "imagegen": "그림 만들기 AI 그림 그려줘 이미지 생성 text to image ai art stable diffusion",
+    "regionwatch": "화면 감시 변화 알림 바뀌면 알려줘 모니터링 screen watch change detect",
     "base64": "base64 encode decode 인코딩",
     "birth": "birthday age 나이",
     "bizno": "business number validate 사업자등록번호",
