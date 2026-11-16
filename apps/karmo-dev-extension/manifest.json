@@ -77,16 +77,7 @@
         "https://arca.live/*"
       ],
       "js": [
-        "block-defaults.js",
-        "block-toast.js",
-        "block-core.js",
-        "arca-profile.js",
-        "arca-auto-block.js",
-        "arca-insight.js",
-        "arca-block.js",
-        "arca-seen.js",
-        "arca-scrap.js",
-        "arca-liked-link.js"
+        "arca-entry.js"
       ],
       "run_at": "document_idle"
     }
@@ -96,6 +87,7 @@
     "default_popup": "popup.html"
   },
   "externally_connectable": {
+    "ids": ["jblnjmafdicfkgfghgcgijkconpomgkc"],
     "matches": [
       "http://127.0.0.1/*",
       "http://localhost/*"
