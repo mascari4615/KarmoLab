@@ -340,19 +340,5 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && ch[UL_STATE]) renderSaveState();
 });
 
-async function renderArcaOwnership() {
-  const handoff = (await chrome.storage.local.get('arcaHandoff')).arcaHandoff;
-  const groups = [...document.querySelectorAll('#tab-arca fieldset')];
-  const previous = groups.some(group => group.disabled);
-  const transferred = handoff?.status === 'committed';
-  for (const group of groups) group.disabled = transferred;
-  if (!transferred) {
-    if (previous) show('이전이 취소되었습니다. Dev의 기존 설정을 사용할 수 있습니다.');
-    return;
-  }
-  show('아카라이브 기능과 설정은 KarmoLab으로 이전되었습니다. KarmoLab 팝업의 차단과 팔로우 관리를 사용하세요.');
-}
-void renderArcaOwnership();
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.arcaHandoff) void renderArcaOwnership();
-});
+for (const group of document.querySelectorAll('#tab-arca fieldset')) group.disabled = true;
+show('아카라이브 기능과 설정은 KarmoLab 팝업에서 관리하세요.');

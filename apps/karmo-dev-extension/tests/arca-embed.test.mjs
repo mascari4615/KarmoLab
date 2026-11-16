@@ -16,28 +16,15 @@ test('Embed: 글 작성자와 공개 그림 메타만, 외부와 위험 주소 �
   }
 });
 
-test('Embed 수집: 계정 번호 검증, 중복 요청과 캐시 재사용', async () => {
-  let calls = 0;
-  const ctx = { Date, Map, Promise, runInTab: async () => { calls++; return { author: '새닉#42', image: 'https://ac.arca.live/a.webp' }; } };
-  vm.createContext(ctx);
-  const code = read('background.js');
-  vm.runInContext(code.slice(code.indexOf('const embedPending'), code.indexOf('/* 확장 페이지와')), ctx);
-  await Promise.all([ctx.readFollowEmbed('https://arca.live/b/example/1', '옛닉#42'), ctx.readFollowEmbed('https://arca.live/b/example/1', '옛닉#42')]);
-  assert.equal(calls, 1);
-  await ctx.readFollowEmbed('https://arca.live/b/example/1', '옛닉#42');
-  assert.equal(calls, 1);
-  await assert.rejects(ctx.readFollowEmbed('https://arca.live/b/example/2', '옛닉#43'), /글이 아닙니다/);
-});
-
-test('실제 Embed 분기: 외부 글, 비팔로우 작성자 거부', async () => {
-  const ctx = { URL, chrome: { storage: { local: { get: async () => ({ likelist: { arca: { a: {} } } }) } } }, readFollowEmbed: async () => ({ image: '' }) };
+test('종료된 Dev 아카 읽기는 저장소와 사이트 접근 없이 거부', async () => {
+  const ctx = { chrome: { storage: { local: { get: () => assert.fail('No storage access') } } }, openWorkTab: () => assert.fail('No site access') };
   vm.createContext(ctx);
   const code = read('background.js');
   vm.runInContext(code.slice(code.indexOf('function dispatchExt(')), ctx);
-  const call = (key, url) => new Promise((resolve) => ctx.dispatchExt({ type: 'arca.embed.read', key, url }, {}, resolve));
-  assert.equal((await call('a', 'https://evil.test/b/x/1')).ok, false);
-  assert.equal((await call('b', 'https://arca.live/b/x/1')).ok, false);
-  assert.equal((await call('a', 'https://arca.live/b/x/1')).ok, true);
+  for (const type of ['arca.embed.read', 'arca.liked.read', 'arca.transfer.prepare']) {
+    const result = await new Promise(resolve => ctx.dispatchExt({ type }, {}, resolve));
+    assert.equal(result.ok, false); assert.match(result.error, /KarmoLab/);
+  }
 });
 
 test('Embed: DOM 준비 즉시 읽기, 리소스 완료와 3초 대기 제외', async () => {

@@ -104,35 +104,6 @@ test("화면: 수집 실패에 이전 글 유지, 저장 실패 은폐 없음", 
   saving.d.window.close();
 });
 
-test("실제 background 분기: 좋아요 키 검증, 성공과 실패 모두 탭 정리", async () => {
-  const code = source("background.js");
-  let removed = 0;
-  let created = 0;
-  let reject = false;
-  const ctx = {
-    URL, Date, setTimeout,
-    chrome: {
-      storage: { local: { get: async () => ({ likelist: { arca: { "a#42": {} } } }) } },
-      scripting: { executeScript: async (o) => { if (o.files) return []; if (reject) throw new Error("アクセス失敗"); return [{ result: [] }]; } },
-    },
-    openWorkTab: async (url) => { created++; assert.equal(url, "https://arca.live/u/@a/42"); return { id: 1 }; },
-    closeWorkTab: async () => { removed++; },
-    waitReady: async () => {},
-    within: async (_, __, promise) => promise,
-  };
-  vm.createContext(ctx);
-  vm.runInContext(code.slice(code.indexOf("function dispatchExt(")), ctx);
-  const call = (key) => new Promise((resolve) => ctx.dispatchExt({ type: "arca.liked.read", key }, {}, resolve));
-  assert.equal((await call("other")).ok, false);
-  assert.equal(created, 0);
-  assert.equal((await call("a#42")).ok, true);
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(removed, 1);
-  reject = true;
-  assert.equal((await call("a#42")).ok, false);
-  assert.equal(removed, 2);
-});
-
 test("동시 수집 탭: 등록과 해제 직렬화, 저장 실패 시 탭 회수", async () => {
   let ids = [];
   let seq = 0;

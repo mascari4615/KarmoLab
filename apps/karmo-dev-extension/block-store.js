@@ -2,11 +2,7 @@
 (() => {
   let tail = Promise.resolve();
   async function mutate(command) {
-    const handoff = (await chrome.storage.local.get('arcaHandoff')).arcaHandoff;
-    if ((command.site || 'arca') === 'arca') {
-      if (handoff?.status === 'committed') throw new Error('KarmoLab으로 이전되었습니다. KarmoLab 설정을 사용하세요.');
-      if (handoff?.status === 'pending' && handoff.until > Date.now()) throw new Error('KarmoLab으로 이전 중입니다. 잠시 뒤 다시 시도하세요.');
-    }
+    if ((command.site || 'arca') === 'arca') throw new Error('아카라이브 설정은 KarmoLab에서 변경하세요.');
     const site = command.site || "arca";
     if (["__proto__", "prototype", "constructor"].includes(site)) throw new Error("지원하지 않는 저장 키");
     const got = await chrome.storage.local.get({ blocklist: {}, likelist: {}, karmoSettings: {} });

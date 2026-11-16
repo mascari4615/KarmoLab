@@ -71,15 +71,6 @@
       ],
       "run_at": "document_start",
       "world": "MAIN"
-    },
-    {
-      "matches": [
-        "https://arca.live/*"
-      ],
-      "js": [
-        "arca-entry.js"
-      ],
-      "run_at": "document_idle"
     }
   ],
   "action": {
@@ -87,7 +78,6 @@
     "default_popup": "popup.html"
   },
   "externally_connectable": {
-    "ids": ["jblnjmafdicfkgfghgcgijkconpomgkc"],
     "matches": [
       "http://127.0.0.1/*",
       "http://localhost/*"
