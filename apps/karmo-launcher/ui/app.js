@@ -15,6 +15,27 @@ const heroEl = $('hero');
 const msgEl = $('msg');
 const dlBtn = $('dlBtn');
 
+/** 화면 안 알림. 위 작은 글만으로는 실패와 저장 결과를 못 알아챔 (사용자 2026-11-16 "피드백이 없어").
+ *  kind: ok, err, info. 오류는 오래 두고, 누르면 닫힘 */
+function toast(text, kind = 'info') {
+  const box = $('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  el.textContent = text;
+  el.addEventListener('click', () => el.remove());
+  box.append(el);
+  while (box.children.length > 4) box.firstElementChild.remove();
+  window.setTimeout(() => el.remove(), kind === 'err' ? 9000 : 4000);
+}
+
+/** 업데이터 플러그인이 주는 영어 오류를 읽히게. 백엔드 받기 오류는 이미 한국어 */
+function friendly(e) {
+  const t = String(e);
+  const m = t.match(/error sending request for url \(https?:\/\/([^/)]+)/);
+  return m ? m[1] + ' 에 연결 못 함. 인터넷 연결을 확인하고 잠시 뒤 다시' : t;
+}
+
 const ICON = { tauri: 'tool', web: 'dash', unity: 'play', tool: 'tool', bot: 'tool' };
 const CHECK_EVERY_MS = 30 * 60 * 1000;
 let apps = [];
@@ -318,6 +339,9 @@ function syncTray() {
   void invoke('set_tray_apps', { apps: list }).catch((e) => void invoke('log_event', { text: 'tray menu failed: ' + e }));
 }
 
+/* 버튼 묶음 (진행 바, 안내 포함) 높이만큼 왼쪽 단의 바닥을 올림. 받는 중에 바가 릴리스 글을 덮었음 (사용자 2026-11-16) */
+new ResizeObserver(() => $('stage').style.setProperty('--acts-h', actsEl.offsetHeight + 'px')).observe(actsEl);
+
 function paint() {
   syncTray();
   paintList();
@@ -496,10 +520,12 @@ async function runInstall(app, opts = {}) {
     failures[app.id] = { at: Date.now(), count, version };
     /* 재시도마다 울리지 않게 판마다 첫 실패만 */
     if (count === 1 && error !== '취소함') notifyUser(app.name + ' 업데이트 실패', error);
+    if (error !== '취소함' && (!opts.auto || count === 1)) toast(app.name + ' ' + (st.installed ? '업데이트' : '설치') + ' 실패: ' + error, 'err');
   } else {
     delete failures[app.id];
     notifyUser(app.name + ' ' + version, opts.auto ? '자동 업데이트 끝' : '설치 끝');
     msgEl.textContent = app.name + ' ' + version + (opts.auto ? ' 자동 업데이트' : ' 설치') + ' 끝';
+    toast(msgEl.textContent, 'ok');
     fresh.set(app.id, 'done');
     window.setTimeout(() => {
       fresh.delete(app.id);
@@ -866,8 +892,10 @@ async function paintBuilds(app) {
   $('pBuildGet').textContent = '이 빌드 받기';
   $('pBuildNote').textContent = '노트북 빌드 목록 받는 중';
   $('pBuilds').innerHTML = '';
-  $('pDlRow').hidden = true;
   $('pDlPw').value = '';
+  paintPropsPw();
+  /* 저장된 비밀번호를 아직 확인 안 했으면 열 때 확인. 틀린 값이 '저장됨' 으로만 보이지 않게 */
+  if (dlPwSaved && dlPwVerdict === null) void checkDlPw();
   let failed = '';
   try {
     buildRows = await invoke('laptop_builds');
@@ -914,23 +942,33 @@ $('pBuildGet').addEventListener('click', async () => {
     $('pBuildNote').textContent = '받는 중인 작업이 끝난 뒤에 다시';
     return;
   }
-  /* 비밀번호가 없으면 창을 닫지 않고 이 자리에서 받음. 닫은 뒤 실패하면 오류가 안 보임 */
+  /* 받기 전에 비밀번호를 노트북에 확인. 틀리면 창을 닫지 않고 이 자리에서 다시 넣게. 닫은 뒤 실패하면 오류가 안 보임 */
   if (buildPick) {
     const typed = $('pDlPw').value;
+    const btn = $('pBuildGet');
+    btn.disabled = true;
+    btn.textContent = '비밀번호 확인 중';
+    let ok;
     try {
       if (typed.trim()) await invoke('laptop_dl_set', { password: typed });
-      if (!(await invoke('laptop_dl_status'))) {
-        $('pDlRow').hidden = false;
-        $('pBuildNote').textContent = '다운로드 비밀번호를 넣고 다시 받기 (설정에도 저장됨)';
-        $('pDlPw').focus();
-        return;
-      }
+      dlPwSaved = await invoke('laptop_dl_status');
+      ok = dlPwSaved ? await checkDlPw() : false;
     } catch (e) {
-      $('pBuildNote').textContent = String(e);
+      ok = String(e);
+    }
+    btn.disabled = false;
+    btn.textContent = '이 빌드 받기';
+    /* 확인 못 함 (목록 없음, 연결 실패) 은 받기에서 다시 드러나니 막지 않음. 틀림과 없음만 막음 */
+    if (ok === false) {
+      const why = dlPwSaved ? '다운로드 비밀번호가 틀림. 다시 넣어 주세요' : '다운로드 비밀번호를 넣고 다시 받기 (설정에도 저장됨)';
+      paintPropsPw(true);
+      $('pBuildNote').textContent = why;
+      if (dlPwSaved) toast(why, 'err');
+      $('pDlPw').focus();
       return;
     }
+    if (typed.trim()) toast(ok === true ? '다운로드 비밀번호 저장, 노트북에서 확인됨' : '다운로드 비밀번호 저장함', 'ok');
     $('pDlPw').value = '';
-    paintDlPw();
   }
   closeModal($('props'));
   if (!buildPick) {
@@ -950,6 +988,7 @@ $('pBuildGet').addEventListener('click', async () => {
   const after = status.get(app.id) || {};
   if (after.version !== version) {
     msgEl.textContent = app.name + ' 빌드 받기 실패: ' + (after.error || '설치된 판이 다름');
+    if (!after.error) toast(msgEl.textContent, 'err');
     setAppPref(app.id, { build: before });
     await refreshStatus(app);
     planAuto();
@@ -957,16 +996,94 @@ $('pBuildGet').addEventListener('click', async () => {
   }
 });
 
-const paintDlPw = () => void invoke('laptop_dl_status').then((ok) => ($('dlPwState').textContent = ok ? '저장됨' : '없음')).catch(() => {});
-$('dlPwSave').addEventListener('click', async () => {
+/* 다운로드 비밀번호. 저장 여부와 노트북 확인 결과를 같이 보임. 저장돼 있으면 입력칸 대신 바꾸기 (사용자 2026-11-16) */
+let dlPwVerdict = null; /* null 모름, true 맞음, false 틀림, 문자열은 확인 못 한 이유 */
+let dlPwSaved = false;
+async function checkDlPw() {
   try {
-    await invoke('laptop_dl_set', { password: $('dlPw').value });
-    $('dlPw').value = '';
+    dlPwVerdict = await invoke('laptop_dl_check');
   } catch (e) {
-    $('dlPwState').textContent = String(e);
+    dlPwVerdict = String(e);
+  }
+  await paintDlPw();
+  return dlPwVerdict;
+}
+async function paintDlPw() {
+  try {
+    dlPwSaved = await invoke('laptop_dl_status');
+  } catch (e) {
+    $('dlPwState').textContent = '저장 상태를 못 읽음: ' + e;
     return;
   }
-  paintDlPw();
+  const st = $('dlPwState');
+  st.className = 'state';
+  if (!dlPwSaved) st.textContent = '저장된 비밀번호 없음';
+  else if (dlPwVerdict === true) st.textContent = '저장됨, 노트북에서 확인됨';
+  else if (dlPwVerdict === false) {
+    st.textContent = '저장됨, 그런데 노트북이 거절함 (틀림)';
+    st.className = 'state bad';
+  } else if (typeof dlPwVerdict === 'string') st.textContent = '저장됨, 맞는지 확인 못 함: ' + dlPwVerdict;
+  else st.textContent = '저장됨';
+  const edit = !dlPwSaved || dlPwVerdict === false || $('dlPwForm').dataset.open === '1';
+  $('dlPwForm').hidden = !edit;
+  $('dlPwEdit').hidden = edit;
+  $('dlPwCheck').hidden = !dlPwSaved;
+  $('dlPwClear').hidden = !dlPwSaved;
+  if (!$('props').hidden) paintPropsPw();
+}
+/** 속성의 빌드 칸. 저장돼 있고 틀리지 않았으면 입력칸 대신 한 줄 */
+function paintPropsPw(force = false) {
+  const need = force || !dlPwSaved || dlPwVerdict === false;
+  $('pDlRow').hidden = !need;
+  $('pDlSaved').hidden = need;
+}
+$('dlPwSave').addEventListener('click', async () => {
+  const v = $('dlPw').value;
+  if (!v.trim()) {
+    toast('비밀번호를 넣어 주세요', 'err');
+    return;
+  }
+  const btn = $('dlPwSave');
+  btn.disabled = true;
+  try {
+    await invoke('laptop_dl_set', { password: v });
+  } catch (e) {
+    btn.disabled = false;
+    toast('저장 실패: ' + e, 'err');
+    return;
+  }
+  $('dlPw').value = '';
+  delete $('dlPwForm').dataset.open;
+  $('dlPwState').textContent = '저장함, 노트북에 확인 중';
+  const r = await checkDlPw();
+  btn.disabled = false;
+  if (r === true) toast('다운로드 비밀번호 저장, 노트북에서 확인됨', 'ok');
+  else if (r === false) toast('저장했지만 노트북이 거절함. 비밀번호가 틀림', 'err');
+  else toast('저장함. 맞는지는 확인 못 함: ' + r, 'info');
+});
+$('dlPw').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('dlPwSave').click();
+});
+$('dlPwEdit').addEventListener('click', () => {
+  $('dlPwForm').dataset.open = '1';
+  void paintDlPw().then(() => $('dlPw').focus());
+});
+$('dlPwCheck').addEventListener('click', async () => {
+  $('dlPwState').textContent = '노트북에 확인 중';
+  const r = await checkDlPw();
+  toast(r === true ? '다운로드 비밀번호 맞음' : r === false ? '다운로드 비밀번호 틀림' : '확인 못 함: ' + r, r === true ? 'ok' : r === false ? 'err' : 'info');
+});
+$('dlPwClear').addEventListener('click', async () => {
+  try {
+    await invoke('laptop_dl_set', { password: '' });
+  } catch (e) {
+    toast('지우기 실패: ' + e, 'err');
+    return;
+  }
+  dlPwVerdict = null;
+  delete $('dlPwForm').dataset.open;
+  await paintDlPw();
+  toast('다운로드 비밀번호 지움', 'info');
 });
 paintDlPw();
 $('pOpen').addEventListener('click', () => void invoke('open_location', { app: propsApp }).catch((e) => ($('pWhere').textContent = String(e))));
@@ -989,6 +1106,7 @@ $('pRollback').addEventListener('click', async (e) => {
     if (st.latest) setAppPref(app.id, { skip: st.latest });
     closeModal($('props'));
     msgEl.textContent = app.name + ' v' + st.prev + ' 로 되돌림';
+    toast(msgEl.textContent, 'ok');
     await refreshStatus(app);
     planAuto();
     paint();
@@ -1073,6 +1191,7 @@ function paintSetSay() {
 $('keyBtn').addEventListener('click', () => {
   $('keys').hidden = false;
   paintSetSay();
+  void paintDlPw().then(() => dlPwSaved && dlPwVerdict === null && checkDlPw());
   void paintKeys();
   void invoke('get_settings').then((s) => ($('ws').value = s.workspace || '')).catch(() => {});
 });
@@ -1173,6 +1292,7 @@ document.querySelectorAll('[data-rz]').forEach((el) => {
    버튼으로만 받게 했더니 0.1.3 이 그대로 남아 끄기 수정이 안 들어왔다. 켜자마자 한 번, 트레이에 오래 있으니 30분마다.
    앱을 받는 중이면 다시 켜면 끊기니 다음 차례로 */
 const selfEl = $('selfup');
+/** 실패하면 오류 글, 아니면 null (성공하면 앱이 다시 켜져 돌아오지 않음) */
 async function installSelf() {
   selfBusy = true;
   selfEl.hidden = false;
@@ -1183,8 +1303,11 @@ async function installSelf() {
   } catch (e) {
     selfBusy = false;
     selfEl.disabled = false;
-    selfEl.textContent = '런처 업데이트 실패: ' + e;
+    selfEl.textContent = '런처 업데이트 실패: ' + friendly(e);
+    toast(selfEl.textContent, 'err');
+    return selfEl.textContent;
   }
+  return null;
 }
 async function checkSelf() {
   if (selfBusy) return;
@@ -1234,13 +1357,20 @@ async function manualSelfCheck() {
     } else {
       text = 'v' + v + ' 받는 중';
       selfStateEl.textContent = text;
-      await installSelf();
+      const fail = await installSelf();
+      if (fail) {
+        /* installSelf 가 이미 토스트를 띄움 */
+        selfStateEl.textContent = fail;
+        selfCheckEl.disabled = false;
+        return fail;
+      }
     }
   } catch (e) {
-    text = '확인 실패: ' + e;
+    text = '확인 실패: ' + friendly(e);
   }
   selfStateEl.textContent = text;
   selfCheckEl.disabled = false;
+  toast('런처 ' + text, text.startsWith('확인 실패') ? 'err' : 'info');
   return text;
 }
 selfCheckEl.addEventListener('click', () => void manualSelfCheck());

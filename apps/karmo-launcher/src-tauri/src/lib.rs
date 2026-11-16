@@ -34,6 +34,7 @@ const TOKEN_TARGET: &str = "karmo-launcher:github";
 const LAPTOP_BUILDS_URL: &str = "https://laptop.mascari4615.com/dash/builds";
 /// 노트북 빌드 받기. 서명 만료 링크 + 다운로드 비밀번호 (HTTP Basic). ops 토큰은 런처에 없음
 const LAPTOP_DL: &str = "https://laptop.mascari4615.com/dl/";
+const LAPTOP_DL_WRONG: &str = "노트북 빌드 받기 비밀번호가 맞지 않음 (설정)";
 /// 다운로드 비밀번호 자리
 const LAPTOP_DL_TARGET: &str = "karmo-launcher:laptop-dl";
 
@@ -226,7 +227,7 @@ fn laptop_dl_status() -> bool {
     laptop_dl_password().is_some()
 }
 
-/// 다운로드 비밀번호 저장. 빈 글자면 지움. 맞는지는 첫 받기에서 확인 (401 이면 그 자리에서 알림)
+/// 다운로드 비밀번호 저장. 빈 글자면 지움. 맞는지는 화면이 `laptop_dl_check` 로 바로 확인
 #[tauri::command]
 fn laptop_dl_set(password: String) -> Result<(), String> {
     let p = password.trim();
@@ -235,6 +236,33 @@ fn laptop_dl_set(password: String) -> Result<(), String> {
         return Ok(());
     }
     cred_write(LAPTOP_DL_TARGET, "launcher", p)
+}
+
+/// 저장된 다운로드 비밀번호를 노트북에 확인. 목록의 받기 링크 하나에 첫 바이트만 요청.
+/// Ok(true) 맞음, Ok(false) 틀림 (401), Err 는 확인 못 함 (목록 없음, 연결 실패)
+#[tauri::command]
+async fn laptop_dl_check() -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        if laptop_dl_password().is_none() {
+            return Ok(false);
+        }
+        if token().is_none() {
+            return Err("GitHub 로그인이 있어야 확인 가능".to_string());
+        }
+        let list: Value = serde_json::from_str(&get_text(LAPTOP_BUILDS_URL)?).map_err(|e| e.to_string())?;
+        let url = laptop_rows(&list)
+            .iter()
+            .find_map(|r| str_at(r, &["download"]).map(String::from))
+            .ok_or("노트북에 받을 빌드가 없어 확인 못 함")?;
+        /* 첫 바이트만. 범위 없이 보내면 수백 MB 묶음이 흐르기 시작함 */
+        match request_range(&url, None, Some("bytes=0-0".into())).map(|_| ()) {
+            Ok(()) => Ok(true),
+            Err(e) if e == LAPTOP_DL_WRONG => Ok(false),
+            Err(e) => Err(e),
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// 노트북 빌드 목록에서 런처가 받을 수 있는 줄 (PC zip, 받기 링크 있음)
@@ -379,6 +407,31 @@ fn client() -> Result<reqwest::blocking::Client, String> {
         .map_err(|e| e.to_string())
 }
 
+/// 보내기 실패 글. 주소 대신 호스트만 남김. 노트북 받기 링크는 서명이 열쇠라 화면과 로그에 남기면 안 됨
+/// (2026-11-16 연결 실패 글에 서명 링크가 그대로 나왔음)
+fn net_err(e: reqwest::Error) -> String {
+    let host = e.url().and_then(|u| u.host_str()).unwrap_or("?").to_string();
+    if e.is_timeout() {
+        format!("{} 응답 없음 (시간 초과). 잠시 뒤 다시", host)
+    } else if e.is_connect() || e.is_request() {
+        format!("{} 에 연결 못 함. 인터넷 연결을 확인하고 잠시 뒤 다시", host)
+    } else {
+        format!("{} 받기 끊김: {}", host, e.without_url())
+    }
+}
+
+/// 오류 글에서 `for url (...)` 를 뺌. 받는 도중 끊긴 오류도 주소를 달고 옴
+fn strip_url(s: &str) -> String {
+    match s.find(" for url (") {
+        Some(i) => {
+            let rest = &s[i..];
+            let end = rest.find(')').map(|j| i + j + 1).unwrap_or(s.len());
+            format!("{}{}", &s[..i], &s[end..])
+        }
+        None => s.to_string(),
+    }
+}
+
 /// GET. 내 저장소 API 주소면 토큰을 붙임 (비공개 저장소, 시간당 제한 완화)
 fn request(url: &str, accept: Option<&str>) -> Result<reqwest::blocking::Response, String> {
     request_from(url, accept, 0)
@@ -386,12 +439,16 @@ fn request(url: &str, accept: Option<&str>) -> Result<reqwest::blocking::Respons
 
 /// GET, `from` 바이트부터. 서버가 Range 를 무시하면 200 으로 처음부터 옴
 fn request_from(url: &str, accept: Option<&str>, from: u64) -> Result<reqwest::blocking::Response, String> {
+    request_range(url, accept, if from > 0 { Some(format!("bytes={}-", from)) } else { None })
+}
+
+fn request_range(url: &str, accept: Option<&str>, range: Option<String>) -> Result<reqwest::blocking::Response, String> {
     let mut rq = client()?.get(url);
     if let Some(a) = accept {
         rq = rq.header("Accept", a);
     }
-    if from > 0 {
-        rq = rq.header("Range", format!("bytes={}-", from));
+    if let Some(r) = range {
+        rq = rq.header("Range", r);
     }
     if url.starts_with(OWNER_API) || url == LAPTOP_BUILDS_URL {
         if let Some(t) = token() {
@@ -403,13 +460,13 @@ fn request_from(url: &str, accept: Option<&str>, from: u64) -> Result<reqwest::b
         let pw = laptop_dl_password().ok_or("노트북 빌드 받기 비밀번호가 없음. 설정에서 넣어 주세요")?;
         rq = rq.basic_auth("launcher", Some(pw));
     }
-    let res = rq.send().map_err(|e| e.to_string())?;
+    let res = rq.send().map_err(net_err)?;
     if !res.status().is_success() {
         let code = res.status().as_u16();
         if laptop_dl {
             /* 서명 링크를 화면과 로그에 남기지 않음 */
             return Err(match code {
-                401 => "노트북 빌드 받기 비밀번호가 맞지 않음 (설정)".into(),
+                401 => LAPTOP_DL_WRONG.into(),
                 403 | 410 => "받기 링크가 만료됨. 목록을 다시 열어 주세요".into(),
                 _ => format!("{} 노트북 빌드 받기 실패", code),
             });
@@ -1266,7 +1323,7 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
             if pause_list().contains(&id) {
                 return Err(PAUSED_TEXT.into());
             }
-            let n = res.read(&mut buf).map_err(|e| e.to_string())?;
+            let n = res.read(&mut buf).map_err(|e| format!("받기 끊김: {}", strip_url(&e.to_string())))?;
             if n == 0 {
                 break;
             }
@@ -1724,6 +1781,7 @@ pub fn run() {
             github_clear,
             laptop_dl_status,
             laptop_dl_set,
+            laptop_dl_check,
             laptop_builds,
             get_settings,
             set_workspace,
@@ -1749,6 +1807,12 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn strip_url_drops_address() {
+        let e = "error decoding response body for url (https://laptop.mascari4615.com/dl/a.zip?exp=1&sig=abc): closed";
+        assert_eq!(super::strip_url(e), "error decoding response body: closed");
+        assert_eq!(super::strip_url("plain"), "plain");
+    }
     use super::*;
 
     #[test]

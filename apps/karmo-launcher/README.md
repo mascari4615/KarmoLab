@@ -15,10 +15,10 @@
 - 설치 화면: `setup/`. 자체 창이 안에 넣은 NSIS 설치 파일을 숨겨 실행. 릴리스 첨부 `Karmo-Launcher-Setup.exe`, NSIS 설치 파일도 유지. 런처 자체 업데이트는 `installMode` `quiet`
 - 받기: 판마다 조각 파일 `<id>-<판>.part`. 끊기거나 일시정지하면 Range 로 이어 받고, 다 받은 뒤 이름을 바꿔 서명과 해시 확인. 받기 전 남은 공간 확인 (nsis 나머지 + 전체, zip 나머지 + 전체 3배, 추정). 일시정지 상태는 `prefs.paused`
 - 되돌리기: zip 앱은 판이 바뀔 때 옛 판을 `apps/<id>.prev` 에 하나 보관 (디스크를 그만큼 더 씀), 속성에서 맞바꿈. 되돌린 판의 최신 판은 `apps.<id>.skip` 으로 자동 업데이트 제외, 더 새 판이나 손 설치로 풀림. nsis 앱은 옛 릴리스를 안 남겨서 아직 안 됨
-- 노트북 빌드 고르기 (Steam 베타 자리): 항목에 `builds: "laptop"` 이 있으면 속성 창에 빌드 칸. 첫 줄 기본 (최신 릴리스), 아래 laptop-ops `/dash/builds` 의 PC zip (GitHub 토큰으로 조회). 받기는 `/dl` 서명 링크 + 다운로드 비밀번호 (설정 또는 빌드 칸 입력란, 자격 증명 `karmo-launcher:laptop-dl`), sha256 은 laptop-ops 값. 고른 빌드는 `apps.<id>.build` 로 고정돼 자동 업데이트 제외, 기본으로 돌리면 최신 릴리스 설치. 설치 판 이름 `<버전>+<실행 번호>`. 정본 memo `notes/launcher/builds/README.md`
+- 노트북 빌드 고르기 (Steam 베타 자리): 항목에 `builds: "laptop"` 이 있으면 속성 창에 빌드 칸. 첫 줄 기본 (최신 릴리스), 아래 laptop-ops `/dash/builds` 의 PC zip (GitHub 토큰으로 조회). 받기는 `/dl` 서명 링크 + 다운로드 비밀번호 (설정 또는 빌드 칸 입력란, 자격 증명 `karmo-launcher:laptop-dl`). 저장하거나 받기 전에 `laptop_dl_check` 가 목록의 받기 링크 하나로 노트북에 확인 (맞음, 틀림 401, 확인 못 함). 설정은 저장 여부와 확인 결과를 보이고, 저장돼 있고 틀리지 않았으면 입력칸 대신 바꾸기, 다시 확인, 지우기. 틀리면 속성 창을 닫지 않고 그 자리에서 다시 넣게 함, sha256 은 laptop-ops 값. 고른 빌드는 `apps.<id>.build` 로 고정돼 자동 업데이트 제외, 기본으로 돌리면 최신 릴리스 설치. 설치 판 이름 `<버전>+<실행 번호>`. 정본 memo `notes/launcher/builds/README.md`
 - PC 간 설정: 즐겨찾기와 앱별 업데이트 방식만 memo `data/launcher/sync.json` 에 (GitHub API, 앱별 `syncAt` 이 큰 쪽이 이김). 켤 때, 30분마다, 바꾸고 20초 뒤. 쓰기 권한 있는 토큰 필요. 실행 시간과 머신 현황은 안 올림 (현황은 Dash)
 - 로그: 앱 로그 폴더 `launcher.log` (1MB 넘으면 `launcher.old.log`). 시작, 자체 업데이트, 설치. 설정의 "로그 폴더 열기". 토큰을 남기지 않음
-- 알림: 창을 안 볼 때 앱 업데이트 끝과 판마다 첫 실패. 설정으로 끔. 트레이: 열기, 실행, 업데이트 확인, 끝내기
+- 알림: 창을 안 볼 때 앱 업데이트 끝과 판마다 첫 실패. 설정으로 끔. 창 안에는 토스트 (`toast()`): 설치 끝과 실패 (자동은 판마다 첫 실패만), 손으로 한 런처 업데이트 확인 결과, 비밀번호 저장과 확인 결과. 받기 연결 실패 글은 호스트만 남기고 주소는 안 남김 (`net_err`, 서명 링크 보호) 트레이: 열기, 실행, 업데이트 확인, 끝내기
 - 자동 업데이트: 판단은 `ui/updates.js` (시험 `node --test scripts/updates.test.mjs`), 실행은 `ui/app.js` 받기 줄. 30분마다 확인, 자동은 줄을 서서 동시에 둘, 손으로 누른 것은 바로 시작, 앱이 떠 있으면 꺼질 때까지 미룸. 앱별 방식 `auto`, `priority`, `launch`, `off`. 설정은 `settings.json` 의 `prefs`. 실측 memo `notes/launcher/e2e-auto-update-2026-11-05.ps1`
 - 로컬 서버 항목: `local.port` 가 열려 있으면 다시 안 켜고 `local.open` 만 엶. 주소는 이 PC 만. `local.stop` 은 끄는 명령 (`{path}` 치환), 두 번 눌러 실행하고 포트가 닫히길 15초까지 기다림. `local.remote` 는 https 원격 주소, 이 PC 에 파일이 없으면 주 버튼, 있으면 보조 버튼
 - 트레이 시작: 인자 `--tray`. Windows 시작 등록은 설정에서 켤 때만 (HKCU Run)
