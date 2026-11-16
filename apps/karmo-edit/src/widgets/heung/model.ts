@@ -335,13 +335,23 @@ export function splitClip(source: StudioClip, atBeat: number): StudioClip | null
   return right;
 }
 
+/* 불러온 파일의 id, 색: 화면 속성에 그대로 들어감. 모양이 다르면 새로 생성, 따옴표 탈출 차단 */
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const SAFE_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+function safeId(value: unknown, prefix: string): string {
+  return typeof value === 'string' && SAFE_ID.test(value) ? value : studioId(prefix);
+}
+function safeColor(value: unknown): string | undefined {
+  return typeof value === 'string' && SAFE_COLOR.test(value) ? value : undefined;
+}
+
 export function normalizeProject(input: unknown): StudioProject {
   if (!input || typeof input !== 'object') throw new Error('Invalid 흥 project');
   const value = input as Partial<StudioProject>;
   if (!Array.isArray(value.tracks)) throw new Error('Project has no tracks');
   const project: StudioProject = {
     version: 1,
-    id: typeof value.id === 'string' ? value.id : studioId('project'),
+    id: safeId(value.id, 'project'),
     name: typeof value.name === 'string' ? value.name : 'Imported Song',
     bpm: Math.max(30, Math.min(300, Number(value.bpm) || 120)),
     beatsPerBar: [3, 4, 5, 6, 7].includes(Number(value.beatsPerBar)) ? Number(value.beatsPerBar) : 4,
@@ -356,7 +366,7 @@ export function normalizeProject(input: unknown): StudioProject {
           .map((marker) => {
             const raw = marker as Partial<StudioMarker>;
             return {
-              id: typeof raw.id === 'string' ? raw.id : studioId('marker'),
+              id: safeId(raw.id, 'marker'),
               beat: Math.max(0, Number(raw.beat) || 0),
               name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : 'Section'
             };
@@ -370,7 +380,12 @@ export function normalizeProject(input: unknown): StudioProject {
   };
   project.tracks = value.tracks.map((raw, index) => {
     const source = raw as Partial<StudioTrack>;
-    const track = { ...newTrack(source.kind === 'audio' ? 'audio' : 'midi', index + 1), ...source } as StudioTrack;
+    const base = newTrack(source.kind === 'audio' ? 'audio' : 'midi', index + 1);
+    const track = { ...base, ...source } as StudioTrack;
+    track.kind = base.kind;
+    track.id = safeId(source.id, 'track');
+    track.color = safeColor(source.color) ?? base.color;
+    if (typeof track.name !== 'string') track.name = base.name;
     /* 모르는 악기 이름은 톱니로. 옛 저장본과 손으로 고친 파일이 소리를 잃지 않게 */
     if (!TRACK_INSTRUMENTS.includes(track.instrument)) track.instrument = 'sawtooth';
     const clamp = (value: unknown, low: number, high: number, fallback: number): number => {
@@ -392,6 +407,8 @@ export function normalizeProject(input: unknown): StudioProject {
     const filter = (source as { filter?: Partial<StudioTrack['filter']> }).filter;
     track.filter = { cutoff: clamp(filter?.cutoff, 120, 18000, 6800), envelope: clamp(filter?.envelope, 0, 6, 1.6) };
     track.detune = clamp((source as { detune?: unknown }).detune, 0, 60, 8);
+    track.volume = clamp(source.volume, 0, 1.2, base.volume);
+    track.pan = clamp(source.pan, -1, 1, base.pan);
     track.folded = source.folded === true;
     track.height = source.height === undefined ? TRACK_HEIGHT.default : clampTrackHeight(source.height);
     /* 옛 저장본은 볼륨 자동화를 `volumeAutomation` 한 줄로 들고 있었다. 새 자리로 옮겨 담는다. */
@@ -405,12 +422,12 @@ export function normalizeProject(input: unknown): StudioProject {
     track.clips = Array.isArray(source.clips) ? source.clips.map((rawClip) => {
       const clip = rawClip as Partial<StudioClip>;
       return {
-        id: typeof clip.id === 'string' ? clip.id : studioId('clip'), trackId: track.id, kind: track.kind,
+        id: safeId(clip.id, 'clip'), trackId: track.id, kind: track.kind,
         name: typeof clip.name === 'string' ? clip.name : 'Clip', start: Math.max(0, Number(clip.start) || 0),
         duration: Math.max(0.0625, Number(clip.duration) || 1), offset: Math.max(0, Number(clip.offset) || 0),
-        assetId: clip.assetId, mute: clip.mute === true, locked: clip.locked === true, color: typeof clip.color === 'string' ? clip.color : undefined, gain: Math.max(0, Math.min(2, Number(clip.gain) || 1)),
+        assetId: clip.assetId, mute: clip.mute === true, locked: clip.locked === true, color: safeColor(clip.color), gain: Math.max(0, Math.min(2, Number(clip.gain) || 1)),
         fadeIn: Math.max(0, Number(clip.fadeIn) || 0), fadeOut: Math.max(0, Number(clip.fadeOut) || 0),
-        notes: Array.isArray(clip.notes) ? clip.notes.map((note) => ({ ...note })) : []
+        notes: Array.isArray(clip.notes) ? clip.notes.map((note) => ({ ...note, id: safeId((note as { id?: unknown }).id, 'note') })) : []
       };
     }) : [];
     return track;
@@ -485,7 +502,7 @@ export function cleanAutomation(input: unknown, param: AutomationParam): Automat
     .map((point) => {
       const raw = point as Partial<AutomationPoint>;
       return {
-        id: typeof raw.id === 'string' ? raw.id : studioId('auto'),
+        id: safeId(raw.id, 'auto'),
         beat: Math.max(0, Number(raw.beat) || 0),
         value: Math.max(range.min, Math.min(range.max, Number(raw.value) ?? 0))
       };

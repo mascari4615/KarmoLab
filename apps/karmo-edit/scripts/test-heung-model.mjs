@@ -136,6 +136,21 @@ broken.tracks[0].automation = { volume: [{ beat: 'x', value: 0.5 }, { beat: 1, v
 const fixedAuto = normalizeProject(broken).tracks[0].automation;
 assert.equal(fixedAuto.volume.length, 1, '숫자가 아닌 점은 버린다');
 assert.equal(fixedAuto.pan.length, 0, '배열이 아니면 빈 배열');
+// 불러온 파일의 id, 색, 볼륨: 화면 속성 탈출 불가
+const hostile = JSON.parse(JSON.stringify(project));
+const evil = '"><img src=x onerror=alert(1)>';
+hostile.markers = [{ id: evil, beat: 1, name: 'A' }];
+hostile.tracks[0].id = evil; hostile.tracks[0].color = 'red;background:url(x)'; hostile.tracks[0].volume = evil;
+hostile.tracks[0].automation = { volume: [{ id: evil, beat: 1, value: 0.5 }] };
+hostile.tracks[0].clips = [{ id: evil, color: evil, start: 0, duration: 1, notes: [{ id: evil, beat: 0, duration: 1, pitch: 60, velocity: 0.8 }] }];
+const safe = normalizeProject(hostile);
+const safeTrack = safe.tracks[0];
+for (const value of [safe.markers[0].id, safeTrack.id, safeTrack.color, safeTrack.automation.volume[0].id, safeTrack.clips[0].id, safeTrack.clips[0].notes[0].id]) {
+  assert.ok(!/["<>;]/.test(value), '위험한 값이 남음: ' + value);
+}
+assert.equal(safeTrack.clips[0].color, undefined, '색 모양이 아니면 버린다');
+assert.equal(safeTrack.clips[0].trackId, safeTrack.id, '클립은 새 트랙 id 를 따른다');
+assert.ok(Number.isFinite(safeTrack.volume), '볼륨은 숫자');
 
 // 트랙 순서 바꾸기
 const order = (list) => list.map((item) => item.id).join('');
