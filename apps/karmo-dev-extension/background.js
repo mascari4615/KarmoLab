@@ -1,4 +1,4 @@
-importScripts("schedule.js", "userlists.js");
+importScripts("schedule.js", "userlists.js", "block-store.js");
 
 /**
  * MV3 service worker. 배지, 알림, 메시지 중계 등은 여기에 추가.
@@ -911,8 +911,13 @@ function readFollowEmbed(url, key) {
 /* 확장 페이지와 아카라이브 콘텐츠 스크립트 전용 입구 */
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
-  if (msg?.type === "arca.liked.open") {
-    chrome.tabs.create({ url: chrome.runtime.getURL("arca-liked.html") }).then(() => sendResponse({ ok: true }),
+  if (msg?.type === "arca.block.mutate") {
+    globalThis.KarmoBlockStore.apply(msg.command).then((result) => sendResponse({ ok: true, ...result }),
+      (error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+  if (msg?.type === "arca.liked.open" || msg?.type === "arca.settings.open") {
+    chrome.tabs.create({ url: chrome.runtime.getURL(msg.type === "arca.settings.open" ? "options.html#arca" : "arca-liked.html") }).then(() => sendResponse({ ok: true }),
       (error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }

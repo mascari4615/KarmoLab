@@ -15,6 +15,10 @@ globalThis.KARMO_BLOCK_DEFAULTS = {
   candSeen: 6, // 후보로 올리려면 최소로 본 글 수
   keywords: [], // 제목에 들어 있으면 숨기는 단어. 대소문자 무시, re: 로 시작하면 정규식
   blockedChannels: [], // 채널 주소의 이름으로 차단, 개념글과 추천수 예외 없음
+  autoBlockChannels: [], // 이 채널에 글 쓴 작성자 자동 완전 차단. 빈 목록이면 꺼짐
+  autoBlockSeen: true,
+  autoBlockHistory: true,
+  autoAllowKeys: [], // 자동 차단 해제한 작성자는 다시 차단하지 않음
   reasonTags: ["광고", "싸움", "취향 아님", "도배", "기타"], // 차단 직후 토스트의 사유 칩
   likeColor: "#ff5c8c", // 좋아요 유저 줄 색
   palette: ["#d9480f", "#1c7ed6", "#2f9e44", "#7048e8", "#0c8599", "#e67700", "#a61e4d", "#364fc7"], // 유저 자동 색

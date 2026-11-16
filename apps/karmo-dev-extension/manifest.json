@@ -80,6 +80,8 @@
         "block-defaults.js",
         "block-toast.js",
         "block-core.js",
+        "arca-profile.js",
+        "arca-auto-block.js",
         "arca-insight.js",
         "arca-block.js",
         "arca-seen.js",

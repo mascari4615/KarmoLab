@@ -10,6 +10,9 @@ const squash = (s, n) => (s || "").replace(/\s+/g, " ").trim().slice(0, n);
 /* 계정 번호 확인. 목록 줄의 계정 닉은 겹침 (실측 2026-10-03: "ㅇㅇ" 차단에 4줄 동시 숨김)
  * 글 페이지의 글쓴이는 `닉#번호`. 그 글을 받아 읽고 글 번호 -> 키로 저장, 재요청 없음 */
 const ID_CACHE = "karmoIdCache";
+const CHANNEL_CACHE = "karmoChannelCache";
+const VIRTUAL_CHANNELS = new Set(["breaking", "best", "all", "search", "headlines"]);
+const channelCache = new Map();
 const ID_CACHE_MAX = 6000;
 const ID_RETRY_MS = 60000;
 const idCache = new Map(); // "채널/글번호" -> 키
@@ -21,8 +24,9 @@ let idLoaded = false;
 let idSaveTimer = null;
 let apiRef = null;
 
-chrome.storage.local.get({ [ID_CACHE]: {} }, (items) => {
+chrome.storage.local.get({ [ID_CACHE]: {}, [CHANNEL_CACHE]: {} }, (items) => {
   for (const [k, v] of Object.entries(items[ID_CACHE] || {})) idCache.set(k, v);
+  for (const [k, v] of Object.entries(items[CHANNEL_CACHE] || {})) if (!VIRTUAL_CHANNELS.has(v)) channelCache.set(k, v);
   idLoaded = true;
   apiRef?.refresh();
 });
@@ -31,27 +35,37 @@ function saveIdCache() {
   clearTimeout(idSaveTimer);
   idSaveTimer = setTimeout(() => {
     while (idCache.size > ID_CACHE_MAX) idCache.delete(idCache.keys().next().value);
-    chrome.storage.local.set({ [ID_CACHE]: Object.fromEntries(idCache) });
+    while (channelCache.size > ID_CACHE_MAX) channelCache.delete(channelCache.keys().next().value);
+    chrome.storage.local.set({ [ID_CACHE]: Object.fromEntries(idCache), [CHANNEL_CACHE]: Object.fromEntries(channelCache) })
+      .catch(() => apiRef?.setAutoStatus("원문 채널 캐시 저장 실패, 현재 탭의 확인 결과 유지"));
   }, 1500);
 }
 
 /* 글 페이지 HTML 에서 글쓴이 키 */
-function authorKeyOf(html) {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  return doc.querySelector(".article-head .user-info [data-filter]")?.getAttribute("data-filter") || "";
+function postOf(href) {
+  if (!href) return null;
+  try {
+    const url = new URL(href, location.href);
+    if (!["arca.live", "namu.la"].includes(url.hostname)) return null;
+    const match = /^\/b\/([^/]+)\/(\d+)\/?$/.exec(url.pathname);
+    return match ? { channel: match[1], id: match[2], href: url.href } : null;
+  } catch { return null; }
 }
 
 async function resolveOne(job) {
   try {
     const res = await fetch(job.href, { credentials: "include" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const key = authorKeyOf(await res.text());
+    const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+    const key = doc.querySelector(".article-head .user-info [data-filter]")?.getAttribute("data-filter") || "";
+    const canonical = postOf(doc.querySelector('link[rel="canonical"]')?.getAttribute("href") || doc.querySelector('meta[property="og:url"]')?.content || "");
+    const requested = postOf(job.href);
+    if (canonical && requested && canonical.id === requested.id && !VIRTUAL_CHANNELS.has(canonical.channel)) channelCache.set(canonical.id, canonical.channel);
     if (key.includes("#")) {
       idCache.set(job.id, key);
-      saveIdCache();
-    } else {
-      idFailed.set(job.id, Date.now());
     }
+    if (!key.includes("#") || !channelCache.has(requested?.id)) idFailed.set(job.id, Date.now());
+    saveIdCache();
   } catch {
     idFailed.set(job.id, Date.now());
   }
@@ -83,17 +97,35 @@ function resolveHref(href, settings, fetchIfMissing = true) {
   if (!id) return null;
   const hit = idCache.get(id);
   if (hit) return hit;
+  if (fetchIfMissing) queueArticle(href);
+  return null;
+}
+
+function queueArticle(href, retry = false) {
+  const id = idOfHref(href);
+  if (!id || !idLoaded || idPending.has(id)) return;
   const failed = idFailed.get(id);
-  if (!fetchIfMissing || idPending.has(id) || (failed && Date.now() - failed < ID_RETRY_MS)) return null;
+  if (!retry && failed && Date.now() - failed < ID_RETRY_MS) return;
+  if (retry) idFailed.delete(id);
   idPending.add(id);
   idQueue.push({ id, href: new URL(href, location.href).href });
   pumpIds();
-  return null;
+}
+
+function sourceChannel(href, needsCanonical = false, ask = true) {
+  const post = postOf(href);
+  if (!post) return "";
+  const cached = channelCache.get(post.id);
+  if (cached) return cached;
+  if (!needsCanonical && !VIRTUAL_CHANNELS.has(post.channel)) return post.channel;
+  if (ask) queueArticle(href);
+  return "";
 }
 
 /* 인사이트 모듈이 쓰는 입구. 대기 중인 확인 건수는 한 번에 몰리지 않게 조절하는 데 씀 */
 globalThis.KarmoArca = {
   resolveHref,
+  sourceChannel,
   pendingCount: () => idPending.size,
   onResolved: (fn) => resolvedListeners.push(fn),
 };
@@ -140,9 +172,7 @@ function exemptReason(row, s) {
 }
 
 function channelOf(row) {
-  try {
-    return /^\/b\/([^/]+)\/\d+\/?$/.exec(new URL(row.getAttribute("href"), location.href).pathname)?.[1] || "";
-  } catch { return ""; }
+  return sourceChannel(row.getAttribute("href"), !!row.querySelector(".badges .badge.text-bg-success"));
 }
 
 KarmoBlock.start({
@@ -152,34 +182,41 @@ KarmoBlock.start({
   scan(root, api) {
     apiRef = api;
     if (api.ready) globalThis.KarmoInsight?.start(api);
+    if (api.ready) globalThis.KarmoAutoBlock?.start(api);
     const channels = new Set(api.settings.blockedChannels || []);
     for (const row of root.querySelectorAll("a.vrow")) {
       if (row.closest(".karmo-blocked-block")) continue;
       const channel = channelOf(row);
       if (channel && channels.has(channel)) {
         api.hide(row, { ...summary(row, `channel:${channel}`, channel), channel, reason: "채널" });
-      } else if (channel) {
-        api.addChannelButton(row.querySelector(".user-info") || row.querySelector(".title") || row, channel);
+      } else if (postOf(row.getAttribute("href"))) {
+        const href = row.getAttribute("href");
+        api.addChannelButton(row.querySelector(".user-info") || row.querySelector(".title") || row, channel, {
+          pending: !idLoaded || idPending.has(idOfHref(href)),
+          retry: () => { queueArticle(href, true); api.refresh(); },
+        });
       }
     }
     for (const el of root.querySelectorAll(".user-info [data-filter]")) {
       let key = el.getAttribute("data-filter");
       if (!key || el.closest(".karmo-blocked-block")) continue;
       const row = el.closest("a.vrow, .comment-item");
-      if (row?.matches("a.vrow") && channels.has(channelOf(row))) continue;
+      const channelHidden = row?.matches("a.vrow") && channels.has(channelOf(row));
+      if (channelHidden && !api.settings.autoBlockChannels?.length) continue;
       // 키워드 숨김은 글쓴이 확인보다 먼저 (번호 확인 전에도 적용)
-      const kw = row?.matches("a.vrow") && !row.classList.contains("notice") ? keywordHit(row, api.settings.keywords) : "";
+      const kw = !channelHidden && row?.matches("a.vrow") && !row.classList.contains("notice") ? keywordHit(row, api.settings.keywords) : "";
       if (kw) {
         api.hide(row, { ...summary(row, `kw:${kw}`, `키워드 ${kw}`), keyword: kw, reason: "키워드" });
-        continue;
       }
       // 목록 줄의 계정 유저: 글을 열어 확인한 `닉#번호` 로 바꿔 쓴다 (공지 줄은 대상 아님)
       if (row?.matches("a.vrow") && !row.classList.contains("notice") && !key.includes("#") && isAccount(el)) {
-        key = resolveHref(row.getAttribute("href"), api.settings);
+        key = resolveHref(row.getAttribute("href"), { ...api.settings, resolveAccounts: api.settings.resolveAccounts || !!api.settings.autoBlockChannels?.length });
         if (!key) continue;
       }
       if (!isUnique(el, key)) continue;
       const name = el.textContent.trim() || key;
+      if (row?.matches("a.vrow")) globalThis.KarmoAutoBlock?.inspect({ key, name, channel: channelOf(row) });
+      if (channelHidden || kw) continue;
       const blocked = api.isBlocked(key);
       if (row && blocked) {
         // 일반 차단의 목록 글만 예외 판정. 2단계는 개념글과 추천수 예외도 숨김

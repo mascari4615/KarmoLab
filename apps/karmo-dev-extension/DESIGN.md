@@ -168,6 +168,10 @@ Progress remains text in a polite live status region, and the list exposes its b
 
 ## Do's and Don'ts
 
+The injected blocking controls use the host board's existing list and neutral controls. Writer actions include the existing staged block and a named SVG prohibition button for immediate full blocking. On list rows the action group sits at the right center, so it cannot fall beneath the following row. Hover, keyboard focus and touch expose the same actions. Source-channel lookup has explicit pending and retry states and never labels an aggregate route as the target channel.
+
+A compact disclosure above the board lists blocked channels, writers, automatic-rule reasons and exemptions. Search keeps its value, selection and focus as automatic checks update. Each item has a named release action; rules and full settings remain reachable from the same disclosure. Blocking produces a brief undo toast. Toast timers pause for pointer, keyboard focus and saving; injected toast rows use a dedicated class to avoid host Bootstrap layout rules. All settings retain native fields and controls.
+
 ### Do:
 
 - **Do** preserve system typography, native controls, and the current distinction between feed and settings styling.

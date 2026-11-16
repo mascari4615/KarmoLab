@@ -30,7 +30,7 @@
   const squash = (s, n) => (s || "").replace(/\s+/g, " ").trim().slice(0, n);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const channelBlocked = (r) => {
-    const channel = /^\/b\/([^/]+)\/\d+/.exec(new URL(r.href, location.href).pathname)?.[1];
+    const channel = globalThis.KarmoArca.sourceChannel(r.href);
     return (api.settings.blockedChannels || []).includes(channel);
   };
 

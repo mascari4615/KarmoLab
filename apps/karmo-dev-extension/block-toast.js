@@ -8,14 +8,15 @@
   const CLS = "karmo-toast";
   const style = document.createElement("style");
   style.textContent = `
-    .${CLS} { position: fixed; left: 14px; bottom: 14px; z-index: 2147483000; width: 330px; padding: 10px 12px; border-radius: 6px;
+    .${CLS} { position: fixed; left: 14px; bottom: 14px; z-index: 2147483000; width: min(330px, calc(100vw - 52px)); padding: 10px 12px; border-radius: 6px;
       font: 13px/1.5 system-ui, sans-serif; color: #eee; background: rgba(35,35,40,.96); box-shadow: 0 2px 10px rgba(0,0,0,.35); }
-    .${CLS} .row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; }
-    .${CLS} .row:first-child { margin-top: 0; }
-    .${CLS} strong { font-weight: 600; margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+    .${CLS} .karmo-toast-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; }
+    .${CLS} .karmo-toast-row:first-child { margin-top: 0; }
+    .${CLS} strong { font-weight: 600; margin-right: auto; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
     .${CLS} .lab { color: #aaa; font-size: 12px; margin-right: 2px; }
     .${CLS} button { all: unset; cursor: pointer; padding: 1px 8px; font-size: 12px; border: 1px solid #777; border-radius: 10px; color: #ddd; }
     .${CLS} button:hover { border-color: #fff; color: #fff; }
+    .${CLS} button:focus-visible, .${CLS} input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
     .${CLS} button.on { background: #e8590c; border-color: #e8590c; color: #fff; }
     .${CLS} button.undo { border-radius: 3px; border-color: #aaa; }
     .${CLS} input { flex: 1; min-width: 0; padding: 2px 6px; font-size: 12px; border: 1px solid #666; border-radius: 3px; color: #eee; background: #222; }
@@ -32,9 +33,13 @@
     document.querySelector(`.${CLS}`)?.remove();
     const box = document.createElement("div");
     box.className = CLS;
+    box.setAttribute("role", "status");
+    box.setAttribute("aria-live", "polite");
     let timer = null;
+    let saving = false;
     const arm = () => {
       clearTimeout(timer);
+      if (saving || box.matches(":hover") || box.contains(document.activeElement)) return;
       timer = setTimeout(() => box.remove(), o.ms ?? 12000);
     };
     const btn = (text, cls = "") => {
@@ -46,20 +51,39 @@
     };
     const row = () => {
       const r = document.createElement("div");
-      r.className = "row";
+      r.className = "karmo-toast-row";
       box.append(r);
       return r;
     };
 
     const head = row();
     const t = document.createElement("strong");
-    t.textContent = `${o.title} 차단됨`;
+    t.textContent = o.message || `${o.title} 차단됨`;
     const undo = btn("되돌리기", "undo");
-    undo.addEventListener("click", () => {
-      o.onUndo();
-      box.remove();
+    undo.addEventListener("click", async () => {
+      saving = true;
+      clearTimeout(timer);
+      undo.disabled = true;
+      try { await o.onUndo(); box.remove(); }
+      catch { t.textContent = "저장 실패, 다시 시도하세요"; undo.disabled = false; }
+      finally { saving = false; arm(); }
     });
-    head.append(t, undo);
+    head.append(t);
+    if (o.onUndo) head.append(undo);
+    if (o.onManage) {
+      const manage = btn("차단 관리");
+      manage.addEventListener("click", o.onManage);
+      head.append(manage);
+    }
+    box.addEventListener("mouseenter", () => clearTimeout(timer));
+    box.addEventListener("mouseleave", arm);
+    box.addEventListener("focusin", () => clearTimeout(timer));
+    box.addEventListener("focusout", () => queueMicrotask(arm));
+    if (o.compact) {
+      document.body.append(box);
+      arm();
+      return box;
+    }
 
     const tagRow = row();
     const lab = document.createElement("span");
@@ -110,8 +134,6 @@
     note.addEventListener("input", () => clearTimeout(timer));
     noteRow.append(note);
 
-    box.addEventListener("mouseenter", () => clearTimeout(timer));
-    box.addEventListener("mouseleave", arm);
     document.body.append(box);
     arm();
     return box;

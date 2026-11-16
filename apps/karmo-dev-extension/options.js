@@ -65,7 +65,6 @@ input.addEventListener("keydown", (e) => {
 /* 아카라이브. 저장 형식은 block-core.js 머리 주석, 기본값은 block-defaults.js */
 const SITE = "arca";
 const D = globalThis.KARMO_BLOCK_DEFAULTS;
-const KEYS = { block: "blocklist", like: "likelist" };
 const LABEL = { block: "차단", like: "팔로우" };
 let state = { settings: { ...D }, lists: { block: {}, like: {} } };
 
@@ -81,12 +80,13 @@ function loadAll(cb) {
 }
 
 /* 설정 한 부분을 저장. 저장 뒤 화면을 다시 그림 */
+async function mutate(command) {
+  const result = await chrome.runtime.sendMessage({ type: "arca.block.mutate", command });
+  if (!result?.ok) throw new Error(result?.error || "차단 저장 응답 없음");
+  return result;
+}
 function patch(change) {
-  chrome.storage.local.get({ karmoSettings: {} }, (items) => {
-    const raw = items.karmoSettings || {};
-    const cur = { ...(raw[SITE] || (raw.linkStyle ? raw : {})) };
-    chrome.storage.local.set({ karmoSettings: { ...raw, [SITE]: { ...cur, ...change } } }, () => loadAll(render));
-  });
+  return mutate({ op: "settings", patch: change }).then(() => loadAll(render)).catch((error) => show(error.message, false));
 }
 
 const el = (id) => document.getElementById(id);
@@ -155,9 +155,7 @@ function renderUserColors() {
 /* 차단 항목의 사유, 메모, 만료일 입력. 바꾸면 바로 저장 */
 function blockFields(site, key, v) {
   const save = (fields) => {
-    Object.assign(state.lists.block[site][key], fields);
-    for (const k of Object.keys(fields)) if (!fields[k]) delete state.lists.block[site][key][k];
-    chrome.storage.local.set({ blocklist: state.lists.block });
+    mutate({ op: "patch", site, key, fields }).then(() => loadAll(render)).catch((error) => show(error.message, false));
   };
   const tags = [...new Set([...(state.settings.reasonTags || []), ...(v.reason ? [v.reason] : [])])];
   const sel = document.createElement("select");
@@ -197,9 +195,10 @@ function renderLists() {
         rm.type = "button";
         rm.className = "secondary";
         rm.textContent = "해제";
-        rm.addEventListener("click", () => {
-          delete state.lists[kind][site][key];
-          chrome.storage.local.set({ [KEYS[kind]]: state.lists[kind] }, () => loadAll(render));
+        rm.addEventListener("click", async () => {
+          rm.disabled = true;
+          try { await mutate({ op: kind === "block" ? "remove" : "removeLike", site, key }); loadAll(render); }
+          catch (error) { rm.disabled = false; show(error.message, false); }
         });
         const label = document.createElement("span");
         label.textContent = `${site} / ${v.name} `;
@@ -227,6 +226,23 @@ function render() {
   el("reasonTags").value = (s.reasonTags || []).join(", ");
   if (document.activeElement !== el("keywords")) el("keywords").value = (s.keywords || []).join(String.fromCharCode(10));
   if (document.activeElement !== el("blockedChannels")) el("blockedChannels").value = (s.blockedChannels || []).join(String.fromCharCode(10));
+  if (document.activeElement !== el("autoBlockChannels")) el("autoBlockChannels").value = (s.autoBlockChannels || []).join(String.fromCharCode(10));
+  el("autoBlockSeen").checked = s.autoBlockSeen !== false;
+  el("autoBlockHistory").checked = s.autoBlockHistory !== false;
+  const allow = el("autoAllowKeys");
+  allow.textContent = "";
+  for (const key of s.autoAllowKeys || []) {
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    label.textContent = key;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "예외 해제";
+    remove.addEventListener("click", () => mutate({ op: "allowRemove", key }).then(() => loadAll(render)).catch((error) => show(error.message, false)));
+    li.append(label, remove);
+    allow.append(li);
+  }
+  if (!allow.children.length) allow.textContent = "예외 없음";
   el("resolveAccounts").checked = !!s.resolveAccounts;
   el("minRec").value = String(s.minRec);
   el("blockSort").value = s.blockSort;
@@ -242,9 +258,9 @@ el("hoverHl").addEventListener("change", (e) => patch({ hoverHl: e.target.checke
 el("resolveAccounts").addEventListener("change", (e) => patch({ resolveAccounts: e.target.checked }));
 el("reasonTags").addEventListener("change", (e) => patch({ reasonTags: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }));
 el("keywords").addEventListener("change", (e) => patch({ keywords: e.target.value.split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean) }));
-el("blockedChannels").addEventListener("change", (e) => {
+function parseChannels(value) {
   const channels = [];
-  for (const line of e.target.value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean)) {
+  for (const line of value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean)) {
     let channel = line;
     if (line.startsWith("/") || /^https?:\/\//i.test(line)) {
       try {
@@ -252,14 +268,23 @@ el("blockedChannels").addEventListener("change", (e) => {
         channel = /^(arca\.live|namu\.la)$/.test(url.hostname) ? /^\/b\/([^/]+)(?:\/|$)/.exec(url.pathname)?.[1] || "" : "";
       } catch { channel = ""; }
     }
-    if (!/^[a-zA-Z0-9_-]+$/.test(channel)) {
-      show(`채널 주소 확인 필요: ${line}`, false);
-      return;
-    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(channel) || ["breaking", "best", "all", "search", "headlines"].includes(channel)) throw new Error(`원문 채널 주소 확인 필요: ${line}`);
     channels.push(channel);
   }
-  patch({ blockedChannels: [...new Set(channels)] });
+  return [...new Set(channels)];
+}
+el("blockedChannels").addEventListener("change", (e) => {
+  try { patch({ blockedChannels: parseChannels(e.target.value) }); }
+  catch (error) { show(error.message, false); }
 });
+el("autoBlockChannels").addEventListener("change", (e) => {
+  let channels;
+  try { channels = parseChannels(e.target.value); }
+  catch (error) { show(error.message, false); return; }
+  patch({ autoBlockChannels: channels });
+});
+el("autoBlockSeen").addEventListener("change", (e) => patch({ autoBlockSeen: e.target.checked }));
+el("autoBlockHistory").addEventListener("change", (e) => patch({ autoBlockHistory: e.target.checked }));
 el("insight").addEventListener("change", (e) => patch({ insight: e.target.checked }));
 el("scanPages").addEventListener("change", (e) => patch({ scanPages: Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)) }));
 el("candSeen").addEventListener("change", (e) => patch({ candSeen: Math.max(2, parseInt(e.target.value, 10) || 6) }));
@@ -301,28 +326,11 @@ listFile.addEventListener("change", async () => {
   }
   /* { block, like } 형태. 옛 형태 (사이트 맵 하나) 는 차단으로 본다 */
   if (!incoming.block && !incoming.like) incoming = { block: incoming };
-  const cur = { block: state.lists.block, like: state.lists.like };
-  let n = 0;
-  for (const kind of ["block", "like"]) {
-    for (const [site, users] of Object.entries(incoming[kind] || {})) {
-      cur[kind][site] = cur[kind][site] || {};
-      for (const [key, v] of Object.entries(users || {})) {
-        if (!cur[kind][site][key]) n += 1;
-        cur[kind][site][key] = cur[kind][site][key] || v;
-      }
-    }
-  }
-  /* 파일에 설정이 있으면 지금 저장된 값이 우선, 빈 자리만 채움 */
-  chrome.storage.local.get({ karmoSettings: {} }, (items) => {
-    const merged = { ...items.karmoSettings };
-    for (const [site, s] of Object.entries(incoming.settings || {})) {
-      if (s && typeof s === "object") merged[site] = { ...s, ...(merged[site] || {}) };
-    }
-    chrome.storage.local.set({ blocklist: cur.block, likelist: cur.like, karmoSettings: merged }, () => {
-      loadAll(render);
-      show(`가져옴. 새로 ${n}명`);
-    });
-  });
+  try {
+    const result = await mutate({ op: "import", data: incoming });
+    loadAll(render);
+    show(`가져옴. 새로 ${result.added}명`);
+  } catch (error) { show(error.message, false); }
   listFile.value = "";
 });
 

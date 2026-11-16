@@ -22,15 +22,35 @@
   const BLOCK = "karmo-blocked-block";
   const PANEL = "karmo-panel";
   const EXEMPT = "karmo-exempt";
+  const MANAGER = "karmo-block-manager";
+  const BAN_ICON = '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></svg>';
 
   const style = document.createElement("style");
   style.textContent = `
     .${HIDDEN} { display: none !important; }
     .${BTNS} { position: absolute; display: inline-flex; gap: 2px; margin-left: 3px; }
+    a.vrow { position: relative; }
+    a.vrow .${BTNS} { right: 8px; top: 50%; transform: translateY(-50%); z-index: 2; margin: 0; }
     .${BTNS} button { all: unset; cursor: pointer; padding: 0 4px; font: 12px/1.3 system-ui, sans-serif; white-space: nowrap;
       color: #888; border: 1px solid #bbb; border-radius: 2px; opacity: 0; background: #fff; }
     [data-karmo-row]:hover .${BTNS} button, a.vrow:hover .${BTNS} button, .user-info:hover + .${BTNS} button { opacity: .85; }
+    .${BTNS}:focus-within button { opacity: 1; }
+    @media (hover: none) { .${BTNS} button { opacity: 1; } }
     .${BTNS} button:hover { opacity: 1 !important; }
+    .${BTNS} button:focus-visible { opacity: 1; outline: 2px solid #1c7ed6; outline-offset: 2px; }
+    .${BTNS} button[hidden] { display: none; }
+    .${BTNS} .full { color: #a33; vertical-align: middle; }
+    .${BTNS} button:disabled { cursor: progress; }
+    .${MANAGER} { margin: 10px 0; padding: 8px 10px; border: 1px solid #999; border-radius: 4px; background: var(--bs-body-bg, #fff); color: var(--bs-body-color, #333); font: 13px/1.5 system-ui,sans-serif; }
+    .${MANAGER} summary { cursor: pointer; width: fit-content; font-weight: 600; }
+    .${MANAGER} button, .${MANAGER} input { font: inherit; color: inherit; border: 1px solid #999; border-radius: 3px; background: transparent; padding: 4px 8px; }
+    .${MANAGER} button { cursor: pointer; }
+    .${MANAGER} button:focus-visible, .${MANAGER} input:focus-visible, .${MANAGER} summary:focus-visible { outline: 2px solid #1c7ed6; outline-offset: 2px; }
+    .${MANAGER} .manager-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+    .${MANAGER} ul { list-style: none; padding: 0; max-height: 300px; overflow: auto; margin: 0; }
+    .${MANAGER} li { display: flex; gap: 8px; align-items: center; border-top: 1px solid #aaa5; padding: 6px 0; }
+    .${MANAGER} li[hidden] { display:none; }
+    .${MANAGER} li span { flex: 1; overflow-wrap: anywhere; }
     .${BTNS} .x:hover { color: #c00; border-color: #c00; }
     .${BTNS} .like:hover, .${BTNS} .like.on { color: #e0457b; border-color: #e0457b; }
     .${BTNS} .like.on { opacity: 1; }
@@ -92,8 +112,8 @@
   };
 
   function start({ site, footer, listBox, scan }) {
-    let blockMap = {};
-    let likeMap = {};
+    let blockMap = Object.create(null);
+    let likeMap = Object.create(null);
     let settings = { ...DEFAULTS };
     let queued = false;
     let hidden = [];
@@ -101,45 +121,140 @@
     let panelSig = "";
     let sections = [];
     let loaded = false;
+    let managerSig = "";
+    let autoStatus = "";
     const listeners = [];
     let hlKey = null;
     const turn = new Map();
 
-    function edit(storeKey, fn) {
-      chrome.storage.local.get({ [storeKey]: {} }, (items) => {
-        const all = items[storeKey] || {};
-        all[site] = all[site] || {};
-        fn(all[site]);
-        chrome.storage.local.set({ [storeKey]: all });
-      });
-    }
-    const patchBlock = (key, fields) => edit(K.block, (s) => { if (s[key]) Object.assign(s[key], fields); });
-    const unblock = (key) => edit(K.block, (s) => { delete s[key]; });
+    const reportSave = () => globalThis.KarmoToast?.show({ compact: true, message: "차단 저장 실패, 다시 시도하세요", onManage: openManager });
+    const mutate = async (command) => {
+      const result = await chrome.runtime.sendMessage({ type: "arca.block.mutate", command });
+      if (!result?.ok) throw new Error(result?.error || "차단 저장 응답 없음");
+      return result;
+    };
+    const patchBlock = (key, fields) => mutate({ op: "patch", key, fields });
+    const unblock = (key) => mutate({ op: "remove", key });
     /* 하단 블록의 해제: 키워드로 숨겼으면 그 키워드를 빼고, 아니면 차단 해제 */
     const release = (h) => h.channel
-      ? setSetting({ blockedChannels: (settings.blockedChannels || []).filter((c) => c !== h.channel) })
+      ? mutate({ op: "channelRemove", channel: h.channel })
       : h.keyword ? setSetting({ keywords: (settings.keywords || []).filter((k) => k !== h.keyword) }) : unblock(h.key);
     /* 차단 직후 토스트로 사유, 기간, 메모 */
-    const setBlock = (key, name) => {
-      if (blockMap[key]) {
-        patchBlock(key, { hideAll: true });
-        return;
-      }
-      edit(K.block, (s) => { s[key] = { name, at: new Date().toISOString() }; });
+    const setBlock = async (key, name, fields = {}) => {
+      const { previous } = await mutate({ op: "block", key, name, fields });
+      if (fields.autoChannel) return;
       globalThis.KarmoToast?.show({
         title: name,
+        message: fields.hideAll || previous ? `${name} 완전 차단됨` : `${name} 일반 차단됨`,
+        compact: !!fields.hideAll || !!previous,
+        onManage: openManager,
         tags: settings.reasonTags,
-        onReason: (reason) => patchBlock(key, { reason }),
-        onDays: (days) => patchBlock(key, { until: days ? new Date(Date.now() + days * 86400000).toISOString() : null }),
-        onNote: (note) => patchBlock(key, { note }),
-        onUndo: () => unblock(key),
+        onReason: (reason) => patchBlock(key, { reason }).catch(reportSave),
+        onDays: (days) => patchBlock(key, { until: days ? new Date(Date.now() + days * 86400000).toISOString() : null }).catch(reportSave),
+        onNote: (note) => patchBlock(key, { note }).catch(reportSave),
+        onUndo: () => mutate({ op: "restore", key, entry: previous }),
       });
     };
-    const toggleLike = (key, name) => edit(K.like, (s) => { if (s[key]) delete s[key]; else s[key] = { name, at: new Date().toISOString() }; });
-    const setSetting = (patch) => chrome.storage.local.get({ [K.settings]: {} }, (i) => {
-      const raw = i[K.settings] || {};
-      chrome.storage.local.set({ [K.settings]: { ...raw, [site]: { ...(raw[site] || {}), ...patch } } });
-    });
+
+    function openManager() {
+      renderManager();
+      const box = document.querySelector(`.${MANAGER}`);
+      if (!box) return;
+      box.open = true;
+      box.scrollIntoView({ block: "nearest" });
+      box.querySelector("input")?.focus();
+    }
+
+    function renderManager() {
+      if (!loaded) return;
+      const channels = settings.blockedChannels || [];
+      const sig = JSON.stringify([blockMap, channels, settings.autoBlockChannels, settings.autoAllowKeys]);
+      let box = document.querySelector(`.${MANAGER}`);
+      if (box && sig === managerSig) {
+        const status = box.querySelector(".manager-auto-status");
+        if (status) { status.textContent = autoStatus; status.hidden = !autoStatus; }
+        return;
+      }
+      managerSig = sig;
+      if (!box) {
+        box = document.createElement("details");
+        box.className = MANAGER;
+        const host = document.querySelector(".board-article") || document.body;
+        host.prepend(box);
+      }
+      const active = box.contains(document.activeElement);
+      const searching = document.activeElement === box.querySelector("input");
+      const selection = searching ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+      const query = box.querySelector("input")?.value || "";
+      box.textContent = "";
+      const summary = document.createElement("summary");
+      summary.textContent = `차단 관리 (${Object.keys(blockMap).length + channels.length})`;
+      box.append(summary);
+      const tools = document.createElement("div");
+      tools.className = "manager-tools";
+      const search = document.createElement("input");
+      search.type = "search";
+      search.placeholder = "작성자, 채널 찾기";
+      search.setAttribute("aria-label", "차단 목록 검색");
+      search.value = query;
+      const options = document.createElement("button");
+      options.type = "button";
+      options.textContent = "자동 차단 규칙, 전체 설정";
+      options.addEventListener("click", async () => {
+        try {
+          const result = await chrome.runtime.sendMessage({ type: "arca.settings.open" });
+          if (!result?.ok) throw new Error();
+        } catch { globalThis.KarmoToast?.show({ compact: true, message: "설정 열기 실패, 아카라이브 새로고침 후 재시도" }); }
+      });
+      tools.append(search, options);
+      if (settings.autoBlockChannels?.length) {
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.textContent = "작성 이력 다시 확인";
+        retry.addEventListener("click", () => globalThis.KarmoAutoBlock?.retry());
+        tools.append(retry);
+      }
+      box.append(tools);
+      const list = document.createElement("ul");
+      const add = (label, action, text = "해제") => {
+        const li = document.createElement("li");
+        const name = document.createElement("span");
+        name.textContent = label;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = text;
+        button.setAttribute("aria-label", `${label} ${text}`);
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try { await action(); }
+          catch { button.disabled = false; reportSave(); }
+        });
+        li.append(name, button);
+        list.append(li);
+      };
+      for (const channel of channels) add(`채널 / ${channel}`, () => mutate({ op: "channelRemove", channel }));
+      for (const [key, user] of Object.entries(blockMap)) add(`${user.name || key} / ${key} / ${user.autoChannel ? `자동: ${user.autoChannel}` : user.hideAll ? "완전 차단" : "일반 차단"}`, () => unblock(key));
+      for (const key of settings.autoAllowKeys || []) add(`자동 차단 예외 / ${key}`, () => mutate({ op: "allowRemove", key }), "예외 해제");
+      if (!list.children.length) {
+        const empty = document.createElement("li");
+        empty.textContent = "차단한 항목 없음";
+        list.append(empty);
+      }
+      const filter = () => { for (const li of list.children) li.hidden = !li.textContent.toLocaleLowerCase().includes(search.value.toLocaleLowerCase()); };
+      search.addEventListener("input", filter);
+      filter();
+      box.append(list);
+      const status = document.createElement("p");
+      status.className = "manager-auto-status";
+      status.textContent = autoStatus;
+      status.hidden = !autoStatus;
+      status.setAttribute("role", "status");
+      box.append(status);
+      if (searching) { search.focus(); search.setSelectionRange(...selection); }
+      else if (active) summary.focus();
+    }
+    const toggleLike = (key, name) => mutate({ op: "like", key, name });
+    const setSetting = (patch) => mutate({ op: "settings", patch });
 
     const rowsOf = (key) => [...document.querySelectorAll("[data-karmo-row]")].filter((r) => r.dataset.karmoRow === key && !r.classList.contains(HIDDEN));
     function buttonBox(anchor) {
@@ -167,6 +282,11 @@
       },
       like: (key, name) => toggleLike(key, name),
       block: (key, name) => setBlock(key, name),
+      async autoBlock(key, name, channel) {
+        if (blockMap[key]?.hideAll || (settings.autoAllowKeys || []).includes(key)) return;
+        await setBlock(key, name, { hideAll: true, autoChannel: channel, reason: `자동: ${channel}` });
+      },
+      setAutoStatus(value) { if (autoStatus !== value) { autoStatus = value; renderManager(); } },
       /** 저장소나 설정이 바뀔 때 부를 함수 등록 */
       subscribe: (fn) => listeners.push(fn),
       /** 왼쪽 패널 아래에 붙는 구역 [{ id, title, items: [{ label, href, tag, tagClass, actions: [{ text, title, fn }] }] }] */
@@ -205,11 +325,14 @@
             b.addEventListener("click", (e) => {
               e.preventDefault();
               e.stopPropagation();
-              fn();
+              Promise.resolve(fn()).catch(reportSave);
             });
             return b;
           };
-          w.prepend(mk("like", "♥", `${name} 팔로우`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key]?.hideAll ? unblock(key) : setBlock(key, name))));
+          const full = mk("full", "", `${name} 즉시 완전 차단 (개념글도 숨김)`, () => setBlock(key, name, { hideAll: true }));
+          full.innerHTML = BAN_ICON;
+          full.setAttribute("aria-label", `${name} 즉시 완전 차단`);
+          w.prepend(mk("like", "♥", `${name} 팔로우`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key]?.hideAll ? unblock(key) : setBlock(key, name))), full);
         }
         w.querySelector(".like").classList.toggle("on", !!likeMap[key]);
         w.querySelector(".like").title = `${name} ${likeMap[key] ? "팔로우 해제" : "팔로우"}`;
@@ -218,22 +341,35 @@
         const text = blockMap[key]?.hideAll ? "해제" : blockMap[key] ? "××" : "×";
         if (x.textContent !== text) x.textContent = text;
         x.title = blockMap[key]?.hideAll ? `${name} 차단 해제` : blockMap[key] ? `${name} 2단계 차단 (개념글, 추천수 예외도 숨김)` : `${name} 차단`;
+        w.querySelector(".full").hidden = !!blockMap[key]?.hideAll;
       },
-      addChannelButton(anchor, channel) {
+      addChannelButton(anchor, channel, state = {}) {
         const w = buttonBox(anchor);
-        if (channel && !w.querySelector(".channel")) {
+        if (!w.querySelector(".channel")) {
           const b = document.createElement("button");
           b.type = "button";
           b.className = "channel";
           b.textContent = "채널×";
-          b.title = `${channel} 채널 차단 (개념글도 숨김)`;
-          b.addEventListener("click", (e) => {
+          b.addEventListener("click", async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            setSetting({ blockedChannels: [...new Set([...(settings.blockedChannels || []), channel])] });
+            const target = b.dataset.channel;
+            if (!target) { b._retry?.(); return; }
+            try {
+              await mutate({ op: "channelAdd", channel: target });
+              globalThis.KarmoToast?.show({ compact: true, message: `${target} 채널 차단됨`, onManage: openManager,
+                onUndo: () => mutate({ op: "channelRemove", channel: target }) });
+            } catch { reportSave(); }
           });
           w.append(b);
         }
+        const b = w.querySelector(".channel");
+        b.dataset.channel = channel;
+        b._retry = state.retry;
+        b.disabled = !channel && !!state.pending;
+        const text = channel ? "채널×" : state.pending ? "채널 확인 중" : "채널 재확인";
+        if (b.textContent !== text) b.textContent = text;
+        b.title = channel ? `${channel} 채널 차단 (이 글의 원문 채널)` : "원문 채널 확인 후 차단 가능";
       },
     };
 
@@ -473,7 +609,7 @@
           un.className = "un";
           un.textContent = h.channel ? "채널 차단 해제" : h.keyword ? "키워드 빼기" : "차단 해제";
           un.title = whyOf(h);
-          un.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); release(h); });
+          un.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); release(h).catch(reportSave); });
           c.append(un);
           table.append(c);
         }
@@ -496,7 +632,7 @@
           un.type = "button";
           un.textContent = h.channel ? "채널 차단 해제" : h.keyword ? "키워드 빼기" : "차단 해제";
           un.title = whyOf(h);
-          un.addEventListener("click", () => release(h));
+          un.addEventListener("click", () => release(h).catch(reportSave));
           li.append(nm, a, un);
           ul.append(li);
         }
@@ -512,6 +648,7 @@
       scan(document, api);
       decorate();
       renderBlock();
+      renderManager();
     }
     function schedule() {
       if (queued) return;
@@ -522,14 +659,21 @@
     function load(items) {
       /* 임시 차단: 만료된 항목은 차단에서 빼고 저장소에서도 지움 */
       const now = Date.now();
-      blockMap = {};
+      blockMap = Object.create(null);
       const expired = [];
       for (const [k, v] of Object.entries((items[K.block] || {})[site] || {})) {
+        const activeRules = (items[K.settings] || {})[site]?.autoBlockChannels || [];
         if (v.until && Date.parse(v.until) <= now) expired.push(k);
+        else if (v.autoChannel && !activeRules.includes(v.autoChannel)) {
+          expired.push(k);
+          if (v.autoPrevious) blockMap[k] = v.autoPrevious;
+        }
         else blockMap[k] = v;
       }
-      if (expired.length) edit(K.block, (s) => { for (const k of expired) delete s[k]; });
-      likeMap = (items[K.like] || {})[site] || {};
+      const rawSettings = (items[K.settings] || {})[site] || {};
+      const invalidChannels = [...(rawSettings.blockedChannels || []), ...(rawSettings.autoBlockChannels || [])].some((c) => ["breaking", "best", "all", "search", "headlines"].includes(c));
+      if (expired.length || invalidChannels) mutate({ op: "prune" }).catch(reportSave);
+      likeMap = Object.assign(Object.create(null), (items[K.like] || {})[site] || {});
       const raw = items[K.settings] || {};
       settings = { ...DEFAULTS, ...(raw[site] || (raw.linkStyle ? raw : {})) };
       if (!STYLES.includes(settings.linkStyle)) settings.linkStyle = DEFAULTS.linkStyle; // 옛 값 (lines, stripe)
@@ -549,9 +693,9 @@
     chrome.storage.onChanged.addListener((ch, area) => {
       if (area === "local" && (ch[K.block] || ch[K.like] || ch[K.settings])) read();
     });
-    const ours = (n) => n.nodeType === 1 && (n.classList.contains(PANEL) || n.classList.contains(BLOCK) || n.classList.contains(BTNS) || n.classList.contains("karmo-toast"));
+    const ours = (n) => n.nodeType === 1 && (n.classList.contains(MANAGER) || n.classList.contains(PANEL) || n.classList.contains(BLOCK) || n.classList.contains(BTNS) || n.classList.contains("karmo-toast"));
     new MutationObserver((muts) => {
-      const own = (m) => m.target.closest?.(`.${BLOCK}, .${PANEL}, .karmo-toast`) || (m.type === "childList" && [...m.addedNodes, ...m.removedNodes].every(ours));
+      const own = (m) => m.target.closest?.(`.${MANAGER}, .${BLOCK}, .${PANEL}, .karmo-toast`) || (m.type === "childList" && [...m.addedNodes, ...m.removedNodes].every(ours));
       if (muts.every(own)) return;
       schedule();
     }).observe(document.documentElement, { childList: true, subtree: true });
