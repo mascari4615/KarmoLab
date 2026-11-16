@@ -1026,7 +1026,10 @@ function openBrowser(url: string): void {
       : ['xdg-open', [url]];
     try {
       // windowsHide 를 안 걸면 윈도우에서 **검은 콘솔 창이 툭 튀어나온다** (조수님이 겪었다).
-      spawn(command[0] as string, command[1] as string[], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+      const child = spawn(command[0] as string, command[1] as string[], { detached: true, stdio: 'ignore', windowsHide: true });
+      // 명령 없음 (리눅스 xdg-open 부재) 은 예외 아닌 'error' 이벤트. 미처리 시 프로세스 종료
+      child.on('error', (e) => process.stderr.write(`브라우저를 못 열었다 (${url}): ${e.message}\n`));
+      child.unref();
     } catch {
       // 브라우저를 못 열어도 몸은 살아있다. 주소를 직접 열면 된다.
     }
