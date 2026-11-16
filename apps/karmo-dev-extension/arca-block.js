@@ -165,8 +165,8 @@ KarmoBlock.start({
       const name = el.textContent.trim() || key;
       const blocked = api.isBlocked(key);
       if (row && blocked) {
-        // 목록 글만 예외 판정. 개념글, 추천컷 이상은 숨기지 않고 차단됨 표시
-        const why = row.matches("a.vrow") ? exemptReason(row, api.settings) : "";
+        // 일반 차단의 목록 글만 예외 판정. 2단계는 개념글과 추천수 예외도 숨김
+        const why = row.matches("a.vrow") && !api.blocked[key]?.hideAll ? exemptReason(row, api.settings) : "";
         if (!why) {
           api.hide(row, summary(row, key, name));
           continue;

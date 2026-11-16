@@ -4,7 +4,7 @@
  *   blocklist: 차단. 제자리 숨김, 페이지 맨 아래 (footer 앞) 접힌 블록에 모음. 블록은 목록 폭과 왼쪽에 맞춤
  *   likelist: 좋아요. 올리지 않아도 줄 바탕을 분홍으로 강조
  *   karmoSettings: { 사이트: { linkStyle: pill | tint | off, panel, blockSort: name | id, exBest, minRec, hoverHl } }
- *     차단 유저라도 개념글, 추천컷 이상이면 숨기지 않고 "차단됨" 표시로 보임 (어댑터가 판정, api.exempt)
+ *     일반 차단은 개념글, 추천컷 예외 표시. hideAll 차단은 예외 없이 숨김 (어댑터가 판정)
  * 한 페이지에 두 줄 이상 쓴 유저: 유저마다 색, 닉네임을 색 알약으로, 줄 왼쪽에 색 띠 (tint 는 줄 바탕도, 기본). 건수는 닉네임 툴팁과 왼쪽 패널
  * 사용: 어댑터가 KarmoBlock.start({ site, footer, listBox, scan }), 화면이 바뀔 때마다 scan(root, api)
  */
@@ -119,6 +119,10 @@
     const release = (h) => (h.keyword ? setSetting({ keywords: (settings.keywords || []).filter((k) => k !== h.keyword) }) : unblock(h.key));
     /* 차단 직후 토스트로 사유, 기간, 메모 */
     const setBlock = (key, name) => {
+      if (blockMap[key]) {
+        patchBlock(key, { hideAll: true });
+        return;
+      }
       edit(K.block, (s) => { s[key] = { name, at: new Date().toISOString() }; });
       globalThis.KarmoToast?.show({
         title: name,
@@ -196,14 +200,16 @@
             });
             return b;
           };
-          w.append(mk("like", "♥", `${name} 팔로우`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key] ? unblock(key) : setBlock(key, name))));
+          w.append(mk("like", "♥", `${name} 팔로우`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key]?.hideAll ? unblock(key) : setBlock(key, name))));
           anchor.after(w);
         }
         w.querySelector(".like").classList.toggle("on", !!likeMap[key]);
         w.querySelector(".like").title = `${name} ${likeMap[key] ? "팔로우 해제" : "팔로우"}`;
         const x = w.querySelector(".x");
         x.classList.toggle("on", !!blockMap[key]);
-        x.title = blockMap[key] ? `${name} 차단 해제` : `${name} 차단`;
+        const text = blockMap[key]?.hideAll ? "해제" : blockMap[key] ? "××" : "×";
+        if (x.textContent !== text) x.textContent = text;
+        x.title = blockMap[key]?.hideAll ? `${name} 차단 해제` : blockMap[key] ? `${name} 2단계 차단 (개념글, 추천수 예외도 숨김)` : `${name} 차단`;
       },
     };
 

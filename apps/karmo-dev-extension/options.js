@@ -175,7 +175,12 @@ function blockFields(site, key, v) {
   until.title = "이 날까지만 차단 (비우면 영구)";
   until.value = (v.until || "").slice(0, 10);
   until.addEventListener("change", () => save({ until: until.value ? new Date(`${until.value}T23:59:59`).toISOString() : "" }));
-  return [sel, note, until];
+  const level = document.createElement("select");
+  level.title = "차단 단계";
+  level.append(new Option("1단계: 개념글, 추천수 예외 허용", "normal"), new Option("2단계: 예외 없이 숨김", "all"));
+  level.value = v.hideAll ? "all" : "normal";
+  level.addEventListener("change", () => save({ hideAll: level.value === "all" }));
+  return [level, sel, note, until];
 }
 
 function renderLists() {
