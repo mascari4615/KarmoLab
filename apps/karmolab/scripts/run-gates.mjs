@@ -295,7 +295,11 @@ let ordered = gates
   .map((gate, i) => ({ gate, i, expectedSec: previousTimes[gate] ?? medianTime, browser: usesBrowser(gate) }))
   .sort((a, b) => b.expectedSec - a.expectedSec);
 if (shard) {
-  /* 긴 것부터 지금 제일 가벼운 몫에 넣음. 이름 순 동률 처리로 job 마다 같은 나눔 */
+  /* 긴 것부터 지금 제일 가벼운 몫에 넣음. 이름 순 동률 처리로 job 마다 같은 나눔.
+     시간은 CI 러너 실측 (`data/gate-times-ci.json`) 우선. 데스크톱 시간으로 나누면 몫이 2.2~4.3분으로 갈림 (2026-11-16) */
+  let ciTimes = {};
+  try { ciTimes = JSON.parse(readFileSync(path.join(path.dirname(timesFile), 'gate-times-ci.json'), 'utf8')); } catch { /* 없으면 지난 판 시간 */ }
+  for (const e of ordered) if (Number.isFinite(ciTimes[e.gate])) e.expectedSec = ciTimes[e.gate];
   const loads = Array.from({ length: shard.n }, () => 0);
   const mine = [];
   for (const entry of [...ordered].sort((a, b) => b.expectedSec - a.expectedSec || a.gate.localeCompare(b.gate))) {

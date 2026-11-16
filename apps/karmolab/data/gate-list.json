@@ -529,7 +529,19 @@
       ]
     },
     {
-      "name": "smoke:tool-boot",
+      "name": "smoke:tool-boot:1",
+      "watch": [
+        "src/**",
+        "index.html",
+        "build.mjs",
+        "scripts/entry-points.mjs",
+        "scripts/smoke-tool-boot.mjs",
+        "package.json",
+        "data/gate-list.json"
+      ]
+    },
+    {
+      "name": "smoke:tool-boot:2",
       "watch": [
         "src/**",
         "index.html",
