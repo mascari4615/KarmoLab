@@ -1,4 +1,4 @@
-importScripts("schedule.js", "userlists.js", "block-store.js");
+importScripts("schedule.js", "userlists.js", "block-store.js", "arca-transfer-data.js", "arca-transfer.js");
 
 /**
  * MV3 service worker. 배지, 알림, 메시지 중계 등은 여기에 추가.
@@ -875,6 +875,7 @@ async function closeBridgeTabs(exceptId) {
 
 /** 웹페이지(허용 도메인) → 확장 */
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+  if (msg?.type?.startsWith('arca.transfer.')) return false;
   /* 주소로 부른 bridge 는 결과를 보낸 뒤 탭을 닫는다. bridge 가 closeAfter 를 붙인다 */
   if (msg && msg.closeAfter && sender && sender.tab) {
     const id = sender.tab.id;
@@ -917,7 +918,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
   if (msg?.type === "arca.liked.open" || msg?.type === "arca.settings.open") {
-    chrome.tabs.create({ url: chrome.runtime.getURL(msg.type === "arca.settings.open" ? "options.html#arca" : "arca-liked.html") }).then(() => sendResponse({ ok: true }),
+    chrome.storage.local.get('arcaHandoff').then(({ arcaHandoff }) => {
+      if (arcaHandoff?.status === 'committed') throw new Error('아카라이브 기능은 KarmoLab 팝업에서 여세요.');
+      return chrome.tabs.create({ url: chrome.runtime.getURL(msg.type === "arca.settings.open" ? "options.html#arca" : "arca-liked.html") });
+    }).then(() => sendResponse({ ok: true }),
       (error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
@@ -930,6 +934,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 function dispatchExt(msg, sender, sendResponse) {
   (async () => {
     try {
+      if (msg?.type?.startsWith('arca.')) {
+        const handoff = (await chrome.storage.local.get('arcaHandoff')).arcaHandoff;
+        if (handoff?.status === 'committed') throw new Error('아카라이브 기능이 KarmoLab으로 이전되었습니다. KarmoLab 팝업을 사용하세요.');
+      }
       if (msg?.type === "arca.embed.read") {
         const key = String(msg.key || '');
         const likes = (await chrome.storage.local.get({ likelist: {} })).likelist.arca || {};

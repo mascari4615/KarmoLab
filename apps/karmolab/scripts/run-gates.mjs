@@ -298,12 +298,16 @@ const startedAt = Date.now();
 let finishedCount = 0;
 let browserActive = 0;
 const pending = [...ordered];
+/* 창을 여럿 띄우는 검사는 브라우저 자리를 더 차지함. 2026-11-16 야추 등급전 (창 최대 4개) 이
+   6판, 브라우저 4판 동시에서 3건 실패, 단독과 CI (브라우저 2판) 에서는 통과 */
+const BROWSER_SLOTS = { 'test:arcade:yacht-ranked': 2 };
+const slotsOf = (e) => (e.browser ? Math.min(browserLimit, BROWSER_SLOTS[e.gate] || 1) : 0);
 /** 브라우저 자리가 찼으면 그 검사는 건너뛰고 다음 것을 집는다. 순서(긴 것부터)는 그대로다. */
 function takeNext() {
-  const idx = pending.findIndex((e) => !e.browser || browserActive < browserLimit);
+  const idx = pending.findIndex((e) => !e.browser || browserActive + slotsOf(e) <= browserLimit);
   if (idx === -1) return undefined;
   const [entry] = pending.splice(idx, 1);
-  if (entry.browser) browserActive += 1;
+  browserActive += slotsOf(entry);
   return entry;
 }
 await Promise.all(
@@ -315,7 +319,7 @@ await Promise.all(
       if (nextGate === undefined) return;
       const started = Date.now();
       const run = await runGate(nextGate.gate);
-      if (nextGate.browser) browserActive -= 1;
+      browserActive -= slotsOf(nextGate);
       const sec = Math.round((Date.now() - started) / 1000);
       /* 죽은 방식도 구분해 남긴다. 빨강과 아예 못 돌았다는 손 갈 데가 다르다. */
       const how = run.error ? `못 돌림 (${run.error.message.slice(0, 60)})` : run.status === 0 ? null : `exit ${run.status}`;
