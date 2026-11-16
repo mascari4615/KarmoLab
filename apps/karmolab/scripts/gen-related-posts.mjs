@@ -17,6 +17,7 @@
  * 쓰기: `npm run gen:related` ,  `--limit N` 으로 맛보기
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -58,8 +59,16 @@ const items = posts.map((p) => {
   return { id: p.slug, hash: crypto.createHash('sha1').update(text).digest('hex').slice(0, 12), text };
 });
 
-let cache = {};
-try { cache = JSON.parse(fs.readFileSync(CACHE, 'utf8')); } catch { /* 첫 판 */ }
+/* lane 마다 곳간이 비어 매번 330편을 다시 잼 (74초, 2026-11-16 실측). 글 해시가 열쇠라
+   기계 공용 곳간을 같이 읽고 씀. CI 는 집 폴더가 비어 있어 예전과 같음 */
+const SHARED_CACHE = process.env.KARMO_RELATED_CACHE || path.join(os.homedir(), '.karmoddrine', 'cache', 'related-cache.json');
+const readCache = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; } };
+let cache = { ...readCache(SHARED_CACHE), ...readCache(CACHE) };
+const writeCache = (c) => {
+  const body = JSON.stringify(c);
+  fs.writeFileSync(CACHE, body);
+  try { fs.mkdirSync(path.dirname(SHARED_CACHE), { recursive: true }); fs.writeFileSync(SHARED_CACHE, body); } catch { /* 공용 곳간은 덤 */ }
+};
 
 const t0 = Date.now();
 const got = await embedAll(items, {
@@ -67,8 +76,9 @@ const got = await embedAll(items, {
   loadRunner: () => import('@huggingface/transformers'),
   onLoad: () => console.log('[related] 이 기계에서 도는 모델을 준비한다 (처음 한 번은 내려받는다)'),
   onProgress: (done, all) => console.log(`[related]   ${done}/${all}`),
-  onFlush: (c) => fs.writeFileSync(CACHE, JSON.stringify(c)),
+  onFlush: writeCache,
 });
+if (!fs.existsSync(SHARED_CACHE)) writeCache(cache);
 console.log(`[related] 글 ${items.length}편, 새로 잰 것 ${got.todo}편, ${((Date.now() - t0) / 1000).toFixed(1)}초 (${got.tier})`);
 
 const ok = [];
