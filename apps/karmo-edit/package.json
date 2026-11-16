@@ -23,6 +23,7 @@
     "test:heung:ux": "node scripts/test-heung-ux-contract.mjs",
     "test:ibatch": "node scripts/test-imgbatch.mjs",
     "test:imerge": "node scripts/test-imgmerge.mjs",
+    "test:paste": "node scripts/test-paste.mjs",
     "test:iresize": "node scripts/test-imgresize.mjs",
     "test:level": "node scripts/test-audiolevel.mjs",
     "test:meok": "node scripts/test-meok-doc.mjs && node scripts/test-meok-brush.mjs && node scripts/test-meok-selection.mjs && node scripts/test-meok-ops.mjs && node scripts/test-meok-storage.mjs && node scripts/test-meok-apng.mjs && node scripts/test-meok-emote.mjs && node scripts/test-meok-perf.mjs",

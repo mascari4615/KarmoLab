@@ -13,20 +13,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { serveAppAssets } from './lib/widget-harness.mjs';
+import { serveAppAssets } from '../../karmolab/scripts/lib/widget-harness.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
-await serveAppAssets(page, root);
+await serveAppAssets(page, path.join(root, 'dist'));
 await page.goto('http://localhost/');
 await page.evaluate(() => {
   window.__reg = {};
   window.Toolbox = { register: (t) => { window.__reg[t.id] = t; }, trackUse() {}, mountTool() { return true; } };
 });
-await page.addScriptTag({ content: read('js/widgets/tools/imgmerge.js') });
+await page.addScriptTag({ content: read('dist/js/widgets/tools/imgmerge.js') });
 
 const result = await page.evaluate(async () => {
   const tool = window.__reg['imgmerge'];
