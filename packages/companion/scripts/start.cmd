@@ -8,6 +8,9 @@ rem 붙는데 그건 이 꾸러미(4.7MB)의 열여덟 배다. 대신 **없으�
 rem 말없이 죽으면 사람은 「고장」으로 읽는다.
 rem
 rem 판 검사는 `check-node.mjs` 가 한다 — 배치 안에서 따옴표를 다루다 한 번 죽었다.
+rem
+rem 런처는 터미널 창 없이 띄운다 (COMPANION_CONSOLE=hidden, 사용자 2026-11-16). 그때 pause 는 안 보이는 창에서
+rem 영영 기다리므로, 막히면 알림 창으로 말하고 끝낸다. 서버 글은 %USERPROFILE%\.companion\서버.log 와 설정 판 기록 탭.
 setlocal
 cd /d "%~dp0.."
 
@@ -19,16 +22,25 @@ if errorlevel 1 (
   echo   받는 곳: https://nodejs.org  (LTS 를 고르면 된다^)
   echo   깔고 나서 이 파일을 다시 누르면 된다.
   echo.
-  pause
+  call :stop "Node 가 없어 KarmoMaid 를 못 띄웠다. https://nodejs.org 에서 LTS 를 깔고 다시 실행해 줘."
   exit /b 1
 )
 
 node scripts\check-node.mjs
 if errorlevel 1 (
-  pause
+  call :stop "Node 판이 맞지 않아 KarmoMaid 를 못 띄웠다. https://nodejs.org 에서 LTS 를 깔아 줘."
   exit /b 1
 )
 
 echo 동반자를 띄운다. 끝내려면 이 창에서 Ctrl+C.
 node demo\face.mjs
-if errorlevel 1 pause
+if errorlevel 1 call :stop "KarmoMaid 서버가 멈췄다. 기록: %USERPROFILE%\.companion\서버.log"
+exit /b
+
+:stop
+if /i "%COMPANION_CONSOLE%"=="hidden" (
+  powershell -NoProfile -WindowStyle Hidden -Command "Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('%~1', 'KarmoMaid') | Out-Null"
+) else (
+  pause
+)
+exit /b

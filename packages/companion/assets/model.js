@@ -787,8 +787,41 @@ export async function mountModel(canvas, modelName, onFail) {
     return { x: rect.x + left, y: rect.y + top, width: right - left, height: bottom - top };
   }
 
+  /**
+   * 얼굴 초상. 지금 자세 그대로 한 판 그리고 머리 둘레를 정사각으로 잘라 data URL 로.
+   * 아이콘 모드의 둥근 아이콘이 글자 대신 이걸 쓴다 (사용자 2026-11-16 "욘 텍스트에 안 이쁜 원").
+   * preserveDrawingBuffer 가 꺼져 있어도 그린 직후 같은 흐름에서 옮기면 읽힌다. 몸이 안 보이면 null
+   */
+  const headAt = new THREE.Vector3();
+  function portrait(size = 128) {
+    const body = screenBox();
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (body === null || w === 0 || h === 0) return null;
+    renderer.render(scene, camera);
+    const rect = canvas.getBoundingClientRect();
+    // 가로는 머리 뼈, 세로는 몸 꼭대기(모자, 머리칼)부터. 머리가 큰 몸(키의 절반 가까이)이라
+    // 머리 뼈 중심으로 자르면 얼굴 한가운데만 확대돼 안경만 보였음 (2026-11-16 실측)
+    let cx = body.x - rect.x + body.width / 2;
+    if (bones.head !== null) {
+      bones.head.getWorldPosition(headAt);
+      headAt.project(camera);
+      cx = (headAt.x * 0.5 + 0.5) * w;
+    }
+    const side = Math.max(24, Math.min(body.width * 1.1, body.height * 0.6));
+    const cy = body.y - rect.y + side / 2 - body.height * 0.02;
+    const sx = canvas.width / w, sy = canvas.height / h;
+    const out = document.createElement('canvas');
+    out.width = size;
+    out.height = size;
+    const g = out.getContext('2d');
+    if (g === null) return null;
+    g.drawImage(canvas, (cx - side / 2) * sx, (cy - side / 2) * sy, side * sx, side * sy, 0, 0, size, size);
+    return out.toDataURL('image/png');
+  }
+
   return {
     screenBox,
+    portrait,
     /** 아이콘 모드에서 그리기 정지. 몸이 안 보이는 동안 CPU 0 */
     pause(yes) {
       renderer.setAnimationLoop(yes ? null : loop);

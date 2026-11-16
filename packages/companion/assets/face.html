@@ -45,6 +45,7 @@
       <button type="button" class="cur" data-page="quick" title="빠른 설정" data-icon="sliders-horizontal"></button>
       <button type="button" data-page="voice" title="목소리와 듣기" data-icon="mic-vocal"></button>
       <button type="button" data-page="more" title="기억과 도구" data-icon="book-heart"></button>
+      <button type="button" data-page="log" title="기록" data-icon="scroll-text"></button>
       <button type="button" class="menu-off" id="gripClose" title="끄기" data-icon="power"></button>
     </div>
     <div class="menu-main">
@@ -85,6 +86,14 @@
         <button type="button" class="menu-link" id="boxesBtn"><i data-icon="scan"></i>차지하는 자리 보기<i class="go" data-icon="chevron-right"></i></button>
         <button type="button" class="menu-link" id="alwaysEarsBtn" hidden>늘 듣기</button>
       </div>
+      <!-- 기록. 런처가 터미널 창 없이 띄우므로 서버 글은 여기서 본다. 터미널은 원할 때만 (사용자 2026-11-16) -->
+      <div class="menu-page" data-page="log" hidden>
+        <pre class="menu-log" id="logBody" tabindex="0" aria-live="off">기록을 불러오는 중</pre>
+        <div class="menu-log-foot">
+          <span id="logFile"></span>
+          <button type="button" class="menu-log-btn" id="logTerminal" title="이 기록을 따라가는 터미널 창을 연다"><i data-icon="square-terminal"></i>터미널로 보기</button>
+        </div>
+      </div>
       <!-- 기능별 끄기의 값 칸. 서로 따로 (사용자 지시 2026-11-01). 보이는 것은 원형 버튼과 판의 칸, 저장은 이 칸의 change -->
       <div class="menu-hidden">
         <input type="checkbox" id="optScreen" /><input type="checkbox" id="optVoice" />
@@ -114,7 +123,7 @@
   </div>
   <div class="nt-toast" id="ntToast" hidden></div>
   <!-- 아이콘 모드의 몸. 끌어 옮김, 누르면 판, 두 번 누르면 몸으로 -->
-  <div class="nt-icon" id="ntIcon" hidden title="누르면 알림 판, 끌어서 옮김">욘</div>
+  <div class="nt-icon" id="ntIcon" hidden title="누르면 알림 판, 끌어서 옮김"></div>
 
   <div class="room">
     <!-- 얘가 하는 말 -->
@@ -1743,7 +1752,13 @@
     const who = document.getElementById('whoPick');
     const name = who?.selectedOptions?.[0]?.textContent?.trim() || '동반자';
     document.getElementById('menuName').textContent = name;
-    document.getElementById('menuFace').textContent = name.slice(0, 1);
+    // 판 머리 얼굴도 아이콘과 같은 몸 사진. 아이콘 모드면 몸이 숨어 못 찍으니 아이콘 것을 빌림
+    const menuFace = document.getElementById('menuFace');
+    let 사진 = null;
+    try { 사진 = 아이콘모드 ? (ntIcon.classList.contains('has-face') ? ntIcon.style.backgroundImage : null) : ((x) => (x ? `url("${x}")` : null))(body3d?.portrait?.(96) ?? null); } catch { /* 글자로 */ }
+    menuFace.classList.toggle('has-face', 사진 !== null);
+    menuFace.style.backgroundImage = 사진 ?? '';
+    menuFace.textContent = 사진 === null ? name.slice(0, 1) : '';
     const chips = document.getElementById('menuChips');
     chips.innerHTML = '';
     const ear = document.getElementById('earMode')?.value ?? 'off';
@@ -1898,9 +1913,50 @@
     b.addEventListener('click', () => {
       for (const x of menu.querySelectorAll('.menu-rail button[data-page]')) x.classList.toggle('cur', x === b);
       for (const page of menu.querySelectorAll('.menu-page')) page.hidden = page.dataset.page !== b.dataset.page;
+      기록따라가기();
       reportHitAreas();
     });
   }
+
+  /* ── 기록 탭 ─────────────────────────────────────────────
+     런처가 터미널 창 없이 띄워서 (사용자 2026-11-16) 서버 글은 `/logs` 로 받아 판에 보인다.
+     탭이 보이는 동안만 2초마다 다시 읽음. 맨 아래를 보고 있었으면 새 줄을 따라 내려감 */
+  const logBody = document.getElementById('logBody');
+  const logPage = menu.querySelector('.menu-page[data-page="log"]');
+  let 기록타이머 = null;
+  async function 기록읽기() {
+    try {
+      const r = await fetch('/logs', { cache: 'no-store' });
+      const { lines, file } = await r.json();
+      const 바닥 = logBody.scrollTop + logBody.clientHeight >= logBody.scrollHeight - 8;
+      logBody.textContent = lines.length > 0 ? lines.slice(-400).join('\n') : '아직 남은 기록이 없다.';
+      document.getElementById('logFile').textContent = file ?? '';
+      document.getElementById('logFile').title = file ?? '';
+      if (바닥) logBody.scrollTop = logBody.scrollHeight;
+    } catch (e) {
+      logBody.textContent = `기록을 못 읽었다: ${e}`;
+    }
+  }
+  function 기록따라가기() {
+    const 보임 = menu.hidden === false && logPage.hidden === false;
+    if (보임 && 기록타이머 === null) {
+      void 기록읽기().then(() => { logBody.scrollTop = logBody.scrollHeight; });
+      기록타이머 = setInterval(기록읽기, 2000);
+    } else if (보임 === false && 기록타이머 !== null) {
+      clearInterval(기록타이머);
+      기록타이머 = null;
+    }
+  }
+  new MutationObserver(기록따라가기).observe(menu, { attributes: true, attributeFilter: ['hidden'] });
+  document.getElementById('logTerminal').addEventListener('click', async () => {
+    try {
+      const r = await fetch('/logs/terminal', { method: 'POST' });
+      const { failed } = await r.json();
+      if (failed) tell(failed);
+    } catch (e) {
+      tell(`터미널을 못 열었다: ${e}`);
+    }
+  });
 
   /** 값 칸이 밖에서 바뀌었을 때 (저장 실패로 되돌림) 열린 원형과 판을 다시 그림 */
   function 메뉴다시그리기() {
@@ -2184,7 +2240,26 @@
      4px 넘게 움직이면 끌기, 아니면 누르기 (판 열고 닫기). 두 번 누르면 몸으로. 우클릭 설정에도 켜고 끄기 */
   const NT_ICON = 52;
   try { ntIconAt = JSON.parse(localStorage.getItem('companion.iconAt') || 'null'); } catch { /* 기본 자리 */ }
+  /* 아이콘 얼굴. 글자 「욘」 대신 몸의 얼굴을 찍어 씀 (사용자 2026-11-16). 몸이 보일 때만 찍을 수 있어서
+     켜는 순간 찍고 저장. 저장값으로 시작하면 (몸이 숨은 채) 지난 사진을 씀. 없으면 이름 첫 글자 */
+  function 아이콘얼굴(찍기) {
+    const who = document.getElementById('whoPick')?.selectedOptions?.[0]?.textContent?.trim() || '동반자';
+    // 인격마다 따로 두지 않음. 시작 때는 인격 목록이 아직 안 와서 이름으로 못 찾음. 다음에 켤 때 다시 찍힘
+    const key = 'companion.iconFace';
+    let face = null;
+    if (찍기) {
+      try { face = body3d?.portrait?.(128) ?? null; } catch (e) { tell(`아이콘 얼굴을 못 찍었다: ${e}`); }
+      if (face !== null) { try { localStorage.setItem(key, face); } catch { /* 이번만 */ } }
+    }
+    if (face === null) { try { face = localStorage.getItem(key); } catch { /* 글자로 */ } }
+    ntIcon.classList.toggle('has-face', face !== null);
+    ntIcon.style.backgroundImage = face === null ? '' : `url("${face}")`;
+    ntIcon.textContent = face === null ? who.slice(0, 1) : '';
+    ntIcon.setAttribute('aria-label', `${who}. 누르면 알림 판, 끌어서 옮김`);
+  }
   function 아이콘모드켜기(on) {
+    // 몸이 아직 보일 때 찍어야 함 (iconmode 가 붙으면 방이 숨어 그림판 크기가 0)
+    if (on) 아이콘얼굴(아이콘모드 === false);
     아이콘모드 = on;
     document.body.classList.toggle('iconmode', on);
     ntIcon.hidden = !on;
