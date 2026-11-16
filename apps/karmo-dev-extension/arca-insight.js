@@ -29,6 +29,10 @@
 
   const squash = (s, n) => (s || "").replace(/\s+/g, " ").trim().slice(0, n);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const channelBlocked = (r) => {
+    const channel = /^\/b\/([^/]+)\/\d+/.exec(new URL(r.href, location.href).pathname)?.[1];
+    return (api.settings.blockedChannels || []).includes(channel);
+  };
 
   function saveStats() {
     clearTimeout(saveTimer);
@@ -108,6 +112,7 @@
   function countSeen(slug) {
     let changed = false;
     for (const r of liveRows) {
+      if (channelBlocked(r)) continue;
       const key = keyOf(r, false);
       const tag = `${slug}:${r.id}`;
       if (!key || seenSet.has(tag)) continue;
@@ -127,7 +132,7 @@
     if (!api || !api.settings.insight) return api?.setSections([]);
     const likes = api.likes;
     const blocked = api.blocked;
-    const keyed = rows.map((r) => ({ ...r, key: keyOf(r, false) })).filter((r) => r.key);
+    const keyed = rows.filter((r) => !channelBlocked(r)).map((r) => ({ ...r, key: keyOf(r, false) })).filter((r) => r.key);
     const base = globalThis.KarmoSeen?.base ?? null;
     const sections = [];
 
@@ -216,6 +221,7 @@
     // 키를 모르는 계정 글은 한 번에 일부만 확인 요청 (나머지는 다음 방문)
     let asked = 0;
     for (const r of rows) {
+      if (channelBlocked(r)) continue;
       if (r.kind !== "account" || asked >= MAX_FRESH_RESOLVE || globalThis.KarmoArca.pendingCount() >= MAX_FRESH_RESOLVE) continue;
       if (!keyOf(r, true)) asked += 1;
     }

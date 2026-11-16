@@ -29,7 +29,7 @@
     .${BTNS} { position: absolute; display: inline-flex; gap: 2px; margin-left: 3px; }
     .${BTNS} button { all: unset; cursor: pointer; padding: 0 4px; font: 12px/1.3 system-ui, sans-serif; white-space: nowrap;
       color: #888; border: 1px solid #bbb; border-radius: 2px; opacity: 0; background: #fff; }
-    [data-karmo-row]:hover .${BTNS} button, .user-info:hover + .${BTNS} button { opacity: .85; }
+    [data-karmo-row]:hover .${BTNS} button, a.vrow:hover .${BTNS} button, .user-info:hover + .${BTNS} button { opacity: .85; }
     .${BTNS} button:hover { opacity: 1 !important; }
     .${BTNS} .x:hover { color: #c00; border-color: #c00; }
     .${BTNS} .like:hover, .${BTNS} .like.on { color: #e0457b; border-color: #e0457b; }
@@ -116,7 +116,9 @@
     const patchBlock = (key, fields) => edit(K.block, (s) => { if (s[key]) Object.assign(s[key], fields); });
     const unblock = (key) => edit(K.block, (s) => { delete s[key]; });
     /* 하단 블록의 해제: 키워드로 숨겼으면 그 키워드를 빼고, 아니면 차단 해제 */
-    const release = (h) => (h.keyword ? setSetting({ keywords: (settings.keywords || []).filter((k) => k !== h.keyword) }) : unblock(h.key));
+    const release = (h) => h.channel
+      ? setSetting({ blockedChannels: (settings.blockedChannels || []).filter((c) => c !== h.channel) })
+      : h.keyword ? setSetting({ keywords: (settings.keywords || []).filter((k) => k !== h.keyword) }) : unblock(h.key);
     /* 차단 직후 토스트로 사유, 기간, 메모 */
     const setBlock = (key, name) => {
       if (blockMap[key]) {
@@ -140,6 +142,15 @@
     });
 
     const rowsOf = (key) => [...document.querySelectorAll("[data-karmo-row]")].filter((r) => r.dataset.karmoRow === key && !r.classList.contains(HIDDEN));
+    function buttonBox(anchor) {
+      let box = anchor.nextElementSibling;
+      if (!(box && box.classList.contains(BTNS))) {
+        box = document.createElement("span");
+        box.className = BTNS;
+        anchor.after(box);
+      }
+      return box;
+    }
 
     const api = {
       isBlocked: (key) => Object.prototype.hasOwnProperty.call(blockMap, key),
@@ -183,10 +194,8 @@
       },
       /** anchor 바로 뒤에 좋아요와 차단 버튼을 한 번만 단다. 좋아요 상태는 매번 맞춘다 */
       addButtons(anchor, key, name) {
-        let w = anchor.nextElementSibling;
-        if (!(w && w.classList.contains(BTNS))) {
-          w = document.createElement("span");
-          w.className = BTNS;
+        const w = buttonBox(anchor);
+        if (!w.querySelector(".like")) {
           const mk = (cls, text, title, fn) => {
             const b = document.createElement("button");
             b.type = "button";
@@ -200,8 +209,7 @@
             });
             return b;
           };
-          w.append(mk("like", "♥", `${name} 팔로우`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key]?.hideAll ? unblock(key) : setBlock(key, name))));
-          anchor.after(w);
+          w.prepend(mk("like", "♥", `${name} 팔로우`, () => toggleLike(key, name)), mk("x", "×", `${name} 차단`, () => (blockMap[key]?.hideAll ? unblock(key) : setBlock(key, name))));
         }
         w.querySelector(".like").classList.toggle("on", !!likeMap[key]);
         w.querySelector(".like").title = `${name} ${likeMap[key] ? "팔로우 해제" : "팔로우"}`;
@@ -210,6 +218,22 @@
         const text = blockMap[key]?.hideAll ? "해제" : blockMap[key] ? "××" : "×";
         if (x.textContent !== text) x.textContent = text;
         x.title = blockMap[key]?.hideAll ? `${name} 차단 해제` : blockMap[key] ? `${name} 2단계 차단 (개념글, 추천수 예외도 숨김)` : `${name} 차단`;
+      },
+      addChannelButton(anchor, channel) {
+        const w = buttonBox(anchor);
+        if (channel && !w.querySelector(".channel")) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "channel";
+          b.textContent = "채널×";
+          b.title = `${channel} 채널 차단 (개념글도 숨김)`;
+          b.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSetting({ blockedChannels: [...new Set([...(settings.blockedChannels || []), channel])] });
+          });
+          w.append(b);
+        }
       },
     };
 
@@ -413,7 +437,7 @@
       const why = {};
       for (const h of hidden) if (h.reason) why[h.reason] = (why[h.reason] || 0) + 1;
       const whyText = Object.entries(why).map(([k, n]) => `${k} ${n}`).join(", ");
-      sum.textContent = `차단한 유저의 글 ${hidden.length}개${whyText ? ` (${whyText})` : ""}`;
+      sum.textContent = `숨긴 글 ${hidden.length}개${whyText ? ` (${whyText})` : ""}`;
       const tools = document.createElement("div");
       tools.className = "tools";
       tools.append("정렬 ");
@@ -447,7 +471,7 @@
           const un = document.createElement("button");
           un.type = "button";
           un.className = "un";
-          un.textContent = h.keyword ? "키워드 빼기" : "차단 해제";
+          un.textContent = h.channel ? "채널 차단 해제" : h.keyword ? "키워드 빼기" : "차단 해제";
           un.title = whyOf(h);
           un.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); release(h); });
           c.append(un);
@@ -470,7 +494,7 @@
           if (h.href) a.href = h.href;
           const un = document.createElement("button");
           un.type = "button";
-          un.textContent = h.keyword ? "키워드 빼기" : "차단 해제";
+          un.textContent = h.channel ? "채널 차단 해제" : h.keyword ? "키워드 빼기" : "차단 해제";
           un.title = whyOf(h);
           un.addEventListener("click", () => release(h));
           li.append(nm, a, un);

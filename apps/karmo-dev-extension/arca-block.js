@@ -139,6 +139,12 @@ function exemptReason(row, s) {
   return "";
 }
 
+function channelOf(row) {
+  try {
+    return /^\/b\/([^/]+)\/\d+\/?$/.exec(new URL(row.getAttribute("href"), location.href).pathname)?.[1] || "";
+  } catch { return ""; }
+}
+
 KarmoBlock.start({
   site: "arca",
   footer: "footer.footer",
@@ -146,10 +152,21 @@ KarmoBlock.start({
   scan(root, api) {
     apiRef = api;
     if (api.ready) globalThis.KarmoInsight?.start(api);
+    const channels = new Set(api.settings.blockedChannels || []);
+    for (const row of root.querySelectorAll("a.vrow")) {
+      if (row.closest(".karmo-blocked-block")) continue;
+      const channel = channelOf(row);
+      if (channel && channels.has(channel)) {
+        api.hide(row, { ...summary(row, `channel:${channel}`, channel), channel, reason: "채널" });
+      } else if (channel) {
+        api.addChannelButton(row.querySelector(".user-info") || row.querySelector(".title") || row, channel);
+      }
+    }
     for (const el of root.querySelectorAll(".user-info [data-filter]")) {
       let key = el.getAttribute("data-filter");
       if (!key || el.closest(".karmo-blocked-block")) continue;
       const row = el.closest("a.vrow, .comment-item");
+      if (row?.matches("a.vrow") && channels.has(channelOf(row))) continue;
       // 키워드 숨김은 글쓴이 확인보다 먼저 (번호 확인 전에도 적용)
       const kw = row?.matches("a.vrow") && !row.classList.contains("notice") ? keywordHit(row, api.settings.keywords) : "";
       if (kw) {

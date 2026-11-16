@@ -226,6 +226,7 @@ function render() {
   el("candSeen").value = String(s.candSeen);
   el("reasonTags").value = (s.reasonTags || []).join(", ");
   if (document.activeElement !== el("keywords")) el("keywords").value = (s.keywords || []).join(String.fromCharCode(10));
+  if (document.activeElement !== el("blockedChannels")) el("blockedChannels").value = (s.blockedChannels || []).join(String.fromCharCode(10));
   el("resolveAccounts").checked = !!s.resolveAccounts;
   el("minRec").value = String(s.minRec);
   el("blockSort").value = s.blockSort;
@@ -241,6 +242,24 @@ el("hoverHl").addEventListener("change", (e) => patch({ hoverHl: e.target.checke
 el("resolveAccounts").addEventListener("change", (e) => patch({ resolveAccounts: e.target.checked }));
 el("reasonTags").addEventListener("change", (e) => patch({ reasonTags: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }));
 el("keywords").addEventListener("change", (e) => patch({ keywords: e.target.value.split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean) }));
+el("blockedChannels").addEventListener("change", (e) => {
+  const channels = [];
+  for (const line of e.target.value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean)) {
+    let channel = line;
+    if (line.startsWith("/") || /^https?:\/\//i.test(line)) {
+      try {
+        const url = new URL(line, "https://arca.live");
+        channel = /^(arca\.live|namu\.la)$/.test(url.hostname) ? /^\/b\/([^/]+)(?:\/|$)/.exec(url.pathname)?.[1] || "" : "";
+      } catch { channel = ""; }
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(channel)) {
+      show(`채널 주소 확인 필요: ${line}`, false);
+      return;
+    }
+    channels.push(channel);
+  }
+  patch({ blockedChannels: [...new Set(channels)] });
+});
 el("insight").addEventListener("change", (e) => patch({ insight: e.target.checked }));
 el("scanPages").addEventListener("change", (e) => patch({ scanPages: Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)) }));
 el("candSeen").addEventListener("change", (e) => patch({ candSeen: Math.max(2, parseInt(e.target.value, 10) || 6) }));

@@ -34,6 +34,7 @@
   let total = 0;
   let storageError = "";
   let view = "list";
+  let blockedChannels = new Set();
   function applyView() {
     articleList.setArticleView(el("posts"), view);
     el("postLayout").dataset.view = view;
@@ -61,7 +62,7 @@
     const rows = api.merge(profiles, likes);
     const selected = el("author").value;
     const query = el("search").value.trim().toLocaleLowerCase();
-    const visible = rows.filter((r) => (!selected || r.key === selected) && (!query || r.title.toLocaleLowerCase().includes(query)));
+    const visible = rows.filter((r) => !blockedChannels.has(r.channel) && (!selected || r.key === selected) && (!query || r.title.toLocaleLowerCase().includes(query)));
     const posts = visible.map((r) => ({ id: r.id, title: r.title, url: r.href, author: likes[r.key].name || r.key,
       authorKey: r.key, authorUrl: api.profileUrl(r.key), channel: r.channelName, date: r.time, dateText: date(r.time) }));
     articleList.reconcileArticles(el("posts"), posts, (post) => articleList.createArticleRow(post, { tag: "li", onPreview: preview, previewHost: el("previewRail"), thumbnail: true }));
@@ -93,7 +94,7 @@
       el("emptyText").textContent = errors.length ? "불러오지 못한 작성자를 확인하고 다시 시도하세요." : "최신 글 불러오기를 누르세요. 공개된 최근 작성글이 없는 유저는 글이 표시되지 않습니다.";
     } else {
       el("emptyTitle").textContent = "조건에 맞는 글이 없습니다";
-      el("emptyText").textContent = "검색어를 지우거나 전체 작성자를 선택하세요.";
+      el("emptyText").textContent = "검색어, 작성자 선택과 설정의 채널 차단 목록을 확인하세요.";
     }
     el("refresh").disabled = busy || !keys.length;
     el("refresh").textContent = busy ? "글 불러오는 중" : "최신 글 불러오기";
@@ -141,13 +142,18 @@
   el("viewList").addEventListener("click", () => void changeView("list"));
   el("viewCards").addEventListener("click", () => void changeView("cards"));
   chrome.storage.onChanged.addListener((change, area) => {
+    if (area === "local" && change.karmoSettings) {
+      blockedChannels = new Set(change.karmoSettings.newValue?.arca?.blockedChannels || []);
+      render();
+    }
     if (area === "local" && change.likelist) {
       likes = change.likelist.newValue?.arca || {};
       renderAuthors();
       render();
     }
   });
-  chrome.storage.local.get({ likelist: {}, [CACHE]: {}, karmoLikedView: "list" }).then((got) => {
+  chrome.storage.local.get({ likelist: {}, [CACHE]: {}, karmoLikedView: "list", karmoSettings: {} }).then((got) => {
+    blockedChannels = new Set(got.karmoSettings?.arca?.blockedChannels || []);
     likes = got.likelist.arca || {};
     profiles = got[CACHE] || {};
     view = got.karmoLikedView === "cards" ? "cards" : "list";

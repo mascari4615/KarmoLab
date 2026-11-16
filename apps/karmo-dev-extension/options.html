@@ -197,7 +197,7 @@
 
       <fieldset>
         <legend>차단</legend>
-        <p class="hint">차단한 유저의 글은 숨기고 페이지 맨 아래 블록에 모읍니다. 아래 조건이면 숨기지 않고 "차단됨" 표시로 보입니다.</p>
+        <p class="hint">차단한 유저의 글은 숨기고 페이지 맨 아래 블록에 모읍니다. 1단계 차단은 아래 예외 허용. 작성자 옆 ××로 2단계 차단하면 예외도 숨김.</p>
         <label class="opt"><input type="checkbox" id="resolveAccounts" /> 목록의 계정 유저는 확장이 그 글을 열어 번호를 확인 (같은 닉의 다른 계정이 같이 가려지지 않게. 한 번 확인한 글은 저장해 두고 다시 안 엶)</label>
         <label class="opt"><input type="checkbox" id="exBest" /> 개념글은 보임</label>
         <label class="opt">추천이 <input type="number" id="minRec" min="0" step="1" /> 이상이면 보임 (0 이면 끔)</label>
@@ -223,6 +223,13 @@
         <legend>키워드 숨김</legend>
         <p class="hint">제목에 이 단어가 들어 있는 글을 숨깁니다 (한 줄에 하나, 대소문자 무시, <code>re:</code> 로 시작하면 정규식). 숨긴 글은 차단 글과 같이 페이지 맨 아래 블록에 모이고 거기서 "키워드 빼기"로 풀 수 있습니다.</p>
         <textarea id="keywords" rows="4" style="width: 100%; box-sizing: border-box" spellcheck="false"></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>채널 차단</legend>
+        <p class="hint">글 작성자 옆 채널×로 추가. 개념글과 추천수에 관계없이 해당 채널의 목록 글을 숨깁니다. 팔로우 글 모아보기에도 적용. 채널 주소의 이름이나 URL을 한 줄에 하나씩 입력. 하단 숨긴 글 모음의 "채널 차단 해제" 또는 여기서 지워 해제.</p>
+        <label for="blockedChannels">차단할 채널</label>
+        <textarea id="blockedChannels" rows="4" style="width: 100%; box-sizing: border-box" spellcheck="false" placeholder="채널 주소의 /b/ 뒤 이름 또는 https://arca.live/b/채널"></textarea>
       </fieldset>
 
       <fieldset>
