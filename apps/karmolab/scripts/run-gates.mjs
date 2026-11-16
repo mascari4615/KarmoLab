@@ -45,6 +45,18 @@ if (process.argv.includes('--trace-waits')) {
   process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS || ''} --import ${tracer}`.trim();
 }
 const fromIdx = args.indexOf('--from');
+/* CI 나눠 돌리기 (2026-11-16, verify.yml `gates` job). 본 job 은 KL_GATES_DEFER 1 로 전체 목록 판을 건너뛰고,
+   job 셋이 KL_GATE_SHARD (k/n) 로 같은 목록을 지난 시간 기준으로 나눠 돈다. 검사 수는 그대로 */
+if (fromIdx !== -1 && process.env.KL_GATES_DEFER === '1') {
+  console.log('[gates] 전체 목록은 나눠 도는 job 이 맡음 (KL_GATES_DEFER). 여기서는 안 돎');
+  process.exit(0);
+}
+const shardMatch = /^(\d+)\/(\d+)$/.exec(process.env.KL_GATE_SHARD || '');
+const shard = fromIdx !== -1 && shardMatch ? { k: Number(shardMatch[1]), n: Number(shardMatch[2]) } : null;
+if (shard && !(shard.n >= 1 && shard.k >= 1 && shard.k <= shard.n)) {
+  console.error(`[gates] KL_GATE_SHARD 형식 오류: ${process.env.KL_GATE_SHARD}`);
+  process.exit(2);
+}
 let gates = args;
 if (fromIdx !== -1) {
   const file = args[fromIdx + 1];
@@ -279,9 +291,23 @@ const browserLimit = Math.max(1, Number(process.env.KL_GATE_BROWSER_JOBS || (wor
    맨 뒤에 세우면 사실 긴 놈이 꼬리에 남는다. */
 const knownTimes = Object.values(previousTimes).filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
 const medianTime = knownTimes.length ? knownTimes[Math.floor(knownTimes.length / 2)] : 1;
-const ordered = gates
+let ordered = gates
   .map((gate, i) => ({ gate, i, expectedSec: previousTimes[gate] ?? medianTime, browser: usesBrowser(gate) }))
   .sort((a, b) => b.expectedSec - a.expectedSec);
+if (shard) {
+  /* 긴 것부터 지금 제일 가벼운 몫에 넣음. 이름 순 동률 처리로 job 마다 같은 나눔 */
+  const loads = Array.from({ length: shard.n }, () => 0);
+  const mine = [];
+  for (const entry of [...ordered].sort((a, b) => b.expectedSec - a.expectedSec || a.gate.localeCompare(b.gate))) {
+    let bin = 0;
+    for (let b = 1; b < shard.n; b++) if (loads[b] < loads[bin]) bin = b;
+    loads[bin] += Math.max(1, entry.expectedSec);
+    if (bin === shard.k - 1) mine.push(entry);
+  }
+  console.log(`[gates] 나눠 돌기 ${shard.k}/${shard.n}: ${mine.length}/${ordered.length}개, 예상 ${Math.round(loads[shard.k - 1])}초 (몫별 ${loads.map((v) => Math.round(v)).join('/')})`);
+  ordered = mine;
+  gates = mine.map((e) => e.gate);
+}
 
 const browserCount = ordered.filter((e) => e.browser).length;
 const directCount = ordered.filter((e) => directCommand(e.gate)).length;
