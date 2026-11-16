@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko" data-theme="dark" data-site="karmo-edit">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KarmoEdit</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/shell-critical.css">
+<link rel="stylesheet" href="css/toolbox.css">
+<link rel="stylesheet" href="css/tools.css">
+<style>
+  html,body{height:100%;margin:0;background:var(--bg-primary);color:var(--text-primary)}
+  #kt{display:grid;grid-template-columns:200px 1fr;height:100vh}
+  #kt nav{border-right:1px solid var(--border-color,#333);overflow:auto;padding:8px}
+  #kt nav button{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:6px 8px;cursor:pointer;font:inherit}
+  #kt nav button[aria-current=true]{background:var(--bg-secondary,#222)}
+  #kt main{overflow:auto;padding:16px;min-width:0}
+  #kt main:not([data-layout=full]) .tool-page{max-width:1240px;margin-inline:auto}
+  #brCanvas,#cuCanvas,#rdCanvas{max-width:100%;max-height:62vh;width:auto;height:auto}
+  #ktMain .tool-actions{justify-content:flex-start}
+  #ktMain .tool-actions>.btn,#ktMain .btn-primary{flex:0 0 auto;width:auto;min-width:220px}
+  #kt main[data-layout=full]{padding:0;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+  #kt main[data-layout=full]>*{flex:1;min-height:0}
+  #kt main[data-layout=full] .tab-panel{height:100%;display:flex;flex-direction:column;min-height:0}
+  #kt main[data-layout=full] .tab-panel>*{flex:1;min-height:0}
+  #kt main[data-layout=full] .meok{border:0;border-radius:0;min-height:0}
+</style>
+</head>
+<body>
+<div id="kt"><nav id="ktNav" aria-label="도구"></nav><main id="ktMain"></main></div>
+<div id="statusToast" class="status-toast" role="status" aria-live="polite"></div>
+<script src="js/i18n.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/host.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>

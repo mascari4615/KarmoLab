@@ -1,0 +1,39 @@
+{
+  "hubs": {
+    "image": [
+      "imgresize",
+      "imgmerge",
+      "imgbatch",
+      "idphoto",
+      "docscan",
+      "favicon",
+      "imageedit",
+      "asciiart",
+      "bgremove",
+      "cleanup",
+      "redact",
+      "exifclean"
+    ],
+    "videotool": [
+      "video2gif",
+      "videotrim",
+      "videorotate",
+      "videocompress",
+      "video2img",
+      "video2audio",
+      "videobg"
+    ],
+    "sound": [
+      "audiocut",
+      "audiolevel",
+      "audiospeed",
+      "audiofade",
+      "audiojoin"
+    ]
+  },
+  "standalone": [
+    "subtitle",
+    "meok",
+    "heung"
+  ]
+}

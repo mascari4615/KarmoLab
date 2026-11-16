@@ -1,0 +1,38 @@
+{
+    "compilerOptions":  {
+                            "target":  "ES2020",
+                            "lib":  [
+                                        "ES2020",
+                                        "DOM",
+                                        "DOM.Iterable"
+                                    ],
+                            "module":  "ESNext",
+                            "moduleResolution":  "bundler",
+                            "strict":  true,
+                            "esModuleInterop":  true,
+                            "noEmit":  true,
+                            "skipLibCheck":  true,
+                            "types":  [
+
+                                      ],
+                            "paths":  {
+                                          "@lab/*":  [
+                                                         "../karmolab/src/*"
+                                                     ],
+                                          "/packages/3d/vendor/three.module.min.js":  [
+                                                                                          "../karmolab/node_modules/@types/three/src/Three.d.ts"
+                                                                                      ],
+                                          "badapple":  [
+                                                           "../karmolab/node_modules/badapple"
+                                                       ]
+                                      }
+                        },
+    "include":  [
+                    "src/**/*.ts",
+                    "host/**/*.ts",
+                    "../karmolab/types/**/*.ts",
+                    "../karmolab/src/mdd.ts",
+                    "../karmolab/src/toolbox.ts",
+                    "../karmolab/src/badapple/boot.ts"
+                ]
+}

@@ -1,0 +1,21 @@
+# 결과물 수정 프로그램. 이름 미정. 런처와 같은 독립 crate, karmolab-tauri 워크스페이스 밖
+[package]
+name = "karmo-edit"
+version = "0.0.1"
+description = "Edit existing images, video and sound"
+authors = ["mascari4615"]
+edition = "2021"
+
+[lib]
+name = "karmo_edit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.6", features = [] }
+tauri-plugin-single-instance = "2"
+open = "5"
+
+[workspace]
