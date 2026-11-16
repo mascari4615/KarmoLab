@@ -219,7 +219,9 @@ run('apps/karmolab 첫 화면 미리 그리기 (그 검사가 볼 것)', 'apps/k
 /* 로컬은 앱 쪽이 바뀐 판에만 (2026-09-25, 136초). 글 (`content/`) 만 바뀐 판은 부팅, 성능과 무관. CI 는 늘 */
 const qualityTouched = changedFiles === null
   || changedFiles.some((f) => (f.startsWith('apps/karmolab/') && !f.startsWith('apps/karmolab/content/')) || f.startsWith('packages/'));
-if (qualityTouched) run('apps/karmolab 품질 래칫 (부팅, 성능, 누수)', 'apps/karmolab', 'npm run verify:quality');
+/* CI 는 `verify.yml` `quality` job 둘이 따로 잼 (2026-11-16, 본 job 163초). KL_QUALITY_DEFER 1 이면 여기서 안 돎 */
+if (qualityTouched && process.env.KL_QUALITY_DEFER === '1') console.log('[verify] ! 품질 래칫은 quality job 이 맡음 (KL_QUALITY_DEFER)');
+else if (qualityTouched) run('apps/karmolab 품질 래칫 (부팅, 성능, 누수)', 'apps/karmolab', 'npm run verify:quality');
 else console.log('[verify] ! apps/karmolab 앱 쪽이 안 바뀌었다. 품질 래칫 건너뜀 (CI 는 늘 잰다)');
 
 // 2.1. 도구 페이지가 앱 셸과 갈라졌는지 (KL-097).
