@@ -243,17 +243,17 @@ jobs:
 
   # ★ **게이트를 러너 셋에 나눠 돈다** (2026-11-16, 사용자 "여전히 길다").
   #   한 러너 (4코어, 2판) 에서 277개를 돌면 637~884초였고 verify 한 판이 16~21분이었다.
-  #   같은 목록을 지난 시간 기준으로 여섯 몫으로 나눠 (2026-11-16 셋 5.8분 -> 여섯) (`run-gates.mjs` KL_GATE_SHARD) 각자 build 사슬 뒤 제 몫만 돈다.
+  #   같은 목록을 지난 시간 기준으로 여섯 몫으로 나눠 (2026-11-16 셋 5.8분 -> 여섯 3.7분 -> 오락실 검사를 빼고 넷) (`run-gates.mjs` KL_GATE_SHARD) 각자 build 사슬 뒤 제 몫만 돈다.
   #   검사 수는 그대로 (CI 통짜, 2026-09-25 사용자 결정). 공개 저장소라 러너 시간 비용 없음.
   #   ⚠ push 마다 러너 자리를 셋 더 씀. 세션이 몰려 줄이 길어지면 몫 수를 줄여라
   gates:
-    name: verify gates (${{ matrix.shard }}/6)
+    name: verify gates (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Setup Node.js
@@ -275,12 +275,12 @@ jobs:
         env:
           KL_GATES_DEFER: '1'
         run: npm run build:direct
-      - name: Gates (몫 ${{ matrix.shard }}/6)
+      - name: Gates (몫 ${{ matrix.shard }}/4)
         working-directory: apps/karmolab
         env:
           GH_TOKEN: ${{ github.token }}
           KL_GATE_JOBS: '2'
-          KL_GATE_SHARD: ${{ matrix.shard }}/6
+          KL_GATE_SHARD: ${{ matrix.shard }}/4
         run: npm run gates
 
   # ★ **품질 래칫을 따로 잰다** (2026-11-16). 본 job 에서 다섯을 한 줄로 163초.

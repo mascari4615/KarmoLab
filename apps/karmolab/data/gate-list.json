@@ -437,35 +437,6 @@
     "audit:wait",
     "audit:orphans",
     "audit:prerender-home",
-    {
-      "name": "smoke:arcadekeys",
-      "watch": [
-        "src/widgets/arcade/**",
-        "scripts/smoke-arcade-keys.mjs"
-      ]
-    },
-    "audit:arcade-contract",
-    "audit:arcade-feel",
-    "test:arcade",
-    "test:arcade:ranked",
-    "test:arcade:ranked-live",
-    "test:arcade:verify",
-    "test:arcade:tutor",
-    "test:arcade:lifecycle",
-    "test:arcade:ghost",
-    {
-      "name": "test:arcade:bots",
-      "watch": [
-        "src/widgets/arcade/games/gomoku-engine.ts",
-        "src/widgets/arcade/games/gomoku.ts",
-        "scripts/bench-gomoku-ai.mjs",
-        "package.json",
-        "data/gate-list.json"
-      ]
-    },
-    "test:arcade:solitaire",
-    "test:arcade:cards",
-    "test:drift",
     "test:spectate",
     "test:replay",
     "test:ghost",
@@ -594,13 +565,7 @@
     "audit:generated",
     "audit:vendor-syntax",
     "audit:nightly-alive",
-    "smoke:arcadeletter",
-    "test:arcade:ui",
-    "test:arcade:ui:all",
-    "test:arcade:yacht",
-    "test:arcade:yacht-ranked",
     "test:room-handshake",
-    "test:arcade:multi",
     "test:garden",
     "test:gate-reaper",
     "test:favorites",
@@ -610,7 +575,6 @@
     "smoke:shell",
     "smoke:soundscape",
     "test:orbita",
-    "smoke:arcadeteams",
     "smoke:burnnote",
     "test:badapple:home",
     "test:badapple:load",

@@ -194,6 +194,7 @@
     "gates": "node scripts/run-gates.mjs --from data/gate-list.json",
     "gates:trace-waits": "node scripts/run-gates.mjs --from data/gate-list.json --trace-waits",
     "gates:changed": "node scripts/run-gates.mjs --from data/gate-list.json --changed",
+    "gates:arcade": "node scripts/run-gates.mjs smoke:arcadekeys audit:arcade-contract audit:arcade-feel test:arcade test:arcade:ranked test:arcade:ranked-live test:arcade:verify test:arcade:tutor test:arcade:lifecycle test:arcade:ghost test:arcade:bots test:arcade:solitaire test:arcade:cards test:drift smoke:arcadeletter test:arcade:ui test:arcade:ui:all test:arcade:yacht test:arcade:yacht-ranked test:arcade:multi smoke:arcadeteams",
     "gen:arcade-catalog": "node scripts/gen-arcade-catalog.mjs",
     "gen:badapple": "node scripts/gen-badapple-demo.mjs",
     "gen:changelog": "node scripts/gen-changelog.mjs",
