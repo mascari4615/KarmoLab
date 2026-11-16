@@ -1,0 +1,44 @@
+name: "KarmoLab 스터디 맵 바깥 링크"
+
+# 왜 따로 있나 (2026-11-16, 사용자 "불필요한건 끄거나 치우면")
+#
+# `test:studymap` 은 지도에 적힌 바깥 주소가 살아 있는지 본다. 바뀌는 것은 남의 사이트지
+# 우리 코드가 아니다. verify 안에서는 CI 81초, 로컬 167초를 쓰고, 바깥 망이 느리면 못 돌림이 났다.
+# 그래서 주 1회 여기서만 돈다. 배포도 verify 도 안 막는다. 죽은 주소는 요약에 남는다.
+
+on:
+  schedule:
+    # 매주 월 18:40 UTC (한국 화요일 새벽 3시 40분). 접근성 전수(18:10)와 안 겹치게
+    - cron: '40 18 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: karmolab-studymap-links
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    name: 스터디 맵 바깥 링크
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/setup-karmolab
+        with:
+          chromium: 'true'
+      - name: 바깥 링크 확인
+        id: links
+        working-directory: apps/karmolab
+        continue-on-error: true
+        run: npm run test:studymap 2>&1 | tee /tmp/studymap.txt; exit ${PIPESTATUS[0]}
+      - name: 요약
+        if: always()
+        run: |
+          {
+            echo '### 스터디 맵 바깥 링크'
+            tail -40 /tmp/studymap.txt 2>/dev/null || echo '못 돌림'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.links.outcome }}" = "failure" ]; then exit 1; fi
