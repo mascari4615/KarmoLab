@@ -24,7 +24,7 @@
     <button type="button" class="wb" id="close" title="닫기" aria-label="닫기">&#10005;</button>
   </header>
   <nav class="side" aria-label="라이브러리">
-    <input type="search" id="q" placeholder="검색" spellcheck="false" aria-label="검색">
+    <div class="srow"><button type="button" class="sidetg" id="sideTg" title="목록 접기" aria-label="목록 접기">&#171;</button><input type="search" id="q" placeholder="검색" spellcheck="false" aria-label="검색"></div>
     <div class="filters">
       <div id="filters"><button type="button" class="on" data-filter="all">전체</button><button type="button" data-filter="installed">설치됨</button><button type="button" data-filter="updates">업데이트</button></div>
       <select id="sort" aria-label="정렬"><option value="list">기본</option><option value="name">이름</option><option value="recent">최근 실행</option></select>
@@ -32,8 +32,10 @@
     <div class="scroll" id="list"></div>
     <button type="button" class="dlbtn" id="dlBtn">다운로드</button>
   </nav>
-  <div class="col">
+  <!-- 본문 단. 목록 오른쪽부터 캐릭터 앞 (x 800) 까지. 제목, 플레이 바, 탭 칸 (사용자 2026-11-16 V1 "판이 캐릭터 앞에서 멈춤") -->
+  <div class="main" id="main">
     <section class="head" id="head"></section>
+    <div class="acts" id="acts"></div>
     <section class="rel" id="rel" hidden></section>
   </div>
   <!-- 런처 자신의 새 판. 켜질 때 한 번 물어봄 -->
@@ -41,7 +43,6 @@
   <img class="yawn" id="mascot" alt="" hidden>
   <button type="button" class="mascot-hit" id="mascotHit" title="말 걸기" aria-label="말 걸기" hidden></button>
   <p class="say" id="say" hidden></p>
-  <div class="acts" id="acts"></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <!-- 설정. 비공개 항목 (memo, WM) 은 GitHub 로그인이 있어야 목록에 나옴. 로컬 항목은 작업 폴더 아래에서 찾음 -->

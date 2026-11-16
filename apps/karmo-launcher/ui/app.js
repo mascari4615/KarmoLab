@@ -22,10 +22,28 @@ function toast(text, kind = 'info') {
   const el = document.createElement('div');
   el.className = 'toast ' + kind;
   el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
-  el.textContent = text;
+  /* "제목: 이유" 는 두 줄로 */
+  const cut = text.indexOf(': ');
+  const tt = document.createElement('div');
+  tt.className = 'tt';
+  tt.textContent = cut > 0 ? text.slice(0, cut) : text;
+  const wrap = document.createElement('div');
+  wrap.append(tt);
+  if (cut > 0) {
+    const tx = document.createElement('div');
+    tx.className = 'tx';
+    tx.textContent = text.slice(cut + 2);
+    wrap.append(tx);
+  }
+  const x = document.createElement('span');
+  x.className = 'x';
+  x.textContent = '\u2715';
+  el.append(wrap, x);
   el.addEventListener('click', () => el.remove());
   box.append(el);
-  while (box.children.length > 4) box.firstElementChild.remove();
+  placeToasts();
+  /* 자리가 제목 아래 한 칸뿐이라 하나만. 새 알림이 옛 알림을 바꿈 */
+  while (box.children.length > 1) box.firstElementChild.remove();
   window.setTimeout(() => el.remove(), kind === 'err' ? 9000 : 4000);
 }
 
@@ -98,7 +116,7 @@ function paintList() {
           const accent = accentOf(a);
           const star = appPref(prefs, a.id).favorite ? '<b class="star" title="즐겨찾기">&#9733;</b>' : '';
           return (
-            '<button type="button" class="li' + (accent ? ' brand' : '') + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '"' + (accent ? ' style="--c:' + accent + '"' : '') + '>' +
+            '<button type="button" class="li' + (accent ? ' brand' : '') + (current === a.id ? ' on' : '') + '" data-id="' + esc(a.id) + '" title="' + esc(a.name + (tag ? ', ' + tag.replace(/<[^>]+>/g, '') : '')) + '"' + (accent ? ' style="--c:' + accent + '"' : '') + '>' +
             (logo ? '<i class="logo" style="' + esc('-webkit-mask-image:url("' + logo + '");mask-image:url("' + logo + '")') + '"></i>' : '<img class="ic" src="img/' + esc(icon) + '.png" alt="">') + '<span>' + esc(a.name) + '</span>' + star + tag + '</button>'
           );
         })
@@ -113,6 +131,9 @@ function paintDlBtn() {
   const now = jobs.length === 1 ? phaseText(jobs[0]) : jobs.length ? '작업 ' + jobs.length + '개' : '';
   dlBtn.textContent = now ? now + (waiting ? ', 대기 ' + waiting : '') : waiting ? '다운로드 대기 ' + waiting : '다운로드';
   dlBtn.classList.toggle('on', !!jobs.length || !!waiting);
+  /* 접힌 목록 (72px) 에는 짧게 */
+  dlBtn.dataset.short = jobs.length === 1 && jobs[0].phase === 'download' ? pctOf(jobs[0]) + '%' : jobs.length ? '작업 ' + jobs.length : waiting ? '대기 ' + waiting : '\u21e9';
+  dlBtn.title = dlBtn.textContent;
 }
 
 /* 마스코트. 고른 앱의 그림으로 바꿈. 그림이 없거나 못 읽으면 아무도 안 섬. 빠르게 넘기면 마지막 앱만 남김 */
@@ -229,6 +250,84 @@ async function paintMascot(app, state) {
   showMascot(url, turn);
 }
 
+let menuOpen = false;
+/** 받는 중 숫자만 바꿈. 단추는 그대로 둬서 누르는 사이 사라지지 않게 */
+function paintProgress(job) {
+  const bar = actsEl.querySelector('.top i');
+  if (bar) bar.style.width = pctOf(job) + '%';
+  const small = actsEl.querySelector('.start small');
+  if (small) small.textContent = small.textContent.replace(/\d+%$/, pctOf(job) + '%');
+  const kv = actsEl.querySelectorAll('.stats .kv b');
+  const vals = [job.total ? sizeText(job.got || 0) + ' / ' + sizeText(job.total) : pctOf(job) + '%'];
+  if (job.speed > 0) vals.push(sizeText(job.speed) + '/s');
+  if (job.speed > 0 && job.total) vals.push(fmtLeft((job.total - (job.got || 0)) / job.speed));
+  if (kv.length !== vals.length) return paintMain();
+  kv.forEach((b, i) => (b.textContent = vals[i]));
+}
+const relTab = new Map();
+const fmtLeft = (sec) => (!isFinite(sec) || sec < 0 ? '-' : sec < 60 ? Math.ceil(sec) + '초' : sec < 3600 ? Math.ceil(sec / 60) + '분' : (sec / 3600).toFixed(1) + '시간');
+const FORMAT_TEXT = { nsis: '설치 프로그램', zip: '압축 (런처 폴더)', local: '이 PC 작업 폴더' };
+
+/** 아래 칸. 탭: 릴리스, 정보, 빌드 (노트북 빌드 고르기가 있는 앱만, 속성 창을 엶). 정보는 캐릭터 앞에서 멈추려고 탭 안 (V1) */
+function paintRel(app, st, pref, played, last) {
+  if (app.kind === 'web' || app.soon) {
+    relEl.hidden = true;
+    return;
+  }
+  relEl.hidden = false;
+  const tabs = [];
+  if (st.latest) tabs.push(['notes', '릴리스']);
+  tabs.push(['info', '정보']);
+  let tab = relTab.get(app.id) || tabs[0][0];
+  if (!tabs.some(([k]) => k === tab)) tab = tabs[0][0];
+  let body = '';
+  if (tab === 'notes') {
+    const day = st.pub_date ? String(st.pub_date).slice(5, 10).replace('-', '.') : '';
+    body = '<div class="row"><span>' + esc(app.name + ' v' + st.latest) + '</span><span>' + esc(day) + '</span></div>' +
+      (st.notes ? '<div class="notes">' + esc(st.notes) + '</div>' : '') +
+      (st.page ? '<button type="button" class="more" data-page="' + esc(st.page) + '">전체 보기</button>' : '');
+  } else {
+    const rows = [];
+    if (fmt(app) !== 'local') {
+      rows.push(['내 버전', st.installed ? st.version || '-' : '설치 안 됨']);
+      rows.push(['최신', st.latest || '-']);
+      rows.push(['빌드', pref.build ? '노트북 빌드 (고정)' : '기본 (최신 릴리스)']);
+      if (st.prev) rows.push(['되돌릴 판', st.prev]);
+      rows.push(['자동 업데이트', MODES[modeOf(prefs, app.id)] || '-']);
+    }
+    rows.push(['형식', FORMAT_TEXT[fmt(app)] || fmt(app)]);
+    if (last) rows.push(['마지막 실행', last]);
+    if (played) rows.push(['실행 시간', played]);
+    body = '<dl>' + rows.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('') + '</dl>';
+  }
+  /* 빌드 고르기는 탭이 아니라 속성 창을 여는 동작 */
+  const pick = app.builds === 'laptop' && st.installed ? '<button type="button" class="tablink" data-builds>빌드 고르기 &#8599;</button>' : '';
+  relEl.innerHTML = '<div class="tabs" role="tablist">' + tabs.map(([k, label]) => '<button type="button" role="tab" data-tab="' + k + '"' + (k === tab ? ' class="on" aria-selected="true"' : '') + '>' + label + '</button>').join('') + pick + '</div><div class="body">' + body + '</div>';
+}
+
+/** 토스트는 플레이 바 바로 위, 같은 폭. 설정 화면이 덮였으면 오른쪽 위 */
+function placeToasts() {
+  const box = $('toasts');
+  const stage = $('stage');
+  if (stage.classList.contains('settings')) {
+    box.style.left = '';
+    box.style.right = '56px';
+    box.style.width = '440px';
+    box.style.top = '84px';
+    box.style.bottom = 'auto';
+    return;
+  }
+  const main = $('main');
+  box.style.right = 'auto';
+  const h1 = headEl.querySelector('h1');
+  /* h1 과 플레이 바의 offsetTop 은 둘 다 .main 기준 */
+  box.style.top = h1 ? main.offsetTop + h1.offsetTop + h1.offsetHeight + 6 + 'px' : 'auto';
+  box.style.left = main.offsetLeft + 'px';
+  box.style.width = main.offsetWidth + 'px';
+  box.style.bottom = stage.offsetHeight - (main.offsetTop + actsEl.offsetTop) + 8 + 'px';
+}
+new ResizeObserver(() => placeToasts()).observe($('main'));
+
 function paintMain() {
   const app = apps.find((a) => a.id === current);
   const castNow = castState(app, app && status.get(app.id), app && busy.get(app.id), app && fresh.get(app.id));
@@ -245,40 +344,34 @@ function paintMain() {
   heroEl.style.backgroundImage = bg;
   const st = status.get(app.id) || {};
   const pref = appPref(prefs, app.id);
-  const info = [];
-  if (app.kind !== 'web' && !app.soon) {
-    if (fmt(app) === 'local') info.push(['위치', st.installed ? '이 PC' : '이 PC 에 없음']);
-    else {
-      info.push(['내 버전', st.installed ? st.version || '-' : '설치 안 됨']);
-      info.push(['최신', st.latest || (st.error ? '못 읽음' : '-')]);
-    }
-  }
   const played = fmtDuration(pref.total);
   const last = fmtAgo(pref.last, Date.now());
-  const history = [];
-  if (last) history.push(['마지막 실행', last]);
-  if (played) history.push(['실행 시간', played]);
+  const pin = pref.build;
+  /* 제목 아래 한 줄: 버전 (Steam 의 기록 줄 자리는 플레이 바로) */
+  const ver = [];
+  if (app.kind !== 'web' && !app.soon) {
+    if (fmt(app) === 'local') ver.push(['위치', st.installed ? '이 PC' : '이 PC 에 없음']);
+    else {
+      ver.push(['내 버전', st.installed ? st.version || '-' : '설치 안 됨']);
+      if (!pin) ver.push(['최신', st.latest || (st.error ? '못 읽음' : '-')]);
+      else ver.push(['빌드', '노트북 빌드 고정']);
+    }
+  }
   headEl.innerHTML =
     '<h1>' + esc(app.name) + '</h1><p>' + esc(app.summary) + '</p>' +
-    (info.length ? '<dl class="info">' + info.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd><b>' + esc(v) + '</b></dd>').join('') + '</dl>' : '') +
-    (history.length ? '<dl class="info hist">' + history.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('') + '</dl>' : '') +
+    (ver.length ? '<p class="ver">' + ver.map(([k, v]) => '<span>' + esc(k) + '<b>' + esc(v) + '</b></span>').join('') + '</p>' : '') +
     (st.error ? '<p class="err">' + esc(st.error) + '</p>' : '');
 
-  if (st.latest) {
-    relEl.hidden = false;
-    const day = st.pub_date ? String(st.pub_date).slice(5, 10).replace('-', '.') : '';
-    relEl.innerHTML =
-      '<div class="t">릴리스</div><div class="row"><span>' + esc(app.name + ' v' + st.latest) + '</span><span>' + esc(day) + '</span></div>' +
-      (st.notes ? '<div class="notes">' + esc(st.notes) + '</div>' : '') +
-      (st.page ? '<button type="button" class="more" data-page="' + esc(st.page) + '">전체 보기</button>' : '');
-  } else relEl.hidden = true;
+  paintRel(app, st, pref, played, last);
 
   const sub = [];
+  const tools = [];
+  const notes = [];
   let start = '';
   const job = busy.get(app.id);
   const waiting = isQueued(app.id);
   const mode = modeOf(prefs, app.id);
-  if (app.soon) start = '<p class="note">아직 받을 수 있는 판이 없습니다.</p>';
+  if (app.soon) notes.push('아직 받을 수 있는 판이 없습니다.');
   else if (app.kind === 'web') start = '<button type="button" class="start" data-act="open">브라우저로 열기</button>';
   else if (fmt(app) === 'local') {
     const remote = remoteOf(app);
@@ -292,13 +385,15 @@ function paintMain() {
     } else if (remote) {
       start = '<button type="button" class="start" data-act="remote">원격으로 열기<small>로그인 필요</small></button>';
     } else {
-      start = '<p class="note">이 PC 의 작업 폴더에 없습니다. 설정에서 작업 폴더를 바꿀 수 있습니다.</p>';
+      notes.push('이 PC 의 작업 폴더에 없습니다. 설정에서 작업 폴더를 바꿀 수 있습니다.');
     }
   } else if (job) {
     const word = job.phase === 'uninstall' ? '제거' : job.auto ? '자동 업데이트' : st.installed ? '업데이트' : '설치';
-    start = '<button type="button" class="start" disabled>' + word + '</button>';
-    /* 설치 프로그램이 돌기 시작하면 못 멈춤 */
-    if (job.phase === 'download') sub.push('<button type="button" data-act="pause">일시정지</button>', '<button type="button" data-act="cancel">취소</button>');
+    /* 받는 동안 큰 버튼은 일시정지, 취소는 오른쪽 작은 단추. 설치 프로그램이 돌기 시작하면 못 멈춤 */
+    if (job.phase === 'download') {
+      start = '<button type="button" class="start" data-act="pause">일시정지<small>' + esc(word + ' ' + pctOf(job) + '%') + '</small></button>';
+      tools.push('<button type="button" class="tool" data-act="cancel" title="취소" aria-label="취소">&#10005;</button>');
+    } else start = '<button type="button" class="start" disabled>' + esc(word) + '<small>' + esc(phaseText(job)) + '</small></button>';
   } else if (waiting) {
     start = '<button type="button" class="start" disabled>대기 중</button>';
     sub.push('<button type="button" data-act="dequeue">빼기</button>');
@@ -306,7 +401,7 @@ function paintMain() {
     /* 실행 중이면 Steam 처럼 끄기가 주 버튼. 떠 있는 동안 파일을 못 바꾸니 업데이트, 제거는 막음 */
     start = '<button type="button" class="start running" data-act="stop">끄기<small>실행 중</small></button>';
     /* 캐릭터가 대사로 말하면 안내를 또 쓰지 않음 */
-    if (hasUpdate(st) && sayEl.hidden) sub.push('<p class="note">끄면 ' + esc(st.latest) + ' 받음</p>');
+    if (hasUpdate(st) && sayEl.hidden) notes.push('끄면 ' + esc(st.latest) + ' 받음');
   } else if (st.download && isPaused(prefs, app.id, st.latest)) {
     start = '<button type="button" class="start" data-act="install">이어 받기<small>' + esc(pausedText(app.id)) + '</small></button>';
     sub.push('<button type="button" data-act="discard">받은 것 버리기</button>');
@@ -324,9 +419,26 @@ function paintMain() {
   }
   if (st.installed && !job && !app.soon && app.kind !== 'web') sub.push('<button type="button" data-act="props">속성</button>');
   const why = blocked[app.id] && blocked[app.id] !== 'paused' && !job && !waiting ? BLOCK_TEXT[blocked[app.id]] : '';
-  const bar = job ? '<div class="bar"><i style="width:' + pctOf(job) + '%"></i></div><p class="note">' + esc(phaseText(job)) + '</p>' : '';
-  actsEl.innerHTML =
-    bar + (why && !st.running ? '<p class="note">' + esc(why) + '</p>' : '') + (sub.length ? '<div class="sub">' + sub.join('') + '</div>' : '') + start;
+  if (why && !st.running) notes.push(esc(why));
+  /* 가운데: 받는 중이면 진행, 아니면 기록 */
+  const kv = (k, v) => '<div class="kv">' + esc(k) + '<b>' + esc(v) + '</b></div>';
+  let stats = '';
+  if (job && job.phase === 'download') {
+    stats += kv('받는 중', job.total ? sizeText(job.got || 0) + ' / ' + sizeText(job.total) : pctOf(job) + '%');
+    if (job.speed > 0) stats += kv('속도', sizeText(job.speed) + '/s');
+    if (job.speed > 0 && job.total) stats += kv('남음', fmtLeft((job.total - (job.got || 0)) / job.speed));
+  } else if (!job) {
+    if (last) stats += kv('마지막 실행', last);
+    if (played) stats += kv('실행 시간', played);
+  }
+  stats += notes.map((n) => '<p class="note">' + n + '</p>').join('');
+  const more = sub.length
+    ? '<span class="morewrap"><button type="button" class="tool" data-menu title="더 보기" aria-label="더 보기" aria-expanded="' + menuOpen + '">&#8943;</button>' + (menuOpen ? '<div class="menu" role="menu">' + sub.join('') + '</div>' : '') + '</span>'
+    : '';
+  if (!sub.length) menuOpen = false;
+  const top = job ? '<div class="top"><i style="width:' + pctOf(job) + '%"></i></div>' : '';
+  actsEl.innerHTML = top + start + '<div class="stats">' + stats + '</div>' + tools.join('') + more;
+  placeToasts();
 }
 
 /** 트레이 실행 목록. 바뀔 때만 메뉴를 다시 만듦 */
@@ -338,9 +450,6 @@ function syncTray() {
   trayKey = key;
   void invoke('set_tray_apps', { apps: list }).catch((e) => void invoke('log_event', { text: 'tray menu failed: ' + e }));
 }
-
-/* 버튼 묶음 (진행 바, 안내 포함) 높이만큼 왼쪽 단의 바닥을 올림. 받는 중에 바가 릴리스 글을 덮었음 (사용자 2026-11-16) */
-new ResizeObserver(() => $('stage').style.setProperty('--acts-h', actsEl.offsetHeight + 'px')).observe(actsEl);
 
 function paint() {
   syncTray();
@@ -697,7 +806,31 @@ listEl.addEventListener('click', (e) => {
   const b = e.target.closest('[data-id]');
   if (!b) return;
   current = b.dataset.id;
+  menuOpen = false;
   paint();
+});
+/* 목록 접기 (아이콘만). 사용자 2026-11-16 "L2 처럼 아이콘만 보이는 모드 토글" */
+function applySide() {
+  const slim = prefs.sideSlim === true;
+  document.documentElement.dataset.side = slim ? 'slim' : 'wide';
+  const tg = $('sideTg');
+  tg.innerHTML = slim ? '&#187;' : '&#171;';
+  tg.title = slim ? '목록 펼치기' : '목록 접기';
+  tg.setAttribute('aria-label', tg.title);
+}
+$('sideTg').addEventListener('click', () => {
+  prefs.sideSlim = prefs.sideSlim !== true;
+  /* 접으면 검색과 필터가 안 보이므로 풀어 둠. 안 그러면 숨은 조건이 앱을 계속 가림 */
+  if (prefs.sideSlim && (view.q || view.filter !== 'all')) {
+    view.q = '';
+    $('q').value = '';
+    view.filter = 'all';
+    $('filters').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.filter === 'all'));
+    paintList();
+  }
+  savePrefs();
+  applySide();
+  placeToasts();
 });
 listEl.addEventListener('contextmenu', (e) => {
   const b = e.target.closest('[data-id]');
@@ -709,10 +842,45 @@ listEl.addEventListener('contextmenu', (e) => {
   if (app && !app.soon && app.kind !== 'web') openProps(app);
 });
 actsEl.addEventListener('click', (e) => {
+  if (e.target.closest('[data-menu]')) {
+    menuOpen = !menuOpen;
+    paintMain();
+    return;
+  }
   const b = e.target.closest('[data-act]');
-  if (b) void act(b.dataset.act);
+  if (!b) return;
+  menuOpen = false;
+  void act(b.dataset.act);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && menuOpen) {
+    menuOpen = false;
+    paintMain();
+  }
+});
+/* 메뉴 밖을 누르면 닫음 */
+document.addEventListener('click', (e) => {
+  /* 메뉴 단추를 눌러 다시 그린 경우 눌린 요소는 이미 떨어져 나감 */
+  if (menuOpen && e.target.isConnected && !actsEl.contains(e.target)) {
+    menuOpen = false;
+    paintMain();
+  }
 });
 relEl.addEventListener('click', (e) => {
+  menuOpen = false;
+  const app = apps.find((a) => a.id === current);
+  if (app && e.target.closest('[data-builds]')) {
+    openProps(app);
+    paintMain();
+    return;
+  }
+  const t = e.target.closest('[data-tab]');
+  if (t) {
+    if (!app) return;
+    relTab.set(app.id, t.dataset.tab);
+    paintMain();
+    return;
+  }
   const b = e.target.closest('[data-page]');
   if (b) void invoke('open_url', { url: b.dataset.page });
 });
@@ -754,6 +922,7 @@ new MutationObserver(() => {
   $('dim').classList.toggle('solid', full);
   $('stage').classList.toggle('dimmed', open && !full);
   $('stage').classList.toggle('settings', full);
+  placeToasts();
 }).observe($('stage'), { subtree: true, attributes: true, attributeFilter: ['hidden'] });
 
 /* ---------- 다운로드 ---------- */
@@ -1396,12 +1565,26 @@ void listen('install-progress', (ev) => {
   /* 끝난 뒤 늦게 온 이벤트는 무시 */
   if (!old) return;
   const job = { ...old, ...ev.payload };
+  /* 속도: 1초 넘게 벌어진 표본끼리, 지수 평균 */
+  const now = Date.now();
+  if (old.at && job.got >= (old.got || 0) && now - old.at >= 1000) {
+    const v = ((job.got - (old.sampleGot || 0)) * 1000) / (now - old.at);
+    job.speed = old.speed ? old.speed * 0.7 + v * 0.3 : v;
+    job.at = now;
+    job.sampleGot = job.got;
+  } else if (!old.at) {
+    job.at = now;
+    job.sampleGot = job.got || 0;
+  }
   busy.set(job.id, job);
   /* 목록은 글자만 바꿈. 통째로 다시 그리면 누르는 사이 단추가 바뀌어 클릭이 사라짐 */
   const tag = listEl.querySelector('[data-id="' + CSS.escape(job.id) + '"] [data-job]');
   if (tag) tag.textContent = phaseText(job);
   paintDlBtn();
-  if (job.id === current) paintMain();
+  if (job.id === current) {
+    if (old.phase === job.phase && job.phase === 'download' && actsEl.querySelector('.top')) paintProgress(job);
+    else paintMain();
+  }
   if (!$('dl').hidden) paintDownloads();
 });
 
@@ -1415,6 +1598,7 @@ async function boot() {
   }
   applyTheme();
   applyMdd();
+  applySide();
   fitStage();
   await load();
   void checkSelf();
