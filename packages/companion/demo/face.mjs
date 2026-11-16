@@ -48,6 +48,7 @@ import {
   followUpRatio,
   justLearned,
   InMemoryMemory,
+  startLogBook,
   JsonlFileMemory,
   landingNote,
   feelingNote,
@@ -195,6 +196,25 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // 되돌릴 수 있거나 보기만 하는 일은 그냥 하고, 화면을 가로채는 일(열기)은 먼저 묻는다.
 // 아무거나 실행하게 열어두지 않고 할 수 있는 일을 하나씩 쥐여주는 방식은 그대로다.
 const home = join(homedir(), '.companion');
+
+/* 기록장. 런처가 터미널 창 없이 띄우므로 (사용자 2026-11-16) 서버 글을 파일과 메모리에도 받는다.
+   설정 판 기록 탭이 `/logs` 로 읽고, 「터미널로 보기」 는 이 파일을 따라가는 창을 연다 */
+const logBook = startLogBook({ file: join(home, '서버.log') });
+
+/** 기록 파일을 따라가는 터미널 창. 윈도우만 (런처가 숨기는 곳이 윈도우뿐) */
+function openLogTerminal() {
+  if (process.platform !== 'win32') return '터미널로 보기는 윈도우에서만 된다';
+  if (logBook.file === null) return '기록 파일이 없다';
+  const file = logBook.file.replace(/'/g, "''");
+  const follow = `[Console]::OutputEncoding=[Text.Encoding]::UTF8; $Host.UI.RawUI.WindowTitle='KarmoMaid log'; Get-Content -LiteralPath '${file}' -Encoding UTF8 -Tail 300 -Wait`;
+  try {
+    // cmd 는 숨기고 (windowsHide), 보일 창은 start 가 새로 연다. 브라우저 열기 (web.ts openBrowser) 와 같은 수
+    spawn(`start "KarmoMaid log" powershell -NoProfile -NoExit -Command "${follow}"`, { shell: true, detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    return null;
+  } catch (e) {
+    return `터미널을 못 열었다: ${e instanceof Error ? e.message : String(e)}`;
+  }
+}
 const notePath = join(home, '적어둔-것.md');
 
 // 물어보고 기다리는 자리. 화면이 대답을 줄 때까지 붙잡아 둔다.
@@ -705,6 +725,8 @@ ${tallyReport(tally)}`;
   settings: () => settingsReport(settings),
   putSettings: (next) => settings.put(next),
   settingValues: () => settings.all,
+  logs: () => ({ lines: logBook.lines(), file: logBook.file }),
+  openLogTerminal,
   // 얼굴 신호를 유도할 재료. 생김새는 다른 세션이 이 신호를 받아 쓴다.
   feeling: () => heart.state,
   port,
@@ -1475,6 +1497,11 @@ if (desktop) {
     width: Number(process.env.COMPANION_WIDTH ?? (surface === 'page' ? '920' : '420')),
     height: Number(process.env.COMPANION_HEIGHT ?? (surface === 'page' ? '780' : '640')),
     transparent: process.env.COMPANION_TRANSPARENT !== '0',
+    /* 터미널 없이 떴으면 (런처, COMPANION_CONSOLE=hidden) 창을 닫는 것이 곧 끄기. 터미널이 있으면
+       예전처럼 Ctrl+C 로 끈다 (창만 다시 띄워 보는 개발 흐름) */
+    onClosed: process.env.COMPANION_CONSOLE === 'hidden'
+      ? (code) => { console.log(`[창] 닫힘 (${code}). 터미널 없이 떴으므로 서버도 끈다`); void shutdown(); }
+      : undefined,
   }).then((how) => console.log(`[창] ${how}`));
 }
 console.log(
@@ -1483,7 +1510,10 @@ console.log(
     `혼잣말=${clockMs > 0 ? `${clockMs / 1000}초마다` : '끔'}, 끝내려면 Ctrl+C`,
 );
 
-process.on('SIGINT', async () => {
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
   await companion.stop();
   // 끄기 전에 한 번 접는다. 방금 나눈 말이 아는 것에 안 남고 사라지지 않게.
   if (memory instanceof DistillingMemory) {
@@ -1492,4 +1522,5 @@ process.on('SIGINT', async () => {
   }
   console.log('\n동반자 꺼짐.');
   process.exit(0);
-});
+}
+process.on('SIGINT', () => { void shutdown(); });

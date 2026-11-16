@@ -45,6 +45,18 @@ if (process.argv.includes('--trace-waits')) {
   process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS || ''} --import ${tracer}`.trim();
 }
 const fromIdx = args.indexOf('--from');
+/* CI 나눠 돌리기 (2026-11-16, verify.yml `gates` job). 본 job 은 KL_GATES_DEFER 1 로 전체 목록 판을 건너뛰고,
+   job 셋이 KL_GATE_SHARD (k/n) 로 같은 목록을 지난 시간 기준으로 나눠 돈다. 검사 수는 그대로 */
+if (fromIdx !== -1 && process.env.KL_GATES_DEFER === '1') {
+  console.log('[gates] 전체 목록은 나눠 도는 job 이 맡음 (KL_GATES_DEFER). 여기서는 안 돎');
+  process.exit(0);
+}
+const shardMatch = /^(\d+)\/(\d+)$/.exec(process.env.KL_GATE_SHARD || '');
+const shard = fromIdx !== -1 && shardMatch ? { k: Number(shardMatch[1]), n: Number(shardMatch[2]) } : null;
+if (shard && !(shard.n >= 1 && shard.k >= 1 && shard.k <= shard.n)) {
+  console.error(`[gates] KL_GATE_SHARD 형식 오류: ${process.env.KL_GATE_SHARD}`);
+  process.exit(2);
+}
 let gates = args;
 if (fromIdx !== -1) {
   const file = args[fromIdx + 1];
@@ -279,9 +291,27 @@ const browserLimit = Math.max(1, Number(process.env.KL_GATE_BROWSER_JOBS || (wor
    맨 뒤에 세우면 사실 긴 놈이 꼬리에 남는다. */
 const knownTimes = Object.values(previousTimes).filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
 const medianTime = knownTimes.length ? knownTimes[Math.floor(knownTimes.length / 2)] : 1;
-const ordered = gates
+let ordered = gates
   .map((gate, i) => ({ gate, i, expectedSec: previousTimes[gate] ?? medianTime, browser: usesBrowser(gate) }))
   .sort((a, b) => b.expectedSec - a.expectedSec);
+if (shard) {
+  /* 긴 것부터 지금 제일 가벼운 몫에 넣음. 이름 순 동률 처리로 job 마다 같은 나눔.
+     시간은 CI 러너 실측 (`data/gate-times-ci.json`) 우선. 데스크톱 시간으로 나누면 몫이 2.2~4.3분으로 갈림 (2026-11-16) */
+  let ciTimes = {};
+  try { ciTimes = JSON.parse(readFileSync(path.join(path.dirname(timesFile), 'gate-times-ci.json'), 'utf8')); } catch { /* 없으면 지난 판 시간 */ }
+  for (const e of ordered) if (Number.isFinite(ciTimes[e.gate])) e.expectedSec = ciTimes[e.gate];
+  const loads = Array.from({ length: shard.n }, () => 0);
+  const mine = [];
+  for (const entry of [...ordered].sort((a, b) => b.expectedSec - a.expectedSec || a.gate.localeCompare(b.gate))) {
+    let bin = 0;
+    for (let b = 1; b < shard.n; b++) if (loads[b] < loads[bin]) bin = b;
+    loads[bin] += Math.max(1, entry.expectedSec);
+    if (bin === shard.k - 1) mine.push(entry);
+  }
+  console.log(`[gates] 나눠 돌기 ${shard.k}/${shard.n}: ${mine.length}/${ordered.length}개, 예상 ${Math.round(loads[shard.k - 1])}초 (몫별 ${loads.map((v) => Math.round(v)).join('/')})`);
+  ordered = mine;
+  gates = mine.map((e) => e.gate);
+}
 
 const browserCount = ordered.filter((e) => e.browser).length;
 const directCount = ordered.filter((e) => directCommand(e.gate)).length;
@@ -299,9 +329,10 @@ let finishedCount = 0;
 let browserActive = 0;
 const pending = [...ordered];
 /* 창을 여럿 띄우는 검사는 브라우저 자리를 더 차지함. 2026-11-16 야추 등급전 (창 최대 4개) 이
-   6판, 브라우저 4판 동시에서 3건 실패, 단독과 CI (브라우저 2판) 에서는 통과 */
+   6판, 브라우저 4판 동시에서 3건 실패, 단독과 CI (브라우저 2판) 에서는 통과.
+   자리가 2개 이하면 가중 없음: CI 에서 2자리를 쥐면 다른 브라우저 검사가 멈춤 (검사 판 664 -> 884초 관측) */
 const BROWSER_SLOTS = { 'test:arcade:yacht-ranked': 2 };
-const slotsOf = (e) => (e.browser ? Math.min(browserLimit, BROWSER_SLOTS[e.gate] || 1) : 0);
+const slotsOf = (e) => (!e.browser ? 0 : browserLimit > 2 ? Math.min(browserLimit, BROWSER_SLOTS[e.gate] || 1) : 1);
 /** 브라우저 자리가 찼으면 그 검사는 건너뛰고 다음 것을 집는다. 순서(긴 것부터)는 그대로다. */
 function takeNext() {
   const idx = pending.findIndex((e) => !e.browser || browserActive + slotsOf(e) <= browserLimit);

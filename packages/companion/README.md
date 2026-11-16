@@ -77,6 +77,8 @@ npm run page:preview   # 가짜 미리보기
 
 더블클릭: `page.cmd`. 주소는 `http://localhost:4620/?surface=page`.
 
+기록: 서버 글은 `~/.companion/서버.log` 와 설정 판 「기록」 탭 (`/logs`). 런처는 터미널 없이 띄우고 (`COMPANION_CONSOLE=hidden`, 창을 닫으면 서버도 꺼짐), 터미널은 기록 탭의 「터미널로 보기」 로 원할 때만.
+
 재시작 없이 바꾸는 것(창 우클릭 또는 `/settings`): 먼저 말 걸기, 화면 보기 간격, 조용한 시간, 놀리기, 애니 목소리 자동/쉬는 시간.
 
 ## 남는 것 (사람이 읽어도 되는 형태)

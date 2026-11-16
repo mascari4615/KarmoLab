@@ -175,6 +175,10 @@ jobs:
           #   서로 방해해 빨개지면 그게 신호다. 그때는 3으로 낮추거나 지워라.
           # 소프트웨어 3D 검사 동시 실행에서 입력과 렌더 지연 재현. 러너 기본 폭으로 복귀
           KL_GATE_JOBS: '2'
+          # 게이트 전체 목록은 아래 `gates` job 셋이 나눠 돈다 (2026-11-16). 여기서는 build 사슬의 그 단계만 건너뜀
+          KL_GATES_DEFER: '1'
+          # 품질 래칫 (성능 검사 다섯) 도 아래 `quality` job 둘이 따로 잼
+          KL_QUALITY_DEFER: '1'
         run: npm run verify
 
       # ★ **두 번 시도한다** (2026-08-12). 이 단계는 검사 프로그램을 깃허브 릴리스에서 **내려받아**
@@ -236,3 +240,84 @@ jobs:
       - name: Bake related posts, then measure
         if: ${{ github.event_name != 'push' }}
         run: cd apps/karmolab && npm run gen:post-pages && npm run gen:related && npm run test:related
+
+  # ★ **게이트를 러너 셋에 나눠 돈다** (2026-11-16, 사용자 "여전히 길다").
+  #   한 러너 (4코어, 2판) 에서 277개를 돌면 637~884초였고 verify 한 판이 16~21분이었다.
+  #   같은 목록을 지난 시간 기준으로 여섯 몫으로 나눠 (2026-11-16 셋 5.8분 -> 여섯) (`run-gates.mjs` KL_GATE_SHARD) 각자 build 사슬 뒤 제 몫만 돈다.
+  #   검사 수는 그대로 (CI 통짜, 2026-09-25 사용자 결정). 공개 저장소라 러너 시간 비용 없음.
+  #   ⚠ push 마다 러너 자리를 셋 더 씀. 세션이 몰려 줄이 길어지면 몫 수를 줄여라
+  gates:
+    name: verify gates (${{ matrix.shard }}/6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            apps/karmolab/package-lock.json
+            packages/ai/package-lock.json
+            packages/mcp/package-lock.json
+      - uses: ./.github/actions/setup-karmolab
+        with:
+          node-version: '20'
+          chromium: 'true'
+      # 검사가 읽는 산출물을 짓는다. 사슬 끝의 게이트 단계는 건너뜀
+      - name: Build (게이트 제외)
+        working-directory: apps/karmolab
+        env:
+          KL_GATES_DEFER: '1'
+        run: npm run build:direct
+      - name: Gates (몫 ${{ matrix.shard }}/6)
+        working-directory: apps/karmolab
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KL_GATE_JOBS: '2'
+          KL_GATE_SHARD: ${{ matrix.shard }}/6
+        run: npm run gates
+
+  # ★ **품질 래칫을 따로 잰다** (2026-11-16). 본 job 에서 다섯을 한 줄로 163초.
+  #   러너가 다르면 서로 CPU 를 안 나누므로 성능 측정 조건은 오히려 깨끗하다. 둘로 나눠 동시에
+  quality:
+    name: verify quality (${{ matrix.part }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: perf
+            gates: test:perf test:leak
+          - part: budget
+            gates: test:perf:budget audit:boot test:widget-idle
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            apps/karmolab/package-lock.json
+            packages/ai/package-lock.json
+            packages/mcp/package-lock.json
+      - uses: ./.github/actions/setup-karmolab
+        with:
+          node-version: '20'
+          chromium: 'true'
+      # verify 가 품질 래칫 앞에 찍는 것들 (도구 장, 짝 장, 첫 화면) 까지
+      - name: Build (게이트 제외)
+        working-directory: apps/karmolab
+        env:
+          KL_GATES_DEFER: '1'
+        run: npm run build:direct && npm run gen:tool-pages && npm run gen:tool-pages-locale && npm run prerender:home
+      - name: Quality (${{ matrix.part }})
+        working-directory: apps/karmolab
+        run: node scripts/run-gates.mjs --serial ${{ matrix.gates }}

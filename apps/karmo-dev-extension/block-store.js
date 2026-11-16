@@ -2,6 +2,7 @@
 (() => {
   let tail = Promise.resolve();
   async function mutate(command) {
+    if ((command.site || 'arca') === 'arca') throw new Error('아카라이브 설정은 KarmoLab에서 변경하세요.');
     const site = command.site || "arca";
     if (["__proto__", "prototype", "constructor"].includes(site)) throw new Error("지원하지 않는 저장 키");
     const got = await chrome.storage.local.get({ blocklist: {}, likelist: {}, karmoSettings: {} });
@@ -87,7 +88,11 @@
     await chrome.storage.local.set(got);
     return { previous, changed: true, added };
   }
-  globalThis.KarmoBlockStore = { apply(command) {
+  globalThis.KarmoBlockStore = { exclusive(fn) {
+    const result = tail.then(fn);
+    tail = result.catch(() => {});
+    return result;
+  }, apply(command) {
     const result = tail.then(() => mutate(command));
     tail = result.catch(() => {});
     return result;

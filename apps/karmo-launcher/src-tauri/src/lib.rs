@@ -1391,6 +1391,17 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
     done
 }
 
+/// 콘솔 창 없이 띄움. 자식 (cmd 아래 node) 도 숨은 콘솔을 이어받아 창이 안 뜸
+#[cfg(windows)]
+fn hide_console(c: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    c.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(windows))]
+fn hide_console(_c: &mut Command) {}
+
 /// 실행. nsis 는 레지스트리의 설치 자리와 본 실행 파일, zip 은 풀린 폴더의 `install.entry`,
 /// local 은 `local.run` (명령과 인자, `{path}` 자리에 찾은 파일). 모두 보이는 창으로
 #[tauri::command]
@@ -1412,6 +1423,11 @@ fn launch_app(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Resul
                         c.env(k, v.replace("{workspace}", &ws).replace("{dir}", &d));
                     }
                 }
+            }
+            /* `install.console: "hidden"`: 실행기 (start.cmd) 의 터미널 창을 숨김. 서버 글은 앱이 제 판에서 보여 줌.
+               컴패니언이 열 때마다 터미널이 같이 뜨던 문제 (사용자 2026-11-16) */
+            if str_at(&app, &["install", "console"]) == Some("hidden") {
+                hide_console(&mut c);
             }
             c.spawn().map_err(|e| e.to_string())?;
         }

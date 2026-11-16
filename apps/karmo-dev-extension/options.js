@@ -339,3 +339,6 @@ chrome.storage.onChanged.addListener((ch, area) => {
   if (area === "local" && (ch.karmoSettings || ch.blocklist || ch.likelist)) loadAll(render);
   if (area === "local" && ch[UL_STATE]) renderSaveState();
 });
+
+for (const group of document.querySelectorAll('#tab-arca fieldset')) group.disabled = true;
+show('아카라이브 기능과 설정은 KarmoLab 팝업에서 관리하세요.');

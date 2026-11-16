@@ -85,6 +85,10 @@ export interface WebBodyOptions {
   settingValues?: () => Readonly<Record<string, number | boolean>>;
   /** 설정을 바꾼다. 안 받아들인 것들을 돌려준다. */
   putSettings?: (next: unknown) => string[];
+  /** 서버 기록 최근 줄. 설정 판의 기록 탭이 읽는다 (창 없이 뜰 때 터미널 대신) */
+  logs?: () => { lines: string[]; file: string | null };
+  /** 기록을 따라가는 터미널 창을 연다. 못 열면 까닭 */
+  openLogTerminal?: () => string | null;
   /** 오프라인 받아쓰기. 없으면 브라우저 받아쓰기로 물러선다. */
   ears?: Whisper;
   /** 누가 될 수 있는지 + 지금 누구인지 + 바꾸기. 없으면 창에 고르는 자리가 안 뜬다. */
@@ -845,6 +849,21 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
 
         // 만든 게 실제로 도는지 보는 창구. 사람이 열어 봐도 읽히는 글로 준다.
         // 손댈 수 있는 설정. 읽고(GET) 바꾸고(POST). 재시작 없이 먹는다.
+        // 기록. 터미널 창 없이 떠도 서버가 무슨 말을 했는지 판에서 본다 (사용자 2026-11-16)
+        if (url === '/logs' && req.method === 'GET') {
+          const body = Buffer.from(JSON.stringify(options.logs?.() ?? { lines: [], file: null }), 'utf8');
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'content-length': body.length });
+          res.end(body);
+          return;
+        }
+        if (url === '/logs/terminal' && req.method === 'POST') {
+          const failed = options.openLogTerminal?.() ?? '터미널을 열 자리가 없다';
+          const body = Buffer.from(JSON.stringify({ failed }), 'utf8');
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'content-length': body.length });
+          res.end(body);
+          return;
+        }
+
         if (url === '/settings.json') {
           res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
           res.end(JSON.stringify(options.settingValues?.() ?? {}));
@@ -1007,7 +1026,10 @@ function openBrowser(url: string): void {
       : ['xdg-open', [url]];
     try {
       // windowsHide 를 안 걸면 윈도우에서 **검은 콘솔 창이 툭 튀어나온다** (조수님이 겪었다).
-      spawn(command[0] as string, command[1] as string[], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+      const child = spawn(command[0] as string, command[1] as string[], { detached: true, stdio: 'ignore', windowsHide: true });
+      // 명령 없음 (리눅스 xdg-open 부재) 은 예외 아닌 'error' 이벤트. 미처리 시 프로세스 종료
+      child.on('error', (e) => process.stderr.write(`브라우저를 못 열었다 (${url}): ${e.message}\n`));
+      child.unref();
     } catch {
       // 브라우저를 못 열어도 몸은 살아있다. 주소를 직접 열면 된다.
     }
@@ -1023,7 +1045,7 @@ function openBrowser(url: string): void {
  */
 export function openPinnedWindow(
   url: string,
-  size?: { width?: number; height?: number; transparent?: boolean },
+  size?: { width?: number; height?: number; transparent?: boolean; onClosed?: (code: number | null) => void },
 ): Promise<string> {
   /* **제 창(`companion-window.exe`)이 정본이다.**
    *
@@ -1086,7 +1108,7 @@ export function ownWindowExe(): string | null {
 function openOwnWindow(
   exe: string,
   url: string,
-  size?: { width?: number; height?: number },
+  size?: { width?: number; height?: number; onClosed?: (code: number | null) => void },
 ): Promise<string> {
   // **창을 화면 전체로 편다.**
   //
@@ -1121,6 +1143,10 @@ function openOwnWindow(
           COMPANION_FIT: 'work',
         },
       });
+      /* 창이 닫힌 걸 알린다. 터미널 없이 뜬 서버는 이걸로 같이 꺼진다. 안 그러면 보이지 않는 채
+         포트를 쥐고 남는다 (사용자 2026-11-16, 런처가 터미널을 숨기면서) */
+      const onClosed = size?.onClosed;
+      if (onClosed !== undefined) child.on('exit', (code) => onClosed(code));
       child.unref();
       return screen === null
         ? '제 창으로 떴다 (창틀 없음, 배경 뚫림, 화면 크기를 못 재서 작은 창)'

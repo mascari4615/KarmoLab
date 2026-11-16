@@ -234,6 +234,12 @@ button:hover { border-color: rgba(110, 231, 255, 0.5); color: var(--accent); }
   color: #ece5d8; background: rgba(0, 0, 0, 0.7); padding: 2px 8px; border-radius: 6px; pointer-events: none;
 }
 .ring-btn:hover small, .ring-btn:focus-visible small { display: block; }
+/* 버튼마다 position: fixed 라 뒤에 그린 버튼이 앞 버튼 이름표를 덮었음 (사용자 2026-11-16).
+   이름표를 띄운 버튼을 형제들 위로. 마우스가 올라간 것이 키보드 포커스보다 위 */
+.ring-btn:focus-visible { z-index: 1; }
+.ring-btn:hover { z-index: 2; }
+/* 마우스로 가리키는 동안은 키보드 포커스 이름표를 접음. 이름표 둘이 동시에 떠 겹쳤음 */
+.ring:hover .ring-btn:focus-visible:not(:hover) small { display: none; }
 .ring-btn.tip-up small { top: auto; bottom: 56px; }
 .ring-btn.tip-left small { left: auto; right: 0; transform: none; }
 .ring-btn.tip-right small { left: 0; transform: none; }
@@ -260,6 +266,7 @@ body:has(.talk.on) .nt-dock { visibility: hidden; }
 .menu-main { flex: 1; min-width: 0; padding: 14px 16px 16px; min-height: 280px; }
 .menu-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 .menu-face { width: 46px; height: 46px; flex: none; border-radius: 50%; border: 2px solid #d3bc8e; display: grid; place-items: center; font-size: 18px; font-weight: 700; color: #d3bc8e; background: rgba(211, 188, 142, 0.12); }
+.menu-face.has-face { background-size: cover; background-position: center; background-color: #2a2f3d; }
 .menu-name { font-size: 17px; font-weight: 700; }
 .menu-chips { display: flex; gap: 6px; margin-top: 4px; }
 .menu-chips span { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.07); color: #a59c8c; }
@@ -290,6 +297,18 @@ body:has(.talk.on) .nt-dock { visibility: hidden; }
 .menu-link svg { width: 16px; height: 16px; color: #a59c8c; flex: none; }
 .menu-link:hover { color: #d3bc8e; background: transparent; }
 .menu-link .go { margin-left: auto; }
+/* 기록 탭. 터미널 대신 서버 글을 보는 자리 (사용자 2026-11-16) */
+.menu-log {
+  margin: 12px 0 8px; height: 220px; overflow: auto; padding: 8px 10px; border-radius: 8px;
+  background: rgba(0, 0, 0, 0.32); color: #c9c1b1; font: 11px/1.45 ui-monospace, Consolas, monospace;
+  white-space: pre-wrap; word-break: break-all; user-select: text;
+}
+.menu-log:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.menu-log-foot { display: flex; align-items: center; gap: 8px; }
+.menu-log-foot span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: #7d7568; }
+.menu-log-btn { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.06); color: #ece5d8; font: inherit; font-size: 12px; cursor: pointer; flex: none; }
+.menu-log-btn svg { width: 15px; height: 15px; }
+.menu-log-btn:hover { background: rgba(255, 255, 255, 0.1); color: #d3bc8e; }
 .menu-hidden { display: none; }
 
 /* ── 아는 것 ───────────────────────────────────────── */
@@ -833,8 +852,17 @@ body.iconmode .nt-body { display: inline-block; }
 .nt-toast.on { opacity: 1; transform: none; }
 .nt-toast small { display: block; color: var(--dim); font-size: 11px; margin-top: 2px; }
 .nt-snooze { margin-top: 6px; font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--edge); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
-.nt-icon { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--accent); background: #18202b; color: var(--accent); display: grid; place-items: center; font-weight: 700; cursor: pointer; touch-action: none; user-select: none; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
-.nt-icon.dragging { cursor: grabbing; box-shadow: 0 8px 22px rgba(0,0,0,.55); }
+/* 아이콘: 몸의 얼굴 사진 (has-face), 없으면 이름 첫 글자. 판 머리 얼굴과 같은 금빛 테 (사용자 2026-11-16 "안 이쁜 원") */
+.nt-icon {
+  width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; touch-action: none; user-select: none;
+  border: 2px solid #d3bc8e; color: #d3bc8e; font: 700 20px/1 "Pretendard", "Segoe UI", system-ui, sans-serif;
+  background: radial-gradient(circle at 50% 35%, #3a4052, #20242f 70%) center / cover no-repeat;
+  box-shadow: 0 0 0 3px rgba(211, 188, 142, 0.16), 0 6px 16px rgba(0, 0, 0, .45);
+  transition: transform .12s, box-shadow .12s;
+}
+.nt-icon.has-face { background-color: #2a2f3d; background-size: cover; background-position: center; }
+.nt-icon:hover { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(211, 188, 142, 0.3), 0 8px 20px rgba(0, 0, 0, .5); }
+.nt-icon.dragging { cursor: grabbing; transform: scale(1.04); box-shadow: 0 0 0 3px rgba(211, 188, 142, 0.24), 0 10px 24px rgba(0,0,0,.55); }
 /* 아이콘 모드: 몸, 말풍선, 대화창, 분신 숨김 */
 body.iconmode .room { display: none !important; }
 

@@ -71,24 +71,6 @@
       ],
       "run_at": "document_start",
       "world": "MAIN"
-    },
-    {
-      "matches": [
-        "https://arca.live/*"
-      ],
-      "js": [
-        "block-defaults.js",
-        "block-toast.js",
-        "block-core.js",
-        "arca-profile.js",
-        "arca-auto-block.js",
-        "arca-insight.js",
-        "arca-block.js",
-        "arca-seen.js",
-        "arca-scrap.js",
-        "arca-liked-link.js"
-      ],
-      "run_at": "document_idle"
     }
   ],
   "action": {

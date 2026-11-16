@@ -157,6 +157,15 @@ const LANES = Number(process.env.KL_BOOT_LANES || 4);
 try {
   const queue = [];
   for (const [skin, theme] of combos()) for (const id of ids) queue.push([id, theme, skin]);
+  /* `--part=k/n`: 큐를 n조각 내 k번째만. CI 나눠 돌기에서 이 검사 하나가 165초로 바닥값이라 둘로 (2026-11-16) */
+  const part = /^--part=(\d+)\/(\d+)$/.exec(process.argv.find((a) => a.startsWith('--part=')) || '');
+  if (part) {
+    const [k, n] = [Number(part[1]), Number(part[2])];
+    const mine = queue.filter((_, i) => i % n === k - 1);
+    queue.length = 0;
+    queue.push(...mine);
+    console.log(`[tool-boot] 조각 ${k}/${n}: ${queue.length}판`);
+  }
   await Promise.all(
     Array.from({ length: LANES }, async () => {
       const lane = { tabs: new Map() };

@@ -270,6 +270,8 @@
     "smoke:soundscape": "node scripts/smoke-soundscape.mjs",
     "smoke:timeshell": "node scripts/smoke-time-shell.mjs",
     "smoke:tool-boot": "node scripts/smoke-tool-boot.mjs",
+    "smoke:tool-boot:1": "node scripts/smoke-tool-boot.mjs --part=1/2",
+    "smoke:tool-boot:2": "node scripts/smoke-tool-boot.mjs --part=2/2",
     "smoke:tool-page-nav": "node scripts/smoke-tool-page-nav.mjs",
     "smoke:esc-menu": "node scripts/smoke-esc-menu.mjs",
     "smoke:txtshell": "node scripts/smoke-text-shell.mjs",
