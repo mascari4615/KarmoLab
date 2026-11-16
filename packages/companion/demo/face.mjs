@@ -208,8 +208,8 @@ function openLogTerminal() {
   const file = logBook.file.replace(/'/g, "''");
   const follow = `[Console]::OutputEncoding=[Text.Encoding]::UTF8; $Host.UI.RawUI.WindowTitle='KarmoMaid log'; Get-Content -LiteralPath '${file}' -Encoding UTF8 -Tail 300 -Wait`;
   try {
-    // start 가 새 콘솔 창을 연다. 셸 경유라 cmd 는 숨은 콘솔을 이어받아 따로 번쩍이지 않음
-    spawn(`start "KarmoMaid log" powershell -NoProfile -NoExit -Command "${follow}"`, { shell: true, detached: true, stdio: 'ignore' }).unref();
+    // cmd 는 숨기고 (windowsHide), 보일 창은 start 가 새로 연다. 브라우저 열기 (web.ts openBrowser) 와 같은 수
+    spawn(`start "KarmoMaid log" powershell -NoProfile -NoExit -Command "${follow}"`, { shell: true, detached: true, stdio: 'ignore', windowsHide: true }).unref();
     return null;
   } catch (e) {
     return `터미널을 못 열었다: ${e instanceof Error ? e.message : String(e)}`;
