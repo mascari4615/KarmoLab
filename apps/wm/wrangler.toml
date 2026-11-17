@@ -1,0 +1,12 @@
+name = "wm-atlas"
+compatibility_date = "2026-11-17"
+workers_dev = false
+preview_urls = false
+
+# Only the atlas path belongs to this app; the game keeps its origin.
+routes = [{ pattern = "wm.mascari4615.com/atlas*", zone_name = "mascari4615.com" }]
+
+[assets]
+directory = "./dist"
+base_path = "/atlas/"
+not_found_handling = "single-page-application"
