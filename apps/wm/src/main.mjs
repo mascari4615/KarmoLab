@@ -157,8 +157,8 @@ async function setMode(mode) {
   state.mode = mode; document.body.classList.toggle('planet-mode', mode === 'planet');
   map.hidden = mode !== 'map'; $('#planet').hidden = mode !== 'planet';
   $('#map-mode').setAttribute('aria-pressed', String(mode === 'map')); $('#planet-mode').setAttribute('aria-pressed', String(mode === 'planet'));
-  $('#view-description').textContent = `${world.star}의 빛, ${world.moon || '위성 없는'} 하늘 ,  동주기자전`;
-  $('#interaction-hint').textContent = mode === 'planet' ? '드래그로 회전 ,  스크롤로 확대' : '드래그로 이동 ,  스크롤로 확대';
+  $('#view-description').textContent = `${world.star}의 빛, ${world.moon || '위성 없는'} 하늘,  동주기자전`;
+  $('#interaction-hint').textContent = mode === 'planet' ? '드래그로 회전,  스크롤로 확대' : '드래그로 이동,  스크롤로 확대';
   if (mode === 'planet') { if (planetDirty) { planet.update(world); planetDirty = false; } const place = places.find(p => p.id === state.selected); if (place) planet.focus(place.x, place.y); else if (state.zoom === 1 && state.center[0] === .5 && state.center[1] === .5) planet.reset(); else planet.focus(...state.center, mobile() ? 4.7 : 4.25); planet.start(); }
   else { planet?.stop(); drawMap(); }
   updateLabels(); updateURL(); $('#announcement').textContent = mode === 'planet' ? '행성 보기' : '지도 보기';
@@ -242,8 +242,8 @@ function changedWorld(next, rebuild) {
   if (rebuild) { atlasDirty = true; planetDirty = true; if (state.mode === 'planet' && planet) { planet.update(world); planetDirty = false; } }
   planet?.configure(world);
   document.querySelector('.atlas-heading h1').textContent = world.name;
-  $('#view-description').textContent = `${world.star}의 빛, ${world.moon || '위성 없는'} 하늘 ,  동주기자전`;
-  document.title = `${world.name} , WM 세계`;
+  $('#view-description').textContent = `${world.star}의 빛, ${world.moon || '위성 없는'} 하늘,  동주기자전`;
+  document.title = `${world.name}, WM 세계`;
   if (changedId || !places.some(p => p.id === state.selected)) { state.selected = null; $('#detail').hidden = true; }
   const signature = JSON.stringify(places);
   if (signature !== placesSignature) { placesSignature = signature; buildMarkers(); renderList(); if (state.selected) select(state.selected); }

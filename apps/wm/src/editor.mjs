@@ -14,13 +14,13 @@ export function createEditor(initial, callbacks) {
   panel.innerHTML = `<div class="editor-head"><h2>세계 편집</h2><button id="editor-collapse" aria-label="편집 도구 접기" aria-expanded="true">⌄</button><button id="editor-close" aria-label="편집 닫기">×</button></div><div class="editor-scroll">
   <div class="world-picker"><label for="world-select">내 행성</label><select id="world-select"></select><button id="world-new">새로 만들기</button></div>
   <details class="world-settings"><summary>천체 설정</summary><div class="editor-fields"><label>행성 이름<input id="world-name" maxlength="100"></label><div class="field-pair"><label>항성<input id="star-name" maxlength="80"></label><label>위성<input id="moon-name" maxlength="80"></label></div></div>
-  <p class="locked-note">동주기자전 ,  항성을 향한 면 고정</p></details>
+  <p class="locked-note">동주기자전,  항성을 향한 면 고정</p></details>
   <fieldset><legend>지형 그리기</legend><div class="brush-tools"><button data-tool="raise" aria-pressed="true">육지 올리기</button><button data-tool="lower" aria-pressed="false">땅 깎기</button><button data-tool="forest" aria-pressed="false">숲</button><button data-tool="grass" aria-pressed="false">초원</button><button data-tool="desert" aria-pressed="false">사막</button><button data-tool="ice" aria-pressed="false">빙하</button><button data-tool="volcano" aria-pressed="false">화산</button><button data-tool="auto" aria-pressed="false">기후에 맞추기</button><button data-tool="place" aria-pressed="false">장소 추가</button><button data-tool="navigate" aria-pressed="false">이동, 회전</button></div>
   <label class="range-label">붓 크기<input id="brush-size" type="range" min="1" max="15" value="4.5" step=".5"></label><label class="range-label">붓 세기<input id="brush-strength" type="range" min="1" max="30" value="9"></label></fieldset>
   <details class="world-settings"><summary>행성 표현</summary><fieldset><label class="range-label">지형 높이<input id="relief" type="range" min=".1" max="3" step=".1"></label><label class="range-label">해수면<input id="sea-level" type="range" min="-.3" max=".3" step=".01"></label><label class="range-label">구름량<input id="clouds" type="range" min="0" max="1" step=".05"></label><label class="range-label">항성을 향한 경도<input id="sun-longitude" type="range" min="0" max="1" step=".01"></label></fieldset></details>
   <div class="history-actions"><button id="undo" disabled>실행 취소</button><button id="redo" disabled>다시 실행</button></div>
   <div class="file-actions"><button id="save-world">저장</button><button id="export-world">내보내기</button><button id="import-world">불러오기</button><input type="file" id="world-file" accept="application/json,.json" hidden></div>
-  <p id="save-status" role="status">이 브라우저에 저장 ,  JSON 파일로 백업 가능</p></div>`;
+  <p id="save-status" role="status">이 브라우저에 저장,  JSON 파일로 백업 가능</p></div>`;
   document.querySelector('main').append(panel);
   const $ = id => panel.querySelector(id);
   const status = message => { $('#save-status').textContent = message; };
@@ -28,7 +28,7 @@ export function createEditor(initial, callbacks) {
   function pushUndo() { undo.push(clone(world)); if (undo.length > 20) undo.shift(); redo = []; updateHistory(); }
   function updateHistory() { $('#undo').disabled = !undo.length; $('#redo').disabled = !redo.length; }
   async function save() {
-    try { await storeWorld(world); status('이 브라우저에 저장됨 ,  JSON으로 백업 가능'); return true; }
+    try { await storeWorld(world); status('이 브라우저에 저장됨,  JSON으로 백업 가능'); return true; }
     catch { status('브라우저 저장 공간이 부족하거나 차단됐어요. 내보내기로 파일을 보관해 주세요.'); return false; }
   }
   async function refreshList() {
@@ -46,7 +46,7 @@ export function createEditor(initial, callbacks) {
     try { await storeWorld(next,{signal}); }
     catch(error) { if(error.name==='AbortError')return false;status('새 행성을 저장하지 못했어요. 현재 행성은 그대로 유지합니다. 저장 공간을 확인해 주세요.'); return false; }
     localStorage.setItem('wm.active-world',next.id);
-    world = next; undo = []; redo = []; fill(); status('이 브라우저에 저장됨 ,  JSON으로 백업 가능'); notify(); callbacks.reset(); return true;
+    world = next; undo = []; redo = []; fill(); status('이 브라우저에 저장됨,  JSON으로 백업 가능'); notify(); callbacks.reset(); return true;
   }
   function openNew() {
     callbacks.dialog(`<span class="eyebrow">A NEW WORLD</span><h2>새 행성 만들기</h2><form id="new-world-form" class="world-form"><label>행성 이름<input name="name" required maxlength="100" value="새 행성"></label><label>생성 방식<select name="template"><option value="generated">새로운 대륙</option><option value="blank">빈 바다에서 시작</option><option value="copy">현재 행성 복제</option><option value="undo">운도 원본에서 시작</option></select></label><label>생성 번호<input name="seed" type="number" min="1" max="999999" value="${Math.floor(Math.random() * 99999) + 1}" required></label><button class="primary-button" type="submit">행성 만들기</button><p>지금 작업 중인 행성은 그대로 보관됩니다.</p></form>`);
