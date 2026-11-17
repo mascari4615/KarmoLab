@@ -2,11 +2,102 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2034,
+    "commits": 2057,
     "days": 11,
     "shown": 60
   },
   "days": [
+    {
+      "date": "2026-11-17",
+      "entries": [
+        {
+          "sha": "e1db3246b",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "상호작용 표시 독립 검토 지적 반영"
+        },
+        {
+          "sha": "4301ac8db",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "ui",
+          "text": "NPC 옆에 뜨는 상호작용 표시를 UI Toolkit 으로"
+        },
+        {
+          "sha": "c98fe4847",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "입장 창 스타레일식 재배치와 슬라임 숲 대표 그림"
+        },
+        {
+          "sha": "5d0a226a9",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "입장 창 진행 방식 섹션과 던전 대표 그림 자리"
+        },
+        {
+          "sha": "50f613675",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "적 피해 제약 (DC_2) 이 피해 계산에 안 쓰이던 것"
+        }
+      ],
+      "quiet": 2,
+      "more": 0
+    },
+    {
+      "date": "2026-11-16",
+      "entries": [
+        {
+          "sha": "343de57dc",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "doll",
+          "text": "던전에서 플레이어 2D 그림이 카메라를 안 보고 납작하던 것"
+        },
+        {
+          "sha": "2a00531f7",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "dungeon",
+          "text": "시점을 돌린 채 한쪽으로 달리면 적이 옆과 뒤에만 생기던 것"
+        },
+        {
+          "sha": "72c46724e",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "npc",
+          "text": "대화 없는 NPC 메뉴에서 카메라가 엉뚱한 곳을 잡던 것"
+        },
+        {
+          "sha": "857fc8b32",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "stage",
+          "text": "시작 스테이지 실험실에 떠돌이 상인 배치"
+        },
+        {
+          "sha": "93064c087",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "world",
+          "text": "릴리스 빌드에서 세계 주울 것 임시 네모 숨김"
+        },
+        {
+          "sha": "53469d4e3",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "입장 창 제약을 켜고 끄기"
+        }
+      ],
+      "quiet": 1,
+      "more": 9
+    },
     {
       "date": "2026-11-15",
       "entries": [
@@ -412,97 +503,6 @@
       ],
       "quiet": 1,
       "more": 5
-    },
-    {
-      "date": "2026-11-04",
-      "entries": [
-        {
-          "sha": "713930757",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "doll",
-          "text": "알리사 스프라이트 밉맵 끄기"
-        },
-        {
-          "sha": "97558750a",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "world",
-          "text": "땅 찾는 광선 높이를 인스펙터 값으로"
-        },
-        {
-          "sha": "ff44e853f",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ui",
-          "text": "v0.0.7 플레이 지적 네 건 수정"
-        },
-        {
-          "sha": "988fd7dab",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "alchemy",
-          "text": "솥 지도를 Esc, 닫기 버튼, 메뉴 전환으로 닫을 수 있게"
-        },
-        {
-          "sha": "4ae604ec2",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "dev",
-          "text": "디버그 UI를 개발자 뱃지와 개발자 창 탭으로 정리"
-        },
-        {
-          "sha": "5f7c2449f",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "world",
-          "text": "로비에서 싱글, 멀티를 나누고 싱글은 서버에 접속 안 함"
-        }
-      ],
-      "quiet": 4,
-      "more": 0
-    },
-    {
-      "date": "2026-11-03",
-      "entries": [
-        {
-          "sha": "12a5c0c43",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "combat",
-          "text": "검 효과를 날아가는 검기, 궤적 확대, 판정 맞춤 획 셋 중 고르게"
-        },
-        {
-          "sha": "0510cbdbb",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "combat",
-          "text": "검 휘두르기 궤적이 판정 윤곽을 각도별로 따름"
-        },
-        {
-          "sha": "0b6310b87",
-          "type": "perf",
-          "typeLabel": "빨라진 것",
-          "scope": "player",
-          "text": "조준 최근접 대상 탐색을 프레임당 한 번으로"
-        },
-        {
-          "sha": "e0d3d09a0",
-          "type": "perf",
-          "typeLabel": "빨라진 것",
-          "scope": "combat",
-          "text": "검 판정 범위 측정의 공격마다 배열 할당 제거"
-        },
-        {
-          "sha": "400c85e9b",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "combat",
-          "text": "검 휘두르기 연출을 실제 판정 범위에 맞춤"
-        }
-      ],
-      "quiet": 7,
-      "more": 1
     }
   ]
 }
