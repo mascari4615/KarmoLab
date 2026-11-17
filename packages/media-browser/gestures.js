@@ -46,6 +46,18 @@ export function galleryZoom(image, surface, changed = () => {}) {
   };
   const set = (value) => { scale = Math.max(1, Math.min(4, value)); if (scale === 1) x = y = 0; paint(); };
   const reset = () => { gesture = null; set(1); };
+  const cssZoom = () => image.getBoundingClientRect().width / Math.max(1, image.offsetWidth * scale) || 1;
+  image.addEventListener('wheel', event => {
+    if (image.hidden || !image.offsetWidth || !event.deltaY) return;
+    event.preventDefault();
+    const rect = image.getBoundingClientRect(), zoom = cssZoom();
+    const px = (event.clientX - rect.left - rect.width / 2) / zoom + x;
+    const py = (event.clientY - rect.top - rect.height / 2) / zoom + y;
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? surface.clientHeight : 1);
+    const next = Math.max(1, Math.min(4, scale * Math.exp(-delta * 0.002)));
+    x = px - (px - x) * next / scale; y = py - (py - y) * next / scale;
+    set(next);
+  }, { passive: false, signal: controller.signal });
   const distance = touches => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
   const middle = touches => ({ x: (touches[0].clientX + touches[1].clientX) / 2, y: (touches[0].clientY + touches[1].clientY) / 2 });
   surface.addEventListener('touchstart', event => {
@@ -75,13 +87,22 @@ export function galleryZoom(image, surface, changed = () => {}) {
   }, { passive: true, signal: controller.signal });
   surface.addEventListener('touchcancel', () => { gesture = null; lastTap = 0; }, { passive: true, signal: controller.signal });
   image.addEventListener('dblclick', event => { event.preventDefault(); set(scale > 1 ? 1 : 2); }, { signal: controller.signal });
-  let pointer = null;
+  let pointer = null, dragged = false;
   image.addEventListener('pointerdown', event => {
+    dragged = false;
     if (event.pointerType !== 'mouse' || scale <= 1 || event.button !== 0) return;
-    event.preventDefault(); pointer = { id: event.pointerId, sx: event.clientX, sy: event.clientY, x, y }; image.setPointerCapture(event.pointerId);
+    event.preventDefault(); pointer = { id: event.pointerId, sx: event.clientX, sy: event.clientY, x, y, zoom: cssZoom() }; image.setPointerCapture(event.pointerId);
   }, { signal: controller.signal });
-  image.addEventListener('pointermove', event => { if (pointer?.id === event.pointerId) { x = pointer.x + event.clientX - pointer.sx; y = pointer.y + event.clientY - pointer.sy; paint(); } }, { signal: controller.signal });
-  for (const type of ['pointerup', 'pointercancel']) image.addEventListener(type, () => { pointer = null; }, { signal: controller.signal });
+  image.addEventListener('pointermove', event => { if (pointer?.id === event.pointerId) {
+    const dx = event.clientX - pointer.sx, dy = event.clientY - pointer.sy;
+    dragged ||= Math.hypot(dx, dy) > 3;
+    x = pointer.x + dx / pointer.zoom; y = pointer.y + dy / pointer.zoom; paint();
+  } }, { signal: controller.signal });
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) image.addEventListener(type, () => { pointer = null; }, { signal: controller.signal });
+  surface.addEventListener('click', event => {
+    if (!dragged || event.target !== image) return;
+    dragged = false; event.preventDefault(); event.stopImmediatePropagation();
+  }, { capture: true, signal: controller.signal });
   image.draggable = false;
   return { reset, dispose: () => { controller.abort(); reset(); }, toggle: () => set(scale > 1 ? 1 : 2), get zoomed() { return scale > 1.01; } };
 }

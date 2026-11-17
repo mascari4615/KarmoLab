@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {nextItem,mediaPosition,createMediaSurface} from './index.js';
+import {nextItem,mediaPosition,createMediaSurface,galleryZoom} from './index.js';
 const list=[{id:'a'},{id:'b'},{id:'c'}];
 assert.equal(nextItem([], 'a',1),null);
 assert.equal(nextItem(list,'a',-1),list[0]);
@@ -28,3 +28,28 @@ managed.retry();assert.equal(managed.state,'loading');const count=callbacks.leng
 callbacks[1]('ready');assert.equal(managed.state,'loading');callbacks[2]('ready');assert.equal(managed.state,'ready');callbacks[2]('error');assert.equal(managed.state,'error');
 managed.clear();callbacks[2]('error');assert.equal(managed.state,'idle');assert.deepEqual(phases.at(-1),['idle',undefined]);
 console.log('PASS loading, retry, duplicate retry guard, stale completion, late playback error, close cleanup');
+const zoomImage = new Media(), zoomSurface = new EventTarget();
+Object.assign(zoomImage, { offsetWidth: 800, offsetHeight: 600, style: {}, setPointerCapture() {} });
+Object.assign(zoomSurface, { clientWidth: 800, clientHeight: 600, dataset: {} });
+zoomImage.getBoundingClientRect = () => {
+  const [, x, y, scale] = /translate\(([-.\d]+)px, ([-.\d]+)px\) scale\(([-.\d]+)\)/.exec(zoomImage.style.transform || 'translate(0px, 0px) scale(1)').map(Number);
+  return { left: 360 + x * .9 - 360 * scale, top: 270 + y * .9 - 270 * scale, width: 720 * scale, height: 540 * scale };
+};
+const fire = (type, data) => { const event = new Event(type, { cancelable: true }); Object.assign(event, data); zoomImage.dispatchEvent(event); return event; };
+const zoom = galleryZoom(zoomImage, zoomSurface);
+zoom.reset();
+assert.ok(fire('wheel', { deltaY: -200, deltaMode: 0, clientX: 450, clientY: 270 }).defaultPrevented);
+assert.ok(zoom.zoomed);
+const rect = zoomImage.getBoundingClientRect();
+assert.ok(Math.abs((450 - rect.left) / rect.width - 450 / 720) < .0001, 'wheel keeps the image point under the cursor at CSS zoom .9');
+const beforeDrag = rect.left;
+fire('pointerdown', { pointerType: 'mouse', button: 0, pointerId: 1, clientX: 400, clientY: 270 });
+fire('pointermove', { pointerId: 1, clientX: 445, clientY: 270 });
+assert.ok(Math.abs(zoomImage.getBoundingClientRect().left - beforeDrag - 45) < .001, 'drag follows physical pixels at CSS zoom .9');
+fire('pointerup', { pointerId: 1 });
+fire('wheel', { deltaY: 10000, deltaMode: 0, clientX: 450, clientY: 270 });
+assert.equal(zoom.zoomed, false);
+assert.equal(zoomImage.style.transform, 'translate(0px, 0px) scale(1)');
+zoom.dispose();
+assert.equal(fire('wheel', { deltaY: -200, deltaMode: 0, clientX: 450, clientY: 270 }).defaultPrevented, false);
+console.log('PASS wheel cursor anchor, CSS zoom drag, fit limit, wheel disposal');
