@@ -18,6 +18,12 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
         return { ok: true };
       }
       if (op === 'send') { const el = button('메시지 보내기') || button('Send message'); if (!el || el.disabled) return { pending: true }; el.click(); return { ok: true }; }
+      if (op === 'resend') {
+        const editor = document.querySelector('[contenteditable="true"][role="textbox"]');
+        const el = button('메시지 보내기') || button('Send message');
+        if (location.pathname !== '/app' || !editor || (editor.innerText || '').trim() !== text.trim() || !el || el.disabled) return { ok: true };
+        el.click(); return { ok: true };
+      }
       if (op === 'ready' || op === 'download') {
         const matches = [...document.querySelectorAll('button')].filter(e => /동영상 다운로드|Download video/i.test((e.getAttribute('aria-label') || '') + ' ' + (e.innerText || '')));
         if (matches.length > 1) return { error: '영상 결과가 여러 개' };
@@ -78,11 +84,13 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
   try {
   await focusCheck();
   let conversation;
-  const navigationEnd = Date.now() + 30000;
+  const navigationStart = Date.now(), navigationEnd = navigationStart + 45000;
+  let retriedSend = false;
   while (Date.now() < navigationEnd) {
     await focusCheck();
     conversation = new URL((await chrome.tabs.get(tabId)).url || 'https://invalid.invalid/');
     if (conversation.origin === 'https://gemini.google.com' && /^\/app\/[^/]+$/.test(conversation.pathname)) break;
+    if (!resume && !retriedSend && Date.now() - navigationStart >= 15000) { retriedSend = true; await run('resend', prompt); }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   if (conversation.origin !== 'https://gemini.google.com' || !/^\/app\/[^/]+$/.test(conversation.pathname)) throw new Error('Gemini 영상 대화를 식별하지 못함');
