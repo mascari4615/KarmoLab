@@ -108,7 +108,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
       for (const id of ids) {
         const items = await chrome.downloads.search({ id });
         const item = items[0];
-        if (item) observed.add([item.mime || 'unknown', item.referrer ? 'referrer' : 'no-referrer', item.byExtensionId ? 'extension' : 'page', (item.url || '').startsWith('blob:') ? 'blob' : 'non-blob'].join('/'));
+        if (item) observed.add([item.mime || 'unknown', item.referrer ? 'referrer' : 'no-referrer', item.byExtensionId ? 'extension' : 'page', (item.url || '').startsWith('blob:https://gemini.google.com/') ? 'gemini-blob' : (item.url || '').startsWith('blob:') ? 'other-blob' : 'non-blob'].join('/'));
         const sameBlob = clicked.downloadUrls.includes(item?.url);
         const sameMedia = !!ready.mediaUrl && (item?.url === ready.mediaUrl || item?.finalUrl === ready.mediaUrl);
         // Some Gemini audio is encoded in a worker, so its blob is invisible to
@@ -125,7 +125,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    throw new Error('음악 파일 다운로드 확인 실패 (' + ([...observed].join(', ') || '다운로드 이벤트 없음') + ')');
+    throw new Error('음악 파일 다운로드 확인 실패 (' + ([...observed].join(', ') || '다운로드 이벤트 없음') + '; count=' + ids.size + ')');
   } finally {
     chrome.downloads.onCreated.removeListener(onCreated);
   }
