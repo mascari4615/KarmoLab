@@ -11,7 +11,9 @@ async function geminiMusic(tabId, prompt) {
       if (op === 'mode') { const el = button('음악 만들기') || button('Create music'); if (!el) return { pending: true }; el.click(); return { ok: true }; }
       if (op === 'submit') {
         const editor = document.querySelector('[contenteditable="true"][role="textbox"]');
-        if (!editor || !button('음악 선택 해제') && !button('Remove music')) return { pending: true, detail: `editor=${!!editor},music=${!!(button('음악 선택 해제') || button('Remove music'))}` };
+        const placeholder = editor?.getAttribute('data-placeholder') || '';
+        const music = button('음악 선택 해제') || button('Remove music') || /트랙을 설명|describe (your|the) track/i.test(placeholder);
+        if (!editor || !music) return { pending: true, detail: `editor=${!!editor},music=${!!music}` };
         editor.focus(); document.execCommand('insertText', false, text);
         editor.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
         return { ok: true };
