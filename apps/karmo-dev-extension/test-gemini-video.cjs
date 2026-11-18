@@ -9,7 +9,7 @@ test('video request uses Gemini controls and a download from the same conversati
   const actions = [];
   let onCreated;
   const chrome = {
-    scripting: { executeScript: async ({ args }) => { actions.push(args[0]); if (args[0] === 'download') onCreated({ id: 42 }); return [{ result: { ok: true, downloadUrl: 'blob:https://gemini.google.com/123' } }]; } },
+    scripting: { executeScript: async ({ args }) => { actions.push(args[0]); if (args[0] === 'download') onCreated({ id: 42 }); return [{ result: { ok: true, downloadUrls: ['blob:https://gemini.google.com/123'] } }]; } },
     tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123' }) },
     downloads: { onCreated: { addListener: (fn) => { onCreated = fn; }, removeListener: () => { onCreated = null; } }, search: async () => [{ state: 'complete', filename: 'C:/Users/test/Downloads/video.mp4', url: 'blob:https://gemini.google.com/123', fileSize: 1200 }] },
   };
