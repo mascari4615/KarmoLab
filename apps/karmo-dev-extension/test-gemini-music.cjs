@@ -86,6 +86,41 @@ test('music result matches the selected media URL when download is not a blob', 
   assert.equal((await context.geminiMusic(9, 'piano')).filename, 'selected.mp3');
 });
 
+test('a single Gemini worker MPEG download is accepted after the quiet interval', async () => {
+  let listener, now = 0;
+  class FastDate extends Date { static now() { return now; } }
+  const chrome = {
+    scripting: { executeScript: async ({ args }) => {
+      if (args[0] === 'download') { listener({ id: 1 }); now += 13000; }
+      return [{ result: { ok: true, downloadUrls: [] } }];
+    } },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123', windowId: 1 }) },
+    windows: { get: async () => ({ focused: false }), onFocusChanged: { addListener() {}, removeListener() {} } },
+    downloads: { onCreated: { addListener: fn => { listener = fn; }, removeListener() {} }, search: async () => [{ state: 'complete', filename: 'worker.mp3', url: 'blob:https://gemini.google.com/worker', mime: 'audio/mpeg' }] },
+  };
+  const context = vm.createContext({ chrome, Date: FastDate, URL, setTimeout });
+  vm.runInContext(source, context);
+  assert.equal((await context.geminiMusic(9, 'piano')).filename, 'worker.mp3');
+});
+
+test('worker MPEG download is rejected when another download overlaps', async () => {
+  let listener, now = 0;
+  class FastDate extends Date { static now() { return now; } }
+  const chrome = {
+    scripting: { executeScript: async ({ args }) => {
+      if (args[0] === 'download') { listener({ id: 1 }); listener({ id: 2 }); now += 13000; }
+      return [{ result: { ok: true, downloadUrls: [] } }];
+    } },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123', windowId: 1 }) },
+    windows: { get: async () => ({ focused: false }), onFocusChanged: { addListener() {}, removeListener() {} } },
+    downloads: { onCreated: { addListener: fn => { listener = fn; }, removeListener() {} }, search: async () => [{ state: 'complete', filename: 'worker.mp3', url: 'blob:https://gemini.google.com/worker', mime: 'audio/mpeg' }] },
+  };
+  const fastTimeout = fn => { now += 60000; fn(); };
+  const context = vm.createContext({ chrome, Date: FastDate, URL, setTimeout: fastTimeout });
+  vm.runInContext(source, context);
+  await assert.rejects(context.geminiMusic(9, 'piano'), /다운로드 확인 실패/);
+});
+
 test('official download click captures the same tab blob and restores the original method', async () => {
   let listener;
   function Element() {}
