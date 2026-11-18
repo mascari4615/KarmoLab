@@ -23,8 +23,10 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
       if (op === 'ready') {
         const matches = nodes('button').filter(e => /트랙 다운로드|Download track/i.test((e.getAttribute('aria-label') || '') + ' ' + (e.innerText || '')));
         if (matches.length > 1) return { error: '음악 결과가 여러 개' };
-        if (isResume && matches.length === 1 && (button('오디오만') || button('Audio only'))) return { ok: true };
-        const el = matches[0]; if (!el) return { pending: true }; el.click(); return { ok: true };
+        const media = nodes('audio,video').map(e => e.currentSrc || e.getAttribute('src') || '').filter(Boolean);
+        const mediaUrl = media.length === 1 ? media[0] : '';
+        if (isResume && matches.length === 1 && (button('오디오만') || button('Audio only'))) return { ok: true, mediaUrl };
+        const el = matches[0]; if (!el) return { pending: true }; el.click(); return { ok: true, mediaUrl };
       }
       if (op === 'download') {
         const el = button('오디오만') || button('Audio only'); if (!el) return { pending: true };
@@ -33,7 +35,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
           const urlDescriptor = Object.getOwnPropertyDescriptor(URL, 'createObjectURL'), originalCreate = URL.createObjectURL;
           if (typeof original !== 'function' || (descriptor && !descriptor.configurable) || typeof originalCreate !== 'function' || !urlDescriptor?.configurable || !('value' in urlDescriptor)) return resolve({ error: '다운로드 확인을 준비하지 못함' });
           const urls = new Set(), types = new Set(); let timer;
-          const finish = () => { clearTimeout(timer); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(urls.size === 1 ? { ok: true, downloadUrls: [...urls] } : { error: '음악 다운로드 연결을 확인하지 못함 (형식: ' + ([...types].join(',') || '없음') + ')' }); };
+          const finish = () => { clearTimeout(timer); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(urls.size <= 1 ? { ok: true, downloadUrls: [...urls], types: [...types] } : { error: '음악 다운로드 결과가 여러 개' }); };
           const observe = (href) => { try { if (href.startsWith('blob:') && new URL(href).origin === location.origin) urls.add(href); } catch {} };
           const wrapped = function (...args) {
             const href = this.href || '', download = this.hasAttribute('download') && /\.mp3$/i.test(this.getAttribute('download') || '');
@@ -94,7 +96,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
   }
   if (resume && conversation.href !== expectedUrl) throw new Error('Gemini 작업 대화가 바뀜');
   await onConversation(conversation.href);
-  await wait('ready', '', 150000);
+  const ready = await wait('ready', '', 150000);
   if ((await chrome.tabs.get(tabId)).url !== conversation.href) throw new Error('Gemini 작업 대화가 바뀜');
   if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
   const started = Date.now(), ids = new Set();
@@ -106,7 +108,9 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
       for (const id of ids) {
         const items = await chrome.downloads.search({ id });
         const item = items[0];
-        if (!clicked.downloadUrls.includes(item?.url)) continue;
+        const sameBlob = clicked.downloadUrls.includes(item?.url);
+        const sameMedia = !!ready.mediaUrl && (item?.url === ready.mediaUrl || item?.finalUrl === ready.mediaUrl);
+        if (!sameBlob && !sameMedia) continue;
         if (item?.state === 'interrupted') throw new Error('음악 파일 다운로드가 중단됨');
         if (item?.state === 'complete' && /\.mp3$/i.test(item.filename || '')) {
           if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');

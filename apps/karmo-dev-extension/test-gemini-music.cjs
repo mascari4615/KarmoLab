@@ -42,6 +42,19 @@ test('recovery downloads the existing result without another prompt submission',
   assert.deepEqual(actions, ['ready', 'download']);
 });
 
+test('recovery rejects a different conversation before clicking controls', async () => {
+  let clicks = 0;
+  const chrome = {
+    scripting: { executeScript: async () => { clicks++; return [{ result: { ok: true } }]; } },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/other', windowId: 1 }) },
+    windows: { get: async () => ({ focused: false }), onFocusChanged: { addListener() {}, removeListener() {} } },
+  };
+  const context = vm.createContext({ chrome, Date, URL, setTimeout });
+  vm.runInContext(source, context);
+  await assert.rejects(context.geminiMusic(9, '', { resume: true, expectedUrl: 'https://gemini.google.com/app/expected' }), /대화가 바뀜/);
+  assert.equal(clicks, 0);
+});
+
 test('music result selects only the exact clicked blob when downloads overlap', async () => {
   let listener;
   const chrome = {
@@ -54,6 +67,23 @@ test('music result selects only the exact clicked blob when downloads overlap', 
   vm.runInContext(source, context);
   const result = await context.geminiMusic(9, 'piano');
   assert.equal(result.filename, 'song.mp3');
+});
+
+test('music result matches the selected media URL when download is not a blob', async () => {
+  let listener;
+  const selected = 'https://media.example.test/selected';
+  const chrome = {
+    scripting: { executeScript: async ({ args }) => {
+      if (args[0] === 'download') { listener({ id: 1 }); listener({ id: 2 }); }
+      return [{ result: { ok: true, mediaUrl: selected, downloadUrls: [] } }];
+    } },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123', windowId: 1 }) },
+    windows: { get: async () => ({ focused: false }), onFocusChanged: { addListener() {}, removeListener() {} } },
+    downloads: { onCreated: { addListener: fn => { listener = fn; }, removeListener() {} }, search: async ({ id }) => [{ state: 'complete', filename: id === 1 ? 'other.mp3' : 'selected.mp3', url: id === 1 ? 'https://media.example.test/other' : selected }] },
+  };
+  const context = vm.createContext({ chrome, Date, URL, setTimeout });
+  vm.runInContext(source, context);
+  assert.equal((await context.geminiMusic(9, 'piano')).filename, 'selected.mp3');
 });
 
 test('official download click captures the same tab blob and restores the original method', async () => {
@@ -150,6 +180,6 @@ test('ambiguous blobs are rejected and original browser methods are restored', a
   const fastTimeout = (fn, ms) => setTimeout(fn, ms === 10000 ? 5 : ms);
   const context = vm.createContext({ chrome, document: { querySelectorAll: () => [option], hasFocus: () => false }, window: { addEventListener() {}, removeEventListener() {} }, location: { hostname: 'gemini.google.com', origin: 'https://gemini.google.com' }, HTMLAnchorElement: Anchor, Date, URL: PageURL, setTimeout: fastTimeout, clearTimeout });
   vm.runInContext(source, context);
-  await assert.rejects(context.geminiMusic(9, 'piano'), /연결을 확인하지 못함/);
+  await assert.rejects(context.geminiMusic(9, 'piano'), /다운로드 결과가 여러 개/);
   assert.equal(PageURL.createObjectURL, originalCreate);
 });

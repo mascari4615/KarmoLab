@@ -22,13 +22,16 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
         const matches = [...document.querySelectorAll('button')].filter(e => /동영상 다운로드|Download video/i.test((e.getAttribute('aria-label') || '') + ' ' + (e.innerText || '')));
         if (matches.length > 1) return { error: '영상 결과가 여러 개' };
         const el = matches[0]; if (!el || el.disabled) return { pending: true };
-        if (op === 'ready') return { ok: true };
+        if (op === 'ready') {
+          const media = [...document.querySelectorAll('audio,video')].map(e => e.currentSrc || e.getAttribute('src') || '').filter(Boolean);
+          return { ok: true, mediaUrl: media.length === 1 ? media[0] : '' };
+        }
         return new Promise((resolve) => {
           const proto = HTMLAnchorElement.prototype, descriptor = Object.getOwnPropertyDescriptor(proto, 'click'), original = proto.click;
           const urlDescriptor = Object.getOwnPropertyDescriptor(URL, 'createObjectURL'), originalCreate = URL.createObjectURL;
           if (typeof original !== 'function' || (descriptor && !descriptor.configurable) || typeof originalCreate !== 'function' || !urlDescriptor?.configurable || !('value' in urlDescriptor)) return resolve({ error: '다운로드 확인을 준비하지 못함' });
           const urls = new Set(), types = new Set(); let timer;
-          const finish = () => { clearTimeout(timer); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(urls.size === 1 ? { ok: true, downloadUrls: [...urls] } : { error: '영상 다운로드 연결을 확인하지 못함 (형식: ' + ([...types].join(',') || '없음') + ')' }); };
+          const finish = () => { clearTimeout(timer); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(urls.size <= 1 ? { ok: true, downloadUrls: [...urls], types: [...types] } : { error: '영상 다운로드 결과가 여러 개' }); };
           const observe = (href) => { try { if (href.startsWith('blob:') && new URL(href).origin === location.origin) urls.add(href); } catch {} };
           const wrapped = function (...args) {
             const href = this.href || '', download = this.hasAttribute('download') && /\.mp4$/i.test(this.getAttribute('download') || '');
@@ -85,7 +88,7 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
   if (conversation.origin !== 'https://gemini.google.com' || !/^\/app\/[^/]+$/.test(conversation.pathname)) throw new Error('Gemini 영상 대화를 식별하지 못함');
   if (resume && conversation.href !== expectedUrl) throw new Error('Gemini 작업 대화가 바뀜');
   await onConversation(conversation.href);
-  await wait('ready', '', 240000);
+  const ready = await wait('ready', '', 240000);
   if ((await chrome.tabs.get(tabId)).url !== conversation.href) throw new Error('Gemini 작업 대화가 바뀜');
   if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
   const started = Date.now(), ids = new Set();
@@ -97,7 +100,9 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
       for (const id of ids) {
         const items = await chrome.downloads.search({ id });
         const item = items[0];
-        if (!clicked.downloadUrls.includes(item?.url)) continue;
+        const sameBlob = clicked.downloadUrls.includes(item?.url);
+        const sameMedia = !!ready.mediaUrl && (item?.url === ready.mediaUrl || item?.finalUrl === ready.mediaUrl);
+        if (!sameBlob && !sameMedia) continue;
         if (item?.state === 'interrupted') throw new Error('영상 파일 다운로드가 중단됨');
         if (item?.state === 'complete' && /\.mp4$/i.test(item.filename || '')) {
           if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
