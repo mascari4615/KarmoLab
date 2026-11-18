@@ -281,9 +281,15 @@ function countHtml(c: QuotaCount): string {
     </div>`;
 }
 
-function cardBodyHtml(data: VendorQuota): string {
+function cardBodyHtml(data: VendorQuota, excludeLoginNote = false): string {
   const parts: string[] = [];
-  parts.push(...data.notes.map((n) => `<p class="myai-note">${esc(noteText(n))}</p>`));
+  for (const note of data.notes) {
+    if (note === 'claude-cli-login-required') {
+      if (!excludeLoginNote) parts.push('<p class="myai-note">Claude CLI 로그인 필요. 사용량은 웹에서 가져왔습니다. CLI를 다시 연결하려면 수집 PC의 터미널에서 <code>claude auth login</code>을 실행하세요.</p>');
+    } else {
+      parts.push(`<p class="myai-note">${esc(noteText(note))}</p>`);
+    }
+  }
   parts.push(...data.windows.map(gaugeHtml));
   parts.push(...data.counts.map(countHtml));
   if (data.last_rate_limited_at) {
@@ -309,7 +315,7 @@ function freshnessHtml(data: VendorQuota): string {
   )}">${esc(t('my-ai.t18', { when }, `${when} 관측`))}</span>`;
 }
 
-function renderCard(card: VendorCard): string {
+function renderCard(card: VendorCard, dashMode: boolean): string {
   const chips: string[] = [];
   if (card.quota) {
     if (card.quota.plan) {
@@ -322,11 +328,23 @@ function renderCard(card: VendorCard): string {
     isDesktop() && card.id === 'claude' && needsLogin(card)
       ? `<button type="button" class="myai-login" data-claude-login>${esc(t('my-ai.login.button', undefined, '로그인'))}</button>`
       : '';
-  const body = card.error
-    ? `<p class="myai-error">${esc(errorText(card.error))}</p>${login}`
-    : card.quota
-      ? cardBodyHtml(card.quota) + login
-      : `<p class="myai-note">${esc(t('my-ai.t19', undefined, '읽는 중...'))}</p>`;
+  const browserClaude = card.id === 'claude' && !isDesktop();
+  const webFailed = card.error === 'claude-login-and-web-unavailable' || card.error === 'claude-web-unavailable';
+  const cliLoginNeeded = card.error === 'claude-login-and-web-unavailable' || (card.error !== null && isLoginCode(card.error));
+  let issue = '';
+  if (browserClaude && (cliLoginNeeded || webFailed)) {
+    const title = [cliLoginNeeded ? 'Claude CLI 로그인 필요.' : '', webFailed ? '웹 사용량을 가져오지 못했습니다.' : ''].filter(Boolean).join(' ');
+    issue = `<p class="myai-error">${title}${card.quota ? ' 마지막 기록을 표시합니다.' : ''}</p>`;
+    if (cliLoginNeeded) issue += '<p class="myai-note">CLI를 연결하려면 수집 PC의 터미널에서 <code>claude auth login</code>을 실행하세요.</p>';
+    if (webFailed) {
+      const retry = dashMode ? '강제 새로고침하세요.' : 'Dash 구독 탭에서 강제 새로고침하세요.';
+      issue += `<p class="myai-note">수집 PC의 Edge에서 <a href="https://claude.ai/settings/usage" target="_blank" rel="noopener noreferrer">Claude 사용량</a>을 열어 로그인 상태를 확인한 뒤 ${retry}</p>`;
+    }
+  } else if (card.error) {
+    issue = `<p class="myai-error">${esc(errorText(card.error))}</p>`;
+  }
+  const body = (issue + (card.quota ? cardBodyHtml(card.quota, Boolean(card.error)) : '') + login)
+    || `<p class="myai-note">${esc(t('my-ai.t19', undefined, '읽는 중...'))}</p>`;
 
   return `
     <section class="myai-card${card.error ? ' myai-card--error' : ''}" style="--myai-accent:${esc(card.accent)}">
@@ -571,7 +589,7 @@ export function buildQuota(
       cards.innerHTML = `<p class="myai-error">${esc(errorText(fatal))}</p>`;
       return;
     }
-    cards.innerHTML = cards_data.map(renderCard).join('');
+    cards.innerHTML = cards_data.map((card) => renderCard(card, Boolean(dashToken))).join('');
     cards.querySelector<HTMLButtonElement>('[data-claude-login]')?.addEventListener('click', startLogin);
   }
 
