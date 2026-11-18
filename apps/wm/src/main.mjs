@@ -1,10 +1,12 @@
 import { createAtlas } from './atlas.mjs';
-import { typeNames, WORLD, clamp } from './world.mjs';
+import { typeNames, clamp } from './world.mjs';
 import { loadInitial, createEditor } from './editor.mjs';
 import { observePerformance } from './performance.mjs';
+import { createViewSettings, loadViewSettings } from './view-settings.mjs';
 
 async function start() {
 const $ = selector => document.querySelector(selector);
+$('#terrain-retry').addEventListener('click',()=>location.reload());
 let world = await loadInitial(), places = world.places, editor, isEditing = false;
 const map = $('#map'), context = map.getContext('2d'), stage = $('#stage');
 const brushCursor=document.createElement('div');brushCursor.id='brush-cursor';brushCursor.hidden=true;brushCursor.setAttribute('aria-hidden','true');stage.append(brushCursor);
@@ -13,6 +15,9 @@ const state = { mode: 'map', selected: null, filter: 'all', labels: true, zoom: 
 let width = 0, height = 0, baseWidth = 0, baseHeight = 0, originX = 0, originY = 0, atlas, planet, planetLoading = false, atlasDirty = false, planetDirty = false, placesSignature = '';
 const mobile = () => width <= 780;
 let previousMobile = null;
+const viewOptions = loadViewSettings();
+const viewSettings = createViewSettings(viewOptions, () => { planet?.setDisplay(viewOptions); atlas?.setDisplay(viewOptions); drawMap(); });
+viewSettings.setMode('map');
 const iconPaths = {
   home: '<path d="m3 11 9-8 9 8M5 10v11h14V10M10 21v-7h4v7"/>',
   forest: '<path d="m12 2-6 8h3l-5 7h6v5h4v-5h6l-5-7h3Z"/>',
@@ -65,6 +70,12 @@ function renderList() {
 }
 function mapPosition(x, y) { return { x: originX + (x - state.center[0]) * baseWidth * state.zoom, y: originY + (y - state.center[1]) * baseHeight * state.zoom, visible: true }; }
 function updateLabels() {
+  if(height){
+    const span=state.mode==='planet'&&planet?planet.view().spanV:height/(baseHeight*state.zoom),degrees=span*180*80/height;
+    const scale=`${degrees>=1?degrees.toFixed(1):degrees>=.01?degrees.toFixed(2):degrees.toPrecision(2)}°`,label=$('#terrain-scale span');
+    if(label.textContent!==scale)label.textContent=scale;
+    document.body.classList.toggle('terrain-close',span<.12);
+  }
   if(!state.labels){for(const node of markers.values())if(!node.hidden)node.hidden=true;return;}
   const placed = [];
   for (const place of labelCandidates) {
@@ -73,7 +84,7 @@ function updateLabels() {
     let visible = point.visible && point.x > 16 && point.x < width - 20 && point.y > 80 && point.y < height - 62;
     const important = place.id === state.selected || place.featured;
     const minDistance = mobile() ? 62 : 65;
-    if (!important && placed.some(p => Math.abs(point.x - p.x) < minDistance && Math.abs(point.y - p.y) < 40)) visible = false;
+    if (placed.some(p => Math.abs(point.x - p.x) < minDistance && Math.abs(point.y - p.y) < 40)) visible = false;
     if (visible) placed.push(point);
     if(node.hidden===visible)node.hidden = !visible;
     if(!visible)continue;
@@ -82,19 +93,20 @@ function updateLabels() {
     node.setAttribute('aria-pressed', String(place.id === state.selected));
   }
 }
-function drawMap() {
+let mapFrame=0;
+function drawMap(){if(!mapFrame)mapFrame=requestAnimationFrame(renderMap);}
+function renderMap() {
+  mapFrame=0;
   if (!atlas || state.mode !== 'map') return;
   const started = performance.now();
-  if (atlasDirty) { atlas = createAtlas(world, atlasReady); atlasDirty = false; }
+  if (atlasDirty) { atlas = createAtlas(world, atlasReady, viewOptions); atlasDirty = false; }
   const ratio = Math.min(devicePixelRatio, 2);
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
-  context.fillStyle = '#e5e1d2'; context.fillRect(0, 0, width, height);
+  context.clearRect(0,0,width,height);
   // 도곽과 좌표선은 거리 척도가 아닌 탐색 보조선
   const w = baseWidth * state.zoom, h = baseHeight * state.zoom;
   const x = originX - state.center[0] * w, y = originY - state.center[1] * h;
-  context.save(); context.shadowColor = '#334b3424'; context.shadowBlur = 25; context.shadowOffsetY = 5;
-  context.fillStyle = '#eee8d8'; context.fillRect(x, y, w, h); context.restore();
-  atlas.draw(context, x, y, w, h);
+  atlas.draw(context, x, y, w, h,{direct:true});
   context.save(); context.beginPath(); context.rect(x, y, w, h); context.clip();
   context.strokeStyle = '#263f3313'; context.lineWidth = .7;
   context.restore();
@@ -103,7 +115,7 @@ function drawMap() {
   updateLabels();
   stage.dataset.mapDrawMs = (performance.now() - started).toFixed(2);
 }
-function atlasReady() { stage.dataset.reliefReady = 'true'; drawMap(); if (state.selected && !document.body.classList.contains('editing')) select(state.selected); }
+function atlasReady() { stage.dataset.reliefReady = 'true'; drawMap(); if (state.mode==='map'&&state.selected && !document.body.classList.contains('editing')) select(state.selected); }
 function resize() {
   width = stage.clientWidth; height = stage.clientHeight;
   if (previousMobile !== mobile()) { previousMobile = mobile(); setExplorer(!previousMobile); }
@@ -111,13 +123,15 @@ function resize() {
   const left = width > 950 ? 325 : width > 780 ? 260 : 25;
   const right = width > 780 ? 90 : 25;
   const availableHeight = Math.max(80, height - (height < 420 ? 100 : mobile() ? 240 : 155));
-  baseWidth = Math.min(width - left - right, availableHeight * WORLD.aspect);
-  baseHeight = baseWidth / WORLD.aspect;
+  const aspect=world.width/world.height;
+  baseWidth = Math.min(width - left - right, availableHeight * aspect);
+  baseHeight = baseWidth / aspect;
   originX = left + (width - left - right) / 2; originY = mobile() ? height * .47 : 95 + availableHeight / 2;
   planet?.resize(width, height); drawMap();
 }
 function updateURL() {
   const parameters = new URLSearchParams();
+  parameters.set('world',world.id);
   if (state.mode === 'planet') parameters.set('view', 'planet');
   if (state.selected) parameters.set('place', state.selected);
   history.replaceState(null, '', `${location.pathname}${parameters.size ? `?${parameters}` : ''}`);
@@ -127,21 +141,23 @@ function select(id) {
   state.selected = id; $('#detail').hidden = false;
   $('#detail-title').textContent = place.name; $('#detail-kind').textContent = `${place.area} / ${typeNames[place.type]}`;
   $('#detail-text').textContent = place.text; $('#detail-source').textContent = place.source;
+  $('#detail-art').hidden=Boolean(place.viewSpan&&place.viewSpan<.005);
   const preview = document.createElement('canvas'); preview.width = 600; preview.height = 240;
-  if (atlasDirty) { atlas = createAtlas(world, atlasReady); atlasDirty = false; }
+  if (atlasDirty) { atlas = createAtlas(world, atlasReady, viewOptions); atlasDirty = false; }
   atlas.draw(preview.getContext('2d'), 300 - place.x * 2200, 120 - place.y * 1237, 2200, 1237, { preview: true });
   $('#detail-art').replaceChildren(preview); preview.style.width = '100%'; preview.style.height = '100%'; preview.style.objectFit = 'cover';
+  drawMap();
   $('#announcement').textContent = `${place.name} 선택. ${place.text}`;
   renderList(); updateURL();
 }
 function focusPlace(place) {
-  if (state.mode === 'planet') planet?.focus(place.x, place.y);
-  else { state.center = [place.x, place.y]; state.zoom = mobile() ? 2.5 : 1.8; drawMap(); }
+  if (state.mode === 'planet') {if(place.viewSpan)planet?.focusView(place.x,place.y,place.viewSpan);else planet?.focus(place.x, place.y);}
+  else { state.center = [place.x, place.y]; state.zoom = place.viewSpan?clamp(height/(baseHeight*place.viewSpan),.7,8192):mobile()?2.5:1.8; drawMap(); }
 }
 function reset() { state.center = [.5, .5]; state.zoom = 1; if (state.mode === 'planet') planet?.reset(); else drawMap(); }
 function zoom(factor, anchor) {
   if (state.mode === 'planet') { planet?.zoom(factor); return; }
-  const old = state.zoom, next = clamp(old * factor, .7, 7);
+  const old = state.zoom, next = clamp(old * factor, .7, 8192);
   if (anchor) { state.center[0] += (anchor.x - originX) / baseWidth * (1 / old - 1 / next); state.center[1] += (anchor.y - originY) / baseHeight * (1 / old - 1 / next); }
   state.zoom = next; drawMap();
 }
@@ -149,17 +165,19 @@ async function setMode(mode) {
   if (mode === state.mode || planetLoading) return;
   if (mode === 'planet' && !planet) {
     planetLoading = true; $('#planet-mode').disabled = true;$('#planet-mode').setAttribute('aria-busy','true');$('#planet-mode').lastChild.textContent='준비 중';
-    try { const { createPlanet } = await import('./planet.mjs'); planet = createPlanet($('#planet'), world, updateLabels, (phase, point) => editor?.brush(phase, point),()=>editor?.brushSettings()); planet.resize(width, height); planet.setEditing(isEditing);await planet.ready; }
+    try { const { createPlanet } = await import('./planet.mjs'); planet = createPlanet($('#planet'), world, updateLabels, (phase, point) => editor?.brush(phase, point),()=>editor?.brushSettings(),viewOptions); planet.resize(width, height); planet.setEditing(isEditing);await planet.ready; }
     catch (error) {planet?.dispose();planet=null;$('#planet').replaceChildren(); openDialog('<span class="eyebrow">PLANET VIEW</span><h2>행성을 열지 못했어요</h2><p>이 브라우저에서 3D 그래픽을 시작하지 못했습니다. 지도는 계속 사용할 수 있어요. 브라우저의 그래픽 가속 설정을 확인하거나 새로고침해 주세요.</p>'); console.error(error); return; }
     finally { planetLoading = false; $('#planet-mode').disabled = false;$('#planet-mode').setAttribute('aria-busy','false');$('#planet-mode').lastChild.textContent='행성'; }
   }
-  if (mode === 'map' && planet) state.center = state.zoom>1?planet.center():[.5,.5];
+  if(mode==='map'&&planet){const view=planet.view();state.center=view.center;state.zoom=clamp(height/(baseHeight*view.spanV),.7,8192);}
   state.mode = mode; document.body.classList.toggle('planet-mode', mode === 'planet');
+  atlas?.setActive(mode==='map');
+  viewSettings.setMode(mode);
   map.hidden = mode !== 'map'; $('#planet').hidden = mode !== 'planet';
   $('#map-mode').setAttribute('aria-pressed', String(mode === 'map')); $('#planet-mode').setAttribute('aria-pressed', String(mode === 'planet'));
   $('#view-description').textContent = `${world.star}의 빛, ${world.moon || '위성 없는'} 하늘,  동주기자전`;
   $('#interaction-hint').textContent = mode === 'planet' ? '드래그로 회전,  스크롤로 확대' : '드래그로 이동,  스크롤로 확대';
-  if (mode === 'planet') { if (planetDirty) { planet.update(world); planetDirty = false; } const place = places.find(p => p.id === state.selected); if (place) planet.focus(place.x, place.y); else if (state.zoom === 1 && state.center[0] === .5 && state.center[1] === .5) planet.reset(); else planet.focus(...state.center, mobile() ? 4.7 : 4.25); planet.start(); }
+  if (mode === 'planet') { if (planetDirty) { planet.update(world); planetDirty = false; } if (state.zoom === 1 && state.center[0] === .5 && state.center[1] === .5) planet.reset(); else planet.focusView(...state.center,height/(baseHeight*state.zoom)); planet.start(); }
   else { planet?.stop(); drawMap(); }
   updateLabels(); updateURL(); $('#announcement').textContent = mode === 'planet' ? '행성 보기' : '지도 보기';
 }
@@ -213,6 +231,9 @@ function openDialog(html) { $('#dialog-body').innerHTML = html; $('#dialog').sho
 $('#close-dialog').addEventListener('click', () => $('#dialog').close());
 $('#dialog').addEventListener('click', event => { if (event.target === $('#dialog')) { const rect = $('#dialog').getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) $('#dialog').close(); } });
 function showSource() {
+  if(world.terrainSource){
+    openDialog('<span class="eyebrow">TERRAIN SOURCES</span><h2>샘플 지형의 출처</h2><p>대륙과 화산호는 절차적으로 생성한 예제입니다. 상세 산악 지역은 알프스의 고도 수치자료를 새로운 위치와 높이로 재구성했습니다. 모두 운도의 세계관과 별도로 편집하고 저장됩니다.</p><p><a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Mapzen Terrain Tiles</a><br>Produced using Copernicus data and information funded by the European Union - EU-DEM layers.</p><p>원본 고도는 미터 단위로 반올림했으며, 세계 안의 위치와 고도 배율, 가장자리 연결을 변경했습니다. 가까운 급경사면에는 생성한 작은 굴곡을 더했습니다. 지표 색상과 눈은 수치로 계산하며 위성사진은 사용하지 않습니다.</p><p><a href="'+import.meta.env.BASE_URL+'data/alpine-v1.json" target="_blank" rel="noopener">수치자료 기록과 원본 타일</a></p>');return;
+  }
   openDialog(`<span class="eyebrow">THE FIRST MAP</span><h2>세계의 첫 번째 모습</h2><p>한 장의 종이에 그려진 숲과 바다, 도시와 산맥. 이 지도에서 WM의 세계가 시작됩니다.</p><div class="image-scroll"><img class="reference-image" src="${import.meta.env.BASE_URL}reference/original-photo.png" alt="사용자가 직접 그린 WM 세계 지도 원본. 북서쪽 숲, 중앙 내해와 반도, 동쪽 큰바다, 남쪽 산맥." tabindex="0" role="button" aria-label="원본 지도 확대 또는 축소" aria-pressed="false"></div><p>사진을 누르면 원본 크기로 볼 수 있어요. 디지털 지도의 일부 이름과 위치는 확인 중입니다. 행성은 현재 지도를 구면에 펼친 탐색용 표현이며, 실제 거리와 행성 전체 범위는 아직 미정입니다.</p>`);
   const image = $('.reference-image'); const toggle = () => { image.classList.toggle('full-size'); image.setAttribute('aria-pressed', String(image.classList.contains('full-size'))); };
   image.addEventListener('click', toggle); image.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } });
@@ -235,11 +256,13 @@ document.addEventListener('keydown', event => {
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) planet?.stop(); else if (state.mode === 'planet') planet?.start(); });
 new ResizeObserver(resize).observe(stage);
-function changedWorld(next, rebuild) {
+function changedWorld(next, rebuild,detailOnly=false) {
   const started = performance.now();
   const changedId = world.id !== next.id;
   world = next; places = world.places;
-  if (rebuild) { atlasDirty = true; planetDirty = true; if (state.mode === 'planet' && planet) { planet.update(world); planetDirty = false; } }
+  $('#source-button').innerHTML=world.terrainSource?'지형 자료 출처 <span>↗</span>':'첫 번째 지도 <span>↗</span>';
+  if(rebuild&&detailOnly){atlas?.updateDetails(world);planet?.updateDetails(world);}
+  else if (rebuild) { atlasDirty = true; planetDirty = true; if (state.mode === 'planet' && planet) { planet.update(world); planetDirty = false; } }
   planet?.configure(world);
   document.querySelector('.atlas-heading h1').textContent = world.name;
   $('#view-description').textContent = `${world.star}의 빛, ${world.moon || '위성 없는'} 하늘,  동주기자전`;
@@ -249,6 +272,7 @@ function changedWorld(next, rebuild) {
   if (signature !== placesSignature) { placesSignature = signature; buildMarkers(); renderList(); if (state.selected) select(state.selected); }
   else if (rebuild && state.selected && !document.body.classList.contains('editing')) select(state.selected);
   drawMap(); updateURL();
+  if(changedId)resize();
   stage.dataset.updateMs = (performance.now() - started).toFixed(2);
 }
 function placeForm(point, save, existing) {
@@ -262,15 +286,22 @@ function placeForm(point, save, existing) {
 const editPlaceButton = document.createElement('button'); editPlaceButton.className = 'text-button'; editPlaceButton.id = 'edit-place'; editPlaceButton.textContent = '장소 수정'; $('.detail-body').append(editPlaceButton);
 editPlaceButton.addEventListener('click', () => { const place = places.find(p => p.id === state.selected); if (place) placeForm([place.x, place.y], values => { editor.editPlace(place, values); select(place.id); }, place); });
 $('#edit-toggle').addEventListener('click', () => editor?.toggle());
+$('#world-library').addEventListener('click',()=>editor?.openLibrary());
 requestAnimationFrame(() => {
   try {
     const parameters = new URLSearchParams(location.search); const selected = parameters.get('place'); const view = parameters.get('view');
-    atlas = createAtlas(world, atlasReady);
+    atlas = createAtlas(world, atlasReady, viewOptions);
     editor = createEditor(world, { change: changedWorld, reset, dialog: openDialog, closeDialog: () => $('#dialog').close(), addPlace: (point, save) => placeForm(point, save), editMode: value => { isEditing = value; planet?.setEditing(value); map.style.cursor = value ? 'crosshair' : 'grab'; if (!value && state.selected) select(state.selected); } });
     changedWorld(world, false); resize(); renderList(); setExplorer(!mobile()); $('#loading').hidden = true;
     if (selected && places.some(p => p.id === selected)) { select(selected); focusPlace(places.find(p => p.id === selected)); }
-    if (view === 'planet') setMode('planet');
+    if (view === 'planet') setMode('planet').then(()=>{const place=places.find(p=>p.id===selected);if(place&&state.selected===selected)focusPlace(place);});
   } catch (error) { $('#loading').textContent = '지도를 불러오지 못했습니다. 새로고침해 주세요.'; console.error(error); }
 });
 }
-start().catch(error=>{document.querySelector('#loading').textContent='세계를 불러오지 못했습니다. 새로고침해 주세요.';console.error(error);});
+start().catch(error=>{
+  const loading=document.querySelector('#loading');loading.replaceChildren();
+  const message=document.createElement('p');message.textContent=`세계를 불러오지 못했습니다. ${error.message}`;
+  const retry=document.createElement('button');retry.textContent='다시 시도';retry.onclick=()=>location.reload();
+  const home=document.createElement('a');home.href='?world=undo';home.textContent='운도 열기';
+  loading.append(message,retry,home);console.error(error);
+});

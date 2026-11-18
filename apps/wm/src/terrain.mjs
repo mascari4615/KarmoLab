@@ -122,6 +122,13 @@ export function surfaceColor(world, u, v, height, cachedGrain) {
   return color.map(c => clamp(c * factor, 0, 255));
 }
 const brushGrids = new Map();
+const paintHistory=new WeakMap();
+export function paintedRows(world,since=-1){
+  const history=paintHistory.get(world)||[],revision=history.at(-1)?.revision||0;
+  if(since<0||(history.length&&since<history[0].revision-1))return{top:0,bottom:world.height-1,revision};
+  let top=world.height,bottom=-1;for(const change of history)if(change.revision>since){top=Math.min(top,change.top);bottom=Math.max(bottom,change.bottom);}
+  return{top:Math.max(0,top-1),bottom:Math.min(world.height-1,bottom+1),revision};
+}
 export function strokePoints(from, to, radius) {
   if (!from) return [to];
   const a = spherePoint(...from), b = spherePoint(...to);
@@ -133,6 +140,16 @@ export function strokePoints(from, to, radius) {
   });
 }
 export function paint(world, u, v, tool, radius, strength) {
+  if((world.detailStrokes?.length||0)>=20000)throw new Error('상세 편집 기록 한도에 도달했어요. 실행 취소 후 다시 그리거나 JSON으로 작업을 보관해 주세요.');
+  if(world.terrainSource&&(tool==='raise'||tool==='lower')&&!world.detailBaseHeights){world.detailBaseHeights=world.heights.slice();world.detailStrokes??=[];}
+  if(radius<1/world.height){
+    if(!['raise','lower',...BIOMES].includes(tool))return false;
+    if((tool==='raise'||tool==='lower')&&!world.detailBaseHeights)world.detailBaseHeights=world.heights.slice();
+    world.detailStrokes??=[];
+    world.detailStrokes.push({u:(u%1+1)%1,v:clamp(v,0,1),tool,radius,strength});return true;
+  }
+  if(world.detailBaseHeights&&(tool==='raise'||tool==='lower'))world.detailStrokes.push({u:(u%1+1)%1,v:clamp(v,0,1),tool,radius,strength});
+  if((world.detailStrokes?.length||world.terrainSource)&&BIOMES.includes(tool)){world.detailStrokes??=[];world.detailStrokes.push({u:(u%1+1)%1,v:clamp(v,0,1),tool,radius,strength});}
   const brushPoint = spherePoint(u, v); let changed = false;
   const radiusRadians = radius * Math.PI;
   const gridKey = `${world.width}:${world.height}`;
@@ -161,12 +178,18 @@ export function paint(world, u, v, tool, radius, strength) {
     changed = true;
     }
   }
+  if(changed){const history=paintHistory.get(world)||[];history.push({revision:(history.at(-1)?.revision||0)+1,top,bottom});if(history.length>64)history.shift();paintHistory.set(world,history);}
   return changed;
 }
 export function validateWorld(input) {
   if (!input || input.schema !== 'wm-world' || input.version !== 1) throw new Error('지원하지 않는 세계 파일입니다.');
-  if (![[256,144],[768,432]].some(([w,h])=>input.width===w&&input.height===h)) throw new Error('세계 데이터의 격자 크기가 맞지 않습니다.');
+  if (![[256,144],[768,432],[1536,768]].some(([w,h])=>input.width===w&&input.height===h)) throw new Error('세계 데이터의 격자 크기가 맞지 않습니다.');
   const count = input.width * input.height;
+  if(input.terrainSource!==undefined&&input.terrainSource!=='alpine-v1')throw new Error('지원하지 않는 상세 고도 자료입니다.');
+  if(input.snowLevel!==undefined&&(!Number.isFinite(input.snowLevel)||input.snowLevel<.01||input.snowLevel>1))throw new Error('설선 높이가 올바르지 않습니다.');
+  if(input.detailBaseHeights!==undefined&&(!Array.isArray(input.detailBaseHeights)||input.detailBaseHeights.length!==count||!input.detailBaseHeights.every(h=>Number.isFinite(h)&&h>=-1&&h<=1)))throw new Error('상세 편집의 원본 높이 데이터가 손상되었습니다.');
+  if(input.regionalDetail!==undefined&&typeof input.regionalDetail!=='boolean')throw new Error('지역 지형 설정이 올바르지 않습니다.');
+  if(input.detailStrokes!==undefined&&(!Array.isArray(input.detailStrokes)||input.detailStrokes.length>20000||!input.detailStrokes.every(s=>s&&Number.isFinite(s.u)&&s.u>=0&&s.u<=1&&Number.isFinite(s.v)&&s.v>=0&&s.v<=1&&Number.isFinite(s.radius)&&s.radius>=.00001&&s.radius<=.15&&Number.isFinite(s.strength)&&s.strength>=0&&s.strength<=.3&&['raise','lower',...BIOMES].includes(s.tool))))throw new Error('상세 지형 편집 데이터가 올바르지 않습니다.');
   if (!Array.isArray(input.heights) || input.heights.length !== count || !input.heights.every(h => Number.isFinite(h) && h >= -1 && h <= 1)) throw new Error('지형 높이 데이터가 손상되었습니다.');
   if (!Array.isArray(input.biomes) || input.biomes.length !== count || !input.biomes.every(b => Number.isInteger(b) && b >= 0 && b < BIOMES.length)) throw new Error('지형 종류 데이터가 손상되었습니다.');
   if (typeof input.name !== 'string' || input.name.length > 100 || !input.name.trim()) throw new Error('행성 이름을 확인해 주세요.');

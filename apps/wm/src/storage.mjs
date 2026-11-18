@@ -1,4 +1,13 @@
-const PREFIX='wm.world.v1.';
+import { paintedRows } from './terrain.mjs';
+const PREFIX='wm.world.v1.',snapshots=new WeakMap(),baselines=new WeakMap();
+function terrainSnapshot(world){
+  let value=snapshots.get(world);
+  if(!value||value.heightRef!==world.heights||value.biomeRef!==world.biomes){value={heightRef:world.heights,biomeRef:world.biomes,heights:new Float32Array(world.heights.length),biomes:new Uint8Array(world.biomes.length),revision:-1};snapshots.set(world,value);}
+  const rows=paintedRows(world,value.revision);value.revision=rows.revision;
+  for(let i=rows.top*world.width;i<(rows.bottom+1)*world.width;i++){value.heights[i]=world.heights[i];value.biomes[i]=world.biomes[i];}
+  let baseline;if(world.detailBaseHeights){baseline=baselines.get(world.detailBaseHeights);if(!baseline){baseline=Float32Array.from(world.detailBaseHeights);baselines.set(world.detailBaseHeights,baseline);}}
+  return {heights:value.heights,biomes:value.biomes,...(baseline?{detailBaseHeights:baseline}:{})};
+}
 let database,problem='';
 export const storageProblem=()=>problem;
 function open(){return database??=new Promise((resolve,reject)=>{
@@ -24,8 +33,8 @@ async function request(mode,action,table='worlds'){
   });
 }
 export async function storeWorld(world,{signal}={}){
-  const snapshot={...world,places:world.places.map(p=>({...p})),heights:Float32Array.from(world.heights),biomes:Uint8Array.from(world.biomes)};
   const db=await open();if(signal?.aborted)throw new DOMException('취소됨','AbortError');
+  const snapshot={...world,places:world.places.map(p=>({...p})),...terrainSnapshot(world),...(world.detailStrokes?{detailStrokes:world.detailStrokes.map(s=>({...s}))}:{})};
   await new Promise((resolve,reject)=>{
     const tx=db.transaction(['worlds','catalog'],'readwrite'),abort=()=>tx.abort();
     signal?.addEventListener('abort',abort,{once:true});
@@ -35,9 +44,9 @@ export async function storeWorld(world,{signal}={}){
   });
 }
 export async function readWorld(id){
-  let stored;try{stored=await request('readonly',store=>store.get(id));}catch{}
-  if(stored)return {...stored,heights:Array.from(stored.heights,v=>Math.round(v*100000)/100000),biomes:Array.from(stored.biomes)};
-  const raw=localStorage.getItem(PREFIX+id);return raw?JSON.parse(raw):null;
+  let stored,readError;try{stored=await request('readonly',store=>store.get(id));}catch(error){readError=error;}
+  if(stored)return {...stored,heights:Array.from(stored.heights,v=>Math.round(v*100000)/100000),biomes:Array.from(stored.biomes),...(stored.detailBaseHeights?{detailBaseHeights:Array.from(stored.detailBaseHeights)}:{})};
+  const raw=localStorage.getItem(PREFIX+id);if(raw)return JSON.parse(raw);if(readError)throw readError;return null;
 }
 export async function listWorlds(){
   let stored=[];try{stored=await request('readonly',store=>store.getAll(),'catalog');}catch{}const entries=new Map();

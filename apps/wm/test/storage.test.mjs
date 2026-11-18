@@ -10,3 +10,10 @@ test('IndexedDB 업그레이드가 막혀도 legacy 세계를 읽고 목록 유�
  assert.equal((await storage.listWorlds()).get('undo'),'보존할 세계');
  assert.match(storage.storageProblem(),/다른 WM 탭/);
 });
+
+test('저장소 읽기 오류를 없는 세계로 취급하지 않음',async()=>{
+ globalThis.localStorage={getItem:()=>null};
+ globalThis.indexedDB={open(){const request={};queueMicrotask(()=>request.onerror());return request;}};
+ const storage=await import('../src/storage.mjs');
+ await assert.rejects(storage.readWorld('undo'),/저장소/);
+});

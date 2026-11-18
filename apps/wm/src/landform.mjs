@@ -34,7 +34,7 @@ function distanceField(mask,w,h) {
 }
 
 // 물방울의 경사 이동, 운반 한도와 퇴적으로 골짜기 생성
-export function erode(heights,w,h,seed,drops=100000) {
+export function erode(heights,w,h,seed,drops=100000,radius=3) {
   let state=seed|0; const random=()=>{state=(Math.imul(state,1664525)+1013904223)|0;return(state>>>0)/4294967296;};
   const read=(x,y)=>heights[y*w+(x+w)%w];
   const sample=(x,y)=>{
@@ -43,7 +43,7 @@ export function erode(heights,w,h,seed,drops=100000) {
     return [(a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+d*tx)*ty,(b-a)*(1-ty)+(d-c)*ty,(c-a)*(1-tx)+(d-b)*tx];
   };
   const brush=[];let total=0;
-  for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++){const weight=Math.max(0,1-Math.hypot(x,y)/3);if(weight){brush.push([x,y,weight]);total+=weight;}}
+  for(let y=-Math.ceil(radius);y<=radius;y++)for(let x=-Math.ceil(radius);x<=radius;x++){const weight=Math.max(0,1-Math.hypot(x,y)/radius);if(weight){brush.push([x,y,weight]);total+=weight;}}
   for(const p of brush)p[2]/=total;
   for(let drop=0;drop<drops;drop++){
     let x=random()*w,y=4+random()*(h-9),vx=0,vy=0,speed=1,water=1,sediment=0;
