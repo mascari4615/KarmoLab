@@ -2,52 +2,87 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2057,
-    "days": 11,
+    "commits": 2098,
+    "days": 12,
     "shown": 60
   },
   "days": [
     {
+      "date": "2026-11-18",
+      "entries": [
+        {
+          "sha": "cb7574b1d",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "fx",
+          "text": "전투 연출 부품의 토대 (에셋 하나가 연출 하나)"
+        },
+        {
+          "sha": "f1a2c9eba",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "tools",
+          "text": "폰 실기 스크립트가 앱 실행 줄에서 멈추던 것"
+        },
+        {
+          "sha": "90122326d",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "닫기 버튼의 글과 키 표시가 한 자리에 겹쳐 그려지던 것"
+        }
+      ],
+      "quiet": 0,
+      "more": 0
+    },
+    {
       "date": "2026-11-17",
       "entries": [
         {
-          "sha": "e1db3246b",
+          "sha": "15c598876",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "ui",
-          "text": "상호작용 표시 독립 검토 지적 반영"
+          "text": "전체 메뉴 코어 모델을 원본에서 다시 구운 792면 판으로"
         },
         {
-          "sha": "4301ac8db",
+          "sha": "577ac68b8",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
           "scope": "ui",
-          "text": "NPC 옆에 뜨는 상호작용 표시를 UI Toolkit 으로"
+          "text": "ESC 와 폰 뒤로가기가 전체 메뉴를 열고 설정은 그 안의 버튼"
         },
         {
-          "sha": "c98fe4847",
+          "sha": "b4da5543f",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
-          "scope": "dungeon",
-          "text": "입장 창 스타레일식 재배치와 슬라임 숲 대표 그림"
+          "scope": "ui",
+          "text": "패널과 창 연출 13종을 에셋으로, UIFxProfile 로 자리마다 끼움"
         },
         {
-          "sha": "5d0a226a9",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "dungeon",
-          "text": "입장 창 진행 방식 섹션과 던전 대표 그림 자리"
-        },
-        {
-          "sha": "50f613675",
+          "sha": "d2ff3ce36",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "적 피해 제약 (DC_2) 이 피해 계산에 안 쓰이던 것"
+          "scope": "survival",
+          "text": "공용 공격속도와 쿨타임 감소를 주기형 무기 전부에, 카드 설명 수치는 효과 값에서"
+        },
+        {
+          "sha": "debda30de",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "mobile",
+          "text": "말걸기가 뜰 때 다른 동작 버튼이 밀리던 것, 폰에서 단축키 창 자동 열림"
+        },
+        {
+          "sha": "bc465f280",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ui",
+          "text": "손가락 조작에서 PC 키 안내를 숨기고 손가락용 안내를 보임"
         }
       ],
-      "quiet": 2,
-      "more": 0
+      "quiet": 15,
+      "more": 24
     },
     {
       "date": "2026-11-16",
@@ -471,38 +506,10 @@
           "typeLabel": "고친 것",
           "scope": "dungeon",
           "text": "입장 화면 세 스타일 재현도 조정"
-        },
-        {
-          "sha": "c4b3372ab",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "dungeon",
-          "text": "입장 화면 스타일을 고서, 밤유리, 컷 셋으로 교체 가능하게"
-        },
-        {
-          "sha": "5bd82c130",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "입장 화면 보상 숫자가 아이콘에 겹치지 않게"
-        },
-        {
-          "sha": "b8e0be20e",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "입장 화면 안개 경계와 보상 숫자 수정"
-        },
-        {
-          "sha": "0ae2a6086",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "입장 화면 첫 캡처 지적 반영"
         }
       ],
       "quiet": 1,
-      "more": 5
+      "more": 9
     }
   ]
 }
