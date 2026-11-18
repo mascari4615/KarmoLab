@@ -82,8 +82,12 @@ async function xbStep() {
   const before = S.rows.size;
   xbHarvest(instructions, S.rows, cursors, 0);
   const next = cursors.find((c) => !S.seenCursor.has(c));
-  if (!cursors.length) { S.phase = "stop"; return xbSnap(S); }
-  if (!next || S.rows.size === before || S.rounds >= 80) {
+  const ended = instructions.some((entry) => entry?.type === "TimelineTerminateTimeline" && entry.direction === "Bottom");
+  if (ended || !cursors.length || (S.rounds > 1 && S.rows.size === before)) {
+    S.phase = "stop";
+    return xbSnap(S);
+  }
+  if (!next || S.rounds >= 80) {
     S.phase = "stop";
     S.note = "X 북마크 페이지 미완료";
     return xbSnap(S);
