@@ -27,15 +27,13 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '' } =
       }
       if (op === 'download') {
         const el = button('오디오만') || button('Audio only'); if (!el) return { pending: true };
-        if (document.hasFocus()) return { error: 'Gemini 작업 창을 사용 중이어서 다운로드 확인을 멈춤' };
         return new Promise((resolve) => {
           const proto = HTMLAnchorElement.prototype, descriptor = Object.getOwnPropertyDescriptor(proto, 'click'), original = proto.click;
           const urlDescriptor = Object.getOwnPropertyDescriptor(URL, 'createObjectURL'), originalCreate = URL.createObjectURL;
           if (typeof original !== 'function' || (descriptor && !descriptor.configurable) || typeof originalCreate !== 'function' || !urlDescriptor?.configurable || !('value' in urlDescriptor)) return resolve({ error: '다운로드 확인을 준비하지 못함' });
-          const urls = new Set(), types = new Set(); let timer, unsafe = false;
-          const onFocus = () => { unsafe = true; };
-          const finish = () => { clearTimeout(timer); window.removeEventListener('focus', onFocus, true); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(!unsafe && urls.size === 1 ? { ok: true, downloadUrls: [...urls] } : { error: '음악 다운로드 연결을 확인하지 못함 (형식: ' + ([...types].join(',') || '없음') + ')' }); };
-          const observe = (href) => { try { if (document.hasFocus()) unsafe = true; if (href.startsWith('blob:') && new URL(href).origin === location.origin) urls.add(href); } catch {} };
+          const urls = new Set(), types = new Set(); let timer;
+          const finish = () => { clearTimeout(timer); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(urls.size === 1 ? { ok: true, downloadUrls: [...urls] } : { error: '음악 다운로드 연결을 확인하지 못함 (형식: ' + ([...types].join(',') || '없음') + ')' }); };
+          const observe = (href) => { try { if (href.startsWith('blob:') && new URL(href).origin === location.origin) urls.add(href); } catch {} };
           const wrapped = function (...args) {
             const href = this.href || '', download = this.hasAttribute('download') && /\.mp3$/i.test(this.getAttribute('download') || '');
             const result = original.apply(this, args);
@@ -44,7 +42,6 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '' } =
           };
           const wrappedCreate = function (...args) { const result = originalCreate.apply(this, args), type = args[0]?.type || ''; types.add(/^audio\//i.test(type) ? 'audio' : /^video\//i.test(type) ? 'video' : type ? 'other' : 'empty'); if (/^audio\/(mpeg|mp3)$/i.test(type)) observe(result); return result; };
           try {
-            window.addEventListener('focus', onFocus, true);
             Object.defineProperty(proto, 'click', descriptor && 'value' in descriptor ? { ...descriptor, value: wrapped } : { value: wrapped, configurable: true, writable: true, enumerable: descriptor?.enumerable || false });
             Object.defineProperty(URL, 'createObjectURL', { ...urlDescriptor, value: wrappedCreate });
             timer = setTimeout(finish, 10000);
@@ -56,10 +53,12 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '' } =
     }, args: [action, value || '', resume, expectedUrl] });
     return reply?.result || { error: '페이지 응답 없음' };
   };
+  let focusCheck = async () => {};
   const wait = async (action, value, ms) => {
     const end = Date.now() + ms;
     let detail = '';
     while (Date.now() < end) {
+      await focusCheck();
       const result = await run(action, value);
       if (result.error) throw new Error(result.error);
       if (result.ok) return result;
@@ -74,12 +73,20 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '' } =
     await wait('submit', prompt, 45000);
     await wait('send', '', 10000);
   }
+  const workTab = await chrome.tabs.get(tabId), windowId = workTab.windowId;
+  let unsafe = false;
+  const onFocusChanged = (id) => { if (id === windowId) unsafe = true; };
+  chrome.windows.onFocusChanged.addListener(onFocusChanged);
+  focusCheck = async () => { if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창을 사용 중이어서 다운로드 확인을 멈춤'); };
+  try {
+  await focusCheck();
   await wait('ready', '', 150000);
   const conversation = new URL((await chrome.tabs.get(tabId)).url || 'https://invalid.invalid/');
   if (conversation.origin !== 'https://gemini.google.com' || !/^\/app\/[^/]+$/.test(conversation.pathname)) {
     throw new Error('Gemini 음악 대화를 식별하지 못함');
   }
   if (resume && conversation.href !== expectedUrl) throw new Error('Gemini 작업 대화가 바뀜');
+  if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
   const started = Date.now(), ids = new Set();
   const onCreated = (item) => { if (Number.isInteger(item.id)) ids.add(item.id); };
   chrome.downloads.onCreated.addListener(onCreated);
@@ -92,6 +99,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '' } =
         if (!clicked.downloadUrls.includes(item?.url)) continue;
         if (item?.state === 'interrupted') throw new Error('음악 파일 다운로드가 중단됨');
         if (item?.state === 'complete' && /\.mp3$/i.test(item.filename || '')) {
+          if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
           return { ok: true, filename: item.filename, bytes: item.fileSize };
         }
       }
@@ -100,5 +108,8 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '' } =
     throw new Error('음악 파일 다운로드 확인 실패');
   } finally {
     chrome.downloads.onCreated.removeListener(onCreated);
+  }
+  } finally {
+    chrome.windows.onFocusChanged.removeListener(onFocusChanged);
   }
 }
