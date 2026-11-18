@@ -1,5 +1,5 @@
 /* 로그인된 Gemini의 영상 도구만 사용. 생성 결과와 작업 창은 보존. */
-async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '' } = {}) {
+async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', onConversation = () => {} } = {}) {
   if (!resume && (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 4000)) throw new Error('영상 설명을 확인하세요');
   const run = async (action, value) => {
     const [reply] = await chrome.scripting.executeScript({ target: { tabId }, ...(action === 'download' ? { world: 'MAIN' } : {}), func: (op, text, isResume, expected) => {
@@ -74,10 +74,19 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '' } =
   focusCheck = async () => { if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창을 사용 중이어서 다운로드 확인을 멈춤'); };
   try {
   await focusCheck();
-  await wait('ready', '', 240000);
-  const conversation = new URL((await chrome.tabs.get(tabId)).url || 'https://invalid.invalid/');
+  let conversation;
+  const navigationEnd = Date.now() + 30000;
+  while (Date.now() < navigationEnd) {
+    await focusCheck();
+    conversation = new URL((await chrome.tabs.get(tabId)).url || 'https://invalid.invalid/');
+    if (conversation.origin === 'https://gemini.google.com' && /^\/app\/[^/]+$/.test(conversation.pathname)) break;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
   if (conversation.origin !== 'https://gemini.google.com' || !/^\/app\/[^/]+$/.test(conversation.pathname)) throw new Error('Gemini 영상 대화를 식별하지 못함');
   if (resume && conversation.href !== expectedUrl) throw new Error('Gemini 작업 대화가 바뀜');
+  await onConversation(conversation.href);
+  await wait('ready', '', 240000);
+  if ((await chrome.tabs.get(tabId)).url !== conversation.href) throw new Error('Gemini 작업 대화가 바뀜');
   if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
   const started = Date.now(), ids = new Set();
   const onCreated = (item) => { if (Number.isInteger(item.id)) ids.add(item.id); };

@@ -537,7 +537,14 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** 큐 할 일 하나. 결과는 늘 돌려보냄 (실패도 `{ ok: false, error }`) */
 async function runQueueJob(job) {
-  let result;
+  let result, recovery;
+  const onConversation = async (tabId, expectedUrl) => {
+    recovery = { tabId, expectedUrl };
+    const response = await fetch(QUEUE_BASE + '/progress/' + encodeURIComponent(job.id), {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(recovery), signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error('Gemini 대화 복구 정보를 저장하지 못함');
+  };
   try {
     const msg = (job && job.msg) || {};
     if (job.kind === "reload") {
@@ -552,7 +559,8 @@ async function runQueueJob(job) {
       const tab = await chrome.tabs.get(msg.tabId);
       const url = new URL(tab.url || 'https://invalid.invalid/');
       if (url.origin !== 'https://gemini.google.com' || !/^\/app\/[^/]+$/.test(url.pathname) || tab.url !== msg.expectedUrl) throw new Error('Gemini 작업 탭 확인 필요');
-      const options = { resume: true, expectedUrl: msg.expectedUrl };
+      recovery = { tabId: tab.id, expectedUrl: url.href };
+      const options = { resume: true, expectedUrl: msg.expectedUrl, onConversation: value => onConversation(tab.id, value) };
       result = await (msg.type === 'gemini.resumeMusic' ? geminiMusic(tab.id, '', options) : geminiVideo(tab.id, '', options));
     } else if (msg.type === 'gemini.music' || msg.type === 'gemini.video') {
       // 전용 비초점 창: 비활성 탭의 Gemini 모드 지연과 기존 창의 활성 탭 변경 방지
@@ -560,7 +568,8 @@ async function runQueueJob(job) {
       const tab = workWindow.tabs?.[0];
       if (!tab?.id) throw new Error('Gemini 작업 창을 열지 못함');
       await waitLoaded(tab.id);
-      result = await (msg.type === 'gemini.music' ? geminiMusic(tab.id, msg.prompt) : geminiVideo(tab.id, msg.prompt));
+      const options = { onConversation: value => onConversation(tab.id, value) };
+      result = await (msg.type === 'gemini.music' ? geminiMusic(tab.id, msg.prompt, options) : geminiVideo(tab.id, msg.prompt, options));
       // 서버 저장 확인 전까지 결과 탭 보존
     } else if (job.open) {
       if (!/^https?:\/\//.test(String(job.open))) throw new Error("open 은 http 주소만");
@@ -586,8 +595,9 @@ async function runQueueJob(job) {
       result = await new Promise((res) => dispatchExt(msg, null, res));
     }
   } catch (e) {
-    result = { ok: false, error: String(e && e.message ? e.message : e) };
+    result = { ok: false, error: String(e && e.message ? e.message : e), ...(recovery ? { recovery } : {}) };
   }
+  if (result?.ok && recovery) result.recovery = recovery;
   await queueDone(job.id, result);
 }
 
