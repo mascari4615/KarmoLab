@@ -550,9 +550,9 @@ async function runQueueJob(job) {
     } else if (msg.type === 'gemini.downloadInfo') {
       if (!Number.isSafeInteger(msg.bytes) || msg.bytes < 1) throw new Error('파일 크기 확인 필요');
       const items = await chrome.downloads.search({ startedAfter: new Date(Date.now() - 3600000).toISOString(), state: 'complete', limit: 20, orderBy: ['-startTime'] });
-      result = { ok: true, items: items.filter(x => x.fileSize === msg.bytes && /\.mp3$/i.test(x.filename || '')).map(x => {
+      result = { ok: true, items: items.filter(x => (x.fileSize === msg.bytes || x.bytesReceived === msg.bytes || x.totalBytes === msg.bytes) && /\.mp3$/i.test(x.filename || '')).map(x => {
         let referrer = 'empty'; try { const u = new URL(x.referrer); referrer = u.origin === 'https://gemini.google.com' ? (u.pathname.startsWith('/app/') ? 'gemini-conversation' : 'gemini-origin') : 'other'; } catch {}
-        return { referrer };
+        return { referrer, matchesFileSize: x.fileSize === msg.bytes, matchesReceived: x.bytesReceived === msg.bytes, matchesTotal: x.totalBytes === msg.bytes };
       }) };
     } else if (msg.type === 'gemini.music') {
       let tab, createdWindow;
