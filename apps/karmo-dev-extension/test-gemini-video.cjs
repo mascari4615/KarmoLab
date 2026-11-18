@@ -27,3 +27,37 @@ test('empty video prompt is rejected', async () => {
   vm.runInContext(source, context);
   await assert.rejects(context.geminiVideo(1, ' '), /영상 설명/);
 });
+
+test('single worker video download is accepted after the quiet interval', async () => {
+  let listener, now = 0;
+  class FastDate extends Date { static now() { return now; } }
+  const chrome = {
+    scripting: { executeScript: async ({ args }) => {
+      if (args[0] === 'download') { listener({ id: 1 }); now += 13000; }
+      return [{ result: { ok: true, downloadUrls: [] } }];
+    } },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123', windowId: 1 }) },
+    windows: { get: async () => ({ focused: false }), onFocusChanged: { addListener() {}, removeListener() {} } },
+    downloads: { onCreated: { addListener: fn => { listener = fn; }, removeListener() {} }, search: async () => [{ state: 'complete', filename: 'worker.mp4', url: 'blob:https://gemini.google.com/worker', mime: 'video/mp4' }] },
+  };
+  const context = vm.createContext({ chrome, Date: FastDate, URL, setTimeout });
+  vm.runInContext(source, context);
+  assert.equal((await context.geminiVideo(9, 'paper boat')).filename, 'worker.mp4');
+});
+
+test('overlapping worker video downloads are rejected', async () => {
+  let listener, now = 0;
+  class FastDate extends Date { static now() { return now; } }
+  const chrome = {
+    scripting: { executeScript: async ({ args }) => {
+      if (args[0] === 'download') { listener({ id: 1 }); listener({ id: 2 }); now += 13000; }
+      return [{ result: { ok: true, downloadUrls: [] } }];
+    } },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123', windowId: 1 }) },
+    windows: { get: async () => ({ focused: false }), onFocusChanged: { addListener() {}, removeListener() {} } },
+    downloads: { onCreated: { addListener: fn => { listener = fn; }, removeListener() {} }, search: async () => [{ state: 'complete', filename: 'worker.mp4', url: 'blob:https://gemini.google.com/worker', mime: 'video/mp4' }] },
+  };
+  const context = vm.createContext({ chrome, Date: FastDate, URL, setTimeout: fn => { now += 60000; fn(); } });
+  vm.runInContext(source, context);
+  await assert.rejects(context.geminiVideo(9, 'paper boat'), /다운로드 확인 실패/);
+});

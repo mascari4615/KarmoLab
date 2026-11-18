@@ -103,7 +103,11 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
         if (item) observed.add([item.mime || 'unknown', item.referrer ? 'referrer' : 'no-referrer', item.byExtensionId ? 'extension' : 'page', (item.url || '').startsWith('blob:') ? 'blob' : 'non-blob'].join('/'));
         const sameBlob = clicked.downloadUrls.includes(item?.url);
         const sameMedia = !!ready.mediaUrl && (item?.url === ready.mediaUrl || item?.finalUrl === ready.mediaUrl);
-        if (!sameBlob && !sameMedia) continue;
+        // Worker-generated blobs are invisible to the page interceptor.
+        // An overlapping download makes the fallback ambiguous, so reject it.
+        const singleWorkerBlob = ids.size === 1 && Date.now() - started >= 12000 &&
+          /^blob:https:\/\/gemini\.google\.com\//.test(item?.url || '') && item?.mime === 'video/mp4' && !item?.byExtensionId;
+        if (!sameBlob && !sameMedia && !singleWorkerBlob) continue;
         if (item?.state === 'interrupted') throw new Error('영상 파일 다운로드가 중단됨');
         if (item?.state === 'complete' && /\.mp4$/i.test(item.filename || '')) {
           if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
