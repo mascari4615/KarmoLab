@@ -10,7 +10,7 @@ test('music request follows fixed actions and returns a single matching download
   const chrome = {
     scripting: { executeScript: async ({ args }) => { actions.push(args[0]); return [{ result: { ok: true } }]; } },
     tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123' }) },
-    downloads: { search: async () => [{ filename: 'C:/Users/test/Downloads/song.mp3', referrer: 'https://gemini.google.com/app/123', fileSize: 1200 }] },
+    downloads: { search: async () => [{ state: 'complete', filename: 'C:/Users/test/Downloads/song.mp3', referrer: 'https://gemini.google.com/app/123', fileSize: 1200 }] },
   };
   const context = vm.createContext({ chrome, Date, URL, setTimeout, InputEvent: function () {} });
   vm.runInContext(source, context);

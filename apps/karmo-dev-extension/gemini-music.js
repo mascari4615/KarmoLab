@@ -44,12 +44,19 @@ async function geminiMusic(tabId, prompt) {
   }
   const started = Date.now();
   await wait('download', '', 10000);
+  let diagnostic = 'no recent mp3';
   while (Date.now() - started < 30000) {
-    const items = await chrome.downloads.search({ startedAfter: new Date(started - 1000).toISOString(), state: 'complete' });
-    const found = items.filter((x) => /\.mp3$/i.test(x.filename || '') && x.referrer === conversation.href);
+    const items = await chrome.downloads.search({ startedAfter: new Date(started - 1000).toISOString() });
+    const mp3 = items.filter((x) => /\.mp3$/i.test(x.filename || ''));
+    diagnostic = `${mp3.length} recent mp3; referrer ` + mp3.map((x) => {
+      const state = x.state || 'unknown';
+      if (!x.referrer) return state + ':empty';
+      try { const ref = new URL(x.referrer); return state + ':' + (ref.href === conversation.href ? 'conversation' : ref.origin === conversation.origin ? 'gemini' : 'other'); } catch { return state + ':invalid'; }
+    }).join(',');
+    const found = items.filter((x) => x.state === 'complete' && /\.mp3$/i.test(x.filename || '') && x.referrer === conversation.href);
     if (found.length === 1) return { ok: true, filename: found[0].filename, bytes: found[0].fileSize };
     if (found.length > 1) throw new Error('음악 다운로드 결과가 여러 개');
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  throw new Error('음악 파일 다운로드 확인 실패');
+  throw new Error('음악 파일 다운로드 확인 실패 (' + diagnostic + ')');
 }
