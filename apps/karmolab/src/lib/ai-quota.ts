@@ -100,6 +100,8 @@ const nowSecs = (): number => Math.floor(Date.now() / 1000);
 /** 창 key → 사람이 읽는 라벨. 백엔드가 모르는 창을 보내면 key 를 그대로 쓴다. */
 function windowLabel(key: string): string {
   switch (key) {
+    case 'current':
+      return '현재 사용량';
     case 'five_hour':
       return t('my-ai.win.five_hour', undefined, '5시간');
     case 'seven_day':
@@ -429,7 +431,7 @@ export function buildQuota(
   const refreshBtn = document.createElement('button');
   refreshBtn.type = 'button';
   refreshBtn.className = 'btn btn-secondary btn-sm';
-  refreshBtn.textContent = t('my-ai.t02', undefined, '새로고침');
+  refreshBtn.textContent = dashToken ? '강제 새로고침' : t('my-ai.t02', undefined, '새로고침');
   actions.append(modeGroup, refreshBtn);
   top.append(lede, actions);
 
@@ -499,6 +501,7 @@ export function buildQuota(
     return body.cards;
   }
 
+  type RefreshResult = { updated: string[]; missed: string[] };
   async function loadFromDash(token: () => Promise<string | null>): Promise<VendorCard[]> {
     const tok = await token();
     if (!tok) throw new Error('login');
@@ -511,6 +514,30 @@ export function buildQuota(
     const body = (await res.json()) as { ok?: boolean; cards?: VendorCard[] };
     if (body.ok !== true || !Array.isArray(body.cards)) throw new Error('bad-response');
     return body.cards;
+  }
+
+  const refreshAbort = new AbortController();
+  async function requestFreshCards(token: () => Promise<string | null>): Promise<RefreshResult | null> {
+    const tok = await token();
+    if (!tok) throw new Error('login');
+    const request = async (suffix: string, method = 'GET') => {
+      const res = await fetch(`${LAPTOP_BASE}/dash/ai-quota/refresh${suffix}`, {
+        method, headers: { authorization: 'Bearer ' + tok }, cache: 'no-store',
+        signal: AbortSignal.any([refreshAbort.signal, AbortSignal.timeout(10_000)]),
+      });
+      if (!res.ok) throw new Error(`http-${res.status}`);
+      return res.json();
+    };
+    const { id } = await request('', 'POST');
+    if (typeof id !== 'string') throw new Error('bad-response');
+    const deadline = Date.now() + 200_000;
+    while (!refreshAbort.signal.aborted && Date.now() < deadline) {
+      const status = await request('/' + encodeURIComponent(id));
+      if (status.state === 'finished') return status.result ?? null;
+      if (status.state !== 'pending') throw new Error('bad-response');
+      await new Promise((resolve) => window.setTimeout(resolve, 3000));
+    }
+    return null;
   }
 
   const load = (): Promise<VendorCard[]> =>
@@ -602,27 +629,35 @@ export function buildQuota(
 
   let inFlight = false;
 
-  function refresh(): void {
+  async function refresh(force = false): Promise<void> {
     if (inFlight) return;
     inFlight = true;
     refreshBtn.disabled = true;
-    void load()
-      .then((list) => {
-        cards_data = list;
-        fatal = '';
-      })
-      .catch((e: unknown) => {
-        fatal = e instanceof Error ? e.message : String(e);
-      })
-      .finally(() => {
-        inFlight = false;
-        refreshBtn.disabled = false;
-        paint();
+    if (force) updated.textContent = '구독 사용량 다시 확인 중';
+    try {
+      if (force && dashToken) {
+        const result = await requestFreshCards(dashToken);
+        if (refreshAbort.signal.aborted) return;
+        cards_data = await loadFromDash(dashToken);
+        const names = cards_data.filter((card) => result?.missed.includes(card.id) && !card.quota?.live).map((card) => card.label);
+        updated.textContent = !result ? '데스크톱 응답 없음. 마지막 기록을 표시합니다.'
+          : names.length ? `새 기록을 받지 못함: ${names.join(', ')}` : '구독 사용량 갱신됨';
+      } else {
+        cards_data = await load();
         updated.textContent = cards_data.length ? t('my-ai.t04', undefined, '방금 읽음') : '';
-      });
+      }
+      fatal = '';
+    } catch (e: unknown) {
+      if (force) updated.textContent = '강제 새로고침 실패. 마지막 기록을 표시합니다.';
+      else fatal = e instanceof Error ? e.message : String(e);
+    } finally {
+      inFlight = false;
+      refreshBtn.disabled = false;
+      paint();
+    }
   }
 
-  refreshBtn.addEventListener('click', refresh);
+  refreshBtn.addEventListener('click', () => { void refresh(Boolean(dashToken)); });
   paint();
   refresh();
 
@@ -653,6 +688,7 @@ export function buildQuota(
   // 핫리로드로 위젯을 갈아 끼울 때 타이머, 리스너 쌓임 방지
   // (blog CLAUDE.md § KarmoLab 화면 작업).
   onDispose(() => {
+    refreshAbort.abort();
     stopTimer();
     stopLoginPoll();
     document.removeEventListener('visibilitychange', onVisibility);
