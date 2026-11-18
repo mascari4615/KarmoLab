@@ -43,6 +43,16 @@ export async function storeWorld(world,{signal}={}){
     tx.oncomplete=()=>{cleanup();resolve();};tx.onerror=()=>{cleanup();reject(tx.error);};tx.onabort=()=>{cleanup();reject(tx.error||new DOMException('취소됨','AbortError'));};
   });
 }
+export async function storeWorldIfMissing(world,{signal}={}){
+  const db=await open();if(signal?.aborted)throw new DOMException('취소됨','AbortError');
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(['worlds','catalog'],'readwrite'),worlds=tx.objectStore('worlds'),lookup=worlds.get(world.id);
+    let inserted=false;const abort=()=>tx.abort();signal?.addEventListener('abort',abort,{once:true});
+    const cleanup=()=>signal?.removeEventListener('abort',abort);
+    lookup.onsuccess=()=>{if(lookup.result)return;worlds.add({...world,...terrainSnapshot(world)});tx.objectStore('catalog').put({id:world.id,name:world.name});inserted=true;};
+    tx.oncomplete=()=>{cleanup();resolve(inserted);};tx.onerror=()=>{cleanup();reject(tx.error);};tx.onabort=()=>{cleanup();reject(tx.error||new DOMException('취소됨','AbortError'));};
+  });
+}
 export async function readWorld(id){
   let stored,readError;try{stored=await request('readonly',store=>store.get(id));}catch(error){readError=error;}
   if(stored)return {...stored,heights:Array.from(stored.heights,v=>Math.round(v*100000)/100000),biomes:Array.from(stored.biomes),...(stored.detailBaseHeights?{detailBaseHeights:Array.from(stored.detailBaseHeights)}:{})};

@@ -1,19 +1,35 @@
 import { createWorld, validateWorld, paint, strokePoints } from './terrain.mjs';
-import { storeWorld, readWorld, listWorlds, storageProblem } from './storage.mjs';
+import { storeWorld, storeWorldIfMissing, readWorld, listWorlds, storageProblem } from './storage.mjs';
 import { generateWorld } from './generation.mjs';
 import {initialEntries,updateRecord,removeRecord,entryKinds,validateLore} from './lore.mjs';
 
 const clone = value => ({...value,heights:value.heights.slice(),...(value.detailBaseHeights?{detailBaseHeights:value.detailBaseHeights}:{}),biomes:value.biomes.slice(),places:structuredClone(value.places),entries:structuredClone(value.entries||[]),...(value.detailStrokes?{detailStrokes:value.detailStrokes.map(stroke=>({...stroke}))}:{})});
 export const editSnapshot=(world,fine=false)=>fine==='meta'?{meta:true,places:structuredClone(world.places),entries:structuredClone(world.entries||[])}:fine?{fine:true,detailStrokes:(world.detailStrokes||[]).map(s=>({...s})),detailBaseHeights:world.detailBaseHeights}:clone(world);
 export function restoreEdit(world,snapshot){if(snapshot.meta)return {...world,places:snapshot.places,entries:snapshot.entries};if(!snapshot.fine)return snapshot;return {...world,detailStrokes:snapshot.detailStrokes,detailBaseHeights:snapshot.detailBaseHeights};}
+export function originalRevision(generated,prior){
+  generated.entries=structuredClone(prior?.entries||initialEntries(generated));
+  if(prior){
+    generated.places=structuredClone(prior.places);
+    for(const field of ['name','star','moon','sunU','sunV','clouds'])generated[field]=prior[field];
+  }
+  generated.id='undo-atlas-v2';generated.sourceRevision='hand-map-20261118';return generated;
+}
+async function generateOriginalRevision(signal){
+  const generated=await generateWorld({original:true,seed:27},signal),prior=await readWorld('undo');
+  const proposal=originalRevision(generated,prior);
+  if(await storeWorldIfMissing(proposal,{signal}))return proposal;
+  return validateWorld(await readWorld(proposal.id));
+}
 export async function loadInitial() {
   const requested=new URLSearchParams(location.search).get('world');
   let active='undo';try{active=localStorage.getItem('wm.active-world')||active;}catch{}
   const id=requested==='sample'?'sample-8147-v5':requested||active;
   const raw=await readWorld(id);
-  if(raw){if(raw.id==='sample-8147-v5')raw.regionalDetail??=true;return validateWorld(raw);}
-  if(id!=='undo'&&id!=='sample-8147-v5')throw new Error('이 브라우저에 저장되지 않은 행성입니다. 행성 선택에서 다른 세계를 열어 주세요.');
-  return generateWorld(id==='sample-8147-v5'?{sample:true,seed:8147}:{original:true,seed:27});
+  if(raw){if(raw.id==='sample-8147-v5')raw.regionalDetail??=true;const valid=validateWorld(raw);if(requested)try{localStorage.setItem('wm.active-world',valid.id);}catch{}return valid;}
+  if(!['undo','undo-atlas-v2','sample-8147-v5'].includes(id))throw new Error('이 브라우저에 저장되지 않은 행성입니다. 행성 선택에서 다른 세계를 열어 주세요.');
+  const generated=id==='undo-atlas-v2'?await generateOriginalRevision():await generateWorld(id==='sample-8147-v5'?{sample:true,seed:8147}:{original:true,seed:27});
+  if(requested)try{localStorage.setItem('wm.active-world',generated.id);}catch{}
+  return generated;
 }
 export function createEditor(initial, callbacks) {
   initial.entries??=initialEntries(initial);
@@ -32,11 +48,12 @@ export function createEditor(initial, callbacks) {
   <p id="save-status" role="status">이 브라우저에 저장,  JSON 파일로 백업 가능</p></div>`;
   document.querySelector('main').append(panel);
   const $ = id => panel.querySelector(id);
-  const status = message => { $('#save-status').textContent = message; };
+  const status = message => { $('#save-status').textContent = message;document.dispatchEvent(new CustomEvent('wm-status',{detail:{message}})); };
   function setBusy(value){busy=value;panel.inert=value;panel.setAttribute('aria-busy',String(value));if(value){strokeActive=false;previousPoint=null;changed=false;}}
   function pushUndo(fine=false) { undo.push(editSnapshot(world,fine)); if (undo.length > 20) undo.shift(); redo = []; updateHistory(); }
-  function updateHistory() { $('#undo').disabled = !undo.length; $('#redo').disabled = !redo.length; }
+  function updateHistory() { $('#undo').disabled = !undo.length; $('#redo').disabled = !redo.length;document.dispatchEvent(new CustomEvent('wm-history',{detail:{undo:undo.length,redo:redo.length}})); }
   async function save() {
+    status('저장 중');
     try { await storeWorld(world); status('이 브라우저에 저장됨,  JSON으로 백업 가능'); return true; }
     catch { status('브라우저 저장 공간이 부족하거나 차단됐어요. 내보내기로 파일을 보관해 주세요.'); return false; }
   }
@@ -51,10 +68,10 @@ export function createEditor(initial, callbacks) {
     refreshList(); updateHistory();
   }
   function notify({ rebuild = true,detailOnly=false } = {}) { callbacks.change(world, rebuild,detailOnly); }
-  async function setWorld(next,signal) {
+  async function setWorld(next,signal,persist=true) {
     if(await callbacks.beforeWorldChange?.()===false)return false;
     next.entries??=initialEntries(next);
-    try { await storeWorld(next,{signal}); }
+    try { if(persist)await storeWorld(next,{signal}); }
     catch(error) { if(error.name==='AbortError')return false;status('새 행성을 저장하지 못했어요. 현재 행성은 그대로 유지합니다. 저장 공간을 확인해 주세요.'); return false; }
     localStorage.setItem('wm.active-world',next.id);
     world = next; undo = []; redo = []; fill(); status('이 브라우저에 저장됨,  JSON으로 백업 가능'); notify(); callbacks.reset(); return true;
@@ -81,7 +98,7 @@ export function createEditor(initial, callbacks) {
   async function openLibrary(){
     if(busy||await callbacks.beforeWorldChange?.()===false)return;
     let entries;try{entries=await listWorlds();}catch{entries=new Map();}
-    entries.set('undo','운도');entries.set('sample-8147-v5','지형 실험 행성 (샘플)');entries.set(world.id,world.name);
+    entries.set(world.id,world.name);entries.set('undo',`${entries.get('undo')||'운도'} · 기존 작업`);entries.set('undo-atlas-v2',`${entries.get('undo-atlas-v2')||'운도'} · 새 지도`);entries.set('sample-8147-v5','지형 실험 행성 (샘플)');
     callbacks.dialog('<span class="eyebrow">WORLDS</span><h2>행성 선택</h2><div id="world-library-list"></div><p id="library-status">샘플 행성은 운도와 별도로 편집하고 저장됩니다.</p><button id="library-new" class="primary-button">새 행성 만들기</button>');
     const controller=new AbortController();document.querySelector('#dialog').addEventListener('close',()=>controller.abort(),{once:true});
     const list=document.querySelector('#world-library-list');
@@ -93,8 +110,8 @@ export function createEditor(initial, callbacks) {
         const message=document.querySelector('#library-status');message.textContent='지형을 준비하고 있어요...';
         try{
           if(!await save())throw new Error('현재 행성을 저장하지 못했어요. JSON으로 보관한 뒤 다시 시도해 주세요.');
-          const stored=await readWorld(id),next=stored?validateWorld(stored):await generateWorld(id==='sample-8147-v5'?{sample:true,seed:8147}:{original:true,seed:27},controller.signal);
-          if(!controller.signal.aborted&&await setWorld(next,controller.signal))callbacks.closeDialog();
+          const stored=await readWorld(id),next=stored?validateWorld(stored):id==='undo-atlas-v2'?await generateOriginalRevision(controller.signal):await generateWorld(id==='sample-8147-v5'?{sample:true,seed:8147}:{original:true,seed:27},controller.signal);
+          if(!controller.signal.aborted&&await setWorld(next,controller.signal,!stored&&id!=='undo-atlas-v2'))callbacks.closeDialog();
         }catch(error){if(error.name!=='AbortError')message.textContent=error.message;}
         finally{setBusy(false);for(const row of list.children)row.disabled=false;}
       });
@@ -147,13 +164,22 @@ export function createEditor(initial, callbacks) {
     if(busy)return;
     enabled = value; panel.hidden = !enabled; document.body.classList.toggle('editing', enabled);
     document.querySelector('#edit-toggle').setAttribute('aria-pressed', String(enabled)); callbacks.editMode(enabled && tool !== 'navigate');
+    document.dispatchEvent(new CustomEvent('wm-tool',{detail:{tool:enabled?tool:'navigate'}}));
   }
   $('#editor-collapse').addEventListener('click',()=>{const folded=!$('.editor-scroll').hidden;$('.editor-scroll').hidden=folded;panel.classList.toggle('folded',folded);$('#editor-collapse').setAttribute('aria-expanded',String(!folded));$('#editor-collapse').setAttribute('aria-label',folded?'편집 도구 펼치기':'편집 도구 접기');$('#editor-collapse').textContent=folded?'⌃':'⌄';});
   $('#editor-close').addEventListener('click', () => toggle(false)); fill();if(storageProblem())status(storageProblem());
   return {
     undoEdit,redoEdit,
+    openSettings(){if(busy)return;tool='navigate';toggle(true);},
+    chooseTool(next,options={}){
+      if(busy)return;tool=next;
+      if(options.radius){radius=options.radius;$('#brush-size').value=radius*100;}
+      if(options.strength){strength=options.strength;$('#brush-strength').value=strength*100;}
+      panel.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===tool)));
+      toggle(next!=='navigate');document.body.classList.remove('document-open','outline-open');
+    },
     history:()=>({undo:undo.length,redo:redo.length}),
-    beginPlace(){tool='place';panel.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===tool)));toggle(true);status('지도나 행성에서 새 장소의 위치를 누르세요.');},
+    beginPlace(){tool='place';panel.dataset.category='place';document.body.classList.remove('outline-open','document-open','celestial-open');panel.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===tool)));toggle(true);status('지도나 행성에서 새 장소의 위치를 누르세요.');},
     async writeRecord(key,values){
       if(busy)return false;const next=updateRecord(world,key,values);pushUndo('meta');world.places=next.places;world.entries=next.entries;
       notify({rebuild:false});return save();

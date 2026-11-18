@@ -1,4 +1,4 @@
-const defaults = Object.freeze({ clouds: true, cloudShadows: true, dayNight: true, terrainShading: true, atmosphere: true, rivers: true, terrainTilt:true });
+const defaults = Object.freeze({ cartography:true, clouds: true, cloudShadows: true, dayNight: true, terrainShading: true, atmosphere: true, rivers: true, terrainTilt:true });
 const key = 'wm.view-settings.v1';
 
 export function loadViewSettings() {
@@ -13,6 +13,7 @@ export function createViewSettings(values, onChange) {
   panel.id = 'view-settings'; panel.hidden = true; panel.setAttribute('aria-label', '표시 설정');
   panel.innerHTML = `<header><h2>표시 설정</h2><button type="button" aria-label="표시 설정 닫기">×</button></header>
     <div class="view-options">
+    <label data-map-option><input type="checkbox" name="cartography">지도 기호와 해안선</label>
     <label data-planet-option><input type="checkbox" name="clouds">구름</label>
     <label data-planet-option><input type="checkbox" name="cloudShadows">구름 그림자</label>
     <label data-planet-option><input type="checkbox" name="dayNight">낮과 밤</label>

@@ -14,7 +14,7 @@ export function createWorkspace(initial,callbacks){
     <div class="outline-list"></div><div class="outline-new"><label class="sr-only" for="new-record-kind">새 기록 분류</label><select id="new-record-kind"><option value="place">장소</option><option value="person">인물</option><option value="event">사건</option><option value="lore">설정</option><option value="faction">세력</option></select><button id="new-record">＋ 새로 만들기</button></div>
     <div class="workspace-file"><button data-file="save">저장</button><button data-file="export">백업</button><button data-file="import">불러오기</button></div>`;
   const pane=document.createElement('aside');pane.id='world-document';pane.setAttribute('aria-label','설정 작성');
-  pane.innerHTML=`<header class="document-toolbar"><span class="document-kind">설정</span><div><button id="record-undo" title="설정 실행 취소" aria-label="설정 실행 취소">↶</button><button id="record-redo" title="설정 다시 실행" aria-label="설정 다시 실행">↷</button><button id="record-save">저장</button></div></header>
+  pane.innerHTML=`<header class="document-toolbar"><span class="document-kind">설정</span><div><button id="record-undo" title="설정 실행 취소" aria-label="설정 실행 취소">↶</button><button id="record-redo" title="설정 다시 실행" aria-label="설정 다시 실행">↷</button><button id="record-save">저장</button><button id="document-close" aria-label="설정창 닫기">×</button></div></header>
     <div class="document-empty"><span>◇</span><h2>지도의 한 곳에서 시작</h2><p>장소를 선택해 설정을 쓰거나,<br>인물과 사건을 새로 만드세요.</p><button id="empty-place">지도에 장소 추가</button></div>
     <form class="record-form" hidden><div class="document-heading"><label class="sr-only" for="record-title">설정 이름</label><input id="record-title" maxlength="100" required placeholder="이름"><div class="record-meta"><label><span>상태</span><select id="record-state"><option value="draft">초안</option><option value="confirmed">확정</option><option value="question">미정</option></select></label><label class="record-area"><span>지역</span><input id="record-area" maxlength="100" placeholder="아직 정하지 않음"></label></div><button id="record-focus" type="button">지도에서 위치 보기 ↗</button></div>
     <div class="document-writing"><div class="writing-heading"><label for="record-body">설정</label><button id="record-template" type="button">작성 항목 넣기</button></div><textarea id="record-body" maxlength="30000" spellcheck="false" placeholder="이곳에서 떠오르는 설정을 자유롭게 적으세요."></textarea></div>
@@ -23,13 +23,14 @@ export function createWorkspace(initial,callbacks){
     <footer class="document-status"><span role="status" id="record-status">이 브라우저에 저장</span><span id="record-count"></span></footer>`;
   main.append(outline,pane);
   const q=s=>pane.querySelector(s),list=outline.querySelector('.outline-list'),search=outline.querySelector('input[type=search]');
+  q('#document-close').onclick=async()=>{await flush();document.body.classList.remove('document-open');};
   const deleteConfirm=document.createElement('div');deleteConfirm.className='record-delete-confirm';deleteConfirm.hidden=true;deleteConfirm.innerHTML='<p></p><button type="button" id="record-delete-cancel">취소</button><button type="button" id="record-delete-confirm">삭제</button>';q('.record-remove').after(deleteConfirm);
   const locationButton=document.createElement('button');locationButton.type='button';locationButton.id='record-location';locationButton.textContent='위치와 분류 수정';q('.document-heading').append(locationButton);
   const menu=document.createElement('button');menu.id='workspace-menu';menu.textContent='목록';menu.setAttribute('aria-label','세계관 목록 열기');document.querySelector('.header-actions').prepend(menu);
   menu.onclick=()=>document.body.classList.toggle('outline-open');outline.querySelector('.outline-close').onclick=()=>document.body.classList.remove('outline-open');
   const draftKey=(record=key)=>`wm.writing-draft.v2.${world.id}.${encodeURIComponent(record)}`;
   const lastKey=()=>`wm.writing-open.v1.${world.id}`;
-  const status=text=>{q('#record-status').textContent=text;};
+  const status=text=>{q('#record-status').textContent=text;document.dispatchEvent(new CustomEvent('wm-status',{detail:{message:text}}));};
   function values(){return {title:q('#record-title').value.trim(),body:q('#record-body').value,state:q('#record-state').value,area:q('#record-area').value,links:structuredClone(draftLinks)};}
   function remember(){
     dirty=true;revision++;status('저장 중');q('#record-count').textContent=`${q('#record-body').value.length.toLocaleString()}자`;
@@ -100,6 +101,7 @@ export function createWorkspace(initial,callbacks){
     }}catch{status('초안 복구 실패. 원본 초안은 브라우저에 유지됩니다.');}
   }
   async function open(next,selectMap=false){
+    document.body.classList.add('document-open');
     if(next===key){if(selectMap&&next.startsWith('place:'))callbacks.selectPlace(next.slice(6));return true;}
     const attempt=++opening;if(!await flush()||attempt!==opening)return false;
     if(!recordByKey(world,next))return false;

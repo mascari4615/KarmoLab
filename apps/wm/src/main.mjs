@@ -4,11 +4,12 @@ import { loadInitial, createEditor } from './editor.mjs';
 import { observePerformance } from './performance.mjs';
 import { createViewSettings, loadViewSettings } from './view-settings.mjs';
 import { createWorkspace } from './workspace.mjs';
+import { createStudio } from './studio.mjs';
 
 async function start() {
 const $ = selector => document.querySelector(selector);
 $('#terrain-retry').addEventListener('click',()=>location.reload());
-let world = await loadInitial(), places = world.places, editor, workspace, isEditing = false;
+let world = await loadInitial(), places = world.places, editor, workspace, studio, isEditing = false;
 const map = $('#map'), context = map.getContext('2d'), stage = $('#stage');
 const brushCursor=document.createElement('div');brushCursor.id='brush-cursor';brushCursor.hidden=true;brushCursor.setAttribute('aria-hidden','true');stage.append(brushCursor);
 observePerformance(stage);
@@ -121,12 +122,12 @@ function resize() {
   width = stage.clientWidth; height = stage.clientHeight;
   if (previousMobile !== mobile()) { previousMobile = mobile(); setExplorer(!previousMobile); }
   const ratio = Math.min(devicePixelRatio, 2); map.width = Math.round(width * ratio); map.height = Math.round(height * ratio);
-  const left = 24, right = 24;
-  const availableHeight = Math.max(80, height - 100);
+  const left = mobile()?16:40, right = mobile()?16:40;
+  const availableHeight = Math.max(80, height - (mobile()?70:100));
   const aspect=world.width/world.height;
   baseWidth = Math.min(width - left - right, availableHeight * aspect);
   baseHeight = baseWidth / aspect;
-  originX = width / 2; originY = 58 + availableHeight / 2;
+  originX = width / 2; originY = height / 2 + 8;
   planet?.resize(width, height); drawMap();
 }
 function updateURL() {
@@ -173,6 +174,7 @@ async function setMode(mode) {
   }
   if(mode==='map'&&planet){const view=planet.view();state.center=view.center;state.zoom=clamp(height/(baseHeight*view.spanV),.7,8192);}
   state.mode = mode; document.body.classList.toggle('planet-mode', mode === 'planet');
+  studio?.refreshHints();
   atlas?.setActive(mode==='map');
   viewSettings.setMode(mode);
   map.hidden = mode !== 'map'; $('#planet').hidden = mode !== 'planet';
@@ -273,6 +275,7 @@ function changedWorld(next, rebuild,detailOnly=false) {
   const signature = JSON.stringify(places);
   if (signature !== placesSignature) { placesSignature = signature; buildMarkers(); renderList(); }
   workspace?.update(world);
+  studio?.update(world);
   drawMap(); updateURL();
   if(changedId)resize();
   stage.dataset.updateMs = (performance.now() - started).toFixed(2);
@@ -295,13 +298,13 @@ requestAnimationFrame(() => {
     atlas = createAtlas(world, atlasReady, viewOptions);
     editor = createEditor(world, { change: changedWorld, reset, beforeWorldChange:()=>workspace?.flush(),beforeExport:()=>workspace?.prepareExport(), selectPlace:select, dialog: openDialog, closeDialog: () => $('#dialog').close(), addPlace: (point, save) => placeForm(point, save), editMode: value => { isEditing = value; planet?.setEditing(value); map.style.cursor = value ? 'crosshair' : 'grab'; } });
     workspace=createWorkspace(world,{opened:key=>{state.record=key;updateURL();},writeRecord:editor.writeRecord,addEntry:editor.addEntry,removeRecord:editor.removeRecord,undo:editor.undoEdit,redo:editor.redoEdit,history:editor.history,selectPlace:select,focusPlace:id=>{const place=places.find(p=>p.id===id);if(place)focusPlace(place);},editPlace:id=>{const place=places.find(p=>p.id===id);if(place)placeForm([place.x,place.y],values=>editor.editPlace(place,values),place);},newPlace:editor.beginPlace,file:action=>$('#'+({save:'save-world',export:'export-world',import:'import-world'}[action])).click()});
+    studio=createStudio(world,{editor,workspace,focusEditing:()=>{if(mobile()&&state.mode==='map'&&state.zoom<2.2)zoom(2.2/state.zoom);}});
     changedWorld(world, false); resize(); renderList(); setExplorer(!mobile()); $('#loading').hidden = true;
     const record=parameters.get('record'),remembered=workspace.recoveryKey();
     if(record&&world.entries.some(e=>`entry:${e.id}`===record)){if(places.some(p=>p.id===selected))state.selected=selected;workspace.openRecord(record);}
     else if (selected && places.some(p => p.id === selected)) { select(selected); focusPlace(places.find(p => p.id === selected)); }
     else if(remembered?.startsWith('entry:')&&world.entries.some(e=>`entry:${e.id}`===remembered))workspace.openRecord(remembered);
-    else if(remembered?.startsWith('place:')&&places.some(p=>`place:${p.id}`===remembered))select(remembered.slice(6));
-    else if(places.length)select(places.find(p=>p.id==='yon')?.id||places[0].id);
+    // 첫 진입은 전체 지도. 장소 선택 시에만 설정창 표시.
     if (view === 'planet') setMode('planet').then(()=>{const place=places.find(p=>p.id===selected);if(place&&state.selected===selected)focusPlace(place);});
   } catch (error) { $('#loading').textContent = '지도를 불러오지 못했습니다. 새로고침해 주세요.'; console.error(error); }
 });

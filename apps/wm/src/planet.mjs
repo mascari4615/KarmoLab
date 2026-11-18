@@ -23,19 +23,22 @@ export function createPlanet(container,world,onChange,brush,brushSettings=()=>nu
     fragmentShader:`${fieldGLSL}\n${detailGLSL}\n${weatherGLSL}\nuniform float relief;uniform float terrainShading;uniform float dayNight;uniform float cloudShadows;uniform float patchSurface;varying vec3 p;
     void main(){vec3 q=normalize(p);vec2 uv=globeUV(q);if(patchSurface<.5&&detailWeight(uv)>.99)discard;float h=surfaceHeightAt(uv);vec3 n=q;vec3 color;
       bool sea=h<=seaLevel;
-      if(sea){float shelf=exp((h-seaLevel)*30.);color=mix(vec3(.035,.14,.23),vec3(.07,.31,.33),shelf);}
+      if(sea){float shelf=exp((h-seaLevel)*14.);color=mix(vec3(.025,.105,.17),vec3(.19,.43,.43),shelf);}
       else{
         color=surfaceColorAt(uv);vec2 gradient=surfaceGradientAt(uv);float gx=gradient.x,gy=gradient.y;
-        float slope=length(gradient)*.008,grain=mix(fieldNoise(uv*vec2(18000.,9000.)),fieldNoise(uv*vec2(300000.,150000.)),.6*(1.-smoothstep(.7,2.,length(fwidth(uv)*vec2(300000.,150000.)))));
+        float slope=length(gradient)*.008;
+        float footprint=length(fwidth(uv)*vec2(18000.,9000.));
+        float grain=mix(.5,fieldNoise(uv*vec2(18000.,9000.)),1.-smoothstep(.5,1.5,footprint));
         float strata=fieldNoise(uv*vec2(2100.,1050.))*.6+grain*.4;
         float rock=smoothstep(.30,.80,slope)*smoothstep(.004,.018,h-seaLevel);
         vec3 stone=mix(vec3(.28,.29,.28),vec3(.51,.48,.41),strata);
-        color=mix(color,stone,rock);color*=.90+grain*.16;
+        color=mix(color,stone,rock);color*=.96+grain*.06;
         float snowWidth=min(.035,snowLevel*.18);
-        float snow=smoothstep(snowLevel,snowLevel+snowWidth,h-seaLevel)*(1.-smoothstep(.35,1.3,slope));
+        float snow=smoothstep(snowLevel+fieldNoise(uv*vec2(120.,60.))*.06,snowLevel+snowWidth+.06,h-seaLevel)*(1.-smoothstep(.35,1.3,slope));
         color=mix(color,vec3(.78,.83,.85)*(1.-grain*.035),snow);
         vec3 east=length(q.xz)>.001?normalize(vec3(q.z,0.,-q.x)):vec3(1.,0.,0.),south=cross(east,q);
-        n=normalize(q-(east*gx+south*gy)*.008*relief*smoothstep(.015,.15,length(q.xz))*smoothstep(.005,.025,h-seaLevel));
+        float reliefLight=mix(.008,.055,smoothstep(.4,1.2,length(cameraPosition)-1.));
+        n=normalize(q-(east*gx+south*gy)*reliefLight*relief*smoothstep(.015,.15,length(q.xz))*smoothstep(.005,.025,h-seaLevel));
         vec2 microScale=vec2(1500000.,750000.);float microVisible=1.-smoothstep(.5,1.5,length(fwidth(uv)*microScale));
         if(microVisible>.01){vec3 micro=fieldNoiseGradient(uv*microScale);n=normalize(n-(east*micro.y+south*micro.z)*(.04+.16*rock)*(1.-snow*.75)*microVisible);color*=1.+(micro.x-.5)*.09*microVisible;}
       }
@@ -45,7 +48,7 @@ export function createPlanet(container,world,onChange,brush,brushSettings=()=>nu
       float localShade=mix((.26+.74*clamp(dot(n,inspectionLight)/max(.3,dot(q,inspectionLight)),0.,1.5)),clamp(dot(n,sunDirection)/max(.2,facing),.12,1.5),dayNight);
       float daylight=mix(1.,max(0.,facing),dayNight)*mix(1.,localShade,terrainShading);
       float shadow=cloudAt(q+sunDirection*.026)*.42*mix(1.,smoothstep(-.05,.2,facing),dayNight)*cloudShadows;
-      vec3 light=vec3(.028,.045,.065)+vec3(1.05,1.02,.94)*daylight*(1.-shadow);
+      vec3 light=vec3(.045,.065,.085)+vec3(1.05,1.02,.94)*daylight*(1.-shadow);
       vec3 result=pow(color,vec3(2.2))*light;
       vec3 view=normalize(cameraPosition-q);
       if(sea){vec3 halfV=normalize(sunDirection+view);float glint=pow(max(0.,dot(n,halfV)),110.)*.06*max(0.,facing)*(1.-shadow);result+=vec3(1.,.92,.76)*glint;}
@@ -118,7 +121,7 @@ export function createPlanet(container,world,onChange,brush,brushSettings=()=>nu
   function invalidate(){dirty=true;if(active&&!frame)frame=requestAnimationFrame(draw);}
   controls.addEventListener('change',invalidate);
   function setDisplay(next){display=next;uniforms.terrainShading.value=Number(display.terrainShading!==false);uniforms.dayNight.value=Number(display.dayNight!==false);uniforms.cloudShadows.value=Number(display.clouds!==false&&display.cloudShadows!==false);clouds.visible=display.clouds!==false&&world.clouds>0;atmosphere.visible=display.atmosphere!==false;sun.intensity=display.dayNight===false?0:2.2;ambient.intensity=display.dayNight===false?2:.12;invalidate();}
-  function configure(next){world=next;const direction=new THREE.Vector3(...spherePoint(world.sunU,world.sunV));uniforms.sunDirection.value.copy(direction);sun.position.copy(direction).multiplyScalar(8);uniforms.cloudAmount.value=world.clouds;uniforms.seaLevel.value=world.seaLevel;uniforms.snowLevel.value=world.snowLevel??.34;uniforms.relief.value=world.relief;moon.visible=Boolean(world.moon);outerRadius=1+Math.max(0,maximumHeight-world.seaLevel)*.008*world.relief;clouds.scale.setScalar((outerRadius+.008)/1.026);atmosphere.scale.setScalar((outerRadius+.028)/1.035);uniforms.atmosphereRadius.value=outerRadius+.028;setDisplay(display);dirty=true;}
+  function configure(next){world=next;const direction=new THREE.Vector3(...spherePoint(world.sunU,world.sunV));uniforms.sunDirection.value.copy(direction);sun.position.copy(direction).multiplyScalar(8);uniforms.cloudAmount.value=world.clouds;uniforms.seaLevel.value=world.seaLevel;uniforms.snowLevel.value=world.snowLevel??.52;uniforms.relief.value=world.relief;moon.visible=Boolean(world.moon);outerRadius=1+Math.max(0,maximumHeight-world.seaLevel)*.008*world.relief;clouds.scale.setScalar((outerRadius+.008)/1.026);atmosphere.scale.setScalar((outerRadius+.028)/1.035);uniforms.atmosphereRadius.value=outerRadius+.028;setDisplay(display);dirty=true;}
   function update(next){
     detail.update(next);patch.visible=uniforms.detailEnabled.value>0;
     world=next;const data=fields.update(world);uniforms.elevationField.value=data.elevation;uniforms.colorField.value=data.colors;uniforms.automaticField.value=data.automatic;uniforms.fieldSize.value.set(world.width,world.height);uniforms.seed.value=world.seed;
@@ -209,7 +212,7 @@ export function createPlanet(container,world,onChange,brush,brushSettings=()=>nu
   return {update,configure,ready,setDisplay,
     updateDetails(next){world=next;detail.update(next,true);patch.visible=uniforms.detailEnabled.value>0;configure(next);},
     setEditing(value){editing=value;controls.enabled=!value;brushRing.visible=false;invalidate();renderer.domElement.style.cursor=value?'crosshair':'grab';},
-    resize(w,h){width=w;height=h;renderer.setSize(w,h);camera.aspect=w/h;camera.fov=w<=780?Math.max(38,Math.atan(h/(w*.84*Math.sqrt(4.25**2-1)))*360/Math.PI):38;camera.setViewOffset(w,h,w>950?-130:w>780?-75:0,w<=780?35:0,w,h);camera.updateProjectionMatrix();invalidate();},
+    resize(w,h){width=w;height=h;renderer.setSize(w,h);camera.aspect=w/h;camera.fov=w<=780?Math.max(38,Math.atan(h/(w*.84*Math.sqrt(4.25**2-1)))*360/Math.PI):38;camera.clearViewOffset();camera.updateProjectionMatrix();invalidate();},
     start(){if(!active){active=true;detail.setActive(true);invalidate();}},stop(){active=false;detail.setActive(false);cancelAnimationFrame(frame);frame=0;lastFrameTime=0;},
     focus(x,y,distance=3.25){destination=new THREE.Vector3(...spherePoint(x,y,distance));invalidate();},
     focusView(x,y,spanV){const surface=1+Math.max(0,surfaceAt(x,y)-world.seaLevel)*.008*world.relief;this.focus(x,y,clamp(surface+spanV*Math.PI/(2*Math.tan(camera.fov*Math.PI/360)),surface+.0003,5.5));},

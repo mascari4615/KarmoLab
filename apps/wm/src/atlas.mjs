@@ -1,8 +1,36 @@
 import * as THREE from 'three';
 import { createFields, fieldGLSL } from './fields.mjs';
 import { createDetailFields, detailGLSL } from './detail-fields.mjs';
+import { createCartography } from './cartography.mjs';
 let renderer,fields,material,scene,camera,fallback;
 let detail,detailReady=()=>{};
+let chart,chartWorker,chartPending,chartWorking=false,chartRevision=0,chartWorldId,chartWorld,chartMinRevision=0,chartReady=()=>{};
+function scheduleCartography(world,onReady){
+  const id=++chartRevision;chartReady=onReady;chartWorld=world;
+  if(world.id!==chartWorldId){chart=null;chartWorldId=world.id;chartMinRevision=id;}
+  chartPending={id,world};
+  const dispatch=()=>{
+    if(chartWorking||!chartPending)return;
+    const job=chartPending;chartPending=null;chartWorking=true;
+    const heights=Float32Array.from(job.world.heights),biomes=Uint8Array.from(job.world.biomes);
+    chartWorker.postMessage({id:job.id,world:{id:job.world.id,seed:job.world.seed,sunU:job.world.sunU,sunV:job.world.sunV,seaLevel:job.world.seaLevel,width:job.world.width,height:job.world.height,places:job.world.places,heights,biomes}},[heights.buffer,biomes.buffer]);
+  };
+  if(!chartWorker){
+    chartWorker=new Worker(new URL('./cartography-worker.mjs',import.meta.url),{type:'module'});
+    chartWorker.onmessage=({data})=>{
+      chartWorking=false;
+      if(data.worldId===chartWorldId&&data.id>=chartMinRevision){
+        if(data.error){document.querySelector('#map').dataset.cartographyState='error';}
+        else{chart=createCartography(chartWorld,data.geometry);document.querySelector('#map').dataset.cartographyState='ready';document.querySelector('#map').dataset.cartographyMs=data.elapsed.toFixed(2);}
+        chartReady();
+      }
+      dispatch();
+    };
+    chartWorker.onerror=()=>{chartWorking=false;chartPending=null;chartWorker.terminate();chartWorker=null;document.querySelector('#map').dataset.cartographyState='error';chartReady();};
+  }
+  if(!chart)document.querySelector('#map').dataset.cartographyState='loading';
+  dispatch();
+}
 let fallbackWorker,fallbackPending,fallbackWorking=false,fallbackRevision=0,fallbackReady;
 let fallbackRegion={u:0,v:0,w:1,h:1},fallbackKey='';
 let fallbackWorldId,fallbackOverview;
@@ -62,19 +90,32 @@ function initialize() {
   }catch{renderer?.dispose();renderer=null;fallback=document.createElement('canvas');fallback.width=768;fallback.height=432;}
 }
 export function createAtlas(world,onReady=()=>{},display={}) {
-  initialize();const started=performance.now();let cache;
+  const started=performance.now();let cache,prepared=false;
+  scheduleCartography(world,onReady);
+  function prepareRelief(){
+  if(prepared)return;prepared=true;initialize();
   detailReady=onReady;detail?.update(world);
   if(renderer){
     const data=fields.update(world),u=material.uniforms;
     u.elevationField.value=data.elevation;u.colorField.value=data.colors;u.automaticField.value=data.automatic;u.fieldSize.value.set(world.width,world.height);u.seaLevel.value=world.seaLevel;u.snowLevel.value=world.snowLevel??.38;u.seed.value=world.seed;
     u.terrainShading.value=Number(display.terrainShading!==false);cache=renderer.domElement;
   }else{if(fallbackWorldId!==world.id){fallbackWorldId=world.id;fallbackOverview=null;fallback.getContext('2d').clearRect(0,0,fallback.width,fallback.height);}fallbackKey='';renderFallback(world,onReady,display);cache=fallback;}
+  }
   const elapsed=performance.now()-started;queueMicrotask(onReady);scheduleRivers(world,onReady);
   return {elapsed,
     setActive(value){detail?.setActive(value);},
-    updateDetails(next){world=next;detail?.update(world,true);if(!renderer){fallbackKey='';renderFallback(world,onReady,display,fallbackRegion);}},
-    setDisplay(next){display=next;if(renderer)material.uniforms.terrainShading.value=Number(display.terrainShading!==false);else{fallbackKey='';renderFallback(world,onReady,display,fallbackRegion);}},
+    updateDetails(next){world=next;detail?.update(world,true);if(prepared&&!renderer){fallbackKey='';renderFallback(world,onReady,display,fallbackRegion);}},
+    setDisplay(next){display=next;if(renderer)material.uniforms.terrainShading.value=Number(display.terrainShading!==false);else if(prepared){fallbackKey='';renderFallback(world,onReady,display,fallbackRegion);}},
     draw(context,x,y,width,height,{direct=false}={}){
+      const visibleFineEdits=(world.detailStrokes||[]).some(stroke=>stroke.radius*height>1);
+      if(display.cartography!==false && width<16000&&!visibleFineEdits){
+        if(renderer)renderer.domElement.hidden=true;
+        detail?.setActive(false);
+        if(chart)chart.draw(context,x,y,width,height,{rivers:riverPaths,display});
+        else{context.fillStyle='#a7c4c6';context.fillRect(x,y,width,height);}
+        return;
+      }
+      prepareRelief();detail?.setActive(true);
       context.save();context.beginPath();context.rect(x,y,width,height);context.clip();
       if(renderer){
         const ratio=Math.abs(context.getTransform().a)||1,cw=context.canvas.width/ratio,ch=context.canvas.height/ratio;
