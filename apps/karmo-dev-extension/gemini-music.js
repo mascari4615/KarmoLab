@@ -2,7 +2,7 @@
 async function geminiMusic(tabId, prompt) {
   if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 12000) throw new Error('음악 설명을 확인하세요');
   const run = async (action, value) => {
-    const [reply] = await chrome.scripting.executeScript({ target: { tabId }, func: (op, text) => {
+    const [reply] = await chrome.scripting.executeScript({ target: { tabId }, ...(action === 'download' ? { world: 'MAIN' } : {}), func: (op, text) => {
       if (location.hostname !== 'gemini.google.com') return { error: 'Gemini 로그인이나 페이지 확인 필요' };
       const nodes = (selector) => [...document.querySelectorAll(selector)];
       const button = (label) => nodes('button,[role="menuitem"],[role="menuitemcheckbox"]').find((e) =>
@@ -20,7 +20,28 @@ async function geminiMusic(tabId, prompt) {
       }
       if (op === 'send') { const el = button('메시지 보내기') || button('Send message'); if (!el || el.disabled) return { pending: true }; el.click(); return { ok: true }; }
       if (op === 'ready') { const el = button('트랙 다운로드') || button('Download track'); if (!el) return { pending: true }; el.click(); return { ok: true }; }
-      if (op === 'download') { const el = button('오디오만') || button('Audio only'); if (!el) return { pending: true }; el.click(); return { ok: true }; }
+      if (op === 'download') {
+        const el = button('오디오만') || button('Audio only'); if (!el) return { pending: true };
+        return new Promise((resolve) => {
+          const proto = HTMLAnchorElement.prototype, descriptor = Object.getOwnPropertyDescriptor(proto, 'click'), original = proto.click;
+          if (typeof original !== 'function' || (descriptor && !descriptor.configurable)) return resolve({ error: '다운로드 확인을 준비하지 못함' });
+          let timer;
+          const finish = (result) => { clearTimeout(timer); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } resolve(result); };
+          const wrapped = function (...args) {
+            const href = this.href || '', download = this.hasAttribute('download');
+            const result = original.apply(this, args);
+            let matches = false;
+            try { matches = download && href.startsWith('blob:') && new URL(href).origin === location.origin; } catch {}
+            if (matches) finish({ ok: true, downloadUrl: href });
+            return result;
+          };
+          try {
+            Object.defineProperty(proto, 'click', descriptor && 'value' in descriptor ? { ...descriptor, value: wrapped } : { value: wrapped, configurable: true, writable: true, enumerable: descriptor?.enumerable || false });
+            timer = setTimeout(() => finish({ error: '음악 다운로드 연결을 확인하지 못함' }), 10000);
+            el.click();
+          } catch { finish({ error: '음악 다운로드 동작 실패' }); }
+        });
+      }
       return { error: '지원하지 않는 작업' };
     }, args: [action, value || ''] });
     return reply?.result || { error: '페이지 응답 없음' };
@@ -31,7 +52,7 @@ async function geminiMusic(tabId, prompt) {
     while (Date.now() < end) {
       const result = await run(action, value);
       if (result.error) throw new Error(result.error);
-      if (result.ok) return;
+      if (result.ok) return result;
       detail = result.detail || '';
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
@@ -46,21 +67,25 @@ async function geminiMusic(tabId, prompt) {
   if (conversation.origin !== 'https://gemini.google.com' || !/^\/app\/[^/]+$/.test(conversation.pathname)) {
     throw new Error('Gemini 음악 대화를 식별하지 못함');
   }
-  const started = Date.now();
-  await wait('download', '', 10000);
-  let diagnostic = 'no recent mp3';
-  while (Date.now() - started < 30000) {
-    const items = await chrome.downloads.search({ startedAfter: new Date(started - 1000).toISOString() });
-    const mp3 = items.filter((x) => /\.mp3$/i.test(x.filename || ''));
-    diagnostic = `${mp3.length} recent mp3; referrer ` + mp3.map((x) => {
-      const state = x.state || 'unknown';
-      if (!x.referrer) return state + ':empty';
-      try { const ref = new URL(x.referrer); return state + ':' + (ref.href === conversation.href ? 'conversation' : ref.origin === conversation.origin ? 'gemini' : 'other'); } catch { return state + ':invalid'; }
-    }).join(',');
-    const found = items.filter((x) => x.state === 'complete' && /\.mp3$/i.test(x.filename || '') && x.referrer === conversation.href);
-    if (found.length === 1) return { ok: true, filename: found[0].filename, bytes: found[0].fileSize };
-    if (found.length > 1) throw new Error('음악 다운로드 결과가 여러 개');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  const started = Date.now(), ids = new Set();
+  const onCreated = (item) => { if (Number.isInteger(item.id)) ids.add(item.id); };
+  chrome.downloads.onCreated.addListener(onCreated);
+  try {
+    const clicked = await wait('download', '', 10000);
+    while (Date.now() - started < 60000) {
+      for (const id of ids) {
+        const items = await chrome.downloads.search({ id });
+        const item = items[0];
+        if (item?.url !== clicked.downloadUrl) continue;
+        if (item?.state === 'interrupted') throw new Error('음악 파일 다운로드가 중단됨');
+        if (item?.state === 'complete' && /\.mp3$/i.test(item.filename || '')) {
+          return { ok: true, filename: item.filename, bytes: item.fileSize };
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    throw new Error('음악 파일 다운로드 확인 실패');
+  } finally {
+    chrome.downloads.onCreated.removeListener(onCreated);
   }
-  throw new Error('음악 파일 다운로드 확인 실패 (' + diagnostic + ')');
 }
