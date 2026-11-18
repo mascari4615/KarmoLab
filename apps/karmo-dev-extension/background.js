@@ -205,6 +205,7 @@ function readyArgs(msg) {
   return {
     selector: typeof msg.ready === "string" && msg.ready ? msg.ready : null,
     capMs: Math.min(Math.max(Number(msg.readyMs) || 20000, 1000), 60000),
+    graceMs: Math.min(Math.max(Number(msg.readyGraceMs) || 3000, 1000), 20000),
   };
 }
 
@@ -604,7 +605,7 @@ async function runQueueJob(job) {
         let ready = null;
         if (msg.ready) {
           const a = readyArgs(msg);
-          ready = await waitReady(tab.id, a.selector, a.capMs);
+          ready = await waitReady(tab.id, a.selector, a.capMs, a.graceMs);
         } else await waitLoaded(tab.id);
         if (msg.type === "page.text") {
           const tabs = await readOpenTabs("", msg.maxChars, msg.links, false, msg.images, msg.html, tab.id);
