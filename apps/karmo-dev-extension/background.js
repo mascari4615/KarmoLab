@@ -555,17 +555,12 @@ async function runQueueJob(job) {
         return { referrer, matchesFileSize: x.fileSize === msg.bytes, matchesReceived: x.bytesReceived === msg.bytes, matchesTotal: x.totalBytes === msg.bytes };
       }) };
     } else if (msg.type === 'gemini.music') {
-      let tab, createdWindow;
-        // 생성 중에는 워커가 재시작해도 탭을 보존한다 (계정 활동 기록이 꺼져 있을 수 있음).
-        try { tab = await chrome.tabs.create({ url: 'https://gemini.google.com/app', active: false }); }
-        catch (error) {
-          if (!String(error?.message || error).includes('No current window')) throw error;
-          createdWindow = await chrome.windows.create({ url: 'https://gemini.google.com/app', focused: false, state: 'minimized' });
-          tab = createdWindow.tabs?.[0];
-          if (!tab?.id) throw new Error('Gemini 작업 창을 열지 못함');
-        }
-        await waitLoaded(tab.id);
-        result = await geminiMusic(tab.id, msg.prompt);
+      // 전용 비초점 창: 비활성 탭의 Gemini 모드 지연과 기존 창의 활성 탭 변경 방지
+      const workWindow = await chrome.windows.create({ url: 'https://gemini.google.com/app', focused: false });
+      const tab = workWindow.tabs?.[0];
+      if (!tab?.id) throw new Error('Gemini 작업 창을 열지 못함');
+      await waitLoaded(tab.id);
+      result = await geminiMusic(tab.id, msg.prompt);
       // 서버 저장 확인 전까지 결과 탭 보존
     } else if (job.open) {
       if (!/^https?:\/\//.test(String(job.open))) throw new Error("open 은 http 주소만");
