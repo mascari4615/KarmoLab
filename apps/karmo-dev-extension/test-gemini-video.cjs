@@ -28,6 +28,15 @@ test('empty video prompt is rejected', async () => {
   await assert.rejects(context.geminiVideo(1, ' '), /영상 설명/);
 });
 
+test('a disabled Gemini video tool reports unavailability', async () => {
+  const option = { disabled: true, getAttribute: () => '', innerText: '동영상 만들기', click() { throw new Error('disabled tool clicked'); } };
+  const chrome = { scripting: { executeScript: async ({ func, args }) => [{ result: args[0] === 'menu' ? { ok: true } : await func(...args) }] } };
+  const document = { querySelectorAll: () => [option] };
+  const context = vm.createContext({ chrome, document, location: { hostname: 'gemini.google.com' }, Date, URL, setTimeout });
+  vm.runInContext(source, context);
+  await assert.rejects(context.geminiVideo(1, 'paper boat'), /동영상 만들기를 사용할 수 없음/);
+});
+
 test('single worker video download is accepted after the quiet interval', async () => {
   let listener, now = 0;
   class FastDate extends Date { static now() { return now; } }
