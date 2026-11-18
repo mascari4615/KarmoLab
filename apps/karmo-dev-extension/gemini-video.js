@@ -8,7 +8,7 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
       const button = (label) => [...document.querySelectorAll('button,[role="menuitemcheckbox"]')].find((e) =>
         (e.getAttribute('aria-label') || '').includes(label) || (e.innerText || '').trim().startsWith(label));
       if (op === 'menu') { const el = button('업로드 및 도구') || button('Upload files and more'); if (!el) return { pending: true }; el.click(); return { ok: true }; }
-      if (op === 'mode') { const el = button('동영상 만들기') || button('Create video'); if (!el) return { pending: true }; if (el.disabled || el.getAttribute('aria-disabled') === 'true') return { error: 'Gemini에서 현재 동영상 만들기를 사용할 수 없음' }; el.click(); return { ok: true }; }
+      if (op === 'mode') { const el = button('동영상 만들기') || button('Create video'); if (!el) return { pending: true }; if (el.disabled || el.getAttribute('aria-disabled') === 'true' || el.closest?.('[aria-disabled="true"],[disabled]') || el.querySelector?.('[aria-disabled="true"],[disabled]')) return { error: 'Gemini에서 현재 동영상 만들기를 사용할 수 없음' }; el.click(); return { ok: true }; }
       if (op === 'submit') {
         const editor = document.querySelector('[contenteditable="true"][role="textbox"]');
         const placeholder = editor?.getAttribute('data-placeholder') || '';
