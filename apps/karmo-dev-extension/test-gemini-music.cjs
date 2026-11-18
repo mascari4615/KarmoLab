@@ -60,6 +60,7 @@ test('official download click captures the same tab blob and restores the origin
   function Anchor() { this.href = 'blob:https://gemini.google.com/from-page'; }
   Object.setPrototypeOf(Anchor.prototype, Element.prototype);
   Anchor.prototype.hasAttribute = name => name === 'download';
+  Anchor.prototype.getAttribute = name => name === 'download' ? 'song.mp3' : null;
   const original = Anchor.prototype.click;
   const option = { getAttribute: () => '오디오만', innerText: '', click: () => new Anchor().click() };
   const chrome = {
@@ -71,8 +72,9 @@ test('official download click captures the same tab blob and restores the origin
     tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123' }) },
     downloads: { onCreated: { addListener: fn => { listener = fn; }, removeListener: () => {} }, search: async () => [{ state: 'complete', filename: 'song.mp3', url: 'blob:https://gemini.google.com/from-page' }] },
   };
-  const document = { querySelectorAll: () => [option] };
-  const context = vm.createContext({ chrome, document, location: { hostname: 'gemini.google.com', origin: 'https://gemini.google.com' }, HTMLAnchorElement: Anchor, Date, URL, setTimeout, clearTimeout });
+  const document = { querySelectorAll: () => [option], hasFocus: () => false };
+  const fastTimeout = (fn, ms) => setTimeout(fn, ms === 10000 ? 5 : ms);
+  const context = vm.createContext({ chrome, document, window: { addEventListener() {}, removeEventListener() {} }, location: { hostname: 'gemini.google.com', origin: 'https://gemini.google.com' }, HTMLAnchorElement: Anchor, Date, URL, setTimeout: fastTimeout, clearTimeout });
   vm.runInContext(source, context);
   const result = await context.geminiMusic(9, 'piano');
   assert.equal(result.filename, 'song.mp3');
@@ -86,14 +88,48 @@ test('blob creation in the task tab is matched and restored', async () => {
   PageURL.createObjectURL = () => 'blob:https://gemini.google.com/created';
   const originalCreate = PageURL.createObjectURL;
   class Anchor { click() {} }
-  const option = { getAttribute: () => '오디오만', innerText: '', click: () => { PageURL.createObjectURL({}); listener({ id: 8 }); } };
+  const option = { getAttribute: () => '오디오만', innerText: '', click: () => { PageURL.createObjectURL({ type: 'audio/mpeg' }); listener({ id: 8 }); } };
   const chrome = {
     scripting: { executeScript: async ({ func, args }) => [{ result: args[0] === 'download' ? await func(...args) : { ok: true } }] },
     tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123' }) },
     downloads: { onCreated: { addListener: fn => { listener = fn; }, removeListener: () => {} }, search: async () => [{ state: 'complete', filename: 'song.mp3', url: 'blob:https://gemini.google.com/created' }] },
   };
-  const context = vm.createContext({ chrome, document: { querySelectorAll: () => [option] }, location: { hostname: 'gemini.google.com', origin: 'https://gemini.google.com' }, HTMLAnchorElement: Anchor, Date, URL: PageURL, setTimeout, clearTimeout });
+  const fastTimeout = (fn, ms) => setTimeout(fn, ms === 10000 ? 5 : ms);
+  const context = vm.createContext({ chrome, document: { querySelectorAll: () => [option], hasFocus: () => false }, window: { addEventListener() {}, removeEventListener() {} }, location: { hostname: 'gemini.google.com', origin: 'https://gemini.google.com' }, HTMLAnchorElement: Anchor, Date, URL: PageURL, setTimeout: fastTimeout, clearTimeout });
   vm.runInContext(source, context);
   assert.equal((await context.geminiMusic(9, 'piano')).filename, 'song.mp3');
+  assert.equal(PageURL.createObjectURL, originalCreate);
+});
+
+test('download is not clicked while the task window is in use', async () => {
+  let clicked = false;
+  const option = { getAttribute: () => '오디오만', innerText: '', click: () => { clicked = true; } };
+  const chrome = {
+    scripting: { executeScript: async ({ func, args }) => [{ result: args[0] === 'download' ? await func(...args) : { ok: true } }] },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123' }) },
+    downloads: { onCreated: { addListener: () => {}, removeListener: () => {} } },
+  };
+  const context = vm.createContext({ chrome, document: { querySelectorAll: () => [option], hasFocus: () => true }, location: { hostname: 'gemini.google.com', origin: 'https://gemini.google.com' }, Date, URL, setTimeout, clearTimeout });
+  vm.runInContext(source, context);
+  await assert.rejects(context.geminiMusic(9, 'piano'), /사용 중/);
+  assert.equal(clicked, false);
+});
+
+test('ambiguous blobs are rejected and original browser methods are restored', async () => {
+  let n = 0;
+  class PageURL extends URL {}
+  PageURL.createObjectURL = () => `blob:https://gemini.google.com/${++n}`;
+  const originalCreate = PageURL.createObjectURL;
+  class Anchor { click() {} }
+  const option = { getAttribute: () => '오디오만', innerText: '', click: () => { PageURL.createObjectURL({ type: 'audio/mpeg' }); PageURL.createObjectURL({ type: 'audio/mpeg' }); } };
+  const chrome = {
+    scripting: { executeScript: async ({ func, args }) => [{ result: args[0] === 'download' ? await func(...args) : { ok: true } }] },
+    tabs: { get: async () => ({ url: 'https://gemini.google.com/app/123' }) },
+    downloads: { onCreated: { addListener: () => {}, removeListener: () => {} } },
+  };
+  const fastTimeout = (fn, ms) => setTimeout(fn, ms === 10000 ? 5 : ms);
+  const context = vm.createContext({ chrome, document: { querySelectorAll: () => [option], hasFocus: () => false }, window: { addEventListener() {}, removeEventListener() {} }, location: { hostname: 'gemini.google.com', origin: 'https://gemini.google.com' }, HTMLAnchorElement: Anchor, Date, URL: PageURL, setTimeout: fastTimeout, clearTimeout });
+  vm.runInContext(source, context);
+  await assert.rejects(context.geminiMusic(9, 'piano'), /연결을 확인하지 못함/);
   assert.equal(PageURL.createObjectURL, originalCreate);
 });

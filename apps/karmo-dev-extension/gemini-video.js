@@ -19,25 +19,28 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '' } =
       }
       if (op === 'send') { const el = button('메시지 보내기') || button('Send message'); if (!el || el.disabled) return { pending: true }; el.click(); return { ok: true }; }
       if (op === 'ready' || op === 'download') {
-        const matches = [...document.querySelectorAll('button')].filter(e => /동영상 다운로드|Download video/i.test((e.getAttribute('aria-label') || '') + ' ' + (e.innerText || '')) && e.getClientRects().length);
-        if (isResume && matches.length > 1) return { error: '복구할 영상 결과가 여러 개' };
+        const matches = [...document.querySelectorAll('button')].filter(e => /동영상 다운로드|Download video/i.test((e.getAttribute('aria-label') || '') + ' ' + (e.innerText || '')));
+        if (matches.length > 1) return { error: '영상 결과가 여러 개' };
         const el = matches[0]; if (!el || el.disabled) return { pending: true };
         if (op === 'ready') return { ok: true };
+        if (document.hasFocus()) return { error: 'Gemini 작업 창을 사용 중이어서 다운로드 확인을 멈춤' };
         return new Promise((resolve) => {
           const proto = HTMLAnchorElement.prototype, descriptor = Object.getOwnPropertyDescriptor(proto, 'click'), original = proto.click;
           const urlDescriptor = Object.getOwnPropertyDescriptor(URL, 'createObjectURL'), originalCreate = URL.createObjectURL;
           if (typeof original !== 'function' || (descriptor && !descriptor.configurable) || typeof originalCreate !== 'function' || !urlDescriptor?.configurable || !('value' in urlDescriptor)) return resolve({ error: '다운로드 확인을 준비하지 못함' });
-          const urls = new Set(); let timer, settle;
-          const finish = () => { clearTimeout(timer); clearTimeout(settle); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(urls.size ? { ok: true, downloadUrls: [...urls] } : { error: '영상 다운로드 연결을 확인하지 못함' }); };
-          const observe = (href) => { try { if (href.startsWith('blob:') && new URL(href).origin === location.origin) { urls.add(href); clearTimeout(settle); settle = setTimeout(finish, 750); } } catch {} };
+          const urls = new Set(), types = new Set(); let timer, unsafe = false;
+          const onFocus = () => { unsafe = true; };
+          const finish = () => { clearTimeout(timer); window.removeEventListener('focus', onFocus, true); if (proto.click === wrapped) { if (descriptor) Object.defineProperty(proto, 'click', descriptor); else delete proto.click; } if (URL.createObjectURL === wrappedCreate) Object.defineProperty(URL, 'createObjectURL', urlDescriptor); resolve(!unsafe && urls.size === 1 ? { ok: true, downloadUrls: [...urls] } : { error: '영상 다운로드 연결을 확인하지 못함 (형식: ' + ([...types].join(',') || '없음') + ')' }); };
+          const observe = (href) => { try { if (document.hasFocus()) unsafe = true; if (href.startsWith('blob:') && new URL(href).origin === location.origin) urls.add(href); } catch {} };
           const wrapped = function (...args) {
-            const href = this.href || '', download = this.hasAttribute('download');
+            const href = this.href || '', download = this.hasAttribute('download') && /\.mp4$/i.test(this.getAttribute('download') || '');
             const result = original.apply(this, args);
             if (download) observe(href);
             return result;
           };
-          const wrappedCreate = function (...args) { const result = originalCreate.apply(this, args); observe(result); return result; };
+          const wrappedCreate = function (...args) { const result = originalCreate.apply(this, args), type = args[0]?.type || ''; types.add(/^audio\//i.test(type) ? 'audio' : /^video\//i.test(type) ? 'video' : type ? 'other' : 'empty'); if (/^video\/mp4$/i.test(type)) observe(result); return result; };
           try {
+            window.addEventListener('focus', onFocus, true);
             Object.defineProperty(proto, 'click', descriptor && 'value' in descriptor ? { ...descriptor, value: wrapped } : { value: wrapped, configurable: true, writable: true, enumerable: descriptor?.enumerable || false });
             Object.defineProperty(URL, 'createObjectURL', { ...urlDescriptor, value: wrappedCreate });
             timer = setTimeout(finish, 10000);
