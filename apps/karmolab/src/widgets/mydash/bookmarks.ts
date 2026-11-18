@@ -87,6 +87,7 @@ import gridCss from './bookmark-grid.css';
     photos?: MediaPhoto[] | null;
     video?: { poster?: string; src?: string; durationMs?: number; w?: number; h?: number } | null;
     deleted?: boolean;
+    reason?: string;
     sensitive?: boolean;
     title?: string | null;
     description?: string | null;
@@ -105,7 +106,7 @@ import gridCss from './bookmark-grid.css';
   };
 
   /** 이벤트가 건드리는 축 갈래. 갈래 하나가 파일 하나 */
-  type EvType = 'tag' | 'status' | 'priority' | 'note';
+  type EvType = 'tag' | 'status' | 'priority' | 'note' | 'preview';
   type DashEvent = {
     v: number;
     at: string;
@@ -120,6 +121,7 @@ import gridCss from './bookmark-grid.css';
     priority?: string | null;
     status?: string;
     note?: string;
+    preview?: Media & { id: string };
   };
 
   /** 이벤트를 다 덮은 뒤의 한 항목. 화면과 필터가 보는 값은 전부 여기서 나옴 */
@@ -257,6 +259,37 @@ import gridCss from './bookmark-grid.css';
     return it.media && typeof it.media === 'object' ? it.media : null;
   }
 
+  function xStatus(url: unknown): { handle: string; id: string } | null {
+    const match = /^https:\/\/(?:www\.)?(?:x|twitter)\.com\/(\w{1,15})\/status\/(\d{1,20})(?:[/?#]|$)/i.exec(text(url));
+    return match ? { handle: match[1], id: match[2] } : null;
+  }
+
+  function needsXPreview(it: Item): boolean {
+    return !!xStatus(it.url) && (it.media?.kind !== 'tweet' || !!it.media.deleted);
+  }
+
+  function xPreview(value: unknown, id: string): DashEvent['preview'] {
+    const raw = value as (Media & { id?: string }) | null | undefined;
+    if (!raw || raw.id !== id) return;
+    const cdn = (url: unknown, origin: string): string => {
+      try {
+        const parsed = new URL(text(url));
+        return parsed.origin === origin && !parsed.username && !parsed.password ? parsed.href : '';
+      } catch { return ''; }
+    };
+    const photos = (Array.isArray(raw.photos) ? raw.photos : []).slice(0, 4).flatMap(photo => {
+      const url = cdn(photo?.url, 'https://pbs.twimg.com');
+      return url ? [{ url }] : [];
+    });
+    const poster = cdn(raw.video?.poster, 'https://pbs.twimg.com');
+    const src = cdn(raw.video?.src, 'https://video.twimg.com');
+    const video = poster || src ? { poster, src } : null;
+    const body = text(raw.text).replace(/https:\/\/t\.co\/\S+/g, '').trim().slice(0, 30000);
+    if (!body && !photos.length && !video) return;
+    return { id, kind: 'tweet', text: body, photos, video, sensitive: !!raw.sensitive,
+      who: raw.who ? { name: text(raw.who.name).slice(0, 100), handle: text(raw.who.handle).slice(0, 15) } : null };
+  }
+
   function mediaItems(it: Item): MediaItem[] {
     const media = mediaOf(it);
     if (!media || media.deleted) return [];
@@ -314,7 +347,7 @@ import gridCss from './bookmark-grid.css';
      달이 통째로 접힌 것이 확실할 때만 건너뛰므로 (그 달의 마지막 ms 까지 접혔을 때),
      생성기가 접다 만 달은 다시 읽힌다. 받은 뒤 `at` 으로 한 번 더 잰다. */
 
-  const EV_TYPES: EvType[] = ['tag', 'priority', 'status', 'note'];
+  const EV_TYPES: EvType[] = ['tag', 'priority', 'status', 'note', 'preview'];
 
   function evAt(ev: DashEvent): number {
     const n = Date.parse(text(ev.at));
@@ -535,6 +568,7 @@ import gridCss from './bookmark-grid.css';
        낙관적 갱신도 같은 지도에 이벤트를 하나 넣고 다시 계산하는 것이라 화면이 안 갈라진다. */
     const latest = new Map<string, Map<EvType, DashEvent>>();
     const states = new Map<string, ItemState>();
+    const summaryMedia = new Map(items.map(it => [text(it.id), it.media]));
 
     function noteEvent(ev: DashEvent): void {
       let m = latest.get(ev.target);
@@ -596,7 +630,15 @@ import gridCss from './bookmark-grid.css';
     }
 
     function rebuildStates(only?: Item[]): void {
-      for (const it of only || items) states.set(text(it.id), computeState(it));
+      for (const it of only || items) {
+        const id = text(it.id);
+        const status = xStatus(it.url);
+        const event = latest.get(id)?.get('preview');
+        const preview = status && event && xPreview(event.preview, status.id);
+        it.media = summaryMedia.get(id);
+        if (preview && needsXPreview(it)) it.media = preview;
+        states.set(id, computeState(it));
+      }
     }
 
     /** 이벤트가 닿는 항목들. 낙관적 갱신에서 다시 계산할 범위 */
@@ -969,6 +1011,7 @@ import gridCss from './bookmark-grid.css';
       if (fields.priority !== undefined) ev.priority = fields.priority;
       if (fields.status !== undefined) ev.status = fields.status;
       if (fields.note !== undefined) ev.note = fields.note;
+      if (fields.preview) ev.preview = fields.preview;
       return { ev, path: eventPath(ms) };
     }
 
@@ -995,14 +1038,14 @@ import gridCss from './bookmark-grid.css';
      * 보낸 것으로 치고 버린다. 그래서 이벤트가 조용히 사라진다. nonce 가 붙은 뒤로는
      * 같은 탭에서 같은 ms 가 두 번 나올 때만 나므로, 새 시각으로 **한 번만** 다시 보냄.
      */
-    async function sendEvent(out: Outgoing): Promise<SendResult> {
-      const first = await putOnce(out);
+    async function sendEvent(out: Outgoing, queueOnFailure = true): Promise<SendResult> {
+      const first = await putOnce(out, queueOnFailure);
       if (first !== 'collided') return first;
-      const again = await putOnce(restamp(out));
+      const again = await putOnce(restamp(out), queueOnFailure);
       return again;
     }
 
-    async function putOnce(out: Outgoing): Promise<SendResult> {
+    async function putOnce(out: Outgoing, queueOnFailure: boolean): Promise<SendResult> {
       const { ev, path } = out;
       const message = 'dash: ' + ev.type + ' ' + ev.target;
       try {
@@ -1012,6 +1055,7 @@ import gridCss from './bookmark-grid.css';
       } catch (e) {
         if (isPermError(e)) return 'denied';
         if (isExistsError(e)) return 'collided';
+        if (!queueOnFailure) throw e;
         repo.enqueueJson(path, ev, message);
         applySent(ev);
         return 'queued';
@@ -1031,6 +1075,62 @@ import gridCss from './bookmark-grid.css';
         undefined,
         '쓰기 권한이 없습니다. GitHub App 권한 Contents 를 Read & write 로 바꾸고 설치에서 승인하세요'
       );
+    }
+
+    const retrying = new Set<string>();
+    const retryMessage = new Map<string, string>();
+
+    function previewReason(reason?: string): string {
+      if (reason === 'login') return t('mydash.bm.media.login', undefined, 'Edge에서 X에 로그인한 뒤 다시 시도하세요.');
+      if (reason === 'busy') return t('mydash.bm.media.busy', undefined, '다른 글을 확인 중입니다. 잠시 뒤 다시 시도하세요.');
+      if (reason === 'extension') return t('mydash.bm.media.extension', undefined, '이 기능은 KarmoDevExtension이 설치된 Edge에서 사용할 수 있습니다.');
+      if (reason === 'transport' || reason === 'load incomplete') return t('mydash.bm.media.load', undefined, 'X 응답을 받지 못했습니다. 잠시 뒤 다시 시도하세요.');
+      if (reason === 'rate-limit') return t('mydash.bm.media.rate', undefined, 'X 요청 한도에 도달했습니다. 나중에 다시 시도하세요.');
+      if (reason === 'restricted') return t('mydash.bm.media.restricted', undefined, 'X가 접근을 제한한 글입니다. 원문에서 확인하세요.');
+      if (reason === 'suspended') return t('mydash.bm.media.suspended', undefined, 'X가 작성자 계정을 정지했다고 응답했습니다.');
+      if (reason === 'removed') return t('mydash.bm.media.removed', undefined, 'X가 삭제된 게시물이라고 응답했습니다.');
+      if (reason === 'not-found') return t('mydash.bm.media.notFound', undefined, 'X에서 게시물을 찾을 수 없다고 응답했습니다.');
+      return t('mydash.bm.media.deleted', undefined, '미리보기를 가져오지 못했습니다. X에서 원문을 열어 보세요.');
+    }
+
+    async function retryPreview(id: string): Promise<void> {
+      const item = items.find(it => text(it.id) === id);
+      const status = xStatus(item?.url);
+      if (!item || !status || retrying.has(id)) return;
+      type Reply = { preview?: unknown; error?: string; reason?: string };
+      const browser = globalThis as typeof globalThis & { chrome?: { runtime?: {
+        lastError?: { message?: string };
+        sendMessage: (extensionId: string, request: object, callback: (reply?: Reply) => void) => void;
+      } } };
+      const runtime = browser.chrome?.runtime;
+      if (!runtime?.sendMessage) { retryMessage.set(id, previewReason('extension')); paintSheet(); return; }
+      retrying.add(id);
+      retryMessage.set(id, t('mydash.bm.media.checking', undefined, 'X에서 미리보기를 확인 중입니다.'));
+      paintSheet();
+      try {
+        const reply = await new Promise<Reply>(resolve => {
+          const timer = setTimeout(() => resolve({ error: 'transport' }), 30000);
+          try {
+            runtime.sendMessage('lojdjbbekohhajlefkklkfoddldpheom', { type: 'dash.x.preview', ...status }, result => {
+              clearTimeout(timer);
+              resolve(runtime.lastError || !result ? { error: 'extension' } : result);
+            });
+          } catch {
+            clearTimeout(timer);
+            resolve({ error: 'extension' });
+          }
+        });
+        const preview = xPreview(reply.preview, status.id);
+        if (!preview) { retryMessage.set(id, previewReason(reply.reason || reply.error)); return; }
+        const saved = await sendEvent(makeEvent('preview', id, { preview }), false);
+        retryMessage.set(id, sendWord(saved));
+        if (saved === 'sent') paint();
+      } catch {
+        retryMessage.set(id, t('mydash.bm.media.saveFailed', undefined, '미리보기를 받았지만 저장하지 못했습니다. 다시 시도하세요.'));
+      } finally {
+        retrying.delete(id);
+        if (ctx.isCurrent()) paintSheet();
+      }
     }
 
     /** 보내기가 안 끝난 것. 화면이 선택을 안 비우고, 사람에게 말을 남기는 갈래 */
@@ -1346,7 +1446,12 @@ import gridCss from './bookmark-grid.css';
         );
       }
       const body: string[] = [];
-      if (m && m.kind === 'tweet') {
+      if (needsXPreview(it)) {
+        const id = text(it.id);
+        body.push('<p class="tool-hint" role="status">' + esc(retryMessage.get(id) || previewReason(m?.reason)) + '</p>' +
+          '<button type="button" class="btn btn-ghost" data-act="x-preview" data-id="' + esc(id) + '"' +
+          (retrying.has(id) ? ' disabled' : '') + '>' + esc(t('mydash.bm.media.retry', undefined, '미리보기 다시 가져오기')) + '</button>');
+      } else if (m && m.kind === 'tweet') {
         if (m.deleted) {
           body.push('<div class="tool-hint">' + esc(t('mydash.bm.media.deleted', undefined, '미리보기를 가져오지 못했습니다. X에서 원문을 열어 보세요.')) + '</div>');
         } else {
@@ -1876,6 +1981,7 @@ import gridCss from './bookmark-grid.css';
         return;
       }
       if (act === 'open') { openSheet(el.dataset.target || ''); return; }
+      if (act === 'x-preview') { void retryPreview(el.dataset.id || ''); return; }
       if (act === 'sheet-close') {
         if (mediaViewer.opened) { mediaViewer.showActions(false); return; }
         closeSheet();
@@ -2179,6 +2285,8 @@ import gridCss from './bookmark-grid.css';
 
     function openTile(id: string, trigger: HTMLElement): void {
               setCur(id);
+              const item = items.find(it => text(it.id) === id);
+              if (item && needsXPreview(item)) { openSheet(id); return; }
               const media = items.filter(it => matches(it)).sort(bySort).flatMap(mediaItems);
               const first = media.find(item => item.id.startsWith(id + '::'));
               if (first) mediaViewer.open(media, first.id, trigger); else openSheet(id);

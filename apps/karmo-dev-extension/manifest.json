@@ -79,6 +79,7 @@
   },
   "externally_connectable": {
     "matches": [
+      "https://dash.mascari4615.com/*",
       "http://127.0.0.1/*",
       "http://localhost/*"
     ]

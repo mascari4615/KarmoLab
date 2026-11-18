@@ -538,17 +538,33 @@ async function xPreview(handle, id) {
     const current = await chrome.tabs.get(tab.id);
     if (current.url?.startsWith("https://x.com/i/flow/login")) return { ok: false, error: "login" };
     if (!ready.found && !ready.complete) return { ok: false, error: "load incomplete" };
-    if (!ready.found) return { ok: false, error: "unavailable" };
+    if (!ready.found) return { ok: false, error: "unavailable", reason: await xPreviewIssue(tab.id) };
     const [read] = await within(10000, "x.preview", chrome.scripting.executeScript({
       target: { tabId: tab.id },
       world: "MAIN",
       files: ["x-preview-fields.js", "x-preview.js"],
     }));
     const preview = read?.result;
-    return preview?.id === id ? { ok: true, preview } : { ok: false, error: "unavailable" };
+    return preview?.id === id ? { ok: true, preview } : { ok: false, error: "unavailable", reason: await xPreviewIssue(tab.id) };
   } finally {
     await closeWorkTab(tab.id);
   }
+}
+
+async function xPreviewIssue(tabId) {
+  const [read] = await within(3000, "x.preview.issue", chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => {
+      const message = document.querySelector('[data-testid="error-detail"], [data-testid="tweetUnavailable"], [data-testid="emptyState"]')?.textContent || "";
+      if (/rate limit|too many requests|요청 한도|요청이 너무/i.test(message)) return "rate-limit";
+      if (/account (?:is |has been )?suspended|계정이 정지/i.test(message)) return "suspended";
+      if (/these posts are protected|only approved followers|승인된 팔로워만|비공개 게시물/i.test(message)) return "restricted";
+      if (/this (?:post|tweet) was deleted|삭제된 (?:게시물|트윗)/i.test(message)) return "removed";
+      if (/this (?:post|tweet) doesn.t exist|존재하지 않는 (?:게시물|트윗)/i.test(message)) return "not-found";
+      return "unavailable-unconfirmed";
+    },
+  })).catch(() => []);
+  return read?.result || "unavailable-unconfirmed";
 }
 
 function xBookmarkQueueResult(result, includePreviews) {
@@ -943,7 +959,19 @@ async function closeBridgeTabs(exceptId) {
 }
 
 /** 웹페이지(허용 도메인) → 확장 */
+let dashPreviewBusy = false;
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+  if (sender.url?.startsWith("https://dash.mascari4615.com/")) {
+    if (msg?.type !== "dash.x.preview") return false;
+    if (dashPreviewBusy) {
+      sendResponse({ ok: false, error: "busy" });
+      return false;
+    }
+    dashPreviewBusy = true;
+    xPreview(msg.handle, msg.id).catch(() => ({ ok: false, error: "load incomplete" }))
+      .then(sendResponse).finally(() => { dashPreviewBusy = false; });
+    return true;
+  }
   /* 주소로 부른 bridge 는 결과를 보낸 뒤 탭을 닫는다. bridge 가 closeAfter 를 붙인다 */
   if (msg && msg.closeAfter && sender && sender.tab) {
     const id = sender.tab.id;
