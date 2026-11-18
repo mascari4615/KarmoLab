@@ -3,17 +3,18 @@ import { typeNames, clamp } from './world.mjs';
 import { loadInitial, createEditor } from './editor.mjs';
 import { observePerformance } from './performance.mjs';
 import { createViewSettings, loadViewSettings } from './view-settings.mjs';
+import { createWorkspace } from './workspace.mjs';
 
 async function start() {
 const $ = selector => document.querySelector(selector);
 $('#terrain-retry').addEventListener('click',()=>location.reload());
-let world = await loadInitial(), places = world.places, editor, isEditing = false;
+let world = await loadInitial(), places = world.places, editor, workspace, isEditing = false;
 const map = $('#map'), context = map.getContext('2d'), stage = $('#stage');
 const brushCursor=document.createElement('div');brushCursor.id='brush-cursor';brushCursor.hidden=true;brushCursor.setAttribute('aria-hidden','true');stage.append(brushCursor);
 observePerformance(stage);
 const state = { mode: 'map', selected: null, filter: 'all', labels: true, zoom: 1, center: [.5, .5] };
 let width = 0, height = 0, baseWidth = 0, baseHeight = 0, originX = 0, originY = 0, atlas, planet, planetLoading = false, atlasDirty = false, planetDirty = false, placesSignature = '';
-const mobile = () => width <= 780;
+const mobile = () => matchMedia('(max-width: 780px)').matches;
 let previousMobile = null;
 const viewOptions = loadViewSettings();
 const viewSettings = createViewSettings(viewOptions, () => { planet?.setDisplay(viewOptions); atlas?.setDisplay(viewOptions); drawMap(); });
@@ -115,18 +116,17 @@ function renderMap() {
   updateLabels();
   stage.dataset.mapDrawMs = (performance.now() - started).toFixed(2);
 }
-function atlasReady() { stage.dataset.reliefReady = 'true'; drawMap(); if (state.mode==='map'&&state.selected && !document.body.classList.contains('editing')) select(state.selected); }
+function atlasReady() { stage.dataset.reliefReady = 'true'; drawMap(); }
 function resize() {
   width = stage.clientWidth; height = stage.clientHeight;
   if (previousMobile !== mobile()) { previousMobile = mobile(); setExplorer(!previousMobile); }
   const ratio = Math.min(devicePixelRatio, 2); map.width = Math.round(width * ratio); map.height = Math.round(height * ratio);
-  const left = width > 950 ? 325 : width > 780 ? 260 : 25;
-  const right = width > 780 ? 90 : 25;
-  const availableHeight = Math.max(80, height - (height < 420 ? 100 : mobile() ? 240 : 155));
+  const left = 24, right = 24;
+  const availableHeight = Math.max(80, height - 100);
   const aspect=world.width/world.height;
   baseWidth = Math.min(width - left - right, availableHeight * aspect);
   baseHeight = baseWidth / aspect;
-  originX = left + (width - left - right) / 2; originY = mobile() ? height * .47 : 95 + availableHeight / 2;
+  originX = width / 2; originY = 58 + availableHeight / 2;
   planet?.resize(width, height); drawMap();
 }
 function updateURL() {
@@ -134,10 +134,12 @@ function updateURL() {
   parameters.set('world',world.id);
   if (state.mode === 'planet') parameters.set('view', 'planet');
   if (state.selected) parameters.set('place', state.selected);
+  if(state.record?.startsWith('entry:'))parameters.set('record',state.record);
   history.replaceState(null, '', `${location.pathname}${parameters.size ? `?${parameters}` : ''}`);
 }
-function select(id) {
+async function select(id) {
   const place = places.find(item => item.id === id); if (!place) return;
+  if(workspace){if(!await workspace.openPlace(id))return;state.selected=id;$('#detail').hidden=true;renderList();updateURL();return;}
   state.selected = id; $('#detail').hidden = false;
   $('#detail-title').textContent = place.name; $('#detail-kind').textContent = `${place.area} / ${typeNames[place.type]}`;
   $('#detail-text').textContent = place.text; $('#detail-source').textContent = place.source;
@@ -243,13 +245,12 @@ $('#help').addEventListener('click', () => openDialog('<span class="eyebrow">EXP
 $('#about-button').addEventListener('click', () => openDialog('<span class="eyebrow">WITCH MENDOKUSAI</span><h2>이 세계에 관하여</h2><p>숲속의 마녀 욘과 함께 사는 인형들. 서로 다른 놀이와 이야기가 같은 세계에 쌓이는 Witch Mendokusai의 기록입니다.</p><p>이곳은 WM의 세계, 인물, 역사와 게임을 담는 공간입니다. 지금은 첫 번째 지도를 펼치고 있습니다.</p><button class="text-button" id="about-map">첫 번째 지도 보기 ↗</button>'));
 $('#dialog-body').addEventListener('click', event => { if (event.target.id === 'about-map') { $('#dialog').close(); showSource(); } });
 document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => {
-  if (button.dataset.page === 'world') { $('#dialog').close(); return; }
-  if (button.dataset.page === 'archive') { showSource(); return; }
-  openDialog('<span class="eyebrow">PEOPLE OF THE WORLD</span><h2>함께 사는 이들</h2><div class="characters"><article><span class="character-number">01 / WITCH</span><h3>욘</h3><p>숲속에 사는 엘프 마녀. 누군가를 행복하게 만드는 마법을 연구한다.</p></article><article><span class="character-number">02 / DOLL</span><h3>링</h3><p>욘의 첫 번째 메이드 인형. 하고 싶은 일을 향해 먼저 움직인다.</p></article><article><span class="character-number">03 / DOLL</span><h3>알리사</h3><p>욘의 두 번째 메이드 인형. 계획을 세우고 함께 사는 공간을 돌본다.</p></article><article><span class="character-number">04 / YOU</span><h3>네 번째 인형</h3><p>새로 만들어진, 아직 완성되지 않은 인형. 플레이어가 되어 이 세계를 만난다.</p></article></div>');
+  workspace?.show({world:'place',characters:'person',archive:'lore'}[button.dataset.page]);
+  document.querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b===button);if(b===button)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
 }));
 document.addEventListener('keydown', event => {
-  if ($('#dialog').open || ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
-  if (event.key === '/') { event.preventDefault(); setExplorer(true); $('#search').focus(); }
+  if ($('#dialog').open || ['INPUT', 'TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+  if (event.key === '/') { event.preventDefault(); document.body.classList.add('outline-open');document.querySelector('.record-search input')?.focus(); }
   if (event.key === '+' || event.key === '=') zoom(1.3);
   if (event.key === '-') zoom(1 / 1.3);
   if (event.key === 'Escape' && state.selected) closeDetail();
@@ -268,15 +269,16 @@ function changedWorld(next, rebuild,detailOnly=false) {
   $('#view-description').textContent = `${world.star}의 빛, ${world.moon || '위성 없는'} 하늘,  동주기자전`;
   document.title = `${world.name}, WM 세계`;
   if (changedId || !places.some(p => p.id === state.selected)) { state.selected = null; $('#detail').hidden = true; }
+  if(changedId)state.record=null;
   const signature = JSON.stringify(places);
-  if (signature !== placesSignature) { placesSignature = signature; buildMarkers(); renderList(); if (state.selected) select(state.selected); }
-  else if (rebuild && state.selected && !document.body.classList.contains('editing')) select(state.selected);
+  if (signature !== placesSignature) { placesSignature = signature; buildMarkers(); renderList(); }
+  workspace?.update(world);
   drawMap(); updateURL();
   if(changedId)resize();
   stage.dataset.updateMs = (performance.now() - started).toFixed(2);
 }
 function placeForm(point, save, existing) {
-  openDialog('<span class="eyebrow">A PLACE IN THE WORLD</span><h2>장소 기록</h2><form id="place-form" class="world-form"><label>이름<input name="name" required maxlength="100"></label><label>지역<input name="area" maxlength="100"></label><label>분류<select name="type"></select></label><div class="field-pair"><label>경도<input name="longitude" type="number" min="-180" max="180" step=".01" required></label><label>위도<input name="latitude" type="number" min="-90" max="90" step=".01" required></label></div><label>설명<textarea name="text" rows="4" maxlength="3000"></textarea></label><button type="submit" class="primary-button">장소 저장</button></form>');
+  openDialog('<span class="eyebrow">A PLACE IN THE WORLD</span><h2>장소 기록</h2><form id="place-form" class="world-form"><label>이름<input name="name" required maxlength="100"></label><label>지역<input name="area" maxlength="5000"></label><label>분류<select name="type"></select></label><div class="field-pair"><label>경도<input name="longitude" type="number" min="-180" max="180" step=".01" required></label><label>위도<input name="latitude" type="number" min="-90" max="90" step=".01" required></label></div><label>설명<textarea name="text" rows="4" maxlength="30000"></textarea></label><button type="submit" class="primary-button">장소 저장</button></form>');
   const form = $('#place-form'); form.elements.name.value = existing?.name || ''; form.elements.area.value = existing?.area || ''; form.elements.text.value = existing?.text || '';
   for (const [value, label] of Object.entries(typeNames)) { const option = document.createElement('option'); option.value = value; option.textContent = label; form.elements.type.append(option); }
   form.elements.type.value = existing?.type || 'city'; form.elements.longitude.value = (point[0] * 360 - 180).toFixed(2); form.elements.latitude.value = (90 - point[1] * 180).toFixed(2);
@@ -291,9 +293,15 @@ requestAnimationFrame(() => {
   try {
     const parameters = new URLSearchParams(location.search); const selected = parameters.get('place'); const view = parameters.get('view');
     atlas = createAtlas(world, atlasReady, viewOptions);
-    editor = createEditor(world, { change: changedWorld, reset, dialog: openDialog, closeDialog: () => $('#dialog').close(), addPlace: (point, save) => placeForm(point, save), editMode: value => { isEditing = value; planet?.setEditing(value); map.style.cursor = value ? 'crosshair' : 'grab'; if (!value && state.selected) select(state.selected); } });
+    editor = createEditor(world, { change: changedWorld, reset, beforeWorldChange:()=>workspace?.flush(),beforeExport:()=>workspace?.prepareExport(), selectPlace:select, dialog: openDialog, closeDialog: () => $('#dialog').close(), addPlace: (point, save) => placeForm(point, save), editMode: value => { isEditing = value; planet?.setEditing(value); map.style.cursor = value ? 'crosshair' : 'grab'; } });
+    workspace=createWorkspace(world,{opened:key=>{state.record=key;updateURL();},writeRecord:editor.writeRecord,addEntry:editor.addEntry,removeRecord:editor.removeRecord,undo:editor.undoEdit,redo:editor.redoEdit,history:editor.history,selectPlace:select,focusPlace:id=>{const place=places.find(p=>p.id===id);if(place)focusPlace(place);},editPlace:id=>{const place=places.find(p=>p.id===id);if(place)placeForm([place.x,place.y],values=>editor.editPlace(place,values),place);},newPlace:editor.beginPlace,file:action=>$('#'+({save:'save-world',export:'export-world',import:'import-world'}[action])).click()});
     changedWorld(world, false); resize(); renderList(); setExplorer(!mobile()); $('#loading').hidden = true;
-    if (selected && places.some(p => p.id === selected)) { select(selected); focusPlace(places.find(p => p.id === selected)); }
+    const record=parameters.get('record'),remembered=workspace.recoveryKey();
+    if(record&&world.entries.some(e=>`entry:${e.id}`===record)){if(places.some(p=>p.id===selected))state.selected=selected;workspace.openRecord(record);}
+    else if (selected && places.some(p => p.id === selected)) { select(selected); focusPlace(places.find(p => p.id === selected)); }
+    else if(remembered?.startsWith('entry:')&&world.entries.some(e=>`entry:${e.id}`===remembered))workspace.openRecord(remembered);
+    else if(remembered?.startsWith('place:')&&places.some(p=>`place:${p.id}`===remembered))select(remembered.slice(6));
+    else if(places.length)select(places.find(p=>p.id==='yon')?.id||places[0].id);
     if (view === 'planet') setMode('planet').then(()=>{const place=places.find(p=>p.id===selected);if(place&&state.selected===selected)focusPlace(place);});
   } catch (error) { $('#loading').textContent = '지도를 불러오지 못했습니다. 새로고침해 주세요.'; console.error(error); }
 });

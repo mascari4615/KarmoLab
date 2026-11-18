@@ -1,10 +1,11 @@
 import { createWorld, validateWorld, paint, strokePoints } from './terrain.mjs';
 import { storeWorld, readWorld, listWorlds, storageProblem } from './storage.mjs';
 import { generateWorld } from './generation.mjs';
+import {initialEntries,updateRecord,removeRecord,entryKinds,validateLore} from './lore.mjs';
 
-const clone = value => ({...value,heights:value.heights.slice(),...(value.detailBaseHeights?{detailBaseHeights:value.detailBaseHeights}:{}),biomes:value.biomes.slice(),places:value.places.map(place=>({...place})),...(value.detailStrokes?{detailStrokes:value.detailStrokes.map(stroke=>({...stroke}))}:{})});
-export const editSnapshot=(world,fine=false)=>fine?{fine:true,detailStrokes:(world.detailStrokes||[]).map(s=>({...s})),detailBaseHeights:world.detailBaseHeights}:clone(world);
-export function restoreEdit(world,snapshot){if(!snapshot.fine)return snapshot;return {...world,detailStrokes:snapshot.detailStrokes,detailBaseHeights:snapshot.detailBaseHeights};}
+const clone = value => ({...value,heights:value.heights.slice(),...(value.detailBaseHeights?{detailBaseHeights:value.detailBaseHeights}:{}),biomes:value.biomes.slice(),places:structuredClone(value.places),entries:structuredClone(value.entries||[]),...(value.detailStrokes?{detailStrokes:value.detailStrokes.map(stroke=>({...stroke}))}:{})});
+export const editSnapshot=(world,fine=false)=>fine==='meta'?{meta:true,places:structuredClone(world.places),entries:structuredClone(world.entries||[])}:fine?{fine:true,detailStrokes:(world.detailStrokes||[]).map(s=>({...s})),detailBaseHeights:world.detailBaseHeights}:clone(world);
+export function restoreEdit(world,snapshot){if(snapshot.meta)return {...world,places:snapshot.places,entries:snapshot.entries};if(!snapshot.fine)return snapshot;return {...world,detailStrokes:snapshot.detailStrokes,detailBaseHeights:snapshot.detailBaseHeights};}
 export async function loadInitial() {
   const requested=new URLSearchParams(location.search).get('world');
   let active='undo';try{active=localStorage.getItem('wm.active-world')||active;}catch{}
@@ -15,6 +16,7 @@ export async function loadInitial() {
   return generateWorld(id==='sample-8147-v5'?{sample:true,seed:8147}:{original:true,seed:27});
 }
 export function createEditor(initial, callbacks) {
+  initial.entries??=initialEntries(initial);
   let world = initial, tool = 'raise', radius = .045, strength = .09, enabled = false, undo = [], redo = [], changed = false, lastPreview = 0;
   let previousPoint = null,busy=false,strokeActive=false,coarseChanged=false;
   const panel = document.createElement('section'); panel.id = 'editor'; panel.hidden = true; panel.setAttribute('aria-label', '세계 편집');
@@ -50,12 +52,15 @@ export function createEditor(initial, callbacks) {
   }
   function notify({ rebuild = true,detailOnly=false } = {}) { callbacks.change(world, rebuild,detailOnly); }
   async function setWorld(next,signal) {
+    if(await callbacks.beforeWorldChange?.()===false)return false;
+    next.entries??=initialEntries(next);
     try { await storeWorld(next,{signal}); }
     catch(error) { if(error.name==='AbortError')return false;status('새 행성을 저장하지 못했어요. 현재 행성은 그대로 유지합니다. 저장 공간을 확인해 주세요.'); return false; }
     localStorage.setItem('wm.active-world',next.id);
     world = next; undo = []; redo = []; fill(); status('이 브라우저에 저장됨,  JSON으로 백업 가능'); notify(); callbacks.reset(); return true;
   }
-  function openNew() {
+  async function openNew() {
+    if(busy||await callbacks.beforeWorldChange?.()===false)return;
     callbacks.dialog(`<span class="eyebrow">A NEW WORLD</span><h2>새 행성 만들기</h2><form id="new-world-form" class="world-form"><label>행성 이름<input name="name" required maxlength="100" value="새 행성"></label><label>생성 방식<select name="template"><option value="generated">새로운 대륙</option><option value="sample">샘플 지형에서 시작</option><option value="blank">빈 바다에서 시작</option><option value="copy">현재 행성 복제</option><option value="undo">운도 원본에서 시작</option></select></label><label>생성 번호<input name="seed" type="number" min="1" max="999999" value="${Math.floor(Math.random() * 99999) + 1}" required></label><button class="primary-button" type="submit">행성 만들기</button><p>지금 작업 중인 행성은 그대로 보관됩니다.</p></form>`);
     const controller=new AbortController();document.querySelector('#dialog').addEventListener('close',()=>controller.abort(),{once:true});
     document.querySelector('#new-world-form').addEventListener('submit', async event => {
@@ -67,13 +72,14 @@ export function createEditor(initial, callbacks) {
       try{
         const next = template === 'copy' ? clone(world) : await generateWorld({ name, seed, sample:template==='sample', original: template === 'undo', blank: template === 'blank' },controller.signal);
         if(!event.target.isConnected||!document.querySelector('#dialog').open)return;
-        next.id = `world-${Date.now()}-${seed}`; next.name = name; if (await setWorld(next,controller.signal)) callbacks.closeDialog();
+        next.entries??=initialEntries(next);next.id = `world-${Date.now()}-${seed}`; next.name = name; if (await setWorld(next,controller.signal)) callbacks.closeDialog();
       }catch(error){if(error.name!=='AbortError')event.target.querySelector('p').textContent=error.message;}
       finally{button.disabled=false;button.textContent='행성 만들기';setBusy(false);}
     });
   }
   $('#world-new').addEventListener('click', openNew);
   async function openLibrary(){
+    if(busy||await callbacks.beforeWorldChange?.()===false)return;
     let entries;try{entries=await listWorlds();}catch{entries=new Map();}
     entries.set('undo','운도');entries.set('sample-8147-v5','지형 실험 행성 (샘플)');entries.set(world.id,world.name);
     callbacks.dialog('<span class="eyebrow">WORLDS</span><h2>행성 선택</h2><div id="world-library-list"></div><p id="library-status">샘플 행성은 운도와 별도로 편집하고 저장됩니다.</p><button id="library-new" class="primary-button">새 행성 만들기</button>');
@@ -97,6 +103,7 @@ export function createEditor(initial, callbacks) {
   }
   $('#world-select').addEventListener('change', async event => {
     const id = event.target.value; if (id === world.id) return;
+    if(await callbacks.beforeWorldChange?.()===false){event.target.value=world.id;return;}
     if(busy)return;setBusy(true);
     if (!await save()) { event.target.value = world.id; setBusy(false);return; }
     try { await setWorld(validateWorld(await readWorld(id))); }
@@ -115,16 +122,20 @@ export function createEditor(initial, callbacks) {
   panel.querySelectorAll('[data-tool]').forEach(button => button.addEventListener('click', () => { tool = button.dataset.tool; panel.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); callbacks.editMode(enabled && tool !== 'navigate'); }));
   $('#brush-size').addEventListener('input', event => { radius = Number(event.target.value) / 100; });
   $('#brush-strength').addEventListener('input', event => { strength = Number(event.target.value) / 100; });
-  $('#undo').addEventListener('click', () => { if (!undo.length) return; const snapshot=undo.pop();redo.push(editSnapshot(world,snapshot.fine));world=restoreEdit(world,snapshot);fill();notify({detailOnly:Boolean(snapshot.fine)});save(); });
-  $('#redo').addEventListener('click', () => { if (!redo.length) return; const snapshot=redo.pop();undo.push(editSnapshot(world,snapshot.fine));world=restoreEdit(world,snapshot);fill();notify({detailOnly:Boolean(snapshot.fine)});save(); });
+  function undoEdit(){if(!undo.length)return;const snapshot=undo.pop();redo.push(editSnapshot(world,snapshot.meta?'meta':snapshot.fine));world=restoreEdit(world,snapshot);fill();notify({rebuild:!snapshot.meta,detailOnly:Boolean(snapshot.fine)});save();}
+  function redoEdit(){if(!redo.length)return;const snapshot=redo.pop();undo.push(editSnapshot(world,snapshot.meta?'meta':snapshot.fine));world=restoreEdit(world,snapshot);fill();notify({rebuild:!snapshot.meta,detailOnly:Boolean(snapshot.fine)});save();}
+  $('#undo').addEventListener('click',async()=>{if(await callbacks.beforeWorldChange?.()!==false)undoEdit();});$('#redo').addEventListener('click',async()=>{if(await callbacks.beforeWorldChange?.()!==false)redoEdit();});
   $('#save-world').addEventListener('click', save);
-  $('#export-world').addEventListener('click', () => {
-    const url = URL.createObjectURL(new Blob([JSON.stringify(world)], { type: 'application/json' }));
+  $('#export-world').addEventListener('click', async () => {
+    const draft=await callbacks.beforeExport?.();if(draft===false)return;
+    const exported=draft?updateRecord(world,draft.key,draft.values):world;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(exported)], { type: 'application/json' }));
     const link = document.createElement('a'); link.href = url; link.download = `${world.name.replace(/[\\/:*?"<>|]/g, '_')}.wm.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); status('세계 JSON 내보냄. 파일을 다른 기기에서 불러올 수 있어요.');
   });
   $('#import-world').addEventListener('click', () => $('#world-file').click());
   $('#world-file').addEventListener('change', async event => {
     const file = event.target.files?.[0]; if (!file) return;
+    if(await callbacks.beforeWorldChange?.()===false){event.target.value='';return;}
     if(busy)return;setBusy(true);
     try {
       if (file.size > 64 * 1024 * 1024) throw new Error('64MB 이하의 세계 JSON만 불러올 수 있어요.');
@@ -140,13 +151,27 @@ export function createEditor(initial, callbacks) {
   $('#editor-collapse').addEventListener('click',()=>{const folded=!$('.editor-scroll').hidden;$('.editor-scroll').hidden=folded;panel.classList.toggle('folded',folded);$('#editor-collapse').setAttribute('aria-expanded',String(!folded));$('#editor-collapse').setAttribute('aria-label',folded?'편집 도구 펼치기':'편집 도구 접기');$('#editor-collapse').textContent=folded?'⌃':'⌄';});
   $('#editor-close').addEventListener('click', () => toggle(false)); fill();if(storageProblem())status(storageProblem());
   return {
+    undoEdit,redoEdit,
+    history:()=>({undo:undo.length,redo:redo.length}),
+    beginPlace(){tool='place';panel.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===tool)));toggle(true);status('지도나 행성에서 새 장소의 위치를 누르세요.');},
+    async writeRecord(key,values){
+      if(busy)return false;const next=updateRecord(world,key,values);pushUndo('meta');world.places=next.places;world.entries=next.entries;
+      notify({rebuild:false});return save();
+    },
+    async addEntry(kind,title,link){
+      if(busy||world.entries.length>=2000||!Object.hasOwn(entryKinds,kind))return null;
+      const entry={id:crypto.randomUUID(),kind,title,body:'',state:'draft',links:link?[{to:link,label:'관련 항목'}]:[]},next={...world,entries:[...world.entries,entry]};validateLore(next);
+      try{await storeWorld(next);}catch{status('새 기록을 저장하지 못했습니다. 저장 공간을 확인해 주세요.');return null;}
+      pushUndo('meta');world.entries=next.entries;notify({rebuild:false});return `entry:${entry.id}`;
+    },
+    async removeRecord(key){if(busy)return false;pushUndo('meta');world=removeRecord(world,key);notify({rebuild:false});return save();},
     toggle, save, openLibrary, current: () => world,brushSettings:()=>({radius,tool,enabled:enabled&&!busy&&tool!=='navigate'&&tool!=='place'}),
     brush(phase, point) {
       const started=performance.now();if(phase==='start')panel.dataset.brushMaxMs='0';
       try{
       if (!enabled || busy || tool === 'navigate') return;
       if (phase === 'start') {
-        if (tool === 'place') { if (world.places.length >= 1000) { status('한 행성에는 장소를 1,000개까지 기록할 수 있어요.'); return; } callbacks.addPlace(point, place => { pushUndo(); world.places.push(place); notify({ rebuild: false }); save(); }); return; }
+        if (tool === 'place') { if (world.places.length >= 1000) { status('한 행성에는 장소를 1,000개까지 기록할 수 있어요.'); return; } callbacks.addPlace(point, place => { pushUndo('meta'); world.places.push(place); notify({ rebuild: false });save();toggle(false);callbacks.selectPlace?.(place.id); }); return; }
         pushUndo(radius<1/world.height); changed = false; previousPoint = null;strokeActive=true;coarseChanged=false;
       }
       if(!strokeActive)return;
@@ -159,7 +184,7 @@ export function createEditor(initial, callbacks) {
       }catch(error){status(error.message);strokeActive=false;previousPoint=null;if(changed){notify();save();}changed=false;}
       finally{const elapsed=performance.now()-started;panel.dataset.brushMaxMs=Math.max(Number(panel.dataset.brushMaxMs||0),elapsed).toFixed(2);panel.dataset.brushPhase=phase;panel.dataset[`brush${phase[0].toUpperCase()+phase.slice(1)}Ms`]=elapsed.toFixed(2);}
     },
-    editPlace(place, values) { if(busy)return;pushUndo(); Object.assign(place, values); notify({ rebuild: false }); save(); },
-    removePlace(id) { if(busy)return;pushUndo(); world.places = world.places.filter(place => place.id !== id); notify({ rebuild: false }); save(); },
+    editPlace(place, values) { if(busy)return;pushUndo('meta'); Object.assign(place, values); notify({ rebuild: false }); save(); },
+    removePlace(id) { if(busy)return;pushUndo('meta');world=removeRecord(world,`place:${id}`);notify({rebuild:false});save(); },
   };
 }

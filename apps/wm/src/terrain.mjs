@@ -1,4 +1,5 @@
 import { sourceMask } from './source-coasts.mjs';
+import {validateLore} from './lore.mjs';
 import { makeRidges } from './ridges.mjs';
 import { places, spherePoint, sphereUV, clamp, typeNames } from './world.mjs';
 
@@ -199,9 +200,9 @@ export function validateWorld(input) {
   if (new Set(input.places.map(p => p.id)).size !== input.places.length) throw new Error('장소 ID가 중복되어 있습니다.');
   for (const place of input.places) {
     if (!Object.hasOwn(typeNames, place.type)) throw new Error('장소 분류를 확인해 주세요.');
-    for (const key of ['area', 'text', 'source']) if (place[key] !== undefined && (typeof place[key] !== 'string' || place[key].length > 5000)) throw new Error('장소 설명을 확인해 주세요.');
+    for (const key of ['area', 'text', 'source']) if (place[key] !== undefined && (typeof place[key] !== 'string' || place[key].length > (key==='text'?30000:5000))) throw new Error('장소 설명을 확인해 주세요.');
   }
   if (typeof input.star !== 'string' || input.star.length > 100 || typeof input.moon !== 'string' || input.moon.length > 100 || typeof input.id !== 'string' || input.id.length > 150 || input.tidalLocked !== true) throw new Error('천체 설정이 올바르지 않습니다.');
   for (const row of [0, input.height - 1]) if (input.heights.slice(row * input.width, (row + 1) * input.width).some(value => Math.abs(value - input.heights[row * input.width]) > .0001)) throw new Error('극점의 높이가 서로 다릅니다.');
-  return copy(input);
+  validateLore(input);return copy(input);
 }
