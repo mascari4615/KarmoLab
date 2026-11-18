@@ -99,7 +99,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
   const ready = await wait('ready', '', 150000);
   if ((await chrome.tabs.get(tabId)).url !== conversation.href) throw new Error('Gemini 작업 대화가 바뀜');
   if (unsafe || (await chrome.windows.get(windowId)).focused) throw new Error('Gemini 작업 창 사용 중 결과 확인을 멈춤');
-  const started = Date.now(), ids = new Set();
+  const started = Date.now(), ids = new Set(), observed = new Set();
   const onCreated = (item) => { if (Number.isInteger(item.id)) ids.add(item.id); };
   chrome.downloads.onCreated.addListener(onCreated);
   try {
@@ -108,6 +108,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
       for (const id of ids) {
         const items = await chrome.downloads.search({ id });
         const item = items[0];
+        if (item) observed.add([item.mime || 'unknown', item.referrer ? 'referrer' : 'no-referrer', item.byExtensionId ? 'extension' : 'page', (item.url || '').startsWith('blob:') ? 'blob' : 'non-blob'].join('/'));
         const sameBlob = clicked.downloadUrls.includes(item?.url);
         const sameMedia = !!ready.mediaUrl && (item?.url === ready.mediaUrl || item?.finalUrl === ready.mediaUrl);
         if (!sameBlob && !sameMedia) continue;
@@ -119,7 +120,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    throw new Error('음악 파일 다운로드 확인 실패');
+    throw new Error('음악 파일 다운로드 확인 실패 (' + ([...observed].join(', ') || '다운로드 이벤트 없음') + ')');
   } finally {
     chrome.downloads.onCreated.removeListener(onCreated);
   }
