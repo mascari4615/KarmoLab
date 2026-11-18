@@ -19,30 +19,9 @@ function readPreview(id) {
       const tweet = fiber.memoizedProps?.tweet;
       if (tweet?.id_str !== id) continue;
       const text = tweet.note_tweet?.note_tweet_results?.result?.text || tweet.full_text || tweet.text || "";
-      const media = tweet.extended_entities?.media || tweet.entities?.media || [];
-      const photos = [];
-      let video = null;
-      for (const item of media) {
-        if (!item.media_url_https) continue;
-        const w = item.original_info?.width || 0;
-        const h = item.original_info?.height || 0;
-        if (item.type === "photo") {
-          photos.push({ url: item.media_url_https, w, h });
-        } else if (!video && (item.type === "video" || item.type === "animated_gif")) {
-          const variants = item.video_info?.variants || [];
-          const mp4 = variants.filter((variant) => variant.content_type === "video/mp4" && variant.url)
-            .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
-          video = {
-            poster: item.media_url_https, w, h, type: item.type,
-            src: mp4?.url, durationMs: item.video_info?.duration_millis,
-          };
-        }
-      }
-      if (!(text || photos.length || video)) continue;
-      return {
-        id, text, photos, video, sensitive: !!tweet.possibly_sensitive,
-        who: tweet.user ? { name: tweet.user.name || "", handle: tweet.user.screen_name || "" } : null,
-      };
+      const who = tweet.user ? { name: tweet.user.name || "", handle: tweet.user.screen_name || "" } : null;
+      const preview = xPreviewFields(id, tweet, text, who);
+      if (preview) return preview;
     }
   }
   return null;

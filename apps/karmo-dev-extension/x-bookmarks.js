@@ -21,7 +21,7 @@ function xbTemplate() {
 
 function xbText(t) {
   const note = t.note_tweet && t.note_tweet.note_tweet_results && t.note_tweet.note_tweet_results.result;
-  return String((note && note.text) || (t.legacy && t.legacy.full_text) || "").replace(/\s+/g, " ").trim();
+  return String((note && note.text) || (t.legacy && t.legacy.full_text) || "");
 }
 
 /** 응답에서 트윗만. tweet_results 안의 rest_id, 작성자, 본문, 링크 */
@@ -35,7 +35,10 @@ function xbHarvest(node, rows, cursors, depth) {
     const handle = (user && ((user.core && user.core.screen_name) || (user.legacy && user.legacy.screen_name))) || "";
     if (t.rest_id && !rows.has(t.rest_id)) {
       const urls = ((t.legacy && t.legacy.entities && t.legacy.entities.urls) || []).map((u) => u.expanded_url).filter(Boolean);
-      rows.set(t.rest_id, { id: t.rest_id, handle, text: xbText(t), at: (t.legacy && t.legacy.created_at) || "", urls });
+      const text = xbText(t);
+      const who = user ? { handle, name: user.core?.name || user.legacy?.name || "" } : null;
+      const preview = xPreviewFields(t.rest_id, t.legacy, text, who);
+      rows.set(t.rest_id, { id: t.rest_id, handle, text: text.replace(/\s+/g, " ").trim(), at: t.legacy?.created_at || "", urls, preview });
     }
   }
   if (node.cursorType === "Bottom" && node.value) cursors.push(node.value);
@@ -67,11 +70,24 @@ async function xbStep() {
   const res = await fetch(u.toString(), { headers: tpl.headers, credentials: "include" });
   S.rounds += 1;
   if (!res.ok) { S.phase = "stop"; S.note = `응답 ${res.status}`; return xbSnap(S); }
+  const envelope = await res.json();
+  const timeline = envelope.data?.bookmark_timeline_v2 || envelope.data?.bookmark_timeline;
+  const instructions = timeline?.timeline?.instructions || timeline?.instructions;
+  if (envelope.errors?.length || !Array.isArray(instructions)) {
+    S.phase = "stop";
+    S.note = "X 북마크 응답 오류";
+    return xbSnap(S);
+  }
   const cursors = [];
   const before = S.rows.size;
-  xbHarvest(await res.json(), S.rows, cursors, 0);
+  xbHarvest(instructions, S.rows, cursors, 0);
   const next = cursors.find((c) => !S.seenCursor.has(c));
-  if (!next || S.rows.size === before || S.rounds >= 80) { S.phase = "stop"; return xbSnap(S); }
+  if (!cursors.length) { S.phase = "stop"; return xbSnap(S); }
+  if (!next || S.rows.size === before || S.rounds >= 80) {
+    S.phase = "stop";
+    S.note = "X 북마크 페이지 미완료";
+    return xbSnap(S);
+  }
   S.seenCursor.add(next);
   S.cursor = next;
   return xbSnap(S);

@@ -277,7 +277,7 @@ chrome.runtime.onInstalled.addListener(() => { reapBridgeTabs(); });
  * 한 걸음씩 되부르기. MV3 워커는 30초 무활동이면 종료
  * 긴 await 하나면 응답이 영영 안 옴 (2026-09-21 15분 멈춤 실측)
  * @param {string} url 열 주소
- * @param {string} file 주입할 파일
+ * @param {string | string[]} file 주입할 파일
  * @param {string} fnName done 을 돌려주는 걸음 함수
  * @param {number} [maxSteps] 걸음 상한
  */
@@ -288,7 +288,7 @@ async function stepInTab(url, file, fnName, maxSteps) {
     await waitLoaded(tab.id);
     const where = { target: { tabId: tab.id }, world: "MAIN" };
     try {
-      await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: [file] }));
+      await within(20000, "inject", chrome.scripting.executeScript({ ...where, files: [].concat(file) }));
     } catch (e) {
       await note("inject-fail", `${url} ${e.message}`);
       return { count: 0, done: true, note: "\uc8fc\uc785 \uc2e4\ud328 " + e.message, rows: [] };
@@ -542,13 +542,31 @@ async function xPreview(handle, id) {
     const [read] = await within(10000, "x.preview", chrome.scripting.executeScript({
       target: { tabId: tab.id },
       world: "MAIN",
-      files: ["x-preview.js"],
+      files: ["x-preview-fields.js", "x-preview.js"],
     }));
     const preview = read?.result;
     return preview?.id === id ? { ok: true, preview } : { ok: false, error: "unavailable" };
   } finally {
     await closeWorkTab(tab.id);
   }
+}
+
+function xBookmarkQueueResult(result, includePreviews) {
+  const source = result?.rows || [];
+  const rows = source.map(({ preview, ...row }) => row);
+  const payload = { ok: true, count: result?.count || 0, note: result?.note || "", done: result?.done === true, rows };
+  if (!includePreviews) return payload;
+  const encoder = new TextEncoder();
+  // 1 MB broker limit, with room for the result envelope.
+  let capacity = 900000 - encoder.encode(JSON.stringify(payload)).length;
+  for (const [index, { preview }] of source.entries()) {
+    if (!preview) continue;
+    const size = encoder.encode(JSON.stringify(preview)).length + 12;
+    if (size > capacity) continue;
+    rows[index].preview = preview;
+    capacity -= size;
+  }
+  return payload;
 }
 // youtube.remove 는 상태를 바꾸지만 큐 (127.0.0.1 수신기) 로만 받음. bridge 주소 허용 목록에는 없음
 // 정리가 memo 에 push 된 것만 넘기는 판단은 부르는 쪽 (memo scripts/youtube, 사용자 2026-10-07 "정리 한 번 한거는 지우기")
@@ -1015,8 +1033,8 @@ function dispatchExt(msg, sender, sendResponse) {
       } else if (msg?.type === "youtube.remove") {
         sendResponse(await youtubeRemove(String(msg.list), Array.isArray(msg.items) ? msg.items : []));
       } else if (msg?.type === "x.bookmarks") {
-        const r = await stepInTab("https://x.com/i/bookmarks", "x-bookmarks.js", "xbStep", 120);
-        sendResponse({ ok: true, count: (r && r.count) || 0, note: r && r.note, rows: (r && r.rows) || [] });
+        const r = await stepInTab("https://x.com/i/bookmarks", ["x-preview-fields.js", "x-bookmarks.js"], "xbStep", 120);
+        sendResponse(xBookmarkQueueResult(r, msg.preview === true));
       } else if (msg?.type === "x.bookmarksRemove") {
         sendResponse(await xBookmarksRemove(Array.isArray(msg.ids) ? msg.ids : []));
       } else if (msg?.type === "youtube.history") {
