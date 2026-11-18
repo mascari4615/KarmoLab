@@ -103,7 +103,7 @@ export function createWorkspace(initial,callbacks){
     if(next===key){if(selectMap&&next.startsWith('place:'))callbacks.selectPlace(next.slice(6));return true;}
     const attempt=++opening;if(!await flush()||attempt!==opening)return false;
     if(!recordByKey(world,next))return false;
-    key=next;dirty=false;renderDocument();renderOutline();document.body.classList.remove('outline-open');
+    key=next;dirty=false;renderDocument();q('.record-form').scrollTop=0;renderOutline();document.body.classList.remove('outline-open');
     try{localStorage.setItem(lastKey(),key);}catch{}
     callbacks.opened(key);
     if(selectMap&&next.startsWith('place:'))callbacks.selectPlace(next.slice(6));
