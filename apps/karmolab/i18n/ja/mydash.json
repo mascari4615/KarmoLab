@@ -174,7 +174,7 @@
   "mydash.bm.layer.page": "ページ",
   "mydash.bm.layer.ai": "AI 分類",
   "mydash.bm.layer.aiHint": "推定です。上の原文が正",
-  "mydash.bm.media.deleted": "X から取得できず。削除済みかログインが必要",
+  "mydash.bm.media.deleted": "プレビューを取得できませんでした。Xで元のポストを開いてください。",
   "mydash.bm.media.video": "動画は元ページで",
   "mydash.bm.view.list": "リスト",
   "mydash.bm.view.feed": "フィード",

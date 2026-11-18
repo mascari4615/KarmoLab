@@ -1348,7 +1348,7 @@ import gridCss from './bookmark-grid.css';
       const body: string[] = [];
       if (m && m.kind === 'tweet') {
         if (m.deleted) {
-          body.push('<div class="tool-hint">' + esc(t('mydash.bm.media.deleted', undefined, 'X 에서 못 받음. 지워졌거나 로그인이 필요한 트윗')) + '</div>');
+          body.push('<div class="tool-hint">' + esc(t('mydash.bm.media.deleted', undefined, '미리보기를 가져오지 못했습니다. X에서 원문을 열어 보세요.')) + '</div>');
         } else {
           const who = m.who ? [text(m.who.name), m.who.handle ? '@' + text(m.who.handle) : ''].filter(Boolean).join(' ') : '';
           if (who) body.push('<div class="bm-who">' + esc(who) + '</div>');
