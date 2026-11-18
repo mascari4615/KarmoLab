@@ -11,7 +11,7 @@ async function geminiMusic(tabId, prompt) {
       if (op === 'mode') { const el = button('음악 만들기') || button('Create music'); if (!el) return { pending: true }; el.click(); return { ok: true }; }
       if (op === 'submit') {
         const editor = document.querySelector('[contenteditable="true"][role="textbox"]');
-        if (!editor || !button('음악 선택 해제') && !button('Remove music')) return { pending: true };
+        if (!editor || !button('음악 선택 해제') && !button('Remove music')) return { pending: true, detail: `editor=${!!editor},music=${!!(button('음악 선택 해제') || button('Remove music'))}` };
         editor.focus(); document.execCommand('insertText', false, text);
         editor.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
         return { ok: true };
@@ -25,17 +25,19 @@ async function geminiMusic(tabId, prompt) {
   };
   const wait = async (action, value, ms) => {
     const end = Date.now() + ms;
+    let detail = '';
     while (Date.now() < end) {
       const result = await run(action, value);
       if (result.error) throw new Error(result.error);
       if (result.ok) return;
+      detail = result.detail || '';
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    throw new Error('Gemini 음악 ' + action + ' 대기 시간 초과');
+    throw new Error('Gemini 음악 ' + action + ' 대기 시간 초과' + (detail ? ' (' + detail + ')' : ''));
   };
   await wait('menu', '', 30000);
   await wait('mode', '', 10000);
-  await wait('submit', prompt, 10000);
+  await wait('submit', prompt, 45000);
   await wait('send', '', 10000);
   await wait('ready', '', 150000);
   const conversation = new URL((await chrome.tabs.get(tabId)).url || 'https://invalid.invalid/');
