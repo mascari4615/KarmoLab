@@ -1,4 +1,4 @@
-importScripts("schedule.js", "userlists.js", "block-store.js");
+importScripts("schedule.js", "userlists.js", "block-store.js", "gemini-music.js");
 
 /**
  * MV3 service worker. 배지, 알림, 메시지 중계 등은 여기에 추가.
@@ -525,7 +525,7 @@ async function jobTick() {
  * 워커가 30초 무활동 종료에 걸리지 않게 함. 한 바퀴는 `QUEUE_TICK_MS` 까지, 다음 알람이 이어받음. 수신기가 없으면 한 번 묻고 끝
  */
 const QUEUE_BASE = "http://127.0.0.1:17378";
-const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read", "youtube.list", "youtube.remove", "x.bookmarks", "x.bookmarksRemove"];
+const QUEUE_TYPES = ["ext.version", "page.text", "dash.inspect", "collect.progress", "collect.status", "pinterest.last", "gcp.last", "gcp.read", "youtube.list", "youtube.remove", "x.bookmarks", "x.bookmarksRemove", "gemini.music"];
 // youtube.remove 는 상태를 바꾸지만 큐 (127.0.0.1 수신기) 로만 받음. bridge 주소 허용 목록에는 없음
 // 정리가 memo 에 push 된 것만 넘기는 판단은 부르는 쪽 (memo scripts/youtube, 사용자 2026-10-07 "정리 한 번 한거는 지우기")
 const QUEUE_PARALLEL = 5;
@@ -547,6 +547,22 @@ async function runQueueJob(job) {
     }
     if (job.kind !== "ext.call" || !QUEUE_TYPES.includes(msg.type)) {
       result = { ok: false, error: "큐로 못 부르는 종류 " + job.kind + " " + (msg.type || "") };
+    } else if (msg.type === 'gemini.music') {
+      let tab, createdWindow;
+      try {
+        try { tab = await openWorkTab('https://gemini.google.com/app'); }
+        catch (error) {
+          if (!String(error?.message || error).includes('No current window')) throw error;
+          createdWindow = await chrome.windows.create({ url: 'https://gemini.google.com/app', focused: false, state: 'minimized' });
+          tab = createdWindow.tabs?.[0];
+          if (!tab?.id) throw new Error('Gemini 작업 창을 열지 못함');
+        }
+        await waitLoaded(tab.id);
+        result = await geminiMusic(tab.id, msg.prompt);
+      } finally {
+        if (createdWindow?.id) await chrome.windows.remove(createdWindow.id).catch(() => {});
+        else if (tab?.id) await closeWorkTab(tab.id);
+      }
     } else if (job.open) {
       if (!/^https?:\/\//.test(String(job.open))) throw new Error("open 은 http 주소만");
       const tab = await openWorkTab(String(job.open));
