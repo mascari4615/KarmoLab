@@ -123,7 +123,7 @@ async function geminiMusic(tabId, prompt, { resume = false, expectedUrl = '', on
         // the page interceptor. Accept only one download event from the click
         // interval, after a quiet period, and only a Gemini-owned MPEG blob.
         const singleWorkerBlob = ids.size === 1 && Date.now() - started >= 12000 &&
-          /^blob:https:\/\/gemini\.google\.com\//.test(item?.url || '') && item?.mime === 'audio/mpeg' && !item?.byExtensionId;
+          (item?.url || '').startsWith('blob:') && item?.mime === 'audio/mpeg' && !item?.byExtensionId;
         if (!sameBlob && !sameMedia && !singleWorkerBlob) continue;
         if (item?.state === 'interrupted') throw new Error('음악 파일 다운로드가 중단됨');
         if (item?.state === 'complete' && /\.mp3$/i.test(item.filename || '')) {

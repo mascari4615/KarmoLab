@@ -114,7 +114,7 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
         // Worker-generated blobs are invisible to the page interceptor.
         // An overlapping download makes the fallback ambiguous, so reject it.
         const singleWorkerBlob = ids.size === 1 && Date.now() - started >= 12000 &&
-          /^blob:https:\/\/gemini\.google\.com\//.test(item?.url || '') && item?.mime === 'video/mp4' && !item?.byExtensionId;
+          (item?.url || '').startsWith('blob:') && item?.mime === 'video/mp4' && !item?.byExtensionId;
         if (!sameBlob && !sameMedia && !singleWorkerBlob) continue;
         if (item?.state === 'interrupted') throw new Error('영상 파일 다운로드가 중단됨');
         if (item?.state === 'complete' && /\.mp4$/i.test(item.filename || '')) {
