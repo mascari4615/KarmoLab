@@ -10,6 +10,8 @@ async function geminiVideo(tabId, prompt, { resume = false, expectedUrl = '', on
       if (op === 'menu') { const el = button('업로드 및 도구') || button('Upload files and more'); if (!el) return { pending: true }; el.click(); return { ok: true }; }
       if (op === 'mode') { const el = button('동영상 만들기') || button('Create video'); if (!el) return { pending: true }; if (el.disabled || el.getAttribute('aria-disabled') === 'true' || el.closest?.('[aria-disabled="true"],[disabled]') || el.querySelector?.('[aria-disabled="true"],[disabled]')) return { error: 'Gemini에서 현재 동영상 만들기를 사용할 수 없음' }; el.click(); return { ok: true }; }
       if (op === 'submit') {
+        const videoOption = button('동영상 만들기') || button('Create video');
+        if (videoOption && (videoOption.disabled || videoOption.getAttribute('aria-disabled') === 'true')) return { error: 'Gemini에서 현재 동영상 만들기를 사용할 수 없음' };
         const editor = document.querySelector('[contenteditable="true"][role="textbox"]');
         const placeholder = editor?.getAttribute('data-placeholder') || '';
         if (!editor || !button('동영상 선택 해제') && !button('Remove video') && !/동영상을 설명|describe (your|the) video/i.test(placeholder)) return { pending: true };
