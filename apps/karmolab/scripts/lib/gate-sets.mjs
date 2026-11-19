@@ -76,6 +76,7 @@ export const PREPUSH = [
   'audit:tool-state',
   'audit:spec-locales',
   'audit:memo-derived',
+  'audit:worldbook-names',
   'audit:generated-registry',
   'audit:shell-t',
   /* 2.2초 (둘 합쳐). 위젯 CSS 의 없는 토큰, 직접 색, 직접 크기 신규 유입 차단.
