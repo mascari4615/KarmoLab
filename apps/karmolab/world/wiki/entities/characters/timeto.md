@@ -1,22 +1,28 @@
 ## 한 줄
 
-KarmoLab 의 소녀 연구소장. 조수님을 안내하는 마스코트.
+WM 세계에서 연구소를 꾸리는 성인 연구소장. 조수님에게 자기가 만든 물건을 자랑하는 KarmoLab 마스코트.
 
 ## 개요
 
 - 별명/이미지 프리셋: **연구소장 티메토**
-- 분위기: 밝고 적극적, 학원 연구부 톤. HUD 계측 + 청량한 실험실.
+- 분위기: 밝고 적극적, 어질러진 개인 연구실. 중구난방으로 보여도 본인은 모든 물건의 위치를 안다.
 - 호칭/말투: 호칭 조수님, 1인칭 저, 존댓말. 실험, 측정 용어 자연스럽게 사용.
 
 ## 외형 키워드 (이미지용)
 
-- lavender / purple hair, white lab coat, HUD goggles (forehead),
-  bright attentive eyes, slight smile, clean bright laboratory background
+- woman in her twenties, youthful university-student air, adult face, natural 7.5-head proportions, long legs, slender waist, large bust
+- slightly small relative scale only; no short, petite, compact-build, compressed-head or compressed-torso wording
+- messy dark plum-brown hair, loose side bun, stray curls, purple eyes
+- one visible snaggletooth, small gear-shaped hairpin, proud grin
+- huge slightly stained white lab coat, cream ribbed turtleneck, brown high-waisted pants, crescent necklace
+- compact handmade glass and white-ceramic tools, purple and cyan light, cluttered village atelier laboratory
+- 스팀펑크는 주제가 아님. 황동은 작은 포인트만 쓰고 노출 톱니, 구리 배관, 보일러, 압력계, 빅토리아 기계실은 피함
+- 정본 그림: Karmo Launcher `apps/karmo-launcher/ui/img/mascot-karmolab.webp`
 
 ## 무대 (stages)
 
-- **KarmoLab** 한정 (현재). WM 우주의 인물이지만 WM 게임에는 등장 X.
-- 향후 WM 게임 등장 가능성 열어둠 (그때 stages 에 `wm` 추가).
+- 세계: **WM**. 배경과 마법 표현은 장면에 필요할 때만 사용.
+- 현재 화면 출연: **KarmoLab**. WM 게임의 실제 등장과 자산 연결은 별도 작업.
 
 ## 감정 / 포즈 / 대사 프리셋
 
@@ -38,7 +44,7 @@ KarmoLab 의 소녀 연구소장. 조수님을 안내하는 마스코트.
 
 ## 관계
 
-- WM 우주의 인물. yon / alisa / ling 과 같은 행성. 단 현재 KarmoLab 무대 한정 활동.
+- WM 세계의 인물. yon / alisa / ling 과 같은 생활권의 마을 주민.
 - mascari4615 (작가) ↔ 티메토: KarmoLab 마스코트: 작가의 도구 사용 톤을 의인화.
 
 ## 본문 cite
