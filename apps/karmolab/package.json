@@ -183,6 +183,7 @@
     "build:wiki": "node scripts/sync-wiki.mjs",
     "build:wm-tasks": "node scripts/build-wm-tasks.mjs",
     "build:worldbook": "node scripts/build-worldbook.mjs",
+    "audit:worldbook-names": "node scripts/audit-worldbook-names.mjs",
     "check:daily-fresh": "node scripts/daily/check-freshness.mjs",
     "check:daily-images": "node scripts/daily/check-images.mjs",
     "check:live-tools": "node scripts/check-live-tools.mjs",

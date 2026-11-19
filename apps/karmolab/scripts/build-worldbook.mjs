@@ -28,6 +28,7 @@ const REPO_ROOT = path.resolve(KARMOLAB_ROOT, '../..');
 const MEMO_PATH = process.env.KARMODDRINE_MEMO_PATH || path.resolve(REPO_ROOT, '../memo');
 const DESIGN_ROOT = path.join(MEMO_PATH, 'wm/design');
 const POLICY_PATH = path.join(DESIGN_ROOT, 'web-policy.json');
+const PRIVATE_NAMES_PATH = path.join(MEMO_PATH, 'dotfiles/git-hooks/private-names.txt');
 const OUT_PATH = path.join(KARMOLAB_ROOT, 'data/worldbook.json');
 
 const CHECK = process.argv.includes('--check');
@@ -193,6 +194,17 @@ async function collect() {
   }
   const fallback = policy._default || 'private';
 
+  // 외부 이름 목록: memo(private) 전용, 없으면 검사 생략 후 경고
+  const privateNames = [];
+  if (fs.existsSync(PRIVATE_NAMES_PATH)) {
+    for (const line of (await fsp.readFile(PRIVATE_NAMES_PATH, 'utf8')).split('\n')) {
+      const name = line.trim().toLowerCase();
+      if (name !== '' && name.startsWith('#') === false) privateNames.push(name);
+    }
+  } else {
+    notes.push(`외부 이름 목록 없음: ${PRIVATE_NAMES_PATH}. 이름 검사를 건너뜀`);
+  }
+
   const files = await walk(DESIGN_ROOT);
   const docs = [];
   const kinds = new Map();
@@ -226,6 +238,15 @@ async function collect() {
     if (docWeb !== '' && !['public', 'summary', 'private'].includes(docWeb)) {
       problems.push(`${rel}: 알 수 없는 web 값 "${docWeb}" (public|summary|private)`);
       continue;
+    }
+    // 외부 이름 포함 문서: 폴더 정책과 web: 값보다 우선해 비공개 (산출물은 공개 저장소)
+    if (visibility !== 'private') {
+      const lowered = text.toLowerCase();
+      const found = privateNames.filter((name) => lowered.includes(name));
+      if (found.length > 0) {
+        visibility = 'private';
+        notes.push(`${rel}: 외부 이름 ${found.join(', ')} 이 있어 비공개로 내림. 공개하려면 memo 문서에서 이름을 빼라`);
+      }
     }
     if (visibility === 'private') { skippedPrivate++; continue; }
 

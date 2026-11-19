@@ -1,9 +1,9 @@
 {
   "source": "memo/wm/apps, memo/wm/features",
   "counts": {
-    "docs": 12,
-    "groups": 2,
-    "shown": 12,
+    "docs": 14,
+    "groups": 4,
+    "shown": 14,
     "hidden": 0
   },
   "groups": [
@@ -103,6 +103,21 @@
       ]
     },
     {
+      "status": "live",
+      "label": "나와 있음",
+      "count": 1,
+      "items": [
+        {
+          "id": "wm.app.world-site",
+          "title": "WM 세계 사이트",
+          "status": "live",
+          "statusLabel": "나와 있음",
+          "priority": "",
+          "updated": ""
+        }
+      ]
+    },
+    {
       "status": "paused",
       "label": "멈춤",
       "count": 1,
@@ -112,6 +127,21 @@
           "title": "파견",
           "status": "paused",
           "statusLabel": "멈춤",
+          "priority": "",
+          "updated": ""
+        }
+      ]
+    },
+    {
+      "status": "planned",
+      "label": "planned",
+      "count": 1,
+      "items": [
+        {
+          "id": "wm.feature.simulation-lobby",
+          "title": "연구소 시뮬레이션 로비",
+          "status": "planned",
+          "statusLabel": "planned",
           "priority": "",
           "updated": ""
         }
