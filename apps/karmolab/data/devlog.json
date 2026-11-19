@@ -2,38 +2,80 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2098,
+    "commits": 2143,
     "days": 12,
     "shown": 60
   },
   "days": [
     {
-      "date": "2026-11-18",
+      "date": "2026-11-19",
       "entries": [
         {
-          "sha": "cb7574b1d",
+          "sha": "d9e87a812",
           "type": "feat",
           "typeLabel": "새로 생긴 것",
-          "scope": "fx",
-          "text": "전투 연출 부품의 토대 (에셋 하나가 연출 하나)"
+          "scope": "camera",
+          "text": "카메라를 가리는 나무는 통째로 비움, 카메라 근처 나무도"
         },
         {
-          "sha": "f1a2c9eba",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "tools",
-          "text": "폰 실기 스크립트가 앱 실행 줄에서 멈추던 것"
-        },
-        {
-          "sha": "90122326d",
+          "sha": "05a362a32",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "ui",
-          "text": "닫기 버튼의 글과 키 표시가 한 자리에 겹쳐 그려지던 것"
+          "text": "스킬창을 기존 마름모 칸으로, 마을과 던전이 같은 부품"
         }
       ],
       "quiet": 0,
       "more": 0
+    },
+    {
+      "date": "2026-11-18",
+      "entries": [
+        {
+          "sha": "458687a26",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "입장 창 제약을 아이콘 칩과 위험도 합계로, 눌러서 여는 설정 팝업"
+        },
+        {
+          "sha": "a259b976d",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "input",
+          "text": "클릭과 우클릭 스킬을 모든 장면에서 끔, 조준은 키보드 기준"
+        },
+        {
+          "sha": "ed60d4814",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "판마다 새 런 시드, 부서지는 물건과 바닥 장식 배치에 연결"
+        },
+        {
+          "sha": "122b3a66e",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "combat",
+          "text": "화상, 독 틱 피해 숫자를 종류별 색, 아이콘, 움직임으로 구분"
+        },
+        {
+          "sha": "e53190cb5",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "combat",
+          "text": "몬스터별 상태이상 5종, 얼음은 화면 안 몬스터만, 피격 좌우 흔들림, 특수 아이템 확률 낮춤"
+        },
+        {
+          "sha": "d3d8748cf",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "dungeon",
+          "text": "때리면 부서지는 절차 생성 3D 물건과 냥 떨어뜨림"
+        }
+      ],
+      "quiet": 4,
+      "more": 36
     },
     {
       "date": "2026-11-17",
@@ -464,52 +506,10 @@
           "typeLabel": "고친 것",
           "scope": "ui",
           "text": "상점 격자가 화면 밖으로 나가던 줄바꿈 수정"
-        },
-        {
-          "sha": "35215f2db",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "equipment",
-          "text": "장비 22종 연출 자산과 추가 3종 자산"
-        },
-        {
-          "sha": "163535c36",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "ui",
-          "text": "리롤, 스킵, 차단 버튼, 상자 보상 패널, 진화 진행 표시"
-        },
-        {
-          "sha": "4d8441b37",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "doll",
-          "text": "인형 창 장비 칸이 비던 문제, 같은 장비 중복과 장비 아닌 물건 차단"
         }
       ],
       "quiet": 6,
-      "more": 36
-    },
-    {
-      "date": "2026-11-05",
-      "entries": [
-        {
-          "sha": "bff47a801",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "보상 재화를 냥으로 표시, 상단 줄 위치 조정"
-        },
-        {
-          "sha": "34df3d63c",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "dungeon",
-          "text": "입장 화면 세 스타일 재현도 조정"
-        }
-      ],
-      "quiet": 1,
-      "more": 9
+      "more": 39
     }
   ]
 }
