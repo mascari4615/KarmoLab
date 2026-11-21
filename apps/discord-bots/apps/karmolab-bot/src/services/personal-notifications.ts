@@ -12,10 +12,12 @@ interface NetflixTitle { id: string; title: string; releases: string[]; firstEpi
 interface CatalogEpisode { id: number; number: string; title: string; publishedAt: string; available: boolean }
 interface CatalogTitle { id: number; title: string; episodes: CatalogEpisode[] }
 export interface AnimeEpisode { key: string; animeId: string; title: string; provider: 'laftel' | 'netflix'; publishedAt: string; url: string; scheduled: boolean; watchedAt?: string; episodeId?: number; episodeNumber?: string; episodeTitle?: string; archived?: boolean }
-export interface NotificationSettings { enabled: boolean; hour: number; minute: number; reminderMinutes: number; animeIds: number[] }
+export interface CommuteSettings { enabled: boolean; hour: number; minute: number; days: number[] }
+export interface NotificationSettings { enabled: boolean; hour: number; minute: number; reminderMinutes: number; animeIds: number[]; commute?: CommuteSettings }
+const COMMUTE_WINDOW_MINUTES = 180;
 interface LocalSnapshot { localEvents: AgendaEvent[]; localTasks: AgendaTask[]; localUpdatedAt?: string; localThrough?: string }
 interface SavedConnection { refreshToken?: string; snapshots: Record<string, LocalSnapshot> }
-interface SavedState { daily?: string; reminders: Record<string, string>; episodes: Record<string, string>; homework?: Record<string, AnimeEpisode>; lastSentAt?: string }
+interface SavedState { daily?: string; commute?: string; reminders: Record<string, string>; episodes: Record<string, string>; homework?: Record<string, AnimeEpisode>; lastSentAt?: string }
 export interface AgendaReport {
   collectedAt: string; connected: boolean; settings: NotificationSettings; localUpdatedAt?: string;
   errors: string[]; events: AgendaEvent[]; tasks: AgendaTask[]; anime: AnimeUpdate[]; lastSentAt?: string;
@@ -66,6 +68,28 @@ export function summaryEmbed(report: AgendaReport, now: number): APIEmbed {
   return { color: notificationColors.schedule, description: `**오늘 안내** ${kstDate(now)} / [플래너](https://dash.mascari4615.com/#planner)${fields.length ? '' : '\n일정과 할 일 없음'}`, fields };
 }
 
+const DAILY_LINK = 'https://dash.mascari4615.com/#daily';
+function commuteSettings(raw: unknown): CommuteSettings | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const { enabled, hour = 7, minute = 20, days = [1, 2, 3, 4, 5] } = raw as Partial<CommuteSettings>;
+  const valid = Number.isInteger(hour) && hour >= 0 && hour <= 23 && Number.isInteger(minute) && minute >= 0 && minute <= 59 && Array.isArray(days) && days.length > 0 && days.every(day => Number.isInteger(day) && day >= 0 && day <= 6);
+  if (!valid) { console.warn('[PersonalNotifications] 출근길 설정 형식 오류, 무전송'); return undefined; }
+  return { enabled: enabled === true, hour, minute, days };
+}
+export function commuteDue(commute: CommuteSettings | undefined, now: number): boolean {
+  if (!commute?.enabled) return false;
+  const local = new Date(now + 9 * 60 * MINUTE), minutes = local.getUTCHours() * 60 + local.getUTCMinutes(), start = commute.hour * 60 + commute.minute;
+  return commute.days.includes(local.getUTCDay()) && minutes >= start && minutes < start + COMMUTE_WINDOW_MINUTES;
+}
+export function commuteText(report: AgendaReport, now: number): string | null {
+  const { today, upcoming, tasks, upcomingTasks } = agendaSelection(report, now);
+  const week = upcoming.length + upcomingTasks.length;
+  if (!today.length && !tasks.length && !week) return null;
+  const timed = today.find(e => !e.allDay && eventTime(e.start) >= now) || today.find(e => !e.allDay && kstDate(eventTime(e.start)) === kstDate(now)) || today[0];
+  const first = timed ? ` (${timed.allDay || kstDate(eventTime(timed.start)) !== kstDate(now) ? '종일' : new Date(eventTime(timed.start)).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} ${(timed.title || '(제목 없음)').replace(/\s+/g, ' ').slice(0, 40)}${today.length > 1 ? ` 외 ${today.length - 1}` : ''})` : '';
+  return `오늘 일정 ${today.length}${first}, 할 일 ${tasks.length}, 다음 7일 ${week}\n${DAILY_LINK}`;
+}
+
 function readJson<T>(file: string, fallback: T): T {
   if (!fs.existsSync(file)) return fallback;
   return JSON.parse(fs.readFileSync(file, 'utf8')) as T;
@@ -90,7 +114,7 @@ export class PersonalNotifications {
   private readonly connectionFile: string;
   private readonly stateFile: string;
   private readonly liveEpisodes = new Map<number, { latest: string; episodes: CatalogEpisode[] }>();
-  constructor(private readonly memoRoot: string, private readonly send: (text: string, embed: APIEmbed) => Promise<void>, private readonly dataRoot = path.join(PKG_ROOT, 'data'), private readonly request: typeof fetch = fetch) {
+  constructor(private readonly memoRoot: string, private readonly send: (text: string, embed: APIEmbed) => Promise<void>, private readonly dataRoot = path.join(PKG_ROOT, 'data'), private readonly request: typeof fetch = fetch, private readonly direct?: (text: string) => Promise<void>) {
     this.connectionFile = path.join(dataRoot, 'personal-notifications-connection.json');
     this.stateFile = path.join(dataRoot, 'personal-notifications-state.json');
     this.connection = { snapshots: {} };
@@ -105,7 +129,8 @@ export class PersonalNotifications {
   }
   settings(): NotificationSettings {
     const raw = readJson<Partial<NotificationSettings> & { recentIds?: number[] }>(path.join(this.memoRoot, 'data/personal-notifications/settings.json'), {});
-    return { enabled: raw.enabled === true, hour: raw.hour ?? 9, minute: raw.minute ?? 0, reminderMinutes: raw.reminderMinutes ?? 30, animeIds: [...new Set([...(Array.isArray(raw.animeIds) ? raw.animeIds : []), ...(Array.isArray(raw.recentIds) ? raw.recentIds : [])])].filter(id => Number.isInteger(id) && id > 0) };
+    return { enabled: raw.enabled === true, hour: raw.hour ?? 9, minute: raw.minute ?? 0, reminderMinutes: raw.reminderMinutes ?? 30, animeIds: [...new Set([...(Array.isArray(raw.animeIds) ? raw.animeIds : []), ...(Array.isArray(raw.recentIds) ? raw.recentIds : [])])].filter(id => Number.isInteger(id) && id > 0),
+      commute: commuteSettings(raw.commute) };
   }
   updateConnection(input: Partial<LocalSnapshot> & { refreshToken?: string; deviceId?: string }): void {
     this.connectionVersion++;
@@ -317,6 +342,14 @@ export class PersonalNotifications {
       const report = !this.report || now - this.lastCollection >= 5 * MINUTE || preview ? await this.collect(now) : this.report;
       const date = kstDate(now), local = new Date(now + 9 * 60 * MINUTE);
       const dueDaily = local.getUTCHours() * 60 + local.getUTCMinutes() >= report.settings.hour * 60 + report.settings.minute;
+      if (!preview && this.direct && this.state.commute !== date && commuteDue(report.settings.commute, now)) {
+        const text = commuteText(report, now);
+        try {
+          if (text) await this.direct(text);
+          this.state.commute = date;
+          saveJson(this.stateFile, this.state);
+        } catch { console.warn('[PersonalNotifications] 출근길 개인 메시지 실패, 다음 회차 재시도'); }
+      }
       if (preview || (dueDaily && this.state.daily !== date)) {
         await this.send(summaryText(report, now), summaryEmbed(report, now));
         this.state.daily = date;

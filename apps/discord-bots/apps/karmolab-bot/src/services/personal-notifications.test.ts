@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PersonalNotifications, agendaSelection, dueReminders, kstDate, summaryText, summaryEmbed, type AgendaReport } from './personal-notifications';
+import { PersonalNotifications, agendaSelection, commuteDue, commuteText, dueReminders, kstDate, summaryText, summaryEmbed, type AgendaReport } from './personal-notifications';
 
 const dirs: string[] = [];
 afterEach(() => { dirs.splice(0).forEach(dir => fs.rmSync(dir, { recursive: true, force: true })); });
@@ -34,6 +34,54 @@ function setup(send = vi.fn(async () => {})): { service: PersonalNotifications; 
   service.updateConnection({ refreshToken: 'fixture-refresh-token', localEvents: [], localTasks: [], localUpdatedAt: new Date(now).toISOString(), localThrough: '2026-12-01' });
   return { service, send, root, request, setAnime: at => { episode = at; } };
 }
+describe('출근길 개인 메시지', () => {
+  const commute = { enabled: true, hour: 7, minute: 20, days: [1, 2, 3, 4, 5] };
+  it('한 줄 요약과 오늘 페이지 링크, 비어 있는 날은 없음', () => {
+    expect(commuteText(fixture(), now)).toBe('오늘 일정 2 (09:30 약속 외 1), 할 일 1, 다음 7일 2\nhttps://dash.mascari4615.com/#daily');
+    expect(commuteText({ ...fixture(), events: [], tasks: [] }, now)).toBeNull();
+  });
+  it('평일 설정 시각부터 세 시간, 주말과 꺼진 설정 제외', () => {
+    expect(commuteDue(commute, Date.parse('2026-10-14T07:19:00+09:00'))).toBe(false);
+    expect(commuteDue(commute, Date.parse('2026-10-14T07:20:00+09:00'))).toBe(true);
+    expect(commuteDue(commute, Date.parse('2026-10-14T10:20:00+09:00'))).toBe(false);
+    expect(commuteDue(commute, Date.parse('2026-10-17T08:00:00+09:00'))).toBe(false);
+    expect(commuteDue({ ...commute, enabled: false }, now)).toBe(false);
+    expect(commuteDue(undefined, now)).toBe(false);
+  });
+  it('하루 한 번, 재시작 중복 없음, 실패는 다음 회차 재시도, 설정 없으면 무전송', async () => {
+    const x = setup();
+    const direct = vi.fn(async (_text: string) => {});
+    const make = (): PersonalNotifications => {
+      const service = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch, direct);
+      service.updateConnection({ refreshToken: 'fixture-refresh-token', localEvents: [], localTasks: [], localUpdatedAt: new Date(now).toISOString(), localThrough: '2026-12-01' });
+      return service;
+    };
+    await make().tick(now);
+    expect(direct).not.toHaveBeenCalled();
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/settings.json'), JSON.stringify({ ...fixture().settings, commute }));
+    direct.mockRejectedValueOnce(new Error('dm_closed'));
+    const service = make();
+    await service.tick(now);
+    await service.tick(now + 60_000);
+    await service.tick(now + 120_000);
+    await make().tick(now + 180_000);
+    expect(direct).toHaveBeenCalledTimes(2);
+    expect(direct.mock.calls[1][0]).toContain('https://dash.mascari4615.com/#daily');
+  });
+  it('개인 메시지 실패는 같은 회차의 오전 요약과 일정 전 알림을 막지 않음, 잘못된 설정은 무전송', async () => {
+    const x = setup();
+    const direct = vi.fn(async (_text: string) => { throw new Error('dm_closed'); });
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/settings.json'), JSON.stringify({ ...fixture().settings, commute }));
+    const service = new PersonalNotifications(x.root, x.send, path.join(x.root, 'runtime'), x.request as typeof fetch, direct);
+    service.updateConnection({ refreshToken: 'fixture-refresh-token', localEvents: [], localTasks: [], localUpdatedAt: new Date(now).toISOString(), localThrough: '2026-12-01' });
+    await service.tick(now);
+    expect(direct).toHaveBeenCalledTimes(1);
+    expect(x.send).toHaveBeenCalledTimes(2);
+    fs.writeFileSync(path.join(x.root, 'data/personal-notifications/settings.json'), JSON.stringify({ ...fixture().settings, commute: { ...commute, days: ['1'] } }));
+    expect(service.settings().commute).toBeUndefined();
+  });
+});
+
 describe('개인 안내', () => {
   it('daily embed keeps agenda fields with a visible overflow count and planner link', () => {
     const report = fixture();

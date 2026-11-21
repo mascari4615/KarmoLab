@@ -392,6 +392,11 @@ const personalNotifications = new PersonalNotifications(memoRepoPath, async (_te
   const channel = await client.channels.fetch(id);
   if (!channel?.isTextBased() || !('send' in channel)) throw new Error('notification_channel_unavailable');
   await notificationServices.deliver('personal', () => channel.send({ embeds: [embed], allowedMentions: { parse: [] } }));
+}, undefined, undefined, async text => {
+  if (!OWNER_ID) throw new Error('notification_owner_missing');
+  const dm = await (await client.users.fetch(OWNER_ID)).createDM();
+  const sent = await notificationServices.deliver('personal', () => dm.send({ content: text, allowedMentions: { parse: [] } }));
+  if (!sent) throw new Error('notification_paused');
 });
 registerPersonalNotifications(app, personalNotifications);
 const userPresence = new UserPresence(path.join(PKG_ROOT, 'data', 'user-presence.json'));
