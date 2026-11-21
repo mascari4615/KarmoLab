@@ -7,7 +7,7 @@
 - 백엔드 `src-tauri/src/lib.rs`, 화면 `ui/` (번들러 없음)
 - 로컬 실행: `npm run dev`. 릴리스 없이 실제 앱으로 확인. 식별자가 달라 설치된 런처와 같이 켜지고, 제목 옆 버전이 `v0.0.0-dev`, 자동 업데이트 안 함. 데이터 폴더도 별도지만 NSIS 앱 설치와 제거는 이 PC 의 실제 앱을 건드림. 앱 자동 업데이트 설정이 켜져 있으면 로컬 판도 실제 앱을 업데이트함. 설치된 런처가 자동 업데이트되면 로컬 판도 같이 꺼짐 (2026-11-05 시각 일치로 판단, 실행 파일 이름이 같음). 다시 `npm run dev`
 - 설치판: `npm run build` (NSIS). 실측 시험: `cd src-tauri && cargo test -- --include-ignored`
-- 설치 형식 (`install.format`): `nsis` (설치 프로그램, 상태는 HKCU Uninstall 레지스트리, 런처 밖에서 깐 것도 보임, minisign 서명 필수), `zip` (런처 데이터 폴더 `apps/<id>` 에 풂, 상태는 `.karmo-version`, GitHub 자산 sha256 필수, 끄기는 `install.exe` 와 그것을 띄운 `cmd.exe`, `node.exe` 부모까지 강제 종료), `local` (받지 않음, 작업 폴더 아래 `local.path` 가 있으면 `local.run` 실행)
+- 설치 형식 (`install.format`): `nsis` (설치 프로그램, 상태는 HKCU Uninstall 레지스트리, 런처 밖에서 깐 것도 보임, minisign 서명 필수), `zip` (런처 데이터 폴더 `apps/<id>` 에 풂, 상태는 `.karmo-version`, GitHub 자산 sha256 필수, 실행 설정은 설치된 묶음의 `karmo-launch.json` (`entry`, `exe`, `console`, `env`) 이 정본이고 그 파일이 없는 옛 묶음만 목록의 `install.entry`, `install.exe`, `install.env` 로 띄우되 터미널은 숨기지 않음, 끄기는 그 `exe` 와 그것을 띄운 `cmd.exe`, `node.exe` 부모까지 강제 종료), `local` (받지 않음, 작업 폴더 아래 `local.path` 가 있으면 `local.run` 실행)
 - 최신 판 (`source.type`): `tauri-latest` (catalog 먼저, 없으면 latest.json), `gh-release` (`repo` 릴리스에서 `tag_prefix`, `asset_prefix`, `asset_suffix` 가 맞는 첫 자산)
 - 비공개 목록: memo 저장소 `data/launcher/apps.json`. 런처에 GitHub 토큰이 있을 때만 받아 공개 목록 뒤에 붙임. 토큰은 자격 증명 관리자 `karmo-launcher:github`. 화면 오른쪽 위 열쇠에서 붙여 넣기 또는 이 PC 의 git 로그인 (`git:https://github.com`) 복사
 - 동시 작업: 진행 상태는 앱별. 한 앱을 받는 동안 다른 앱을 조작할 수 있음. NSIS 설치와 제거 프로그램만 한 번에 하나 (`native_setup_turn`). 런처 자체 업데이트는 앱 작업이 다 끝난 뒤. 켤 때, 30분마다, 창을 열 때 (1분 간격) 확인, 설정의 "업데이트 확인" 과 다운로드 창의 "지금 확인" 으로 손으로도 확인

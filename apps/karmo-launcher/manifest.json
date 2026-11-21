@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-11-16",
+  "updated": "2026-11-21",
   "launcher": {
     "cast": {
       "name": "관리인",
@@ -119,7 +119,7 @@
       "source": {
         "type": "gh-release",
         "repo": "mascari4615/KarmoLab",
-        "tag_prefix": "karmolab-v",
+        "tag_prefix": "companion-v",
         "asset_prefix": "companion-",
         "asset_suffix": ".zip"
       },
@@ -127,10 +127,8 @@
         "format": "zip",
         "entry": "scripts/start.cmd",
         "exe": "companion-window.exe",
-        "console": "hidden",
         "env": {
-          "COMPANION_WORKSPACE": "{workspace}",
-          "COMPANION_CONSOLE": "hidden"
+          "COMPANION_WORKSPACE": "{workspace}"
         }
       },
       "art": {
