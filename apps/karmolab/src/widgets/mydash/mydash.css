@@ -330,6 +330,7 @@ html[data-home-bg="dusk"] .mydh { --mydh-photo: url('/apps/karmolab/img/home/sky
 .mydl-status { min-height: 1.5em; line-height: 1.6; font-size: var(--font-size-sm); }
 @media (max-width: 899px) {
   .mydd-layout, .mydl-layout { grid-template-columns: minmax(0, 1fr); }
+  .mydd-agenda { order: -1; }
   .mydl-preview { position: relative; height: 350px; }
 }
 .mydq {
