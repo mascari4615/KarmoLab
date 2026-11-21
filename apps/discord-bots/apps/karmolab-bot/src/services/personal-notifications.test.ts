@@ -36,9 +36,9 @@ function setup(send = vi.fn(async () => {})): { service: PersonalNotifications; 
 }
 describe('출근길 개인 메시지', () => {
   const commute = { enabled: true, hour: 7, minute: 20, days: [1, 2, 3, 4, 5] };
-  it('한 줄 요약과 오늘 페이지 링크, 비어 있는 날은 없음', () => {
+  it('한 줄 요약과 오늘 페이지 링크, 비어 있는 날도 전송', () => {
     expect(commuteText(fixture(), now)).toBe('오늘 일정 2 (09:30 약속 외 1), 할 일 1, 다음 7일 2\nhttps://dash.mascari4615.com/#daily');
-    expect(commuteText({ ...fixture(), events: [], tasks: [] }, now)).toBeNull();
+    expect(commuteText({ ...fixture(), events: [], tasks: [] }, now)).toBe('오늘 일정과 할 일 없음, 다음 7일도 비어 있음\nhttps://dash.mascari4615.com/#daily');
   });
   it('평일 설정 시각부터 세 시간, 주말과 꺼진 설정 제외', () => {
     expect(commuteDue(commute, Date.parse('2026-10-14T07:19:00+09:00'))).toBe(false);

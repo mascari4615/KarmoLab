@@ -81,10 +81,10 @@ export function commuteDue(commute: CommuteSettings | undefined, now: number): b
   const local = new Date(now + 9 * 60 * MINUTE), minutes = local.getUTCHours() * 60 + local.getUTCMinutes(), start = commute.hour * 60 + commute.minute;
   return commute.days.includes(local.getUTCDay()) && minutes >= start && minutes < start + COMMUTE_WINDOW_MINUTES;
 }
-export function commuteText(report: AgendaReport, now: number): string | null {
+export function commuteText(report: AgendaReport, now: number): string {
   const { today, upcoming, tasks, upcomingTasks } = agendaSelection(report, now);
   const week = upcoming.length + upcomingTasks.length;
-  if (!today.length && !tasks.length && !week) return null;
+  if (!today.length && !tasks.length && !week) return `오늘 일정과 할 일 없음, 다음 7일도 비어 있음\n${DAILY_LINK}`;
   const timed = today.find(e => !e.allDay && eventTime(e.start) >= now) || today.find(e => !e.allDay && kstDate(eventTime(e.start)) === kstDate(now)) || today[0];
   const first = timed ? ` (${timed.allDay || kstDate(eventTime(timed.start)) !== kstDate(now) ? '종일' : new Date(eventTime(timed.start)).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} ${(timed.title || '(제목 없음)').replace(/\s+/g, ' ').slice(0, 40)}${today.length > 1 ? ` 외 ${today.length - 1}` : ''})` : '';
   return `오늘 일정 ${today.length}${first}, 할 일 ${tasks.length}, 다음 7일 ${week}\n${DAILY_LINK}`;
@@ -345,7 +345,7 @@ export class PersonalNotifications {
       if (!preview && this.direct && this.state.commute !== date && commuteDue(report.settings.commute, now)) {
         const text = commuteText(report, now);
         try {
-          if (text) await this.direct(text);
+          await this.direct(text);
           this.state.commute = date;
           saveJson(this.stateFile, this.state);
         } catch { console.warn('[PersonalNotifications] 출근길 개인 메시지 실패, 다음 회차 재시도'); }
