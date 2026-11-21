@@ -435,6 +435,29 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       body.emit({ type: 'rhythm', kind: 'evening', text: '덮으면 안 됨' });
       await page.waitForTimeout(400);
       assert.equal(await page.locator('#ntToast .nt-rhythm-input').inputValue(), '적던 글', '적던 한 줄을 다른 카드가 덮었다');
+      // 판과 카드 겹침 금지 (사용자 2026-11-21)
+      await page.evaluate(() => { document.getElementById('ntBoard').hidden = false; window.dispatchEvent(new Event('resize')); });
+      await page.waitForTimeout(700);
+      const overlap = await page.evaluate(() => {
+        const a = document.getElementById('ntBoard').getBoundingClientRect();
+        const b = document.getElementById('ntToast').getBoundingClientRect();
+        return { x: Math.min(a.right, b.right) - Math.max(a.left, b.left), y: Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top), a: [a.left, a.top, a.right, a.bottom], b: [b.left, b.top, b.right, b.bottom] };
+      });
+      assert.ok(overlap.x <= 0 || overlap.y <= 0, `한 줄 카드가 오늘 판과 겹친다: ${JSON.stringify(overlap)}`);
+      // 위로 쌓을 자리가 없는 낮은 창에서는 판을 접어서라도 겹치지 않음
+      await page.setViewportSize({ width: 520, height: 300 });
+      await page.evaluate(() => { document.getElementById('ntBoard').hidden = false; window.dispatchEvent(new Event('resize')); });
+      await page.waitForTimeout(700);
+      const low = await page.evaluate(() => {
+        const board = document.getElementById('ntBoard');
+        if (board.hidden) return { folded: true };
+        const a = board.getBoundingClientRect();
+        const b = document.getElementById('ntToast').getBoundingClientRect();
+        return { folded: false, x: Math.min(a.right, b.right) - Math.max(a.left, b.left), y: Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) };
+      });
+      assert.ok(low.folded || low.x <= 0 || low.y <= 0, `낮은 창에서 카드와 판이 겹친다: ${JSON.stringify(low)}`);
+      await page.setViewportSize({ width: 520, height: 900 });
+      await page.evaluate(() => { document.getElementById('ntBoard').hidden = true; });
       await page.locator('#ntToast [data-act="close"]').click();
       assert.equal(await hidden(), false, '적은 글이 있는데 한 번에 닫혔다');
       await page.locator('#ntToast [data-act="close"]').click();

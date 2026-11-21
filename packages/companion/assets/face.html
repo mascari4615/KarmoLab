@@ -319,13 +319,27 @@
     const dockX = left ? anchor.x - dockW - 10 : anchor.x + anchor.width + 10;
     const dockY = clampY(아이콘모드 ? anchor.y + anchor.height - dockH : anchor.y + anchor.height * 0.15, dockH);
     ntMove(dock, dockX, dockY);
-    for (const id of ['ntBoard', 'ntToast']) {
-      const el = document.getElementById(id);
-      if (!el || el.hidden) continue;
+    // 판과 카드가 같이 떠 있으면 카드를 판 위에 쌓음 (2026-11-21 한 줄 카드가 판을 덮음)
+    // 위가 모자라면 판을 접음. 카드는 사람이 닫을 때까지 남는 쪽이고 판은 칸을 누르면 다시 열림
+    const board = document.getElementById('ntBoard');
+    const toast = document.getElementById('ntToast');
+    const fits = (el) => {
       const w = el.offsetWidth || 320;
       const h = el.offsetHeight || 200;
       const x = left ? dockX - w - 10 : dockX + dockW + 10;
-      ntMove(el, Math.max(4, Math.min(innerWidth - w - 4, x)), clampY(dockY + dockH - h, h));
+      return { w, h, x: Math.max(4, Math.min(innerWidth - w - 4, x)), y: clampY(dockY + dockH - h, h) };
+    };
+    if (board && toast && !board.hidden && !toast.hidden) {
+      const b = fits(board);
+      if (b.y - (toast.offsetHeight || 200) - 8 < 4) board.hidden = true;
+    }
+    let boardTop = null;
+    for (const el of [board, toast]) {
+      if (!el || el.hidden) continue;
+      const at = fits(el);
+      if (el === board) boardTop = at.y;
+      else if (boardTop !== null) at.y = boardTop - at.h - 8;
+      ntMove(el, at.x, at.y);
     }
   }
 

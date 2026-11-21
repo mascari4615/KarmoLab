@@ -39,7 +39,11 @@ exit /b
 
 :stop
 if /i "%COMPANION_CONSOLE%"=="hidden" (
+  rem 알림 창이 떠 있는 동안 이 폴더를 쥐지 않게 밖으로 나감. 쥐고 있으면 런처가 판을 못 바꿈 (2026-11-21 os error 32)
+  cd /d "%TEMP%"
   powershell -NoProfile -WindowStyle Hidden -Command "Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('%~1', 'KarmoMaid') | Out-Null"
+  rem 알림을 닫은 뒤 이 파일을 다시 읽지 않게 묶음 안에서 끝냄. 그사이 런처가 판을 바꿨을 수 있음
+  exit 1
 ) else (
   pause
 )
