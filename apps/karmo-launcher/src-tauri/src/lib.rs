@@ -699,11 +699,62 @@ fn open_when_ready(app: &Value) {
     });
 }
 
-/// 실행 중을 볼 프로세스 이름. nsis 는 레지스트리의 MainBinaryName, zip 은 `install.exe`
-fn exe_of(app: &Value) -> Option<String> {
+/// zip 묶음 안의 실행 설정 파일. 묶음을 굽는 쪽이 넣음 (KarmoMaid 는 packages/companion/karmo-launch.json)
+const LAUNCH_FILE: &str = "karmo-launch.json";
+
+/// zip 앱을 띄우는 법: 시작 파일, 실행 중을 볼 프로세스 이름, 터미널 숨김, 환경 변수
+#[derive(Debug, Default, PartialEq)]
+struct LaunchConf {
+    entry: Option<String>,
+    exe: Option<String>,
+    hidden: bool,
+    env: Vec<(String, String)>,
+    /// 묶음 안 파일에서 읽었나. false 면 목록 (manifest) 값으로 물러선 것
+    bundled: bool,
+}
+
+fn env_pairs(v: Option<&Value>) -> Vec<(String, String)> {
+    v.and_then(|e| e.as_object())
+        .map(|m| m.iter().filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string()))).collect())
+        .unwrap_or_default()
+}
+
+/// 설치된 묶음의 karmo-launch.json 이 정본. 실행 설정은 그 설정을 아는 묶음과 같이 다님.
+/// 파일이 없는 옛 묶음은 목록의 install.entry, install.exe, install.env 로 물러서되 터미널은 숨기지 않음.
+/// 목록은 main 에서 바로 읽혀 옛 묶음에도 적용됨. 숨김을 모르는 옛 start.cmd 가 안 보이는 창에서 멈춰
+/// 설치 폴더를 쥐었고 업데이트가 os error 32 로 막혔음 (2026-11-21 KarmoMaid 0.1.147 -> 0.1.148)
+fn launch_conf(dir: Option<&Path>, app: &Value) -> LaunchConf {
+    let bundled = dir
+        .and_then(|d| std::fs::read_to_string(d.join(LAUNCH_FILE)).ok())
+        .and_then(|text| serde_json::from_str::<Value>(text.trim_start_matches('\u{feff}')).ok())
+        .filter(|v| v.get("schema").and_then(|s| s.as_u64()) == Some(1) && str_at(v, &["entry"]).is_some());
+    match bundled {
+        Some(v) => LaunchConf {
+            entry: str_at(&v, &["entry"]).map(String::from),
+            exe: str_at(&v, &["exe"]).map(String::from),
+            hidden: str_at(&v, &["console"]) == Some("hidden"),
+            env: env_pairs(v.get("env")),
+            bundled: true,
+        },
+        None => LaunchConf {
+            entry: str_at(app, &["install", "entry"]).map(String::from),
+            exe: str_at(app, &["install", "exe"]).map(String::from),
+            hidden: false,
+            env: env_pairs(app.get("install").and_then(|i| i.get("env"))),
+            bundled: false,
+        },
+    }
+}
+
+/// 실행 중을 볼 프로세스 이름. nsis 는 레지스트리의 MainBinaryName, zip 은 설치된 묶음의 실행 설정 (launch_conf)
+fn exe_of(handle: &AppHandle, app: &Value) -> Option<String> {
+    exe_in(zip_dir(handle, app).ok().as_deref(), app)
+}
+
+fn exe_in(dir: Option<&Path>, app: &Value) -> Option<String> {
     match format_of(app) {
         "nsis" => registry(str_at(app, &["install", "registry"])?)?.get("MainBinaryName").cloned(),
-        "zip" => str_at(app, &["install", "exe"]).map(String::from),
+        "zip" => launch_conf(dir, app).exe,
         _ => None,
     }
 }
@@ -741,7 +792,7 @@ fn status_blocking(handle: &AppHandle, app: &Value) -> Status {
         }
     }
     if st.installed && format_of(app) != "local" {
-        st.running = exe_of(app).map(|exe| is_running(&exe)).unwrap_or(false) || (format_of(app) == "zip" && remembered_run(handle, app).is_some());
+        st.running = exe_of(handle, app).map(|exe| is_running(&exe)).unwrap_or(false) || (format_of(app) == "zip" && remembered_run(handle, app).is_some());
     }
     if app.get("source").is_some() {
         match latest_of(app) {
@@ -1017,16 +1068,16 @@ fn rename_patient(from: &Path, to: &Path) -> std::io::Result<()> {
 #[tauri::command]
 async fn running_status(handle: AppHandle, app: Value) -> Result<bool, String> {
     // 창 프로그램이 없어도 런처가 띄운 실행기가 살아 있으면 실행 중. 끄기 버튼이 보여야 정리할 수 있음
-    tauri::async_runtime::spawn_blocking(move || running_blocking(&app) || (format_of(&app) == "zip" && remembered_run(&handle, &app).is_some()))
+    tauri::async_runtime::spawn_blocking(move || running_blocking(&handle, &app) || (format_of(&app) == "zip" && remembered_run(&handle, &app).is_some()))
         .await
         .map_err(|e| e.to_string())
 }
 
-fn running_blocking(app: &Value) -> bool {
+fn running_blocking(handle: &AppHandle, app: &Value) -> bool {
     if format_of(app) == "local" {
         return local_port(app).map(port_open).unwrap_or(false);
     }
-    exe_of(app).map(|exe| is_running(&exe)).unwrap_or(false)
+    exe_of(handle, app).map(|exe| is_running(&exe)).unwrap_or(false)
 }
 
 /// 끄기. 창 닫기만으로는 트레이로 숨는 앱이 실행 중으로 남음 (2026-09-25 KarmoLab)
@@ -1038,13 +1089,13 @@ async fn stop_app(handle: AppHandle, app: Value) -> Result<(), String> {
         if format_of(&app) == "local" {
             stop_local(&handle, &app)
         } else {
-            let stopped = stop_blocking(&app);
+            let stopped = stop_blocking(&app, exe_of(&handle, &app));
             // 창이 이미 없어 위가 실패해도 남은 실행기는 정리
             if format_of(&app) == "zip" {
                 if !stop_remembered(&handle, &app) {
                     return Err("남은 실행 프로세스를 못 끔".into());
                 }
-                if !exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+                if !exe_of(&handle, &app).map(|e| is_running(&e)).unwrap_or(false) {
                     return Ok(());
                 }
             }
@@ -1090,8 +1141,8 @@ fn stop_local(handle: &AppHandle, app: &Value) -> Result<(), String> {
     Err(format!("끄기 명령은 끝났지만 {} 포트가 아직 열려 있음", port))
 }
 
-fn stop_blocking(app: &Value) -> Result<(), String> {
-    let exe = exe_of(app).ok_or("끌 프로세스 이름 모름")?;
+fn stop_blocking(app: &Value, exe: Option<String>) -> Result<(), String> {
+    let exe = exe.ok_or("끌 프로세스 이름 모름")?;
     if format_of(app) == "nsis" {
         let reg = registry(str_at(app, &["install", "registry"]).unwrap_or_default()).ok_or("설치 안 됨")?;
         if let Some(dir) = reg.get("InstallLocation") {
@@ -1218,7 +1269,7 @@ async fn rollback_app(handle: AppHandle, app: Value) -> Result<(), String> {
         if format_of(&app) != "zip" {
             return Err("zip 앱만 되돌릴 수 있음".into());
         }
-        if exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+        if exe_of(&handle, &app).map(|e| is_running(&e)).unwrap_or(false) {
             return Err("실행 중. 끈 뒤에 다시".into());
         }
         if !stop_remembered(&handle, &app) {
@@ -1496,7 +1547,7 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
         if format == "zip" {
             say(got, total, "install");
             let dest = zip_dir(&handle, &app)?;
-            if let Some(exe) = exe_of(&app) {
+            if let Some(exe) = exe_of(&handle, &app) {
                 if is_running(&exe) {
                     let _ = std::fs::remove_file(&file);
                     return Err("실행 중. 끈 뒤에 다시".into());
@@ -1555,7 +1606,7 @@ fn hide_console(c: &mut Command) {
 #[cfg(not(windows))]
 fn hide_console(_c: &mut Command) {}
 
-/// 실행. nsis 는 레지스트리의 설치 자리와 본 실행 파일, zip 은 풀린 폴더의 `install.entry`,
+/// 실행. nsis 는 레지스트리의 설치 자리와 본 실행 파일, zip 은 풀린 묶음의 실행 설정 (launch_conf),
 /// local 은 `local.run` (명령과 인자, `{path}` 자리에 찾은 파일). 모두 보이는 창으로
 #[tauri::command]
 async fn launch_app(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Result<(), String> {
@@ -1568,26 +1619,26 @@ fn launch_blocking(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> 
     match format_of(&app) {
         "zip" => {
             let dir = zip_dir(&handle, &app)?;
-            let entry = safe_rel(str_at(&app, &["install", "entry"]).ok_or("install.entry 없음")?)?;
+            let conf = launch_conf(Some(&dir), &app);
+            let entry = safe_rel(conf.entry.as_deref().ok_or("시작 파일을 모름 (묶음의 karmo-launch.json 도 목록의 install.entry 도 없음)")?)?;
             let mut c = Command::new(dir.join(entry));
             c.current_dir(&dir).args(&args);
-            /* `install.env`: 앱에 넘길 환경 변수. `{workspace}` 는 설정의 작업 폴더, `{dir}` 은 풀린 폴더.
+            /* 환경 변수: {workspace} 는 설정의 작업 폴더, {dir} 은 풀린 폴더.
                컴패니언은 저장소 밖에 풀려 이웃 (memo, 게임 저장소) 을 못 찾아서 작업 폴더를 알려 줌 */
-            if let Some(env) = app.get("install").and_then(|i| i.get("env")).and_then(|e| e.as_object()) {
-                let ws = workspace(&handle);
-                let d = dir.to_string_lossy().to_string();
-                for (k, v) in env {
-                    if let Some(v) = v.as_str() {
-                        c.env(k, v.replace("{workspace}", &ws).replace("{dir}", &d));
-                    }
-                }
+            let ws = workspace(&handle);
+            let d = dir.to_string_lossy().to_string();
+            for (k, v) in &conf.env {
+                c.env(k, v.replace("{workspace}", &ws).replace("{dir}", &d));
             }
-            /* `install.console: "hidden"`: 실행기 (start.cmd) 의 터미널 창을 숨김. 서버 글은 앱이 제 판에서 보여 줌.
+            /* 터미널 숨김은 묶음이 스스로 적었을 때만 (launch_conf). 실행기 (start.cmd) 의 창을 숨기고 서버 글은 앱이 제 판에서 보여 줌.
                컴패니언이 열 때마다 터미널이 같이 뜨던 문제 (사용자 2026-11-16) */
-            if str_at(&app, &["install", "console"]) == Some("hidden") {
+            if conf.hidden {
                 hide_console(&mut c);
             }
-            if !exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+            if !conf.bundled {
+                log_line(&handle, &format!("launch {}: no {} in bundle, manifest fallback, console visible", safe_id(&app).unwrap_or_default(), LAUNCH_FILE));
+            }
+            if !exe_of(&handle, &app).map(|e| is_running(&e)).unwrap_or(false) {
                 // 방금 띄워 창이 뜨는 중이면 또 띄우지 않음
                 if remembered_is_starting(&handle, &app) {
                     return Ok(());
@@ -1634,7 +1685,7 @@ fn launch_blocking(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> 
 async fn uninstall_app(handle: AppHandle, app: Value) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || match format_of(&app) {
         "zip" => {
-            if exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+            if exe_of(&handle, &app).map(|e| is_running(&e)).unwrap_or(false) {
                 return Err("실행 중. 끈 뒤에 다시".into());
             }
             if !stop_remembered(&handle, &app) {
@@ -2183,9 +2234,9 @@ mod tests {
     #[ignore]
     fn karmolab_stop_live() {
         let app = serde_json::json!({ "id": "karmolab", "install": { "format": "nsis", "registry": "KarmoLab" } });
-        let exe = exe_of(&app).expect("KarmoLab 레지스트리");
+        let exe = exe_in(None, &app).expect("KarmoLab 레지스트리");
         assert!(is_running(&exe), "먼저 KarmoLab 을 켜 둔다");
-        stop_blocking(&app).unwrap();
+        stop_blocking(&app, Some(exe.clone())).unwrap();
         assert!(!is_running(&exe));
     }
 
@@ -2212,7 +2263,7 @@ mod tests {
     fn companion_zip_live() {
         let app = serde_json::json!({
             "id": "companion",
-            "source": { "type": "gh-release", "repo": "mascari4615/KarmoLab", "tag_prefix": "karmolab-v", "asset_prefix": "companion-", "asset_suffix": ".zip" }
+            "source": { "type": "gh-release", "repo": "mascari4615/KarmoLab", "tag_prefix": "companion-v", "asset_prefix": "companion-", "asset_suffix": ".zip" }
         });
         let l = latest_of(&app).unwrap();
         let sha = l.sha256.expect("GitHub digest");
@@ -2230,10 +2281,105 @@ mod tests {
         extract_zip(&file, &dest, "test").unwrap();
         assert!(dest.join("scripts").join("start.cmd").exists());
         assert!(dest.join("companion-window.exe").exists());
+        // 실행 설정은 묶음 안에서. 목록에 install 값이 하나도 없어도 띄울 수 있어야 함
+        let conf = launch_conf(Some(&dest), &serde_json::json!({ "id": "companion", "install": { "format": "zip" } }));
+        assert!(conf.bundled, "묶음에 karmo-launch.json 이 있음");
+        assert!(dest.join(conf.entry.as_deref().unwrap()).exists());
+        assert!(dest.join(conf.exe.as_deref().unwrap()).exists());
+        assert!(conf.hidden);
         let names: Vec<String> = std::fs::read_dir(dest.join("characters")).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().to_string()).collect();
         println!("version {:?} characters {:?}", l.version, names);
         assert!(names.iter().any(|n| n.chars().any(|c| ('\u{AC00}'..='\u{D7A3}').contains(&c))), "한글 이름이 깨지지 않음");
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    fn zip_app_with_manifest_launch() -> Value {
+        serde_json::json!({
+            "id": "companion",
+            "install": {
+                "format": "zip", "entry": "scripts/start.cmd", "exe": "companion-window.exe", "console": "hidden",
+                "env": { "COMPANION_WORKSPACE": "{workspace}", "COMPANION_CONSOLE": "hidden" }
+            }
+        })
+    }
+
+    fn fresh_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("{}-{}", name, std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// 설정 파일이 없는 옛 묶음: 목록 값으로 띄우되 목록이 숨기라고 해도 터미널은 숨기지 않음
+    #[test]
+    fn old_bundle_without_launch_file_never_hides_console() {
+        let dir = fresh_dir("karmo-launch-old");
+        let app = zip_app_with_manifest_launch();
+        let conf = launch_conf(Some(&dir), &app);
+        assert!(!conf.bundled);
+        assert!(!conf.hidden, "옛 묶음에 새 설정을 얹지 않음");
+        assert_eq!(conf.entry.as_deref(), Some("scripts/start.cmd"));
+        assert_eq!(conf.exe.as_deref(), Some("companion-window.exe"));
+        assert!(conf.env.contains(&("COMPANION_WORKSPACE".to_string(), "{workspace}".to_string())));
+        // 설치 전 (폴더 없음) 도 같은 길
+        assert_eq!(launch_conf(None, &app), conf);
+        assert_eq!(exe_in(Some(&dir), &app).as_deref(), Some("companion-window.exe"));
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// 설정 파일이 있는 묶음: 그 파일이 전부. 목록 값은 섞이지 않음
+    #[test]
+    fn bundle_launch_file_wins_over_manifest() {
+        let dir = fresh_dir("karmo-launch-new");
+        let app = zip_app_with_manifest_launch();
+        // 머리에 BOM 이 붙어도 읽음 (Windows 편집기)
+        let body = format!("{}{}", '\u{feff}', r#"{ "schema": 1, "entry": "run/go.cmd", "exe": "maid.exe", "console": "hidden", "env": { "A": "{dir}" } }"#);
+        std::fs::write(dir.join(LAUNCH_FILE), body).unwrap();
+        let conf = launch_conf(Some(&dir), &app);
+        assert_eq!(
+            conf,
+            LaunchConf { entry: Some("run/go.cmd".into()), exe: Some("maid.exe".into()), hidden: true, env: vec![("A".into(), "{dir}".into())], bundled: true }
+        );
+        assert_eq!(exe_in(Some(&dir), &app).as_deref(), Some("maid.exe"));
+        // 목록에 실행 값이 하나도 없어도 묶음만으로 띄움
+        let bare = serde_json::json!({ "id": "companion", "install": { "format": "zip" } });
+        assert_eq!(launch_conf(Some(&dir), &bare), conf);
+        // 숨김을 안 적은 묶음은 보이는 창
+        std::fs::write(dir.join(LAUNCH_FILE), r#"{ "schema": 1, "entry": "a.cmd" }"#).unwrap();
+        assert!(!launch_conf(Some(&dir), &app).hidden);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// 깨졌거나 모르는 판의 설정 파일은 없는 것으로 봄 (목록 값, 보이는 창)
+    #[test]
+    fn broken_launch_file_falls_back_visible() {
+        let dir = fresh_dir("karmo-launch-bad");
+        for body in ["{ not json", r#"{ "schema": 2, "entry": "x.cmd", "console": "hidden" }"#, r#"{ "schema": 1, "console": "hidden" }"#] {
+            std::fs::write(dir.join(LAUNCH_FILE), body).unwrap();
+            let conf = launch_conf(Some(&dir), &zip_app_with_manifest_launch());
+            assert!(!conf.bundled && !conf.hidden, "{}", body);
+            assert_eq!(conf.entry.as_deref(), Some("scripts/start.cmd"));
+        }
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// 판을 바꿔 끼우면 실행 설정도 그 판의 것. 되돌리면 옛 판의 것
+    #[test]
+    fn launch_conf_follows_the_installed_version() {
+        let root = fresh_dir("karmo-launch-swap");
+        let dest = root.join("companion");
+        let old_zip = root.join("old.zip");
+        zip_with(&old_zip, "scripts/start.cmd", b"old");
+        extract_zip(&old_zip, &dest, "0.1.149").unwrap();
+        let app = zip_app_with_manifest_launch();
+        assert!(!launch_conf(Some(&dest), &app).hidden, "옛 판은 보이는 창");
+        let new_zip = root.join("new.zip");
+        zip_with(&new_zip, LAUNCH_FILE, br#"{ "schema": 1, "entry": "scripts/start.cmd", "exe": "companion-window.exe", "console": "hidden" }"#);
+        extract_zip(&new_zip, &dest, "0.2.0").unwrap();
+        assert!(launch_conf(Some(&dest), &app).hidden, "새 판은 제 설정대로");
+        swap_with_prev(&dest).unwrap();
+        assert!(!launch_conf(Some(&dest), &app).hidden, "되돌린 옛 판에 새 설정이 남지 않음");
+        std::fs::remove_dir_all(&root).unwrap();
     }
 
     /// 이름이 겹치지 않는 ping 사본을 띄워 실행 중으로 읽고, 강제 종료 뒤 사라지는지 (Windows API 경로)

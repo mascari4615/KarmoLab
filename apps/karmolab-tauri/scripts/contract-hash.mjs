@@ -43,7 +43,7 @@ const INCLUDE = [
   'src-tauri/tauri.release.conf.json',
   'src-tauri-shared',
   'src-tauri-ml',
-  'src-tauri-companion', // 릴리스가 companion-window.exe 도 같이 담음. 빠져 있어 창 수정이 건너뛰어졌음 (2026-11-02)
+  // src-tauri-companion 은 여기 없음. 창 프로그램은 KarmoMaid 묶음에만 들어가고 그 계약은 packages/companion/scripts/release-contract.mjs (2026-11-21)
   '../../vendor/glib-0.18.5/Cargo.toml',
   '../../vendor/glib-0.18.5/src',
   '../../vendor/rand-0.7.3/Cargo.toml',

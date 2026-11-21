@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "entry": "scripts/start.cmd",
+  "exe": "companion-window.exe",
+  "console": "hidden",
+  "env": {
+    "COMPANION_WORKSPACE": "{workspace}",
+    "COMPANION_CONSOLE": "hidden"
+  }
+}

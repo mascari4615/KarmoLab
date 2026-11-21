@@ -1,0 +1,210 @@
+name: KarmoMaid Release
+
+# KarmoMaid (내부 식별자 companion) 의 전용 릴리스. 묶음 companion-<판>.zip 을 companion-v<판> 태그로 냄.
+#
+# 왜 따로인가 (2026-11-21): 묶음이 KarmoLab 릴리스에 딸려 나가서 packages/companion 만 고치면 묶음이 옛 판으로
+# 남았다. 런처는 목록 (manifest.json) 을 main 에서 바로 읽으니 새 실행 설정이 옛 묶음에 얹혀 업데이트가 막혔다.
+# 정본: memo projects/karmolab/systems/release.md, systems/companion.md
+#
+# 판 번호는 태그에서 계산 (지난 companion-v 태그의 patch + 1, 바닥값은 packages/companion/package.json).
+# main 에 판 번호 커밋을 밀지 않으므로 다른 릴리스의 bump 커밋과 다투지 않는다.
+# 릴리스는 prerelease. 저장소의 releases/latest 는 KarmoLab 자체 업데이터가 기대는 자리.
+#
+# trigger-audit: self-exempt. 이 파일이 바뀌어 돌면 판이 하나 더 나감 (다른 릴리스 판과 같은 사정)
+concurrency:
+  group: companion-release
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      # 넓게 잡고 아래 계약 해시로 거른다. 시험과 문서만 바뀐 push 는 굽지 않고 끝남
+      - 'packages/companion/**'
+      - 'packages/ai/dist/**'
+      - 'packages/ai/package.json'
+      - 'apps/karmolab-tauri/src-tauri-companion/**'
+      - 'apps/karmolab-tauri/Cargo.toml'
+      - 'apps/karmolab-tauri/Cargo.lock'
+      - 'vendor/glib-0.18.5/**'
+      - 'vendor/rand-0.7.3/**'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG_PREFIX: companion-v
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: 계약 해시와 판 번호. 묶음 입력이 지난 판과 같으면 안 굽는다
+        id: plan
+        run: |
+          set -euo pipefail
+          R="${{ github.repository }}"
+          NOW=$(node packages/companion/scripts/release-contract.mjs)
+          # 빈 값이 지나가면 빈 contract.txt 가 올라가고 그 뒤 push 마다 판이 나감
+          [[ "$NOW" =~ ^[0-9a-f]{64}$ ]] || { echo "계약 해시를 못 구함: '$NOW'" >&2; exit 1; }
+          # 지난 판은 태그로 찾음 (릴리스는 최신 하나만 남기고 지우지만 태그는 남김)
+          LAST_VER=$(git ls-remote --tags origin "refs/tags/${TAG_PREFIX}*" \
+            | sed "s#.*refs/tags/${TAG_PREFIX}##" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -n 1)
+          LAST=
+          if [ -n "$LAST_VER" ]; then
+            mkdir -p "$RUNNER_TEMP/last"
+            if gh release download "${TAG_PREFIX}${LAST_VER}" --repo "$R" -p contract.txt -D "$RUNNER_TEMP/last" --clobber 2>/dev/null; then
+              LAST=$(tr -d '\r\n ' < "$RUNNER_TEMP/last/contract.txt")
+            fi
+          fi
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "$LAST" ] && [ "$NOW" = "$LAST" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::묶음 입력이 ${TAG_PREFIX}${LAST_VER} 와 같다. 굽지 않음 ($NOW)"
+            exit 0
+          fi
+          BASE=$(node -p "require('./packages/companion/package.json').version")
+          if [ -n "$LAST_VER" ]; then
+            IFS='.' read -r MA MI PA <<< "$LAST_VER"
+            NEXT="$MA.$MI.$((PA + 1))"
+            VERSION=$(printf '%s\n%s\n' "$BASE" "$NEXT" | sort -V | tail -n 1)
+          else
+            VERSION="$BASE"
+          fi
+          {
+            echo "changed=true"
+            echo "contract=$NOW"
+            echo "version=$VERSION"
+            echo "tag=${TAG_PREFIX}${VERSION}"
+            echo "last_tag=${LAST_VER:+${TAG_PREFIX}${LAST_VER}}"
+          } >> "$GITHUB_OUTPUT"
+          echo "::notice::굽는다 ${TAG_PREFIX}${VERSION} (지난 판 ${LAST_VER:-없음}, 계약 ${LAST:-없음} -> $NOW)"
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: steps.plan.outputs.changed == 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: packages/companion/package-lock.json
+
+      - name: 묶음 굽기 (pack)
+        if: steps.plan.outputs.changed == 'true'
+        env:
+          COMPANION_PACK_VERSION: ${{ steps.plan.outputs.version }}
+        # npm ci 가 아니라 npm install. lock 에 playwright 줄이 빠져 ci 가 죽었던 자리 (2026-08-19).
+        # 개발 의존까지 받는 이유: 묶기 전에 tsc 로 구움. 굽는 도구는 묶음에 안 들어감 (pack 이 런타임 의존만 따라감)
+        run: |
+          set -euo pipefail
+          cd packages/companion
+          npm install --no-audit --no-fund
+          npm run pack
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        if: steps.plan.outputs.changed == 'true'
+
+      - name: 창 프로그램 캐시 열쇠
+        id: win_key
+        if: steps.plan.outputs.changed == 'true'
+        # KarmoLab 릴리스가 쓰던 열쇠와 같은 식. Cargo.lock 은 KarmoLab 판 번호 줄을 빼고 잼
+        working-directory: apps/karmolab-tauri
+        run: |
+          set -euo pipefail
+          LOCK=$(node -e "const s=require('fs').readFileSync('Cargo.lock','utf8').replace(/(name = \"karmolab-desktop\"\s+version = )\"[^\"]*\"/,'\$1\"\"');console.log(require('crypto').createHash('sha256').update(s).digest('hex').slice(0,16))")
+          RUSTC=$(rustc -V | tr -c 'a-zA-Z0-9.\n' '-')
+          echo "base=${RUSTC}-${LOCK}" >> "$GITHUB_OUTPUT"
+
+      - name: 창 프로그램 캐시
+        id: win_cache
+        if: steps.plan.outputs.changed == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: apps/karmolab-tauri/target/release/companion-window.exe
+          key: companion-window-${{ steps.win_key.outputs.base }}-${{ hashFiles('apps/karmolab-tauri/Cargo.toml', 'apps/karmolab-tauri/src-tauri-companion/**', 'apps/karmolab-tauri/src-tauri-shared/**', 'vendor/**') }}
+
+      - name: Rust 캐시 (창 프로그램을 새로 구울 때만)
+        if: steps.plan.outputs.changed == 'true' && steps.win_cache.outputs.cache-hit != 'true'
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: apps/karmolab-tauri -> target
+          cache-on-failure: true
+
+      - name: 창 프로그램 굽기
+        if: steps.plan.outputs.changed == 'true' && steps.win_cache.outputs.cache-hit != 'true'
+        working-directory: apps/karmolab-tauri
+        run: cargo build --release -p companion-window --bin companion-window --target-dir target
+
+      - name: zip 으로 묶고 속을 확인
+        id: zip
+        if: steps.plan.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          PACK=packages/companion/pack
+          WIN=apps/karmolab-tauri/target/release/companion-window.exe
+          test -d "$PACK" || { echo "묶음이 없다: $PACK"; exit 1; }
+          test -f "$WIN"  || { echo "창 프로그램이 없다: $WIN"; exit 1; }
+          cp "$WIN" "$PACK/companion-window.exe"
+          # 실행 설정이 가리키는 파일이 실제로 묶음에 있어야 함
+          node -e "
+            const fs = require('fs'), path = require('path');
+            const pack = process.argv[1];
+            const l = JSON.parse(fs.readFileSync(path.join(pack, 'karmo-launch.json'), 'utf8'));
+            for (const rel of [l.entry, l.exe]) {
+              if (!rel || !fs.existsSync(path.join(pack, rel))) { console.error('karmo-launch.json 이 가리키는 파일이 없음: ' + rel); process.exit(1); }
+            }
+            const v = JSON.parse(fs.readFileSync(path.join(pack, 'package.json'), 'utf8')).version;
+            if (v !== process.argv[2]) { console.error('묶음 판 번호가 다름: ' + v); process.exit(1); }
+          " "$PACK" "${{ steps.plan.outputs.version }}"
+          ZIP="companion-${{ steps.plan.outputs.version }}.zip"
+          # 압축은 러너의 것. 한글 이름은 CP949 로 들어가고 런처가 그렇게 읽음 (zip_name)
+          powershell -NoProfile -Command "Compress-Archive -Path '$PACK/*' -DestinationPath '$ZIP' -Force"
+          echo "${{ steps.plan.outputs.contract }}" > contract.txt
+          ls -la "$ZIP"
+          sha256sum "$ZIP"
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: 릴리스 (prerelease, latest 로 안 잡힘)
+        if: steps.plan.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          R="${{ github.repository }}"
+          TAG="${{ steps.plan.outputs.tag }}"
+          LAST_TAG="${{ steps.plan.outputs.last_tag }}"
+          {
+            echo "KarmoMaid ${{ steps.plan.outputs.version }}"
+            echo
+            if [ -n "$LAST_TAG" ] && git rev-parse -q --verify "refs/tags/$LAST_TAG" >/dev/null; then
+              git log --no-merges --format='- %s' "$LAST_TAG..HEAD" -- packages/companion apps/karmolab-tauri/src-tauri-companion | { grep -v '\[skip ci\]' || true; } | head -n 30
+            else
+              echo "- 전용 릴리스 첫 판. 실행 설정 (karmo-launch.json) 이 묶음 안에 들어감"
+            fi
+          } > notes.md
+          # 태그를 먼저 이 소스에 고정. 릴리스 API 가 태그를 새로 만들게 두면 main 이 앞서 있을 때 엉뚱한 소스를 가리킴
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            git push origin "HEAD:refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$R" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${{ steps.zip.outputs.zip }}" contract.txt --repo "$R" --clobber
+          else
+            # 자산을 다 올린 뒤에 공개됨. 런처가 자산 없는 릴리스를 보는 틈이 없음
+            gh release create "$TAG" "${{ steps.zip.outputs.zip }}" contract.txt --repo "$R" --verify-tag --prerelease \
+              --title "KarmoMaid v${{ steps.plan.outputs.version }}" --notes-file notes.md
+          fi
+
+      - name: 옛 판 릴리스 치우기 (최신 하나만, 태그는 남김)
+        if: steps.plan.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          KEEP="${{ steps.plan.outputs.tag }}"
+          gh release list --repo "${{ github.repository }}" --limit 200 --json tagName --jq '.[].tagName' \
+            | { grep "^${TAG_PREFIX}" || true; } | { grep -v "^${KEEP}$" || true; } \
+            | while read -r tag; do
+                gh release delete "$tag" --repo "${{ github.repository }}" --yes || true
+              done

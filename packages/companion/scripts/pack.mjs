@@ -151,7 +151,8 @@ writeFileSync(
   JSON.stringify(
     {
       name: pkg.name,
-      version: pkg.version,
+      /* 릴리스 판 번호는 워크플로가 태그에서 계산해 넘김 (COMPANION_PACK_VERSION). 손으로 구우면 package.json 값 */
+      version: process.env.COMPANION_PACK_VERSION || pkg.version,
       private: true,
       type: pkg.type,
       main: pkg.main,
@@ -175,6 +176,16 @@ cpSync(join(root, 'scripts', 'get-voice.mjs'), join(out, 'scripts', 'get-voice.m
    한글 조각을 명령으로 실행했다 (2026-11-03 런처에서 실행, "'諛곕떎.'은(는) 내부 또는 외부 명령...") */
 writeFileSync(join(out, 'scripts', 'start.cmd'), readFileSync(join(root, 'scripts', 'start.cmd'), 'utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
 cpSync(join(root, 'scripts', 'check-node.mjs'), join(out, 'scripts', 'check-node.mjs'), { recursive: true });
+
+/* 실행 설정 (실행 파일, 터미널 숨김, 환경 변수) 은 묶음과 같이 나감. 런처는 설치된 묶음의 이 파일을 읽음.
+   런처 목록에만 두면 새 설정이 옛 묶음에 얹힘 (2026-11-21 숨긴 터미널에서 멈춘 옛 start.cmd 가 폴더를 쥠).
+   적힌 파일이 묶음에 없으면 실패 */
+const launch = JSON.parse(readFileSync(join(root, 'karmo-launch.json'), 'utf8'));
+if (launch.schema !== 1 || !launch.entry || !existsSync(join(out, launch.entry))) {
+  console.error(`[pack] karmo-launch.json 의 entry 가 묶음에 없음: ${launch.entry}`);
+  process.exit(1);
+}
+cpSync(join(root, 'karmo-launch.json'), join(out, 'karmo-launch.json'));
 
 /* **받은 사람이 처음 보는 글.** 저장소 README 는 만드는 사람 것이라 여기선 쓸모가 없다 . 
    어디에 뭐가 있나가 아니라 무엇을 누르면 되나가 필요하다. */
