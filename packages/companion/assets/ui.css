@@ -851,6 +851,12 @@ body.iconmode .nt-body { display: inline-block; }
 .nt-toast { width: 290px; padding: 8px 11px; border-radius: 10px; border: 1px solid var(--accent); background: var(--panel); font-size: 13px; cursor: pointer; opacity: 0; transform: translateY(10px); transition: opacity .25s, transform .25s; }
 .nt-toast.on { opacity: 1; transform: none; }
 .nt-toast small { display: block; color: var(--dim); font-size: 11px; margin-top: 2px; }
+.nt-toast[data-kind="rhythm"] { cursor: default; }
+.nt-rhythm-text { margin-top: 4px; line-height: 1.5; overflow-wrap: anywhere; }
+.nt-rhythm-input { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--edge); background: rgba(0,0,0,.25); color: var(--ink); font: inherit; resize: none; }
+.nt-rhythm-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.nt-rhythm-row { display: flex; gap: 6px; }
+.nt-snooze:disabled { opacity: .5; cursor: default; }
 .nt-snooze { margin-top: 6px; font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--edge); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
 /* 아이콘: 몸의 얼굴 사진 (has-face), 없으면 이름 첫 글자. 판 머리 얼굴과 같은 금빛 테 (사용자 2026-11-16 "안 이쁜 원") */
 .nt-icon {

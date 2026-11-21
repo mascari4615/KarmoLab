@@ -10,6 +10,7 @@ export { summarizeToday, dashTodaySource, type Today, type TodayItem } from './d
 export { ReadMarks } from './read-marks';
 export { startLogBook, type LogBook, type LogBookOptions } from './log-book';
 export { Gap, isBusy, gapLine, type FrontSample, type GapKind } from './gap';
+export { rhythmDue, eveningLine, loadRhythm, saveRhythm, dashDiaryWriter, kstDay, type RhythmKind, type RhythmState, type RhythmOptions } from './daily-rhythm';
 export { sharedWindowWatcher } from './body/windows-watch';
 export { parseSurfaceName, SURFACE_NAMES, type SurfaceName } from './surface';
 export { listGrokLanes, roomLane, workLane, talkLane, folderTitle, type Lane, type LaneKind, type LaneVendor } from './desk/lanes';

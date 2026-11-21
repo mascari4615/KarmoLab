@@ -905,6 +905,8 @@
       알아챈것(data.text);
     } else if (data.type === 'today') {
       window.알림갱신?.(Array.isArray(data.fresh) ? data.fresh : []);
+    } else if (data.type === 'rhythm') {
+      window.리듬카드?.(data.kind === 'diary' ? 'diary' : 'evening', typeof data.text === 'string' ? data.text : '', typeof data.date === 'string' ? data.date : undefined);
     } else if (data.type === 'heard') {
       알아챈것(`들었다: ${data.text ?? ''}`);
       setState('thinking', '생각하는 중...');
@@ -2126,6 +2128,8 @@
     ntShowToast(item, label);
   }
   function ntShowToast(item, label) {
+    // 하루 두 번 카드가 떠 있으면 덮지 않고 30초 뒤 다시. 적던 글 보호
+    if (ntToast.dataset.kind === 'rhythm') { setTimeout(() => ntShowToast(item, label), 30_000); return; }
     ntToast.innerHTML = `<b>${esc(label)}</b> ${esc(item.title)}<small>${esc(item.kind)}. 눌러서 판 열기</small>` +
       '<button type="button" class="nt-snooze">10분 뒤 다시</button>';
     ntToast.querySelector('.nt-snooze').onclick = (e) => {
@@ -2152,6 +2156,80 @@
       setTimeout(() => { ntToast.hidden = true; ntDockSync(); reportHitAreas(); }, 260);
     }, 6000);
   }
+
+  /* 하루 두 번 먼저 건네는 카드 (2026-11-21). 저녁 브리핑과 자기 전 한 줄. 서버가 'rhythm' 신호로 보냄
+     알림 카드와 같은 자리, 6초 뒤 사라지지 않고 버튼으로 닫음. 한 줄은 Dash 일기에 덧붙임 */
+  function ntCloseRhythm() {
+    ntToast.classList.remove('on');
+    ntToast.hidden = true;
+    ntToast.dataset.kind = '';
+    ntDockSync();
+    reportHitAreas();
+  }
+  function ntShowRhythm(kind, text, date) {
+    // 적던 한 줄이 있으면 새 카드로 덮지 않음
+    if (ntToast.dataset.kind === 'rhythm' && (ntToast.querySelector('.nt-rhythm-input')?.value ?? '').trim() !== '') return;
+    let requestId = crypto.randomUUID();
+    let saving = false;
+    let closeAsked = false;
+    clearTimeout(ntToastTimer);
+    ntToast.dataset.kind = 'rhythm';
+    if (kind === 'evening') {
+      ntToast.innerHTML = `<b>저녁 브리핑</b><div class="nt-rhythm-text">${esc(text ?? '').replace(/\n/g, '<br>')}</div>` +
+        '<div class="nt-rhythm-row"><button type="button" class="nt-snooze" data-act="board">자세히</button><button type="button" class="nt-snooze" data-act="close">닫기</button></div>';
+    } else {
+      ntToast.innerHTML = '<b>오늘 한 줄?</b><textarea class="nt-rhythm-input" rows="3" maxlength="2000" aria-label="오늘 한 줄" placeholder="한 일이나 생각을 짧게"></textarea><small class="nt-rhythm-note" role="status"></small>' +
+        '<div class="nt-rhythm-row"><button type="button" class="nt-snooze" data-act="save">일기에 남기기</button><button type="button" class="nt-snooze" data-act="close">오늘은 넘어가기</button></div>';
+    }
+    const input = ntToast.querySelector('.nt-rhythm-input');
+    const note = ntToast.querySelector('.nt-rhythm-note');
+    async function save() {
+      const value = input.value.trim();
+      if (value === '') { note.textContent = '적은 것이 없어'; return; }
+      const button = ntToast.querySelector('[data-act="save"]');
+      button.disabled = true;
+      saving = true;
+      note.textContent = '저장 중';
+      try {
+        const result = await (await fetch('/diary', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: value, requestId, date }) })).json();
+        if (result.ok !== true) throw new Error(result.why || '저장 실패');
+        note.textContent = 'Dash 일기에 남겼어';
+        input.disabled = true;
+        setTimeout(ntCloseRhythm, 1800);
+      } catch (err) {
+        // 적은 글은 그대로 둠. 다시 누르면 재시도
+        note.textContent = `못 남겼어: ${err && err.message ? err.message : err}`;
+        button.disabled = false;
+      } finally {
+        saving = false;
+      }
+    }
+    ntToast.querySelectorAll('[data-act]').forEach((button) => {
+      button.onclick = (e) => {
+        e.stopPropagation();
+        const act = button.dataset.act;
+        if (act === 'close') {
+          if (saving) return;
+          // 적은 글이 있으면 한 번 더 눌러야 닫힘
+          if (input && input.value.trim() !== '' && !input.disabled && !closeAsked) { closeAsked = true; note.textContent = '적은 글이 있어. 한 번 더 누르면 버리고 닫아'; return; }
+          ntCloseRhythm();
+        }
+        else if (act === 'board') { ntCloseRhythm(); ntOpenBoard('일정'); }
+        else if (act === 'save') void save();
+      };
+    });
+    // 글이 바뀌면 새 요청 번호. 같은 번호에 다른 글은 원본이 거절함
+    input?.addEventListener('input', () => { note.textContent = ''; closeAsked = false; requestId = crypto.randomUUID(); });
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) { e.preventDefault(); void save(); }
+      e.stopPropagation();
+    });
+    ntToast.hidden = false;
+    requestAnimationFrame(() => ntToast.classList.add('on'));
+    placeNotify();
+    reportHitAreas();
+  }
+  window.리듬카드 = ntShowRhythm;
 
   /** 일정 시작 N분 전 (설정 미리 알림) 과 시작 시각에 카드. 받은 목록이 바뀔 때마다 다시 맞춤 */
   function ntSchedule() {
@@ -2202,6 +2280,7 @@
     ntOpenBoard(chip.dataset.kind);
   });
   ntToast.addEventListener('click', () => {
+    if (ntToast.dataset.kind === 'rhythm') return; // 하루 두 번 카드는 제 버튼으로만 닫음
     ntToast.classList.remove('on');
     ntToast.hidden = true;
     ntOpenBoard(ntToast.dataset.kind);
@@ -2344,7 +2423,11 @@
   document.getElementById('ntBody').addEventListener('click', () => 아이콘모드켜기(false));
   // 중력 상태(fall)가 아래에서 선언되므로 스크립트 끝난 뒤 복원
   setTimeout(() => {
-    try { if (localStorage.getItem('companion.iconMode') === '1') 아이콘모드켜기(true); } catch { /* 몸 모드로 시작 */ }
+    // 바탕화면 창에서 고른 적이 없으면 아이콘으로 시작 (2026-11-21 조용한 기본값). 몸을 고른 값 '0' 은 그대로 따름
+    try {
+      const saved = localStorage.getItem('companion.iconMode');
+      if (saved === '1' || (saved === null && inDesktopWindow)) 아이콘모드켜기(true);
+    } catch { /* 몸 모드로 시작 */ }
   }, 0);
 
   /* ── 화면 걷기 ─────────────────────────────────────────────

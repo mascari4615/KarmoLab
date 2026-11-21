@@ -115,6 +115,13 @@ import {
   ReadMarks,
   Gap,
   gapLine,
+  isBusy,
+  rhythmDue,
+  eveningLine,
+  loadRhythm,
+  saveRhythm,
+  dashDiaryWriter,
+  kstDay,
   sharedWindowWatcher,
   windowsIdleMs,
   repoCopies,
@@ -643,6 +650,7 @@ const todayMemo = process.env.COMPANION_MEMO_DIR?.trim() || sibling('memo', join
 if (todayMemo === null) console.log('[오늘] memo 저장소를 이웃에서 못 찾았다. 할 일 숫자 없이 지낸다');
 // 1분 보관. 목록 변화는 아래 고리가 1분마다 대조해 창에 바로 밀어 넣음
 const todaySource = dashTodaySource(todayMemo, { ttlMs: 60_000 });
+const diaryWrite = dashDiaryWriter(todayMemo);
 // 알림 줄 읽음. 원본이 아니라 이 컴퓨터의 표시 상태. 원본에서 이틀 안 보인 줄만 지움 (read-marks.ts)
 const readFile = join(home, '알림-읽음.json');
 const readIds = new ReadMarks((() => { try { return JSON.parse(readFileSync(readFile, 'utf8')); } catch { return null; } })(), Date.now());
@@ -722,6 +730,11 @@ ${tallyReport(tally)}`;
     saveRead();
   },
   todayUrl: async (id) => (await todaySource().catch(() => null))?.items.find((i) => i.id === id)?.url ?? null,
+  diarySave: async (text, given) => {
+    const result = await diaryWrite(text, given);
+    console.log(result.ok ? `[한 줄] ${result.date} 일기에 덧붙임` : `[한 줄] 저장 실패. ${result.why}`);
+    return result;
+  },
   settings: () => settingsReport(settings),
   putSettings: (next) => settings.put(next),
   settingValues: () => settings.all,
@@ -944,6 +957,43 @@ if (process.platform === 'win32' && todayMemo !== null && process.env.COMPANION_
     console.log(`[틈] ${kind}. ${line.text}`);
     web.voice.speak({ text: line.text, channel: 'today', at: Date.now() });
   }, 5000);
+}
+
+// 하루 두 번 먼저 건네는 카드 (2026-11-21). 저녁 브리핑과 자기 전 한 줄. 글자만, 두뇌 없음
+// 몰입 중과 자리 비움에는 기다림. 창이 붙어 있지 않으면 건넨 것으로 치지 않음
+if (todayMemo !== null) {
+  const rhythmFile = join(home, '하루-리듬.json');
+  let rhythm = loadRhythm(rhythmFile);
+  let rhythmBusy = false;
+  setInterval(async () => {
+    if (rhythmBusy) return;
+    const now = new Date();
+    const kind = rhythmDue(rhythm, now, {
+      eveningOn: settings.on('eveningBrief'), diaryOn: settings.on('diaryAsk'),
+      eveningHour: Number(settings.get('eveningBriefHour')), diaryHour: Number(settings.get('diaryAskHour')),
+    });
+    if (kind === null) return;
+    if (process.platform === 'win32') {
+      if (isBusy(sharedWindowWatcher().foreground())) return;
+      const idle = windowsIdleMs();
+      if (idle !== null && idle > 5 * 60_000) return;
+    }
+    rhythmBusy = true;
+    try {
+      const attached = await fetch(`http://127.0.0.1:${port}/state`, { signal: AbortSignal.timeout(3000) }).then((r) => r.json()).then((s) => s.windowAttached > 0).catch(() => false);
+      if (!attached) return;
+      if (kind === 'evening') {
+        const today = await Promise.race([todaySource(), new Promise((done) => setTimeout(() => done(null), 20_000))]).catch(() => null);
+        if (today === null) { console.log('[리듬] 저녁 브리핑. 오늘 정보 못 읽음, 다음 회차에 다시'); return; }
+        web.emit({ type: 'rhythm', kind, text: eveningLine(today) });
+      } else {
+        web.emit({ type: 'rhythm', kind, date: kstDay(now) });
+      }
+      rhythm = { ...rhythm, [kind]: kstDay(now) };
+      saveRhythm(rhythmFile, rhythm);
+      console.log(`[리듬] ${kind === 'evening' ? '저녁 브리핑' : '오늘 한 줄'} 카드를 건넴`);
+    } finally { rhythmBusy = false; }
+  }, 30_000);
 }
 
 // 스스로 말 걸기. 시간이 아니라 이유로 깨운다. 이유가 없으면 조용하다.

@@ -32,6 +32,11 @@ export const toConfigure: Readonly<Record<string, SettingSpec>> = {
   screenLook: { what: '화면을 곁눈질해도 되나', value: true },
   voiceOut: { what: '말을 소리로 내나 (끄면 말풍선만)', value: true },
   notifyLeadMin: { what: '일정 몇 분 전에 알림 카드 (0 = 시작 시각만)', value: 10, min: 0, max: 60 },
+  // 하루 두 번 먼저 건네는 카드 (2026-11-21). 먼저 말 걸기와 별개, 글자만
+  eveningBrief: { what: '저녁에 오늘 남은 것을 카드로 한 번 건네나', value: true },
+  eveningBriefHour: { what: '저녁 브리핑을 건네기 시작하는 시각 (시)', value: 17, min: 0, max: 23 },
+  diaryAsk: { what: '자기 전에 오늘 한 줄을 물어보나', value: true },
+  diaryAskHour: { what: '오늘 한 줄을 묻기 시작하는 시각 (시)', value: 22, min: 0, max: 23 },
   screenLookIntervalSec: { what: '화면을 곁눈질하는 간격 (0 = 안 봄)', value: 120, min: 0, max: 1800 },
   quietHourStart: { what: '이 시각부터 조용 (시)', value: 23, min: 0, max: 23 },
   quietHourEnd: { what: '이 시각까지 조용 (시)', value: 7, min: 0, max: 23 },

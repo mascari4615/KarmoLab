@@ -388,6 +388,62 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('하루 두 번 카드. 저녁 브리핑은 버튼으로 닫고, 한 줄은 실패하면 글을 남기고 성공하면 닫힘', async () => {
+      const page = await browser.newPage({ viewport: { width: 520, height: 900 } });
+      await page.route('**/today', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: [], warnings: [], read: [], fetchedAt: new Date().toISOString() }) }));
+      await page.goto(url2 + '/', { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1500);
+      const hidden = () => page.evaluate(() => document.getElementById('ntToast').hidden);
+      body.emit({ type: 'rhythm', kind: 'evening', text: '남은 일정 1개. 19:30 약속\n할 일 없음' });
+      await page.waitForFunction(() => document.getElementById('ntToast').hidden === false);
+      assert.match(await page.locator('#ntToast').innerText(), /저녁 브리핑[\s\S]*19:30 약속[\s\S]*할 일 없음/);
+      await page.waitForTimeout(6600);
+      assert.equal(await hidden(), false, '저녁 브리핑이 알림 카드처럼 6초 뒤 사라졌다');
+      await page.locator('#ntToast .nt-rhythm-text').click();
+      assert.equal(await hidden(), false, '본문을 눌렀는데 카드가 닫혔다');
+      if (process.env.COMPANION_SHOT_DIR) await page.screenshot({ path: `${process.env.COMPANION_SHOT_DIR}/rhythm-evening.png` });
+      await page.locator('#ntToast [data-act="close"]').click();
+      assert.equal(await hidden(), true, '닫기를 눌렀는데 저녁 브리핑이 남았다');
+
+      const sent = [];
+      let fail = true;
+      await page.route('**/diary', (route) => {
+        sent.push(JSON.parse(route.request().postData()));
+        const body2 = fail ? { ok: false, why: 'github_login_required' } : { ok: true, date: '2026-11-23' };
+        fail = false;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body2) });
+      });
+      body.emit({ type: 'rhythm', kind: 'diary', date: '2026-11-23' });
+      await page.waitForFunction(() => document.querySelector('#ntToast .nt-rhythm-input') !== null && document.getElementById('ntToast').hidden === false);
+      await page.locator('#ntToast [data-act="save"]').click();
+      assert.equal(sent.length, 0, '빈 글인데 저장을 요청했다');
+      await page.locator('#ntToast .nt-rhythm-input').fill('오늘은 푹 쉼');
+      if (process.env.COMPANION_SHOT_DIR) await page.screenshot({ path: `${process.env.COMPANION_SHOT_DIR}/rhythm-diary.png` });
+      await page.locator('#ntToast [data-act="save"]').click();
+      await page.waitForFunction(() => document.querySelector('#ntToast .nt-rhythm-note')?.textContent.includes('못 남겼어'));
+      assert.equal(await page.locator('#ntToast .nt-rhythm-input').inputValue(), '오늘은 푹 쉼', '저장에 실패했는데 적은 글이 사라졌다');
+      await page.locator('#ntToast [data-act="save"]').click();
+      await page.waitForFunction(() => document.getElementById('ntToast').hidden === true, null, { timeout: 5000 });
+      assert.deepEqual(sent.map((s) => [s.text, s.date]), [['오늘은 푹 쉼', '2026-11-23'], ['오늘은 푹 쉼', '2026-11-23']]);
+      assert.match(sent[0].requestId, /^[a-f0-9-]{36}$/);
+      assert.equal(sent[0].requestId, sent[1].requestId, '같은 글의 재시도인데 요청 번호가 달라 두 번 붙을 수 있다');
+
+      // 적던 글이 있으면 넘어가기는 두 번, 그사이 온 다른 카드가 글을 덮지 않음
+      body.emit({ type: 'rhythm', kind: 'diary', date: '2026-11-23' });
+      await page.waitForFunction(() => document.querySelector('#ntToast .nt-rhythm-input') !== null && document.getElementById('ntToast').hidden === false);
+      await page.locator('#ntToast .nt-rhythm-input').fill('적던 글');
+      body.emit({ type: 'rhythm', kind: 'evening', text: '덮으면 안 됨' });
+      await page.waitForTimeout(400);
+      assert.equal(await page.locator('#ntToast .nt-rhythm-input').inputValue(), '적던 글', '적던 한 줄을 다른 카드가 덮었다');
+      await page.locator('#ntToast [data-act="close"]').click();
+      assert.equal(await hidden(), false, '적은 글이 있는데 한 번에 닫혔다');
+      await page.locator('#ntToast [data-act="close"]').click();
+      assert.equal(await hidden(), true, '두 번 눌렀는데 안 닫혔다');
+      await page.unroute('**/diary');
+      await page.unroute('**/today');
+      await page.close();
+    });
+
     await t.test('창을 여는 것만으로 터지는 자리가 없다. body3d 가 TDZ 로 터지던 자리', () => {
       assert.deepEqual(consoleMask, [], `창이 열리다 터졌다: ${consoleMask.join(', ')}`);
     });

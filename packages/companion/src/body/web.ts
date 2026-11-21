@@ -135,6 +135,8 @@ export interface WebBodyOptions {
   todayMark?: (id: string, read: boolean) => void;
   /** 알림 줄의 보기 주소. 서버가 가진 목록에서만 찾음 */
   todayUrl?: (id: string) => Promise<string | null>;
+  /** 오늘 한 줄을 Dash 일기에 덧붙임. 자기 전 카드가 부름 */
+  diarySave?: (text: string, given?: { requestId?: string; date?: string }) => Promise<{ ok: boolean; why?: string; date?: string }>;
 }
 
 /**
@@ -536,6 +538,28 @@ export function webBody(options: WebBodyOptions = {}): WebBody {
             } else {
               res.writeHead(404).end();
             }
+          });
+          return;
+        }
+
+        if (url === '/diary' && req.method === 'POST') {
+          let raw = '';
+          req.on('data', (chunk) => { raw += chunk; if (raw.length > 12_000) req.destroy(); });
+          req.on('end', () => {
+            const reply = (body: unknown) => {
+              res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+              res.end(JSON.stringify(body));
+            };
+            let text: unknown;
+            let given: { requestId?: string; date?: string } = {};
+            try {
+              const body = JSON.parse(raw) as { text?: unknown; requestId?: unknown; date?: unknown };
+              text = body.text;
+              given = { requestId: typeof body.requestId === 'string' ? body.requestId : undefined, date: typeof body.date === 'string' ? body.date : undefined };
+            } catch { res.writeHead(400).end(); return; }
+            if (typeof text !== 'string') { res.writeHead(400).end(); return; }
+            if (options.diarySave === undefined) { reply({ ok: false, why: '연결 안 됨' }); return; }
+            options.diarySave(text, given).then(reply, (e) => reply({ ok: false, why: e instanceof Error ? e.message : String(e) }));
           });
           return;
         }
