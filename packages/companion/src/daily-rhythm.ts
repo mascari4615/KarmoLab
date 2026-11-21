@@ -22,13 +22,14 @@ const kstHour = (at: Date): number => Number(at.toLocaleTimeString('en-GB', { ti
 
 /**
  * 지금 건넬 카드. 자기 전 시각부터 자정까지는 한 줄 질문, 그 앞 저녁 시간은 브리핑
- * 저녁 시각이 자기 전 시각보다 늦게 설정되면 브리핑은 없음
+ * 한 줄이 꺼져 있거나 저녁 시각보다 이르면 브리핑을 막지 않음 (설정 칸에서 고를 수 있는 조합)
  */
 export function rhythmDue(state: RhythmState, now: Date, options: RhythmOptions): RhythmKind | null {
   const day = kstDay(now);
   const hour = kstHour(now);
   if (options.diaryOn && hour >= options.diaryHour && state.diary !== day) return 'diary';
-  if (options.eveningOn && hour >= options.eveningHour && hour < options.diaryHour && state.evening !== day) return 'evening';
+  const bedtime = options.diaryOn && options.diaryHour > options.eveningHour && hour >= options.diaryHour;
+  if (options.eveningOn && hour >= options.eveningHour && !bedtime && state.evening !== day) return 'evening';
   return null;
 }
 

@@ -232,6 +232,41 @@ test('창 검사. 실패는 빨갛게, 알아챔은 말 방에도, 설정창은 
       await page.close();
     });
 
+    await t.test('먼저 건네는 카드 둘은 판에서 끄고 시각을 바꾼다. 거절되면 칸이 되돌아간다', async () => {
+      const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+      const sent = [];
+      let refuse = false;
+      await page.route('**/settings.json', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ eveningBrief: true, eveningBriefHour: 17, diaryAsk: false, diaryAskHour: 22 }) }));
+      await page.route('**/settings', (route) => {
+        if (route.request().method() !== 'POST') return route.continue();
+        sent.push(JSON.parse(route.request().postData()));
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ failed: refuse ? ['eveningBriefHour'] : [] }) });
+      });
+      await page.goto(url2 + '/?full=1&roam=0&gravity=0', { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1200);
+      await page.locator('.stage').click({ button: 'right', force: true });
+      await page.locator('#ring .ring-btn.more').click();
+      await page.click('.menu-rail button[data-page=more]');
+      assert.equal(await page.inputValue('#optEvening'), '17', '저장된 저녁 정리 시각이 칸에 안 보인다');
+      assert.equal(await page.inputValue('#optDiary'), 'off', '꺼 둔 오늘 한 줄이 칸에 끔으로 안 보인다');
+      const fit = await page.evaluate(() => ['optEvening', 'optDiary'].map((id) => {
+        const label = document.getElementById(id).closest('.menu-field');
+        const span = label.querySelector('span');
+        const m = document.getElementById('menu').getBoundingClientRect(), r = label.getBoundingClientRect();
+        return { wraps: span.scrollWidth > span.clientWidth + 1 || span.getBoundingClientRect().height > 24, inside: r.left >= m.left && r.right <= m.right && r.bottom <= m.bottom };
+      }));
+      for (const f of fit) assert.deepEqual(f, { wraps: false, inside: true }, `새 칸이 판에서 넘치거나 이름이 줄바꿈됨: ${JSON.stringify(fit)}`);
+      await page.selectOption('#optDiary', '23');
+      await page.selectOption('#optEvening', 'off');
+      await page.waitForTimeout(200);
+      assert.deepEqual(sent, [{ diaryAsk: true, diaryAskHour: 23 }, { eveningBrief: false }]);
+      refuse = true;
+      await page.selectOption('#optEvening', '19');
+      await page.waitForTimeout(300);
+      assert.equal(await page.inputValue('#optEvening'), '17', '서버가 거절했는데 칸이 서버에 저장된 값 (17시) 으로 안 돌아왔다');
+      await page.close();
+    });
+
     await t.test('물어보기 판은 전체 화면 창에서 몸 옆 360px. 모니터 아래를 가로로 덮지 않게', async () => {
       const page = await openWindow('?full=1&roam=0&gravity=0');
       await page.setViewportSize({ width: 1600, height: 900 });

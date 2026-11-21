@@ -25,10 +25,19 @@ test('하루에 종류별 한 번, 다음 날 다시', () => {
   assert.equal(rhythmDue({}, new Date('2026-11-24T00:30:00+09:00'), options), null);
 });
 
-test('끈 종류는 건네지 않음, 저녁 시각이 자기 전보다 늦으면 브리핑 없음', () => {
+test('끈 종류는 건네지 않음, 설정 칸에서 고를 수 있는 조합마다 브리핑이 막히지 않음', () => {
   assert.equal(rhythmDue({}, at('18:00'), { ...options, eveningOn: false }), null);
-  assert.equal(rhythmDue({}, at('22:30'), { ...options, diaryOn: false }), null);
-  assert.equal(rhythmDue({}, at('23:00'), { ...options, eveningHour: 23, diaryOn: false }), null);
+  assert.equal(rhythmDue({}, at('22:30'), { ...options, eveningOn: false, diaryOn: false }), null);
+  // 한 줄을 끄면 자기 전 시각이 브리핑을 막지 않음
+  assert.equal(rhythmDue({}, at('22:30'), { ...options, diaryOn: false }), 'evening');
+  assert.equal(rhythmDue({}, at('23:00'), { ...options, eveningHour: 23, diaryOn: false }), 'evening');
+  // 저녁 시각을 한 줄보다 늦게 고르면 한 줄 먼저, 그 뒤 브리핑
+  const late = { ...options, eveningHour: 23 };
+  assert.equal(rhythmDue({}, at('22:30'), late), 'diary');
+  assert.equal(rhythmDue({ diary: '2026-11-23' }, at('22:30'), late), null);
+  assert.equal(rhythmDue({ diary: '2026-11-23' }, at('23:10'), late), 'evening');
+  // 기본 조합에서는 자기 전 시각 뒤 브리핑 없음
+  assert.equal(rhythmDue({ diary: '2026-11-23' }, at('22:30'), options), null);
 });
 
 test('브리핑 문장은 받은 값만, 비어 있으면 비었다고', () => {

@@ -82,6 +82,9 @@
           <option value="0">시작 때만</option><option value="5">5분 전</option><option value="10">10분 전</option>
           <option value="15">15분 전</option><option value="30">30분 전</option>
         </select></label>
+        <div class="menu-sub">하루 두 번 먼저 건네는 카드</div>
+        <label class="menu-field"><i data-icon="inbox"></i><span>저녁 정리</span><select id="optEvening"></select></label>
+        <label class="menu-field"><i data-icon="scroll-text"></i><span>오늘 한 줄</span><select id="optDiary"></select></label>
         <button type="button" class="menu-link" id="knownBtn"><i data-icon="book-heart"></i>나에 대해 아는 것<i class="go" data-icon="chevron-right"></i></button>
         <button type="button" class="menu-link" id="boxesBtn"><i data-icon="scan"></i>차지하는 자리 보기<i class="go" data-icon="chevron-right"></i></button>
         <button type="button" class="menu-link" id="alwaysEarsBtn" hidden>늘 듣기</button>
@@ -1623,6 +1626,26 @@
 
   /* 기능별 켜고 끄기. 값은 서버 설정 파일이 정본 (껐다 켜도 유지) */
   const 기능칸 = { optScreen: 'screenLook', optVoice: 'voiceOut', optFirst: 'speakFirst' };
+  // 먼저 건네는 카드 둘. 칸 하나가 켜고 끄기와 시작 시각을 같이 가짐 (끔, 0시부터 23시)
+  const 리듬칸 = { optEvening: ['eveningBrief', 'eveningBriefHour'], optDiary: ['diaryAsk', 'diaryAskHour'] };
+  for (const [id, [onKey, hourKey]] of Object.entries(리듬칸)) {
+    const box = document.getElementById(id);
+    if (!box) continue;
+    box.append(new Option('끔', 'off'));
+    for (let h = 0; h < 24; h += 1) box.append(new Option(`${h}시부터`, String(h)));
+    box.addEventListener('change', async () => {
+      const picked = box.value;
+      const patch = picked === 'off' ? { [onKey]: false } : { [onKey]: true, [hourKey]: Number(picked) };
+      // 서버는 실패한 키만 건너뛰고 나머지는 저장. 실패하면 이전 값이 아니라 저장된 값을 다시 읽음
+      try {
+        const { failed } = await (await fetch('/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(patch) })).json();
+        if (failed.length > 0) { tell(`설정 안 바뀜: ${failed.join(', ')}`); await 기능읽기(); }
+      } catch (err) {
+        tell(`설정 저장 실패: ${err && err.message ? err.message : err}`);
+        await 기능읽기();
+      }
+    });
+  }
   async function 기능읽기() {
     try {
       const values = await (await fetch('/settings.json', { cache: 'no-store' })).json();
@@ -1634,6 +1657,12 @@
       if (typeof values.notifyLeadMin === 'number') ntLeadMin = values.notifyLeadMin;
       const lead = document.getElementById('optLead');
       if (lead) lead.value = String(ntLeadMin);
+      for (const [id, [onKey, hourKey]] of Object.entries(리듬칸)) {
+        const box = document.getElementById(id);
+        if (!box) continue;
+        if (values[onKey] === false) box.value = 'off';
+        else if (Number.isInteger(values[hourKey])) box.value = String(values[hourKey]);
+      }
     } catch (e) {
       tell(`설정을 못 읽었다: ${e && e.message ? e.message : e}`);
     }
