@@ -360,7 +360,11 @@ function paintMain() {
   headEl.innerHTML =
     '<h1>' + esc(app.name) + '</h1><p>' + esc(app.summary) + '</p>' +
     (ver.length ? '<p class="ver">' + ver.map(([k, v]) => '<span>' + esc(k) + '<b>' + esc(v) + '</b></span>').join('') + '</p>' : '') +
-    (st.error ? '<p class="err">' + esc(st.error) + '</p>' : '');
+    /* 오류 글은 긁을 수 있고 버튼으로 복사. 전에는 화면 캡처로만 전달 가능 (사용자 2026-11-21) */
+    (st.error
+      ? '<p class="err"><span class="err-text">' + esc(st.error) + '</span> <button type="button" class="err-copy" data-copy="' +
+        esc(app.name + ' ' + (st.version || '-') + ' -> ' + (st.latest || '-') + ' | ' + st.error) + '">복사</button></p>'
+      : '');
 
   paintRel(app, st, pref, played, last);
 
@@ -857,6 +861,30 @@ document.addEventListener('keydown', (e) => {
     menuOpen = false;
     paintMain();
   }
+});
+/* 오류 글 복사. 다시 그려도 살아 있게 문서에서 받음 */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    /* 클립보드 권한이 없는 창. 숨은 칸을 골라 복사 */
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.append(area);
+    area.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { ok = false; }
+    area.remove();
+    return ok;
+  }
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('[data-copy]');
+  if (!btn) return;
+  e.stopImmediatePropagation();
+  void copyText(btn.dataset.copy || '').then((ok) => toast(ok ? '오류 글을 복사함' : '복사 실패. 글을 긁어서 복사', ok ? 'ok' : 'err'));
 });
 /* 메뉴 밖을 누르면 닫음 */
 document.addEventListener('click', (e) => {

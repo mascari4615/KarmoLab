@@ -741,7 +741,7 @@ fn status_blocking(handle: &AppHandle, app: &Value) -> Status {
         }
     }
     if st.installed && format_of(app) != "local" {
-        st.running = exe_of(app).map(|exe| is_running(&exe)).unwrap_or(false);
+        st.running = exe_of(app).map(|exe| is_running(&exe)).unwrap_or(false) || (format_of(app) == "zip" && remembered_run(handle, app).is_some());
     }
     if app.get("source").is_some() {
         match latest_of(app) {
@@ -887,10 +887,139 @@ fn is_running(exe: &str) -> bool {
     !pids_of(exe).is_empty()
 }
 
+/// 프로세스가 만들어진 시각 (FILETIME 100ns). 못 읽으면 None. pid 재사용 판별용
+#[cfg(windows)]
+fn proc_born(pid: u32) -> Option<u64> {
+    use windows_sys::Win32::Foundation::{CloseHandle, FILETIME};
+    use windows_sys::Win32::System::Threading::{GetExitCodeProcess, GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+    unsafe {
+        let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if h.is_null() {
+            return None;
+        }
+        let zero = FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
+        let (mut born, mut exit, mut kernel, mut user) = (zero, zero, zero, zero);
+        let mut code = 0u32;
+        // 끝난 프로세스도 누가 손잡이를 쥐고 있으면 열림. 종료 코드가 STILL_ACTIVE (259) 일 때만 산 것
+        let ok = GetProcessTimes(h, &mut born, &mut exit, &mut kernel, &mut user) != 0 && GetExitCodeProcess(h, &mut code) != 0 && code == 259;
+        CloseHandle(h);
+        ok.then(|| ((born.dwHighDateTime as u64) << 32) | born.dwLowDateTime as u64)
+    }
+}
+
+#[cfg(not(windows))]
+fn proc_born(_pid: u32) -> Option<u64> {
+    None
+}
+
+/// 런처가 띄운 실행기 (zip 앱의 start.cmd) 를 적어 두는 파일. downloads/<id>.run, 내용은 pid 와 만든 시각
+/// 창 프로그램 이름만 보면 창 없이 남은 cmd 와 node 를 못 봄. 그것들이 설치 폴더를 쥐어 업데이트가
+/// os error 32 로 막혔음 (2026-11-21 KarmoMaid 0.1.147 -> 0.1.148)
+fn run_file(handle: &AppHandle, app: &Value) -> Option<PathBuf> {
+    Some(downloads_dir(handle).ok()?.join(format!("{}.run", safe_id(app).ok()?)))
+}
+
+fn remember_run(handle: &AppHandle, app: &Value, pid: u32) {
+    if let (Some(file), Some(born)) = (run_file(handle, app), proc_born(pid)) {
+        if let Some(dir) = file.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        let _ = std::fs::write(file, format!("{} {}", pid, born));
+    }
+}
+
+/// 적어 둔 실행기가 아직 그 프로세스면 pid. 끝났거나 pid 가 다른 프로세스로 재사용됐으면 None 이고 기록을 지움
+fn remembered_run(handle: &AppHandle, app: &Value) -> Option<u32> {
+    let file = run_file(handle, app)?;
+    let text = std::fs::read_to_string(&file).ok()?;
+    let alive = parse_run(&text).filter(|(pid, born)| proc_born(*pid) == Some(*born)).map(|(pid, _)| pid);
+    if alive.is_none() {
+        let _ = std::fs::remove_file(&file);
+    }
+    alive
+}
+
+fn parse_run(text: &str) -> Option<(u32, u64)> {
+    let mut parts = text.split_whitespace();
+    let pid = parts.next()?.parse().ok()?;
+    let born = parts.next()?.parse().ok()?;
+    parts.next().is_none().then_some((pid, born))
+}
+
+/// root 와 그 자손 전부. root 가 맨 앞
+/// 실행기 (cmd) 부터 꺼야 함. 서버가 먼저 죽으면 cmd 가 오류 코드를 보고 알림 창을 띄움
+fn tree_of(all: &[(u32, u32, String)], root: u32) -> Vec<u32> {
+    let mut out = vec![root];
+    let mut i = 0;
+    while i < out.len() {
+        let parent = out[i];
+        for p in all.iter().filter(|p| p.1 == parent && p.0 != 0) {
+            if !out.contains(&p.0) {
+                out.push(p.0);
+            }
+        }
+        i += 1;
+    }
+    out
+}
+
+/// 런처가 띄운 실행기와 그 자손을 끔. 남은 것이 없으면 true
+fn stop_remembered(handle: &AppHandle, app: &Value) -> bool {
+    let Some(root) = remembered_run(handle, app) else { return true };
+    let Some(root_born) = proc_born(root) else { return true };
+    // 자손은 뿌리보다 늦게 만들어진 것만. 죽은 프로세스의 pid 를 물려받은 남의 프로세스를 끄지 않게
+    let tree: Vec<(u32, u64)> = tree_of(&procs(), root)
+        .into_iter()
+        .filter_map(|pid| proc_born(pid).map(|born| (pid, born)))
+        .filter(|(pid, born)| *pid == root || *born >= root_born)
+        .collect();
+    for (pid, _) in &tree {
+        kill_pid(*pid);
+    }
+    let alive = |list: &[(u32, u64)]| -> Vec<(u32, u64)> { list.iter().copied().filter(|(pid, born)| proc_born(*pid) == Some(*born)).collect() };
+    for _ in 0..20 {
+        if alive(&tree).is_empty() {
+            let _ = remembered_run(handle, app);
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    // 못 끈 것이 남으면 그것을 다시 적어 둠. 뿌리만 죽고 서버가 남아도 다음에 다시 정리
+    if let (Some((pid, born)), Some(file)) = (alive(&tree).first().copied(), run_file(handle, app)) {
+        let _ = std::fs::write(file, format!("{} {}", pid, born));
+    }
+    false
+}
+
+/// 방금 (60초 안) 띄운 실행기인가. 창 프로그램이 뜨기 전 몇 초는 남은 것이 아니라 켜지는 중
+fn remembered_is_starting(handle: &AppHandle, app: &Value) -> bool {
+    let Some(born) = remembered_run(handle, app).and_then(proc_born) else { return false };
+    let unix = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos() / 100).unwrap_or(0) as u64;
+    // FILETIME 은 1601년 기준 100ns
+    let now = unix + 116_444_736_000_000_000;
+    now.saturating_sub(born) < 60 * 10_000_000
+}
+
+/// 폴더 옮기기. 방금 끈 프로세스가 손잡이를 놓는 데 잠깐 걸려 2초까지 다시 시도
+fn rename_patient(from: &Path, to: &Path) -> std::io::Result<()> {
+    let mut last = Ok(());
+    for _ in 0..10 {
+        last = std::fs::rename(from, to);
+        if last.is_ok() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    last
+}
+
 /// 실행 중인 것만 가볍게. 화면이 1초마다 부름 (최신 판은 다시 안 받음)
 #[tauri::command]
-async fn running_status(app: Value) -> Result<bool, String> {
-    tauri::async_runtime::spawn_blocking(move || running_blocking(&app)).await.map_err(|e| e.to_string())
+async fn running_status(handle: AppHandle, app: Value) -> Result<bool, String> {
+    // 창 프로그램이 없어도 런처가 띄운 실행기가 살아 있으면 실행 중. 끄기 버튼이 보여야 정리할 수 있음
+    tauri::async_runtime::spawn_blocking(move || running_blocking(&app) || (format_of(&app) == "zip" && remembered_run(&handle, &app).is_some()))
+        .await
+        .map_err(|e| e.to_string())
 }
 
 fn running_blocking(app: &Value) -> bool {
@@ -909,7 +1038,17 @@ async fn stop_app(handle: AppHandle, app: Value) -> Result<(), String> {
         if format_of(&app) == "local" {
             stop_local(&handle, &app)
         } else {
-            stop_blocking(&app)
+            let stopped = stop_blocking(&app);
+            // 창이 이미 없어 위가 실패해도 남은 실행기는 정리
+            if format_of(&app) == "zip" {
+                if !stop_remembered(&handle, &app) {
+                    return Err("남은 실행 프로세스를 못 끔".into());
+                }
+                if !exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+                    return Ok(());
+                }
+            }
+            stopped
         }
     })
     .await
@@ -966,7 +1105,8 @@ fn stop_blocking(app: &Value) -> Result<(), String> {
         }
     }
     if format_of(app) == "zip" {
-        for pid in launcher_chain(&exe) {
+        // 바깥 (cmd) 부터. 서버가 먼저 죽으면 cmd 가 오류 코드를 보고 알림 창을 띄움
+        for pid in launcher_chain(&exe).into_iter().rev() {
             kill_pid(pid);
         }
     }
@@ -1044,7 +1184,7 @@ fn extract_zip(file: &Path, dest: &Path, version: &str) -> Result<(), String> {
         } else {
             let prev = prev_dir(dest);
             let _ = std::fs::remove_dir_all(&prev);
-            std::fs::rename(dest, &prev).map_err(|e| format!("옛 판을 못 옮김 (실행 중인지 확인): {}", e))?;
+            rename_patient(dest, &prev).map_err(|e| format!("옛 판을 못 옮김. 이 앱의 폴더를 쓰는 프로그램 (터미널, 탐색기, 남은 서버) 을 닫고 다시: {}", e))?;
         }
     }
     std::fs::rename(&tmp, dest).map_err(|e| e.to_string())
@@ -1063,7 +1203,7 @@ fn swap_with_prev(dest: &Path) -> Result<(), String> {
     }
     let hold = dest.with_extension("swap");
     let _ = std::fs::remove_dir_all(&hold);
-    std::fs::rename(dest, &hold).map_err(|e| format!("지금 판을 못 옮김 (실행 중인지 확인): {}", e))?;
+    rename_patient(dest, &hold).map_err(|e| format!("지금 판을 못 옮김. 이 앱의 폴더를 쓰는 프로그램 (터미널, 탐색기, 남은 서버) 을 닫고 다시: {}", e))?;
     if let Err(e) = std::fs::rename(&prev, dest) {
         let _ = std::fs::rename(&hold, dest);
         return Err(e.to_string());
@@ -1080,6 +1220,9 @@ async fn rollback_app(handle: AppHandle, app: Value) -> Result<(), String> {
         }
         if exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
             return Err("실행 중. 끈 뒤에 다시".into());
+        }
+        if !stop_remembered(&handle, &app) {
+            return Err("남은 실행 프로세스를 못 끔. 런처를 다시 켠 뒤에 다시".into());
         }
         let dest = zip_dir(&handle, &app)?;
         let result = swap_with_prev(&dest);
@@ -1359,6 +1502,16 @@ async fn install_app(handle: AppHandle, app: Value, url: String, version: String
                     return Err("실행 중. 끈 뒤에 다시".into());
                 }
             }
+            if remembered_is_starting(&handle, &app) {
+                let _ = std::fs::remove_file(&file);
+                return Err("실행 중. 끈 뒤에 다시".into());
+            }
+            // 창은 없는데 남은 실행기 (멈춘 start.cmd, 서버) 는 폴더를 쥐므로 먼저 정리
+            if !stop_remembered(&handle, &app) {
+                let _ = std::fs::remove_file(&file);
+                log_line(&handle, &format!("install blocked {}: leftover launcher process", safe_id(&app).unwrap_or_default()));
+                return Err("남은 실행 프로세스를 못 끔. 런처를 다시 켠 뒤에 다시".into());
+            }
             let r = extract_zip(&file, &dest, version.trim());
             let _ = std::fs::remove_file(&file);
             r?;
@@ -1405,7 +1558,12 @@ fn hide_console(_c: &mut Command) {}
 /// 실행. nsis 는 레지스트리의 설치 자리와 본 실행 파일, zip 은 풀린 폴더의 `install.entry`,
 /// local 은 `local.run` (명령과 인자, `{path}` 자리에 찾은 파일). 모두 보이는 창으로
 #[tauri::command]
-fn launch_app(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Result<(), String> {
+async fn launch_app(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Result<(), String> {
+    // 남은 실행기 정리가 최대 2초 걸려 화면을 막지 않게 따로 돌림
+    tauri::async_runtime::spawn_blocking(move || launch_blocking(handle, app, args)).await.map_err(|e| e.to_string())?
+}
+
+fn launch_blocking(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Result<(), String> {
     let args = args.unwrap_or_default();
     match format_of(&app) {
         "zip" => {
@@ -1429,7 +1587,18 @@ fn launch_app(handle: AppHandle, app: Value, args: Option<Vec<String>>) -> Resul
             if str_at(&app, &["install", "console"]) == Some("hidden") {
                 hide_console(&mut c);
             }
-            c.spawn().map_err(|e| e.to_string())?;
+            if !exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
+                // 방금 띄워 창이 뜨는 중이면 또 띄우지 않음
+                if remembered_is_starting(&handle, &app) {
+                    return Ok(());
+                }
+                // 창 없이 남은 실행기는 정리부터. 겹치면 포트 충돌로 숨은 채 멈춤
+                if !stop_remembered(&handle, &app) {
+                    return Err("남은 실행 프로세스를 못 끔. 런처를 다시 켠 뒤에 다시".into());
+                }
+            }
+            let child = c.spawn().map_err(|e| e.to_string())?;
+            remember_run(&handle, &app, child.id());
         }
         "local" => {
             let path = local_path(&handle, &app)?;
@@ -1467,6 +1636,9 @@ async fn uninstall_app(handle: AppHandle, app: Value) -> Result<(), String> {
         "zip" => {
             if exe_of(&app).map(|e| is_running(&e)).unwrap_or(false) {
                 return Err("실행 중. 끈 뒤에 다시".into());
+            }
+            if !stop_remembered(&handle, &app) {
+                return Err("남은 실행 프로세스를 못 끔. 런처를 다시 켠 뒤에 다시".into());
             }
             let dir = zip_dir(&handle, &app)?;
             let _ = std::fs::remove_dir_all(prev_dir(&dir));
@@ -1888,6 +2060,72 @@ mod tests {
         assert_eq!(space_needed("nsis", 10 * MB, 4 * MB), 16 * MB);
         assert_eq!(space_needed("zip", 10 * MB, 10 * MB), 30 * MB);
         assert_eq!(space_needed("zip", 10 * MB, 20 * MB), 30 * MB);
+    }
+
+    #[test]
+    fn tree_of_lists_descendants_children_first_and_ignores_others() {
+        let all = vec![
+            (10, 1, "cmd.exe".to_string()),
+            (11, 10, "conhost.exe".to_string()),
+            (12, 10, "node.exe".to_string()),
+            (13, 12, "companion-window.exe".to_string()),
+            (20, 1, "cmd.exe".to_string()),
+            (21, 20, "node.exe".to_string()),
+        ];
+        let tree = tree_of(&all, 10);
+        assert_eq!(tree.len(), 4);
+        assert_eq!(tree[0], 10);
+        assert!(tree.iter().position(|p| *p == 12).unwrap() < tree.iter().position(|p| *p == 13).unwrap());
+        assert!(!tree.contains(&20) && !tree.contains(&21));
+        assert_eq!(tree_of(&all, 99), vec![99]);
+    }
+
+    #[test]
+    fn parse_run_needs_pid_and_birth_only() {
+        assert_eq!(parse_run("123 456"), Some((123, 456)));
+        assert_eq!(parse_run(" 123  456 "), Some((123, 456)));
+        assert_eq!(parse_run("123"), None);
+        assert_eq!(parse_run("123 456 789"), None);
+        assert_eq!(parse_run("abc 456"), None);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn proc_born_is_stable_for_a_live_process() {
+        let me = std::process::id();
+        let born = proc_born(me).expect("own process");
+        assert!(born > 0);
+        assert_eq!(proc_born(me), Some(born));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_hung_hidden_launcher_tree_is_found_and_killed() {
+        // 숨은 채 멈춘 start.cmd 흉내: 입력을 영영 기다리는 cmd 와 그 자식
+        let mut child = Command::new("cmd").args(["/c", "ping -n 60 127.0.0.1 >nul"]).spawn().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(600));
+        let root = child.id();
+        let born = proc_born(root).expect("child");
+        let tree = tree_of(&procs(), root);
+        assert!(tree.len() >= 2, "cmd 의 자식 ping 을 못 찾음: {:?}", tree);
+        for pid in &tree {
+            assert!(kill_pid(*pid) || proc_born(*pid).is_none());
+        }
+        let _ = child.wait();
+        drop(child);
+        // 끝난 뒤에는 같은 프로세스로 치지 않고 자손도 남지 않음
+        assert_ne!(proc_born(root), Some(born));
+        assert_eq!(tree_of(&procs(), root), vec![root]);
+    }
+
+    #[test]
+    fn rename_patient_moves_a_folder() {
+        let dir = std::env::temp_dir().join(format!("kl-rename-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("a")).unwrap();
+        rename_patient(&dir.join("a"), &dir.join("b")).unwrap();
+        assert!(dir.join("b").is_dir() && !dir.join("a").exists());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

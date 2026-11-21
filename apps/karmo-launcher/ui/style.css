@@ -249,6 +249,9 @@ body { background: transparent; color: var(--ink); font: 14px/1.5 var(--ko); -we
 .head .ver { margin-top: 14px; font-size: 13px; color: var(--ink); display: flex; flex-wrap: wrap; gap: 4px 22px; }
 .head .ver b { font: 400 18px var(--en); letter-spacing: 0.04em; margin-left: 6px; }
 .err { margin-top: 10px; color: var(--err); font-size: 13px; }
+.err-text { user-select: text; cursor: text; }
+.err-copy { margin-left: 6px; padding: 1px 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--ink); font: 12px var(--ko); cursor: pointer; }
+.err-copy:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 .rel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--glass); border: 1px solid var(--gline); box-shadow: var(--ghi); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 .rel .tabs { flex: none; display: flex; gap: 20px; padding: 10px 14px 0; border-bottom: 1px solid var(--gline); }
