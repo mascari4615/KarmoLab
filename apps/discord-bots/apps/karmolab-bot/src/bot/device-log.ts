@@ -13,6 +13,7 @@
  *
  * 저장 위치: `data/device-logs/` (런타임 산출물. gitignore 대상).
  */
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import type { Application, Request, Response } from 'express';
@@ -73,6 +74,14 @@ export function deviceLogTokens(env: NodeJS.ProcessEnv = process.env): DeviceLog
   };
 }
 
+/** 길이와 내용을 상수 시간에 비교 (응답 시간으로 토큰을 한 글자씩 맞히는 공격 차단) */
+function sameToken(presented: string | undefined, expected: string): boolean {
+  if (presented === undefined) return false;
+  const left = crypto.createHash('sha256').update(presented).digest();
+  const right = crypto.createHash('sha256').update(expected).digest();
+  return crypto.timingSafeEqual(left, right);
+}
+
 function presentedToken(req: Request): string | undefined {
   const header = req.headers['x-karmolab-bot-secret'] ?? req.headers['x-yawnbot-secret']; // 옛 헤더 이름도 받음 (폰 앱)
   if (typeof header === 'string') return header;
@@ -83,7 +92,7 @@ function presentedToken(req: Request): string | undefined {
 /** 보내기. 보내기 토큰이 없으면 dev 모드로 열림 (부팅 시 경고 1회). */
 export function authorizeIngest(req: Request, tokens: DeviceLogTokens = deviceLogTokens()): boolean {
   if (!tokens.ingest) return true;
-  return presentedToken(req) === tokens.ingest;
+  return sameToken(presentedToken(req), tokens.ingest);
 }
 
 /**
@@ -92,7 +101,7 @@ export function authorizeIngest(req: Request, tokens: DeviceLogTokens = deviceLo
  */
 export function authorizeRead(req: Request, tokens: DeviceLogTokens = deviceLogTokens()): boolean {
   if (!tokens.read) return !tokens.ingest;
-  return presentedToken(req) === tokens.read;
+  return sameToken(presentedToken(req), tokens.read);
 }
 
 /** 알림 접기 상태. 프로세스 수명 동안만 (재시작하면 다시 알린다 = 의도). */
