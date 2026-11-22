@@ -12,7 +12,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
 name = "karmolab-settings-regression"
-path = "src/bin/settings_regression.rs"
+# Tauri CLI 2.10 also scans src/bin and can rediscover disabled Cargo targets.
+path = "src/settings_regression_main.rs"
 required-features = ["settings-regression"]
 
 [features]
