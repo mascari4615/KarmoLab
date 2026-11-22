@@ -139,7 +139,8 @@ const RAW_CHECKS = [
      83초, 154초가 붙는데, 지금도 판정이 밀려 40분씩 걸린다. 한 시간에 한 번 도는 이 자리가
      느린 검사의 집이다. */
   { name: '방을 든 채 게임을 갈아타는지', cmd: ['npm', 'run', 'smoke:arcaderoom'] },
-  { name: '흥 화면이 도는지', cmd: ['npm', 'run', 'test:heung'] },
+  /* 흥 검사(`test:heung`)는 2026-11-16 에 KarmoEdit(`apps/karmo-edit`)로 옮겨 갔다. 그쪽은 따로 npm ci 가
+     필요해 이 러너의 채비로는 못 돈다. 부르는 이름이 없어 4조각이 매 판 죽었으므로 호출을 뗐다. */
   { name: '타임캡슐이 도는지', cmd: ['npm', 'run', 'test:timecapsule'] },
   { name: '오락실 자판이 도는지', cmd: ['npm', 'run', 'smoke:arcadekeys'] },
   { name: '자기 성능 재기가 도는지', cmd: ['npm', 'run', 'test:perf:self'] },
