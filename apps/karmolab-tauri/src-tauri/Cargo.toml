@@ -1,5 +1,6 @@
 [package]
 name = "karmolab-desktop"
+default-run = "karmolab-desktop"
 version = "0.1.149"
 description = "KarmoLab desktop shell (Tauri WebView)"
 authors = ["mascari4615"]
@@ -9,6 +10,11 @@ edition = "2021"
 name = "karmolab_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[[bin]]
+name = "karmolab-settings-regression"
+path = "src/bin/settings_regression.rs"
+required-features = ["settings-regression"]
+
 [features]
 # devtools = **release 에서도 켠다** (KL-051 → 2026-08-20 뒤집음). 이유: 이 앱은 본인 PC 전용이고,
 # 릴리스에서 F12 를 못 여는 값이 「우클릭 Inspect 가 안 보인다」보다 훨씬 비쌌다 (버그 하나 볼 때마다
@@ -16,6 +22,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 # 자체 맥락 메뉴를 그려** 없앤다 (Discord/VSCode 방식) — `karmolab_desktop_init_script()` + `lib/context-menu.ts`.
 default = ["dev-tools"]
 dev-tools = ["tauri/devtools"]
+settings-regression = []
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

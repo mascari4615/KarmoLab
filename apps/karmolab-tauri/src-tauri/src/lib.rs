@@ -1212,6 +1212,53 @@ fn set_app_user_model_id() {
 #[cfg(not(windows))]
 fn set_app_user_model_id() {}
 
+#[cfg(all(windows, feature = "settings-regression"))]
+#[doc(hidden)]
+pub fn run_settings_regression() -> Result<(), Box<dyn std::error::Error>> {
+    let (Some(profile), Some(port)) = ({
+        let mut args = std::env::args_os().skip(1);
+        (args.next(), args.next())
+    }) else {
+        return Err("Expected an isolated profile path and loopback debug port".into());
+    };
+    let profile = std::path::PathBuf::from(profile);
+    let port: u16 = port.to_str().ok_or("Invalid port")?.parse()?;
+    if !profile.is_absolute() || port < 1024
+        || !profile.parent().and_then(std::path::Path::file_name)
+            .and_then(std::ffi::OsStr::to_str)
+            .is_some_and(|name| name.starts_with("KarmoSettings-"))
+        || profile.file_name() != Some(std::ffi::OsStr::new("webview"))
+    {
+        return Err("The regression runner requires a dedicated KarmoSettings profile".into());
+    }
+
+    // These overrides belong to this test process and its WebView2 children.
+    std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", profile);
+    std::env::set_var(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        format!("--remote-debugging-address=127.0.0.1 --remote-debugging-port={port}"),
+    );
+    let context = tauri::generate_context!();
+    let mut window = context.config().app.windows.iter()
+        .find(|window| window.label == "main")
+        .ok_or("Missing main window")?
+        .clone();
+    window.title = "KarmoLab Settings Regression".into();
+    window.url = tauri::WebviewUrl::External(Url::parse(KARMOLAB_WEB_URL)?);
+
+    tauri::Builder::default()
+        .setup(move |app| {
+            WebviewWindowBuilder::from_config(app, &window)?
+                .initialization_script(&karmolab_desktop_init_script())
+                .on_navigation(allow_in_webview)
+                .on_new_window(|_, _| NewWindowResponse::Deny)
+                .build()?;
+            Ok(())
+        })
+        .run(context)?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if window_opacity_service::run_helper_if_requested() { return; }
