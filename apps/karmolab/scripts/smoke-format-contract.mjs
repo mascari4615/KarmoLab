@@ -46,7 +46,7 @@ if (!seam.crossDoesNot) problems.push('그림 자리에 PDF 가 들어간다');
 /* 선언을 실제로 읽는가. 도구 이름만 대고 형식을 되돌려 받는다. */
 const declared = await page.evaluate(() => {
   const T = Toolbox;
-  const ids = ['pdfcrop', 'imgresize', 'video2gif', 'audiocut', 'exifclean'];
+  const ids = ['pdfcrop'];
   return ids.map((id) => ({ id, accepts: T.declaredAccepts(id), produces: T.declaredProduces(id) }));
 });
 for (const row of declared) {
@@ -68,7 +68,7 @@ const reach = await page.evaluate(() => {
   const liars = [...pdf, ...img].filter((t) => !T.declaredAccepts(t.id).length).map((t) => t.id);
   return { withProduces, withAccepts, pdfTargets: pdf.length, imgTargets: img.length, liars };
 });
-if (reach.withProduces < 20) problems.push(`내놓는 형식을 밝힌 도구가 ${reach.withProduces}개뿐이다 (축6 전 수준)`);
+if (reach.withProduces < 15) problems.push(`내놓는 형식을 밝힌 도구가 ${reach.withProduces}개뿐이다 (축6 전 수준)`);
 if (reach.pdfTargets < 3) problems.push(`PDF 결과가 갈 곳이 ${reach.pdfTargets}군데뿐이다`);
 /* 그림을 받는다고 적은 것은 셋(img2pdf, imgmerge, exifclean)인데 exifclean 은 JPEG 만 받는다 . 
  * PNG 를 내밀면 둘이 맞다. 많을수록 좋다가 아니라 **선언대로**가 맞다. */

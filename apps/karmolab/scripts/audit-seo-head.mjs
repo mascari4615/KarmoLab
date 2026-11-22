@@ -231,11 +231,11 @@ if (BASE.startsWith('https://')) {
        생성기(`assemble-site.mjs`)는 tools-seo.json 항목 700자 미만의 얇은 도구를 일부러 빼고, 묶음으로 접힌
        옛 도구(retired)는 부모 하나로 싣는다. 2026-09-05 결정(사용자): 얇은 도구는 당분간 사이트맵 밖.
        색인 3/448 인 상태라 장 수가 레버가 아니다. 정확한 수는 생성기 몫이고 여기서는 **둘만** 본다.
-       ① 도구 장이 거의 안 실린 사고 (40장 아래), ② 허브에 없는 주소가 실린 사고 */
+       ① 도구 장이 거의 안 실린 사고 (30장 아래. 편집 도구 30개가 11-16 KarmoEdit 으로 옮겨 37장이 정상), ② 허브에 없는 주소가 실린 사고 */
     const inSitemap = blocks.map((b) => (b.match(/\/t\/([a-z0-9-]+)\//) || [])[1]).filter(Boolean);
     const known = new Set(ids);
     const strangers = inSitemap.filter((id) => !known.has(id));
-    if (inSitemap.length < 40) problems.push(`사이트맵의 도구 페이지가 ${inSitemap.length}장뿐이다. 도구 장이 거의 안 실렸다 (허브 ${ids.length}장)`);
+    if (inSitemap.length < 30) problems.push(`사이트맵의 도구 페이지가 ${inSitemap.length}장뿐이다. 도구 장이 거의 안 실렸다 (허브 ${ids.length}장)`);
     if (strangers.length) problems.push(`사이트맵에 허브에 없는 도구 주소 ${strangers.length}장: ${strangers.slice(0, 5).join(', ')}`);
     console.log(`[audit-seo-head] 사이트맵 도구 장 ${inSitemap.length} / 허브 ${ids.length}. 얇은 도구는 일부러 뺀다 (2026-09-05 결정)`);
     const noDate = blocks.filter((b) => !/<lastmod>/.test(b)).length;

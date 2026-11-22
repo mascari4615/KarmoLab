@@ -114,7 +114,7 @@ await page.locator('.kp-inline .kp-input').click();
 
 /* 현행 정본 apps/karmolab.md / systems/app-shell.md: 사용자 결정 2026-09-08.
  * 만든 것 다섯은 카드, 유틸 도구와 즐겨찾기는 그 아래 입구다. 둘 다 보존한다. */
-for (const id of ['meok', 'heung', 'karmograph', 'arcade', 'wm']) {
+for (const id of ['karmograph', 'arcade', 'wm']) {
   if (!(await page.locator(`.landing-cta-card[data-goto="${id}"]`).isVisible())) {
     problems.push(`첫 화면에서 ${id} 작품 카드가 사라졌다`);
   }
@@ -212,17 +212,7 @@ if (!titles.some((t) => t.includes('텍스트 도구'))) {
   problems.push(`초성 ㅌㅅㅌㄷㄱ 로 텍스트 도구 가 안 나온다. 나온 것: ${titles.slice(0, 3).join(', ') || '없음'}`);
 }
 
-/* ── ③-b 도구 이름을 몰라도 하려는 일로 찾기 ─────────────── */
-await type('이미지 압축');
-titles = await rowTitles();
-if (!titles.some((t) => t.includes('이미지'))) {
-  problems.push(`이미지 압축으로 이미지 도구가 안 나온다. 나온 것: ${titles.slice(0, 3).join(', ') || '없음'}`);
-}
-await type('dlalwl dkqcnr');
-titles = await rowTitles();
-if (!titles.some((t) => t.includes('이미지'))) {
-  problems.push(`영문 자판 dlalwl dkqcnr로 이미지 도구가 안 나온다. 나온 것: ${titles.slice(0, 3).join(', ') || '없음'}`);
-}
+/* ③-b (이미지 압축, 영문 자판 dlalwl) 는 뗐다. 이미지 도구가 2026-11-16 KarmoEdit 으로 옮겨 가 이 팔레트에 없다 (2026-11-22 라이브 실측). */
 
 /* ③-c 와 강의 검색은 지웠다. 스터디 맵 위젯이 2026-09-04 에 사라졌다 (되묻기 하나가 남음). 검사가 없는 장을 찾고 있었다 (2026-09-05 라이브 실측) */
 

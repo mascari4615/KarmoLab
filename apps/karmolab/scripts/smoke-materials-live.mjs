@@ -21,13 +21,11 @@ const LIVE = process.argv[2] || process.env.KL_LIVE_URL || 'https://lab.mascari4
 
 const MATERIALS = [
   ['PDF', 'smoke-pdf-shell.mjs'],
-  ['이미지', 'smoke-image-shell.mjs'],
   ['글', 'smoke-text-shell.mjs'],
   ['데이터', 'smoke-data-shell.mjs'],
   ['수, 돈', 'smoke-calc-shell.mjs'],
   ['때', 'smoke-time-shell.mjs'],
-  ['영상', 'smoke-video-shell.mjs'],
-  ['소리', 'smoke-sound-shell.mjs'],
+  /* 이미지, 영상, 소리 화면은 2026-11-16 KarmoEdit 으로 옮겨 갔다. 그 시험은 `apps/karmo-edit/scripts` 에 있다. */
   /* 재료 화면 말고 **그리로 오는 길**도 함께 잰다. 실서비스에서 제일 조용히 끊기는 자리다
    * (검색으로 들어오는 도구 주소, 도구끼리 결과 넘기기). */
   ['숨은 도구 주소', 'smoke-bundle-deeplink.mjs'],
