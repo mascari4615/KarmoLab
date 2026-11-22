@@ -55,17 +55,44 @@ export function deviceLogDir(): string {
   return process.env.DEVICE_LOG_DIR?.trim() || path.join(PKG_ROOT, 'data', 'device-logs');
 }
 
-function expectedToken(): string {
-  return (process.env.DEVICE_LOG_TOKEN?.trim() || process.env.LOCAL_WEBHOOK_SECRET?.trim() || '');
+/**
+ * 토큰 둘 (2026-11-22 분리).
+ * - 보내기 `DEVICE_LOG_TOKEN`: development 빌드 안에 심김. 빌드를 뜯으면 꺼낼 수 있어 권한은 로그 밀어넣기뿐
+ * - 읽기 `DEVICE_LOG_READ_TOKEN`: 조회, 화면, 삭제. 빌드 반입 금지
+ * - 다른 비밀 (`LOCAL_WEBHOOK_SECRET`) 대체 없음. 겸용 시 빌드에서 꺼낸 값으로 다른 문까지 열림
+ */
+export interface DeviceLogTokens {
+  ingest: string;
+  read: string;
 }
 
-function authorized(req: Request): boolean {
-  const token = expectedToken();
-  if (!token) return true; // dev 모드 (부팅 시 경고 1회)
+export function deviceLogTokens(env: NodeJS.ProcessEnv = process.env): DeviceLogTokens {
+  return {
+    ingest: env.DEVICE_LOG_TOKEN?.trim() || '',
+    read: env.DEVICE_LOG_READ_TOKEN?.trim() || '',
+  };
+}
+
+function presentedToken(req: Request): string | undefined {
   const header = req.headers['x-karmolab-bot-secret'] ?? req.headers['x-yawnbot-secret']; // 옛 헤더 이름도 받음 (폰 앱)
-  if (typeof header === 'string' && header === token) return true;
+  if (typeof header === 'string') return header;
   const query = req.query?.t;
-  return typeof query === 'string' && query === token;
+  return typeof query === 'string' ? query : undefined;
+}
+
+/** 보내기. 보내기 토큰이 없으면 dev 모드로 열림 (부팅 시 경고 1회). */
+export function authorizeIngest(req: Request, tokens: DeviceLogTokens = deviceLogTokens()): boolean {
+  if (!tokens.ingest) return true;
+  return presentedToken(req) === tokens.ingest;
+}
+
+/**
+ * 읽기와 삭제. 읽기 토큰이 없을 때 열리는 것은 두 토큰이 다 없는 순수 dev 뿐.
+ * 보내기 토큰만 있고 읽기 토큰이 없으면 닫힘 (운영에서 secret 을 빠뜨려도 로그가 열리지 않게).
+ */
+export function authorizeRead(req: Request, tokens: DeviceLogTokens = deviceLogTokens()): boolean {
+  if (!tokens.read) return !tokens.ingest;
+  return presentedToken(req) === tokens.read;
 }
 
 /** 알림 접기 상태. 프로세스 수명 동안만 (재시작하면 다시 알린다 = 의도). */
@@ -92,7 +119,7 @@ export function mountDeviceLog(app: Application, client: Client | null): void {
   const counters: Counters = { batches: 0, lines: 0, errors: 0, rejected: 0, lastAt: null };
 
   app.post('/device-log', async (req: Request, res: Response) => {
-    if (!authorized(req)) {
+    if (!authorizeIngest(req)) {
       counters.rejected++;
       res.sendStatus(401);
       return;
@@ -147,7 +174,7 @@ export function mountDeviceLog(app: Application, client: Client | null): void {
   });
 
   app.get('/device-log/sessions', (req: Request, res: Response) => {
-    if (!authorized(req)) {
+    if (!authorizeRead(req)) {
       res.sendStatus(401);
       return;
     }
@@ -155,7 +182,7 @@ export function mountDeviceLog(app: Application, client: Client | null): void {
   });
 
   app.get('/device-log/tail', (req: Request, res: Response) => {
-    if (!authorized(req)) {
+    if (!authorizeRead(req)) {
       res.sendStatus(401);
       return;
     }
@@ -188,7 +215,7 @@ export function mountDeviceLog(app: Application, client: Client | null): void {
   // 시험용 세션 청소. 스모크로 넣은 줄이 목록 맨 위를 계속 차지하면
   // 최근 = 진짜 폰 이라는 읽기가 깨진다.
   app.delete('/device-log/session/:name', (req: Request, res: Response) => {
-    if (!authorized(req)) {
+    if (!authorizeRead(req)) {
       res.sendStatus(401);
       return;
     }
@@ -198,7 +225,7 @@ export function mountDeviceLog(app: Application, client: Client | null): void {
   });
 
   app.get('/device-log', (req: Request, res: Response) => {
-    if (!authorized(req)) {
+    if (!authorizeRead(req)) {
       res
         .status(401)
         .type('text/html; charset=utf-8')
@@ -230,9 +257,15 @@ export function mountDeviceLog(app: Application, client: Client | null): void {
   }, PRUNE_MS);
   prune.unref?.();
 
-  if (!expectedToken()) {
+  const tokens = deviceLogTokens();
+  if (!tokens.ingest) {
+    console.warn('[DeviceLog] DEVICE_LOG_TOKEN 미설정. 보내기가 인증 없이 열림(dev). prod 는 deploy secret 으로 박을 것.');
+  }
+  if (!tokens.read) {
     console.warn(
-      '[DeviceLog] DEVICE_LOG_TOKEN, LOCAL_WEBHOOK_SECRET 미설정. 인증 없이 열림(dev). prod 는 NSSM AppEnvironmentExtra 로 박을 것.',
+      tokens.ingest
+        ? '[DeviceLog] DEVICE_LOG_READ_TOKEN 미설정. 조회, 화면, 삭제가 닫힘. deploy secret DEVICE_LOG_READ_TOKEN 등록 필요.'
+        : '[DeviceLog] DEVICE_LOG_READ_TOKEN 미설정. 조회도 인증 없이 열림(dev).',
     );
   }
   console.log(`[DeviceLog] 기기 로그 수신 준비. ${dir}`);
