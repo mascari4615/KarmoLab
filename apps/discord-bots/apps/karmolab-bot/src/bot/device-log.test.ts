@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Request } from 'express';
 
-import { authorizeIngest, authorizeRead, deviceLogTokens } from './device-log';
+import { authorizeIngest, authorizeRead, deviceLogTokens, viewerHtml } from './device-log';
 
 const INGEST = 'ingest-token-value';
 const READ = 'read-token-value';
@@ -44,5 +44,14 @@ describe('device-log 토큰', () => {
   it('LOCAL_WEBHOOK_SECRET 으로 대신 채우지 않는다', () => {
     const tokens = deviceLogTokens({ LOCAL_WEBHOOK_SECRET: 'webhook-secret' } as NodeJS.ProcessEnv);
     expect(tokens).toEqual({ ingest: '', read: '' });
+  });
+});
+
+describe('device-log 화면', () => {
+  it('화면 스크립트가 파싱되고 세션 목록을 HTML 로 넣지 않는다', () => {
+    const html = viewerHtml('read-token-value');
+    const script = html.slice(html.indexOf('<script>') + '<script>'.length, html.lastIndexOf('</script>'));
+    expect(() => new Function(script)).not.toThrow();
+    expect(script).not.toContain('el.session.innerHTML');
   });
 });

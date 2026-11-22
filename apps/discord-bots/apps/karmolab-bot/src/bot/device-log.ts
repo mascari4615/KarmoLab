@@ -316,7 +316,7 @@ async function notifyErrors(
 }
 
 /** 폰, PC 겸용 로그 뷰어. 외부 자원 0 (터널 뒤에서 CDN 못 씀). */
-function viewerHtml(token: string): string {
+export function viewerHtml(token: string): string {
   const tokenJson = JSON.stringify(token);
   return `<!doctype html>
 <html lang="ko">
@@ -374,9 +374,13 @@ async function loadSessions() {
   const current = pinned ? el.session.value : '';
   // 세션 이름만으론 어느 빌드였나를 모른다. 폰에 여러 빌드를 깔아 비교하는 게 목적이므로
   // 빌드 라벨을 목록에 함께 띄운다 (WM-201: 화면 구석 표시기와 같은 글자).
-  el.session.innerHTML = data.sessions.map(s =>
-    '<option value="' + s.session + '">' + s.session +
-    (s.build ? ', ' + s.build : '') + (s.device ? ', ' + s.device : '') + '</option>').join('');
+  // 세션, 빌드, 기기 문자열은 보내기 토큰 쪽 입력. HTML 로 넣지 않고 글자로만 (읽기 토큰 탈취 방지)
+  el.session.replaceChildren(...data.sessions.map(s => {
+    const option = document.createElement('option');
+    option.value = String(s.session);
+    option.textContent = s.session + (s.build ? ', ' + s.build : '') + (s.device ? ', ' + s.device : '');
+    return option;
+  }));
   if (current) el.session.value = current;
   const picked = data.sessions.find(s => s.session === (el.session.value || ''));
   el.build.textContent = picked && picked.build ? picked.build : '';
@@ -393,14 +397,15 @@ async function load() {
   el.log.innerHTML = data.lines.map(line => {
     const time = new Date(line.t).toTimeString().slice(0, 8);
     const stack = line.stack ? '<span class="stack">' + esc(line.stack) + '</span>' : '';
-    return '<div class="l ' + line.level + '"><span class="t">' + time + '</span><span class="lv">' +
-      line.level.toUpperCase() + '</span>' + esc(line.msg) + stack + '</div>';
+    const level = String(line.level).replace(/[^a-z]/gi, '');
+    return '<div class="l ' + level + '"><span class="t">' + time + '</span><span class="lv">' +
+      level.toUpperCase() + '</span>' + esc(line.msg) + stack + '</div>';
   }).join('') || '<em>줄 없음</em>';
   el.meta.textContent = data.session + ', ' + data.count + '줄, ' + new Date().toTimeString().slice(0, 8);
   window.scrollTo(0, document.body.scrollHeight);
 }
 
-function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
 (async () => { await loadSessions(); await load(); setInterval(async () => { if (auto) { await loadSessions(); await load(); } }, 3000); })();
 </script>
