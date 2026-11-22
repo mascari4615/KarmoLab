@@ -10,7 +10,6 @@ on:
       - apps/blog/**
       - apps/karmolab/**
       - apps/files/**
-      - apps/karmo-edit/**
       - packages/ai/**
       - packages/badapple/**
       - .github/workflows/pages-deploy.yml
@@ -380,20 +379,8 @@ jobs:
             npx --yes wrangler@4 pages deploy "apps/blog/dist/$app" --project-name "karmolab-$app" --branch main --commit-dirty=true
           done
 
-      # KarmoEdit 웹 (memo change.karmo-tbd-split). site-router 의 edit 호스트가 이 프로젝트를 원본으로 본다.
-      # 소스 일부를 KarmoLab 에서 묶으므로 KarmoLab 설치 뒤에 짓는다. router 의 옛 도구 301 보다 먼저 살아 있어야 한다
-      - name: Deploy KarmoEdit to Cloudflare Pages
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ce18bd3c1df233b3cd533ef0623cbafe
-        run: |
-          ACC=ce18bd3c1df233b3cd533ef0623cbafe
-          node apps/karmo-edit/scripts/build-ui.mjs
-          curl -s -o /dev/null -w "create karmo-edit %{http_code}\n" -X POST \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'content-type: application/json' \
-            "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects" \
-            --data '{"name":"karmo-edit","production_branch":"main"}'
-          npx --yes wrangler@4 pages deploy apps/karmo-edit/dist --project-name karmo-edit --branch main --commit-dirty=true
+      # KarmoEdit 웹 배포는 karmo-edit-deploy.yml 로 옮겨 손으로 부를 때만 돈다 (2026-11-22).
+      # 여기 있을 때는 이 단계가 실패하면 KarmoLab 배포까지 섰다.
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4

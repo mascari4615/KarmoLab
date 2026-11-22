@@ -234,7 +234,7 @@ const DEFAULT_REPO = 'Mascari4615/KarmoLab';
 const DEFAULT_WORKFLOW = 'pages-deploy.yml';
 // pages-deploy.yml의 push.paths와 회귀 검사로 대조.
 export const SITE_BUILD_INPUTS = [
-  'apps/blog', 'apps/karmolab', 'apps/files', 'apps/karmo-edit', 'packages/ai', 'packages/badapple',
+  'apps/blog', 'apps/karmolab', 'apps/files', 'packages/ai', 'packages/badapple',
   '.github/workflows/pages-deploy.yml', 'scripts/indexnow-submit.mjs', 'scripts/audit-sitemap-lastmod.mjs',
 ] as const;
 const DEFAULT_INTERVAL_MIN = 10;

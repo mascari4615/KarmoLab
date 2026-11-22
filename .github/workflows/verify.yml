@@ -24,7 +24,11 @@ on:
     #   - apps/handheld, unity/: verify.mjs 어디에도 없다 (grep 실측).
     #   typos 훑기만 이 판들을 놓치는데, 시계(nightwatch) 판이 매시간 전체를 돌므로 늦어도
     #   한 시간 안에 잡힌다. 여기 늘릴 때는 verify.mjs 가 그 경로를 읽나부터 grep 으로 재라.
+    #   - apps/karmo-edit (2026-11-22, 사용자 "KarmoEdit CI 꺼도 됨"): verify.mjs 에 없다 (grep 실측).
+    #     예외 하나: KarmoLab test:search:quality, test:tool-search 가 karmo-edit/data/tool-aliases.json 을
+    #     읽는다. 그 파일만 바꾼 판은 매시간 판이 잡는다.
     paths-ignore:
+      - 'apps/karmo-edit/**'
       - 'packages/companion/**'
       - 'apps/handheld/**'
       - 'unity/**'

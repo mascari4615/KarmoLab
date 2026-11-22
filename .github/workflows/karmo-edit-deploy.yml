@@ -1,0 +1,45 @@
+name: "KarmoEdit Deploy"
+
+# KarmoEdit 웹 (edit.mascari4615.com) 배포. memo change.karmo-tbd-split.
+# 2026-11-22 사용자 결정으로 꺼 둠: 손으로 부를 때만 돈다 (`gh workflow run karmo-edit-deploy.yml --ref main`).
+#   전에는 pages-deploy 안 한 단계라 KarmoLab 배포마다 KarmoEdit 도 다시 지었고, 이 단계가 실패하면
+#   KarmoLab 배포까지 섰다. KarmoEdit 경로만 바뀌어도 KarmoLab 배포 전체가 돌았다.
+# 다시 켜려면 아래 on 에 push (branches main, paths apps/karmo-edit/**) 를 되살린다.
+#   KarmoLab 공용 소스를 `@lab` 으로 묶으므로 KarmoLab 변경은 다음 손 배포 때 반영된다.
+# site-router 의 edit 호스트가 Pages 프로젝트 karmo-edit 를 원본으로 본다.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: karmo-edit-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      # 빌드가 KarmoLab 의 node_modules 와 소스를 쓴다 (scripts/build-ui.mjs)
+      - uses: ./.github/actions/setup-karmolab
+        with:
+          node-version: '20'
+
+      - name: Deploy KarmoEdit to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ce18bd3c1df233b3cd533ef0623cbafe
+        run: |
+          ACC=ce18bd3c1df233b3cd533ef0623cbafe
+          node apps/karmo-edit/scripts/build-ui.mjs
+          curl -s -o /dev/null -w "create karmo-edit %{http_code}\n" -X POST \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'content-type: application/json' \
+            "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects" \
+            --data '{"name":"karmo-edit","production_branch":"main"}'
+          npx --yes wrangler@4 pages deploy apps/karmo-edit/dist --project-name karmo-edit --branch main --commit-dirty=true
