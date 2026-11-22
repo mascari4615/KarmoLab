@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-11-21",
+  "updated": "2026-11-22",
   "launcher": {
     "cast": {
       "name": "관리인",
@@ -197,6 +197,19 @@
           "busy",
           "error"
         ]
+      }
+    },
+    {
+      "id": "karmo-edit",
+      "name": "KarmoEdit",
+      "kind": "web",
+      "summary": "이미지, 영상, 소리를 고치는 편집 도구 모음. 먹과 흥 포함",
+      "open": "https://edit.mascari4615.com/",
+      "art": {
+        "bg": "sky-dusk",
+        "icon": "tool",
+        "accent": "#a3362b",
+        "accent_ink": "#ffffff"
       }
     }
   ]
