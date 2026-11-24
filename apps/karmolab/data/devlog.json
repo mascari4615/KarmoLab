@@ -2,8 +2,8 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2335,
-    "days": 12,
+    "commits": 2351,
+    "days": 11,
     "shown": 60
   },
   "days": [
@@ -11,29 +11,50 @@
       "date": "2026-11-23",
       "entries": [
         {
-          "sha": "467150717",
+          "sha": "3a1705b4c",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "doll",
-          "text": "숙련 HUD 를 키우고 어두운 바탕판"
+          "scope": "magicbook",
+          "text": "팝업이 가운데 마도서도 피하게, 아래 별 이름 칸 넓힘"
         },
         {
-          "sha": "145b2f70e",
+          "sha": "063630303",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "doll",
-          "text": "숙련 HUD 를 체력 띠 위 작은 한 줄로, 조각 작게, 그림자 남보라"
+          "scope": "magicbook",
+          "text": "시각 검토 반영, 팝업 자리 고르기, 마도서에서 장 입구로 선, 대비와 포커스"
         },
         {
-          "sha": "88fe929fa",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "monster",
-          "text": "진흙, 햇살, 이슬, 가시덤불 슬라임을 32px 판으로 (들풀 기준, 몸 안 흡수물)"
+          "sha": "b19ec245e",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "editor",
+          "text": "Play 누르는 순간 시작 씬을 다시 고정하고, 못 읽으면 Play 를 멈춘다"
+        },
+        {
+          "sha": "7d69f9b58",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "tools",
+          "text": "FMOD 준비가 git 훅 안에서도 풀리게 Windows tar 를 직접 지정"
+        },
+        {
+          "sha": "f6c553368",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "magicbook",
+          "text": "전체 하늘에 별 이름까지 담고, 장 이름은 가운데에서 먼 쪽에"
+        },
+        {
+          "sha": "87c708932",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "magicbook",
+          "text": "별 이름은 잎은 바깥, 갈래는 아래로, 장 이름은 별자리 위로"
         }
       ],
-      "quiet": 1,
-      "more": 0
+      "quiet": 2,
+      "more": 12
     },
     {
       "date": "2026-11-22",
@@ -478,38 +499,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "keybind",
           "text": "데모에 없는 기능 키를 릴리스 단축키 안내에서 숨김"
-        },
-        {
-          "sha": "2786b4d5c",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "text",
-          "text": "TMP 한글 줄바꿈을 띄어쓰기 단위로"
         }
       ],
       "quiet": 2,
-      "more": 6
-    },
-    {
-      "date": "2026-11-12",
-      "entries": [
-        {
-          "sha": "f2cec0686",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ui",
-          "text": "단축키 안내 첫 자동 열기가 릴리스에서 안 보이던 것"
-        },
-        {
-          "sha": "0cd2e16f1",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "settings",
-          "text": "FPS 토글 값을 인스펙터 필드로"
-        }
-      ],
-      "quiet": 3,
-      "more": 18
+      "more": 7
     }
   ]
 }
