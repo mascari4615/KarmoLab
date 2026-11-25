@@ -2,59 +2,122 @@
   "source": "Mascari4615/Witch-Mendokusai",
   "windowDays": 120,
   "counts": {
-    "commits": 2351,
-    "days": 11,
+    "commits": 2438,
+    "days": 12,
     "shown": 60
   },
   "days": [
     {
-      "date": "2026-11-23",
+      "date": "2026-11-25",
       "entries": [
         {
-          "sha": "3a1705b4c",
+          "sha": "60cffcc4f",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ci",
+          "text": "주석의 타입 이름 때문에 Compat 이 배선된 층으로 잡히던 것"
+        },
+        {
+          "sha": "f0b6e7dac",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "ci",
+          "text": "엔진 밖 시험 기준선을 312 로, DomainSDK 밖이라 못 거는 셋의 사유"
+        },
+        {
+          "sha": "f87a93aa7",
+          "type": "fix",
+          "typeLabel": "고친 것",
+          "scope": "setting",
+          "text": "묶음을 바꾸면 스크롤을 맨 위로"
+        },
+        {
+          "sha": "448d43120",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "magicbook",
-          "text": "팝업이 가운데 마도서도 피하게, 아래 별 이름 칸 넓힘"
+          "text": "임시 장 별자리를 110도, 간격 170 으로 (이름 겹침 0)"
         },
         {
-          "sha": "063630303",
+          "sha": "ded871c30",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "stage",
+          "text": "릴리스는 슬라임 숲 (D_0) 하나, 숲길과 D_1, D_2 는 개발용"
+        },
+        {
+          "sha": "5b66d22eb",
           "type": "fix",
           "typeLabel": "고친 것",
-          "scope": "magicbook",
-          "text": "시각 검토 반영, 팝업 자리 고르기, 마도서에서 장 입구로 선, 대비와 포커스"
-        },
+          "scope": "ui",
+          "text": "검토 반영, 저절로 연 안내는 판을 덮지 않고 키 탭은 묶음 전환에 대기를 끝내고 스크롤이 따라감"
+        }
+      ],
+      "quiet": 3,
+      "more": 6
+    },
+    {
+      "date": "2026-11-24",
+      "entries": [
         {
-          "sha": "b19ec245e",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "editor",
-          "text": "Play 누르는 순간 시작 씬을 다시 고정하고, 못 읽으면 Play 를 멈춘다"
-        },
-        {
-          "sha": "7d69f9b58",
+          "sha": "4c4c88b04",
           "type": "fix",
           "typeLabel": "고친 것",
           "scope": "tools",
-          "text": "FMOD 준비가 git 훅 안에서도 풀리게 Windows tar 를 직접 지정"
-        },
-        {
-          "sha": "f6c553368",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "magicbook",
-          "text": "전체 하늘에 별 이름까지 담고, 장 이름은 가운데에서 먼 쪽에"
-        },
-        {
-          "sha": "87c708932",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "magicbook",
-          "text": "별 이름은 잎은 바깥, 갈래는 아래로, 장 이름은 별자리 위로"
+          "text": "Play 종료 뒤에만 productName 을 되돌려 시험 세이브가 실제 세이브를 덮지 않게"
         }
       ],
-      "quiet": 2,
-      "more": 12
+      "quiet": 0,
+      "more": 0
+    },
+    {
+      "date": "2026-11-23",
+      "entries": [
+        {
+          "sha": "0b11d019b",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "wand",
+          "text": "빛 탄을 금빛 줄기와 빛 알갱이로, 적중 섬광은 작게"
+        },
+        {
+          "sha": "fd82e250b",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "wand",
+          "text": "빛 베기를 초승달 궤적과 적중 파편으로"
+        },
+        {
+          "sha": "80b83a484",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "magicbook",
+          "text": "판의 재료 목표, 마도서 임시 페이지 3장과 HUD, 결과창 진행 줄"
+        },
+        {
+          "sha": "9a14aceba",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "setting",
+          "text": "설정창을 아이콘 탭, 왼쪽 묶음 목록, 알약 값 칸으로 (시안 1)"
+        },
+        {
+          "sha": "d4782130f",
+          "type": "feat",
+          "typeLabel": "새로 생긴 것",
+          "scope": "remains",
+          "text": "바닥 불을 절차적 불 셰이더로, 노이즈가 깎아 갈라지는 불길과 온도 색과 연기"
+        },
+        {
+          "sha": "ffcb92c66",
+          "type": "revert",
+          "typeLabel": "되돌림",
+          "scope": "portal",
+          "text": "7차 셰이더 되돌림, 6차로 (사용자: 더 별로, 메이플을 너무 따라함)"
+        }
+      ],
+      "quiet": 7,
+      "more": 78
     },
     {
       "date": "2026-11-22",
@@ -443,66 +506,10 @@
           "typeLabel": "새로 생긴 것",
           "scope": "doll",
           "text": "캐릭터 3D 모델 표시 끄기 (기본 꺼짐)"
-        },
-        {
-          "sha": "45f70206a",
-          "type": "fix",
-          "typeLabel": "고친 것",
-          "scope": "ui",
-          "text": "시작 화면에서 세계 시계 숨김"
-        },
-        {
-          "sha": "9bd277230",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "title",
-          "text": "시작 화면 C안 (풍경, 넓은 간격 로고, 아무 키 뒤 메뉴)"
         }
       ],
       "quiet": 0,
-      "more": 0
-    },
-    {
-      "date": "2026-11-13",
-      "entries": [
-        {
-          "sha": "39e60a288",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "mobile",
-          "text": "왼쪽 떠다니는 스틱, 던전 시점 고정, 상태 전환 때 기울기 복귀"
-        },
-        {
-          "sha": "05d8a1df8",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "mobile",
-          "text": "폰 조작 버튼 글자를 game-icons 그림으로"
-        },
-        {
-          "sha": "9725ef745",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "boss",
-          "text": "슬라임 보스 이름을 아쿠아쿠로"
-        },
-        {
-          "sha": "97006c27f",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "ui",
-          "text": "안전 영역을 공통 부품 하나로, 화면별 계산 4벌 삭제"
-        },
-        {
-          "sha": "72d6a96d7",
-          "type": "feat",
-          "typeLabel": "새로 생긴 것",
-          "scope": "keybind",
-          "text": "데모에 없는 기능 키를 릴리스 단축키 안내에서 숨김"
-        }
-      ],
-      "quiet": 2,
-      "more": 7
+      "more": 2
     }
   ]
 }
