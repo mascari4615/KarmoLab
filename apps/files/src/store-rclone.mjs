@@ -156,6 +156,7 @@ export function rcloneStore(prefix, opts = {}) {
   const rcUrl = opts.rcUrl;
   const retryBaseMs = opts.retryBaseMs ?? 15_000;
   const tries = opts.tries ?? 8;
+  const reader = opts.reader ?? null;
   return {
     async put(key, bytes) {
       const body = Buffer.from(bytes);
@@ -178,6 +179,13 @@ export function rcloneStore(prefix, opts = {}) {
       if (delay) await sleep(delay);
     },
     async get(key) {
+      if (reader) {
+        try {
+          return await reader.get(key);
+        } catch {
+          /* 없는 키인지 상주 쪽 고장인지 여기서 안 가른다. 아래 cat 이 정한다 */
+        }
+      }
       try {
         const buf = await withRetry(() => run(['cat', `${base}/${key}`]), tries, retryBaseMs);
         return new Uint8Array(buf);

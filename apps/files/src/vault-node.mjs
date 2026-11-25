@@ -5,6 +5,7 @@
 import { createHash } from 'node:crypto';
 import { open } from 'node:fs/promises';
 import { HEAD_BYTES, exifTakenAt, hasExif } from './exif.mjs';
+import { indexLock } from './index-lock.mjs';
 import { CHUNK, commitFile, newBlobId, normalizePath, putChunk } from './vault.mjs';
 
 export async function sha256File(absPath) {
@@ -48,6 +49,8 @@ export async function takenAtOf(absPath, rel) {
 export async function putFileFromPath(session, vaultPath, absPath, opts = {}) {
   const chunkSize = opts.chunkSize ?? CHUNK;
   const norm = normalizePath(vaultPath);
+  /* 보고서 전송처럼 잠금을 따로 안 다는 쪽도 여기를 지난다. 시험 세션은 제 것을 단다 */
+  session.indexLock ??= indexLock();
   const fh = await open(absPath, 'r');
   try {
     const id = newBlobId();

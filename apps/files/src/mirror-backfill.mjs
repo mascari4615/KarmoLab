@@ -12,6 +12,7 @@
  * 쓰기: node src/mirror-backfill.mjs [--dry-run]
  */
 import { loadFilesEnv } from './env-file.mjs';
+import { startReader } from './reader-rclone.mjs';
 import { rcloneStore, startRcloneDaemon } from './store-rclone.mjs';
 import { fileChunkKeys, listFiles, thumbKeys, unlockVault } from './vault.mjs';
 import { mirrorable } from './mirror-policy.mjs';
@@ -35,7 +36,9 @@ const dry = process.argv.includes('--dry-run');
 
 const daemon = await startRcloneDaemon();
 const rcUrl = daemon?.url;
-const primary = rcloneStore(remote, { rcUrl, delayMs: rcUrl ? 0 : 400 });
+/* 못 띄우면 예전처럼 청크마다 cat. 느려질 뿐이다 */
+const reader = await startReader(remote).catch(() => null);
+const primary = rcloneStore(remote, { rcUrl, delayMs: rcUrl ? 0 : 400, reader });
 const extra = rcloneStore(extraRemote, { rcUrl, delayMs: rcUrl ? 0 : 400 });
 
 const session = await unlockVault(primary, pass);
@@ -124,4 +127,5 @@ for (const f of targets) {
 
 const tail = stoppedByBudget ? ' (값 상한에 걸려 멈춤)' : dry ? ' (연습)' : '';
 console.log(`끝. 옮김 ${copied}, 이미 있음 ${already}, 못 옮김 ${failed}${tail}`);
+reader?.stop();
 await daemon?.stop?.();

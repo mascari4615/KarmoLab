@@ -17,6 +17,8 @@
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadFilesEnv } from './env-file.mjs';
+import { indexLock } from './index-lock.mjs';
+import { attachSums } from './sums.mjs';
 import { rcloneStore, startRcloneDaemon } from './store-rclone.mjs';
 import { flushIndex, getFile, listFiles, putThumb, setTimes, unlockVault } from './vault.mjs';
 import { takenAtOf } from './vault-node.mjs';
@@ -61,6 +63,8 @@ const session = await unlockVault(store, pass);
    rclone 으로 다시 올린다. 2026-08-29 에 그 상태로 28분을 돌렸는데 CPU 는 20초만 썼다.
    전부 색인 올리기를 기다린 시간이었다. 전송기(upload.mjs)는 처음부터 이렇게 한다 */
 session.deferIndex = true;
+session.indexLock = indexLock();
+const ledger = attachSums(session, primary);
 console.log('클라우드 염');
 
 const files = await listFiles(session);
@@ -145,6 +149,7 @@ for (const f of todo) {
 }
 
 /* 마지막 한 판. 이걸 빼먹으면 마지막 묶음이 통째로 사라진다 */
+await ledger.flush();
 await flushIndex(session);
 
 console.log(

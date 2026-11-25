@@ -37,6 +37,7 @@ test('디스크에서 읽어 왕복. 암호문 파일을 뿌리에 안 남김', 
   try {
     const store = memoryStore();
     const session = await createVault(store, PASS, { iterations: 8_000 });
+    session.indexLock = (fn) => fn();
     const rel = 'dir/needle.bin';
     const abs = join(pack.root, 'dir', 'needle.bin');
     const want = createHash('sha256').update('stream-body-xyz').digest('hex');

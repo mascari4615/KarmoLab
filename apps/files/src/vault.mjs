@@ -146,6 +146,61 @@ async function writeIndex(session, index) {
   await session.store.put('idx', packed);
 }
 
+/**
+ * 이 세션이 바꾼 것만 적어 둔다. 색인은 한 덩이라 통째로 덮으면
+ * 그 사이 다른 작업이 쓴 줄이 사라진다 (양방향 유실 재현 2026-11-26).
+ * `put` 은 줄 전체, `patch` 는 칸 몇 개, `drop` 은 빼기. 뒤의 둘은 id 가 같을 때만.
+ */
+function note(session, path, change) {
+  session.changes ??= new Map();
+  const before = session.changes.get(path);
+  /* 뺀 파일에 늦게 온 칸은 버린다 */
+  if (change.kind === 'patch' && before?.kind === 'drop' && before.id === change.id) return;
+  if (change.kind === 'patch' && before && before.id === change.id) {
+    const key = before.kind === 'put' ? 'row' : 'fields';
+    session.changes.set(path, { ...before, [key]: { ...before[key], ...change.fields } });
+    return;
+  }
+  session.changes.set(path, change);
+}
+
+/** 지금 원격에 있는 색인에 이 세션의 변경만 얹는다 */
+export function mergeIndex(fresh, changes) {
+  /* 줄 단위로 본다. 옛 색인에 같은 경로가 두 줄이어도 안 건드린 줄은 그대로 둔다 */
+  const files = [];
+  for (const f of fresh.files) {
+    const c = changes.get(f.path);
+    if (!c) files.push(f);
+    else if (c.kind === 'put' || (c.kind === 'drop' && c.id === f.id)) continue;
+    else if (c.kind === 'patch' && c.id === f.id) files.push({ ...f, ...c.fields });
+    else files.push(f);
+  }
+  for (const c of changes.values()) if (c.kind === 'put') files.push({ ...c.row });
+  return { ...fresh, files };
+}
+
+/**
+ * 다시 읽고 합쳐 쓴다. `session.indexLock` 이 있으면 그 안에서 (전송기는 PC 잠금 파일).
+ * 원격 색인을 못 읽거나 못 열면 예외. 모르는 채로 덮어쓰기 금지
+ */
+async function saveIndex(session) {
+  if (!session.changes?.size) return;
+  await session.beforeIndex?.();
+  const lock = session.indexLock ?? ((fn) => fn());
+  await lock(async (stillHeld) => {
+    const changes = new Map(session.changes);
+    const merged = mergeIndex(await readIndex(session), changes);
+    /* 읽는 사이 잠들었다 깨어 남이 잠금을 가져갔으면 쓰지 않는다 */
+    await stillHeld?.();
+    await writeIndex(session, merged);
+    /* 쓰는 동안 새로 생긴 변경은 남긴다 */
+    for (const [path, c] of changes) {
+      if (session.changes.get(path) === c) session.changes.delete(path);
+    }
+    session.index = mergeIndex(merged, session.changes);
+  });
+}
+
 const AAD_TRASH = new TextEncoder().encode('karmvlt:trash');
 
 /**
@@ -168,6 +223,29 @@ export async function readTrash(session) {
   }
 }
 
+const AAD_SUMS = new TextEncoder().encode('karmvlt:sums:1');
+
+/** 암호문 MD5 장부 한 조각. 내용은 sums.mjs 가 정한다. 화면은 안 읽는다 */
+export async function sealSums(session, plain) {
+  return seal(session.key, plain, AAD_SUMS);
+}
+
+export async function openSums(session, packed) {
+  return open(session.key, packed, AAD_SUMS);
+}
+
+/** 청크를 같은 IV 로 다시 싼다. 원본만으로 원격 MD5 를 확인할 때 쓴다. 새로 쓰는 데 쓰지 않는다 */
+export async function resealChunk(session, id, n, part, iv) {
+  if (!iv || iv.length !== IV_LEN) throw new VaultCorruptError('iv');
+  const ct = new Uint8Array(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: aadChunk(id, n) }, session.key, part),
+  );
+  const out = new Uint8Array(IV_LEN + ct.length);
+  out.set(iv, 0);
+  out.set(ct, IV_LEN);
+  return out;
+}
+
 /** 휴지통 쓰기. 화면이 쓸 수 있는 **유일한** 자리다 */
 export async function writeTrash(session, trash) {
   const body = new TextEncoder().encode(JSON.stringify(normalizeTrash(trash)));
@@ -186,21 +264,25 @@ async function loadIndex(session) {
   return session.index;
 }
 
-async function persistIndex(session, index) {
-  session.index = index;
-  if (session.deferIndex) {
-    session.indexDirty = true;
-    return;
-  }
-  await writeIndex(session, index);
-  session.indexDirty = false;
+async function persistIndex(session, path, change) {
+  note(session, path, change);
+  if (session.deferIndex) return;
+  await saveIndex(session);
 }
 
 /** deferIndex 일 때 암호문 목록을 원격에 한 번 쓴다. */
 export async function flushIndex(session) {
-  if (!session.deferIndex || !session.indexDirty || !session.index) return;
-  await writeIndex(session, session.index);
-  session.indexDirty = false;
+  if (!session.deferIndex) return;
+  await saveIndex(session);
+}
+
+/** 색인에서 줄을 뺀다. 휴지통 비우기가 쓴다. 그 사이 다시 올라온 파일(id 가 다름)은 안 뺀다 */
+export async function dropFiles(session, rows) {
+  const index = await loadIndex(session);
+  const ids = new Set(rows.map((r) => r.id));
+  index.files = index.files.filter((f) => !ids.has(f.id));
+  for (const r of rows) note(session, r.path, { kind: 'drop', id: r.id });
+  if (!session.deferIndex) await saveIndex(session);
 }
 
 function packHeader({ kdf, iterations, salt }) {
@@ -265,6 +347,7 @@ export async function putChunk(session, id, n, part) {
   if (!(part instanceof Uint8Array)) throw new VaultPathError('bytes');
   const sealed = await seal(session.key, part, aadChunk(id, n));
   await session.store.put(`c/${id}/${n}`, sealed);
+  session.onSealed?.(`c/${id}/${n}`, sealed);
   return sealed.length;
 }
 
@@ -284,7 +367,7 @@ export async function commitFile(session, rec) {
   if (rec.mtime > 0) row.mtime = rec.mtime;
   if (rec.shot > 0) row.shot = rec.shot;
   index.files.push(row);
-  await persistIndex(session, index);
+  await persistIndex(session, norm, { kind: 'put', id: row.id, row: { ...row } });
   return { id: rec.id, sha256: rec.sha256, chunks: rec.chunks };
 }
 
@@ -338,16 +421,12 @@ export async function setTimes(session, path, times) {
   const index = await loadIndex(session);
   const entry = index.files.find((f) => f.path === norm);
   if (!entry) return null;
-  let changed = false;
-  if (times.mtime > 0 && entry.mtime !== times.mtime) {
-    entry.mtime = times.mtime;
-    changed = true;
-  }
-  if (times.shot > 0 && entry.shot !== times.shot) {
-    entry.shot = times.shot;
-    changed = true;
-  }
-  if (changed) await persistIndex(session, index);
+  const fields = {};
+  if (times.mtime > 0 && entry.mtime !== times.mtime) fields.mtime = times.mtime;
+  if (times.shot > 0 && entry.shot !== times.shot) fields.shot = times.shot;
+  const changed = Object.keys(fields).length > 0;
+  Object.assign(entry, fields);
+  if (changed) await persistIndex(session, norm, { kind: 'patch', id: entry.id, fields });
   return { changed };
 }
 
@@ -366,8 +445,9 @@ export async function putThumb(session, path, bytes) {
   if (!entry) return null;
   const sealed = await seal(session.key, bytes, aadThumb(entry.id));
   await session.store.put(`t/${entry.id}`, sealed);
+  session.onSealed?.(`t/${entry.id}`, sealed);
   entry.thumb = bytes.length;
-  await persistIndex(session, index);
+  await persistIndex(session, norm, { kind: 'patch', id: entry.id, fields: { thumb: bytes.length } });
   return { id: entry.id, size: bytes.length };
 }
 

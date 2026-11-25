@@ -12,8 +12,9 @@
  *   `--yes` 없이는 무엇을 지울지 보여 주기만 한다.
  */
 import { loadFilesEnv } from './env-file.mjs';
+import { indexLock } from './index-lock.mjs';
 import { rcloneStore, startRcloneDaemon } from './store-rclone.mjs';
-import { flushIndex, listFiles, readTrash, unlockVault, writeTrash } from './vault.mjs';
+import { dropFiles, flushIndex, listFiles, readTrash, unlockVault, writeTrash } from './vault.mjs';
 import { inTrash, takeTrash } from './trash.mjs';
 
 await loadFilesEnv();
@@ -43,6 +44,7 @@ const extra = extraRemote ? rcloneStore(extraRemote, { rcUrl, delayMs: rcUrl ? 0
 
 const session = await unlockVault(primary, pass);
 session.deferIndex = true;
+session.indexLock = indexLock();
 const trash = await readTrash(session);
 const files = await listFiles(session);
 
@@ -84,8 +86,7 @@ for (const f of targets) {
 
 /* 청크를 지운 뒤에 색인에서 뺀다. 순서가 반대면 지울 자리를 잃는다 */
 const drops = new Set(targets.map((f) => f.path));
-index.files = index.files.filter((f) => !drops.has(f.path));
-session.indexDirty = true;
+await dropFiles(session, targets);
 await flushIndex(session);
 await writeTrash(session, takeTrash(trash, [...drops]));
 

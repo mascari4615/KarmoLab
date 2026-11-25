@@ -7,6 +7,8 @@
     "test": "node --test test/*.test.mjs",
     "upload": "node src/upload.mjs",
     "probe": "node scripts/probe-rclone.mjs",
+    "verify": "node src/verify.mjs",
+    "sums": "node src/sums-backfill.mjs",
     "health": "node src/health.mjs",
     "thumbs": "node src/thumb-backfill.mjs",
     "empty-trash": "node src/empty-trash.mjs"

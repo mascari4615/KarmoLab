@@ -11,6 +11,8 @@ import { createVault, flushIndex, listFiles, putThumb, unlockVault } from './vau
 import { putFileFromPath, sha256File, takenAtOf } from './vault-node.mjs';
 import { rcloneStore, startRcloneDaemon } from './store-rclone.mjs';
 import { teeStore } from './store-tee.mjs';
+import { indexLock } from './index-lock.mjs';
+import { attachSums } from './sums.mjs';
 import { walkFiles } from './walk.mjs';
 import { mirrorable } from './mirror-policy.mjs';
 import { thumbKind } from './thumb.mjs';
@@ -104,6 +106,13 @@ const hdr = await store.get('hdr');
 if (hdr) session = await unlockVault(store, pass);
 else session = await createVault(store, pass);
 session.deferIndex = true;
+session.indexLock = indexLock();
+/* 암호문 MD5 장부. 정본에만 둔다 (`npm run verify`) */
+const ledger = attachSums(session, primary);
+/* 색인은 9MB 다. Drive 에 한 번 쓰는 데 4초쯤이고 R2 에도 쓴다 (2026-11-26). 10개마다 쓰면
+   작은 파일에서는 그 시간이 절반에 가깝다. 개수 대신 시간으로 끊는다. 중간에 죽으면 이만큼만 다시 올린다 */
+const FLUSH_MS = 60_000;
+let flushedAt = Date.now();
 console.log('클라우드 염');
 
 /* 진행 상태를 **정해진 자리**에 적는다.
@@ -176,7 +185,10 @@ try {
       thumbCount += 1;
     }
     n += 1;
-    if ((n + skipped) % 10 === 0) await flushIndex(session);
+    if (Date.now() - flushedAt >= FLUSH_MS) {
+      await flushIndex(session);
+      flushedAt = Date.now();
+    }
     if (verbose) console.log(rel);
     else if ((n + skipped) % 10 === 0 || n + skipped === files.length) {
       console.log(`${n + skipped}/${files.length} 올림 ${n} 건너뜀 ${skipped}`);
@@ -188,6 +200,9 @@ try {
   await flushIndex(session);
   await writeProgress('done', files.length, n + skipped, n, skipped);
 } finally {
+  /* 파일 도중에 던지면 저장소가 정본만인 채로 온다. 그대로 쓰면 R2 의 색인이 옛것으로 남는다 */
+  session.store = mirrored;
+  if (!(await ledger.flush())) console.error(`MD5 장부를 못 썼다. 남은 줄 ${ledger.pending}`);
   await flushIndex(session);
   daemon?.stop();
 }
