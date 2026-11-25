@@ -154,6 +154,8 @@ function errorText(code: string): string {
     return t('my-ai.err.no_snapshot', undefined, '최근 사용 기록이 없어 남은 양을 알 수 없다.');
   if (code === 'no-signal' || code === 'no-log')
     return t('my-ai.err.no_signal', undefined, '로그에 할당량 신호가 없다.');
+  if (code === 'antigravity-manual-check')
+    return 'Gemini Web과 별도 할당량, 개인용 공식 조회 API 없음. Antigravity 앱 Settings > Models 또는 agy /usage에서 확인.';
   if (code.startsWith('http-'))
     return t('my-ai.err.http', { code }, `조회 실패 (${code})`);
   return code;
@@ -316,8 +318,11 @@ function freshnessHtml(data: VendorQuota): string {
 }
 
 function renderCard(card: VendorCard, dashMode: boolean): string {
+  const manualInfo = card.id === 'antigravity' && card.error === 'antigravity-manual-check' && !card.quota;
   const chips: string[] = [];
-  if (card.quota) {
+  if (manualInfo) {
+    chips.push('<span class="myai-chip">수동 확인</span>');
+  } else if (card.quota) {
     if (card.quota.plan) {
       chips.push(`<span class="myai-chip myai-chip--plan">${esc(card.quota.plan)}</span>`);
     }
@@ -332,7 +337,11 @@ function renderCard(card: VendorCard, dashMode: boolean): string {
   const webFailed = card.error === 'claude-login-and-web-unavailable' || card.error === 'claude-web-unavailable';
   const cliLoginNeeded = card.error === 'claude-login-and-web-unavailable' || (card.error !== null && isLoginCode(card.error));
   let issue = '';
-  if (browserClaude && (cliLoginNeeded || webFailed)) {
+  if (manualInfo) {
+    issue =
+      '<p class="myai-note">Gemini Web과 할당량이 다르며 개인용 공식 조회 API가 없음.</p>' +
+      '<p class="myai-note">Antigravity 앱 <code>Settings &gt; Models</code> 또는 <code>agy</code> CLI <code>/usage</code>에서 확인.</p>';
+  } else if (browserClaude && (cliLoginNeeded || webFailed)) {
     const title = [cliLoginNeeded ? 'Claude CLI 로그인 필요.' : '', webFailed ? '웹 사용량을 가져오지 못했습니다.' : ''].filter(Boolean).join(' ');
     issue = `<p class="myai-error">${title}${card.quota ? ' 마지막 기록을 표시합니다.' : ''}</p>`;
     if (cliLoginNeeded) issue += '<p class="myai-note">CLI를 연결하려면 수집 PC의 터미널에서 <code>claude auth login</code>을 실행하세요.</p>';
@@ -346,8 +355,9 @@ function renderCard(card: VendorCard, dashMode: boolean): string {
   const body = (issue + (card.quota ? cardBodyHtml(card.quota, Boolean(card.error)) : '') + login)
     || `<p class="myai-note">${esc(t('my-ai.t19', undefined, '읽는 중...'))}</p>`;
 
+  const showErrorStyle = Boolean(card.error) && !manualInfo;
   return `
-    <section class="myai-card${card.error ? ' myai-card--error' : ''}" style="--myai-accent:${esc(card.accent)}">
+    <section class="myai-card${showErrorStyle ? ' myai-card--error' : ''}" style="--myai-accent:${esc(card.accent)}">
       <header class="myai-card-head">
         <h3 class="myai-vendor">${esc(card.label)}</h3>
         <div class="myai-chips">${chips.join('')}</div>
@@ -657,7 +667,9 @@ export function buildQuota(
         const result = await requestFreshCards(dashToken);
         if (refreshAbort.signal.aborted) return;
         cards_data = await loadFromDash(dashToken);
-        const names = cards_data.filter((card) => result?.missed.includes(card.id) && !card.quota?.live).map((card) => card.label);
+        const names = cards_data
+          .filter((card) => result?.missed.includes(card.id) && !card.quota?.live && card.id !== 'antigravity')
+          .map((card) => card.label);
         updated.textContent = !result ? '데스크톱 응답 없음. 마지막 기록을 표시합니다.'
           : names.length ? `새 기록을 받지 못함: ${names.join(', ')}` : '구독 사용량 갱신됨';
       } else {

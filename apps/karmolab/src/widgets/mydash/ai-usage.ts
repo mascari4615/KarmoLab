@@ -560,8 +560,8 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 
   type EnvVendor = { vendor: string; status: string; reason: string; evidence: string[] };
   type EnvFeature = { id: string; label: string; description: string; vendors: EnvVendor[] };
-  type EnvSkill = { name: string; description: string; claude: string; agents: string };
-  type EnvSkills = { skills: EnvSkill[]; outside: { claude: string[]; agents: string[] } };
+  type EnvSkill = { name: string; description: string; claude: string; agents: string; antigravity?: string };
+  type EnvSkills = { skills: EnvSkill[]; outside: { claude: string[]; agents: string[]; antigravity?: string[] } };
   type EnvAudit = { checked_at: number; features: EnvFeature[]; skills?: EnvSkills };
 
   /* 스킬 배포 상태 칩. 색은 하네스 표 칩 재사용 (ok 적용색, drift 일부색, missing 미적용색) */
@@ -580,21 +580,29 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
 
   function renderSkills(skills: EnvSkills | undefined): string {
     if (!skills || !skills.skills || !skills.skills.length) return '';
-    const bad = (item: EnvSkill) => item.claude !== 'ok' || item.agents !== 'ok';
+    const hasAgy = skills.skills.some((item) => typeof item.antigravity === 'string');
+    const bad = (item: EnvSkill) => item.claude !== 'ok' || item.agents !== 'ok' || (hasAgy && item.antigravity !== 'ok');
     const sorted = [...skills.skills].sort((a, b) => Number(bad(b)) - Number(bad(a)) || a.name.localeCompare(b.name));
     const broken = sorted.filter(bad).length;
     const rows = sorted.map((item) =>
       '<tr><th scope="row" title="' + esc(item.description) + '"><strong>' + esc(item.name) + '</strong><small>' +
       esc(firstSentence(item.description)) + '</small></th><td>' + skillStateChip(item.claude) + '</td><td>' +
-      skillStateChip(item.agents) + '</td></tr>').join('');
-    const outside = (['claude', 'agents'] as const)
-      .filter((key) => skills.outside && skills.outside[key] && skills.outside[key].length)
-      .map((key) => (key === 'claude' ? 'Claude 홈' : 'Codex 홈') + ': ' + skills.outside[key].map(esc).join(', '))
+      skillStateChip(item.agents) + '</td>' + (hasAgy ? '<td>' + skillStateChip(item.antigravity ?? 'missing') + '</td>' : '') + '</tr>').join('');
+    const homeLabel: Record<'claude' | 'agents' | 'antigravity', string> = {
+      claude: 'Claude 홈',
+      agents: 'Codex 홈',
+      antigravity: 'Antigravity 홈',
+    };
+    const keys = hasAgy ? (['claude', 'agents', 'antigravity'] as const) : (['claude', 'agents'] as const);
+    const outside = keys
+      .filter((key) => skills.outside && skills.outside[key] && skills.outside[key]!.length)
+      .map((key) => homeLabel[key] + ': ' + skills.outside[key]!.map(esc).join(', '))
       .join(' / ');
     return '<p class="au-foot">스킬 정본 ' + skills.skills.length + '개. ' +
-      (broken ? '배포가 어긋난 것 ' + broken + '개를 위에 올림.' : '두 홈 모두 정본과 같음.') +
+      (broken ? '배포가 어긋난 것 ' + broken + '개를 위에 올림.' : (hasAgy ? '세 홈 모두 정본과 같음.' : '두 홈 모두 정본과 같음.')) +
       ' 정본은 memo dotfiles/skills, 어긋나면 sync-agent-runtime.ps1 -Only skills-common.</p>' +
-      '<div class="au-env-scroll"><table class="au-env"><thead><tr><th>스킬</th><th>Claude 홈</th><th>Codex 홈</th></tr></thead><tbody>' +
+      '<div class="au-env-scroll"><table class="au-env"><thead><tr><th>스킬</th><th>Claude 홈</th><th>Codex 홈</th>' +
+      (hasAgy ? '<th>Antigravity 홈</th>' : '') + '</tr></thead><tbody>' +
       rows + '</tbody></table></div>' +
       (outside ? '<p class="au-foot">정본 밖 (정리 후보, 사용자 확인 뒤 삭제): ' + outside + '</p>' : '');
   }
@@ -627,7 +635,7 @@ import type { DashEntry, DashPanelCtx, DashRepoRead } from './kit';
     const chips = dirs.length > 1
       ? '<div class="au-chips">' + dirs.map((h) => '<button type="button" data-env-host="' + esc(h) + '"' + (h === host ? ' class="on"' : '') + '>' + esc(hostLabel(h)) + '</button>').join('') + '</div>'
       : '';
-    const vendors = ['claude', 'codex', 'grok'] as const;
+    const vendors = ['claude', 'codex', 'grok', 'antigravity'] as const;
     const head = vendors.map((v) => '<th>' + v[0].toUpperCase() + v.slice(1) + '</th>').join('');
     const rows = (audit.features || []).map((feature) => {
       const cells = vendors.map((vendor) => {

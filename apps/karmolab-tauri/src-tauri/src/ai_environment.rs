@@ -78,6 +78,7 @@ fn skill_vendors(
     claude_skills: &Path,
     codex_skills: &Path,
     codex_bundled_skills: &Path,
+    antigravity_skills: &Path,
 ) -> Vec<VendorState> {
     let Some(sync) = sync else {
         return vec![
@@ -96,10 +97,11 @@ fn skill_vendors(
                 "Claude 스킬과 ~/.agents/skills. 같은 이름은 스킬 설명 하나",
                 vec![claude_skills.to_path_buf(), codex_skills.to_path_buf()],
             ),
+            state("antigravity", has_entries(antigravity_skills), false, "Antigravity 사용자 스킬", vec![antigravity_skills.to_path_buf()]),
         ];
     };
     let total = sync.total;
-    let (claude_ok, agents_ok) = (sync.claude_ok, sync.agents_ok);
+    let (claude_ok, agents_ok, antigravity_ok) = (sync.claude_ok, sync.agents_ok, sync.antigravity_ok);
     let note = |ok: usize| format!("정본 {}개 중 {}개 일치", total, ok);
     let bundled = has_entries(codex_bundled_skills);
     vec![
@@ -128,6 +130,13 @@ fn skill_vendors(
             format!("Claude 홈 {}, Codex 홈 {}. 같은 이름은 스킬 설명 하나", note(claude_ok), note(agents_ok)),
             vec![claude_skills.to_path_buf(), codex_skills.to_path_buf()],
         ),
+        state(
+            "antigravity",
+            antigravity_ok == total,
+            antigravity_ok > 0 && antigravity_ok < total,
+            format!("Antigravity 사용자 스킬. {}", note(antigravity_ok)),
+            vec![antigravity_skills.to_path_buf()],
+        ),
     ]
 }
 
@@ -143,10 +152,18 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
     let codex = home.join(".codex");
     let agents = home.join(".agents");
     let grok = home.join(".grok");
+    let gemini = home.join(".gemini");
+    let antigravity_config = gemini.join("config");
+    let antigravity_data = gemini.join("antigravity");
     let agent_hooks = home.join(".karmoddrine").join("agent-hooks");
     let claude_settings = claude.join("settings.json");
     let codex_config = codex.join("config.toml");
     let grok_hooks = grok.join("hooks").join("karmoddrine.json");
+    let antigravity_hooks = antigravity_config.join("hooks.json");
+    let antigravity_settings = antigravity_config.join("config.json");
+    let antigravity_mcp = antigravity_config.join("mcp_config.json");
+    let antigravity_plugins = antigravity_config.join("plugins");
+    let antigravity_knowledge = antigravity_data.join("knowledge");
 
     let instructions = EnvironmentFeature {
         id: "instructions",
@@ -156,22 +173,25 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
             state("claude", exists(&root_claude), false, "CLAUDE.md 진입 문서", vec![root_claude.clone()]),
             state("codex", exists(&root_agents), false, "AGENTS.md 진입 문서", vec![root_agents.clone()]),
             state("grok", exists(&root_agents) && exists(&root_claude), false, "AGENTS.md와 CLAUDE.md를 함께 로드", vec![root_agents.clone(), root_claude.clone()]),
+            state("antigravity", exists(&root_agents), false, "AGENTS.md 진입 문서", vec![root_agents.clone()]),
         ],
     };
 
     let claude_skills = claude.join("skills");
     let codex_skills = agents.join("skills");
     let codex_bundled_skills = codex.join("skills");
+    let antigravity_skills = antigravity_config.join("skills");
     let memo_skills = umbrella.join("memo").join("dotfiles").join("skills");
     let skills = EnvironmentFeature {
         id: "skills",
         label: "스킬",
         description: "반복 작업을 위한 SKILL.md 워크플로",
         vendors: skill_vendors(
-            crate::skill_sync::count(&memo_skills, &claude_skills, &codex_skills),
+            crate::skill_sync::count(&memo_skills, &claude_skills, &codex_skills, &antigravity_skills),
             &claude_skills,
             &codex_skills,
             &codex_bundled_skills,
+            &antigravity_skills,
         ),
     };
 
@@ -179,11 +199,12 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
     let hooks = EnvironmentFeature {
         id: "hooks",
         label: "훅",
-        description: "세션·프롬프트·도구 호출 전후의 기계적 집행",
+        description: "세션, 프롬프트, 도구 호출 전후의 기계적 집행",
         vendors: vec![
             state("claude", has_entries(&agent_hooks) && contains(&claude_settings, "\"hooks\""), false, "공통 hook runtime과 Claude 배선", vec![agent_hooks.clone(), claude_settings.clone()]),
             state("codex", has_entries(&agent_hooks) && (exists(&codex_hooks) || contains(&codex_config, "[hooks]")) && !contains(&codex_config, "hooks = false"), false, "공통 hook runtime과 Codex 배선", vec![agent_hooks.clone(), codex_hooks.clone(), codex_config.clone()]),
             state("grok", has_entries(&agent_hooks) && exists(&grok_hooks), false, "공통 hook runtime과 Grok adapter", vec![agent_hooks.clone(), grok_hooks.clone()]),
+            state("antigravity", has_entries(&agent_hooks) && exists(&antigravity_hooks) && contains(&antigravity_hooks, "vendor-wrap.py"), false, "공통 hook runtime과 Antigravity hooks.json", vec![agent_hooks.clone(), antigravity_hooks.clone()]),
         ],
     };
 
@@ -202,6 +223,7 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
                 "Claude command와 ~/.agents/skills. 같은 이름은 스킬 쪽으로 접힘",
                 vec![claude_commands.clone(), codex_skills.clone()],
             ),
+            state("antigravity", has_entries(&antigravity_skills), false, "Antigravity 사용자 스킬과 내장 슬래시 커맨드", vec![antigravity_skills.clone()]),
         ],
     };
 
@@ -213,28 +235,31 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
             state("claude", exists(&claude.join("projects")), false, "Claude project memory", vec![claude.join("projects")]),
             state("codex", has_entries(&codex.join("memories")) && contains(&codex_config, "memories = true"), exists(&codex.join("memories")), "Codex local memory 설정과 생성 상태", vec![codex.join("memories"), codex_config.clone()]),
             state("grok", exists(&grok.join("last-session-start.md")), true, "SessionStart 파일 기반 기억만 확인", vec![grok.join("last-session-start.md")]),
+            state("antigravity", exists(&antigravity_knowledge), false, "Antigravity knowledge 저장소", vec![antigravity_knowledge.clone()]),
         ],
     };
 
     let mcp = EnvironmentFeature {
         id: "mcp",
-        label: "MCP · 도구",
+        label: "MCP, 도구",
         description: "외부 앱과 로컬 도구 연결",
         vendors: vec![
             state("claude", contains(&claude_settings, "mcp"), true, "Claude settings의 MCP 표식", vec![claude_settings.clone()]),
             state("codex", contains(&codex_config, "[mcp_servers."), false, "Codex MCP 서버 설정", vec![codex_config.clone()]),
             state("grok", contains(&grok.join("settings.json"), "mcp"), true, "Grok MCP 설정 표식", vec![grok.join("settings.json")]),
+            state("antigravity", contains(&antigravity_mcp, "mcpServers") && (contains(&antigravity_mcp, "\"command\"") || contains(&antigravity_mcp, "\"serverUrl\"") || contains(&antigravity_mcp, "\"url\"")), false, "Antigravity MCP 서버 설정", vec![antigravity_mcp.clone()]),
         ],
     };
 
     let permissions = EnvironmentFeature {
         id: "permissions",
-        label: "권한 · 샌드박스",
-        description: "파일·명령·네트워크 허용 범위",
+        label: "권한, 샌드박스",
+        description: "파일, 명령, 네트워크 허용 범위",
         vendors: vec![
             state("claude", contains(&claude_settings, "permissions"), false, "Claude permissions 설정", vec![claude_settings.clone()]),
             state("codex", exists(&codex_config), false, "Codex config와 프로젝트 trust", vec![codex_config.clone()]),
             state("grok", exists(&grok.join("settings.json")), true, "Grok 설정 존재만 확인", vec![grok.join("settings.json")]),
+            state("antigravity", false, exists(&antigravity_settings), "Antigravity 설정 존재만 확인", vec![antigravity_settings.clone()]),
         ],
     };
 
@@ -246,6 +271,7 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
             state("claude", has_entries(&claude.join("plugins")), false, "Claude plugin 저장소", vec![claude.join("plugins")]),
             state("codex", has_entries(&codex.join("plugins")), false, "Codex plugin 저장소", vec![codex.join("plugins")]),
             state("grok", has_entries(&grok.join("plugins")), false, "Grok plugin 저장소", vec![grok.join("plugins")]),
+            state("antigravity", has_entries(&antigravity_plugins), false, "Antigravity plugin 저장소", vec![antigravity_plugins.clone()]),
         ],
     };
 
@@ -257,6 +283,7 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
             unknown("claude", "제품 지원 여부는 로컬 파일만으로 판정하지 않음", vec![claude_settings.clone()]),
             unknown("codex", "제품 지원 여부는 로컬 파일만으로 판정하지 않음", vec![codex_config.clone()]),
             unknown("grok", "제품 지원 여부는 로컬 파일만으로 판정하지 않음", vec![grok.join("config.toml")]),
+            unknown("antigravity", "제품 지원 여부는 로컬 파일만으로 판정하지 않음", vec![antigravity_settings.clone()]),
         ],
     };
 
@@ -269,11 +296,12 @@ pub fn ai_environment_audit() -> Result<EnvironmentAudit, String> {
         features: vec![instructions, skills, hooks, commands, memory, mcp, plugins, permissions, EnvironmentFeature {
             id: "automation",
             label: "예약, 무인 실행",
-            description: "사용자 호출 없이 예약·반복 실행되는 AI 작업",
+            description: "사용자 호출 없이 예약, 반복 실행되는 AI 작업",
             vendors: vec![
                 unknown("claude", "예약 실행의 계정, 앱 상태는 로컬 파일만으로 판정하지 않음", vec![claude.join("automations")]),
                 unknown("codex", "Codex 예약 작업은 데스크톱, 웹 Scheduled에서 관리됨", vec![codex.join("automations")]),
                 unknown("grok", "예약 실행의 계정, 앱 상태는 로컬 파일만으로 판정하지 않음", vec![grok.join("automations")]),
+                unknown("antigravity", "Antigravity 예약 작업은 앱 Scheduled Tasks에서 관리됨", vec![antigravity_settings]),
             ],
         }, subagents],
     })

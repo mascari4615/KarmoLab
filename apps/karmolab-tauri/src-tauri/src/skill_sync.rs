@@ -9,6 +9,7 @@ pub struct SkillSync {
     pub total: usize,
     pub claude_ok: usize,
     pub agents_ok: usize,
+    pub antigravity_ok: usize,
 }
 
 fn files_under(dir: &Path, base: &Path, out: &mut Vec<PathBuf>) {
@@ -39,10 +40,15 @@ fn in_sync(canon: &Path, target: &Path) -> bool {
     })
 }
 
-/// SKILL.md 가 든 정본 폴더마다 두 홈의 일치를 센다. 정본이 없거나 비면 None
-pub fn count(canon_root: &Path, claude_root: &Path, agents_root: &Path) -> Option<SkillSync> {
+/// SKILL.md 가 든 정본 폴더마다 세 홈 일치 집계. 정본 부재 시 None
+pub fn count(
+    canon_root: &Path,
+    claude_root: &Path,
+    agents_root: &Path,
+    antigravity_root: &Path,
+) -> Option<SkillSync> {
     let entries = std::fs::read_dir(canon_root).ok()?;
-    let (mut total, mut claude_ok, mut agents_ok) = (0, 0, 0);
+    let (mut total, mut claude_ok, mut agents_ok, mut antigravity_ok) = (0, 0, 0, 0);
     for entry in entries.flatten() {
         let dir = entry.path();
         if !dir.join("SKILL.md").is_file() {
@@ -56,11 +62,14 @@ pub fn count(canon_root: &Path, claude_root: &Path, agents_root: &Path) -> Optio
         if in_sync(&dir, &agents_root.join(&name)) {
             agents_ok += 1;
         }
+        if in_sync(&dir, &antigravity_root.join(&name)) {
+            antigravity_ok += 1;
+        }
     }
     if total == 0 {
         None
     } else {
-        Some(SkillSync { total, claude_ok, agents_ok })
+        Some(SkillSync { total, claude_ok, agents_ok, antigravity_ok })
     }
 }
 
@@ -85,43 +94,46 @@ mod tests {
 
     #[test]
     fn counts_matching_skills_per_home() {
-        let (canon, claude, agents) = (temp("c"), temp("l"), temp("a"));
+        let (canon, claude, agents, agy) = (temp("c"), temp("l"), temp("a"), temp("g"));
         put(&canon, "alpha", "A");
         put(&canon, "beta", "B");
         put(&claude, "alpha", "A");
         put(&claude, "beta", "B");
         put(&agents, "alpha", "A");
-        let got = count(&canon, &claude, &agents).unwrap();
-        assert_eq!((got.total, got.claude_ok, got.agents_ok), (2, 2, 1));
+        put(&agy, "alpha", "A");
+        put(&agy, "beta", "B");
+        let got = count(&canon, &claude, &agents, &agy).unwrap();
+        assert_eq!((got.total, got.claude_ok, got.agents_ok, got.antigravity_ok), (2, 2, 1, 2));
     }
 
     #[test]
     fn changed_bytes_do_not_count() {
-        let (canon, claude, agents) = (temp("c"), temp("l"), temp("a"));
+        let (canon, claude, agents, agy) = (temp("c"), temp("l"), temp("a"), temp("g"));
         put(&canon, "alpha", "A");
         put(&claude, "alpha", "changed");
-        let got = count(&canon, &claude, &agents).unwrap();
-        assert_eq!((got.total, got.claude_ok, got.agents_ok), (1, 0, 0));
+        put(&agy, "alpha", "changed");
+        let got = count(&canon, &claude, &agents, &agy).unwrap();
+        assert_eq!((got.total, got.claude_ok, got.agents_ok, got.antigravity_ok), (1, 0, 0, 0));
     }
 
     #[test]
     fn extra_file_in_canon_must_exist_in_home() {
-        let (canon, claude, agents) = (temp("c"), temp("l"), temp("a"));
+        let (canon, claude, agents, agy) = (temp("c"), temp("l"), temp("a"), temp("g"));
         put(&canon, "alpha", "A");
         fs::create_dir_all(canon.join("alpha").join("reference")).unwrap();
         fs::write(canon.join("alpha").join("reference").join("x.md"), "x").unwrap();
         put(&claude, "alpha", "A");
-        let got = count(&canon, &claude, &agents).unwrap();
+        let got = count(&canon, &claude, &agents, &agy).unwrap();
         assert_eq!(got.claude_ok, 0);
     }
 
     #[test]
     fn stray_home_skills_and_empty_canon() {
-        let (canon, claude, agents) = (temp("c"), temp("l"), temp("a"));
+        let (canon, claude, agents, agy) = (temp("c"), temp("l"), temp("a"), temp("g"));
         put(&claude, "stray", "S");
-        assert!(count(&canon, &claude, &agents).is_none());
+        assert!(count(&canon, &claude, &agents, &agy).is_none());
         put(&canon, "alpha", "A");
-        let got = count(&canon, &claude, &agents).unwrap();
-        assert_eq!((got.total, got.claude_ok, got.agents_ok), (1, 0, 0));
+        let got = count(&canon, &claude, &agents, &agy).unwrap();
+        assert_eq!((got.total, got.claude_ok, got.agents_ok, got.antigravity_ok), (1, 0, 0, 0));
     }
 }

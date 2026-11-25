@@ -46,6 +46,7 @@ const laptopBody = {
       },
     },
     { id: 'codex', label: 'Codex', accent: '#10a37f', error: 'no-credentials', quota: null },
+    { id: 'antigravity', label: 'Antigravity', accent: '#7c6cf6', error: 'antigravity-manual-check', quota: null },
   ],
 };
 
@@ -98,13 +99,14 @@ function bootWidget({ key, fetchImpl }) {
   await tick();
   check('② 노트북 /ai-quota/api 를 열쇠로 부른다', calls.length === 1 && /\/ai-quota\/api\?k=pw$/.test(calls[0]), calls.join(','));
   const cards = rootEl.querySelectorAll('.myai-card');
-  check('② 카드 두 장', cards.length === 2, String(cards.length));
+  check('② 카드 세 장', cards.length === 3, String(cards.length));
   check('② 게이지 하나 (5시간)', rootEl.querySelectorAll('.myai-bar').length === 1);
   check('② 낡음 칩 (라이브 아님)', !!rootEl.querySelector('.myai-chip--stale') && !rootEl.querySelector('.myai-chip--live'));
   const notes = Array.from(rootEl.querySelectorAll('.myai-note')).map((n) => n.textContent);
   check('② 출처 노트에 mois', notes.some((n) => n.includes('mois')), notes.join(' | '));
   check('② 브라우저에는 로그인 버튼 없음', !rootEl.querySelector('[data-claude-login]'));
-  check('② Codex 는 오류 문구', !!rootEl.querySelector('.myai-card--error'));
+  check('② Codex 는 오류 문구 (수동 안내 카드는 오류 스타일 제외)', rootEl.querySelectorAll('.myai-card--error').length === 1);
+  check('② Antigravity 수동 확인 안내', notes.some((n) => n.includes('Settings > Models')), notes.join(' | '));
   check('② 비밀번호 줄은 숨김', rootEl.querySelector('.myai-keyrow').hidden === true);
   check('② 등록에 desktopOnly 없음', tool.desktopOnly !== true);
 }

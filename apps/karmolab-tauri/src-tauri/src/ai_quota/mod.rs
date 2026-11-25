@@ -23,6 +23,7 @@ static SOURCES: &[VendorSpec] = &[
     VendorSpec { id: "claude", label: "Claude", accent: "#d97757" },
     VendorSpec { id: "codex", label: "Codex", accent: "#10a37f" },
     VendorSpec { id: "grok", label: "Grok", accent: "#8b8b8b" },
+    VendorSpec { id: "antigravity", label: "Antigravity", accent: "#7c6cf6" },
 ];
 
 async fn probe_one(spec: &'static VendorSpec, snapshot_dir: Option<std::path::PathBuf>) -> VendorCard {
@@ -30,6 +31,7 @@ async fn probe_one(spec: &'static VendorSpec, snapshot_dir: Option<std::path::Pa
         "claude" => claude::probe(snapshot_dir).await,
         "codex" => codex::probe().await,
         "grok" => grok::probe().await,
+        "antigravity" => Err("antigravity-manual-check".to_string()),
         other => Err(format!("no-source: {other}")),
     };
     VendorCard::from(spec, result)
@@ -156,7 +158,7 @@ mod tests {
         // 명부에 올려놓고 갈래를 안 만들면 카드가 조용히 "no-source" 로 뜬다.
         for spec in SOURCES {
             assert!(
-                matches!(spec.id, "claude" | "codex" | "grok"),
+                matches!(spec.id, "claude" | "codex" | "grok" | "antigravity"),
                 "명부에 있는 {} 의 갈래가 probe_one 에 없다",
                 spec.id
             );
