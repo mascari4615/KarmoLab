@@ -23,8 +23,8 @@ export function writableKey(key) {
     return key === 'trash';
 }
 
-/** 청크 `c/<id>/<n>`, 미리보기 `t/<id>`. id 는 hex */
-const CHUNK = /^c\/[0-9a-f]+\/\d+$/;
+/** 청크 `c/<id>/<n>` (옛 자리), `k/<id>-<n>` (평평한 자리), 미리보기 `t/<id>`. id 는 hex */
+const CHUNK = /^(c\/[0-9a-f]+\/\d+|k\/[0-9a-f]+-\d+)$/;
 const THUMB = /^t\/[0-9a-f]+$/;
 
 export function allowedKey(key) {

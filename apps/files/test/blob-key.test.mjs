@@ -8,6 +8,11 @@ test('아는 모양만 내준다', () => {
     assert.equal(allowedKey('idx'), true);
     assert.equal(allowedKey('c/0123abcdef/0'), true);
     assert.equal(allowedKey('c/0123abcdef/17'), true);
+    assert.equal(allowedKey('k/0123abcdef-0'), true);
+    assert.equal(allowedKey('k/0123abcdef-17'), true);
+    assert.equal(allowedKey('k/0123abcdef'), false);
+    assert.equal(allowedKey('k/../hdr-0'), false);
+    assert.equal(allowedKey('k/0123abcdef-0/x'), false);
     /* 미리보기. 이 줄이 없어서 배포됐으면 액자가 전부 400 이었다 (2026-08-29) */
     assert.equal(allowedKey('t/0123abcdef'), true);
 });
@@ -27,6 +32,7 @@ test('버킷의 다른 자리를 주소로 훑을 수 없다', () => {
 test('한 번 쓰이면 안 바뀌는 것만 오래 잡아 둔다', () => {
     /* hdr 과 idx 는 파일이 늘 때마다 바뀐다. 잡아 두면 옛 색인을 본다 */
     assert.equal(immutableKey('c/0123abcdef/0'), true);
+    assert.equal(immutableKey('k/0123abcdef-3'), true);
     assert.equal(immutableKey('t/0123abcdef'), true);
     assert.equal(immutableKey('hdr'), false);
     assert.equal(immutableKey('idx'), false);
