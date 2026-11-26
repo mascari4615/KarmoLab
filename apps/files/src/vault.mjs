@@ -234,6 +234,15 @@ export async function openSums(session, packed) {
   return open(session.key, packed, AAD_SUMS);
 }
 
+/** 받은 암호문 하나의 인증 확인. 자리(AAD)가 맞는 우리 암호문이면 평문, 아니면 VaultCorruptError */
+export async function openSealed(session, key, packed) {
+  const m = /^c\/([0-9a-f]+)\/(\d+)$/.exec(key);
+  if (m) return open(session.key, packed, aadChunk(m[1], Number(m[2])));
+  const t = /^t\/([0-9a-f]+)$/.exec(key);
+  if (t) return open(session.key, packed, aadThumb(t[1]));
+  throw new VaultPathError('key');
+}
+
 /** 청크를 같은 IV 로 다시 싼다. 원본만으로 원격 MD5 를 확인할 때 쓴다. 새로 쓰는 데 쓰지 않는다 */
 export async function resealChunk(session, id, n, part, iv) {
   if (!iv || iv.length !== IV_LEN) throw new VaultCorruptError('iv');

@@ -103,8 +103,14 @@ const mirrored = extra ? teeStore(primary, extra, { allowExtra }) : primary;
 const store = mirrored;
 let session;
 const hdr = await store.get('hdr');
+/* 일시 오류의 not found 문구도 null 로 온다. 그때 새로 만들면 새 소금으로 hdr 을 덮어 전부 못 연다 */
 if (hdr) session = await unlockVault(store, pass);
-else session = await createVault(store, pass);
+else if (process.argv.includes('--init')) session = await createVault(store, pass);
+else {
+  console.error('hdr 을 못 받았다. 처음 만드는 저장소면 --init. 아니면 원격 상태부터 확인');
+  daemon?.stop();
+  process.exit(2);
+}
 session.deferIndex = true;
 session.indexLock = indexLock();
 /* 암호문 MD5 장부. 정본에만 둔다 (`npm run verify`) */
