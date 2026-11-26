@@ -24,8 +24,8 @@ console.log(`[verify] 장부 조각 ${got.segments}, 못 연 조각 ${got.badSeg
 const sec = (ms) => (ms / 1000).toFixed(1);
 console.log(`[verify] 목록 ${sec(got.listMs)}초, 전체 ${sec(performance.now() - t0)}초. 본문 다운로드 없음`);
 if (verbose) {
-  const groups = { 없음: r.missing, '크기 다름': r.size, 'MD5 다름': r.md5, 미리보기: r.thumbs.bad };
-  for (const [name, rows] of Object.entries(groups)) {
+  const groups = [['없음', r.missing], ['크기 다름', r.size], ['MD5 다름', r.md5], ['미리보기', r.thumbs.bad]];
+  for (const [name, rows] of groups) {
     for (const x of rows.slice(0, 50)) console.log(`  ${name} ${x.key} ${x.path}`);
   }
 }
