@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { open } from 'node:fs/promises';
 import { HEAD_BYTES, exifTakenAt, hasExif } from './exif.mjs';
 import { indexLock } from './index-lock.mjs';
-import { CHUNK, commitFile, newBlobId, normalizePath, putChunk } from './vault.mjs';
+import { CHUNK, WRITE_FLAT, commitFile, newBlobId, normalizePath, putChunk } from './vault.mjs';
 
 export async function sha256File(absPath) {
   const hash = createHash('sha256');
@@ -63,7 +63,7 @@ export async function putFileFromPath(session, vaultPath, absPath, opts = {}) {
       if (bytesRead === 0) break;
       const part = Uint8Array.from(buf.subarray(0, bytesRead));
       hash.update(part);
-      await putChunk(session, id, n, part);
+      await putChunk(session, id, n, part, { store: opts.store, flat: WRITE_FLAT });
       n += 1;
       size += bytesRead;
     }
@@ -75,6 +75,7 @@ export async function putFileFromPath(session, vaultPath, absPath, opts = {}) {
       sha256: hash.digest('hex'),
       mtime: opts.mtime ?? 0,
       shot: opts.shot ?? 0,
+      flat: WRITE_FLAT,
     });
   } finally {
     await fh.close();

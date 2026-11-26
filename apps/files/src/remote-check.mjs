@@ -5,6 +5,8 @@
  * 기록 없음은 장부 이전에 올라간 것. 존재와 크기까지는 확인
  * 미리보기는 다시 구우면 되므로 따로 세기만, 실패 아님
  */
+import { chunkKey } from './vault.mjs';
+
 /** 봉한 것 하나에 붙는 몫. IV 12 + 인증 태그 16 */
 export const SEAL_OVERHEAD = 28;
 
@@ -17,7 +19,7 @@ function judge(objs, want) {
 }
 
 export function chunkKeysOf(f) {
-  return Array.from({ length: f.chunks }, (_, i) => `c/${f.id}/${i}`);
+  return Array.from({ length: f.chunks }, (_, i) => chunkKey(f, i));
 }
 
 export function checkRemote(files, sums, listing) {
@@ -62,7 +64,7 @@ export function checkRemote(files, sums, listing) {
       else out.noRemoteMd5 += 1;
     }
     if (whole && total !== f.size + SEAL_OVERHEAD * f.chunks) {
-      out.size.push({ path: f.path, key: `c/${f.id}` });
+      out.size.push({ path: f.path, key: chunkKey(f, 0) });
     }
     if (!f.thumb) continue;
     const key = `t/${f.id}`;
@@ -76,7 +78,7 @@ export function checkRemote(files, sums, listing) {
     else out.thumbs.noRecord += 1;
   }
   for (const [key, objs] of seen) {
-    if (!/^[ct]\//.test(key) || wanted.has(key)) continue;
+    if (!/^[ctk]\//.test(key) || wanted.has(key)) continue;
     out.orphans += objs.length;
     for (const o of objs) out.orphanBytes += o.Size;
   }

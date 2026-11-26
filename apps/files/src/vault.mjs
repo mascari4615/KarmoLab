@@ -236,7 +236,7 @@ export async function openSums(session, packed) {
 
 /** 받은 암호문 하나의 인증 확인. 자리(AAD)가 맞는 우리 암호문이면 평문, 아니면 VaultCorruptError */
 export async function openSealed(session, key, packed) {
-  const m = /^c\/([0-9a-f]+)\/(\d+)$/.exec(key);
+  const m = /^c\/([0-9a-f]+)\/(\d+)$/.exec(key) ?? /^k\/([0-9a-f]+)-(\d+)$/.exec(key);
   if (m) return open(session.key, packed, aadChunk(m[1], Number(m[2])));
   const t = /^t\/([0-9a-f]+)$/.exec(key);
   if (t) return open(session.key, packed, aadThumb(t[1]));
@@ -351,12 +351,25 @@ export function newBlobId() {
   return hex(randomBytes(ID_LEN));
 }
 
+/**
+ * 청크 자리. 옛 항목은 파일마다 폴더 `c/<id>/<n>`, 새 항목(`flat: 1`)은 한 폴더 `k/<id>-<n>`.
+ * Drive 는 폴더를 만들고 찾는 데 왕복이 들어 작은 파일이 분당 17개였고, 평평한 키와 동시 8 이면 212개 (2026-11-26).
+ * AAD 는 둘 다 `karmvlt:chunk:<id>:<n>` 그대로라 자리만 다름
+ */
+/** 새로 쓰는 청크의 자리. 읽는 쪽(화면, Worker)이 두 자리를 다 아는 판이 배포된 뒤에 켬 */
+export const WRITE_FLAT = true;
+
+export function chunkKey(entry, n) {
+  return entry.flat ? `k/${entry.id}-${n}` : `c/${entry.id}/${n}`;
+}
+
 /** 청크 하나 암호해서 바로 store 에 넣는다. 호출 쪽이 암호문 배열을 모으지 않게 길이만 돌려준다. */
-export async function putChunk(session, id, n, part) {
+export async function putChunk(session, id, n, part, opts = {}) {
   if (!(part instanceof Uint8Array)) throw new VaultPathError('bytes');
   const sealed = await seal(session.key, part, aadChunk(id, n));
-  await session.store.put(`c/${id}/${n}`, sealed);
-  session.onSealed?.(`c/${id}/${n}`, sealed);
+  const key = chunkKey({ id, flat: opts.flat ?? WRITE_FLAT }, n);
+  await (opts.store ?? session.store).put(key, sealed);
+  session.onSealed?.(key, sealed);
   return sealed.length;
 }
 
@@ -371,6 +384,8 @@ export async function commitFile(session, rec) {
     chunks: rec.chunks,
     sha256: rec.sha256,
   };
+  /* 새 자리 표시. 없으면 옛 자리 (옛 항목과 옛 전송기) */
+  if (rec.flat) row.flat = 1;
   /* 시각은 있을 때만 담는다. 0 을 담으면 옛 항목과 구별이 안 된다.
      `mtime` 은 디스크 수정 시각, `shot` 은 찍은 날 (EXIF) */
   if (rec.mtime > 0) row.mtime = rec.mtime;
@@ -387,7 +402,7 @@ export async function putFile(session, path, bytes, opts = {}) {
   const n = bytes.length === 0 ? 0 : Math.ceil(bytes.length / chunkSize);
   for (let i = 0; i < n; i++) {
     const part = bytes.subarray(i * chunkSize, Math.min(bytes.length, (i + 1) * chunkSize));
-    await putChunk(session, id, i, part);
+    await putChunk(session, id, i, part, { flat: WRITE_FLAT });
   }
   const digest = await sha256Hex(bytes);
   return commitFile(session, {
@@ -396,6 +411,7 @@ export async function putFile(session, path, bytes, opts = {}) {
     size: bytes.length,
     chunks: n,
     sha256: digest,
+    flat: WRITE_FLAT,
   });
 }
 
@@ -404,7 +420,7 @@ export async function fileChunkKeys(session) {
   const index = await loadIndex(session);
   return index.files.map((f) => ({
     path: f.path,
-    keys: Array.from({ length: f.chunks }, (_, i) => `c/${f.id}/${i}`),
+    keys: Array.from({ length: f.chunks }, (_, i) => chunkKey(f, i)),
   }));
 }
 
@@ -446,14 +462,14 @@ export async function setTimes(session, path, times) {
  * 사진 한 장 4MB 면 스무 칸에 80MB 다. 그리고 영상은 아예 못 그렸다.
  * 미리보기는 수십 KB 라 그 둘을 한 번에 푼다.
  */
-export async function putThumb(session, path, bytes) {
+export async function putThumb(session, path, bytes, opts = {}) {
   if (!(bytes instanceof Uint8Array)) throw new VaultPathError('bytes');
   const norm = normalizePath(path);
   const index = await loadIndex(session);
   const entry = index.files.find((f) => f.path === norm);
   if (!entry) return null;
   const sealed = await seal(session.key, bytes, aadThumb(entry.id));
-  await session.store.put(`t/${entry.id}`, sealed);
+  await (opts.store ?? session.store).put(`t/${entry.id}`, sealed);
   session.onSealed?.(`t/${entry.id}`, sealed);
   entry.thumb = bytes.length;
   await persistIndex(session, norm, { kind: 'patch', id: entry.id, fields: { thumb: bytes.length } });
@@ -497,7 +513,7 @@ export async function getFile(session, path, opts = {}) {
   /* 받기 전에 한 번. 0 / 13 을 먼저 보여 줘야 시작한 것이 보인다 */
   tell?.(0, entry.chunks, 0);
   for (let i = 0; i < entry.chunks; i++) {
-    const packed = await session.store.get(`c/${entry.id}/${i}`);
+    const packed = await session.store.get(chunkKey(entry, i));
     if (!packed) throw new VaultCorruptError('missing chunk');
     const part = await open(session.key, packed, aadChunk(entry.id, i));
     parts.push(part);

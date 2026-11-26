@@ -156,58 +156,80 @@ if (!thumbsOn) console.log('ffmpeg 없음. 미리보기는 안 굽는다');
 let thumbCount = 0;
 let n = 0;
 let skipped = 0;
-try {
-  for (const f of files) {
-    const rel = f.rel.replaceAll('\\', '/');
-    const known = have.get(rel);
-    if (known) {
-      const digest = await sha256File(f.abs);
-      if (known === digest) {
-        skipped += 1;
-        continue;
-      }
-    }
-    // 청크를 쓰는 자리는 session.store 다. 파일마다 갈아끼워 R2 로 갈 것만 보낸다.
-    // 영상은 크기까지 봐야 판단된다 (mirror-policy: 큰 영상은 화면이 못 연다)
-    const toMirror = mirrorable(rel, f.size);
-    if (toMirror) mirroredCount += 1;
-    session.store = toMirror ? mirrored : primary;
-    /* 시각도 같이 담는다. 목록의 날짜 칸에 서고 날짜순 정렬의 근거가 된다.
-       사진은 디스크 수정 시각이 옮긴 날로 덮이는 일이 잦아 찍은 날을 따로 읽는다.
-       영상은 컨테이너가 적어 둔 촬영 시각을 본다. ffprobe 는 미리보기와 한 판에 돈다 */
-    const video = thumbsOn && thumbKind(rel, f.size) === 'video' ? await probeVideo(f.abs) : null;
-    const shot = video ? video.createdAt : await takenAtOf(f.abs, rel);
-    await putFileFromPath(session, rel, f.abs, {
-      chunkSize: 8 * 1024 * 1024,
-      mtime: f.mtime,
-      shot,
-    });
-    /* 미리보기는 **늘 열람 저장까지** 간다. 원본을 안 올리는 큰 영상도 칸은 보여야 하고,
-       한 장이 수십 KB 라 값이 거의 안 든다 */
-    session.store = mirrored;
-    const thumb = thumbsOn ? await makeThumb(f.abs, rel, f.size, { duration: video?.duration }) : null;
-    if (thumb) {
-      await putThumb(session, rel, thumb);
-      thumbCount += 1;
-    }
-    n += 1;
-    if (Date.now() - flushedAt >= FLUSH_MS) {
-      await flushIndex(session);
-      flushedAt = Date.now();
-    }
-    if (verbose) console.log(rel);
-    else if ((n + skipped) % 10 === 0 || n + skipped === files.length) {
-      console.log(`${n + skipped}/${files.length} 올림 ${n} 건너뜀 ${skipped}`);
-    }
-    if ((n + skipped) % 10 === 0 || n + skipped === files.length) {
-      await writeProgress('upload', files.length, n + skipped, n, skipped);
-    }
+/* 파일 단위 동시 전송. 한 파일씩이면 작은 파일이 Drive 왕복에 묶인다 (평평한 키 순차 27/분, 동시 8 은 212/분, 2026-11-26).
+   청크는 파일마다 저장소를 넘겨 받는다. 세션 저장소는 색인용으로 열람 저장까지 묶인 것 그대로 */
+const PARALLEL = Math.max(1, Number(process.env.FILES_UPLOAD_PARALLEL) || 8);
+session.store = mirrored;
+let flushing = null;
+function flushIfDue() {
+  if (flushing) return flushing;
+  if (Date.now() - flushedAt < FLUSH_MS) return null;
+  flushing = flushIndex(session).finally(() => {
+    flushedAt = Date.now();
+    flushing = null;
+  });
+  return flushing;
+}
+async function one(f) {
+  const rel = f.rel.replaceAll('\\', '/');
+  const known = have.get(rel);
+  if (known && known === (await sha256File(f.abs))) {
+    skipped += 1;
+    return;
   }
+  /* 영상은 크기까지 봐야 판단 (mirror-policy: 큰 영상은 화면이 못 염) */
+  const toMirror = mirrorable(rel, f.size);
+  if (toMirror) mirroredCount += 1;
+  /* 시각도 같이. 사진은 디스크 수정 시각이 옮긴 날로 덮이는 일이 잦아 찍은 날을 따로 읽음.
+     영상은 컨테이너가 적어 둔 촬영 시각. ffprobe 는 미리보기와 한 판 */
+  const video = thumbsOn && thumbKind(rel, f.size) === 'video' ? await probeVideo(f.abs) : null;
+  const shot = video ? video.createdAt : await takenAtOf(f.abs, rel);
+  await putFileFromPath(session, rel, f.abs, {
+    chunkSize: 8 * 1024 * 1024,
+    mtime: f.mtime,
+    shot,
+    store: toMirror ? mirrored : primary,
+  });
+  /* 미리보기는 늘 열람 저장까지. 원본을 안 올리는 큰 영상도 칸은 보여야 하고, 한 장이 수십 KB */
+  const thumb = thumbsOn ? await makeThumb(f.abs, rel, f.size, { duration: video?.duration }) : null;
+  if (thumb) {
+    await putThumb(session, rel, thumb, { store: mirrored });
+    thumbCount += 1;
+  }
+  n += 1;
+  if (verbose) console.log(rel);
+}
+try {
+  let next = 0;
+  let failure = null;
+  let told = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(PARALLEL, files.length) }, async () => {
+      while (next < files.length && !failure) {
+        const f = files[next++];
+        try {
+          await one(f);
+          await flushIfDue();
+        } catch (e) {
+          /* 색인 쓰기 실패도 여기로. 밖으로 던지면 나머지 일꾼이 도는 채로 finally 가 데몬을 내림 */
+          failure ??= e;
+          return;
+        }
+        const done = n + skipped;
+        if (done - told >= 10 || done === files.length) {
+          told = done;
+          if (!verbose) console.log(`${done}/${files.length} 올림 ${n} 건너뜀 ${skipped}`);
+          await writeProgress('upload', files.length, done, n, skipped);
+        }
+      }
+    }),
+  );
+  if (failure) throw failure;
+  await flushing;
   await flushIndex(session);
   await writeProgress('done', files.length, n + skipped, n, skipped);
 } finally {
-  /* 파일 도중에 던지면 저장소가 정본만인 채로 온다. 그대로 쓰면 R2 의 색인이 옛것으로 남는다 */
-  session.store = mirrored;
+  await flushing?.catch(() => {});
   if (!(await ledger.flush())) console.error(`MD5 장부를 못 썼다. 남은 줄 ${ledger.pending}`);
   await flushIndex(session);
   daemon?.stop();

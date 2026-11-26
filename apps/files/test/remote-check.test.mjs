@@ -53,17 +53,17 @@ test('올린 그대로면 전부 같음', async (t) => {
 test('한 바이트 썩음, 잘림, 없음을 각각 다르게 센다', async (t) => {
   const { store, check, id } = await setup(t);
   const m = store.snapshot();
-  const keep = m.get(`c/${id}/1`);
+  const keep = m.get(`k/${id}-1`);
   const bad = keep.slice();
   bad[20] ^= 1;
-  m.set(`c/${id}/1`, bad);
+  m.set(`k/${id}-1`, bad);
   let r = await check();
   assert.deepEqual([r.md5.length, r.size.length, r.missing.length], [1, 0, 0]);
   assert.equal(failed(r), true);
-  m.set(`c/${id}/1`, keep.slice(0, -1));
+  m.set(`k/${id}-1`, keep.slice(0, -1));
   r = await check();
   assert.equal(r.size.length, 1);
-  m.delete(`c/${id}/1`);
+  m.delete(`k/${id}-1`);
   r = await check();
   assert.deepEqual([r.missing.length, r.size.length], [1, 0]);
   assert.equal(failed(r), true);
@@ -72,9 +72,9 @@ test('한 바이트 썩음, 잘림, 없음을 각각 다르게 센다', async (t
 test('두 청크가 서로 바뀌면 잡는다. 크기 합은 같다', async (t) => {
   const { store, check, id } = await setup(t);
   const m = store.snapshot();
-  const [x, y] = [m.get(`c/${id}/0`), m.get(`c/${id}/1`)];
-  m.set(`c/${id}/0`, y);
-  m.set(`c/${id}/1`, x);
+  const [x, y] = [m.get(`k/${id}-0`), m.get(`k/${id}-1`)];
+  m.set(`k/${id}-0`, y);
+  m.set(`k/${id}-1`, x);
   const r = await check();
   assert.deepEqual([r.md5.length, r.size.length], [2, 0]);
 });
@@ -86,7 +86,7 @@ test('장부 이전 항목은 기록 없음이고 실패가 아니다. 크기는
   assert.deepEqual([r.noRecord.length, r.matched, failed(r), partial(r)], [4, 0, false, true]);
   assert.equal(new TextDecoder().decode((await getFile(again, 'a.bin')).bytes), 'hello-hello-hello');
   const m = store.snapshot();
-  m.set(`c/${id}/0`, m.get(`c/${id}/0`).slice(1));
+  m.set(`k/${id}-0`, m.get(`k/${id}-0`).slice(1));
   r = await check();
   assert.equal(failed(r), true);
 });
@@ -170,14 +170,14 @@ test('소급: 앞 12바이트와 원본만으로 원격 MD5 를 확인한다', a
   };
   const ok = await prove();
   assert.equal(ok.verdict, 'same');
-  assert.deepEqual(ok.rows, [0, 1, 2, 3].map((i) => [`c/${id}/${i}`, md5(store.snapshot().get(`c/${id}/${i}`))]));
-  const bad = store.snapshot().get(`c/${id}/2`).slice();
+  assert.deepEqual(ok.rows, [0, 1, 2, 3].map((i) => [`k/${id}-${i}`, md5(store.snapshot().get(`k/${id}-${i}`))]));
+  const bad = store.snapshot().get(`k/${id}-2`).slice();
   bad[15] ^= 1;
-  store.snapshot().set(`c/${id}/2`, bad);
+  store.snapshot().set(`k/${id}-2`, bad);
   assert.equal((await prove()).verdict, 'diff');
   await writeFile(join(dir, 'a.bin'), 'HELLO-hello-hello');
   assert.equal((await prove()).verdict, 'changed');
-  store.snapshot().delete(`c/${id}/2`);
+  store.snapshot().delete(`k/${id}-2`);
   assert.equal((await prove()).verdict, 'unclear');
 });
 

@@ -214,7 +214,8 @@ test('late cloud unlock errors cannot replace the current PC folder or clear new
 
 test('late decrypted cloud file cannot replace a new tab or create an obsolete blob', async t => {
   const held = [], counters = { blobs: 0 };
-  const key = `c/${vaultEntry.id}/0`;
+  /* 청크 자리는 옛 c/<id>/<n> 와 평평한 k/<id>-<n> 둘. 어느 쪽이든 그 파일의 첫 청크 */
+  const key = [...snapshot.keys()].find((k) => k === `c/${vaultEntry.id}/0` || k === `k/${vaultEntry.id}-0`);
   const ui = await screen(t, '#vault/a.txt', cloudSetup(key, held, counters));
   await until(() => held.length === 1);
   await ui.go('#laptop/current');

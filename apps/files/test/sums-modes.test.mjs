@@ -31,13 +31,13 @@ test('기준선: 대조한 것만, 대조 뒤 바뀐 것과 sha256 다른 것은
   assert.equal(adoptRows([f], [{ id: f.id, sha256: 'x', at: 2000 }], remote(1000), new Map()).n.shaDiff, 1);
   assert.equal(adoptRows([f], [], remote(1000), new Map()).n.notVerified, 1);
   const r = remote(1000);
-  r.delete(`c/${f.id}/1`);
+  r.delete(`k/${f.id}-1`);
   assert.equal(adoptRows([f], [{ id: f.id, sha256: f.sha256, at: 2000 }], r, new Map()).n.unclear, 1);
 });
 
 test('기준선: 이미 기록된 청크는 다시 안 적는다', async () => {
   const { f, remote } = await sample();
-  const sums = new Map([[`c/${f.id}/0`, 'x'], [`c/${f.id}/1`, 'x'], [`c/${f.id}/2`, 'x']]);
+  const sums = new Map([[`k/${f.id}-0`, 'x'], [`k/${f.id}-1`, 'x'], [`k/${f.id}-2`, 'x']]);
   const got = adoptRows([f], [{ id: f.id, sha256: f.sha256, at: 2000 }], remote(), sums);
   assert.deepEqual([got.rows.length, got.n.notVerified], [0, 0]);
 });
@@ -46,10 +46,10 @@ test('내려받기: 인증 통과만 같음. 자리 바꿔치기와 썩음은 �
   const { store, s, f, remote } = await sample();
   const m = store.snapshot();
   const r = remote();
-  const k0 = `c/${f.id}/0`;
+  const k0 = `k/${f.id}-0`;
   assert.equal((await proveSealed(s, k0, m.get(k0), r.get(k0))).verdict, 'same');
   assert.equal((await proveSealed(s, `t/${f.id}`, m.get(`t/${f.id}`), r.get(`t/${f.id}`))).verdict, 'same');
-  const k1 = `c/${f.id}/1`;
+  const k1 = `k/${f.id}-1`;
   assert.equal((await proveSealed(s, k0, m.get(k1), { ...r.get(k1) })).verdict, 'bad');
   const rot = m.get(k0).slice();
   rot[14] ^= 1;
@@ -60,8 +60,8 @@ test('내려받기: 인증 통과만 같음. 자리 바꿔치기와 썩음은 �
 
 test('내려받을 키: 기록 없는 청크와 미리보기, --thumbs 면 미리보기만', async () => {
   const { f } = await sample();
-  const sums = new Map([[`c/${f.id}/0`, 'x']]);
-  assert.deepEqual(downloadKeys([f], sums), [`c/${f.id}/1`, `c/${f.id}/2`, `t/${f.id}`]);
+  const sums = new Map([[`k/${f.id}-0`, 'x']]);
+  assert.deepEqual(downloadKeys([f], sums), [`k/${f.id}-1`, `k/${f.id}-2`, `t/${f.id}`]);
   assert.deepEqual(downloadKeys([f], sums, { thumbsOnly: true }), [`t/${f.id}`]);
 });
 

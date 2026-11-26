@@ -61,7 +61,7 @@ test('미리보기는 청크 자리에 갖다 놔도 안 열린다', async () =>
     await putThumb(s, 'a.bin', new Uint8Array([7, 7]));
     const snap = new Map(store.snapshot());
     const thumbKey = [...snap.keys()].find((k) => k.startsWith('t/'));
-    const chunkKey = [...snap.keys()].find((k) => k.startsWith('c/'));
+    const chunkKey = [...snap.keys()].find((k) => k.startsWith('k/'));
     await store.put(chunkKey, snap.get(thumbKey));
     await assert.rejects(() => import('../src/vault.mjs').then((m) => m.getFile(s, 'a.bin')));
 });

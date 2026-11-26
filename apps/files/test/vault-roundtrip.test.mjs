@@ -65,7 +65,7 @@ test('한글 경로 왕복', async () => {
 test('위변조 1바이트에 복호 실패', async () => {
   const { store, session } = await fresh();
   await putFile(session, 'x.bin', new TextEncoder().encode('aaaa'), { chunkSize: 2 });
-  const keys = [...store.snapshot().keys()].filter((k) => k.startsWith('c/'));
+  const keys = [...store.snapshot().keys()].filter((k) => k.startsWith('k/'));
   assert.ok(keys.length > 0);
   const k = keys[0];
   const blob = await store.get(k);
@@ -166,4 +166,25 @@ test('알림을 안 줘도 그대로 받는다', async () => {
   const s = await createVault(memoryStore(), 'pw', { iterations: 1000 });
   await putFile(s, 'a.bin', new Uint8Array([1, 2, 3]));
   assert.equal((await getFile(s, 'a.bin')).bytes.length, 3);
+});
+
+test('옛 자리(c/<id>/<n>) 항목도 그대로 열리고, 새로 올린 것은 평평한 자리', async () => {
+  const v = await import('../src/vault.mjs');
+  const { store, session } = await fresh();
+  const id = v.newBlobId();
+  await v.putChunk(session, id, 0, new TextEncoder().encode('old'), { flat: false });
+  const digest = (await import('node:crypto')).createHash('sha256').update('old').digest('hex');
+  await v.commitFile(session, { id, path: 'old.txt', size: 3, chunks: 1, sha256: digest });
+  await putFile(session, 'new.txt', new TextEncoder().encode('new'));
+  const keys = [...store.snapshot().keys()];
+  assert.ok(keys.includes(`c/${id}/0`));
+  assert.ok(keys.some((k) => /^k\/[0-9a-f]+-0$/.test(k)));
+  assert.equal(new TextDecoder().decode((await getFile(session, 'old.txt')).bytes), 'old');
+  assert.equal(new TextDecoder().decode((await getFile(session, 'new.txt')).bytes), 'new');
+  const rows = Object.fromEntries(session.index.files.map((f) => [f.path, f]));
+  assert.equal(rows['old.txt'].flat, undefined);
+  assert.equal(rows['new.txt'].flat, 1);
+  const all = Object.fromEntries((await v.fileChunkKeys(session)).map((f) => [f.path, f.keys]));
+  assert.deepEqual(all['old.txt'], [`c/${id}/0`]);
+  assert.match(all['new.txt'][0], /^k\//);
 });

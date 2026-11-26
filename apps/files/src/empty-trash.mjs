@@ -5,7 +5,7 @@
  * 왜 PC 에서만 하나: 화면은 표시만 한다. 청크를 지우는 손은 열쇠와 rclone 이 있는 기계에만
  * 둔다. 세션 하나가 털려도 원본이 사라지지 않는다.
  *
- * 지우는 것: 청크(`c/<id>/<n>`), 미리보기(`t/<id>`), 색인의 그 줄, 휴지통의 그 줄.
+ * 지우는 것: 청크(`c/<id>/<n>` 또는 `k/<id>-<n>`), 미리보기(`t/<id>`), 색인의 그 줄, 휴지통의 그 줄.
  * Drive 와 R2 양쪽에서 지운다.
  *
  * 쓰기: node src/empty-trash.mjs --yes [--older-days N] [--dry-run]
@@ -14,7 +14,7 @@
 import { loadFilesEnv } from './env-file.mjs';
 import { indexLock } from './index-lock.mjs';
 import { rcloneStore, startRcloneDaemon } from './store-rclone.mjs';
-import { dropFiles, flushIndex, listFiles, readTrash, unlockVault, writeTrash } from './vault.mjs';
+import { chunkKey, dropFiles, flushIndex, listFiles, readTrash, unlockVault, writeTrash } from './vault.mjs';
 import { inTrash, takeTrash } from './trash.mjs';
 
 await loadFilesEnv();
@@ -78,7 +78,7 @@ async function drop(key) {
 
 let gone = 0;
 for (const f of targets) {
-    for (let i = 0; i < f.chunks; i++) await drop(`c/${f.id}/${i}`);
+    for (let i = 0; i < f.chunks; i++) await drop(chunkKey(f, i));
     if (f.thumb) await drop(`t/${f.id}`);
     gone += 1;
     if (gone % 20 === 0) console.log(`지움 ${gone} / ${targets.length}`);
