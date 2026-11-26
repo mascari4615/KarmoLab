@@ -152,9 +152,27 @@ async function runDownload(ctx) {
   console.log(`[sums] 기록 없는 것 ${all.length}개 ${gb(all)} GB, 이번에 받을 것 ${keys.length}개 ${gb(keys)} GB`);
   const n = { same: 0, bad: 0, moved: 0, error: 0 };
   let bytes = 0;
+  /* 회선이 끊기면 남은 수천 개가 몇 초 만에 오류로 지나감 (2026-11-26, 5,460건). 재시도, 연속 실패면 중단 */
+  let streak = 0;
+  const fetchWithRetry = async (key) => {
+    for (let t = 1; ; t++) {
+      try {
+        const body = await reader.get(key);
+        streak = 0;
+        return body;
+      } catch (e) {
+        if (t >= 4) {
+          streak += 1;
+          throw e;
+        }
+        await new Promise((r) => setTimeout(r, 2000 * 2 ** t));
+      }
+    }
+  };
   await each(keys, o.parallel, async (key, i) => {
+    if (streak >= 50) return;
     try {
-      const body = await reader.get(key);
+      const body = await fetchWithRetry(key);
       const { verdict, md5 } = await proveSealed(session, key, body, remote.get(key));
       n[verdict] += 1;
       if (verdict === 'same') {
@@ -170,10 +188,11 @@ async function runDownload(ctx) {
   });
   report(
     ctx,
-    `같음 ${n.same} (${(bytes / 1e9).toFixed(2)} GB), 인증 실패 ${n.bad}, 받는 사이 바뀜 ${n.moved}, 오류 ${n.error}`,
+    `같음 ${n.same} (${(bytes / 1e9).toFixed(2)} GB), 인증 실패 ${n.bad}, 받는 사이 바뀜 ${n.moved}, 오류 ${n.error}` +
+      (streak >= 50 ? '. 연속 실패 50건으로 중단, 다시 실행하면 이어서' : ''),
     keys.length,
   );
-  return n.bad || n.error ? 1 : 0;
+  return n.bad || n.error || streak >= 50 ? 1 : 0;
 }
 
 async function runLocal(ctx) {
