@@ -21,6 +21,7 @@
 import { dashRegistry, esc } from './kit';
 import type { DashPanelCtx, DashRepoRead } from './kit';
 import { createLocalServers } from './local-servers';
+import { createMachineEnv } from './machine-env';
 
 (function (): void {
   'use strict';
@@ -165,6 +166,14 @@ import { createLocalServers } from './local-servers';
       '.mc-row .btn.arm{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}',
       '.mc-msg{font-size:var(--font-size-2xs);color:var(--text-tertiary);white-space:nowrap}',
       '.mc-msg.err{color:var(--error)}',
+      '.mc-env{display:flex;flex-direction:column;gap:8px}',
+      '.mc-envrow{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--pl-line2);padding-top:8px}',
+      '.mc-envhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:var(--font-size-xs);min-width:0}',
+      '.mc-envhead b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mc-envin{display:flex;gap:6px;min-width:0}',
+      '.mc-envin input{flex:1;min-width:0;min-height:36px;padding:0 10px;font:inherit;font-size:var(--font-size-sm);border:1px solid var(--border);background:var(--dash-paper);color:var(--text-primary)}',
+      '.mc-envin .btn{min-height:36px;padding:0 12px;background:var(--dash-paper)}',
+      '.mc-envin .btn.arm{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}',
       '.mc-svc{margin-bottom:12px}',
       '.mc-spec{display:grid;grid-template-columns:64px 1fr;row-gap:6px;column-gap:8px;margin:0;font-size:var(--font-size-xs)}',
       '.mc-spec dt{color:var(--text-tertiary);font-weight:700}.mc-spec dd{margin:0;word-break:break-word}',
@@ -528,6 +537,8 @@ import { createLocalServers } from './local-servers';
     const ls = createLocalServers({ isCurrent: ctx.isCurrent });
     /* 만들자마자 치울 자리 등록. 아래 받기에서 일찍 끝나거나 던져도 타이머가 안 샘 */
     ctx.onDispose(() => ls.dispose());
+    /* 상세의 환경 변수 칸. 자기 DOM 을 들고 있다가 다시 그릴 때 자리에 붙인다 */
+    const envBox = createMachineEnv({ ghToken: () => ctx.ghToken(), isCurrent: () => ctx.isCurrent() });
 
     /** 서비스 재시작. 첫 누름은 확인 대기, 같은 단추를 한 번 더 눌러야 보낸다 */
     const armed: Record<string, number> = {};
@@ -881,6 +892,7 @@ import { createLocalServers } from './local-servers';
         '<div><span class="mc-lab">사양</span></div>' + specHtml(m, true) +
         '<div class="mc-sec">' + notesHtml(m) + '</div>' +
         '<div class="mc-sec">' + dailyHtml(m) + '</div>' +
+        envBox.slotHtml() +
         '</section>';
       return (
         '<button type="button" class="mc-back" data-back="1">&lsaquo; 머신</button>' +
@@ -919,6 +931,7 @@ import { createLocalServers } from './local-servers';
       }
       const m = detail ? byId(detail) : null;
       ls.beforeRepaint();
+      if (m) envBox.beforeRepaint();
       if (m) {
         const box = wrap.querySelector('[data-logbox]') as HTMLElement | null;
         const keepScroll = box ? box.scrollTop : -1;
@@ -930,6 +943,7 @@ import { createLocalServers } from './local-servers';
         wrap.innerHTML = overviewHtml();
       }
       ls.attach(wrap);
+      if (m) envBox.attach(wrap, m.id);
       paintStatus();
     }
 
